@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cp inst/CppCode/*.cpp src
+
+cp -r Eigen_local inst/include/Eigen
+
+
+echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"
+#export BOB="$R_PACKAGE_DIR"
+sed -e s!@NIMBLE_HOME@!$R_PACKAGE_DIR! inst/make/Makevars.win.in > inst/make/Makevars.win
+
+#sed -e s!@R_ENABLE_LIB@!FALSE! R/config.R.in > R/config.R
+echo "UseLibraryMakevars = FALSE" > R/config.R
+echo ".NimbleUseRegistration = TRUE" >> R/config.R
+echo "NeedMakevarsFile = TRUE" >> R/config.R

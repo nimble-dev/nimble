@@ -1,0 +1,7 @@
+The X values have been centred in the model to improve
+autocorrelation. The parameter theta0 corresponds to the intercept in
+the uncentred model.
+
+The posterior distributions of theta0 and theta have a very heavy tail.
+Excursions into the tail are rare, but have a strong influence on 
+the mean.  

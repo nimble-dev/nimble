@@ -2,9 +2,7 @@ NIMBLE
 ======
 
 This is the repository for the base NIMBLE package, 
-An R package for programming with BUGS models.
-
-Note: this Github repository for ongoing development of NIMBLE is not quite ready but will be by the end of June.
+An R package for Programming with BUGS Models.
 
 For more information:
 

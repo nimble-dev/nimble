@@ -1,0 +1,4 @@
+# lib=FALSE
+# from=Makevars.in
+
+PKG_CPPFLAGS=@EIGEN_INC@ -DEIGEN_MPL2_ONLY=1 -I@NIMBLE_INC_DIR@

@@ -1,0 +1,226 @@
+// VERY IMPORTANT NOTE: THESE FUNCTIONS WILL ASSUME MODELS ARE OF CLASS
+// "ModelBase". THIS CLASS CAN BE FOUND IN "ModelClassUtils.h" 
+
+
+
+// This file contains new components for accessing and copying from groups of node Functions or subsets of variables in models or modelValues
+#ifndef __ACCESSORCLASSES
+#define __ACCESSORCLASSES
+
+#include <iostream>
+
+#include "NimArrBase.h"
+#include "NimArr.h"			
+#include "ModelClassUtils.h"
+#include "RcppUtils.h"
+#include <Rinternals.h>
+#include "R.h"
+
+
+using std::cout;
+
+#include "nodeFun.h" // will have:
+/* class nodeFun { */
+/*  public: */
+/*   virtual double calculate()=0; */
+/*   virtual void simulate()=0; */
+/*   virtual double getLogProb()=0; */
+/*   // In the future these could be templated */
+/*   virtual double getValue()=0; */
+/*   virtual void setValue(double v)=0; */
+/* }; */
+
+/////////////////////////////////
+// 1. NodeVectors:
+/////////////////////////////////
+class NodeVectorClass {
+ public:
+  vector<nodeFun *> nodeFunPtrs;
+  virtual vector<nodeFun *> &getNodeFunctionPtrs() {return(nodeFunPtrs);}
+  // to be inherited and implemented differently when we have dynamic dependencies
+};
+
+///// Using NodeVectors:
+// utilities for calling node functions from a vector of node pointers
+// see .cpp file for definitions
+double calculate(NodeVectorClass &nodes);
+double getLogProb(NodeVectorClass &nodes);
+void simulate(NodeVectorClass &nodes);
+
+///////////////////////////////
+// 2. Variable accessors
+//
+// These are trickier because there are different types inside of NimArr<>s.
+// We now have a type system so we can extract the type in the copy function.
+// We *may* need to templatize types here, but I think we can avoid it.
+///////////////////////////////
+
+// Base class for access to one NimArr<>
+class SingleVariableAccessBase {
+ public:
+  int flatIndexStart, flatIndexEnd; // For 1-3: In R these should be 1,3; In C++: 0, 3
+  int length; // copying function can check for singletons if it wants to
+  int getIndexStart() {return(flatIndexStart);}  
+  int getIndexEnd() {return(flatIndexEnd);}
+  int getLength() {return(length);}
+  virtual NimArrType *getNimArrPtr()=0; //
+};
+
+// Derived class for access to one NimArr<> in a model
+class SingleVariableAccess : public SingleVariableAccessBase {
+ public:
+  NimArrType **ppVar; // I think we have to do some casting when populating this
+  virtual NimArrType *getNimArrPtr() {return(*ppVar);}
+};
+
+// Base class for vector of single variables accessors
+class ManyVariablesAccessorBase {
+ public:
+  virtual vector<SingleVariableAccessBase *> &getAccessVector()=0;
+  virtual void  setRow(int i) = 0;
+};
+
+// Derived class for vector of single variable accessors to NimArr<>s in a model
+class ManyVariablesAccessor : public ManyVariablesAccessorBase {
+ public:
+  vector<SingleVariableAccessBase *> varAccessors;
+  virtual vector<SingleVariableAccessBase *> &getAccessVector() {return(varAccessors);}
+    ~ManyVariablesAccessor();
+  void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
+};
+
+/////////////////////////////////
+// 3. modelValues accessors
+// 
+// These are like model variable accessors but need a row index
+/////////////////////////////////
+
+// Derived class for access to one NimArr<> in a modelValues
+// This uses some things not yet written: a vecNimArrType base class with a getRowTypePtr().
+class SingleModelValuesAccess : public SingleVariableAccessBase {
+ public:
+  NimVecType *pVVar;   // Cliff and I talked about making a vecNimArrType base class
+  int currentRow;
+  virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} // Need to put a function like this in vecNimArrType base class
+  
+  void setRow(int i) {currentRow = i;}
+  int getRow() {return(currentRow);}
+};
+
+// Derived class for a vector of single variable accessors to NimArr<>s in a modelValues
+// The row(i) member function sets the currentRow of all the single accessors and returns the vector of them
+class ManyModelValuesAccessor : public ManyVariablesAccessorBase {
+  public:
+  int currentRow;
+  vector<SingleVariableAccessBase *> varAccessors;
+  virtual vector<SingleVariableAccessBase *> &getAccessVector() {return(varAccessors);}
+  virtual void setRow(int i);// see .cpp
+};
+
+/////////////////////////////////
+// nimCopy function
+//
+// Now we are ready to write a fairly general copy function
+// I am calling it nimCopy to avoid name conflicts with std::copy or others.
+/////////////////////////////////
+
+void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to);
+void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to);
+
+// This templated piece is given in the .h file
+template<class Tfrom, class Tto>
+void nimCopyOneTyped(SingleVariableAccessBase *fromSVA, SingleVariableAccessBase *toSVA) {
+  NimArrBase<Tfrom> *fromNimPtr = static_cast<NimArrBase<Tfrom> *> ( (fromSVA)->getNimArrPtr() ); //	I don't believe static casting should be necessary
+  NimArrBase<Tto>  *toNimPtr = static_cast<NimArrBase<Tto> *> ( (toSVA)->getNimArrPtr() );		//	Same
+  if(fromSVA->getLength() != toSVA->getLength()) {
+    cout<<"Error in nimCopyOneTyped: lengths do not match.\n";
+    cout << "FromLength = " << fromSVA->getLength() << " ToLength = "<< toSVA->getLength() << "\n";
+  	return;
+  }
+  if(fromSVA->getLength() == 1) {
+    (*toNimPtr)[toSVA->getIndexStart()] = (*fromNimPtr)[fromSVA->getIndexStart()];
+    return;
+  }
+  
+  
+  std::copy( fromNimPtr->getPtr() + fromSVA->getIndexStart(),
+	    fromNimPtr->getPtr() + fromSVA->getIndexEnd() + 1,
+	    toNimPtr->getPtr() + toSVA->getIndexStart());
+}
+
+void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessorBase &to);
+
+void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessorBase &to, int rowTo);
+
+void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to, int rowTo);
+	
+
+
+/* template<int D, class T> */
+/* void nimArr_2_SingleModelAccess(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin); */
+/* template<int D, class T> */
+/* void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr); */
+
+template<class T>
+void nimArr_2_SingleModelAccess(SingleVariableAccess* SMVAPtr, NimArrBase<T>* nimArrPtr, int nimBegin);
+template<class T>
+void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArrBase<T>* nimArrPtr);
+
+template<int D, class T>
+void SingleModelAccess_2_nimArr(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin);
+template<int D, class T>
+void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr);
+
+/* void setValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA); */
+/* void setValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA); */
+
+void setValues(NimArrBase<double> &nimArr, ManyVariablesAccessor &MVA);
+void setValues(NimArrBase<int> &nimArr, ManyVariablesAccessor &MVA);
+
+void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA);
+void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA);
+
+
+double calculate(NodeVectorClass &nodes);
+double getLogProb(NodeVectorClass &nodes);
+void simulate(NodeVectorClass &nodes);
+
+void cAddNodeFun(NodeVectorClass nVObj, nodeFun* nFPtr);
+void cAddVariableAccessor(ManyVariablesAccessor* mVAPtr, SingleVariableAccess* sVAPtr, int index);
+template<class T>
+void cRemoveAccessor(T* aPtr, int index, bool removeAll);
+void setModelValuesAccessorRow(ManyVariablesAccessorBase &access);
+
+
+extern "C" {
+	SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex);
+	SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex);
+
+	SEXP getModelAccessorValues(SEXP accessor);
+	SEXP getMVAccessorValues(SEXP accessor);
+
+	SEXP newNodeFxnVector(SEXP size);
+	SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
+	SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size);
+	SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index);
+	SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll);
+	
+	SEXP newManyVariableAccessor(SEXP size);
+	SEXP addSingleVariableAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
+	SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size);
+	SEXP removeModelVariableAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
+	
+	SEXP newManyModelValuesAccessor(SEXP size);
+	SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size);
+	SEXP addSingleModelValuesAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
+	SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
+	 
+	SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
+	 
+}
+void  SingleVA_Finalizer ( SEXP Sv );
+void  SingleMVA_Finalizer ( SEXP Sv );
+void NodeVector_Finalizer( SEXP Sv);
+void ManyVariable_Finalizer(SEXP Sv);
+void ManyMV_Finalizer(SEXP Sv);
+#endif 			

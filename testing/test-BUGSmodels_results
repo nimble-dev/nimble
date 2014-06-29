@@ -1,0 +1,143 @@
+######################################################
+### checks -mid June
+######################################################
+
+PASSED:  beetles, birats1, birats2, birats3, blocker, bones (dcat!), dugongs, dyes, epil2, epil3, equiv, icear, line, oxford, pump, rats, seeds, seedsuni, seedssig 
+
+PASSED with tweaks to input: jaw-linear, leuk, salm, air, schools
+
+NOTE: schools takes several minutes to create the model (1978 observations)
+
+FAILED:
+
+inhaler: Error in `[<-`(`*tmp*`, i, t, value = 4) : subscript out of bounds
+(I think this is in the data block of the .bug file; haven't followed up)
+
+dipper: issue with 294x7 as y vs. isData returns 294x8; check once backwards indexing is addressed
+
+
+alli: Error in eigenizeNameStrided(code, symTab, typeEnv) : 
+  Error, cannot eigenize a map of dimensions > 2
+issue is with sum(OlogOE[,,])
+
+NOT CHECKED:
+kidney (dinterval), litters (T()), lsat (T()), mice (dinterval), asia (max, random indexing), biops(random indexing), cervix (random indexing), eyes (dnormmix), hearts (random indexing), orange[mvotree](just haven't had a chance), pigs (random indexing), stagnant (random indexing)
+
+######################################################
+### checks late May with package in reorganizeCode2
+######################################################
+
+PASSED: blocker, dugongs, dyes, equiv, line, oxford, pump, rats, seeds
+
+ERRORS:
+hearts:
+Error in if (!(all(isDataVals) || all(!isDataVals))) stop(paste0("it seems we have mixed isData flags for the vectorized node: ",  : 
+  missing value where TRUE/FALSE needed
+
+air:
+Error in x$parentNodeExprs[[iV]][[iDim + 2]] : 
+  object of type 'symbol' is not subsettable
+
+salm:
+Error in addMissingIndexingRecurse(code[[i]], dimensionsList) : 
+  Opps! This part of NIMBLE is still under development.
+The model definition included the expression 'logx[]', which contains missing indices.
+There are two options to resolve this:
+(1) Explicitly provide the missing indices in the model definition (e.g., 'logx[1:10]'), or
+(2) Provide the dimensions of varaible 'logx' via the 'dimensions' argument to modelBUGS(), e.g.,
+    modelBUGS(modelCode, dimensions = list(logx = c(DIM1_MAX)))
+Thanks for bearing with us.
+
+
+##############################
+### checking late April
+##############################
+
+All vol1 and vol2 examples checked by CJP 4/18/14.
+
+PASSED: blocker, dyes, epil(2), epil(3), equiv, line, oxford, pump, rats, seeds, seeds(uni), seeds(sig), birats(1), birats(3), dugongs, hearts, dipper
+
+NOT TESTED: bones (dcat); inhaler(sort); kidney(dinterval == I() in other versions of this example); leuk(step); litters (T()); lsat(T() and prod); mice(dinterval); alli(dmulti); asia(dcat); beetles-probit(no inv_probit), biops(ddirch), birats2(dmnorm); birats4(dmnorm); cervix(random indices); eyes (ddirch, dnormmix[JAGS], random indices[BUGS]); eyes2(dinterval, T()), jaw(dmnorm); orange(dmnorm); pigs(dcat); schools(dmnorm); stagnant(dcat)
+
+SLOW COMPILATION:
+dipper takes a bit of time
+I haven't looked at this systematicaly, but noted the following:
+cervix is slow to compile (there are many nodes...)
+
+ERRORS:
+
+salm:
+after I put in 1:doses as the indices in mean(logx[]), I get this:
+> test('salmtmp')
+R CMD SHLIB salmtmp/salmtmp.cpp salmtmp/salmtmp_nfCode.cpp ../../packages/nimble/inst/include/RcppUtils.cpp ../../packages/nimble/inst/include/Utils.cpp ../../packages/nimble/inst/include/NamedObjects.cpp ../../packages/nimble/inst/include/ModelClassUtils.cpp ../../packages/nimble/inst/include/accessorClasses.cpp
+g++ -I/usr/share/R/include -DNDEBUG      -fpic  -O3 -pipe  -g  -c salmtmp/salmtmp.cpp -o salmtmp/salmtmp.o
+g++ -I/usr/share/R/include -DNDEBUG      -fpic  -O3 -pipe  -g  -c salmtmp/salmtmp_nfCode.cpp -o salmtmp/salmtmp_nfCode.o
+salmtmp/salmtmp_nfCode.cpp: In member function ‘virtual void nfmu_L8::simulate()’:
+salmtmp/salmtmp_nfCode.cpp:394:133: error: expected primary-expression before ‘:’ token
+salmtmp/salmtmp_nfCode.cpp:394:133: error: expected ‘)’ before ‘:’ token
+salmtmp/salmtmp_nfCode.cpp:394:149: error: expected ‘]’ before ‘;’ token
+salmtmp/salmtmp_nfCode.cpp:394:149: error: expected ‘)’ before ‘;’ token
+salmtmp/salmtmp_nfCode.cpp: In member function ‘virtual void nfalpha_L13::simulate()’:
+salmtmp/salmtmp_nfCode.cpp:785:90: error: expected primary-expression before ‘:’ token
+salmtmp/salmtmp_nfCode.cpp:785:90: error: expected ‘)’ before ‘:’ token
+salmtmp/salmtmp_nfCode.cpp:785:131: error: expected ‘]’ before ‘;’ token
+make: *** [salmtmp/salmtmp_nfCode.o] Error 1
+Error in dyn.load(mainfile, local = FALSE) : 
+  unable to load shared object '/var/tmp/paciorek/nimble/NIMBLE1/examples/demos/salmtmp/salmtmp.so':
+  /var/tmp/paciorek/nimble/NIMBLE1/examples/demos/salmtmp/salmtmp.so: cannot open shared object file: No such file or directory
+
+
+air: 
+Error in x$parentNodeExprs[[iV]][[iDim + 2]] : 
+  object of type 'symbol' is not subsettable
+
+
+beetles(logit):
+R CMD SHLIB beetles/beetles.cpp beetles/beetles_nfCode.cpp ../../packages/nimble/inst/include/RcppUtils.cpp ../../packages/nimble/inst/include/Utils.cpp ../../packages/nimble/inst/include/NamedObjects.cpp ../../packages/nimble/inst/include/ModelClassUtils.cpp ../../packages/nimble/inst/include/accessorClasses.cpp
+g++ -I/usr/share/R/include -DNDEBUG      -fpic  -O3 -pipe  -g  -c beetles/beetles.cpp -o beetles/beetles.o
+g++ -I/usr/share/R/include -DNDEBUG      -fpic  -O3 -pipe  -g  -c beetles/beetles_nfCode.cpp -o beetles/beetles_nfCode.o
+beetles/beetles_nfCode.cpp: In member function ‘virtual void nfD_L10::simulate()’:
+beetles/beetles_nfCode.cpp:635:49: error: expected primary-expression before ‘:’ token
+beetles/beetles_nfCode.cpp:635:49: error: expected ‘)’ before ‘:’ token
+beetles/beetles_nfCode.cpp:635:102: error: expected ‘]’ before ‘;’ token
+beetles/beetles_nfCode.cpp:635:102: error: expected ‘)’ before ‘;’ token
+make: *** [beetles/beetles_nfCode.o] Error 1
+Error in dyn.load(mainfile) : 
+  unable to load shared object '/var/tmp/paciorek/nimble/NIMBLE1/examples/demos/beetles/beetles.so':
+  /var/tmp/paciorek/nimble/NIMBLE1/examples/demos/beetles/beetles.so: cannot open shared object file: No such file or directory
+Calls: test ... testSingle -> compileBUGSmodel -> <Anonymous> -> dyn.load
+Execution halted
+
+inhaler:
+processing the data block of inhaler fails as the looping code seems to have a gug that results in for loops over indices such as 287:286 and trying to assign into the 287th row of 'response', which has only 286 rows. This is odd and I'm not sure how BUGS/JAGS do the preprocessing.
+
+lsat:
+testing lsat w/o the T() part of the model and with alpha[1:T], p.item[i,1:T] - gives error regarding prod
+
+
+NOTES:
+
+dyes:
+gives warnings if initial values not used; passes without issues if initial values are used
+
+rats:
+gives warnings if initial values not used; passes without issues if initial values are used
+
+birats(1):
+gives warnings if initial values not used; passes without issues if initial values are used
+
+epil(2), epil(3):
+has an issue with NAs that causes an error when inits not used
+
+ice(ar):
+has an issue with NAs that causes an error when inits not used
+warnings when inits _are_ used are because alpha[1] initial value is NA so things are fine
+
+dipper:
+warnings because 'x' and 'y' have a bunch of NAs
+
+dugongs: 
+warnings if initial values not used; passes without issues if initial values are used
+
+equiv: 
+warnings if initial values not used; passes without issues if initial values are used

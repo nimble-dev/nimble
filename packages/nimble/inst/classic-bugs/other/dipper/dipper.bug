@@ -1,0 +1,19 @@
+model {
+  
+  phi ~ dunif(0,1)
+  p   ~ dunif(0,1)
+  
+  for(i in 1:nind) {
+    
+    x[i, first[i]] <- 1
+
+    for(t in (first[i]+1):k) {
+      mu.x[i,t] <- phi * x[i,t-1]
+      mu.y[i,t] <- p   * x[i,t]
+      x[i,t] ~ dbin(mu.x[i,t], 1)
+      y[i,t] ~ dbin(mu.y[i,t], 1)
+    }
+    
+  }
+  
+}

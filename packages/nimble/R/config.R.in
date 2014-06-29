@@ -1,0 +1,5 @@
+NeedMakevarsFile = @NEED_MAKEVARS_FILE@
+UseLibraryMakevars = @R_ENABLE_LIB@
+@USE_REGISTRATION@
+
+

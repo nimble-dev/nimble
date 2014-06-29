@@ -1,0 +1,40 @@
+var r[N,T];
+data {
+   for (j in 1:culm[1]) {
+      r[j,] <- response[1, ];
+   }
+   for (i in 2:R) {
+      for (j in (culm[i-1] + 1):culm[i]) {
+         r[j,] <- response[i, ];
+      }
+   }
+}
+model {
+# Rasch model
+   for (j in 1:N) {
+      for (k in 1:T) {
+         logit(p[j,k]) <- beta*theta[j] - alpha[k];
+         r[j,k] ~ dbern(p[j,k]);
+      }
+      theta[j] ~ dnorm(0,1);
+   }
+# Priors
+   for (k in 1:T) {
+      alpha[k] ~ dnorm(0,0.0001);
+      a[k] <- alpha[k] - mean(alpha[]);
+   }
+   beta ~ dnorm(0,0.0001) T(0,);
+
+# Compute probability of response pattern i, for later use in computing G^2
+  theta.new ~ dnorm(0,1);          # ability parameter for random student 
+  for(k in 1:T) {
+       logit(p.theta[k]) <- beta*theta.new - alpha[k];  
+       for(i in 1:R) {
+          p.item[i,k] <- p.theta[k]^response[i,k] * (1-p.theta[k])^(1-response[i,k]);
+       }
+  } 
+  for(i in 1:R) {    
+     # P_i|theta = PROD_k p_k|theta   
+     P.theta[i] <- prod(p.item[i,]);
+  }
+}

@@ -1,0 +1,4 @@
+# don't include built package
+*.tar.gz
+*.zip
+*.tgz

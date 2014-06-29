@@ -1,0 +1,4 @@
+# ignore all code files, since these should be copied over from inst/CppCode
+*.cpp
+Makevars
+Makevars.win

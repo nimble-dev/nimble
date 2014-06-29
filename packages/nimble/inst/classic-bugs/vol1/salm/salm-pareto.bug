@@ -1,0 +1,18 @@
+model {
+   alpha.star ~ dnorm(0.0,1.0E-4);     # intercept
+   beta ~ dnorm(0.0,1.0E-4);      # mutagenic effect
+   gamma ~ dnorm(0.0,1.0E-10);    # toxic effect
+   tau ~ dpar(0.5, 0.04);         # Pareto prior on precision
+   sigma <- 1.0/sqrt(tau);
+
+   for(i in 1:doses){
+      for(j in 1:plates){
+         log(mu[i,j])   <- alpha.star + beta*(logx[i]-mean(logx[])) 
+                           + gamma*(x[i]-mean(x[])) + lambda[i,j];
+         y[i,j]          ~ dpois(mu[i,j]);
+         lambda[i,j]     ~ dnorm(0.0,tau);
+     }
+     logx[i]        <- log(x[i]+10);
+   }
+   alpha <- alpha.star - beta*mean(logx[]) - gamma*mean(x[]);
+}

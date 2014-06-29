@@ -1,0 +1,78 @@
+model leuk;
+
+const
+      N = 42,      # number of patients
+      T = 17,      # number of unique failure times
+ Npairs = 21,      # number of matched pairs
+  eps = 0.000001;  # used to guard against numerical 
+                   # imprecision in step function  
+
+var
+    obs.t[N],  # failure or censoring time for each patient
+      t[T+1],  # unique failure times + maximum follow-up time 
+     dN[N,T],  # counting process increment
+      Y[N,T],  # 1=subject observed; 0=not observed 
+    Idt[N,T],  # intensity process
+        Z[N],  # covariate     
+        beta,  # regression coefficient
+      dL0[T],  # increment in unknown hazard function
+ dL0.star[T],  # prior guess at hazard function
+           c,  # degree of confidence in prior guess for dL0
+       mu[T],  # location parameter for Gamma (= c * dL0.star)
+           r,  # prior guess at failure rate
+     fail[N],  # failure = 1; censored = 0
+  S.treat[T],  # survivor function for treatment group
+S.placebo[T],  # survivor function for placebo grou[
+   b[Npairs],  # frailty for each pair
+         tau,  # precision of frailty parameters
+       sigma,  # s.d. (1/sqrt(tau))
+     pair[N];  # indicates which pair each patient belongs to
+ 
+data obs.t, fail, Z, pair in "leukfr.dat", t in "failtime.dat";
+inits in "leukfr.in";
+{
+# Set up data
+
+for(i in 1:N) {
+  for(j in 1:T) {
+
+    # risk set = 1 if obs.t >= t
+    Y[i,j] <- step(obs.t[i] - t[j] + eps);  
+      
+    # counting process jump = 1 if obs.t in [ t[j], t[j+1] )
+    #                      i.e. if t[j] <= obs.t < t[j+1]
+    dN[i,j] <- Y[i,j]*step(t[j+1] - obs.t[i] - eps)*fail[i]; 
+
+  }
+}
+# Model 
+
+for(j in 1:T) {
+  for(i in 1:N) {
+ 
+   dN[i,j]   ~ dpois(Idt[i,j]);              
+   Idt[i,j] <- Y[i,j]*exp(beta*Z[i]+b[pair[i]])*dL0[j];                             
+  }                             
+
+  dL0[j] ~ dgamma(mu[j], c);
+  mu[j] <- dL0.star[j] * c;    # prior mean hazard
+
+  # Survivor function = exp(-Integral{l0(u)du})^exp(beta*z)    
+  S.treat[j] <- pow(exp(-sum(dL0[1:j])), exp(beta * -0.5));
+  S.placebo[j] <- pow(exp(-sum(dL0[1:j])), exp(beta * 0.5));	
+}
+
+for(k in 1:Npairs) {
+    b[k] ~ dnorm(0.0, tau); 
+}
+tau ~ dgamma(0.001, 0.001);
+sigma <- sqrt(1/tau);
+ 
+c <- 0.001; r <- 0.1; 
+for (j in 1:T) {  
+  dL0.star[j] <- r * (t[j+1]-t[j])  
+} 
+
+beta ~ dnorm(0.0,0.000001);                 
+
+}

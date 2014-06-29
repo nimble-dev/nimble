@@ -1,0 +1,99 @@
+#!/usr/bin/Rscript
+
+# this script creates the Rd files from the roxygen info in the R files
+# and creates the NAMESPACE file
+
+require(roxygen2)
+require(methods)
+
+## NAMESPACE 
+
+# do this first as it empties the global env
+source("CreatingExportList.R")
+# (I tried to do the sourcing into a new.env() but had weird errors when sourcing some of the files)
+
+DESC <- readLines(file.path('nimble','DESCRIPTION'))
+
+imports <- DESC[grep("^Imports:", DESC)]
+imports <- gsub("Imports: ", "", imports)
+imports <- gsub("\\s+", "", imports)
+imports <- strsplit(imports, ",")[[1]]
+imports <- paste("import(", imports, ")", sep = '')
+imports <- paste(imports, collapse = '\n')
+
+dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
+exportAllLine <- "exportPattern('.')"
+
+# need everything exported for roxygenization to work...
+cat(paste(imports, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
+    file = file.path("nimble", "NAMESPACE"))
+
+system("R CMD build nimble")
+
+system("R CMD INSTALL nimble_0.1.tar.gz")
+
+# need to remove existing Rd files or get errors with
+# recursion and walking graph for classes
+cur <- getwd()
+setwd(file.path("nimble", "man"))
+
+files <- list.files()
+file.remove(files)
+
+setwd(cur)
+
+require(nimble)
+
+# warning: sometimes get a lot of errors like this:
+#Error in .walkClassGraph(classDef, "subclasses", where) : 
+#  the 'subClass' list for class “envRefClass”, includes an undefined class “nfRefClass21”
+#Error in .walkClassGraph(classDef, "subclasses", where) : 
+
+# not sure the issue, but rerunning prep_pkg usually fixes things
+
+Rpath <- file.path("nimble", "R")
+files <- list.files(Rpath, pattern = "*R$")  # omit config.R.in
+roclet = rd_roclet()
+for(file in files) {  
+  print(file)
+  test <- try(a <- roxygen2:::roc_proc_text(roclet, paste(readLines(file.path(Rpath, file)), sep="\n")))
+  if(!is(test, 'try-error'))
+    roxygen2:::roc_output(roclet, a, "nimble", options = list(wrap=TRUE, roclets = "rd"), check = FALSE)
+}
+  
+funs <- ls('package:nimble')
+documentedFuns <- list.files(file.path("nimble", "man"), pattern = "*Rd$")
+documentedFuns <- sub(".Rd$", "", documentedFuns)
+
+# pull in all the @aliases and @names in the Rd files
+setwd(file.path("nimble", "man"))
+tmp <- readLines(pipe("cat *Rd"))
+aliases <- tmp[grep("^(\\\\name|\\\\alias)", tmp)]
+aliases <- gsub("^(\\\\name|\\\\alias)\\{", "", aliases)
+aliases <- gsub("\\}", "", aliases)
+aliases <- unique(aliases)
+
+setwd(cur)
+
+# combination of file names and @aliases and @names, though all file names are probably in @name or @alias...
+documentedFuns <- unique(c(documentedFuns, aliases))
+
+undocFuns <- funs[!funs %in% documentedFuns]
+
+# write out nimble-internals.Rd
+
+text <- rep("", length(undocFuns))
+for(i in seq_along(undocFuns)) 
+  text[i] <- paste0("\\alias{", undocFuns[i], "}")
+
+text <- c("\\name{nimble-internal}", "\\title{Functions and Classes Internal to NIMBLE}",
+          text,
+          "\\description{\nFunctions and classes used internally in NIMBLE and not expected to be called directly by users. For the moment all functions and classes are exported while we are sorting out questions about the use of non-exported functions in Reference Class methods.\n}\n\\author{NIMBLE Development Team}")
+
+cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-internal.Rd"))
+
+
+# now create real NAMESPACE file
+
+cat(paste(imports, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
+    file = file.path("nimble", "NAMESPACE"))

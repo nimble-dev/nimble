@@ -1,0 +1,19 @@
+model {
+  for(i in 1:N) {                          
+        is.censored[i] ~ dinterval(t[i], last.t[i]);
+        t[i] ~ dweib(r,mu[i]);  
+                                           
+        mu[i] <- exp(beta[group[i]]);      # relative risk model
+  }
+  for(j in 1:M) {
+        beta[j] ~ dnorm(0.0, 0.0001);      # prior
+        median[j] <- pow(log(2) *          # median survival
+                       exp(-beta[j]), 1/r);  
+  }
+  r ~ dgamma(1.0,0.0001);      # slowly decreasing on +ve reals
+
+  irr.control <- beta[1];                  # change 
+  veh.control <- beta[2]-beta[1];          # parameterisation           
+  test.sub <- beta[3]-beta[1];
+  pos.control <- beta[4]-beta[1];
+}

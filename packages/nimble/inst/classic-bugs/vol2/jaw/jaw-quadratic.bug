@@ -1,0 +1,36 @@
+var
+ Y[N,M], age[M], age.c[M],     # jaw bone length in mm, age, centred age
+ mu[M],Omega[M,M],Sigma2[M,M], # mean, precision & covariance matrix for Y
+ beta0, beta1, beta2,          # regression coefficients for location models
+ beta0.uncentred,
+ beta1.uncentred,
+ R[M,M],                       # prior guess at magnitude of Sigma2 
+ resid[N,M],resid2[N,M],RSS,   # residuals and residual sum of squares
+ L1[N,M],llike[N],M,PI,deviance2;    # log-likelihood terms and deviance
+model {
+  for (i in 1:N) {
+     Y[i,] ~ dmnorm(mu[], Omega[,]);  # The 4 measurements for each  
+  }                                   # boy are multivariate normal
+
+  for(j in 1:M) {     # location model for mean bone length at each age
+     mu[j] <- beta0 + beta1 * age.c[j] + beta2 * age.c[j]^2;
+     age.c[j] <- age[j] - mean(age);
+  }
+  beta0.uncentred <- beta0 - beta1 * mean(age) + beta2 * mean(age)^2;
+  beta1.uncentred <- beta1 - 2 * beta2 * mean(age);
+
+  beta0 ~ dnorm(0.0, 0.001); 
+  beta1 ~ dnorm(0.0, 0.001); 
+  beta2 ~ dnorm(0.0, 0.001); 
+  Omega[,] ~ dwish(R[,], 4);	# between-child variance in length at each age	
+  Sigma2[,] <- inverse(Omega[,]);
+
+  for (i in 1:N) {
+     resid[i,] <- Y[i,] - mu;         # residuals
+     llike[i] <- -0.5*(M*log(2*PI) - logdet(Omega[,]))
+         	      + resid[i,] %*% Omega %*% resid[i,];
+  }
+  RSS <- sum(resid^2);                    # Residual Sum of Squares
+  deviance2 <- -2 * sum(llike[]);         # Deviance
+}
+ 

@@ -1,0 +1,18 @@
+/*
+ Seeds example with Pareto prior on the precision of the random effects
+ equivalent to a uniform(0, 10) prior on the standard deviation.
+*/
+model {
+   alpha0  ~ dnorm(0.0,1.0E-6);  # intercept
+   alpha1  ~ dnorm(0.0,1.0E-6);  # seed coeff
+   alpha2  ~ dnorm(0.0,1.0E-6);  # extract coeff
+   alpha12 ~ dnorm(0.0,1.0E-6);
+   tau     ~ dpar(0.5, 0.01);    # 1/sigma^2
+   sigma  <- 1.0/sqrt(tau);
+   for (i in 1:N) {
+      b[i]         ~ dnorm(0.0,tau);
+      logit(p[i]) <- alpha0 + alpha1*x1[i] + alpha2*x2[i] +
+                     alpha12*x1[i]*x2[i] + b[i];
+      r[i]         ~ dbin(p[i],n[i]);
+   }
+}

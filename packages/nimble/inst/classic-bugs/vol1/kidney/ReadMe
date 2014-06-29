@@ -1,0 +1,4 @@
+Although the kidney example will run, it currently suffers from extremely
+high autocorrelation.  There may also be a very long transient at
+the beginning of the chain requiring a long burnin.  In view of these
+problems, the kidney example is not currently part of the test suite.

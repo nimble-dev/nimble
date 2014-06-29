@@ -1,0 +1,6 @@
+The parameterization has changed for the variance of the random
+effects. Here we are using a uniform prior on the standard deviation
+(qv seedsuni.bug in the seeds directory). This substantially cuts down
+on the autocorrelation of the variance parameter and allows a shorter run.
+
+You can see the original parameterization in the directory "old".

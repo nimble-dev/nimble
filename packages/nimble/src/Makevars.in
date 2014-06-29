@@ -1,0 +1,7 @@
+PKG_CPPFLAGS=-I../inst/include @EIGEN_INC@
+PKG_LIBS=@PKG_LIBS@
+
+
+
+
+

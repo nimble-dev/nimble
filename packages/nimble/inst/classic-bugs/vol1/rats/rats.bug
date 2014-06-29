@@ -1,0 +1,18 @@
+model {
+    for (i in 1:N) {
+       for (j in 1:T) {
+          mu[i,j] <- alpha[i] + beta[i]*(x[j] - x.bar);
+          Y[i,j]   ~ dnorm(mu[i,j],tau.c)
+       }
+       alpha[i] ~ dnorm(alpha.c,tau.alpha);
+       beta[i]  ~ dnorm(beta.c,tau.beta);
+    }
+    alpha.c   ~ dnorm(0,1.0E-4);
+    beta.c    ~ dnorm(0,1.0E-4);
+    tau.c     ~ dgamma(1.0E-3,1.0E-3);
+    tau.alpha ~ dgamma(1.0E-3,1.0E-3);
+    tau.beta  ~ dgamma(1.0E-3,1.0E-3);
+    sigma    <- 1.0/sqrt(tau.c);
+    x.bar    <- mean(x[]);
+    alpha0   <- alpha.c - beta.c*x.bar;
+}

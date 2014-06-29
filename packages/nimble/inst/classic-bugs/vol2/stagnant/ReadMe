@@ -1,0 +1,16 @@
+notest1.cmd and notest2.cmd run the same changepoint problem with
+different starting points. As pointed out in the WinBUGS manual.
+This parameterization leads to very poor mixing, hence these examples
+are not included in the test suite. You can run them with:
+
+jags notest3.cmd
+jags notest4.cmd
+
+Then from within R you can then analyze the results with the coda package
+
+coda
+x <- mcmc.list(read.coda("stag1"), read.coda("stag2"))
+plot(x)
+
+test1.cmd and test2.cmd run the changepoint problem with a better
+parameterization

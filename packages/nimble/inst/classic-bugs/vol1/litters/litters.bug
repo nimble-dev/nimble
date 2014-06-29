@@ -1,0 +1,30 @@
+/*
+  Beta-binomial model for litters data.
+  Approximate uniform shrinkage prior
+  with uniform prior for mu
+
+  We need to truncate the beta distribution of p[i] to avoid a
+  singularity at 1 when b[i] < 1.  This slows down the calculation
+  considerably as it requires calculation of the incomplete beta
+  function.
+
+*/
+model {
+  for (i in 1:G)
+  {
+     for (j in 1:N)
+     {
+        r[i,j] ~ dbin(p[i,j], n[i,j]);
+        p[i,j] ~ dbeta(a[i], b[i]) T(,0.9999); 
+     }
+
+     a[i] <- nbar[i] * mu[i] * phi[i];
+     b[i] <- nbar[i] * (1 - mu[i]) * phi[i];
+
+     mu[i] ~ dunif(0, 1);
+     phi[i] <- nbar[i] * theta[i] / (1 - theta[i]);
+
+     theta[i] ~ dunif(0, 1);
+     nbar[i] <- mean(n[i,]);
+  }
+}

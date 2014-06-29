@@ -1,0 +1,2 @@
+JAGS version uses structural zeros in the Dirichlet distribution.
+When prior[i,j] is zero then error[i,j] is always zero.

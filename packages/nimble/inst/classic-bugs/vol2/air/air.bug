@@ -1,0 +1,15 @@
+var
+   theta[2], X[J], Z[J], mu[J], p[J], y[J], n[J], alpha, beta, tau, sigma2,
+   theta0;
+model {
+   theta[1] ~ dnorm(0.0,1.0E-3);  
+   theta[2] ~ dnorm(0.0,1.0E-3);
+   tau <- 1/sigma2;		
+   for (j in 1:J) {
+      mu[j]       <- alpha + beta*Z[j];
+      X[j]         ~ dnorm(mu[j],tau);
+      logit(p[j]) <- theta[1] + theta[2] * (X[j] - mean(X));
+      y[j]         ~ dbin(p[j],n[j]);
+   }
+   theta0    <- theta[1] - theta[2]*mean(X);
+}

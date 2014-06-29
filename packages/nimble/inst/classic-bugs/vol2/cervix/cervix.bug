@@ -1,0 +1,38 @@
+var
+    x[N],      # `true' HSV status
+   x1[N],      #  x[i] + 1
+    d[N],      #  cancer status
+   d1[N],      #  cancer status + 1
+    p[N],      #  prob of case
+    w[N],      #  approximate HSV status
+  beta0C,      #  intercept
+    beta,      #  log-odds ratio
+       q,      #  incidence of HSV
+phi[2,2],      #  rates for w being positive
+  gamma1,      #  prob HSV positive given control
+  gamma2;      #  prob HSV positive given case 
+model {
+   for (i in 1:N) {
+      x[i]   ~ dbern(q);           # incidence of HSV
+      logit(p[i]) <- beta0C + beta * x[i]; # logistic model
+      d[i]  ~ dbern(p[i]);        # incidence of cancer
+      x1[i] <- x[i]+1; 
+      d1[i] <- d[i]+1;  
+      w[i]  ~ dbern(phi[x1[i],d1[i]]); # incidence of w
+    }                                       
+
+    q      ~ dunif(0.0,1.0);           # prior distributions
+    beta0C ~ dnorm(0.0,0.00001);
+    beta   ~ dnorm(0.0,0.00001);
+    for(j in 1:2) {
+       for(k in 1:2){
+          phi[j,k] ~ dunif(0.0,1.0);
+       }
+    }
+
+# calculate gamma1 = P(x=1|d=0) and gamma2 = P(x=1|d=1) 
+    
+    gamma1 <- 1/(1 + (1+exp(beta0C+beta))/(1+exp(beta0C)) * (1-q)/q);
+    gamma2 <- 1/(1 + (1+exp(-beta0C-beta))/(1+exp(-beta0C)) * (1-q)/q);
+}
+

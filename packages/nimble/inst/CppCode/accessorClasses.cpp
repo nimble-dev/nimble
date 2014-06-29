@@ -1,0 +1,630 @@
+#include "nimble/accessorClasses.h"
+
+// 1. NodeVectors
+double calculate(NodeVectorClass &nodes) {
+  double ans(0);
+  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
+  int vecSize = nodeFunPtrs.size();
+  for(int i = 0; i < vecSize; i++)
+  	 	ans +=	nodeFunPtrs[i]->calculate();
+  return(ans);
+}
+
+double getLogProb(NodeVectorClass &nodes) {
+  double ans(0);
+  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
+  vector<nodeFun *>::iterator endNode(nodeFunPtrs.end());
+  for( vector<nodeFun *>::iterator iNodes = nodeFunPtrs.begin();
+       iNodes != endNode;
+       ++iNodes) {
+    ans += (*iNodes)->getLogProb();
+  }
+  return(ans);
+}
+
+void simulate(NodeVectorClass &nodes) {
+  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
+  vector<nodeFun *>::iterator endNode(nodeFunPtrs.end());
+  for( vector<nodeFun *>::iterator iNodes = nodeFunPtrs.begin();
+       iNodes != endNode;
+       ++iNodes) {
+     (*iNodes)->simulate();
+  }
+}
+
+
+
+
+
+// 2. We will only delete the singleVariableAccessors when we delete the ManyVariablesAccesor that they are contained in
+
+ManyVariablesAccessor::~ManyVariablesAccessor(){
+	int k = varAccessors.size();
+	for(int i = 0; i < k; i++)
+		delete static_cast<SingleVariableAccess*>(varAccessors[i]);
+}
+
+
+// 3. 
+void ManyModelValuesAccessor::setRow(int i) {
+  if(i != currentRow) {
+    currentRow = i;
+    vector<SingleVariableAccessBase *>::iterator iVar, iEnd;
+    iEnd = varAccessors.end();
+    for(iVar = varAccessors.begin(); iVar != iEnd; ++iVar) {
+      static_cast<SingleModelValuesAccess*>(*iVar)->setRow(i);
+    }
+  }
+//  return(varAccessors);
+}
+
+
+// Functions for copying
+
+//template<int D, class T>
+//void nimArr_2_SingleModelAccess(SingleVariableAccessBase* SMVAPtr, NimArr<D, T> &nimArr, int nimBegin){
+template<class T>
+void nimArr_2_SingleModelAccess(SingleVariableAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin){
+	NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+	nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+	int SMA_length = (*SMVAPtr).getLength();
+	if(SMA_Type == DOUBLE){
+		NimArrBase<double>* SMA_NimArrPtr = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+		std::copy(nimArr.getPtr() + nimBegin,
+		 nimArr.getPtr() + SMA_length + nimBegin, 
+		 SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
+	}
+	else if(SMA_Type == INT){
+		NimArrBase<int>* SMA_NimArrPtr = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+		std::copy(nimArr.getPtr() + nimBegin,
+		 nimArr.getPtr() + SMA_length +nimBegin, 
+		 SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
+	}
+	else {
+		PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+	}
+}
+
+
+//template<int D, class T>
+//void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArr<D, T> &nimArr){
+template<class T>
+void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArrBase<T> &nimArr){
+	vector<SingleVariableAccessBase*> SMVA_Vec = MMVAPtr.getAccessVector();
+	int nimCurrent = 0;
+	int nimEnd = nimArr.size();
+	int k = SMVA_Vec.size();
+	int nextNumVals;
+	SingleVariableAccessBase* curSingleAccess;
+	for(int i = 0; i < k ; i++){
+		curSingleAccess = SMVA_Vec[i];
+		nextNumVals = (*curSingleAccess).getLength();
+		if(nextNumVals + nimCurrent > nimEnd){
+			PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+			break;
+			}
+		nimArr_2_SingleModelAccess<T>(curSingleAccess, nimArr, nimCurrent);
+		nimCurrent = nimCurrent + nextNumVals;
+				
+	}
+	if(nimCurrent != nimEnd)
+		PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
+
+template<int D, class T>
+void SingleModelAccess_2_nimArr(SingleVariableAccessBase* SMVAPtr, NimArr<D, T> &nimArr, int nimBegin){
+	NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+	nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+	int SMA_length = (*SMVAPtr).getLength();
+	if(SMA_Type == DOUBLE){
+		NimArrBase<double>* SMA_NimArrPtr = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+		std::copy(SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart(),
+		SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() + SMA_length ,
+		 nimArr.getPtr()  + nimBegin);
+	}
+	else if(SMA_Type == INT){
+	NimArrBase<int>* SMA_NimArrPtr = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+		std::copy(SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart(),
+		SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() + SMA_length ,
+		 nimArr.getPtr()  + nimBegin);
+		 	}
+	else {
+		PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+	}
+}
+
+
+template<int D, class T>
+void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T> &nimArr){
+	vector<SingleVariableAccessBase*> SMVA_Vec = MMVAPtr.getAccessVector();
+	int nimCurrent = 0;
+	int nimEnd = nimArr.size();
+	int k = SMVA_Vec.size();
+	int nextNumVals;
+	SingleVariableAccessBase* curSingleAccess;
+	for(int i = 0; i < k ; i++){
+		curSingleAccess = SMVA_Vec[i];
+		nextNumVals = (*curSingleAccess).getLength();
+		if(nextNumVals + nimCurrent > nimEnd){
+			PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+			break;
+			}
+		SingleModelAccess_2_nimArr<D, T>(curSingleAccess, nimArr, nimCurrent);
+		nimCurrent = nimCurrent + nextNumVals;
+				
+	}
+	if(nimCurrent != nimEnd)
+		PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
+
+// void setValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA){
+// 	nimArr_2_ManyModelAccess<1, double>(MVA, nimArr);
+// }
+// void setValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
+// 	nimArr_2_ManyModelAccess<1, int>(MVA, nimArr);
+// }
+
+void setValues(NimArrBase<double> &nimArr, ManyVariablesAccessor &MVA){
+	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
+}
+void setValues(NimArrBase<int> &nimArr, ManyVariablesAccessor &MVA){
+	nimArr_2_ManyModelAccess<int>(MVA, nimArr);
+}
+
+void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA){
+	ManyModelAccess_2_nimArr<1, double>(MVA, nimArr);
+}
+void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
+	ManyModelAccess_2_nimArr<1, int>(MVA, nimArr);
+}
+
+
+void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to) {
+
+  vector<SingleVariableAccessBase *> fromAccessors = from.getAccessVector();
+  vector<SingleVariableAccessBase *> toAccessors = to.getAccessVector();
+
+  if(fromAccessors.size() != toAccessors.size()) {
+    std::cout<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+  }
+
+  vector<SingleVariableAccessBase *>::iterator iFrom, iTo, iFromEnd;
+  iFrom = fromAccessors.begin();
+  iFromEnd = fromAccessors.end();
+  iTo =  toAccessors.begin();
+  for( ; iFrom != iFromEnd; ++iFrom) {
+    nimCopyOne(*iFrom, *iTo);
+    ++iTo;
+  }
+}
+
+
+void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessorBase &to) {
+	from.setRow(rowFrom - 1); 
+	nimCopy(from, to);
+}
+
+void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessorBase &to, int rowTo) {
+	to.setRow(rowTo - 1);
+	from.setRow(rowFrom - 1);
+	nimCopy(from, to);
+}
+
+void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to, int rowTo) {
+	to.setRow(rowTo - 1);
+	nimCopy(from, to);
+};
+
+
+
+
+void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to) {
+  nimType fromType, toType;
+  NimArrType *fromNimArr, *toNimArr;
+  fromNimArr = from->getNimArrPtr();
+  toNimArr = to->getNimArrPtr();
+  fromType = fromNimArr->getNimType();
+  toType = toNimArr->getNimType();
+  switch(fromType) {
+  case DOUBLE:
+    switch(toType) {
+    case DOUBLE:
+      nimCopyOneTyped<double, double>(from, to);
+      break;
+    case INT:
+      nimCopyOneTyped<double, int>(from, to);
+      break;
+    default:
+      cout<<"Error in nimCopyOne: unknown type for destination\n";
+    }
+    break;
+  case INT:
+    switch(toType) {
+//    int *ifromPtr =  static_cast<NimArrBase<int> *>( (from)->getPtr() );
+    case DOUBLE:
+      nimCopyOneTyped<int, double>(from, to);
+      break;
+    case INT:
+      nimCopyOneTyped<int, int>(from, to);
+      break;
+    default:
+      cout<<"Error in nimCopyOne: unknown type for destination\n";
+    }
+    break;
+  default:
+    cout<<"Error in nimCopyOne: unknown type for source\n";
+  }
+}
+
+
+
+
+
+SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex){
+	SingleVariableAccess* sVAPtr = NULL;
+	void* vPtr = R_ExternalPtrAddr(rModelPtr);
+	if(vPtr != NULL){
+		ModelBase* mPtr = static_cast<ModelBase*>(vPtr);
+		int begin = INTEGER(beginIndex)[0];
+		int end = INTEGER(endIndex)[0];
+		string eName = STRSEXP_2_string(elementName, 0);
+		sVAPtr = new SingleVariableAccess;
+		(*sVAPtr).flatIndexStart = INTEGER(beginIndex)[0] - 1;
+		(*sVAPtr).flatIndexEnd = INTEGER(endIndex)[0] - 1;
+		(*sVAPtr).length = (*sVAPtr).flatIndexEnd - (*sVAPtr).flatIndexStart + 1;
+		(*sVAPtr).ppVar = static_cast<NimArrType**> (mPtr->getObjectPtr(eName) );
+		}
+	
+	SEXP rPtr;
+	PROTECT(rPtr = R_MakeExternalPtr(sVAPtr, R_NilValue, R_NilValue) );
+	R_RegisterCFinalizerEx(rPtr, &dontDeleteFinalizer, TRUE);
+	UNPROTECT(1);
+	return(rPtr);
+}
+
+
+SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex){
+	SingleModelValuesAccess* sMVAPtr = NULL;
+	void* vPtr = R_ExternalPtrAddr(rModelValuesPtr);
+	if(vPtr != NULL){
+		Values* MVPtr = static_cast<Values*>(vPtr);
+		int begin = INTEGER(beginIndex)[0];
+		int end = INTEGER(endIndex)[0];
+		int cRow = INTEGER(curRow)[0] - 1;
+		string eName = STRSEXP_2_string(elementName, 0);
+		sMVAPtr = new SingleModelValuesAccess;
+		(*sMVAPtr).flatIndexStart = INTEGER(beginIndex)[0] - 1;
+		(*sMVAPtr).flatIndexEnd = INTEGER(endIndex)[0] - 1;
+		(*sMVAPtr).length = (*sMVAPtr).flatIndexEnd - (*sMVAPtr).flatIndexStart + 1;
+		(*sMVAPtr).currentRow = cRow;
+		(*sMVAPtr).pVVar = static_cast<NimVecType*> (MVPtr->getObjectPtr(eName) );
+		}
+	
+	SEXP rPtr;
+	PROTECT(rPtr = R_MakeExternalPtr(sMVAPtr, R_NilValue, R_NilValue) );
+	R_RegisterCFinalizerEx(rPtr, &dontDeleteFinalizer, TRUE);
+	UNPROTECT(1);
+	return(rPtr);
+}
+
+
+
+
+SEXP getMVAccessorValues(SEXP accessor){
+	void* vPtr = R_ExternalPtrAddr(accessor);
+	if(vPtr == NULL)
+		return(R_NilValue);
+	SingleModelValuesAccess* SVAptr = static_cast<SingleModelValuesAccess*>(vPtr);
+	NimArrType* nimTypePtr = (*SVAptr).getNimArrPtr();
+	nimType arrType = (*nimTypePtr).getNimType();
+	SEXP rOutput;
+	if(arrType == DOUBLE){
+		PROTECT(rOutput = allocVector(REALSXP, (*SVAptr).getLength() ) );
+		NimArrBase<double>* NimArrPtr = static_cast<NimArrBase<double>*>(nimTypePtr) ;
+//		std::copy(	NimArrPtr->getPtr() + SVAptr->getIndexStart(),
+//			 	NimArrPtr->getPtr() + SVAptr->getIndexEnd(),
+//			 	REAL(rOutput) );			// Not sure why this isn't working...
+		int begin = SVAptr->getIndexStart();
+		int length = SVAptr->getLength();
+		for(int i = 0; i <length; i++)
+			REAL(rOutput)[i] = (*NimArrPtr)[begin + i]; 
+		UNPROTECT(1);
+		return(rOutput);
+	}
+	if(arrType == INT){
+		PROTECT(rOutput = allocVector(INTSXP, (*SVAptr).getLength() ) );
+		NimArrBase<int>* NimArrPtr = static_cast<NimArrBase<int>*>(nimTypePtr) ;
+		int begin = SVAptr->getIndexStart();
+		int length = SVAptr->getLength();
+		for(int i = 0; i <length; i++)
+			INTEGER(rOutput)[i] = (*NimArrPtr)[begin + i]; 
+		UNPROTECT(1);
+		return(rOutput);
+	}
+	return(R_NilValue);
+}
+
+SEXP getModelAccessorValues(SEXP accessor){
+	void* vPtr = R_ExternalPtrAddr(accessor);
+	if(vPtr == NULL)
+		return(R_NilValue);
+	SingleVariableAccess* SVAptr = static_cast<SingleVariableAccess*>(vPtr);
+	NimArrType* nimTypePtr = (*SVAptr).getNimArrPtr();
+	nimType arrType = (*nimTypePtr).getNimType();
+	SEXP rOutput;
+	if(arrType == DOUBLE){
+		PROTECT(rOutput = allocVector(REALSXP, (*SVAptr).getLength() ) );
+		NimArrBase<double>* NimArrPtr = static_cast<NimArrBase<double>*>(nimTypePtr) ;
+//		std::copy(	NimArrPtr->getPtr() + SVAptr->getIndexStart(),
+//			 	NimArrPtr->getPtr() + SVAptr->getIndexEnd(),
+//			 	REAL(rOutput) );			// Not sure why this isn't working...
+		int begin = SVAptr->getIndexStart();
+		int length = SVAptr->getLength();
+		for(int i = 0; i <length; i++)
+			REAL(rOutput)[i] = (*NimArrPtr)[begin + i]; 
+		UNPROTECT(1);
+		return(rOutput);
+	}
+	if(arrType == INT){
+		PROTECT(rOutput = allocVector(INTSXP, (*SVAptr).getLength() ) );
+		NimArrBase<int>* NimArrPtr = static_cast<NimArrBase<int>*>(nimTypePtr) ;
+		int begin = SVAptr->getIndexStart();
+		int length = SVAptr->getLength();
+		for(int i = 0; i <length; i++)
+			INTEGER(rOutput)[i] = (*NimArrPtr)[begin + i]; 
+		UNPROTECT(1);
+		return(rOutput);
+	}
+
+	return(R_NilValue);
+}
+
+SEXP newNodeFxnVector(SEXP size){
+	NodeVectorClass* nVPtr = new NodeVectorClass;
+	int cSize = INTEGER(size)[0];
+	(*nVPtr).nodeFunPtrs.resize(cSize);
+	SEXP rPtr = R_MakeExternalPtr(nVPtr, R_NilValue, R_NilValue);
+	PROTECT(rPtr);
+	R_RegisterCFinalizerEx(rPtr, &NodeVector_Finalizer, TRUE);
+	UNPROTECT(1);
+	return(rPtr);
+	}
+
+SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size){
+	int cSize = INTEGER(size)[0];
+	NodeVectorClass* nodeVec = static_cast<NodeVectorClass*>(R_ExternalPtrAddr(nodeFxnVecPtr) ) ;
+	(*nodeVec).nodeFunPtrs.resize(cSize);
+	return(R_NilValue);
+}
+
+
+void cAddNodeFun(NodeVectorClass* nVPtr, nodeFun* nFPtr, bool addAtEnd, int index){
+	int size = (*nVPtr).nodeFunPtrs.size();
+	if(addAtEnd == TRUE) {	
+		(*nVPtr).nodeFunPtrs.push_back(nFPtr);
+		return;
+	}
+	if(index >= size | index < 0){
+		PRINTF("Invalid index passed to addNodeFun\n");
+		return;
+	}
+	(*nVPtr).nodeFunPtrs[index] = nFPtr;
+	return;	
+}
+
+void cRemoveNodeFun(NodeVectorClass* nVPtr, int index, bool removeAll){
+	if(removeAll == TRUE){
+		(*nVPtr).nodeFunPtrs.erase( (*nVPtr).nodeFunPtrs.begin(), (*nVPtr).nodeFunPtrs.end() );
+		return;
+	}
+	if(index >= (*nVPtr).nodeFunPtrs.size() | index < 0){
+		PRINTF("Warning: attempted to delete nodeFunction from nodeFunctionVector with invalid index\n");
+		return;
+	}
+	(*nVPtr).nodeFunPtrs.erase( (*nVPtr).nodeFunPtrs.begin() + index);
+	return; 
+}
+
+SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll){
+	int cIndex = INTEGER(index)[0] - 1;
+	bool cRemoveAll = LOGICAL(removeAll)[0];
+	void* vPtr = R_ExternalPtrAddr(rPtr);
+	if(vPtr == NULL){
+		PRINTF("Warning: pointer to null passed to removeNodeFun\n");
+		return(R_NilValue);
+	} 
+	NodeVectorClass* nVPtr = static_cast<NodeVectorClass*>(vPtr);
+	cRemoveNodeFun(nVPtr, cIndex, cRemoveAll);
+	return(R_NilValue);
+}
+
+SEXP removeModelVariableAccessor(SEXP rPtr, SEXP index, SEXP removeAll){
+	int cIndex = INTEGER(index)[0] - 1;
+	bool cRemoveAll = LOGICAL(removeAll)[0];
+	void* vPtr = R_ExternalPtrAddr(rPtr);
+	if(vPtr == NULL){
+		PRINTF("Warning: pointer to null passed to removeNodeFun\n");
+		return(R_NilValue);
+	} 
+	ManyVariablesAccessor* mVAPtr = static_cast<ManyVariablesAccessor*>(vPtr);
+	cRemoveAccessor<ManyVariablesAccessor>(mVAPtr, cIndex, cRemoveAll);
+	return(R_NilValue);
+}
+
+SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll){
+	int cIndex = INTEGER(index)[0] - 1;
+	bool cRemoveAll = LOGICAL(removeAll)[0];
+	void* vPtr = R_ExternalPtrAddr(rPtr);
+	if(vPtr == NULL){
+		PRINTF("Warning: pointer to null passed to removeNodeFun\n");
+		return(R_NilValue);
+	} 
+	ManyModelValuesAccessor* mMVAPtr = static_cast<ManyModelValuesAccessor*>(vPtr);
+	cRemoveAccessor<ManyModelValuesAccessor>(mMVAPtr, cIndex, cRemoveAll);
+	return(R_NilValue);
+}
+
+
+template<class T>
+void cRemoveAccessor(T* aPtr, int index, bool removeAll){
+	if(removeAll == TRUE){
+		(*aPtr).varAccessors.erase( (*aPtr).varAccessors.begin(), (*aPtr).varAccessors.end() );
+		return;
+	}
+	if(index < 0 || index >= (*aPtr).varAccessors.size() ){
+		PRINTF("Warning: attempting to delete invalid index value of ManyAccessor\n");
+		return;
+	}
+	(*aPtr).varAccessors.erase( (*aPtr).varAccessors.begin() + index);
+	return; 
+}
+
+
+SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName){
+	SEXP nodeElementPtr = getModelObjectPtr(nodeFxnPtr, nodeElementName);
+	PROTECT(nodeElementPtr);
+	NimArrType** nodeNimArrTypePtr = static_cast<NimArrType**>(R_ExternalPtrAddr(nodeElementPtr) ) ;
+	NimArrType** cModelElementPtr = static_cast<NimArrType**>(R_ExternalPtrAddr(modelElementPtr)); 
+	nodeNimArrTypePtr = cModelElementPtr;
+	UNPROTECT(1);
+	return(R_NilValue);
+}
+
+SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index){
+	void* vNVPtr = R_ExternalPtrAddr(nVPtr);
+	void* vNFPtr = R_ExternalPtrAddr(nFPtr);
+	if(vNVPtr == NULL | vNFPtr == NULL){
+		PRINTF("Warning: pointer to null passed to addNodeFun\n");
+		return(R_NilValue);
+	}
+	int cIndex = - 1;
+	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
+	if(cAddAtEnd == FALSE)
+		cIndex = INTEGER(index)[0] - 1;
+	NodeVectorClass* cNVPtr = static_cast<NodeVectorClass*>(vNVPtr);
+	nodeFun* cNFPtr = static_cast<nodeFun*>(vNFPtr);
+	cAddNodeFun(cNVPtr, cNFPtr, cAddAtEnd, cIndex);
+	return(R_NilValue);
+}
+
+
+SEXP newManyVariableAccessor(SEXP size){
+	ManyVariablesAccessor* nMVAPtr = new ManyVariablesAccessor;
+	int cSize = INTEGER(size)[0];
+	(*nMVAPtr).varAccessors.resize(cSize);
+	SEXP rPtr = R_MakeExternalPtr(nMVAPtr, R_NilValue, R_NilValue);
+	PROTECT(rPtr);
+	R_RegisterCFinalizerEx(rPtr, &ManyVariable_Finalizer, TRUE);
+	UNPROTECT(1);
+	return(rPtr);
+}
+
+SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size){
+	int cSize = INTEGER(size)[0];
+	ManyVariablesAccessor* MMVVec = static_cast<ManyVariablesAccessor*>(R_ExternalPtrAddr(manyModelVarPtr) ) ;
+	(*MMVVec).varAccessors.resize(cSize);
+	return(R_NilValue);
+}
+
+SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size){
+	int cSize = INTEGER(size)[0];
+	ManyModelValuesAccessor* MMVVec = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(manyModelValuesPtr) ) ;
+	(*MMVVec).varAccessors.resize(cSize);
+	return(R_NilValue);
+}
+
+
+SEXP newManyModelValuesAccessor(SEXP size){
+	ManyModelValuesAccessor* nMVAPtr = new ManyModelValuesAccessor;
+	int cSize = INTEGER(size)[0];
+	(*nMVAPtr).varAccessors.resize(cSize);
+	SEXP rPtr = R_MakeExternalPtr(nMVAPtr, R_NilValue, R_NilValue);
+	PROTECT(rPtr);
+	R_RegisterCFinalizerEx(rPtr, &ManyMV_Finalizer, TRUE);
+	UNPROTECT(1);
+	return(rPtr);
+}
+
+
+template<class Many, class Single>
+void cAddAccessor(Many* mPtr, Single* sPtr, bool addAtEnd, int index){
+	int size = (*mPtr).varAccessors.size();
+	if(addAtEnd == TRUE ) {	
+		(*mPtr).varAccessors.push_back(sPtr);
+		return;
+	}
+	if(index >= size | index < 0){
+		PRINTF("Invalid index passed to addAccessor\n");
+		return;
+	}
+	(*mPtr).varAccessors[index] = sPtr;
+	return;	
+}
+
+SEXP addSingleVariableAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index){
+	void* vMVAPtr = R_ExternalPtrAddr(MVAPtr);
+	void* vSVAPtr = R_ExternalPtrAddr(SVAPtr);
+	if(vMVAPtr == NULL | vSVAPtr == NULL){
+		PRINTF("Warning: pointer to null passed to addNodeFun\n");
+		return(R_NilValue);
+	}
+	int cIndex = - 1;
+	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
+	if(cAddAtEnd == FALSE)
+		cIndex = INTEGER(index)[0] - 1;
+	ManyVariablesAccessor* cMVAPtr = static_cast<ManyVariablesAccessor*>(vMVAPtr);
+	SingleVariableAccess* cSVAPtr = static_cast<SingleVariableAccess*>(vSVAPtr);
+	cAddAccessor<ManyVariablesAccessor, SingleVariableAccess>(cMVAPtr, cSVAPtr, cAddAtEnd, cIndex);
+	return(R_NilValue);
+}
+
+SEXP addSingleModelValuesAccessor(SEXP MMVAPtr, SEXP SMVAPtr, SEXP addAtEnd, SEXP index){
+	void* vMMVAPtr = R_ExternalPtrAddr(MMVAPtr);
+	void* vSMVAPtr = R_ExternalPtrAddr(SMVAPtr);
+	if(vMMVAPtr == NULL | vSMVAPtr == NULL){
+		PRINTF("Warning: pointer to null passed to addNodeFun\n");
+		return(R_NilValue);
+	}
+	int cIndex = INTEGER(index)[0] - 1;
+	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
+	ManyModelValuesAccessor* cMMVAPtr = static_cast<ManyModelValuesAccessor*>(vMMVAPtr);
+	SingleModelValuesAccess* cSMVAPtr = static_cast<SingleModelValuesAccess*>(vSMVAPtr);
+	cAddAccessor<ManyModelValuesAccessor, SingleModelValuesAccess>(cMMVAPtr, cSMVAPtr, cAddAtEnd, cIndex);
+	return(R_NilValue);
+}
+
+SEXP manualSetNRows(SEXP Sextptr, SEXP nRows){
+  	Values* vPtr = static_cast<Values*>(R_ExternalPtrAddr(Sextptr) );
+  	(*vPtr).numRows = INTEGER(nRows)[0];
+  return(R_NilValue);
+  }
+
+
+
+void  SingleMVA_Finalizer ( SEXP Sv ) {
+	SingleModelValuesAccess* oldObj;
+	oldObj = static_cast<SingleModelValuesAccess *>(R_ExternalPtrAddr(Sv));
+	delete oldObj;
+}
+
+
+void  SingleVA_Finalizer ( SEXP Sv ) {
+	SingleVariableAccess* oldObj;
+	oldObj = static_cast<SingleVariableAccess *>(R_ExternalPtrAddr(Sv));
+	delete oldObj;
+}
+
+void NodeVector_Finalizer( SEXP Sv) {
+	NodeVectorClass* nVPtr = static_cast<NodeVectorClass *>(R_ExternalPtrAddr(Sv));
+	delete nVPtr;
+}
+
+void ManyVariable_Finalizer(SEXP Sv){
+	ManyVariablesAccessor* mVAPtr = static_cast<ManyVariablesAccessor*>(R_ExternalPtrAddr(Sv));
+	delete mVAPtr;
+}
+
+void ManyMV_Finalizer(SEXP Sv){
+	ManyModelValuesAccessor* mVPtr = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(Sv));
+	delete mVPtr;
+}

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+FILES=`cd inst/CppCode; ls *.cpp`
+
+for f in $FILES ; do
+ if test -e src/$f; then
+    echo "src/$f"
+    rm src/$f
+ fi
+done
+
+(cd inst/CppCode ; make clean)
+(cd src ; rm *.o)
+
+if test -d inst/include/Eigen ; then
+  rm -fr inst/include/Eigen
+fi
+
+
+
+

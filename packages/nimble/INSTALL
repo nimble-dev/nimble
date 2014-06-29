@@ -1,0 +1,29 @@
+You can install the package with
+   R CMD INSTALL nimble_0.1.tar.gz
+or
+  install.packages("nimble_0.1.tar.gz", repos = NULL)
+
+You can also install the package directly from the NIMBLE repository [set this up]
+  install.packages("nimble", repos = "http://r-nimble.org/R")
+
+There are two configuration options:  --enable-lib and --with-eigen.
+--enable-lib is currently only supported on UNIX/Linux/OSX platforms,
+i.e. not Windows.
+
+ --enable-lib=false/true  controls whether we compile the shared C++ code that is used
+   across different NIMBLE models as libnimble.so and then use this one copy of the code
+   by linking against it. Otherwise, we link this common code into the DLL for each generated 
+   model, essentially copying the code.
+
+ --with-eigen=/path/to/dir   - this specifies the full path to a directory containing the 
+    header files for the Eigen library. This directory must contain the Eigen/ sub-directory 
+    By default, we will use the Eigen distribution included with the package.
+
+
+We can specify  any or all of these with
+  R CMD INSTALL nimble_0.1.tar.gz  --configure-args="--enable-lib=false --with-eigen=/Users/duncan/local"
+or
+  install.packages("nimble_0.1.tar.gz", repos = NULL, 
+                   configure.args = "--enable-lib=false --with-eigen=/Users/duncan/local")
+
+  

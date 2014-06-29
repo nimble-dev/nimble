@@ -1,0 +1,5 @@
+JAGS cannot run the conditional autoregressive model because it creates
+directed cycles in the model.
+
+The estimate of sigma given by JAGS is somewhat larger than the
+one produced by BUGS.

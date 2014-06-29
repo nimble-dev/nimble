@@ -1,0 +1,30 @@
+/*
+ Model II from section 6.2 of Breslow NE and Clayton DG "Approximate
+ inference in generalized linear mixed models", JASA, Vol 88, pp 9-25 (1993)
+ analyzing the epilepsy data of Thall and Vail (1990).
+*/
+model {
+   for(j in 1:N) {
+      for(k in 1:T) {
+         log(mu[j,k]) <- alpha0 + alpha.Base * log.Base4[j]   
+                            + alpha.Trt * Trt[j]  
+                            + alpha.BT  * Trt[j] * log.Base4[j]
+                            + alpha.Age * log.Age[j]  
+                            + alpha.V4  * V4[k]
+                            + b1[j];
+         y[j,k] ~ dpois(mu[j,k]);
+      }
+      b1[j]         ~ dnorm(0.0,tau.b1);        # subject random effects
+      log.Base4[j] <- log(Base[j]/4);
+      log.Age[j] <- log(Age[j]);
+   }
+# priors:
+   alpha0      ~ dnorm(0.0,1.0E-4); 		           
+   alpha.Base ~ dnorm(0.0,1.0E-4);            
+   alpha.Trt  ~ dnorm(0.0,1.0E-4);            
+   alpha.BT    ~ dnorm(0.0,1.0E-4);            
+   alpha.Age   ~ dnorm(0.0,1.0E-4);            
+   alpha.V4    ~ dnorm(0.0,1.0E-4);
+   tau.b1      ~ dgamma(1.0E-3,1.0E-3); 
+   sigma.b1 <- 1.0/sqrt(tau.b1);
+}

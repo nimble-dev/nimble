@@ -1,0 +1,78 @@
+# A list of bugs, desired features, possible changes to the system, etc.
+# please list with newest issues at the top
+
+* (6/27/14) possible error when compiling nf2 checks in functinalityChecks.R in manual directory
+
+* (6/27/14) using 'step' in data block of bugs model fails because we now use nimbleStep, so not backwards compatible... minor issue we may want to ignore so as not to mask R's step
+
+* (6/27/14) should we change nimbleStep to nimStep to be consistent with nimPrint, nimCopy, etc.?
+
+* (6/26/14) might be nice to have a nodeNamesToVarNames function (and maybe the reverse?); I think this came up as Chris was trying to write a nf for the manual intro example 
+
+* (6/22/14) add citations for our block RW (and maybe slice?) sampler algos in the manual
+
+* (6/22/14) checking of pos-def for Chol, det, etc. and how to handle numerically non-p.d. matrices and pivoting
+
+* (6/22/14) does Eigen really get det on original scale and then log; test for numerical issues with decent-size matrices
+
+* (6/21/14) disable det,fact,gamma as numerically unstable?
+
+* (6/21/14) check nimbleStep vs nimStep
+
+* (6/20/14) additional helper fxns for manipulating models: getParents(), get size info from a model (extract from varInfo$maxes)
+
+* (6/20/14) should we systematize how we handle dim/size of scalars? e.g., mv uses 1 and stuff on the R side in the model uses 0
+
+* (6/19/14) handle initialization of nodes created by link functions - e.g. log(p) ~ dnorm() and a user initializes "p" but we need to initialize log_p as well
+
+* (6/16/14) probably good to provide svd in DSL before long
+
+* (6/16/14) change scalar | and & to || and && ?
+
+* (6/16/14) do we want to replace 
+nfMethod(targetRWSamplerFunction, 'generateProposalValue')()
+with
+targetRWSamplerFunction$generateProposalValue()
+
+I guess this is the same issue as calculate(model, node) vs model$calculate(node)
+
+* (6/11/14) add getPositions() functionality (DT)
+
+* (6/9/14) NaN warnings in R for RW samplers that go beyond domain of a given parameter (e.g., negative proposals for positive-valued params)
+
+* (6/8/14) (CP) eventually release our C/R new distribution functions (d and r functions) as a separate R pkg?
+
+* (6/7/14) (DT) strange printout from MCMCspec(); using blocker as example with default spec, dnorm conjugacy message is formatted oddly (multiple "dependents_dnorm" and some ", ,":
+[23] conjugate_norm sampler;   targetNode: d,  dependents_dnorm: c(\delta[1]\, \delta[2]\, \delta[3]\, \delta[4]\, \delta[5]\, , dependents_dnorm: \delta[6]\, \delta[7]\, \delta[8]\, \delta[9]\, \delta[10]\, , dependents_dnorm: \delta[11]\, \delta[12]\, \delta[13]\, \delta[14]\, \delta[15]\, , dependents_dnorm: \delta[16]\, \delta[17]\, \delta[18]\, \delta[19]\, \delta[20]\, , dependents_dnorm: \delta[21]\, \delta[22]\, \delta.new\)
+
+* (6/7/14) (CP/DT) finish special case conj samplers, e.g. exp is gamma, unif is beta, chisq is gamma, etc.
+
+* (6/7/14) (CP/DT) we might want a version of getNodeNames that returns nodes that are the top of the graph (those without any stochastic parents)
+
+* (6/6/14) [DT] change MCMC to have two separate thinning intervals (rather than thin1=1, and thin2 artibrary)
+
+* (6/5/14) add ability to deal with empty indices in calculate, simulate, etc., e.g.
+calculate(model, 'x[i, ]') 
+
+* [DT/CP] (6/5/14) transform DT's conjugacy check embedded within code with flag into packages/nimble/inst/tests/test-conjugacy.R
+
+* (6/5/14) when compile a model get this warning:
+Warning message:
+In getPackageName(where) :
+  Created a package name, ‘2014-06-05 08:24:46’, when none found
+
+* (6/5/14) calculate and simulate do not allow empty indexing, unlike get and setting values of nodes:
+Cmodel[['y[1,]']] is fine
+calculate(Cmodel, 'y[1,]') is not 
+
+* (6/5/14) should we have returnModel=TRUE be the default for BUGSmodel()?
+
+* (6/5/14) (DT/CP) desire to use 'constants' in 'dimensions' argument, e.g: BUGSmodel(model, constants = list(N = 5), dimensions = list(x = c(N,N))); DT had this and removed it as it was causing some other problem; might revisit this
+
+* (6/5/14) we may want that compileNimbleFunction by default should  just compile a single function as this is the easiest to explain to a new user rather than having to go into the fact that there may be multiple instances right off the bat
+
+* (6/12/14) (DT) checkConjugacy() will complain in multivariate case, when there are 'replacement' expressions in 'codeReplacedWithValues', which do not represent stochastic model nodes.
+
+* (6/13/14) (PDV) correct/consistent handling of is.na() and is.nan() in cpp
+
+* (6/13/14) (DT/PDV) handling cases (e.g., dipper) with nodes defined more than once

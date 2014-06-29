@@ -1,0 +1,29 @@
+var
+   x[T],mu[N,T],Y[N,T],beta[N,2],mu.beta[2],
+   Sigma2.beta[2,2],sigma.beta[2],tau.c,sigma,R[2,2],r,alpha0,
+   tau.beta[2];
+model {
+   for (i in 1:N) {
+      for (j in 1:T) {
+         Y[i,j] ~ dnorm(mu[i,j],tau.c);  
+         mu[i,j] <- beta[i,1] + beta[i,2]*x[j]; 
+      }
+     beta[i,1] ~ dnorm(mu.beta[1],tau.beta[1]);  # independent Normals
+     beta[i,2] ~ dnorm(mu.beta[2],tau.beta[2]);  # independent Normals
+   }
+
+# prior for sampling precision
+   tau.c  ~ dgamma(1.0E-3,1.0E-3);  sigma <- 1.0/sqrt(tau.c);
+
+# intercept at mean(x[]) for uncentred model
+   alpha0 <- mu.beta[1] + mu.beta[2]* mean(x[]);
+
+# parameters considered independent
+   for (k in 1:2){
+      tau.beta[k]  ~ dgamma(1.0E-3,1.0E-3);
+      sigma.beta[k]<-1/sqrt(tau.beta[k]);
+   }
+ 
+   mu.beta[1] ~ dnorm(0,.00001);   # `flat' univariate Normal prior on mean
+   mu.beta[2] ~ dnorm(0,.00001);   # `flat' univariate Normal prior on mean
+}

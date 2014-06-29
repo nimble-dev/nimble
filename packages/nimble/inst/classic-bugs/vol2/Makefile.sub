@@ -1,0 +1,37 @@
+## -*-Makefile-*-
+## Common makefile to be run in each subdirectory
+
+.PHONY: bench check Rcheck clean distclean
+
+bench: test1.cmd
+	@for cmdfile in `ls test*.cmd`; do \
+	   rm -f bench.log; \
+	   $(JAGS) $${cmdfile} >> bench.log 2>> bench.log && \
+	   Rscript -e "benchfile <- 'bench-$${cmdfile%%.cmd}.R'; source('../../R/bench.R')" >> bench.log 2>> bench.log || exit 1; \
+	done;
+
+check: check.OK
+
+check.OK: test1.cmd
+	@for cmdfile in `ls test*.cmd`; do \
+	   rm -f check.log check.OK; \
+	   $(JAGS) $${cmdfile} >> check.log 2>> check.log && \
+	   Rscript -e "source('bench-$${cmdfile%%.cmd}.R');source('../../R/check.R')" >> check.log 2>> check.log && \
+	   touch check.OK || exit 1; \
+	done;
+
+Rcheck: Rcheck.OK
+
+Rcheck.OK: test1.R
+	@for cmdfile in `ls test*.R`; do \
+	   rm -f Rcheck.log Rcheck.OK; \
+	   Rscript $${cmdfile} >> Rcheck.log 2>> Rcheck.log && \
+	   touch Rcheck.OK || exit 1; \
+	done;
+
+clean:
+	@rm -f core jags.dump CODAchain*.txt CODAindex.txt gmon.out check.log Rcheck.log Rcheck.OK check.OK
+
+distclean: clean
+	@rm -f bench-*.R 
+
