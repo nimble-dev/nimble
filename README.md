@@ -4,6 +4,8 @@ NIMBLE
 This is the repository for the base NIMBLE package, 
 An R package for programming with BUGS models.
 
+Note: this Github repository for ongoing development of NIMBLE is not quite ready but will be by the end of June.
+
 For more information:
 
 * [website](http://r-nimble.org/)
@@ -16,12 +18,14 @@ NIMBLE Development Team. 2014. NIMBLE: An R Package for Programming with BUGS mo
 
 ## Installation
 
+At the moment, you must install from the source package on any of Linux, Windows or Mac:
+
 ```r
- # Windows or Linux
-install.packages("nimble", repos = "http://r-nimble.org")
-# Mac OSX 
+# Linux, Windows, or Mac:
 install.packages("nimble", repos = "http://r-nimble.org", type = "source")
 ```
+
+Or use R CMD INSTALL after downloading from our [website](http://r-nimble.org/download-nimble)
 
 ## Acknowledgements
 
