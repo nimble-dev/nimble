@@ -10,7 +10,7 @@ For more information:
 * [user manual](http://r-nimble.org/manuals/NimbleUserManual.pdf)
 
 
-## Citation: 
+## Citation
 
 NIMBLE Development Team. 2014. NIMBLE: An R Package for Programming with BUGS models, Version 0.1.   http://r-nimble.org.
 
@@ -24,6 +24,9 @@ install.packages("nimble", repos = "http://r-nimble.org", type = "source")
 ```
 
 Or use R CMD INSTALL after downloading from our [website](http://r-nimble.org/download-nimble)
+
+Note: at the moment building the package from the packages directory in this repository will not work as we sort out some Makevars-related issues (as of June 30, 2014).
+
 
 ## Acknowledgements
 
