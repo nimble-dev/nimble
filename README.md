@@ -25,8 +25,6 @@ install.packages("nimble", repos = "http://r-nimble.org", type = "source")
 
 Or use R CMD INSTALL after downloading from our [website](http://r-nimble.org/download-nimble)
 
-Note: at the moment building the package from the packages directory in this repository will not work as we sort out some Makevars-related issues (as of June 30, 2014).
-
 
 ## Acknowledgements
 
