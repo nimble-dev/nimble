@@ -131,7 +131,7 @@ sampler_RW_block <- nimbleFunction(
         scaleHistory          <- c(0, 0)
         acceptanceRateHistory <- c(0, 0)
         d <- length(targetNodes)
-        if(propCov == 'identity')     propCov <- diag(d)
+        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
