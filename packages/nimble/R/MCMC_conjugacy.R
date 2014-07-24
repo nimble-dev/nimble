@@ -134,6 +134,13 @@ conjugacyClass <- setRefClass(
                 dependentObj <- dependents[[depNodeDist]]
                 linearityCheckExpr <- cc_getNodeParamExpr(model, depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(linearityCheckExpr, model)
+                ## next line is a NEW ADDITION, prevents a minor bug in conjugacy checking:
+                ## when targetNode doesn't appear in 'param' expr (hence passes the linearlity check),
+                ## and targetNode appears in *exactly one* other parameter expr (hence passing cc_otherParamsCheck()),
+                ## which also explains why depNode is identified as a dependent node in the first place.
+                ## we simply ensure that targetNode actually does appear in the conjugate parameter expression,
+                ## thus the conjugacy check will fail if targetNode appears in any other parameter expressions (failing in cc_otherParamsCheck())
+                if(!cc_nodeInExpr(targetNode, linearityCheckExpr))       return(NULL)
                 linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
                 if(!cc_linkCheck(linearityCheck, dependentObj$link))     return(NULL)
                 if(!cc_otherParamsCheck(model, depNode, targetNode))     return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
@@ -552,7 +559,7 @@ cc_otherParamsCheck <- function(model, depNode, targetNode) {
         expr <- cc_expandDetermNodesInExpr(paramsList[[i]], model)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }
-    if(timesFound == 0)   stop('something went wrong; targetNode not found in any parameter expressions')
+    if(timesFound == 0)     stop('something went wrong; targetNode not found in any parameter expressions')
     if(timesFound == 1)     return(TRUE)
     if(timesFound  > 1)     return(FALSE)
 }
@@ -707,8 +714,8 @@ cc_combineExprsDivision <- function(expr1, expr2) {
 conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList)
 
 conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()
-# createNamedObjectsFromList(conjugateSamplerDefinitions)
-createNamedObjectsFromList(conjugateSamplerDefinitions, writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
+createNamedObjectsFromList(conjugateSamplerDefinitions)
+# createNamedObjectsFromList(conjugateSamplerDefinitions, writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
 
 
 
