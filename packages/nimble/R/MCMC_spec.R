@@ -15,10 +15,10 @@ controlDefaultList <- list(
 samplerSpec <- setRefClass(
     Class = 'samplerSpec',
     fields = list(
-        type    = 'character',
-        control = 'list'
-    ),
+        type    = 'ANY',
+        control = 'ANY'),
     methods = list(
+    	initialize =function(...){control <<- list(); callSuper(...)},
         buildSampler = function(model, mvSaved) {
             samplerNfName <- paste0('sampler_', type)
             eval(call(samplerNfName, model=model, mvSaved=mvSaved, control=control))
@@ -61,13 +61,13 @@ MCMCspec <- setRefClass(
     
     fields = list(
         model               = 'ANY',
-        monitors            = 'character',
-        monitors2           = 'character',
-        thin                = 'numeric',
-        thin2               = 'numeric',
-        samplerSpecs        = 'list',
-        controlDefaults     = 'list',
-        controlNamesLibrary = 'list'
+        monitors            = 'ANY', 		#'character',
+        monitors2           = 'ANY', 		#'character',
+        thin                = 'ANY', 		#'numeric',
+        thin2               = 'ANY', 		#'numeric',
+        samplerSpecs        = 'ANY', 		#'list',
+        controlDefaults     = 'ANY', 		#'list',
+        controlNamesLibrary = 'ANY' 		#'list'
     ),
     
     methods = list(
@@ -76,8 +76,8 @@ MCMCspec <- setRefClass(
                               monitors,                thin  = 1,
                               monitors2 = character(), thin2 = 1,
                               useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
-                              print = FALSE) {
-'
+                              print = FALSE) {	
+'	
 Creates a defaut MCMC specification for a given model.  The resulting mcmcspec object is suitable as an argument to buildMCMC().
 
 Arguments:
@@ -117,6 +117,7 @@ Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
 print: Boolean argument, specifying whether to print the ordered list of default samplers.
 '
             
+            samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list();monitors <<- character(); monitors2 <<- character();
             model <<- model
             addMonitors( monitors,  print = FALSE)
             addMonitors2(monitors2, print = FALSE)

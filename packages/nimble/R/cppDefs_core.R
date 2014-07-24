@@ -7,14 +7,25 @@
 ## Base class for C++ file and compilation information
 cppDefinition <- setRefClass('cppDefinition', 
                              fields = list(
-                                 filename = 'character',  ## what filename (to which .h and .cpp will be appended) is this definition in
-                                 Hincludes = 'list', ## list of either character strings for direct includes or other cppDefinition objects, from which filename can be taken
-                                 CPPincludes = 'list',
-                                 CPPusings = 'character',
-                                 neededTypeDefs = 'list',
+                                 filename = 'ANY',	#'character',  ## what filename (to which .h and .cpp will be appended) is this definition in
+                             #    Hincludes = 'ANY',	#''list', ## list of either character strings for direct includes or other cppDefinition objects, from which filename can be taken
+                             #    CPPincludes = 'ANY',	#''list',
+                                 CPPusings = 'ANY',	#''character',
+                                 neededTypeDefs = 'ANY',	#''list',
+                               
+                               Hincludes = 'list',
+                               CPPincludes = 'list',
+                              # CPPusings = 'character',
+                              # neededTypeDefs = 'list',
+                               
                                  nimbleProject = 'ANY'),  
                              methods = list(
                                  initialize = function(..., project) {
+                                 	filename <<- character()
+                              #   	if(!is.list(Hincludes))	Hincludes <<- list()
+                              #   	if(!is.list(CPPincludes))	CPPincludes <<- list()
+                                 	if(!is.character(CPPusings))	CPPusings <<- character()
+                                 	if(!is.list(neededTypeDefs))	neededTypeDefs <<- list()
                                      nimbleProject <<- if(missing(project)) NULL else project
                                      callSuper(...)
                                  },
@@ -33,14 +44,14 @@ cppDefinition <- setRefClass('cppDefinition',
 cppNamespace <- setRefClass('cppNamespace',
                             contains = 'cppDefinition',
                             fields = list(
-                                name = 'character',
+                                name = 'ANY',	#'character',
                                 objectDefs = 'ANY', ## This one must be ANY because it could be a list or a symbolTable
                               ##  classDefs = 'list',
-                                functionDefs = 'list'),
+                                functionDefs = 'ANY'),		#'list'),
                               ##  typeDefs = 'list',
                               ##  namespaces = 'list'),
                             methods = list(
-                                initialize = function(...) {objectDefs <<- list(); callSuper(...)}, ## By default a list, but can be a symbolTable
+                                initialize = function(...) {name <<- character();functionDefs <<- list(); objectDefs <<- list(); callSuper(...)}, ## By default a list, but can be a symbolTable
                                 addObject = function(newName, newObj) objectDefs[[newName]] <<- newObj,
                            ##     addClass = function(newName, newClass) classDefs[[newName]] <<- newClass,
                                 addFunction = function(newName, newFun) functionDefs[[newName]] <<- newFun,
@@ -70,16 +81,20 @@ cppNamespace <- setRefClass('cppNamespace',
 cppClassDef <- setRefClass('cppClassDef',
                            contains = 'cppNamespace',
                            fields = list(
-                               inheritance = 'list',
-                               private = 'list', ## a placeholder.  everything is public
-                               useGenerator = 'logical',
+                               inheritance = 'list',			#'list',
+                               private = 'list',		#'list', ## a placeholder.  everything is public
+                               useGenerator = 'ANY',		#'logical',
                                SEXPgeneratorFun = 'ANY', ## These will be cppFunctionDefs
                                SEXPfinalizerFun = 'ANY'),
                            methods = list(
                                initialize = function(...) {
                                    useGenerator <<- TRUE
-                                   Hincludes <<- c(Hincludes, '<Rinternals.h>')
-                                   CPPincludes <<- c(CPPincludes, '<iostream>')
+                                 #  inheritance <<- list()
+                                 #  private <<- list()
+                                  # if(!isHincludes <<- list()
+                                  # CPPincludes <<- list()
+                                   Hincludes <<-	c(Hincludes, '<Rinternals.h>')	
+                                   CPPincludes <<-	c(CPPincludes, '<iostream>') 
                                    callSuper(...)
                                },
                                getHincludes = function() {
@@ -170,7 +185,7 @@ cppClassDef <- setRefClass('cppClassDef',
 ## A cppCodeBlock is an arbitrary collection of parse tree and other cppCodeBlocks (defined below)
 ## The parse tree can be either an R parse tree or one of our exprClass objects
 cppCodeBlock <- setRefClass('cppCodeBlock',
-                            fields = list(objectDefs = 'ANY', code = 'ANY', skipBrackets = 'logical'),
+                            fields = list(objectDefs = 'ANY', code = 'ANY', skipBrackets = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
                                     if(inherits(objectDefs, 'uninitializedField')) objectDefs <<- list()
@@ -194,17 +209,18 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
 ##
 cppFunctionDef <- setRefClass('cppFunctionDef',
                               contains = 'cppDefinition',
-                              fields = list(name = 'character',
-                                  returnType = 'cppVar', 
+                              fields = list(name = 'ANY',	#'character',
+                                  returnType = 'ANY',	#'cppVar', 
                                   args = 'ANY', 
-                                  code = 'cppCodeBlock',
+                                  code = 'ANY',	#	'cppCodeBlock',
                                   externC = 'ANY',
                                   virtual = 'ANY',
                                   abstract = 'ANY'
                                             ),
                               methods = list(
                                   initialize = function(...) {
-                                      CPPincludes <<- c(CPPincludes, '<iostream>')
+                                  	  name <<- character()
+                                      CPPincludes <<- as.list( c(CPPincludes, '<iostream>') )
                                       callSuper(...)
                                       if(inherits(virtual, 'uninitializedField')) virtual <<- FALSE
                                       if(inherits(abstract, 'uninitializedField')) abstract <<- FALSE

@@ -385,9 +385,11 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         cppNames <<- .Call("getAvailableNames", .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
-        for(vn in cppNames){
-            vPtrName <- paste(".", vn, "_Ptr", sep = "")
-            eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, vn), list(.DUMMY = as.name(vPtrName)) ) ) 
+        vPtrNames <- 	paste0('.', cppNames, '_Ptr')	
+        for(vn in seq_along(cppNames) ){
+#            vPtrName <- paste(".", vn, "_Ptr", sep = "")
+            eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, cppNames[vn]), list(.DUMMY = as.name(vPtrNames[vn]) ) ) ) 
+            #.self[[vPtrName]] <- newObjElementPtr(.basePtr, vn)
         }
         if(!missing(nfObject)) {
             setRobject(nfObject)
@@ -417,7 +419,9 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
                     list(FIELDS = NFBF, ML = methodsList ) ) )
 
     ans <- function(nfObject, dll = NULL, project) {
-        newClass$new(nfObject, defaults, dll = dll, project = project)
+    	wrappedInterfaceBuild <- newClass$new
+    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project)
+#        newClass$new(nfObject, defaults, dll = dll, project = project)
     }
     return(ans)
 }

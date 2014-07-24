@@ -4,7 +4,7 @@ projectNameCreator <- labelFunctionCreator('P')
 
 nfCompilationInfoClass <- setRefClass('nfCompilationInfoClass',
                                       fields = list(
-                                          nfProc = 'ANY',      ## an nfProcessing object 
+                                          nfProc = 		'ANY',      ## an nfProcessing object 
                                           nfGenerator = 'ANY', ## a nfGenerator, which is a function with special stuff in its environment
                                           cppDef = 'ANY',       ## a cppNimbleFunctionClass object
                                           labelMaker = 'ANY',    ## a label maker function
