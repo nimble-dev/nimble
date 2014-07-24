@@ -1,10 +1,10 @@
 virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                    fields = list(
                                        name = 'ANY', ## character
-                                       nfGenerator = 'function',
-                                       compileInfos = 'list', ## A list of RCfunctionCompileClass objects
+                                       nfGenerator =  'ANY',		#'function',
+                                       compileInfos =  'ANY',		#'list', ## A list of RCfunctionCompileClass objects
                                        origMethods = 'ANY',
-                                       RCfunProcs = 'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
+                                       RCfunProcs =  'ANY',		#'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
                                       ## RCfuns = 'list', ## A list of RCfun objects
                                        cppDef = 'ANY'
                                        ),
@@ -18,6 +18,9 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
                                        initialize = function(f = NULL, className, virtual = TRUE) {
+                                       		compileInfos <<- list()
+                                       		RCfunProcs <<- list()
+                                       		
                                            if(!is.null(f)) { ## This allows successful default instantiation by R when defining nfProcessing below -- crazy
                                                ## nfGenerator allowed if it is a nimbleFunctionVirtual
                                                if(is.nf(f) | is.nfGenerator(f)) nfGenerator <<- nf_getGeneratorFunction(f)
@@ -68,19 +71,22 @@ nfProcessing <- setRefClass('nfProcessing',
                             fields = list(
                                 instances = 'ANY',
                                 setupSymTab = 'ANY',
-                                neededTypes = 'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
-                              neededObjectNames = 'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
-                                newSetupOutputNames = 'character',
-                                newSetupCode = 'list',
+                                neededTypes =  'ANY',		#'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
+                              neededObjectNames =  'ANY',		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
+                                newSetupOutputNames =  'ANY',		#'character',
+                                newSetupCode =  'ANY',		#'list',
                                 newSetupCodeOneExpr = 'ANY',
                                 nimbleProject = 'ANY',
-                                inModel = 'logical'
+                                inModel =  'ANY'		#'logical'
                               ),
                           methods = list(
                               show = function() {
                                   writeLines(paste0('nfProcessing object ', name))
                               },
                               initialize = function(f = NULL, className, fromModel = FALSE, project) {
+                              	neededTypes <<- list()
+                              	neededObjectNames <<- character()
+                              	newSetupCode <<- list()
                                   if(!is.null(f)) {
                                       ## in new system, f must be a specialized nf, or a list of them
                                       nimbleProject <<- project
@@ -930,7 +936,7 @@ nfProcessing$methods(replaceAccessorsOneFunction = function(code) {
 })
 
 singleVarAccessClass <- setRefClass('singleVarAccessClass',
-                                    fields = list(model = 'ANY', var = 'character', useSingleIndex = 'logical'),
+                                    fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
                                     methods = list(
                                         show = function() {
                                             writeLines(paste('singleVarAccess for model',model$name,'to var',var))
@@ -942,7 +948,7 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
 }
 
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
-                                    fields = list(modelValues = 'ANY', var = 'character'),
+                                    fields = list(modelValues = 'ANY', var = 'ANY'),
                                     methods = list(
                                         show = function() {
                                             writeLines(paste('singleModelValuesAccess for model to var',var))

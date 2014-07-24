@@ -14,10 +14,10 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                              
                              fields = list(
                                  ###### the following are set in setup(), and never change.
-                                 contextID = 'numeric',
-                                 sourceLineNumber = 'numeric',
+                                 contextID = 'ANY',
+                                 sourceLineNumber = 'ANY',
                                  code = 'ANY',        ## original BUGS code line
-                                 type = 'character',
+                                 type = 'ANY',
                                  targetExpr = 'ANY',   ## LHS of code
                                  valueExpr = 'ANY',    ## RHS of code
                                  transExpr = 'ANY',
@@ -44,7 +44,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  
                                  ## the following are set in modelDefClass$genNodeInfo(), and never change:
                                  indexedNodeInfo = 'ANY',
-                                 indexedNodeNames = 'character'
+                                 indexedNodeNames = 'ANY'
                              ),   
                              
                              methods = list(

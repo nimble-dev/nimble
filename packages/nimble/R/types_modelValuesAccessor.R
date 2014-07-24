@@ -8,10 +8,10 @@
 modelValuesAccessor <- setRefClass(
     Class = 'modelValuesAccessor',
     fields = list(modelValues = 'ANY',
-                  var         = 'character',
-                  first       = 'numeric',
-                  last        = 'numeric',
-                  length	  = 'numeric'
+                  var         = 'ANY', 		#'character',
+                  first       = 'ANY', 		#'numeric',
+                  last        = 'ANY', 		#'numeric',
+                  length	  = 'ANY' 		#'numeric'
     ),
     methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
                    show  = function() cat(paste0(toStr(), '\n'))
@@ -21,9 +21,9 @@ modelValuesAccessor <- setRefClass(
 modelValuesAccessorVector <- setRefClass(
     Class = 'modelValuesAccessorVector',
     fields = list(modelValues = 'ANY',
-                  nodes = 'character',
+                  nodes = 'ANY', 		#'character',
                   modelValuesAccessors = 'ANY',
-                  length = 'numeric'),
+                  length = 'ANY') ,		#'numeric'),
     methods = list(
         initialize = function(modelValues, nodeNames, logProb = FALSE, env = parent.frame()) {
             nodeNames <- nl_expandNodeNames(nodeNames, modelValues$symTab, env)  # expands nodeNames to fully indexed form, including expanding variables using the symbolTable
