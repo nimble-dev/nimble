@@ -126,9 +126,9 @@ nf_createRefClassDef_fields <- function(setup, methodList) {
     if(FALSE) print(setupOutputNames)
     fields <- as.list(rep('ANY', length(setupOutputNames)))
     names(fields) <- setupOutputNames
-    fields$.generatorFunction = 'function'
+    fields$.generatorFunction = 'ANY'
     fields$.CobjectInterface <- 'ANY'
-    fields$.newSetupLinesProcessed <- 'logical'
+    fields$.newSetupLinesProcessed <- 'ANY'
     return(fields)
 }
 

@@ -12,11 +12,13 @@ nfMethodRC <-
                     code       = 'ANY',
                     returnType = 'ANY',
                     uniqueName = 'character',
-                    neededRCfuns = 'list'
+                    neededRCfuns = 'ANY'		#list
                 ),
                 methods = list(
                     initialize = function(method, name) {
+                    	
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
+						neededRCfuns <<- list()	
                         argInfo <<- formals(method)
                         code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                         if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))

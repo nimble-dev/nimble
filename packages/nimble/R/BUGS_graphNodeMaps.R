@@ -3,35 +3,35 @@ mapsClass <- setRefClass(
     
     fields = list(
         ## set directly from graphNodesList:
-        nodeNames = 'character',
-        graphIDs = 'numeric',
-        nodeFunctionNames = 'character',
-        types = 'character',
+        nodeNames = 'ANY',
+        graphIDs = 'ANY',
+        nodeFunctionNames = 'ANY',
+        types = 'ANY',
         
         ## vectors of nodeNames, representing different subsets of 'types'
-        nodeNamesStoch = 'character',                  ## names of all LHS declared 'stoch' nodes
-        nodeNamesDeterm = 'character',                 ## names of all LHS declared 'determ' nodes
-        nodeNamesLHSinferred = 'character',            ## names of all nodes inferred from LHS multivariate stochastic distributions
-        nodeNamesLHSall = 'character',                 ## names of all nodes with node functions, i.e. all node names *except* RHSonly nodes
-        nodeNamesRHSonly = 'character',                ## names of all nodes appearing on RHS only
-        nodeNamesInModel = 'character',                ## names of all nodes in the model; everything *except* LHSinferred (graph-only) nodes
+        nodeNamesStoch = 'ANY',                  ## names of all LHS declared 'stoch' nodes
+        nodeNamesDeterm = 'ANY',                 ## names of all LHS declared 'determ' nodes
+        nodeNamesLHSinferred = 'ANY',            ## names of all nodes inferred from LHS multivariate stochastic distributions
+        nodeNamesLHSall = 'ANY',                 ## names of all nodes with node functions, i.e. all node names *except* RHSonly nodes
+        nodeNamesRHSonly = 'ANY',                ## names of all nodes appearing on RHS only
+        nodeNamesInModel = 'ANY',                ## names of all nodes in the model; everything *except* LHSinferred (graph-only) nodes
         
         ## nodeName_2_xxxx maps
-        nodeName_2_graphID = 'numeric',                ## named vector of numeric graphIDs
-        nodeName_2_type = 'character',                 ## named vector of character types
-        nodeName_2_nodeFunctionName = 'character',     ## named vector of character nodeFunctionNames
-        nodeName_2_originNodeName = 'character',       ## named vector of character nodeNames
+        nodeName_2_graphID = 'ANY',                ## named vector of numeric graphIDs
+        nodeName_2_type = 'ANY',                 ## named vector of character types
+        nodeName_2_nodeFunctionName = 'ANY',     ## named vector of character nodeFunctionNames
+        nodeName_2_originNodeName = 'ANY',       ## named vector of character nodeNames
         
         ## graphID_2_xxxx maps
-        graphID_2_nodeName = 'character',              ## vector of character nodeNames
-        graphID_2_type = 'character',                  ## vector of character types
-        graphID_2_nodeFunctionName = 'character',      ## vector of character nodeFunctionNames
-        graphID_2_originNodeName = 'character',        ## vector of character nodeNames
+        graphID_2_nodeName = 'ANY',              ## vector of character nodeNames
+        graphID_2_type = 'ANY',                  ## vector of character types
+        graphID_2_nodeFunctionName = 'ANY',      ## vector of character nodeFunctionNames
+        graphID_2_originNodeName = 'ANY',        ## vector of character nodeNames
         
         ## positions vectors of nodeNames (top, latent, end)
-        nodeNamesTop = 'character',
-        nodeNamesLatent = 'character',
-        nodeNamesEnd = 'character'
+        nodeNamesTop = 'ANY',
+        nodeNamesLatent = 'ANY',
+        nodeNamesEnd = 'ANY'
     ),
     
     methods = list(

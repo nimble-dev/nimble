@@ -7,7 +7,7 @@
 nodeFunctionVector <- setRefClass(
     Class = 'nodeFunctionVector',
     fields = list(model = 'ANY',
-                  nodes = 'character',
+                  nodes = 'ANY', 		#'character',
                   nodeFunctionRefClassObjects = 'ANY'),
     methods = list(
         initialize = function(model, nodeNames, env = parent.frame()) {
