@@ -1,0 +1,15 @@
+ifndef NIMBLE_PKG_SRC_DIR
+  NIMBLE_PKG_SRC_DIR=../../../packages/nimble/inst
+endif
+
+# You will probably have to add the directory that contains Eigen/ to the PKG_CPPFLAGS definition, 
+# e.g.
+#  -IC:/Users/duncan/
+# if Eigen is in C:/Users/duncan/
+# My Windows configuration doesn't seem to like cygwin style paths for this, i.e. -I/cygdrive/c/Users/duncantl 
+# results in a failure for R CMD SHLIB ...
+
+PKG_CPPFLAGS=-I$(NIMBLE_PKG_SRC_DIR)/include
+PKG_LIBS=-lRlapack -lRblas
+
+
