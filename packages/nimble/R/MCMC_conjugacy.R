@@ -4,45 +4,52 @@
 
 conjugacyRelationshipsInputList <- list(
     
+    ## beta distribution
     list(prior = 'beta',
          dependents = list(
              bern   = list(param = 'prob', link = 'identity', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
              bin    = list(param = 'prob', link = 'identity', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
-             negbin = list(param = 'prob', link = 'identity', contribution_shape1 = 'size',  contribution_shape2 = 'value'       )
-         ),
+             negbin = list(param = 'prob', link = 'identity', contribution_shape1 = 'size',  contribution_shape2 = 'value'       )),
          posterior = 'beta(shape1 = prior_shape1 + contribution_shape1,
                            shape2 = prior_shape2 + contribution_shape2)'),
     
+    ## gamma distribution
     list(prior = 'gamma',
          dependents = list(
              pois  = list(param = 'lambda', link = 'multiplicative', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
              norm  = list(param = 'tau',    link = 'multiplicative', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
              lnorm = list(param = 'tau',    link = 'multiplicative', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
              gamma = list(param = 'rate',   link = 'multiplicative', contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-             exp   = list(param = 'rate',   link = 'multiplicative', contribution_shape = '1',     contribution_rate = 'coeff   * value'                 )
+             exp   = list(param = 'rate',   link = 'multiplicative', contribution_shape = '1',     contribution_rate = 'coeff   * value'                 )),
              ## dexp  = list(param = 'rate',   link = 'multiplicative', contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
              ## par = list(...)    ## need to figure this out
-         ),
          posterior = 'gamma(shape = prior_shape + contribution_shape,
                             scale = 1 / (prior_rate + contribution_rate))'),
     
+    ## normal distribution
     list(prior = 'norm',
          dependents = list(
              norm  = list(param = 'mean',    link = 'linear', contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
-             lnorm = list(param = 'meanlog', link = 'linear', contribution_mean = 'coeff * (log(value)-offset) * tau', contribution_tau = 'coeff^2 * tau')
-         ),
+             lnorm = list(param = 'meanlog', link = 'linear', contribution_mean = 'coeff * (log(value)-offset) * tau', contribution_tau = 'coeff^2 * tau')),
          posterior = 'norm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
-                           sd   = (prior_tau + contribution_tau)^(-0.5))')
+                           sd   = (prior_tau + contribution_tau)^(-0.5))'),
     
-    ##### waiting for dpar() distribution
-    # list(prior = 'par',
+    ## pareto distribution
+    # list(prior = 'par',      ##### waiting for dpar() distribution
     #      dependents = list(
     #          unif = list(param = 'max', link = 'multiplicative', contribution_alpha = '1', contribution_not_used = 'coeff'),
-    #          par  = list(param = 'c',   link = 'multiplicative', contribution_alpha = '-alpha')
-    #      ),
+    #          par  = list(param = 'c',   link = 'multiplicative', contribution_alpha = '-alpha')),
     #      posterior = 'par(alpha = prior_alpha + contribution_alpha,
     #                       c     = max(prior_c, max(dependents_dunif_values/dependents_dunif_coeff)))'),
     #####
+    
+    ## multivariate-normal distribution
+    list(prior = 'mnorm',
+         dependents = list(
+             mnorm = list(param = 'mean', link = 'linear', contribution_mean = 't(coeff) %*% prec %*% (value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
+         posterior = 'mnorm(mean       = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% prior_mean + contribution_mean),
+                            chol       = chol(prior_prec + contribution_prec),
+                            prec_param = TRUE)')
 )
 
 

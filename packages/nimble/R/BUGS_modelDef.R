@@ -268,8 +268,8 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
                         'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
                         'There are two options to resolve this:', '\n',
                         '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
-                        '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to modelBUGS(), e.g.,', '\n',
-                        '    modelBUGS(modelCode, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
+                        '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
+                        '    nimbleModel(my_modelCode, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
                         'Thanks for bearing with us.'), call. = FALSE)
         }
         ## and to recurse on all elements
@@ -299,7 +299,7 @@ example_fillInMissingIndices <- function(code) {
 example_getMissingDimensions <- function(code) {
     cCall <- quote(c())
     for(i in seq_along(code)[-c(1,2)]) {
-        cCall[[i-1]] <- parse(text = paste0('DIM', i-2, '_MAX'))[[1]]
+        cCall[[i-1]] <- parse(text = paste0('dim', i-2, '_max'))[[1]]
     }
     return(cCall)
 }
@@ -797,7 +797,7 @@ modelDefClass$methods(genVarInfo = function() {
         dimVarName <- names(dimensionsList)[i]
         if(!(dimVarName %in% names(varInfo))) next
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions')
-        if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop('dimensions specified are smaller than model specification')
+        if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 })
