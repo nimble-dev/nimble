@@ -140,6 +140,10 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                             fields = FIELDS,
                                             contains = 'CmodelBaseClass',
                                             methods = list(initialize = function(model, defaults, ..., dll = NULL) { ## model is an optional R model
+                                                nodes <<- list()
+                                          		isDataEnv <<- new.env()
+                                          		classEnvironment <<- new.env()
+                                          		   
                                                 callSuper()
                                                 .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- getMVptr(.basePtr)

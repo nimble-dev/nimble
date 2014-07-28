@@ -4,11 +4,13 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                  fields = list(
                                      modelDef = 'ANY', ## a modelDefClass, but saying 'ANY' to avoid hassles,
                                      model = 'ANY', ## an RmodelBaseClass, needed for the nodeFunctions
-                                     nodeFuns = 'list', ## list of cppNimbleFunctionClass objects
-                                     CmodelValuesClassName = 'character'
+                                     nodeFuns = 'ANY',		#list		 ## list of cppNimbleFunctionClass objects
+                                     CmodelValuesClassName = 'ANY'		#character
                                      ),
                                  methods = list(
                                      initialize = function(...) {
+                                     	nodeFuns <<- list()
+                                     	CmodelValuesClassName <<- character()
                                          Hincludes <<- c(Hincludes, nimbleIncludeFile("NimArr.h"),
                                                                     nimbleIncludeFile("ModelClassUtils.h"))
                                          callSuper(...)

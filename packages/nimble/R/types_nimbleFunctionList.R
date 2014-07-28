@@ -1,12 +1,13 @@
 
 nimPointerList <- setRefClass('nimPointerList', ## A base class for a list of objects that, in C++ will be a vector of pointers
                               fields = list(
-                                  contentsList = 'list',
+                                  contentsList = 'ANY', 		#'list',
                                   baseClass = 'ANY', ## R object with information about the pointer-to type
                                   CobjectInterface = 'ANY'
                                   ),
                               methods = list(
                                   initialize = function(virtualBaseClass = NULL, length = 0) {
+                                  	contentsList <<- list()
                                       if(!is.null(virtualBaseClass)) {
                                           baseClass <<- virtualBaseClass
                                           if(length > 0) contentsList <<- vector('list', length)

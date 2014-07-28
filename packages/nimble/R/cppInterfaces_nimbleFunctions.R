@@ -24,7 +24,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
         if(is.null(thisSymbol)) next
         if(thisSymbol$type == 'model' || thisSymbol$type == 'symbolNodeFunctionVector' || thisSymbol$type == 'symbolModelVariableAccessorVector' ||thisSymbol$type == 'symbolModelValuesAccessorVector') next ## skip models and NodeFunctionVectors and modelVariableAccessors      
         ptrName = paste0(".", vn, "_Ptr")
-        fieldList[[ptrName]] <- "externalptr" ## "ANY" 
+        fieldList[[ptrName]] <- "ANY" ## "ANY" 
         ## Model variables:
         if(inherits(thisSymbol,'symbolNimArrDoublePtr')) {
             fieldList[[vn]] <- eval(substitute(
@@ -92,7 +92,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
         if(inherits(thisSymbol, 'symbolNimPtrList')) { ## for nimbleFunctionList, set up with some partial generality but not all the way
             nflName <- paste0(".",vn,"_CnimbleFunctionList")
             accessorPtrName <- paste0(".", vn, "_setter_Ptr") ## "_setter" part must match nimbleDSL_class_symbolTable symbolNimPtrList 
-            fieldList[[accessorPtrName]] <- "externalptr"
+            fieldList[[accessorPtrName]] <- "ANY"
             fieldList[[nflName]] <- "ANY"
             fieldList[[vn]] <- eval(substitute(
                 function(x) {
@@ -164,16 +164,17 @@ makeNFBindingFields <- function(symTab, cppNames) {
 
 CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                    fields = list(
-                                       dll = "DLLInfoOrNULL",
+                                       dll = "ANY",
                                        compiledNodeFun = 'ANY',
                                        Robject = 'ANY', ## this should be the refClassObject, not the function
-                                       cppNames = 'character',
+                                       cppNames = 'ANY',
                                        cppCopyTypes = 'ANY',
-                                       neededObjects = 'list', ## A list of things like modelValues objects, if they don't already exist
+                                       neededObjects = 'ANY', ## A list of things like modelValues objects, if they don't already exist
                                        nimbleProject = 'ANY'
                                        ),
                                    methods = list(
                                        initialize = function(dll = NULL, project = NULL, test = TRUE, ...) {
+                                       		neededObjects <<- list()
                                            if(!test) {
                                                dll <<- dll
                                                if(is.null(project)) {
@@ -384,9 +385,11 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         cppNames <<- .Call("getAvailableNames", .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
-        for(vn in cppNames){
-            vPtrName <- paste(".", vn, "_Ptr", sep = "")
-            eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, vn), list(.DUMMY = as.name(vPtrName)) ) ) 
+        vPtrNames <- 	paste0('.', cppNames, '_Ptr')	
+        for(vn in seq_along(cppNames) ){
+#            vPtrName <- paste(".", vn, "_Ptr", sep = "")
+            eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, cppNames[vn]), list(.DUMMY = as.name(vPtrNames[vn]) ) ) ) 
+            #.self[[vPtrName]] <- newObjElementPtr(.basePtr, vn)
         }
         if(!missing(nfObject)) {
             setRobject(nfObject)
@@ -416,7 +419,9 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
                     list(FIELDS = NFBF, ML = methodsList ) ) )
 
     ans <- function(nfObject, dll = NULL, project) {
-        newClass$new(nfObject, defaults, dll = dll, project = project)
+    	wrappedInterfaceBuild <- newClass$new
+    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project)
+#        newClass$new(nfObject, defaults, dll = dll, project = project)
     }
     return(ans)
 }

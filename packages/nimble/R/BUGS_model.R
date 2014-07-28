@@ -22,15 +22,15 @@
 modelBaseClass <- setRefClass('modelBaseClass',
                               fields = list(
                                   modelDef = 'ANY',     
-                                  nodes = 'list',       
+                                  nodes = 'ANY',       #list
                                   vars = 'ANY',         
                                   graph = 'ANY',        
                                   defaultModelValues = 'ANY',
-                                  name = 'character',   
+                                  name = 'ANY', 		#character  
                                   ##.ModelValuesLookUpName = 'character',
-                                  isDataVars = 'list',            ## list with the dimensions of isData_vars
-                                  isDataEnv = 'environment',      ## environment holding 'logical' objects, with isData flags
-                                  classEnvironment = 'environment', # environment in which the reference classes will be defined
+                                  isDataVars = 'ANY', #list           ## list with the dimensions of isData_vars
+                                  isDataEnv = 'ANY',	#environment      ## environment holding 'logical' objects, with isData flags
+                                  classEnvironment = 'ANY', # environment in which the reference classes will be defined
                                   origData = 'ANY',
                                   origInits = 'ANY',
                                   nimbleProject = 'ANY'
@@ -338,9 +338,9 @@ setMethod('[[<-', 'modelBaseClass',
 RModelBaseClass <- setRefClass("RModelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(
-                                   nodeFunctions = 'list',
-                                   nodeGenerators = 'list',
-                                   Cname = 'character',
+                                   nodeFunctions = 'ANY',	#list
+                                   nodeGenerators = 'ANY',	#list
+                                   Cname = 'ANY',		#character
                                    CobjectInterface = 'ANY'
                                    ),
                                methods = list(
@@ -408,6 +408,11 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
         fields = FIELDS,
         methods = list(
             initialize = function(inputList, ...) {
+				nodes <<- list()
+				classEnvironment <<- new.env()
+				isDataEnv <<- new.env()
+				nodeFunctions <<- list()
+				nodeGenerators <<- list()
                 vars <<- inputList$vars
                 isDataVars <<- inputList$isDataVars
                 callSuper(modelDef = inputList$modelDef, ...)
@@ -431,10 +436,10 @@ MakeCustomModelClass <- function(vars, className, where = globalenv())
 ## It is built as an unevaluated list parse tree so that when the class if created the function definitions are evaluated then.
 makeBUGSclassFields <- function(vars) {
     activeBindingDefs <- list()
-    envDefs <- as.list(rep('environment', length(vars)))
+    envDefs <- as.list(rep('ANY', length(vars)))
     names(envDefs) <- makeEnvName(vars)    
-    rowDefs <-as.list(rep('integer', length(vars)))
-    nameDefs <- as.list(rep('character', length(vars)))
+    rowDefs <-as.list(rep('ANY', length(vars)))
+    nameDefs <- as.list(rep('ANY', length(vars)))
     names(rowDefs) <- makeRowName(vars)
     names(nameDefs) <- makeNameName(vars)
     for(var in vars) {

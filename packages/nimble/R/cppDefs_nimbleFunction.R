@@ -43,7 +43,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           built = 'ANY',
                                        	  loaded = 'ANY',
                                        	  Cwritten = 'ANY',
-                                          RCfunDefs = 'list'
+                                          RCfunDefs = 'ANY'
+                                          
                                           ),
                                           methods = list(
                                               getDefs = function() {
@@ -129,6 +130,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   }
                                               },
                                               initialize = function(nfProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
+                                              	RCfunDefs <<- list()
                                                   callSuper(...) ## must call this first because it sets objectDefs to list()
                                                   if(!missing(nfProc)) processNFproc(nfProc, debugCpp = debugCpp, fromModel = fromModel)
                                                   if(isNode) {

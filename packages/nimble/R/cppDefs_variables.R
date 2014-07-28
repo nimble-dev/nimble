@@ -5,10 +5,10 @@
 ## Below there are some wrappers for common cases like cppDouble, cppNimArrPtr, cppVoid, etc.
 cppVar <- setRefClass('cppVar',
                              fields = list(
-                                 baseType = 'character',
-                                 ptr = 'numeric',
-                                 ref = 'logical',
-                                 name = 'character'),
+                                 baseType = 'ANY',	#characater
+                                 ptr = 'ANY',			#numeric
+                                 ref = 'ANY',			#logical
+                                 name = 'ANY'),		#character
                              methods = list(
                                  generate = function(printName = .self$name, ...) {
                                      ptrs <- if(length(ptr) > 0) paste(rep('*', ptr), collapse = '')
@@ -33,18 +33,20 @@ cleanWhite <- function(s) gsub('[[:blank:]]+', ' ', s)
 cppVarFull <- setRefClass('cppVarFull',
                       contains = 'cppVar',
                       fields = list(
-                          templateArgs = 'list',
-                          baseScope = 'list',
-                          baseConst = 'logical',
-                          baseConstPtr = 'numeric',
-                          const = 'logical',
-                          static = 'logical',
-                          arraySizes = 'integer',
-                          constructor = 'character',
-                          selfDereference = 'logical'
+                          templateArgs = 'ANY', 	#'list',
+                          baseScope = 'ANY',	#'list',
+                          baseConst = 'ANY',	#'logical',
+                          baseConstPtr = 'ANY', 	#'numeric',
+                          const = 'ANY',	# 'logical',
+                          static = 'ANY', 	#'logical',
+                          arraySizes = 'ANY',	#'integer',
+                          constructor = 'ANY',	#'character',
+                          selfDereference = 'ANY'	#'logical'
                           ),
                       methods = list(
                           initialize = function(...) {
+                          		templateArgs <<- list()
+                          		baseScope <<- list()
                               selfDereference <<- FALSE
                               callSuper(...)
                           },
@@ -88,11 +90,18 @@ cppVarFull <- setRefClass('cppVarFull',
 ## Below there are some wrappers for common cases like cppDouble, cppNimArrPtr, cppVoid, etc.
 cppVar <- setRefClass('cppVar',
                              fields = list(
-                                 baseType = 'character',
-                                 ptr = 'numeric',
-                                 ref = 'logical',
-                                 name = 'character'),
+                                 baseType = 'ANY',		#			'character',
+                                 ptr = 'ANY',		#'numeric',
+                                 ref = 'ANY',		#'logical',
+                                 name = 'ANY'), 	#'character'),
                              methods = list(
+                             	initialize = function(...){
+               		           	  baseType <<- character()
+               		           	  ptr <<- numeric()
+                	          	  ref <<- logical()
+                	          	  name <<- character()
+					    		callSuper(...)
+                             	},
                                  generate = function(printName = .self$name, ...) {
                                      ptrs <- if(length(ptr) > 0) paste(rep('*', ptr), collapse = '')
                                      if(length(printName) > 0) printName <- paste0(printName, collapse = ', ')
@@ -112,18 +121,27 @@ cppVar <- setRefClass('cppVar',
 cppVarFull <- setRefClass('cppVarFull',
                       contains = 'cppVar',
                       fields = list(
-                          templateArgs = 'list',
-                          baseScope = 'list',
-                          baseConst = 'logical',
-                          baseConstPtr = 'numeric',
-                          const = 'logical',
-                          static = 'logical',
-                          arraySizes = 'integer',
-                          constructor = 'character',
-                          selfDereference = 'logical'
+                          templateArgs = 'ANY', #'list',
+                          baseScope = 'ANY', #'list',
+                          baseConst = 'ANY', #'logical',
+                          baseConstPtr = 'ANY', #'numeric',
+                          const = 'ANY', 	#'logical',
+                          static = 'ANY', 	#'logical',
+                          arraySizes = 'ANY', 	#'integer',
+                          constructor = 'ANY', 	#'character',
+                          selfDereference = 'ANY'	#'logical'
                           ),
                       methods = list(
                           initialize = function(...) {
+                          	  templateArgs <<- list()
+                          	  baseScope <<- list()
+                          	  baseConstPtr <<- numeric()
+                          	  baseConst <<- logical()
+                          	  const <<- logical()
+                          	  static <<- logical()
+                          	  arraySizes <<- integer()   
+                          	  constructor <<- character()
+
                               selfDereference <<- FALSE
                               callSuper(...)
                           },
