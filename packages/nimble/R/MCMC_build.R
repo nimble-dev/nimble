@@ -46,7 +46,7 @@ buildMCMC <- nimbleFunction(
     setup = function(mcmcspec) {
         model <- mcmcspec$model
         
-        RHSonlyNodes <- model$getMaps()$nodeNamesRHSonly
+        RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
         RHSonlyInitFunctions <- nimbleFunctionList(RHSonlyInit_virtual)
         for(i in seq_along(RHSonlyNodes))     { RHSonlyInitFunctions[[i]] <- RHSonlyInit(model, RHSonlyNodes[i]) }
         

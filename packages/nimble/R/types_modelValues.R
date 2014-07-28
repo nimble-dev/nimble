@@ -98,7 +98,7 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         initialize = function(nrow = 1L,...) {
                                         	callSuper(...)
                                             nrow <<- nrow
-                                            types <<- list()
+   #                                         types <<- list()
                                             for(vN in varNames) {
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }

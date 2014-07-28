@@ -668,7 +668,7 @@ nfProcessing$methods(replaceOneSimulate = function(code) {
         if(!(nodeNames %in% newSetupOutputNames) ){
             newSetupOutputNames <<- c(newSetupOutputNames, nodeNames)
             ## It is usually redundant to call getDependencies here, but it allows the includeData argument
-            newSetupLine = substitute(NODESNAME <- MODEL$getDependencies(MODEL$getMaps()$nodeNamesLHSall, includeData = SIMDATA), list(NODESNAME = as.name(nodeNames), MODEL = as.name(varName), SIMDATA = simData ) )
+            newSetupLine = substitute(NODESNAME <- MODEL$getDependencies(MODEL$getMaps('nodeNamesLHSall'), includeData = SIMDATA), list(NODESNAME = as.name(nodeNames), MODEL = as.name(varName), SIMDATA = simData ) )
             newSetupCode[[nodeNames]] <<- newSetupLine
         }
     }
@@ -700,7 +700,7 @@ nfProcessing$methods(replaceOneCalcGLP = function(code) {
             nodeNames <- as.character(matchCode[['nodes']])
 
         newName <- paste(varName, nodeNames, 'nodeFxnVector', sep = '_')
-        nodeArg <- substitute(MODEL$getMaps()$nodeNamesLHSall, list(MODEL = code[[2]]) )    
+        nodeArg <- substitute(MODEL$getMaps('nodeNamesLHSall'), list(MODEL = code[[2]]) )    
     } else {## end length(code)==2
         if(length(code) != 3) stop(paste("Error in processing code: unrecognized number of arguments for calculate, simulate or getLogProbs :", deparse(code)))
         newRunCode <- code[1:2]
@@ -946,6 +946,7 @@ singleVarAccessClass <- setRefClass('singleVarAccessClass',
 singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
     singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
 }
+
 
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
                                     fields = list(modelValues = 'ANY', var = 'ANY'),
