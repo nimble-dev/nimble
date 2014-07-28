@@ -5,51 +5,51 @@
 conjugacyRelationshipsInputList <- list(
     
     ## beta distribution
-    list(prior = 'beta',
+    list(prior = 'dbeta',
          dependents = list(
-             bern   = list(param = 'prob', link = 'identity', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
-             bin    = list(param = 'prob', link = 'identity', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
-             negbin = list(param = 'prob', link = 'identity', contribution_shape1 = 'size',  contribution_shape2 = 'value'       )),
-         posterior = 'beta(shape1 = prior_shape1 + contribution_shape1,
-                           shape2 = prior_shape2 + contribution_shape2)'),
+             dbern   = list(param = 'prob', link = 'identity', contribution_shape1 = 'value', contribution_shape2 = '1 - value'   ),
+             dbin    = list(param = 'prob', link = 'identity', contribution_shape1 = 'value', contribution_shape2 = 'size - value'),
+             dnegbin = list(param = 'prob', link = 'identity', contribution_shape1 = 'size',  contribution_shape2 = 'value'       )),
+         posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
+                            shape2 = prior_shape2 + contribution_shape2)'),
     
     ## gamma distribution
-    list(prior = 'gamma',
+    list(prior = 'dgamma',
          dependents = list(
-             pois  = list(param = 'lambda', link = 'multiplicative', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
-             norm  = list(param = 'tau',    link = 'multiplicative', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
-             lnorm = list(param = 'tau',    link = 'multiplicative', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
-             gamma = list(param = 'rate',   link = 'multiplicative', contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-             exp   = list(param = 'rate',   link = 'multiplicative', contribution_shape = '1',     contribution_rate = 'coeff   * value'                 )),
-             ## dexp  = list(param = 'rate',   link = 'multiplicative', contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
-             ## par = list(...)    ## need to figure this out
-         posterior = 'gamma(shape = prior_shape + contribution_shape,
-                            scale = 1 / (prior_rate + contribution_rate))'),
+             dpois  = list(param = 'lambda', link = 'multiplicative', contribution_shape = 'value', contribution_rate = 'coeff'                           ),
+             dnorm  = list(param = 'tau',    link = 'multiplicative', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
+             dlnorm = list(param = 'tau',    link = 'multiplicative', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
+             dgamma = list(param = 'rate',   link = 'multiplicative', contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
+             dexp   = list(param = 'rate',   link = 'multiplicative', contribution_shape = '1',     contribution_rate = 'coeff   * value'                 )),
+             ## ddexp  = list(param = 'rate',   link = 'multiplicative', contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
+             ## dpar = list(...)    ## need to figure this out
+         posterior = 'dgamma(shape = prior_shape + contribution_shape,
+                             scale = 1 / (prior_rate + contribution_rate))'),
     
     ## normal distribution
-    list(prior = 'norm',
+    list(prior = 'dnorm',
          dependents = list(
-             norm  = list(param = 'mean',    link = 'linear', contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
-             lnorm = list(param = 'meanlog', link = 'linear', contribution_mean = 'coeff * (log(value)-offset) * tau', contribution_tau = 'coeff^2 * tau')),
-         posterior = 'norm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
-                           sd   = (prior_tau + contribution_tau)^(-0.5))'),
+             dnorm  = list(param = 'mean',    link = 'linear', contribution_mean = 'coeff * (value-offset) * tau',      contribution_tau = 'coeff^2 * tau'),
+             dlnorm = list(param = 'meanlog', link = 'linear', contribution_mean = 'coeff * (log(value)-offset) * tau', contribution_tau = 'coeff^2 * tau')),
+         posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
+                            sd   = (prior_tau + contribution_tau)^(-0.5))'),
     
     ## pareto distribution
-    # list(prior = 'par',      ##### waiting for dpar() distribution
+    # list(prior = 'dpar',      ##### waiting for dpar() distribution
     #      dependents = list(
-    #          unif = list(param = 'max', link = 'multiplicative', contribution_alpha = '1', contribution_not_used = 'coeff'),
-    #          par  = list(param = 'c',   link = 'multiplicative', contribution_alpha = '-alpha')),
-    #      posterior = 'par(alpha = prior_alpha + contribution_alpha,
-    #                       c     = max(prior_c, max(dependents_dunif_values/dependents_dunif_coeff)))'),
+    #          dunif = list(param = 'max', link = 'multiplicative', contribution_alpha = '1', contribution_not_used = 'coeff'),
+    #          dpar  = list(param = 'c',   link = 'multiplicative', contribution_alpha = '-alpha')),
+    #      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
+    #                        c     = max(prior_c, max(dependents_dunif_values/dependents_dunif_coeff)))'),
     #####
     
     ## multivariate-normal distribution
-    list(prior = 'mnorm',
+    list(prior = 'dmnorm',
          dependents = list(
-             mnorm = list(param = 'mean', link = 'linear', contribution_mean = 't(coeff) %*% prec %*% (value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-         posterior = 'mnorm(mean       = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% prior_mean + contribution_mean),
-                            chol       = chol(prior_prec + contribution_prec),
-                            prec_param = TRUE)')
+             dmnorm = list(param = 'mean', link = 'linear', contribution_mean = 't(coeff) %*% prec %*% (value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
+         posterior = 'dmnorm(mean       = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% prior_mean + contribution_mean),
+                             chol       = chol(prior_prec + contribution_prec),
+                             prec_param = TRUE)')
 )
 
 
@@ -105,7 +105,7 @@ conjugacyRelationshipsClass <- setRefClass(
 conjugacyClass <- setRefClass(
     Class = 'conjugacyClass',
     fields = list(
-        samplerType = 			'ANY', 		## name of the sampler for this conjugacy class, e.g. 'conjugate_norm'
+        samplerType = 			'ANY', 		## name of the sampler for this conjugacy class, e.g. 'conjugate_dnorm'
         prior =					'ANY', 		## name of the prior distribution, e.g. 'dnorm'
         dependents = 			'ANY', 		## (named) list of dependentClass objects, each contains conjugacy information specific to a particular sampling distribution (name is sampling distribution name)
         dependentDistNames = 	'ANY', 		## character vector of the names of all allowable dependent sampling distributions.  same as: names(dependents)
@@ -117,16 +117,17 @@ conjugacyClass <- setRefClass(
         initialize = function(cr) {
         	dependents <<- list()
             samplerType <<- cc_makeSamplerTypeName(cr$prior)
-            prior <<- cc_makeDDistributionName(cr$prior)
+            prior <<- cr$prior
             initialize_addDependents(cr$dependents)
             needsLinearityCheck <<- any(c(unlist(lapply(dependents, function(dep) dep$needsCoeff)), unlist(lapply(dependents, function(dep) dep$needsOffset))))
             posteriorObject <<- posteriorClass(cr$posterior)
+            model <<- NA
         },
         initialize_addDependents = function(depList) {
             for(i in seq_along(depList)) {
                 dependents[[i]] <<- dependentClass(depList[[i]], names(depList)[i])
             }
-            names(dependents) <<- cc_makeDDistributionName(names(depList))
+            names(dependents) <<- names(depList)
             dependentDistNames <<- names(dependents)
         },
         
@@ -405,7 +406,7 @@ dependentClass <- setRefClass(
     methods = list(
         initialize = function(depInfoList, depDistName) {
         	contributionExprs <<- list()
-            distribution <<- cc_makeDDistributionName(depDistName)
+            distribution <<- depDistName
             param <<- depInfoList$param
             link <<- depInfoList$link
             initialize_contributionExprs(depInfoList)
@@ -443,7 +444,7 @@ posteriorClass <- setRefClass(
         initialize = function(posteriorText) {
             posteriorExpr <<- parse(text = posteriorText)[[1]]
             rDistribution <<- cc_makeRDistributionName(as.character(posteriorExpr[[1]]))
-            dDistribution <<- cc_makeDDistributionName(as.character(posteriorExpr[[1]]))
+            dDistribution <<- as.character(posteriorExpr[[1]])
             argumentExprs <<- as.list(posteriorExpr)[-1]
             argumentNames <<- names(argumentExprs)
             rCallExpr <<- as.call(c(as.name(rDistribution), 1, argumentExprs))
@@ -462,10 +463,9 @@ posteriorClass <- setRefClass(
 ##############################################################################################
 
 
-cc_makeSamplerTypeName       <- function(distName)     return(paste0('conjugate_', distName))    ## 'norm' --> 'conjugate_norm'
-cc_makeConjugateSamplerName  <- function(samplerType)  return(paste0('sampler_', samplerType))   ## 'conjugate_norm' --> 'sampler_conjugate_norm'
-cc_makeDDistributionName     <- function(distName)     return(paste0('d', distName))             ## 'norm' --> 'dnorm'
-cc_makeRDistributionName     <- function(distName)     return(paste0('r', distName))             ## 'norm' --> 'rnorm'
+cc_makeSamplerTypeName       <- function(distName)     return(paste0('conjugate_', distName))        ## 'dnorm' --> 'conjugate_dnorm'
+cc_makeConjugateSamplerName  <- function(samplerType)  return(paste0('sampler_', samplerType))       ## 'conjugate_dnorm' --> 'sampler_conjugate_dnorm'
+cc_makeRDistributionName     <- function(distName)     return(paste0('r', substring(distName, 2)))   ## 'dnorm' --> 'rnorm'
 
 ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
 cc_getNodeDistributionText <- function(model, node)     return(model$getNodeInfo()[[node]]$getDistribution())
