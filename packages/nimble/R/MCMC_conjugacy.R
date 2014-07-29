@@ -553,6 +553,11 @@ cc_expandDetermNodesInExpr <- function(expr, model) {
     stop(paste0('something went wrong processing: ', deparse(expr)))
 }
 
+## creates an expression of the form [cc_userArray](dim1=, dim2=, element11, element12, etc...) to represent vectors / arrays defined in terms of other stoch/determ nodes
+cc_createUserArrayExpr <- function(expr, model) {
+    
+}
+
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
     if(!(link %in% c('identity', 'multiplicative', 'linear')))    stop(paste0('unknown link: \'', link, '\''))
