@@ -1,6 +1,6 @@
 source("/Users/Cliff/Desktop/myLoadAllCode.R")#
 #
-t = 500#
+t = 2#
 a = - 0.5#
 b = -1#
 x = rnorm(1, 0, 1)#
@@ -22,14 +22,43 @@ myModelCode <- modelCode({#
 	b ~ dnorm(0, tau = 0.1)#
 })#
 #
+myModel <- nimbleModel(myModelCode, data = list(y = y), constants = list(t = t)) #
+mcmcSpec <- MCMCspec(myModel)#
+mcmc <- buildMCMC(mcmcSpec)#
 Rprof(tmp1 <- tempfile())#
+cm <- compileNimble(myModel, mcmc)#
+Rprof()#
+run2Sum <- summaryRprof(tmp1)#
+unlink(tmp1)
+source("/Users/Cliff/Desktop/myLoadAllCode.R")#
+#
+t = 2#
+a = - 0.5#
+b = -1#
+x = rnorm(1, 0, 1)#
+y = x + rnorm(1, 0, 1)#
+for(i in 2:t){#
+	x[i] = x[i-1] * a + b + rnorm(1, 0, 1)#
+	y[i] = x[i]^2 + rnorm(1, 0, 1)#
+}#
+#
+# Super simple model with parameters a and b#
+myModelCode <- modelCode({#
+	x[1] ~ dnorm(0, sd = 1)#
+	y[1] ~ dnorm(x[1], sd = 1)#
+	for(i in 2:t){#
+		x[i] ~ dnorm(x[i-1] * a + b, sd = 1)#
+		y[i] ~ dnorm(x[i]^2, sd = 1)		#I think this will make a and b multi modal?#
+	}#
+	a ~ dunif(-1, 1)#
+	b ~ dnorm(0, tau = 0.1)#
+})#
 #
 myModel <- nimbleModel(myModelCode, data = list(y = y), constants = list(t = t)) #
 mcmcSpec <- MCMCspec(myModel)#
-rmcmc <- buildMCMC(mcmcSpec)#
-cm <- compileNimble(myModel)#
-cmcmc <- compileNimble(rmcmc, project = myModel)#
+mcmc <- buildMCMC(mcmcSpec)#
+Rprof(tmp1 <- tempfile())#
+cm <- compileNimble(myModel, mcmc)#
 Rprof()#
-run1Sum <- summaryRprof(tmp1)#
+run2Sum <- summaryRprof(tmp1)#
 unlink(tmp1)
-run1Sum

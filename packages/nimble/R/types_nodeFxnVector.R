@@ -14,7 +14,7 @@ nodeFunctionVector <- setRefClass(
             nodeNames <- model$expandNodeNames(nodeNames, env)  # expands nodeNames to fully indexed form, including expanding variables using the symbolTable, and only keep ones in the model
             nl_checkNodeNamesInModel(model, nodeNames)           # checks that all nodeNames are present in model
             nodeNames <- model$topologicallySortNodes(nodeNames)    # topological sort of nodeNames
-            nodeFunctionNames <- unique(model$getMaps()$nodeName_2_nodeFunctionName[nodeNames])
+            nodeFunctionNames <- unique(model$getMaps('nodeName_2_nodeFunctionName')[nodeNames])
             model <<- model
             nodes <<- nodeFunctionNames
          ##   nodeFunctionRefClassObjects <<- lapply(model$nodeFunctions[nodeFunctionNames], nf_getRefClassObject)

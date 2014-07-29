@@ -532,11 +532,11 @@ cc_expandDetermNodesInExpr <- function(expr, model) {
     if(is.numeric(expr))     return(expr)     # return numeric
     if(is.name(expr)    ||    (is.call(expr) && (expr[[1]] == '['))) {    # expr is a name, or an indexed name
         exprText <- deparse(expr)
-        if(!any(exprText == model$getMaps()$nodeNames))          stop('name found which isn\'t a model node')
-        if( any(exprText == model$getMaps()$nodeNamesStoch))        return(expr)      # return stochastic nodes
-        if( any(exprText == model$getMaps()$nodeNamesLHSinferred))  return(expr)      # return LHS nodes inferred from a multivariate stochastic distribution
-        if( any(exprText == model$getMaps()$nodeNamesRHSonly))   stop('something wrong with model; possible failure to specify constants = ..., for a RHS-only node')
-        if(!any(exprText == model$getMaps()$nodeNamesDeterm))    stop('something went wrong, possibly bad model specification')
+        if(!any(exprText == model$getMaps('nodeNames') ) )          stop('name found which isn\'t a model node')
+        if( any(exprText == model$getMaps('nodeNamesStoch') ) )        return(expr)      # return stochastic nodes
+        if( any(exprText == model$getMaps('nodeNamesLHSinferred') ) )  return(expr)      # return LHS nodes inferred from a multivariate stochastic distribution
+        if( any(exprText == model$getMaps('nodeNamesRHSonly') ) )   stop('something wrong with model; possible failure to specify constants = ..., for a RHS-only node')
+        if(!any(exprText == model$getMaps('nodeNamesDeterm') ) )    stop('something went wrong, possibly bad model specification')
         return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))   # precess and return the value expression for this deterministic node
     }
     if(is.call(expr)) {

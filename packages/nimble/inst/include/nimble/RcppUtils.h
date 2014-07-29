@@ -61,6 +61,9 @@ extern "C" {
   SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices);
 
   SEXP fastMatrixInsert(SEXP matrixInto, SEXP matrix, SEXP rowStart, SEXP colStart);
+  SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd);
+  SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims);
+  SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims);
 
   SEXP printMVElement(SEXP Sextptr, SEXP Sindex);
   SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
@@ -273,6 +276,10 @@ SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
   return(Sans);
 }
 
+
+
+void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
+void row2NimArr(SEXP &matrix, NimArrBase<int> &nimPtr, int startPoint, int len, int nRows);
 
 template <class T>
 void cNimArr_2_NimArr(NimArrBase<T> &nimFrom, NimArrBase<T> &nimTo);

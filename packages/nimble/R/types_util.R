@@ -217,6 +217,61 @@ modelValuesElement2Matrix <- function(mv, varName){
 	matrix( as.numeric(unlist(mv[[varName]]) ), ncol = prod(mv$sizes[[varName]]), byrow = TRUE )
 }
 
+
+Cmatrix2mvOneVar <- function(mat, mv, varName, k){
+	ptr <- mv$componentExtptrs[[varName]]
+	if(inherits(ptr, 'externalptr'))
+		.Call('matrix2VecNimArr', ptr, mat, rowStart = as.integer(1), rowEnd = k )
+	else
+		stop('varName not found in modelValues')
+}
+
+Rmatrix2mvOneVar <- function(mat, mv, varName, k){
+	if( mv$symTab$symbols[[varName]][['type']] == 'double'){
+		storage.mode(mat) <- 'double'
+		len <- ncol(mat)
+		.Call('matrix2ListDouble', mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
+	}
+	if( mv$symTab$symbols[[varName]][['type']] == 'int'){
+		storage.mode(mat) <- 'integer'
+		len <- ncol(mat)
+		.Call('matrix2ListInt', mat, mv[[varName]], listStartIndex = as.integer(1), RnRows = k, Rlength = as.integer(mv$sizes[[varName]]) )
+	}
+}
+
+matrix2mv <- function(mat, mv){
+	k <- nrow(mat)
+	if(mv$getSize() < k)
+		mv$resize(k)
+	mvVarNames <- mv$varNames
+	mvSizes <- mv$sizes
+	colNames <- colnames(mat)
+	colNames <- removeIndexing(colNames)
+	uniqueColNames <- unique(colNames)
+	if(inherits(mv, 'CmodelValues')	){
+		for(vN in uniqueColNames){
+			totVals <- prod(mvSizes[[vN]])
+			varInds <- colNames == vN
+			if(totVals != sum(varInds) )
+				stop('matrix2mv halted because dimensions of variables do not match')
+			subMatrix <- as.matrix(mat[, varInds])
+			Cmatrix2mvOneVar(subMatrix, mv, vN, k)
+		}
+	}
+	else if(inherits(mv, 'modelValuesBaseClass') ){
+		for(vN in uniqueColNames){
+			totVals <- prod(mvSizes[[vN]])
+			varInds <- colNames == vN
+			if(totVals != sum(varInds) )
+				stop('matrix2mv halted because dimensions of variables do not match')
+			subMatrix <- as.matrix(mat[, varInds])
+			Rmatrix2mvOneVar(subMatrix, mv, vN, k)
+		}
+	}
+	else
+		stop('argument mv is neither a CmodelValues or RmodelValues object')
+}
+
 #modelValues2Matrix <-function(mv, varNames){
 #	if(missing(varNames))
 #			varNames <- mv$varNames

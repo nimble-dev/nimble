@@ -40,7 +40,10 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   setGraph = function(value) graph <<- value,
                                   getModelDef = function() modelDef,
                                   setModelDef = function(value) modelDef <<- value,
-                                  getMaps = function() modelDef$maps,
+                                  getMaps = function(mapName, all = FALSE){
+                                  	if(all == TRUE)		return(modelDef$maps)
+                                  	return(modelDef$maps[[mapName]])
+                                   },
                                   getNodeInfo = function() modelDef$nodeInfo,
                                   
                                   
@@ -98,7 +101,7 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                   
                                   expandNodeNames = function(nodeNames, env = parent.frame()) {
                                       nodeNames <- nl_expandNodeNames(nodeNames, getSymbolTable(), env)
-                                      nodeNames <- intersect(nodeNames, getMaps()$nodeNames)
+                                      nodeNames <- intersect(nodeNames, getMaps('nodeNames'))
                                       return(nodeNames)
                                   },
                                   
@@ -112,9 +115,9 @@ nodeNames: A character vector of node names, which is to be topologically sorted
 
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
 '
-                                      nodeIDs <- getMaps()$nodeName_2_graphID[nodeNames]
+                                      nodeIDs <- getMaps('nodeName_2_graphID')[nodeNames]
                                       nodeIDs <- sort(nodeIDs)
-                                      nodeNames <- getMaps()$graphID_2_nodeName[nodeIDs]
+                                      nodeNames <- getMaps('graphID_2_nodeName')[nodeIDs]
                                       return(nodeNames)
                                   },
                                   
@@ -236,14 +239,14 @@ downstream: Logical argument specifying whether the downward search through the 
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-                                      nodeIDs <- getMaps()$nodeName_2_graphID[expandNodeNames(nodes)]
-                                      omitIDs <- getMaps()$nodeName_2_graphID[expandNodeNames(omit)]
-                                      dependentIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
-                                      depNodes <- unique(getMaps()$graphID_2_originNodeName[dependentIDs])
-                                      if(!includeRHSonly)   depNodes <- intersect(depNodes, getMaps()$nodeNamesLHSall)
-                                      if(determOnly)        depNodes <- intersect(depNodes, getMaps()$nodeNamesDeterm)
-                                      if(stochOnly)         depNodes <- intersect(depNodes, getMaps()$nodeNamesStoch)
-                                      if(!self)             depNodes <- setdiff(depNodes, getMaps()$nodeName_2_originNodeName[expandNodeNames(nodes)])
+                                      nodeIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(nodes)]
+                                      omitIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(omit)]
+                                      dependentIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+                                      depNodes <- unique(getMaps('graphID_2_originNodeName')[dependentIDs])
+                                      if(!includeRHSonly)   depNodes <- intersect(depNodes, getMaps('nodeNamesLHSall') )
+                                      if(determOnly)        depNodes <- intersect(depNodes, getMaps('nodeNamesDeterm') )
+                                      if(stochOnly)         depNodes <- intersect(depNodes, getMaps('nodeNamesStoch') )
+                                      if(!self)             depNodes <- setdiff(depNodes, getMaps('nodeName_2_originNodeName')[expandNodeNames(nodes)])
                                       if(!includeData)      depNodes <- depNodes[!isData(depNodes)]
                                       if(dataOnly)          depNodes <- depNodes[isData(depNodes)]
                                       return(depNodes)

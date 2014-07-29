@@ -64,7 +64,7 @@ calculate <- function(model, nodes = NA)
 {
 	if(inherits(model, 'modelBaseClass') ){
 		if(is.na(nodes[1]) ) 
-			nodes <- model$getMaps()$nodeNamesLHSall
+			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
 		return(rCalcNodes(nfv$model, nfv$nodes))
 	}	
@@ -83,7 +83,7 @@ getLogProb <- function(model, nodes = NA)
 {
 	if( inherits(model, "modelBaseClass") ){		
 		if(is.na(nodes[1]) ) 
-                    nodes <- model$getMaps()$nodeNamesLHSall
+                    nodes <- model$getMaps('nodeNamesLHSall')
 
 		nfv <- nodeFunctionVector(model, nodes)
     	return(rGetLogProbsNodes(nfv$model, nfv$nodes))
@@ -102,7 +102,7 @@ simulate <- function(model, nodes = NA, includeData = FALSE)
 {
 	if( inherits(model, "modelBaseClass") ) {
 		if(is.na(nodes[1]) ) 
-			nodes <- model$getMaps()$nodeNamesLHSall
+			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
 		if(!includeData) {
 			nodes = nfv$nodes

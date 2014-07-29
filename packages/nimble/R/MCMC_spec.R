@@ -138,7 +138,7 @@ print: Boolean argument, specifying whether to print the ordered list of default
                 discrete <- model$getNodeInfo()[[node]]$isDiscrete()
                 
                 ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
-                if(node %in% model$getMaps()$nodeNamesEnd) {
+                if(node %in% model$getMaps('nodeNamesEnd') ) {
                     if(length(model$getDependencies(node, self = FALSE, stochOnly = TRUE)) != 0)   stop('something went wrong')   ####  TEMPORARY CHECK OF maps$nodeNamesEnd
                     addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
                 
