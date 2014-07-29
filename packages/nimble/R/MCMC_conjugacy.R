@@ -527,17 +527,25 @@ cc_getNodeValueExpr <- function(model, node) {
     return(model$getNodeInfo()[[node]]$getValueExpr())
 }
 
+## special name used to represent vectors / arrays defined in terms of other stoch/determ nodes
+cc_userArray <- quote(`_array`)
+
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
 cc_expandDetermNodesInExpr <- function(expr, model) {
     if(is.numeric(expr))     return(expr)     # return numeric
     if(is.name(expr)    ||    (is.call(expr) && (expr[[1]] == '['))) {    # expr is a name, or an indexed name
         exprText <- deparse(expr)
-        if(!any(exprText == model$getMaps('nodeNames') ) )          stop(paste0('name found which isn\'t a model node: \'', exprText, '\''))
-        if( any(exprText == model$getMaps('nodeNamesStoch') ) )        return(expr)      # return stochastic nodes
-        if( any(exprText == model$getMaps('nodeNamesLHSinferred') ) )  return(expr)      # return LHS nodes inferred from a multivariate stochastic distribution
-        if( any(exprText == model$getMaps('nodeNamesRHSonly') ) )   stop('something wrong with model; possible failure to specify constants = ..., for a RHS-only node')
-        if(!any(exprText == model$getMaps('nodeNamesDeterm') ) )    stop('something went wrong, possibly bad model specification')
-        return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))   # precess and return the value expression for this deterministic node
+        if(any(exprText == model$getMaps('nodeNamesStoch')))        return(expr)      # return stochastic nodes
+        if(any(exprText == model$getMaps('nodeNamesLHSinferred')))  return(expr)      # return LHS nodes inferred from a multivariate stochastic distribution
+        if(any(exprText == model$getMaps('nodeNamesDeterm')))
+            return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))   # precess and return the value expression for this deterministic node
+        if(any(exprText == model$getMaps('nodeNamesRHSonly')))      stop('something wrong with model; possible failure to specify constants = ..., for a RHS-only node')
+        if(is.vectorized(exprText)) {
+            newExpr <- cc_createUserArrayExpr(expr, model)
+            for(i in seq_along(newExpr)[-1])    newExpr[[i]] <- cc_expandDetermNodesInExpr(newExpr[[i]], model)
+            return(newExpr)
+        }
+        stop(paste0('something went wrong, possibly bad model specification, processing expression: \'', exprText, '\''))
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])    expr[[i]] <- cc_expandDetermNodesInExpr(expr[[i]], model)
