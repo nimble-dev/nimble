@@ -2,3 +2,7 @@
 *.tar.gz
 *.zip
 *.tgz
+
+# don't include object files
+*.o
+*.so
