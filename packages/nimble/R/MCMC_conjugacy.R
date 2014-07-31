@@ -591,7 +591,7 @@ cc_expandDetermNodesInExpr <- function(expr, model) {
     stop(paste0('something went wrong processing: ', deparse(expr)))
 }
 
-## creates an expression of the form [cc_userArray](dim1=, dim2=, element11, element12, etc...) to represent vectors / arrays defined in terms of other stoch/determ nodes
+## creates an expression of the form [cc_structureExprName](element11, element12, etc...) to represent vectors / arrays defined in terms of other stoch/determ nodes
 cc_createStructureExpr <- function(expr) {
     expandedNodeNamesVector <- nl_expandNodeIndexExpr(expr)
     expandedNodeExprList <- lapply(expandedNodeNamesVector, function(x) parse(text=x)[[1]])
