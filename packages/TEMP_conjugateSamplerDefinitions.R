@@ -28,14 +28,14 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dbern_values, double(1, length(dependents_dbern_nodeFunctions)))
     declare(dependents_dbern_prob, double(1, length(dependents_dbern_nodeFunctions)))
     for (i in seq_along(dependents_dbern_nodeFunctions)) {
-        dependents_dbern_values[i] <- mfMethod(dependents_dbern_nodeFunctions[[i]], 'get_value')()
+        dependents_dbern_values[i] <- nfMethod(dependents_dbern_nodeFunctions[[i]], 'get_value')()
         dependents_dbern_prob[i] <- nfMethod(dependents_dbern_nodeFunctions[[i]], 'get_prob')()
     }
     declare(dependents_dbin_values, double(1, length(dependents_dbin_nodeFunctions)))
     declare(dependents_dbin_prob, double(1, length(dependents_dbin_nodeFunctions)))
     declare(dependents_dbin_size, double(1, length(dependents_dbin_nodeFunctions)))
     for (i in seq_along(dependents_dbin_nodeFunctions)) {
-        dependents_dbin_values[i] <- mfMethod(dependents_dbin_nodeFunctions[[i]], 'get_value')()
+        dependents_dbin_values[i] <- nfMethod(dependents_dbin_nodeFunctions[[i]], 'get_value')()
         dependents_dbin_prob[i] <- nfMethod(dependents_dbin_nodeFunctions[[i]], 'get_prob')()
         dependents_dbin_size[i] <- nfMethod(dependents_dbin_nodeFunctions[[i]], 'get_size')()
     }
@@ -43,7 +43,7 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dnegbin_prob, double(1, length(dependents_dnegbin_nodeFunctions)))
     declare(dependents_dnegbin_size, double(1, length(dependents_dnegbin_nodeFunctions)))
     for (i in seq_along(dependents_dnegbin_nodeFunctions)) {
-        dependents_dnegbin_values[i] <- mfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_value')()
+        dependents_dnegbin_values[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_value')()
         dependents_dnegbin_prob[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_prob')()
         dependents_dnegbin_size[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_size')()
     }
@@ -98,14 +98,14 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dbern_values, double(1, length(dependents_dbern_nodeFunctions)))
     declare(dependents_dbern_prob, double(1, length(dependents_dbern_nodeFunctions)))
     for (i in seq_along(dependents_dbern_nodeFunctions)) {
-        dependents_dbern_values[i] <- mfMethod(dependents_dbern_nodeFunctions[[i]], 'get_value')()
+        dependents_dbern_values[i] <- nfMethod(dependents_dbern_nodeFunctions[[i]], 'get_value')()
         dependents_dbern_prob[i] <- nfMethod(dependents_dbern_nodeFunctions[[i]], 'get_prob')()
     }
     declare(dependents_dbin_values, double(1, length(dependents_dbin_nodeFunctions)))
     declare(dependents_dbin_prob, double(1, length(dependents_dbin_nodeFunctions)))
     declare(dependents_dbin_size, double(1, length(dependents_dbin_nodeFunctions)))
     for (i in seq_along(dependents_dbin_nodeFunctions)) {
-        dependents_dbin_values[i] <- mfMethod(dependents_dbin_nodeFunctions[[i]], 'get_value')()
+        dependents_dbin_values[i] <- nfMethod(dependents_dbin_nodeFunctions[[i]], 'get_value')()
         dependents_dbin_prob[i] <- nfMethod(dependents_dbin_nodeFunctions[[i]], 'get_prob')()
         dependents_dbin_size[i] <- nfMethod(dependents_dbin_nodeFunctions[[i]], 'get_size')()
     }
@@ -113,7 +113,7 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dnegbin_prob, double(1, length(dependents_dnegbin_nodeFunctions)))
     declare(dependents_dnegbin_size, double(1, length(dependents_dnegbin_nodeFunctions)))
     for (i in seq_along(dependents_dnegbin_nodeFunctions)) {
-        dependents_dnegbin_values[i] <- mfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_value')()
+        dependents_dnegbin_values[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_value')()
         dependents_dnegbin_prob[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_prob')()
         dependents_dnegbin_size[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_size')()
     }
@@ -197,14 +197,14 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dpois_values, double(1, length(dependents_dpois_nodeFunctions)))
     declare(dependents_dpois_lambda, double(1, length(dependents_dpois_nodeFunctions)))
     for (i in seq_along(dependents_dpois_nodeFunctions)) {
-        dependents_dpois_values[i] <- mfMethod(dependents_dpois_nodeFunctions[[i]], 'get_value')()
+        dependents_dpois_values[i] <- nfMethod(dependents_dpois_nodeFunctions[[i]], 'get_value')()
         dependents_dpois_lambda[i] <- nfMethod(dependents_dpois_nodeFunctions[[i]], 'get_lambda')()
     }
     declare(dependents_dnorm_values, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_tau, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_mean, double(1, length(dependents_dnorm_nodeFunctions)))
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        dependents_dnorm_values[i] <- mfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dnorm_values[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dnorm_tau[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_tau')()
         dependents_dnorm_mean[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_mean')()
     }
@@ -212,7 +212,7 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dlnorm_tau, double(1, length(dependents_dlnorm_nodeFunctions)))
     declare(dependents_dlnorm_meanlog, double(1, length(dependents_dlnorm_nodeFunctions)))
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        dependents_dlnorm_values[i] <- mfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dlnorm_values[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dlnorm_tau[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_tau')()
         dependents_dlnorm_meanlog[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_meanlog')()
     }
@@ -220,14 +220,14 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dgamma_rate, double(1, length(dependents_dgamma_nodeFunctions)))
     declare(dependents_dgamma_shape, double(1, length(dependents_dgamma_nodeFunctions)))
     for (i in seq_along(dependents_dgamma_nodeFunctions)) {
-        dependents_dgamma_values[i] <- mfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_value')()
+        dependents_dgamma_values[i] <- nfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_value')()
         dependents_dgamma_rate[i] <- nfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_rate')()
         dependents_dgamma_shape[i] <- nfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_shape')()
     }
     declare(dependents_dexp_values, double(1, length(dependents_dexp_nodeFunctions)))
     declare(dependents_dexp_rate, double(1, length(dependents_dexp_nodeFunctions)))
     for (i in seq_along(dependents_dexp_nodeFunctions)) {
-        dependents_dexp_values[i] <- mfMethod(dependents_dexp_nodeFunctions[[i]], 'get_value')()
+        dependents_dexp_values[i] <- nfMethod(dependents_dexp_nodeFunctions[[i]], 'get_value')()
         dependents_dexp_rate[i] <- nfMethod(dependents_dexp_nodeFunctions[[i]], 'get_rate')()
     }
     declare(dependents_dpois_offset, double(1, length(dependents_dpois_nodeFunctions)))
@@ -336,14 +336,14 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dpois_values, double(1, length(dependents_dpois_nodeFunctions)))
     declare(dependents_dpois_lambda, double(1, length(dependents_dpois_nodeFunctions)))
     for (i in seq_along(dependents_dpois_nodeFunctions)) {
-        dependents_dpois_values[i] <- mfMethod(dependents_dpois_nodeFunctions[[i]], 'get_value')()
+        dependents_dpois_values[i] <- nfMethod(dependents_dpois_nodeFunctions[[i]], 'get_value')()
         dependents_dpois_lambda[i] <- nfMethod(dependents_dpois_nodeFunctions[[i]], 'get_lambda')()
     }
     declare(dependents_dnorm_values, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_tau, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_mean, double(1, length(dependents_dnorm_nodeFunctions)))
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        dependents_dnorm_values[i] <- mfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dnorm_values[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dnorm_tau[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_tau')()
         dependents_dnorm_mean[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_mean')()
     }
@@ -351,7 +351,7 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dlnorm_tau, double(1, length(dependents_dlnorm_nodeFunctions)))
     declare(dependents_dlnorm_meanlog, double(1, length(dependents_dlnorm_nodeFunctions)))
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        dependents_dlnorm_values[i] <- mfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dlnorm_values[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dlnorm_tau[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_tau')()
         dependents_dlnorm_meanlog[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_meanlog')()
     }
@@ -359,14 +359,14 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dgamma_rate, double(1, length(dependents_dgamma_nodeFunctions)))
     declare(dependents_dgamma_shape, double(1, length(dependents_dgamma_nodeFunctions)))
     for (i in seq_along(dependents_dgamma_nodeFunctions)) {
-        dependents_dgamma_values[i] <- mfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_value')()
+        dependents_dgamma_values[i] <- nfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_value')()
         dependents_dgamma_rate[i] <- nfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_rate')()
         dependents_dgamma_shape[i] <- nfMethod(dependents_dgamma_nodeFunctions[[i]], 'get_shape')()
     }
     declare(dependents_dexp_values, double(1, length(dependents_dexp_nodeFunctions)))
     declare(dependents_dexp_rate, double(1, length(dependents_dexp_nodeFunctions)))
     for (i in seq_along(dependents_dexp_nodeFunctions)) {
-        dependents_dexp_values[i] <- mfMethod(dependents_dexp_nodeFunctions[[i]], 'get_value')()
+        dependents_dexp_values[i] <- nfMethod(dependents_dexp_nodeFunctions[[i]], 'get_value')()
         dependents_dexp_rate[i] <- nfMethod(dependents_dexp_nodeFunctions[[i]], 'get_rate')()
     }
     declare(dependents_dpois_offset, double(1, length(dependents_dpois_nodeFunctions)))
@@ -488,7 +488,7 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dnorm_mean, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_tau, double(1, length(dependents_dnorm_nodeFunctions)))
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        dependents_dnorm_values[i] <- mfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dnorm_values[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dnorm_mean[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_mean')()
         dependents_dnorm_tau[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_tau')()
     }
@@ -496,7 +496,7 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dlnorm_meanlog, double(1, length(dependents_dlnorm_nodeFunctions)))
     declare(dependents_dlnorm_tau, double(1, length(dependents_dlnorm_nodeFunctions)))
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        dependents_dlnorm_values[i] <- mfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dlnorm_values[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dlnorm_meanlog[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_meanlog')()
         dependents_dlnorm_tau[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_tau')()
     }
@@ -556,7 +556,7 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dnorm_mean, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_tau, double(1, length(dependents_dnorm_nodeFunctions)))
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        dependents_dnorm_values[i] <- mfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dnorm_values[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dnorm_mean[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_mean')()
         dependents_dnorm_tau[i] <- nfMethod(dependents_dnorm_nodeFunctions[[i]], 'get_tau')()
     }
@@ -564,7 +564,7 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
     declare(dependents_dlnorm_meanlog, double(1, length(dependents_dlnorm_nodeFunctions)))
     declare(dependents_dlnorm_tau, double(1, length(dependents_dlnorm_nodeFunctions)))
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        dependents_dlnorm_values[i] <- mfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dlnorm_values[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dlnorm_meanlog[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_meanlog')()
         dependents_dlnorm_tau[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_tau')()
     }
@@ -635,7 +635,7 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dmnorm_mean, double(2, c(length(dependents_dmnorm_nodeFunctions), d)))
     declare(dependents_dmnorm_prec, double(3, c(length(dependents_dmnorm_nodeFunctions), d, d)))
     for (i in seq_along(dependents_dmnorm_nodeFunctions)) {
-        dependents_dmnorm_values[i, 1:d] <- mfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dmnorm_values[i, 1:d] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dmnorm_mean[i, 1:d] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_mean')()
         dependents_dmnorm_prec[i, 1:d, 1:d] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_prec')()
     }
@@ -685,7 +685,7 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
     declare(dependents_dmnorm_mean, double(2, c(length(dependents_dmnorm_nodeFunctions), d)))
     declare(dependents_dmnorm_prec, double(3, c(length(dependents_dmnorm_nodeFunctions), d, d)))
     for (i in seq_along(dependents_dmnorm_nodeFunctions)) {
-        dependents_dmnorm_values[i, 1:d] <- mfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_value')()
+        dependents_dmnorm_values[i, 1:d] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_value')()
         dependents_dmnorm_mean[i, 1:d] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_mean')()
         dependents_dmnorm_prec[i, 1:d, 1:d] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_prec')()
     }
