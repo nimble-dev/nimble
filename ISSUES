@@ -1,6 +1,48 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (7/31/14) simulate(model, 'multivariateNodeName[1:10]') fails, because the multivariateNodeName is *incorrectly* expanded, none of which are names of model nodes
+
+* (7/24/14) Using 'equals(a,b)' in a model definition, when both a, b are constants, (correctly) attempts to evaluate 'equals(a,b)' at compile-time, but this errors-out because 'equals' refers to function in testthat package, rather than the intended 'nimbleEquals()' function.
+
+* (7/10/14) Revisit model-querying functions: e.g. getParents, get size infor from a model (extract from varInfo$maxes), others?
+
+* (7/10/14) Revisit linear algebra functionality, e.g. svd, eigen, others?
+
+* (7/10/14) Revisit use of `$` notation in the DSL.  This would break in normal R execution unless it is intercepted during nimbleFunction definition.
+
+* (7/10/14) Make simulate() default to including deterministic dependencies
+
+* (7/10/14) Multivariate default samplers. Multivariate conjugate samplers.
+
+* (7/10/14) Revisit efficiency of processing of node sets, especially arising from newSetupCode.
+
+* (7/10/14) Research CppAD/TMB/STAN code generation for automatic differentiation.
+
+* (7/10/14) More profiling
+
+* (7/10/14) Make run-time checking of Gibbs (conjugate) validity optional.
+
+* (7/10/14) Possible bug from state-space model case: incorrect conjugacy determination.
+
+* (7/10/14) Run some proper timing comparisons with MCMC suite, with run-time conjugate validity checking disabled.
+
+* (7/10/14) 1D Laplace and AGQ
+
+* (7/10/14) Generate "q" and "p" functions
+
+* (7/10/14) Make multiple parameterizations of distributions and default parameters available from the DSL.  This could be a time to create a general way of handling R-like argument processing.
+
+* (7/10/14) Fill in missing distributions
+
+* (7/10/14) Censoring: dinterval, I(), T(), etc.
+
+* (7/10/14) Fix gamma / lgamma issue on linux.
+
+* (7/10/14) Make the inverse of as.matrix for a modelValues
+
+* (7/10/14) Fix length(model[[var]])
+
 * (6/27/14) possible error when compiling nf2 checks in functinalityChecks.R in manual directory
 
 * (6/27/14) using 'step' in data block of bugs model fails because we now use nimbleStep, so not backwards compatible... minor issue we may want to ignore so as not to mask R's step
