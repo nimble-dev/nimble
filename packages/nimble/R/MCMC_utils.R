@@ -203,18 +203,19 @@ mcmcNodeInit <- nimbleFunction(
 )
 
 
-calcCoeffAndOffset <- nimbleFunction(
-    setup = TRUE,
-    run = function(x1=double(), x2=double(), y1=double(), y2=double()) {
-        coeff <- (y2-y1) / (x2-x1)
-        offset <- y1 - coeff*x1
-        declare(coeffAndOffset, double(1,2))
-        coeffAndOffset[1] <- coeff
-        coeffAndOffset[2] <- offset
-        returnType(double(1))
-        return(coeffAndOffset)
-    }, where = getLoadingNamespace()
-)
+## possibly obsolete, using the new (0, current) method for calculaating coefficients and offsets  -DT
+# calcCoeffAndOffset <- nimbleFunction(
+#     setup = TRUE,
+#     run = function(x1=double(), x2=double(), y1=double(), y2=double()) {
+#         coeff <- (y2-y1) / (x2-x1)
+#         offset <- y1 - coeff*x1
+#         declare(coeffAndOffset, double(1,2))
+#         coeffAndOffset[1] <- coeff
+#         coeffAndOffset[2] <- offset
+#         returnType(double(1))
+#         return(coeffAndOffset)
+#     }, where = getLoadingNamespace()
+# )
 
 
 codeBlockClass <- setRefClass(
