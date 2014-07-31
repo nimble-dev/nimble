@@ -61,15 +61,18 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
                  STOCHSIM  = ndf_createStochSimulate(RHS),
                  STOCHCALC = ndf_createStochCalculate(LHS, RHS))))
         if(nimbleOptions$compileAltParamFunctions) {
-            ## add accessor functions for stochastic node distribution parameters
             distName <- as.character(RHS[[1]])
+            ## add accessor function for node value; used in multivariate conjugate sampler functions
+            typeList <- distributions[[distName]]$types[['value']]
+            methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, typeList$type, typeList$nDim)
+            ## add accessor functions for stochastic node distribution parameters
             for(param in names(RHS[-1])) {
-                typeList <- distributions[[distName]]$typesForVirtualNodeFunction[[param]]
+                typeList <- distributions[[distName]]$types[[param]]
                 methodList[[paste0('get_',param)]] <- ndf_generateGetParamFunction(RHS[[param]], typeList$type, typeList$nDim)
             }
             for(i in seq_along(altParams)) {
                 altParamName <- names(altParams)[i]
-                typeList <- distributions[[distName]]$typesForVirtualNodeFunction[[altParamName]]
+                typeList <- distributions[[distName]]$types[[altParamName]]
                 methodList[[paste0('get_',altParamName)]] <- ndf_generateGetParamFunction(altParams[[altParamName]], typeList$type, typeList$nDim)
             }
         }
@@ -143,7 +146,7 @@ ndf_createVirtualNodeFunctionDefinitionsList <- function() {
     defsList <- list()
     defsList$node_determ <- ndf_createVirtualNodeFunctionDefinition()
     for(distName in distributions$namesVector) {
-        defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(distributions[[distName]]$typesForVirtualNodeFunction)
+        defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(distributions[[distName]]$types)
     }
     return(defsList)
 }

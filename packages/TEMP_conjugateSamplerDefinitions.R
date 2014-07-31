@@ -25,8 +25,11 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
     origValue <- model[[targetNode]]
     prior_shape1 <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape1')()
     prior_shape2 <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape2')()
+    declare(dependents_dbern_values, double(1, length(dependents_dbern_nodeFunctions)))
     dependents_dbern_values <- values(model, dependents_dbern_nodeNames)
+    declare(dependents_dbin_values, double(1, length(dependents_dbin_nodeFunctions)))
     dependents_dbin_values <- values(model, dependents_dbin_nodeNames)
+    declare(dependents_dnegbin_values, double(1, length(dependents_dnegbin_nodeFunctions)))
     dependents_dnegbin_values <- values(model, dependents_dnegbin_nodeNames)
     declare(dependents_dbern_prob, double(1, length(dependents_dbern_nodeFunctions)))
     for (i in seq_along(dependents_dbern_nodeFunctions)) {
@@ -72,8 +75,11 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
 }, methods = list(getPosteriorLogDensity = function() {
     prior_shape1 <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape1')()
     prior_shape2 <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape2')()
+    declare(dependents_dbern_values, double(1, length(dependents_dbern_nodeFunctions)))
     dependents_dbern_values <- values(model, dependents_dbern_nodeNames)
+    declare(dependents_dbin_values, double(1, length(dependents_dbin_nodeFunctions)))
     dependents_dbin_values <- values(model, dependents_dbin_nodeNames)
+    declare(dependents_dnegbin_values, double(1, length(dependents_dnegbin_nodeFunctions)))
     dependents_dnegbin_values <- values(model, dependents_dnegbin_nodeNames)
     declare(dependents_dbern_prob, double(1, length(dependents_dbern_nodeFunctions)))
     for (i in seq_along(dependents_dbern_nodeFunctions)) {
@@ -151,10 +157,15 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     origValue <- model[[targetNode]]
     prior_shape <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape')()
     prior_rate <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_rate')()
+    declare(dependents_dpois_values, double(1, length(dependents_dpois_nodeFunctions)))
     dependents_dpois_values <- values(model, dependents_dpois_nodeNames)
+    declare(dependents_dnorm_values, double(1, length(dependents_dnorm_nodeFunctions)))
     dependents_dnorm_values <- values(model, dependents_dnorm_nodeNames)
+    declare(dependents_dlnorm_values, double(1, length(dependents_dlnorm_nodeFunctions)))
     dependents_dlnorm_values <- values(model, dependents_dlnorm_nodeNames)
+    declare(dependents_dgamma_values, double(1, length(dependents_dgamma_nodeFunctions)))
     dependents_dgamma_values <- values(model, dependents_dgamma_nodeNames)
+    declare(dependents_dexp_values, double(1, length(dependents_dexp_nodeFunctions)))
     dependents_dexp_values <- values(model, dependents_dexp_nodeNames)
     declare(dependents_dpois_lambda, double(1, length(dependents_dpois_nodeFunctions)))
     for (i in seq_along(dependents_dpois_nodeFunctions)) {
@@ -251,10 +262,15 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
 }, methods = list(getPosteriorLogDensity = function() {
     prior_shape <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape')()
     prior_rate <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_rate')()
+    declare(dependents_dpois_values, double(1, length(dependents_dpois_nodeFunctions)))
     dependents_dpois_values <- values(model, dependents_dpois_nodeNames)
+    declare(dependents_dnorm_values, double(1, length(dependents_dnorm_nodeFunctions)))
     dependents_dnorm_values <- values(model, dependents_dnorm_nodeNames)
+    declare(dependents_dlnorm_values, double(1, length(dependents_dlnorm_nodeFunctions)))
     dependents_dlnorm_values <- values(model, dependents_dlnorm_nodeNames)
+    declare(dependents_dgamma_values, double(1, length(dependents_dgamma_nodeFunctions)))
     dependents_dgamma_values <- values(model, dependents_dgamma_nodeNames)
+    declare(dependents_dexp_values, double(1, length(dependents_dexp_nodeFunctions)))
     dependents_dexp_values <- values(model, dependents_dexp_nodeNames)
     declare(dependents_dpois_lambda, double(1, length(dependents_dpois_nodeFunctions)))
     for (i in seq_along(dependents_dpois_nodeFunctions)) {
@@ -368,7 +384,9 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
     origValue <- model[[targetNode]]
     prior_mean <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_mean')()
     prior_tau <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_tau')()
+    declare(dependents_dnorm_values, double(1, length(dependents_dnorm_nodeFunctions)))
     dependents_dnorm_values <- values(model, dependents_dnorm_nodeNames)
+    declare(dependents_dlnorm_values, double(1, length(dependents_dlnorm_nodeFunctions)))
     dependents_dlnorm_values <- values(model, dependents_dlnorm_nodeNames)
     declare(dependents_dnorm_mean, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_tau, double(1, length(dependents_dnorm_nodeFunctions)))
@@ -425,7 +443,9 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
 }, methods = list(getPosteriorLogDensity = function() {
     prior_mean <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_mean')()
     prior_tau <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_tau')()
+    declare(dependents_dnorm_values, double(1, length(dependents_dnorm_nodeFunctions)))
     dependents_dnorm_values <- values(model, dependents_dnorm_nodeNames)
+    declare(dependents_dlnorm_values, double(1, length(dependents_dlnorm_nodeFunctions)))
     dependents_dlnorm_values <- values(model, dependents_dlnorm_nodeNames)
     declare(dependents_dnorm_mean, double(1, length(dependents_dnorm_nodeFunctions)))
     declare(dependents_dnorm_tau, double(1, length(dependents_dnorm_nodeFunctions)))
@@ -494,6 +514,7 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
     origValue <- model[[targetNode]]
     prior_prec <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_prec')()
     prior_mean <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_mean')()
+    declare(dependents_dmnorm_values, double(1, length(dependents_dmnorm_nodeFunctions)))
     dependents_dmnorm_values <- values(model, dependents_dmnorm_nodeNames)
     declare(dependents_dmnorm_mean, double(1, length(dependents_dmnorm_nodeFunctions)))
     declare(dependents_dmnorm_prec, double(1, length(dependents_dmnorm_nodeFunctions)))
@@ -532,6 +553,7 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
 }, methods = list(getPosteriorLogDensity = function() {
     prior_prec <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_prec')()
     prior_mean <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_mean')()
+    declare(dependents_dmnorm_values, double(1, length(dependents_dmnorm_nodeFunctions)))
     dependents_dmnorm_values <- values(model, dependents_dmnorm_nodeNames)
     declare(dependents_dmnorm_mean, double(1, length(dependents_dmnorm_nodeFunctions)))
     declare(dependents_dmnorm_prec, double(1, length(dependents_dmnorm_nodeFunctions)))
