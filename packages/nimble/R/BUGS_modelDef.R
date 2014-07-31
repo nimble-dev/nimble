@@ -687,6 +687,7 @@ genNodeInfo_singleDeclaration <- function(BUGSdecl, context, constantsEnv) {
         evaledTargetNodeExpr <- if(targetNodeExprHasBracket) evalBracketArgsKnownBracket(BUGSdecl$targetNodeExpr, constantsEnvCopy, targetNodeExpressionIsVectorized) else BUGSdecl$targetNodeExpr
         evaledSymbolicParentNodes <- lapply(BUGSdecl$symbolicParentNodes, evalBracketArgs, constantsEnvCopy)
         targetNodeIndexValuesList <- if(targetNodeExprHasBracket) exprAsListDrop2(evaledTargetNodeExpr)
+        targetNodeIndexSizes <- unlist(lapply(targetNodeIndexValuesList, function(ind) max(eval(ind)) - min(eval(ind)) + 1))
         replacementValues <- eval(replacementsOneBlock, constantsEnvCopy)
         replacementValuesScalar <- removeNonScalarElementsFromList(replacementValues)
         codeReplacedWithValues <- eval(substituteCodeReadyForValues)
@@ -702,6 +703,7 @@ genNodeInfo_singleDeclaration <- function(BUGSdecl, context, constantsEnv) {
                                                            targetNodeExpr = evaledTargetNodeExpr,
                                                            targetNodeName =  targetNodeName,
                                                            targetNodeIndexValuesList = targetNodeIndexValuesList,
+                                                           targetNodeIndexSizes = targetNodeIndexSizes,
                                                            logProbIndexValues = logProbIndexValues,
                                                            targetVarName = BUGSdecl$targetVarName,
                                                            parentNodeExprs = evaledSymbolicParentNodes,
