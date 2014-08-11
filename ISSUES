@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (8/11/14) deal more elegantly with metropolis samples that fall outside the domain of a parameter - e.g. proposals for positive valued parameters that are proposed to be negative
+
 * (7/31/14) simulate(model, 'multivariateNodeName[1:10]') fails, because the multivariateNodeName is *incorrectly* expanded, none of which are names of model nodes
 
 * (7/24/14) Using 'equals(a,b)' in a model definition, when both a, b are constants, (correctly) attempts to evaluate 'equals(a,b)' at compile-time, but this errors-out because 'equals' refers to function in testthat package, rather than the intended 'nimbleEquals()' function.
