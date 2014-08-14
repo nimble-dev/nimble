@@ -494,7 +494,7 @@ conjugacyClass <- setRefClass(
             targetNodeNdim <- distributions[[prior]]$types$value$nDim
             targetCoeffNdim <- switch(as.character(targetNodeNdim), `0`=0, `1`=2, `2`=2, stop())
             
-            functionBody$addCode(counter <- 1)
+            functionBody$addCode(firstTime <- 1)
             
             for(distName in dependentDistNames) {
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
@@ -505,27 +505,19 @@ conjugacyClass <- setRefClass(
                 subList$offset <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_offset')), targetNodeNdim)
                 subList$coeff  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_coeff')),  targetCoeffNdim)
                 forLoopBodyFirst <- codeBlockClass()
+                forLoopBody      <- codeBlockClass()
+                forLoopBodyFirst$addCode(firstTime <- 0)
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
                     forLoopBodyFirst$addCode(CONTRIB_NAME <- CONTRIB_EXPR,
-                                             list(CONTRIB_NAME = as.name(contributionName),
-                                                  CONTRIB_EXPR = contributionExpr)
-                    )
-                }
-                forLoopBodyFirst$addCode(counter <- counter + 1)
-                forLoopBody <- codeBlockClass()
-                for(contributionName in posteriorObject$neededContributionNames) {
-                    if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
-                    contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
-                    forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
-                                        list(CONTRIB_NAME = as.name(contributionName),
-                                             CONTRIB_EXPR = contributionExpr)
-                    )
+                                             list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+                    forLoopBody$addCode(     CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                                             list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                 }
                 ifStatementBody <- codeBlockClass()
                 ifStatementBody$addCode(
-                    if(counter == 1) FORLOOPBODYFIRST else FORLOOPBODY,
+                    if(firstTime == 1) FORLOOPBODYFIRST else FORLOOPBODY,
                     list(FORLOOPBODYFIRST = forLoopBodyFirst$getCode(),
                          FORLOOPBODY      = forLoopBody$getCode()))
                 functionBody$addCode(for(i in seq_along(DEP_NODEFUNCTIONS)) IFSTATEMENTBODY,

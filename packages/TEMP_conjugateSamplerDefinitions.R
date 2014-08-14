@@ -47,12 +47,12 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
         dependents_dnegbin_prob[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_prob')()
         dependents_dnegbin_size[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_size')()
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dbern_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape1 <- dependents_dbern_values[i]
             contribution_shape2 <- 1 - dependents_dbern_values[i]
-            counter <- counter + 1
         }
         else {
             contribution_shape1 <- contribution_shape1 + dependents_dbern_values[i]
@@ -60,10 +60,10 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
         }
     }
     for (i in seq_along(dependents_dbin_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape1 <- dependents_dbin_values[i]
             contribution_shape2 <- dependents_dbin_size[i] - dependents_dbin_values[i]
-            counter <- counter + 1
         }
         else {
             contribution_shape1 <- contribution_shape1 + dependents_dbin_values[i]
@@ -71,10 +71,10 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
         }
     }
     for (i in seq_along(dependents_dnegbin_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape1 <- dependents_dnegbin_size[i]
             contribution_shape2 <- dependents_dnegbin_values[i]
-            counter <- counter + 1
         }
         else {
             contribution_shape1 <- contribution_shape1 + dependents_dnegbin_size[i]
@@ -117,32 +117,32 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
         dependents_dnegbin_prob[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_prob')()
         dependents_dnegbin_size[i] <- nfMethod(dependents_dnegbin_nodeFunctions[[i]], 'get_size')()
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dbern_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape1 <- dependents_dbern_values[i]
             contribution_shape2 <- 1 - dependents_dbern_values[i]
-            counter <- counter + 1
         } else {
             contribution_shape1 <- contribution_shape1 + dependents_dbern_values[i]
             contribution_shape2 <- contribution_shape2 + (1 - dependents_dbern_values[i])
         }
     }
     for (i in seq_along(dependents_dbin_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape1 <- dependents_dbin_values[i]
             contribution_shape2 <- dependents_dbin_size[i] - dependents_dbin_values[i]
-            counter <- counter + 1
         } else {
             contribution_shape1 <- contribution_shape1 + dependents_dbin_values[i]
             contribution_shape2 <- contribution_shape2 + (dependents_dbin_size[i] - dependents_dbin_values[i])
         }
     }
     for (i in seq_along(dependents_dnegbin_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape1 <- dependents_dnegbin_size[i]
             contribution_shape2 <- dependents_dnegbin_values[i]
-            counter <- counter + 1
         } else {
             contribution_shape1 <- contribution_shape1 + dependents_dnegbin_size[i]
             contribution_shape2 <- contribution_shape2 + dependents_dnegbin_values[i]
@@ -263,12 +263,12 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
         dependents_dexp_offset[i] <- nfMethod(dependents_dexp_nodeFunctions[[i]], 'get_rate')()
         dependents_dexp_coeff[i] <- (dependents_dexp_rate[i] - dependents_dexp_offset[i])/x1
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dpois_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- dependents_dpois_values[i]
             contribution_rate <- dependents_dpois_coeff[i]
-            counter <- counter + 1
         }
         else {
             contribution_shape <- contribution_shape + dependents_dpois_values[i]
@@ -276,10 +276,10 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
         }
     }
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- 1/2
             contribution_rate <- dependents_dnorm_coeff[i]/2 * (dependents_dnorm_values[i] - dependents_dnorm_mean[i])^2
-            counter <- counter + 1
         }
         else {
             contribution_shape <- contribution_shape + 1/2
@@ -287,10 +287,10 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
         }
     }
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- 1/2
             contribution_rate <- dependents_dlnorm_coeff[i]/2 * (log(dependents_dlnorm_values[i]) - dependents_dlnorm_meanlog[i])^2
-            counter <- counter + 1
         }
         else {
             contribution_shape <- contribution_shape + 1/2
@@ -298,10 +298,10 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
         }
     }
     for (i in seq_along(dependents_dgamma_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- dependents_dgamma_shape[i]
             contribution_rate <- dependents_dgamma_coeff[i] * dependents_dgamma_values[i]
-            counter <- counter + 1
         }
         else {
             contribution_shape <- contribution_shape + dependents_dgamma_shape[i]
@@ -309,10 +309,10 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
         }
     }
     for (i in seq_along(dependents_dexp_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- 1
             contribution_rate <- dependents_dexp_coeff[i] * dependents_dexp_values[i]
-            counter <- counter + 1
         }
         else {
             contribution_shape <- contribution_shape + 1
@@ -402,52 +402,52 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
         dependents_dexp_offset[i] <- nfMethod(dependents_dexp_nodeFunctions[[i]], 'get_rate')()
         dependents_dexp_coeff[i] <- (dependents_dexp_rate[i] - dependents_dexp_offset[i])/x1
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dpois_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- dependents_dpois_values[i]
             contribution_rate <- dependents_dpois_coeff[i]
-            counter <- counter + 1
         } else {
             contribution_shape <- contribution_shape + dependents_dpois_values[i]
             contribution_rate <- contribution_rate + dependents_dpois_coeff[i]
         }
     }
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- 1/2
             contribution_rate <- dependents_dnorm_coeff[i]/2 * (dependents_dnorm_values[i] - dependents_dnorm_mean[i])^2
-            counter <- counter + 1
         } else {
             contribution_shape <- contribution_shape + 1/2
             contribution_rate <- contribution_rate + dependents_dnorm_coeff[i]/2 * (dependents_dnorm_values[i] - dependents_dnorm_mean[i])^2
         }
     }
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- 1/2
             contribution_rate <- dependents_dlnorm_coeff[i]/2 * (log(dependents_dlnorm_values[i]) - dependents_dlnorm_meanlog[i])^2
-            counter <- counter + 1
         } else {
             contribution_shape <- contribution_shape + 1/2
             contribution_rate <- contribution_rate + dependents_dlnorm_coeff[i]/2 * (log(dependents_dlnorm_values[i]) - dependents_dlnorm_meanlog[i])^2
         }
     }
     for (i in seq_along(dependents_dgamma_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- dependents_dgamma_shape[i]
             contribution_rate <- dependents_dgamma_coeff[i] * dependents_dgamma_values[i]
-            counter <- counter + 1
         } else {
             contribution_shape <- contribution_shape + dependents_dgamma_shape[i]
             contribution_rate <- contribution_rate + dependents_dgamma_coeff[i] * dependents_dgamma_values[i]
         }
     }
     for (i in seq_along(dependents_dexp_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_shape <- 1
             contribution_rate <- dependents_dexp_coeff[i] * dependents_dexp_values[i]
-            counter <- counter + 1
         } else {
             contribution_shape <- contribution_shape + 1
             contribution_rate <- contribution_rate + dependents_dexp_coeff[i] * dependents_dexp_values[i]
@@ -515,12 +515,12 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
         dependents_dlnorm_offset[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_meanlog')()
         dependents_dlnorm_coeff[i] <- (dependents_dlnorm_meanlog[i] - dependents_dlnorm_offset[i])/x1
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_mean <- dependents_dnorm_coeff[i] * (dependents_dnorm_values[i] - dependents_dnorm_offset[i]) * dependents_dnorm_tau[i]
             contribution_tau <- dependents_dnorm_coeff[i]^2 * dependents_dnorm_tau[i]
-            counter <- counter + 1
         }
         else {
             contribution_mean <- contribution_mean + dependents_dnorm_coeff[i] * (dependents_dnorm_values[i] - dependents_dnorm_offset[i]) * dependents_dnorm_tau[i]
@@ -528,10 +528,10 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
         }
     }
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_mean <- dependents_dlnorm_coeff[i] * (log(dependents_dlnorm_values[i]) - dependents_dlnorm_offset[i]) * dependents_dlnorm_tau[i]
             contribution_tau <- dependents_dlnorm_coeff[i]^2 * dependents_dlnorm_tau[i]
-            counter <- counter + 1
         }
         else {
             contribution_mean <- contribution_mean + dependents_dlnorm_coeff[i] * (log(dependents_dlnorm_values[i]) - dependents_dlnorm_offset[i]) * dependents_dlnorm_tau[i]
@@ -583,22 +583,22 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
         dependents_dlnorm_offset[i] <- nfMethod(dependents_dlnorm_nodeFunctions[[i]], 'get_meanlog')()
         dependents_dlnorm_coeff[i] <- (dependents_dlnorm_meanlog[i] - dependents_dlnorm_offset[i])/x1
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_mean <- dependents_dnorm_coeff[i] * (dependents_dnorm_values[i] - dependents_dnorm_offset[i]) * dependents_dnorm_tau[i]
             contribution_tau <- dependents_dnorm_coeff[i]^2 * dependents_dnorm_tau[i]
-            counter <- counter + 1
         } else {
             contribution_mean <- contribution_mean + dependents_dnorm_coeff[i] * (dependents_dnorm_values[i] - dependents_dnorm_offset[i]) * dependents_dnorm_tau[i]
             contribution_tau <- contribution_tau + dependents_dnorm_coeff[i]^2 * dependents_dnorm_tau[i]
         }
     }
     for (i in seq_along(dependents_dlnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_mean <- dependents_dlnorm_coeff[i] * (log(dependents_dlnorm_values[i]) - dependents_dlnorm_offset[i]) * dependents_dlnorm_tau[i]
             contribution_tau <- dependents_dlnorm_coeff[i]^2 * dependents_dlnorm_tau[i]
-            counter <- counter + 1
         } else {
             contribution_mean <- contribution_mean + dependents_dlnorm_coeff[i] * (log(dependents_dlnorm_values[i]) - dependents_dlnorm_offset[i]) * dependents_dlnorm_tau[i]
             contribution_tau <- contribution_tau + dependents_dlnorm_coeff[i]^2 * dependents_dlnorm_tau[i]
@@ -655,12 +655,12 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
             dependents_dmnorm_coeff[i, 1:d, sizeIndex] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_mean')() - dependents_dmnorm_offset[i, 1:d]
         }
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dmnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_prec <- t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% dependents_dmnorm_coeff[i, 1:d, 1:d]
             contribution_mean <- t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% asCol(dependents_dmnorm_values[i, 1:d] - dependents_dmnorm_offset[i, 1:d])
-            counter <- counter + 1
         }
         else {
             contribution_prec <- contribution_prec + t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% dependents_dmnorm_coeff[i, 1:d, 1:d]
@@ -705,12 +705,12 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
             dependents_dmnorm_coeff[i, 1:d, sizeIndex] <- nfMethod(dependents_dmnorm_nodeFunctions[[i]], 'get_mean')() - dependents_dmnorm_offset[i, 1:d]
         }
     }
-    counter <- 1
+    firstTime <- 1
     for (i in seq_along(dependents_dmnorm_nodeFunctions)) {
-        if (counter == 1) {
+        if (firstTime == 1) {
+            firstTime <- 0
             contribution_prec <- t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% dependents_dmnorm_coeff[i, 1:d, 1:d]
             contribution_mean <- t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% asCol(dependents_dmnorm_values[i, 1:d] - dependents_dmnorm_offset[i, 1:d])
-            counter <- counter + 1
         } else {
             contribution_prec <- contribution_prec + t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% dependents_dmnorm_coeff[i, 1:d, 1:d]
             contribution_mean <- contribution_mean + t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% asCol(dependents_dmnorm_values[i, 1:d] - dependents_dmnorm_offset[i, 1:d])
