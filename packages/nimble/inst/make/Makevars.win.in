@@ -6,6 +6,6 @@
 # My Windows configuration doesn't seem to like cygwin style paths for this, i.e. -I/cygdrive/c/Users/duncantl 
 # results in a failure for R CMD SHLIB ...
 
-PKG_CPPFLAGS=-I@NIMBLE_HOME@/include -DEIGEN_MPL2_ONLY=1
+PKG_CPPFLAGS=-I"@NIMBLE_HOME@/include" -DEIGEN_MPL2_ONLY=1
 PKG_LIBS=-lRlapack -lRblas
 
