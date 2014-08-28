@@ -1,0 +1,9 @@
+NIMBLE 0.1-1 (8/28/2014)
+------------------------------------------------------------------------------
+
+BUG FIXES
+
+* updated Makevars.R to handle spaces in directory names
+
+* ensured that various Makevars and Makevars.in and Makevars.win files are
+  provided in the package for proper installation on all platforms
