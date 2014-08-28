@@ -4,9 +4,10 @@
 
 cppNamedObjectsClass <- setRefClass('cppNamedObjectsClass',
                                contains = 'cppClassDef',
-                               fields = list(Rnames2CppNames = 'list'),
+                               fields = list(Rnames2CppNames = 'ANY'),
                                methods = list(
                                    initialize = function(...) {
+                                   		Rnames2CppNames <<- list()
                                        inheritance <<- c(inheritance, list('NamedObjects'))
                                        Hincludes <<- c(Hincludes, nimbleIncludeFile("NamedObjects.h"))
                                        callSuper(...)

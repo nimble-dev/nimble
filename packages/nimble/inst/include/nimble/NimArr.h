@@ -520,6 +520,10 @@ class NimArr<3, T> : public NimArrBase<T> {
 };
 
 
+
+
+
+
 template<int ndim, class T>
 class VecNimArr : public VecNimArrBase<T>  {
  public:

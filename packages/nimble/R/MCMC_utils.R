@@ -185,8 +185,8 @@ mcmcNodeInit_virtual <- nimbleFunctionVirtual()
 mcmcNodeInit <- nimbleFunction(
     contains = mcmcNodeInit_virtual,
     setup = function(model, node) {
-        isDeterm  <- if(node %in% model$getMaps()$nodeNamesDeterm)  TRUE else FALSE
-        isStoch   <- if(node %in% model$getMaps()$nodeNamesStoch)   TRUE else FALSE
+        isDeterm  <- if(node %in% model$getMaps('nodeNamesDeterm') )  TRUE else FALSE
+        isStoch   <- if(node %in% model$getMaps('nodeNamesStoch') )   TRUE else FALSE
     },
     run = function() {
         if(isDeterm) {

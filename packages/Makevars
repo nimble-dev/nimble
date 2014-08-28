@@ -1,0 +1,7 @@
+ifndef NIMBLE_PKG_SRC_DIR
+  NIMBLE_PKG_SRC_DIR=../../../packages/nimble/inst
+endif
+
+PKG_CPPFLAGS=-I$(NIMBLE_PKG_SRC_DIR)/include -I/usr/local/include -I$(HOME)/local
+
+

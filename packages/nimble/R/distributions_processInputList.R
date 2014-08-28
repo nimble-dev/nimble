@@ -4,15 +4,18 @@ distributionsClass <- setRefClass(
     Class = 'distributionsClass',
     
     fields = list(
-        distObjects   = 'list',      ## a list of distClass objects, names of each element are the BUGS distribution name
-        namesVector   = 'character',      ## a character vector of the (BUGS) names of all distributions
-        namesExprList = 'list',   ## a list of the expressions of the (BUGS) names of all distributions
-        matchCallEnv  = 'environment',   ## an environment containing distribution functions which run match.call()
-        translations  = 'list'   ## a list of the (R) d-dist and r-dist function names. element names are BUGS distributions
+        distObjects   = 'ANY',		#'list',      ## a list of distClass objects, names of each element are the BUGS distribution name
+        namesVector   = 'ANY',		#'character',      ## a character vector of the (BUGS) names of all distributions
+        namesExprList = 'ANY',		#'list',   ## a list of the expressions of the (BUGS) names of all distributions
+        matchCallEnv  = 'ANY',		#'environment',   ## an environment containing distribution functions which run match.call()
+        translations  = 'ANY'		#'list'   ## a list of the (R) d-dist and r-dist function names. element names are BUGS distributions
     ),
     
     methods = list(
         initialize = function(dil) {
+        	distObjects <<- list()
+        	namesExprList <<- list()
+        	translations <<- list()
             for(i in seq_along(dil))     distObjects[[i]] <<- distClass(dil[[i]], names(dil)[i])
             names(distObjects) <<- names(dil)
             namesVector <<- names(dil)
@@ -37,23 +40,29 @@ distClass <- setRefClass(
     Class = 'distClass',
     
     fields = list(
-        BUGSdistName = 'character',   ## the (BUGS) name of the distribution
+        BUGSdistName = 'ANY',		#'character',   ## the (BUGS) name of the distribution
         BUGSdistExpr = 'ANY',     ## the BUGS distribution expression, as provided in the original inputs list, with all possible parameter names
-        RdistExprList = 'list',  ## a list of the R distribution expressions, along with their parameters and re-parametrizations
-        numAlts = 'numeric',   ## the number of alternate reparametrizations provided
-        alts = 'list',
-        exprs = 'list',
-        reqdArgs = 'character',   ## chracter vector of the required arguments in our R implementation of each distribution; we always reparametrize to this
-        densityName = 'character',   ## the (R) name of the d-dist function, e.g. 'dnorm'
-        simulateName = 'character',   ## the (R) name of the r-dist function, e.g. 'rnorm'
-        altParams = 'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
-        discrete = 'logical',   ## logical, if the distribution is discrete
-        types = 'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
-        typesForVirtualNodeFunction = 'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
+        RdistExprList = 'ANY',		#'list',  ## a list of the R distribution expressions, along with their parameters and re-parametrizations
+        numAlts = 'ANY',		#'numeric',   ## the number of alternate reparametrizations provided
+        alts = 'ANY',		#'list',
+        exprs = 'ANY',		#'list',
+        reqdArgs = 'ANY',		#'character',   ## chracter vector of the required arguments in our R implementation of each distribution; we always reparametrize to this
+        densityName = 'ANY',		#'character',   ## the (R) name of the d-dist function, e.g. 'dnorm'
+        simulateName = 'ANY',		#'character',   ## the (R) name of the r-dist function, e.g. 'rnorm'
+        altParams = 'ANY',		#'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
+        discrete = 'ANY',		#'logical',   ## logical, if the distribution is discrete
+        types = 'ANY',		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
+        typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
     ),
     
     methods = list(
         initialize = function(distInputList, BUGSdistName) {
+        	RdistExprList <<- list()
+        	alts <<- list()
+        	exprs <<- list()
+        	altParams <<- list()
+        	types <<- list()
+        	typesForVirtualNodeFunction <<- list() 
             BUGSdistName <<- BUGSdistName
             BUGSdistExpr <<- parse(text=distInputList$BUGSdist)[[1]]
             if(BUGSdistExpr[[1]] != BUGSdistName)   stop(paste0('inconsistent BUGS distribution names for distribution: ', BUGSdistName))

@@ -61,8 +61,8 @@ symbolTable2cppVars <- function(symTab, arguments = character(), include, parent
 
 symbolBase <- 
     setRefClass(Class  = 'symbolBase',
-                fields = list(name = 'character',
-                              type = 'character'),
+                fields = list(name = 'ANY', 		#'character',
+                              type = 'ANY' 	),	#'character'),
                 methods = list(
                     generateUse = function(...) name
                     )
@@ -74,8 +74,8 @@ symbolBase <-
 symbolBasic <-
     setRefClass(Class    = 'symbolBasic',
                 contains = 'symbolBase',
-                fields   = list(nDim  = 'numeric',
-                                size = 'numeric'),
+                fields   = list(nDim  = 'ANY', 		#'numeric',
+                                size = 'ANY'), 		#'numeric'),
                 methods = list(
                     show = function() {
                         writeLines(paste0(name,': ', type, ' sizes = (', paste(size, collapse = ', '), '), nDim = ', nDim))
@@ -141,8 +141,8 @@ symbolVecNimArrPtr <-
     setRefClass(Class    = 'symbolVecNimArrPtr',
                 contains = 'symbolBase', ## Important that this is not symbolBase or it will be thought to be directly numeric
                 fields = list(
-                    nDim = 'numeric',
-                    size = 'numeric'),
+                    nDim = 'ANY', 		#'numeric',
+                    size = 'ANY'), 		#'numeric'),
                 methods = list(
                     show = function() writeLines(paste('symbolVecNimArrPtr', name)),
                     genCppVar = function(...){
@@ -175,7 +175,7 @@ symbolNodeFunctionVector <-
 symbolModel <- 
     setRefClass(Class = 'symbolModel',
                 contains = 'symbolBase',
-                fields = list(className = 'character'), ## Only a name is needed to look up the type in .modelValuesSymbolTableLibrary
+                fields = list(className = 'ANY'), 		#'character'), ## Only a name is needed to look up the type in .modelValuesSymbolTableLibrary
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)
@@ -235,7 +235,7 @@ symbolNimbleFunction <-
 symbolModelVariableAccessorVector <- 
     setRefClass(Class = 'symbolModelVariableAccessorVector',
                 contains = 'symbolBase',
-                fields = list(lengthName = 'character'),
+                fields = list(lengthName = 'ANY'), 		#'character'),
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)
@@ -267,8 +267,8 @@ symbolModelValuesAccessorVector <-
 symbolNumericList <- 
     setRefClass(Class = 'symbolNumericList',
                 contains = 'symbolBase', 
-                fields = list(		className = 'character',
-                					nDim = 'numeric'), 
+                fields = list(		className = 'ANY', 		#'character',
+                					nDim ='ANY'), 		# 'numeric'), 
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)
@@ -316,8 +316,8 @@ symbolNimbleFunctionList <-
 symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               contains = 'symbolBase',
                               fields = list(
-                                  eigMatrix = 'logical', ## or array
-                                  strides = 'numeric' ## NA for Dynamic.  length(0) means no strides
+                                  eigMatrix = 'ANY', 		#'logical', ## or array
+                                  strides ='ANY' 		# 'numeric' ## NA for Dynamic.  length(0) means no strides
                                   ),
                               methods = list(
                                   show = function() {
@@ -361,7 +361,7 @@ symbolInt <- function(name, size = numeric(), nDim = length(size)) {
 
 symbolTable <- 
     setRefClass(Class   = 'symbolTable',
-                fields  = list(symbols  = 'list',
+                fields  = list(symbols  = 'ANY', 		#'list',
                                parentST = 'ANY'),
                 methods = list(
                     initialize = function(parentST = NULL, ...) {

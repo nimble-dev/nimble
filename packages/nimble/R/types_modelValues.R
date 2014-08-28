@@ -88,7 +88,7 @@ modelValues <- function(spec, m = 1) {
 modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                     fields = list(
                                         varNames = 'character',
-                                        name = 'character',
+                                        name = 'ANY',
                                         symTab = 'ANY',
                                         sizes = 'ANY',
                                         nrow = 'numeric',  ## nrow is the actually the length of the lists for each variable
@@ -96,9 +96,11 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         mvSpec = 'ANY'),
                                     methods = list(
                                         initialize = function(nrow = 1L,...) {
+                                        	callSuper(...)
                                             nrow <<- nrow
+   #                                         types <<- list()
                                             for(vN in varNames) {
-                                                assign(vN, rep(list(array(data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
+                                                assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
                                         },
                                         getSymbolTable = function() {

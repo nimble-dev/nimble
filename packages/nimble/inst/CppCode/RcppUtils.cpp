@@ -1527,3 +1527,73 @@ SEXP fastMatrixInsert(SEXP matrixInto, SEXP matrix, SEXP rowStart, SEXP colStart
 	UNPROTECT(2);
 	return(R_NilValue);
 }
+
+void row2NimArr(SEXP matrix, NimArrBase<double>* nimPtr, int startPoint, int len, int nRows){
+	for(int i = 0; i < len; i++)
+		(*nimPtr)[i] = REAL(matrix)[startPoint + i * nRows];
+}
+
+void row2NimArr(SEXP matrix, NimArrBase<int>* nimPtr, int startPoint, int len, int nRows){
+	for(int i = 0; i < len; i++)
+		(*nimPtr)[i] = INTEGER(matrix)[startPoint + i * nRows];	
+}
+
+SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims){
+	int cStart = INTEGER(listStartIndex)[0] - 1;
+	int cNRows = INTEGER(RnRows)[0];
+	int len = 1;
+	for(int i = 0; i < LENGTH(dims); i++)
+		len = len * INTEGER(dims)[i];
+	for(int i = 0; i < cNRows; i++){
+	SEXP row = PROTECT(allocVector(REALSXP, len) ) ;
+	setAttrib(row, R_DimSymbol, dims);
+		for(int j = 0; j <  len; j++){		
+			REAL(row)[j] = REAL(matrix)[i + cNRows * j];
+			}
+		SET_VECTOR_ELT(list, i, row);
+	UNPROTECT(1);
+	}	
+	return(R_NilValue);
+}
+
+SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims){
+	int cStart = INTEGER(listStartIndex)[0] - 1;
+	int cNRows = INTEGER(RnRows)[0];
+	int len = 1;
+	for(int i = 0; i < LENGTH(dims); i++)
+		len = len * INTEGER(dims)[i];
+	for(int i = 0; i < cNRows; i++){
+	SEXP row = PROTECT(allocVector(INTSXP, len) ) ;
+	setAttrib(row, R_DimSymbol, dims);
+		for(int j = 0; j <  len; j++){		
+			INTEGER(row)[j] = INTEGER(matrix)[i + cNRows * j];
+			}
+		SET_VECTOR_ELT(list, i, row);
+	UNPROTECT(1);
+	}	
+	return(R_NilValue);
+}
+
+
+SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
+	int cRowStart = INTEGER(rowStart)[0] - 1;
+	int cRowEnd = INTEGER(rowEnd)[0] - 1;
+	NimVecType* vecTypePtr = static_cast<NimVecType*>(R_ExternalPtrAddr(RvecNimPtr) );
+	vector<int> rowDims = vecTypePtr->getRowDims(0);
+	int len = 0;
+	for(int i = 0; i < rowDims.size(); i++)
+		len = len + rowDims[i];		
+	int nRows = LENGTH(matrix) / len;
+	nimType varType = vecTypePtr->getNimType();
+	if(varType == DOUBLE){
+		VecNimArrBase<double>* vecPtr = static_cast<VecNimArrBase<double>*>(vecTypePtr);
+		for(int i = cRowStart; i <= cRowEnd; i++)
+			row2NimArr(matrix, static_cast<NimArrBase<double>*>(vecPtr->getRowTypePtr(i) ), cRowStart + i , len, nRows);
+	}
+	if(varType == INT){
+		VecNimArrBase<int>* vecPtr = static_cast<VecNimArrBase<int>*>(vecTypePtr);
+		for(int i = cRowStart; i <= cRowEnd; i++)
+			row2NimArr(matrix, static_cast<NimArrBase<int>*>(vecPtr->getRowTypePtr(i) ), cRowStart + i , len, nRows);
+	}
+	return(R_NilValue);
+}

@@ -22,15 +22,15 @@
 modelBaseClass <- setRefClass('modelBaseClass',
                               fields = list(
                                   modelDef = 'ANY',     
-                                  nodes = 'list',       
+                                  nodes = 'ANY',       #list
                                   vars = 'ANY',         
                                   graph = 'ANY',        
                                   defaultModelValues = 'ANY',
-                                  name = 'character',   
+                                  name = 'ANY', 		#character  
                                   ##.ModelValuesLookUpName = 'character',
-                                  isDataVars = 'list',            ## list with the dimensions of isData_vars
-                                  isDataEnv = 'environment',      ## environment holding 'logical' objects, with isData flags
-                                  classEnvironment = 'environment', # environment in which the reference classes will be defined
+                                  isDataVars = 'ANY', #list           ## list with the dimensions of isData_vars
+                                  isDataEnv = 'ANY',	#environment      ## environment holding 'logical' objects, with isData flags
+                                  classEnvironment = 'ANY', # environment in which the reference classes will be defined
                                   origData = 'ANY',
                                   origInits = 'ANY',
                                   nimbleProject = 'ANY'
@@ -40,7 +40,10 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   setGraph = function(value) graph <<- value,
                                   getModelDef = function() modelDef,
                                   setModelDef = function(value) modelDef <<- value,
-                                  getMaps = function() modelDef$maps,
+                                  getMaps = function(mapName, all = FALSE){
+                                  	if(all == TRUE)		return(modelDef$maps)
+                                  	return(modelDef$maps[[mapName]])
+                                   },
                                   getNodeInfo = function() modelDef$nodeInfo,
                                   
                                   
@@ -98,7 +101,7 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                   
                                   expandNodeNames = function(nodeNames, env = parent.frame()) {
                                       nodeNames <- nl_expandNodeNames(nodeNames, getSymbolTable(), env)
-                                      nodeNames <- intersect(nodeNames, getMaps()$nodeNames)
+                                      nodeNames <- intersect(nodeNames, getMaps('nodeNames'))
                                       return(nodeNames)
                                   },
                                   
@@ -112,9 +115,9 @@ nodeNames: A character vector of node names, which is to be topologically sorted
 
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
 '
-                                      nodeIDs <- getMaps()$nodeName_2_graphID[nodeNames]
+                                      nodeIDs <- getMaps('nodeName_2_graphID')[nodeNames]
                                       nodeIDs <- sort(nodeIDs)
-                                      nodeNames <- getMaps()$graphID_2_nodeName[nodeIDs]
+                                      nodeNames <- getMaps('graphID_2_nodeName')[nodeIDs]
                                       return(nodeNames)
                                   },
                                   
@@ -236,14 +239,14 @@ downstream: Logical argument specifying whether the downward search through the 
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-                                      nodeIDs <- getMaps()$nodeName_2_graphID[expandNodeNames(nodes)]
-                                      omitIDs <- getMaps()$nodeName_2_graphID[expandNodeNames(omit)]
-                                      dependentIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
-                                      depNodes <- unique(getMaps()$graphID_2_originNodeName[dependentIDs])
-                                      if(!includeRHSonly)   depNodes <- intersect(depNodes, getMaps()$nodeNamesLHSall)
-                                      if(determOnly)        depNodes <- intersect(depNodes, getMaps()$nodeNamesDeterm)
-                                      if(stochOnly)         depNodes <- intersect(depNodes, getMaps()$nodeNamesStoch)
-                                      if(!self)             depNodes <- setdiff(depNodes, getMaps()$nodeName_2_originNodeName[expandNodeNames(nodes)])
+                                      nodeIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(nodes)]
+                                      omitIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(omit)]
+                                      dependentIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+                                      depNodes <- unique(getMaps('graphID_2_originNodeName')[dependentIDs])
+                                      if(!includeRHSonly)   depNodes <- intersect(depNodes, getMaps('nodeNamesLHSall') )
+                                      if(determOnly)        depNodes <- intersect(depNodes, getMaps('nodeNamesDeterm') )
+                                      if(stochOnly)         depNodes <- intersect(depNodes, getMaps('nodeNamesStoch') )
+                                      if(!self)             depNodes <- setdiff(depNodes, getMaps('nodeName_2_originNodeName')[expandNodeNames(nodes)])
                                       if(!includeData)      depNodes <- depNodes[!isData(depNodes)]
                                       if(dataOnly)          depNodes <- depNodes[isData(depNodes)]
                                       return(depNodes)
@@ -338,9 +341,9 @@ setMethod('[[<-', 'modelBaseClass',
 RModelBaseClass <- setRefClass("RModelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(
-                                   nodeFunctions = 'list',
-                                   nodeGenerators = 'list',
-                                   Cname = 'character',
+                                   nodeFunctions = 'ANY',	#list
+                                   nodeGenerators = 'ANY',	#list
+                                   Cname = 'ANY',		#character
                                    CobjectInterface = 'ANY'
                                    ),
                                methods = list(
@@ -408,6 +411,11 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
         fields = FIELDS,
         methods = list(
             initialize = function(inputList, ...) {
+				nodes <<- list()
+				classEnvironment <<- new.env()
+				isDataEnv <<- new.env()
+				nodeFunctions <<- list()
+				nodeGenerators <<- list()
                 vars <<- inputList$vars
                 isDataVars <<- inputList$isDataVars
                 callSuper(modelDef = inputList$modelDef, ...)
@@ -431,10 +439,10 @@ MakeCustomModelClass <- function(vars, className, where = globalenv())
 ## It is built as an unevaluated list parse tree so that when the class if created the function definitions are evaluated then.
 makeBUGSclassFields <- function(vars) {
     activeBindingDefs <- list()
-    envDefs <- as.list(rep('environment', length(vars)))
+    envDefs <- as.list(rep('ANY', length(vars)))
     names(envDefs) <- makeEnvName(vars)    
-    rowDefs <-as.list(rep('integer', length(vars)))
-    nameDefs <- as.list(rep('character', length(vars)))
+    rowDefs <-as.list(rep('ANY', length(vars)))
+    nameDefs <- as.list(rep('ANY', length(vars)))
     names(rowDefs) <- makeRowName(vars)
     names(nameDefs) <- makeNameName(vars)
     for(var in vars) {

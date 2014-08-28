@@ -27,9 +27,9 @@ CmodelValues <- setRefClass(
     Class = 'CmodelValues',
     fields = list(extptr = 'externalptr',
         extptrCall = 'ANY',
-        varNames = 'character',
-        componentExtptrs = 'list',
-        blankAns = 'list',
+        varNames = 'ANY',
+        componentExtptrs = 'ANY',
+        blankAns = 'ANY',
     	sizes = function(){
     		if(length(varNames) == 0)
     			return(NULL)

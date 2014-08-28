@@ -1,21 +1,21 @@
 ## A small class for information deduced about a variable in a BUGS model
 varInfoClass <- setRefClass('varInfoClass',
                             fields = list(
-                                varName = 'character',
-                                mins = 'numeric',
-                                maxs = 'numeric',
-                                nDim = 'numeric',
-                                anyStoch = 'logical'))
+                                varName = 'ANY',
+                                mins = 'ANY',
+                                maxs = 'ANY',
+                                nDim = 'ANY',
+                                anyStoch = 'ANY'))
 
 ## A small class for information about a node in the igraph
 graphNode <- setRefClass(
     Class = 'graphNode',
     fields = list(
-        nodeName         = 'character',
-        graphID          = 'numeric',
-        type             = 'character',
-        originNodeName   = 'character',
-        nodeFunctionName = 'character'
+        nodeName         = 'ANY',
+        graphID          = 'ANY',
+        type             = 'ANY',
+        originNodeName   = 'ANY',
+        nodeFunctionName = 'ANY'
     )
 )
 
@@ -28,34 +28,45 @@ modelDefClass <- setRefClass('modelDefClass',
                              
                              fields = list(
                                  ## set in the call modelDefClass$new(name)
-                                 name = 'character',
+                                 name = 'ANY',
                                  
                                  ## the following are all set in setupModel()
                                  BUGScode = 'ANY',  ## original BUGS code, set in assignBUGScode()
                                  constantsEnv = 'ANY', ## environment with constants, set in assignConstants()
                                  constantsList = 'ANY',  ## named list with constants, set in assignConstants()
                                  constantsNamesList = 'ANY', ## list of constants name objects, set in assignConstants()
-                                 dimensionsList = 'list',   ## list of provided dimension information, set in assignDimensions()
-                                 contexts = 'list', ## list of BUGScontextClass objects
-                                 declInfo = 'list', ## list of BUGSdeclInfo objects
-                                 nodeInfo = 'list', ## list of nodeInfoClass objects, set in genNodeInfo()
-                                 varInfo = 'list',  ## list of varInfoClass objects, set in genVarInfo()
-                                 logProbVarInfo = 'list',  ## list of varInfoClass objects, set in genLogProbVarInfo()
-                                 isDataVarInfo = 'list', ## list of varInfoClass objects, set in genIsDataVarInfo()
-                                 varNames = 'character',  ## vector of all model variable names, set in genVarNames()
+                                 dimensionsList = 'ANY',		#list		   ## list of provided dimension information, set in assignDimensions()
+                                 contexts = 'ANY',				#list 			 ## list of BUGScontextClass objects
+                                 declInfo = 'ANY',				#list				 ## list of BUGSdeclInfo objects
+                                 nodeInfo = 'ANY', 			#list				## list of nodeInfoClass objects, set in genNodeInfo()
+                                 varInfo = 'ANY',			#list	  ## list of varInfoClass objects, set in genVarInfo()
+                                 logProbVarInfo = 'ANY',	#list	  ## list of varInfoClass objects, set in genLogProbVarInfo()
+                                 isDataVarInfo = 'ANY', 	#list		## list of varInfoClass objects, set in genIsDataVarInfo()
+                                 varNames = 'ANY',  ## vector of all model variable names, set in genVarNames()
                                  symTab = 'ANY',  ## symbolTable object, set in buildSymbolTable()
                                  graph = 'ANY',     ## igraph object, set in buildIgraph()
                                  graphNodesList = 'ANY',   ## list of graphNode objects, set in genGraphNodesList()
                                  maps = 'ANY',   ## object of mapsClass, set in buildMaps()
                                  
                                  modelClass = 'ANY',   ## custom model class
-                                 modelValuesClassName = 'character',    ## set in setModelValuesClassName()
+                                 modelValuesClassName = 'ANY',    ## set in setModelValuesClassName()
                                  modelValuesClass = 'ANY', ## custom model values class
-                                 classEnvironment = 'environment' # environment in which the reference classes will be defined.
+                                 classEnvironment = 'ANY'	#environment		 # environment in which the reference classes will be defined.
                              ),
                              
                              methods = list(
-                                 
+                                 initialize = function(...){
+                                 	name <<- character()
+                                 	dimensionsList <<- list()
+                                 	contexts <<- list()
+                                 	declInfo <<- list()
+                                 	nodeInfo <<- list()
+                                 	varInfo <<- list()
+                                 	logProbVarInfo <<- list()
+                                 	isDataVarInfo <<- list()
+                                 	classEnvironment <<- new.env()
+                                 	callSuper(...)
+                                 },
                                  setupModel = function(code, constants, dimensions, debug) {},
                                  
                                  ## the following are all run, in this order, by setupModel():
@@ -257,8 +268,8 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
                         'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
                         'There are two options to resolve this:', '\n',
                         '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
-                        '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to modelBUGS(), e.g.,', '\n',
-                        '    modelBUGS(modelCode, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
+                        '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
+                        '    nimbleModel(my_modelCode, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
                         'Thanks for bearing with us.'), call. = FALSE)
         }
         ## and to recurse on all elements
@@ -288,7 +299,7 @@ example_fillInMissingIndices <- function(code) {
 example_getMissingDimensions <- function(code) {
     cCall <- quote(c())
     for(i in seq_along(code)[-c(1,2)]) {
-        cCall[[i-1]] <- parse(text = paste0('DIM', i-2, '_MAX'))[[1]]
+        cCall[[i-1]] <- parse(text = paste0('dim', i-2, '_max'))[[1]]
     }
     return(cCall)
 }
@@ -786,7 +797,7 @@ modelDefClass$methods(genVarInfo = function() {
         dimVarName <- names(dimensionsList)[i]
         if(!(dimVarName %in% names(varInfo))) next
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions')
-        if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop('dimensions specified are smaller than model specification')
+        if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 })
