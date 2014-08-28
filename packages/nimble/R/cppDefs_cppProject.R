@@ -176,23 +176,26 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                         'accessorClasses.cpp'
                                                         )
                                        if(nimbleOptions$includeCPPdists) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
-                                       includes <- if(!.useLib)
-                                                      sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
-                                       else
-                                           character()
+
+                                       isWindows = (.Platform$OS.type == "windows")
+
+                                       includes <- if(!.useLib) {
+	                                              if(isWindows) {
+                                                         shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
+		    			                 sprintf("%s/%s", shortDirname, cppPermList)
+                                                      } else
+                                                         sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
+                                       	            } else
+                                                       character()
                                        
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
-                                       isWindows = (.Platform$OS.type == "windows")
-                                       
+                                      
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
                                        
                                        outputSOfile <<- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), .Platform$dynlib.ext))
 
-
-                                       if(isWindows)
-                                          include = shortPathName(includes)
 
                                        SHLIBcmd <- paste('R CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
                                        
