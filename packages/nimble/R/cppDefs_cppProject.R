@@ -182,13 +182,19 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            character()
                                        
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
+
+                                       isWindows = (.Platform$OS.type == "windows")
                                        
-				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(.Platform$OS.type == "windows") ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
+				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
                                        
                                        outputSOfile <<- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), .Platform$dynlib.ext))
 
-                                       SHLIBcmd <- paste('R CMD SHLIB', mainfiles, paste(includes, collapse = ' '), '-o', basename(outputSOfile))
+
+                                       if(isWindows)
+                                          include = shortPathName(includes)
+
+                                       SHLIBcmd <- paste('R CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
                                        
                                        cur = getwd()
                                        setwd(dirName)
@@ -218,3 +224,4 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(!file.exists(dirName)) dir.create(dirName)
                                    })
                                )
+
