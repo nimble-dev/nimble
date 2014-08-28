@@ -39,7 +39,7 @@ double dwish_chol(double* x, double* chol, double df, int p, int scale_param, in
   double* tmp = new double[p*p];
   for(i = 0; i < p*p; i++) 
     tmp[i] = x[i];
-  dpotrf_(&uplo, &p, tmp, &p, &info);
+  F77_CALL(dpotrf)(&uplo, &p, tmp, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
     dens += (df - p - 1) * log(tmp[i]);
   delete [] tmp;
@@ -49,16 +49,16 @@ double dwish_chol(double* x, double* chol, double df, int p, int scale_param, in
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
   if(scale_param) {
-    F77_NAME(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
+    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
            chol, &p, x, &p);
-    F77_NAME(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
            chol, &p, x, &p);
     for(i = 0; i < p*p; i += p + 1) 
       tmp_dens += x[i];
     dens += -0.5 * tmp_dens;
   } else {
     // this could be improved by doing efficient U^T U multiply followed by direct product multiply
-    F77_NAME(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+    F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
            chol, &p, x, &p);
     // at this point don't need to do all the multiplications so don't call dtrmm again
     // direct product of upper triangles
@@ -137,8 +137,8 @@ void rwish_chol(double *Z, double* chol, double df, int p, int scale_param) {
  
   // multiply Z*chol, both upper triangular or solve(chol, Z^T)
   // would be more efficient if make use of fact that right-most matrix is triangular
-  if(scale_param) F77_NAME(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, chol, &p);
-  else F77_NAME(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, chol, &p);
+  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
 
   // cp result to Z or chol so can be used as matrix to multiply against and overwrite
   if(scale_param) {
@@ -150,8 +150,8 @@ void rwish_chol(double *Z, double* chol, double df, int p, int scale_param) {
   }
 
   // do crossprod of result; again this would be more efficient use fact that t(input) is lower-tri
-  if(scale_param) F77_NAME(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, chol, &p, Z, &p);
-  else dgemm_(&transN, &transT, &p, &p, &p, &alpha, chol, &p, chol, &p, &beta, Z, &p); 
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, chol, &p, Z, &p);
+  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, chol, &p, &beta, Z, &p); 
 
 }
 
@@ -482,8 +482,8 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, int prec_param,
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
-  if(prec_param) F77_NAME(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
-  else F77_NAME(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
 
   // sum of squares to calculate quadratic form
   double tmp = 0.0;
@@ -556,8 +556,8 @@ void rmnorm_chol(double *ans, double* mean, double* chol, int n, int prec_param)
 
   // do upper-triangular solve or (transpose) multiply
   // dtr{s,m}v is a BLAS level-2 function
-  if(prec_param) F77_NAME(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, devs, &incx);
-  else F77_NAME(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, devs, &incx);
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, devs, &incx);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, devs, &incx);
 
   for(i = 0; i < n; i++) 
     ans[i] = mean[i] + devs[i];
