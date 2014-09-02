@@ -191,13 +191,13 @@ mcmcNodeInit <- nimbleFunction(
     run = function() {
         if(isDeterm) {
             calculate(model, node)
-            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('something went wrong in model initialization')
+            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('deterministic model node is NA or NaN in model initialization')
         }
         if(isStoch) {
             if(is.na(model[[node]])) simulate(model, node)
-            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('something went wrong in model initialization')
+            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('stochastic model node is NA or NaN in model initialization')
             lp <- calculate(model, node)
-            if(is.na(lp) | is.nan(lp) | lp < -1e12)              print('something went wrong in model initialization')
+            if(is.na(lp) | is.nan(lp) | lp < -1e12)              print('stochastic model value is NA, NaN or too small in model initialization')
         }
     }, where = getLoadingNamespace()
 )

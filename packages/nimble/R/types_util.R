@@ -28,7 +28,7 @@ nl_addIndicesToVariables <- function(nodeNames, symtab) {
 
 ## This is the same as nl_ExpandNodeIndex, except it takes a nodeExpr instead of a node char string
 nl_expandNodeIndexExpr <- function(nodeExpr, env = parent.frame()) {
-    if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('something went wrong')
+    if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
     indexStrs <- lapply(indexExprs, function(ind) as.character(eval(ind, envir=env)))
     numInd <- length(indexStrs)
@@ -48,7 +48,7 @@ nl_vectorizedExpandNodeIndexExprs <- function(nodeExprs, env = parent.frame()) {
 ## Expands the indexing of a single node name string, e.g., 'x[1:3]' is expanded to c('x[1]', 'x[2]', 'x[3]')
 nl_expandNodeIndex <- function(node, env = parent.frame()) {
     nodeExpr <- parse(text=node, keep.source = FALSE)[[1]]
-    if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('something went wrong')
+    if(length(nodeExpr)==1)  if(is.name(nodeExpr)) return(as.character(nodeExpr)) else stop('node expression with only one element, but not a variable name')
     indexExprs <- nodeExpr[-c(1,2)]
     indexStrs <- lapply(indexExprs, function(ind) as.character(eval(ind, envir=env)))
     numInd <- length(indexStrs)
@@ -105,9 +105,9 @@ nl_createVarsAndFlatIndexRanges <- function(nodeNames, symtab) {
 
 ## determines the (scalar) flatIndex, from numeric vectors of indicies, and max_indicies
 nl_determineFlatIndex = function(ind, maxs) {
-    if(length(ind) != length(maxs))   stop('something wrong')
-    if(any(ind > maxs))               stop('something wrong')
-    if(any(ind < 1))                  stop('something wrong')
+    if(length(ind) != length(maxs))   stop('number of indices and dimensions are different')
+    if(any(ind > maxs))               stop('some indices exceed dimensions')
+    if(any(ind < 1))                  stop('non-positive index')
     nDim <- length(ind)
     if(nDim==0) return(1)
     if(nDim==1) return(ind)

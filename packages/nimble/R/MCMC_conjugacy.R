@@ -604,7 +604,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     if(identical(targetNode, deparse(expr)))
         return(list(offset = 0, scale = 1))
     
-    if(!is.call(expr))   stop('something went wrong')
+    if(!is.call(expr))   stop('expression is not a call object')
     
     ## process the expression contents of the parentheses
     if(expr[[1]] == '(')
@@ -625,7 +625,7 @@ cc_checkLinearity <- function(expr, targetNode) {
             return(list(offset = cc_negateExpr(checkLin$offset),
                         scale  = cc_negateExpr(checkLin$scale)))
         }
-        stop('something went wrong')
+        stop('problem with negation expression')
     }
     
     if(expr[[1]] == '+') {
@@ -641,7 +641,7 @@ cc_checkLinearity <- function(expr, targetNode) {
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
-        if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('something went wrong')
+        if((checkLinearityLHS$scale != 0) && (checkLinearityRHS$scale != 0)) stop('incompatible scales in * operation')
         if(checkLinearityLHS$scale != 0) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset),
                         scale  = cc_combineExprsMultiplication(checkLinearityLHS$scale,  checkLinearityRHS$offset)))
@@ -650,7 +650,7 @@ cc_checkLinearity <- function(expr, targetNode) {
             return(list(offset = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$offset),
                         scale  = cc_combineExprsMultiplication(checkLinearityLHS$offset, checkLinearityRHS$scale)))
         }
-        stop('something went wrong')
+        stop('problem in * expression')
     }
     
     if(expr[[1]] == '/') {
@@ -658,8 +658,8 @@ cc_checkLinearity <- function(expr, targetNode) {
         checkLinearityLHS <- cc_checkLinearity(expr[[2]], targetNode)
         checkLinearityRHS <- cc_checkLinearity(expr[[3]], targetNode)
         if(is.null(checkLinearityLHS) || is.null(checkLinearityRHS)) return(NULL)
-        if(checkLinearityLHS$scale == 0) stop('something went wrong')
-        if(checkLinearityRHS$scale != 0) stop('something went wrong')
+        if(checkLinearityLHS$scale == 0) stop('left hand side scale == 0')
+        if(checkLinearityRHS$scale != 0) stop('right hand side scale is non-zero')
         return(list(offset = cc_combineExprsDivision(checkLinearityLHS$offset, checkLinearityRHS$offset),
                     scale  = cc_combineExprsDivision(checkLinearityLHS$scale,  checkLinearityRHS$offset)))
     }

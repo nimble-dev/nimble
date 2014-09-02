@@ -258,7 +258,7 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
         for(i in seq_along(code))     code[[i]] <- addMissingIndexingRecurse(code[[i]], dimensionsList)
         return(code)
     }
-    if(code[[1]] != '[')   stop('something went wrong')
+    if(code[[1]] != '[')   stop('something went wrong: expecting a [')
     ## code must be an indexing call, e.g. x[.....]
     if(!any(code[[2]] == names(dimensionsList))) {
         ## dimension information was NOT provided for this variable
@@ -908,7 +908,7 @@ modelDefClass$methods(genGraphNodesList = function() {
         ## only these ones have a nodeFunction associated with them
         if(nodeCase == 1) {
             nI <- nodeInfo[[nodeName]]
-            if(is.null(nI))   stop('something went wrong')
+            if(is.null(nI))   stop('something went wrong: null value for nodeInfo for node named ', nodeName)
             gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
                                             graphID            = i,
                                             type               = nI$type,
@@ -923,7 +923,7 @@ modelDefClass$methods(genGraphNodesList = function() {
         if(nodeCase == 2) {
             declaredNodeName <- nodesLHFInferredLookupList[[nodeName]]
             nI <- nodeInfo[[declaredNodeName]]
-            if(is.null(nI))   stop('something went wrong')
+            if(is.null(nI))   stop('something went wrong: null value for node infor for ', declaredNodeName)
             gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
                                             graphID            = i,
                                             type               = 'LHSinferred',   ## idea: add these inferred nodes (e.g. x[1]) as deterministic dependents of the declared node (x[1:10])

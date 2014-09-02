@@ -337,7 +337,7 @@ Details: See the initialize() function
             modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
             if(ind == 1)   monitorNames <- monitors
             if(ind == 2)   monitorNames <- monitors2
-            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('something went wrong; this should never occur')
+            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
             mv <- modelValues(symbolTable(symbols = modelSymbolObjects[monitorNames]))
             return(mv)
         }
