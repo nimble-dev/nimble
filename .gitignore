@@ -1,2 +1,11 @@
 # emacs backup files
 *~
+.Rhistory
+.Rdata
+ignoreWork
+.DS*
+*.o
+*.so
+*.dll
+*.lnk
+*.tar.gz
