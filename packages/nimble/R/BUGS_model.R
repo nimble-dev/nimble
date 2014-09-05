@@ -101,7 +101,8 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                   
                                   expandNodeNames = function(nodeNames, env = parent.frame()) {
                                       nodeNames <- nl_expandNodeNames(nodeNames, getSymbolTable(), env)
-                                      nodeNames <- intersect(nodeNames, getMaps('nodeNames'))
+                                      # nodeNames <- intersect(nodeNames, getMaps('nodeNames'))
+                                      nodeNames <- unique(as.character(getMaps('nodeName_2_nodeFunctionName')[nodeNames]))
                                       return(nodeNames)
                                   },
                                   
