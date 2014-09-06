@@ -377,7 +377,6 @@ allNodeNames <- function(object, logProb = FALSE){
 	if(inherits(object, 'modelBaseClass') ) {
 		all.Names = ls(object$vars)
 		if(logProb == TRUE)
-		if(logProb == TRUE)
 				return(all.Names)
 		for(i in 1:length(all.Names) ) {
 			if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
