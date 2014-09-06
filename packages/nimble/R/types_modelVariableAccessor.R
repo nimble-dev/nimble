@@ -25,11 +25,11 @@ modelVariableAccessorVector <- setRefClass(
                   length = 'ANY' ),		#'numeric'),
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-            nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env)  # expands nodeNames to fully indexed form, including expanding variables using the symbolTable
             if(logProb){
                 nodeNames <- c(nodeNames, makeLogProbName(nodeNames))
                 nodeNames <- nl_removeNodeNamesNotInSymbolTable(nodeNames, model$getSymbolTable())
             }
+            nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env)  # expands nodeNames to fully indexed form, including expanding variables using the symbolTable
             varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, model$getSymbolTable())  # creates a list of variable names, and ranges of the flat index
             model <<- model
             nodes <<- nodeNames
