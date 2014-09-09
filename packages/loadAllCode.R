@@ -94,9 +94,18 @@ NimbleCodeDir <- "nimble/inst/CppCode"
 options(nimble.Makevars.file = if(.Platform$OS.type == "windows" && file.exists("Makevars.win")) "Makevars.win" else "Makevars")
 
 if(Sys.getenv("NIMBLE_PKG_SRC_DIR") == "") {
-    path = normalizePath("nimble/inst")
-    if(.Platform$OS.type == "windows") # check for cygwin???
+    path = normalizePath("nimble/inst/CppCode")
+    if(.Platform$OS.type == "windows") { # check for cygwin???
          # gsub("C:", "/cygdrive/c", path)  ?
-       path =  gsub("\\\\", "/", path)
+       path =  gsub("\\\\", "/", shortPathName(path))
+         # You need to adjust MyMakevars to have the full path
+         # to the local directory .../nimble/packages
+         # Copy MyMakevars_template to MyMakevars and then edit
+         # You also need to make a copy of the directory Eigen_local to Eigen
+         # in nimble/packages/nimble/
+         # Do not put Eigen or MyMakevars under version control
+       options(nimble.Makevars.file = "MyMakevars")
+    }
     Sys.setenv("NIMBLE_PKG_SRC_DIR" = path)
+    NimbleCodeDir = path
 }
