@@ -6,3 +6,6 @@
 # don't include object files
 *.o
 *.so
+
+MyMakevars
+Eigen*
