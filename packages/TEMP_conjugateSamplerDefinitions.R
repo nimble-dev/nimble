@@ -667,13 +667,13 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
             contribution_mean <- contribution_mean + t(dependents_dmnorm_coeff[i, 1:d, 1:d]) %*% dependents_dmnorm_prec[i, 1:d, 1:d] %*% asCol(dependents_dmnorm_values[i, 1:d] - dependents_dmnorm_offset[i, 1:d])
         }
     }
-    newValue <- rmnorm(1, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE)
+    newValue <- rmnorm_chol(1, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE)
     model[[targetNode]] <<- newValue
     calculate(model, calcNodes)
     nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     modelLogProb1 <- getLogProb(model, calcNodes)
-    posteriorLogDensity0 <- dmnorm(origValue, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE, log = 1)
-    posteriorLogDensity1 <- dmnorm(newValue, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE, log = 1)
+    posteriorLogDensity0 <- dmnorm_chol(origValue, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE, log = 1)
+    posteriorLogDensity1 <- dmnorm_chol(newValue, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE, log = 1)
     posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
     if (abs(posteriorVerification) > 1e-10) {
         nimPrint('conjugate posterior density appears to be wrong')
@@ -717,7 +717,7 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
         }
     }
     targetValue <- model[[targetNode]]
-    posteriorLogDensity <- dmnorm(targetValue, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE, log = 1)
+    posteriorLogDensity <- dmnorm_chol(targetValue, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE, log = 1)
     returnType(double())
     return(posteriorLogDensity)
 }, reset = function() {
