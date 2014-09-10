@@ -1,64 +1,382 @@
-source("/Users/Cliff/Desktop/myLoadAllCode.R")#
-#
-t = 2#
-a = - 0.5#
-b = -1#
-x = rnorm(1, 0, 1)#
-y = x + rnorm(1, 0, 1)#
-for(i in 2:t){#
-	x[i] = x[i-1] * a + b + rnorm(1, 0, 1)#
-	y[i] = x[i]^2 + rnorm(1, 0, 1)#
-}#
-#
-# Super simple model with parameters a and b#
-myModelCode <- modelCode({#
-	x[1] ~ dnorm(0, sd = 1)#
-	y[1] ~ dnorm(x[1], sd = 1)#
-	for(i in 2:t){#
-		x[i] ~ dnorm(x[i-1] * a + b, sd = 1)#
-		y[i] ~ dnorm(x[i]^2, sd = 1)		#I think this will make a and b multi modal?#
-	}#
-	a ~ dunif(-1, 1)#
-	b ~ dnorm(0, tau = 0.1)#
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								OrigGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									to initiate. If so, it just returns#
+							list(getOrgNames = function() orgNodeNames,#
+								getExpandedNames = function() expandedNodeNames,#
+								getOrgIDs = function() OrigGraphIDs,#
+								getSortedIDs = function() sortedGraphIDs,#
+								getSortOrder = function() sortOrder#
+							))
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								OrigGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									#to initiate. If so, it just returns object#
+							list(getOrgNames = function() orgNodeNames,#
+								getExpandedNames = function() expandedNodeNames,#
+								getOrgIDs = function() OrigGraphIDs,#
+								getSortedIDs = function() sortedGraphIDs,#
+								getSortOrder = function() sortOrder#
+							))
+nodeSet <- nodeIDSet()
+is(nodeSet$sortOrder)
+is.na(nodeSet$sortOrder)
+is.null(nodeSet$sortOrder)
+length(nodeSet$sortOrder)
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								OrigGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									#to initiate. If so, it just returns object#
+							list(getOrgNames = function() if(!inherits(origNodeNames, 'uninitializedField') ) orgNodeNames; else stop('Warning: origNodeNames never initialized!'),#
+								getExpandedNames = function() expandedNodeNames,#
+								getOrgIDs = function() OrigGraphIDs,#
+								getSortedIDs = function() sortedGraphIDs,#
+								getSortOrder = function() sortOrder#
+							))
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								OrigGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									#to initiate. If so, it just returns object#
+							list(getOrgNames = function() if(!inherits(origNodeNames, 'uninitializedField') ){ orgNodeNames; else stop('Warning: origNodeNames never initialized!')},#
+								getExpandedNames = function() expandedNodeNames,#
+								getOrgIDs = function() OrigGraphIDs,#
+								getSortedIDs = function() sortedGraphIDs,#
+								getSortOrder = function() sortOrder#
+							))
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								OrigGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									#to initiate. If so, it just returns object#
+							list(getOrgNames = function(){} if(!inherits(origNodeNames, 'uninitializedField') ) orgNodeNames; else stop('Warning: origNodeNames never initialized!')},#
+								getExpandedNames = function() expandedNodeNames,#
+								getOrgIDs = function() OrigGraphIDs,#
+								getSortedIDs = function() sortedGraphIDs,#
+								getSortOrder = function() sortOrder#
+							))
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								OrigGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									#to initiate. If so, it just returns object#
+							list(getOrgNames = function(){ if(!inherits(origNodeNames, 'uninitializedField') ) orgNodeNames; else stop('Warning: origNodeNames never initialized!')},#
+								getExpandedNames = function() expandedNodeNames,#
+								getOrgIDs = function() OrigGraphIDs,#
+								getSortedIDs = function() sortedGraphIDs,#
+								getSortOrder = function() sortOrder#
+							))
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								OrigGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									#to initiate. If so, it just returns object#
+							list(getOrgNames = function(){ if(!inherits(origNodeNames, 'uninitializedField') ) origNodeNames else stop('Warning: origNodeNames never initialized!')},#
+								getExpandedNames = function() expandedNodeNames,#
+								getOrgIDs = function() OrigGraphIDs,#
+								getSortedIDs = function() sortedGraphIDs,#
+								getSortOrder = function() sortOrder#
+							))
+myNodes <- nodeIDSet()
+myNodes$getOrgNames()
+nodeIDSet <- setRefClass(Class = "nodeIDSet",#
+						fields = #
+							list(origNodeNames = 'ANY',#
+								expandedNodeNames = 'ANY',#
+								origGraphIDs = 'ANY',#
+								sortedGraphIDs = 'ANY',#
+								sortOrder = 'ANY'),#
+						methods = 	#These methods need to check if objects are initiated. If not, it needs#
+									#to initiate. If so, it just returns object#
+							list(getOrgNames = function(){ if(!inherits(origNodeNames, 'uninitializedField') ) origNodeNames #
+									else stop('origNodeNames never initialized!')},#
+								getExpandedNames = function(){ if(!inherits(expandedNodeNames, 'uninitializedField') ) expandedNodeNames #
+									else stop('expandedNodeNames never initialized!')},#
+								getOrgIDs = function() { if(!inherits(origGraphIDs, 'uninitializedField') ) origGraphIDs #
+									else stop('origGraphIDs never initialized!')},#
+								getSortedIDs = function() { if(!inherits(sortedGraphIDs, 'uninitializedField') ) sortedGraphIDs #
+									else stop('sortedGraphIDs never initialized!')},#
+								getSortOrder = function() { if(!inherits(sortOrder, 'uninitializedField') ) sortOrder #
+									else stop('sortOrder never initialized!')}#
+							))
+myMat <- matrix(NULL, nrow = 3, ncol = 3)
+myMat <- matrix(NA, nrow = 3, ncol = 3)
+nl_expandNodeNames
+removeIndex
+removeIndexing
+nodeNameWithoutIndex
+removeIndexing <- function(nodes) {#
+    return(gsub('\\[.*', '', nodes))#
+}
+removeIndexing
+removeIndexing(c('x', 'x[1,2]'))
+source("/Users/Cliff/Desktop/myLoadAllCode.R")
+myModelCode <- quote({a ~ dnorm(0,1); b[1,1] ~ dnorm(0,1);b[2,2] ~ dnorm(0,1)})
+myModel <- nimbleModel(myModelCode)
+myModel$expandNodeNames
+nl_expandNodeNames
+nl_addIndicesToVariables
+nl_checkNodeNamesInModel
+nl_expandNodeIndex
+nodeExpr <- parse('x[1,]')
+nodeExpr <- parse('x[1,]', env = parent.frame)
+nodeExpr <- parse(as.name('x[1,]'))
+as.numeric('1,2')
+myModel$expandNodeNames()
+myModel$expandNodeNames('a')
+myModel$expandNodeNames('b')
+myModelCode <- quote({#
+	a ~ dnorm(0,1)#
+	b[1,1] ~ dnorm(0,1)#
+	k = 2#
+	b[2, k] ~dnorm(0,1)#
 })#
 #
-myModel <- nimbleModel(myModelCode, data = list(y = y), constants = list(t = t)) #
-mcmcSpec <- MCMCspec(myModel)#
-mcmc <- buildMCMC(mcmcSpec)#
-Rprof(tmp1 <- tempfile())#
-cm <- compileNimble(myModel, mcmc)#
-Rprof()#
-run2Sum <- summaryRprof(tmp1)#
-unlink(tmp1)
-source("/Users/Cliff/Desktop/myLoadAllCode.R")#
-#
-t = 2#
-a = - 0.5#
-b = -1#
-x = rnorm(1, 0, 1)#
-y = x + rnorm(1, 0, 1)#
-for(i in 2:t){#
-	x[i] = x[i-1] * a + b + rnorm(1, 0, 1)#
-	y[i] = x[i]^2 + rnorm(1, 0, 1)#
-}#
-#
-# Super simple model with parameters a and b#
-myModelCode <- modelCode({#
-	x[1] ~ dnorm(0, sd = 1)#
-	y[1] ~ dnorm(x[1], sd = 1)#
-	for(i in 2:t){#
-		x[i] ~ dnorm(x[i-1] * a + b, sd = 1)#
-		y[i] ~ dnorm(x[i]^2, sd = 1)		#I think this will make a and b multi modal?#
-	}#
-	a ~ dunif(-1, 1)#
-	b ~ dnorm(0, tau = 0.1)#
+myModel <- nimbleModel(myModelCode)
+myModelCode <- quote({#
+	a ~ dnorm(0,1)#
+	b[1,1] ~ dnorm(0,1)#
+	k <- 2#
+	b[2, k] ~dnorm(0,1)#
 })#
 #
-myModel <- nimbleModel(myModelCode, data = list(y = y), constants = list(t = t)) #
-mcmcSpec <- MCMCspec(myModel)#
-mcmc <- buildMCMC(mcmcSpec)#
-Rprof(tmp1 <- tempfile())#
-cm <- compileNimble(myModel, mcmc)#
-Rprof()#
-run2Sum <- summaryRprof(tmp1)#
-unlink(tmp1)
+myModel <- nimbleModel(myModelCode)
+?gsub
+gsub("[]", replacement = "", x = 'x[1:2,2]')
+gsub("[", replacement = "", x = 'x[1:2,2]')
+gsub("\[", replacement = "", x = 'x[1:2,2]')
+x <- "http://stat.umn.edu:80/xyz"#
+m <- regexec("^(([^:]+)://)?([^:/]+)(:([0-9]+))?(/.*)", x)#
+m
+x <- "http://stat.umn.edu:80/xyz"#
+m <- regexec("^(([^:]+)://)?([^:/]+)(:([0-9]+))?(/.*)", x)#
+m#
+regmatches(x, m)
+gsub('.+\\[', '', c('x[1], x[2]'))
+gsub('.+\\[', '', c('x[1]', 'x[2]'))
+nchar('cat') + 1
+?nchar
+xString <- c('x[1]', 'x[2]')
+xString
+substring(xString, 2, last = nchar(xString))
+xString <- c('x[1]', 'x[20]')
+substring(xString, 2, last = nchar(xString))
+nodeNames <- c('x1[1,1]', x1[2,3]'')
+nodeNames <- c('x1[1,1]', 'x1[2,3]')
+nodeNames
+varInfo <- list(varName = 'x')
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	firstDropNumber <- nchar(varName) + 1#
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	return(charIndices_wCommas)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 1, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	return(charIndices_wCommas)#
+}
+varInfo
+varInfo[['varName']]
+extractIndices_wVarInfo(nodeNames, varInfo)
+substring(nodeNames, 2, 5)
+nodeNames
+nodeNames
+varInfo <- list(varName = 'x1')
+extractIndices_wVarInfo(nodeNames, varInfo)
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	return(charIndices_wCommas)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+strsplit
+?strsplit
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',')#
+	return(charIndices_wCommas)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',')#
+	return(charIndices_nCommas)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	numIndices <- as.numeric(strsplit(charIndices_wCommas, ',') )#
+	return(charIndices_nCommas)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+nodeNames <- c('x1[1,1]', 'x1[2,30]')
+extractIndices_wVarInfo(nodeNames, varInfo)
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- as.numeric(strsplit(charIndices_wCommas, ',') )#
+	return(charIndices_nCommas)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',') #
+	return(charIndices_nCommas)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+?lapply
+extractIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',') #
+	numIndices <- lapply(charIndices_nCommas, as.numeric)#
+	return(numIndices)#
+}
+extractIndices_wVarInfo(nodeNames, varInfo)
+myArray <- array(1:27, dim = c(3,3,3))
+myArray
+vectorIndex_2_flat(index, strides)#
+	return(sum(index * strides))
+vectorIndex_2_flat <- function(index, strides)#
+	return(sum(index * strides))
+extractFlatIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',') #
+	numIndices <- lapply(charIndices_nCommas, as.numeric)#
+	if(varInfo$nDim == 1)#
+		return(numIndices)#
+	strides <- rep(1, varInfo$nDim)#
+	for(i in 2:varInfo$nDim)#
+		strides[i] = strides[i-1] * varInfo$maxs[i-1]#
+	flatIndices <- lapply(numIndices, vectorIndex_2_flat, strides = strides)#
+	return(flatIndices)#
+}
+vectorIndex_2_flat <- function(index, strides)#
+	return(sum(index - 1 * strides) + 1)
+nodeNames <- c('x[1,1,1]', 'x[1,2,3]', 'x[3,3,3]')
+nodeNames <- c('x[1,1,1]', 'x[1,2,3]', 'x[3,3,3]')#
+varInfo <- list(varName = 'x', nDim = 3, max = c(3,3,3) )
+extractFlatIndices_wVarInfo(nodeNames, varInfo)
+varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)
+firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',') #
+	numIndices <- lapply(charIndices_nCommas, as.numeric)#
+	if(varInfo$nDim == 1)#
+		return(numIndices)#
+	strides <- rep(1, varInfo$nDim)
+strides
+for(i in 2:varInfo$nDim)#
+		strides[i] = strides[i-1] * varInfo$maxs[i-1]
+strides
+varInfo$nDim
+for(i in 2:(varInfo$nDim) )#
+		strides[i] = strides[i-1] * varInfo$maxs[i-1]
+varInfo$maxs[1]
+varInfo$maxs[2]
+varInfo$maxs[3]
+varInfo <- list(varName = 'x', nDim = 3, maxs = c(3,3,3) )
+extractFlatIndices_wVarInfo(nodeNames, varInfo)
+vectorIndex_2_flat <- function(index, strides)#
+	return(sum(index * strides) )
+extractFlatIndices_wVarInfo(nodeNames, varInfo)
+nodeNames
+vectorIndex_2_flat <- function(index, strides){#
+	index[2:length(index)] <- index[2:length(index)]-1#
+	return(sum(index * strides) )#
+}
+extractFlatIndices_wVarInfo(nodeNames, varInfo)
+myArray
+extractFlatIndices_wVarInfo <- function(nodeNames, varInfo){#
+	varName <- varInfo[['varName']]#
+	numNodes <- length(nodeNames)#
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) #
+	lastDropNumber <- nchar(nodeNames) - 1#
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)#
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',') #
+	numIndices <- lapply(charIndices_nCommas, as.numeric)#
+	if(varInfo$nDim == 1)#
+		return(numIndices)#
+	strides <- rep(1, varInfo$nDim)#
+	for(i in 2:(varInfo$nDim) ){#
+		strides[i] = strides[i-1] * varInfo$maxs[i-1]#
+		}#
+	flatIndices <- unlist(lapply(numIndices, vectorIndex_2_flat, strides = strides) )#
+	return(flatIndices)#
+}
+extractFlatIndices_wVarInfo(nodeNames, varInfo)
+myArray[extractFlatIndices_wVarInfo(nodeNames, varInfo)]
+vectorIndex_2_flat <- function(index, strides){#
+#	index[2:length(index)] <- index[2:length(index)]-1#
+#	return(sum(index * strides) )#
+	return(sum((index-1) * strides) + 1)#
+}
+myArray[extractFlatIndices_wVarInfo(nodeNames, varInfo)]

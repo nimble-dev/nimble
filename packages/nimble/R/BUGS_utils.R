@@ -212,3 +212,48 @@ createNamedObjectsFromList <- function(lst, writeToFile = NULL) {
     }
 }
 
+
+
+
+vectorIndex_2_flat <- function(index, strides){
+#	index[2:length(index)] <- index[2:length(index)]-1
+#	return(sum(index * strides) )
+	return(sum((index-1) * strides) + 1)
+}
+
+extractFlatIndices_wVarInfo <- function(nodeNames, varInfo){
+	varName <- varInfo[['varName']]
+	numNodes <- length(nodeNames)
+	firstDropNumber <- rep(nchar(varName) + 2, numNodes) 
+	lastDropNumber <- nchar(nodeNames) - 1
+	charIndices_wCommas <- substring(nodeNames, firstDropNumber, lastDropNumber)
+	charIndices_nCommas <- strsplit(charIndices_wCommas, ',') 
+	numIndices <- lapply(charIndices_nCommas, as.numeric)
+	if(varInfo$nDim == 1)
+		return(unlist(numIndices) )
+	strides <- rep(1, varInfo$nDim)
+	for(i in 2:(varInfo$nDim) ){
+		strides[i] = strides[i-1] * varInfo$maxs[i-1]
+		}
+	flatIndices <- unlist(lapply(numIndices, vectorIndex_2_flat, strides = strides) )
+	return(flatIndices)
+}
+
+expandIndexSet4sapply <- function(nextIndices, prevIndices, stride)
+	return(prevIndices + (nextIndices-1) * stride)
+
+combineIndices2Flat <- function(prevIndices, nextIndices, stride)
+	as.numeric(sapply(nextIndices, expandIndexSet4sapply, prevIndices, stride) ) 
+	
+character2index <- function(thisChar){
+	splitValues <- strsplit(thisChar, split = ":")[[1]]
+		if(length(splitValues) == 1)
+		return(as.numeric(splitValues) ) 
+	if(length(splitValues)){
+		begin = as.numeric(splitValues[1])
+		end = as.numeric(splitValues[2])
+		return(begin:end)
+	}
+	else
+		stop("Error: too many :'s in index")
+}

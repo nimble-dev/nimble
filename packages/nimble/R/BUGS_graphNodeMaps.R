@@ -28,6 +28,9 @@ mapsClass <- setRefClass(
         graphID_2_nodeFunctionName = 'ANY',      ## vector of character nodeFunctionNames
         graphID_2_originNodeName = 'ANY',        ## vector of character nodeNames
         
+        ## varName2GraphID maps
+        vars2GID = 'ANY',
+        
         ## positions vectors of nodeNames (top, latent, end)
         nodeNamesTop = 'ANY',
         nodeNamesLatent = 'ANY',
@@ -42,7 +45,7 @@ mapsClass <- setRefClass(
 
 
 
-mapsClass$methods(setup = function(graphNodesList, graph) {
+mapsClass$methods(setup = function(graphNodesList, graph, varInfo) {
     
     nodeNames <<- names(graphNodesList)
     graphIDs <<- unlist(lapply(graphNodesList, function(gn) gn$graphID), use.names = FALSE)
@@ -71,6 +74,20 @@ mapsClass$methods(setup = function(graphNodesList, graph) {
     graphID_2_type <<- types
     graphID_2_nodeFunctionName <<- unlist(nodeFunctionNamesRaw, use.names = FALSE)
     graphID_2_originNodeName <<- unlist(originNodeNamesRaw, use.names = FALSE)
+    
+    vars2GID <<- new.env()
+    strippedNodeNames <- removeIndexing(nodeNames)
+    for(var in varInfo){
+    	varName = var[['varName']]
+    	if(var$nDim == 0)	vars2GID[[varName]] <<- nodeName_2_graphID[[varName]]
+    	else{
+	    	vars2GID[[varName]] <<- array(dim = var$maxs)
+	    	nodeNames4Var <- nodeNames[strippedNodeNames == varName]
+	    	var_GIDs = nodeName_2_graphID[nodeNames4Var]
+	    	flatIndices = extractFlatIndices_wVarInfo(nodeNames4Var, var)
+	    	vars2GID[[varName]][flatIndices] <<- var_GIDs
+	    	}
+    }
     
     setPositions(graph)
 })
