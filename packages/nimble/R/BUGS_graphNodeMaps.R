@@ -23,13 +23,14 @@ mapsClass <- setRefClass(
         nodeName_2_originNodeName = 'ANY',       ## named vector of character nodeNames
         
         ## graphID_2_xxxx maps
-        graphID_2_nodeName = 'ANY',              ## vector of character nodeNames
-        graphID_2_type = 'ANY',                  ## vector of character types
-        graphID_2_nodeFunctionName = 'ANY',      ## vector of character nodeFunctionNames
-        graphID_2_originNodeName = 'ANY',        ## vector of character nodeNames
+        graphID_2_nodeName = 		'ANY',              ## vector of character nodeNames
+        graphID_2_type = 			'ANY',                  ## vector of character types
+        graphID_2_nodeFunctionName ='ANY',      ## vector of character nodeFunctionNames
+        graphID_2_originNodeName = 	'ANY',        ## vector of character nodeNames
         
         ## varName2GraphID maps
-        vars2GID = 'ANY',
+        vars2GraphID_values = 		'ANY',
+        vars2GraphID_functions =	'ANY',
         
         ## positions vectors of nodeNames (top, latent, end)
         nodeNamesTop = 'ANY',
@@ -75,18 +76,33 @@ mapsClass$methods(setup = function(graphNodesList, graph, varInfo) {
     graphID_2_nodeFunctionName <<- unlist(nodeFunctionNamesRaw, use.names = FALSE)
     graphID_2_originNodeName <<- unlist(originNodeNamesRaw, use.names = FALSE)
     
-    vars2GID <<- new.env()
+    vars2GraphID_values <<- new.env()
+    vars2GraphID_functions <<- new.env()
+    
+    isMultiVariateFunction <- grepl(':', nodeNames)
     strippedNodeNames <- removeIndexing(nodeNames)
     for(var in varInfo){
     	varName = var[['varName']]
-    	if(var$nDim == 0)	vars2GID[[varName]] <<- nodeName_2_graphID[[varName]]
+    	if(var$nDim == 0){
+    		vars2GraphID_values[[varName]] <<- nodeName_2_graphID[[varName]]
+    		vars2GraphID_functions[[varName]] <<- nodeName_2_graphID[[varName]]
+    	}
     	else{
-	    	vars2GID[[varName]] <<- array(dim = var$maxs)
-	    	nodeNames4Var <- nodeNames[strippedNodeNames == varName]
-	    	var_GIDs = nodeName_2_graphID[nodeNames4Var]
+	    	vars2GraphID_values[[varName]] <<- array(dim = var$maxs)
+	    	nodeNames4Var <- nodeNames[strippedNodeNames == varName & !isMultiVariateFunction]
+	    	var_GIDs = as.numeric(nodeName_2_graphID[nodeNames4Var])		#The only reason 'as.numeric' is used is to strip off names
 	    	flatIndices = extractFlatIndices_wVarInfo(nodeNames4Var, var)
-	    	vars2GID[[varName]][flatIndices] <<- var_GIDs
+	    	vars2GraphID_values[[varName]][flatIndices] <<- var_GIDs
+	    	vars2GraphID_functions[[varName]] <<- vars2GraphID_values[[varName]]
+	    	
+	    	nodeNames4Var <- nodeNames[strippedNodeNames == varName & isMultiVariateFunction]
+	    	if(length(nodeNames4Var) > 0){
+		    	var_GIDs = nodeName_2_graphID[nodeNames4Var]
+				nodeNamesWithCall <- paste0(nodeNames4Var, "<- var_GIDs")
+	    		var_GIDs = nodeName_2_graphID[nodeNames4Var]
+	    		eval(parse(text = nodeNamesWithCall)[[1]], envir = vars2GraphID_functions)		    	
 	    	}
+	    }
     }
     
     setPositions(graph)

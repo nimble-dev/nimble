@@ -23,83 +23,92 @@ graphNode <- setRefClass(
 #The class we use keep track of graphIDs
 nodeIDSet <- setRefClass(Class = "nodeIDSet",
 						fields = 
-							list(origNodeNames = 	'ANY',
-								expandedNodeNames = 'ANY',
-								origGraphIDs = 		'ANY',
-								sortedGraphIDs = 	'ANY',
-								sortOrder = 		'ANY',
-								model = 			'ANY'),
+							list(origNodeNames 				=	'ANY',
+								expandedNodeNames 			=	'ANY',
+								origGraphIDs_values 		=	'ANY',
+								origGraphIDs_functions		=	'ANY',
+								sortedGraphIDs_values 		=	'ANY',
+								sortedGraphIDs_functions	=	'ANY',
+								sortOrder_values 			= 	'ANY',
+								sortOrder_functions 		= 	'ANY',
+								model 						=	'ANY'),
 						methods = 	#These methods need to check if objects are initiated. If not, it needs
 									#to initiate. If so, it just returns object
-							list(getOrgNames = function(){ if(!inherits(origNodeNames, 'uninitializedField') ) origNodeNames 
-									else stop('origNodeNames never initialized!')},
-								getExpandedNames = function(){ if(!inherits(expandedNodeNames, 'uninitializedField') ) expandedNodeNames 
-									else stop('expandedNodeNames never initialized!')},
-								getOrgIDs = function() { if(!inherits(origGraphIDs, 'uninitializedField') ) origGraphIDs 
-									else stop('origGraphIDs never initialized!')},
-								getSortedIDs = function() { if(!inherits(sortedGraphIDs, 'uninitializedField') ) sortedGraphIDs 
-									else stop('sortedGraphIDs never initialized!')},
-								getSortOrder = function() { if(!inherits(sortOrder, 'uninitializedField') ) sortOrder 
-									else stop('sortOrder never initialized!')
+							list(getOrigNames = function(){ 
+									if(!inherits(origNodeNames, 'uninitializedField') ) 
+										origNodeNames 
+									else stop('origNodeNames never initialized!')
+									},
+								getExpandedNames = function(){ 
+									if(!inherits(expandedNodeNames, 'uninitializedField') ) 
+										expandedNodeNames 
+									else {
+										expandedNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values]
+										expandedNodeNames
+										}
+									},
+								getOrigIDs_values = function() { 
+									if(!inherits(origGraphIDs_values, 'uninitializedField') ) 
+										origGraphIDs_values 
+									else stop('origGraphIDs_values never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeIDSet without initializing OrigGraphIDs_values)')
+									},
+								getOrigIDs_functions = function() { 
+									if(!inherits(origGraphIDs_functions, 'uninitializedField') ) 
+										origGraphIDs_functions 
+									else stop('origGraphIDs_functions never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeIDSet without initializing OrigGraphIDs_values)')
+									},
+								getSortedIDs_values = function() { 
+									if(!inherits(sortedGraphIDs_values, 'uninitializedField') ) 
+										sortedGraphIDs_values 
+									else{ 
+										if(inherits(sortOrder_values, 'uninitializedField') ) 
+											sortOrder_values <<- order(origGraphIDs_values)
+ 										sortedGraphIDs_values <<- origGraphIDs_values[sortOrder_values]
+										sortedGraphIDs_values
+									}
+								},
+								getSortedIDs_functions = function() { 
+									if(!inherits(sortedGraphIDs_functions, 'uninitializedField') ) 
+										sortedGraphIDs_functions 
+									else{
+										if(inherits(sortOrder_functions, 'uninitializedField') ) 
+											sortOrder_functions <<- order(origGraphIDs_functions)
+										sortedGraphIDs_functions <<- origGraphIDs_functions[sortOrder_functions]
+										sortedGraphIDs_functions
+									}
+								},
+								getSortOrder_values = function() { 
+									if(!inherits(sortOrder_values, 'uninitializedField') ) 
+										sortOrder_values 
+									else{
+										sortOrder_values <<- order(origGraphIDs_values)
+										sortOrder_values	
+									}
+								},	
+								getSortOrder_functions = function() { 
+									if(!inherits(sortOrder_functions, 'uninitializedField') ) 
+										sortOrder_functions 
+									else {
+										sortOrder_functions <<- order(origGraphIDs_functions)
+										sortOrder_functions
+									}
 								},	
 								initialize = function(...){
 									callSuper(...)
-									if(inherits(model, 'uninitializedField'))	stop('model missing when creating nodeIDset')
-									if(inherits(origGraphIDs, 'uninitializedField') )	{
-										if(inherits(origNodeNames, 'uninitializedField') )	stop('when creating nodeIDset, neither origNodeNames nor origGraphIDs provided')
-										origOrder <- 1:length(origNodeNames)			#For preserving the order entered to pass to origGraphIDs (may be important for copy)
-										varNames <- removeIndexing(origNodeNames)		#Peels off the varNames
-										isVarName <- varNames == origNodeNames			#Checks which name provided is a variable name
-										subsetVarNames <- varNames[isVarName]			#Dividing character strings into variable names and node names
-										subsetVarOrder <- origOrder[isVarName]
-										subsetNodeNames <- origNodeNames[!isVarName]
-										subsetNodeOrder <- origOrder[!isVarName]
-										varGID_list <- list()
-										for(varNum in seq_along(subsetVarNames) ){
-											GIDs <- model$modelDef$maps$vars2GID[[subsetVarNames[varNum] ]]
-											if(is.null(GIDs)){myWarning = paste('when creating nodeIDset, variable', subsetVarNames[varNum], 'not found in provided model')}
-											GIDs <- GIDs[!is.na(GIDs)]
-											varGID_list[[varNum]] <- GIDs
-										}
-										nodeGID_list <- list()
-										for(nodeNum in seq_along(subsetNodeNames) ){
-											thisVarName <- varNames[subsetNodeOrder[nodeNum]]
-											
-											#These next two lines add spaces to the text. This is because otherwise strsplit will throw away indices of length 0,
-											#such as 'x[]', when in fact we want to know that it is blank but not throw out
-											thisIndex <- paste0(' ', substring(subsetNodeNames[nodeNum], first = 2 + nchar(thisVarName), last = nchar(subsetNodeNames[nodeNum]) - 1) )
-											thisIndex <- gsub(',', ', ', thisIndex)
-											
-											splitIndices <- strsplit(thisIndex, ',')[[1]]
-											if(length(splitIndices) != length(model$vars[[thisVarName]]))
-												stop(paste('Incorrect indices provided for variable', thisVarName, 'Indices provided =', thisIndex, 'nDim =', length(model$vars[[thisVarName]])))
-											splitIndices <- gsub(' ', '', splitIndices)
-											needsIndicesAdded <- which(nchar(splitIndices) == 0)
-											for(index in needsIndicesAdded)
-												splitIndices[index] <- paste(1, ":", model$vars[[thisVarName]][index], sep = '')
-											indexList <- list()
-											for(i in seq_along(splitIndices))
-												indexList[[i]] = character2index(splitIndices[i])
-											stride = 1
-											flatIndices <- indexList[[1]]
-											k <- length(splitIndices)
-											if(k > 1){
-												for(i in 2:k){
-													stride <- stride * model$vars[[thisVarName]][i-1]
-													flatIndices <- combineIndices2Flat(flatIndices, indexList[[i]], stride)
-												} 
-											}
-										GIDs <- model$modelDef$maps$vars2GID[[thisVarName]][flatIndices]
-										nodeGID_list[[nodeNum]] <- GIDs[!is.na(GIDs)]
-										}
-									}	
-							AllGIDs <- list()
-							AllGIDs[subsetVarOrder] <- varGID_list
-							AllGIDs[subsetNodeOrder] <- nodeGID_list		
-							origGraphIDs <<- unlist(AllGIDs)
-							}))
+									if(inherits(model, 'uninitializedField'))	
+										stop('model missing when creating nodeIDset')
+									if(inherits(origGraphIDs_values, 'uninitializedField') )	{
+										if(inherits(origNodeNames, 'uninitializedField') )	
+											stop('when creating nodeIDset, neither origNodeNames nor origGraphIDs_values provided')
+										origGraphIDs_values <<- unlist(sapply(origNodeNames, parseEval, env = model$modelDef$maps$vars2GraphID_values, USE.NAMES = FALSE)) 
+										origGraphIDs_functions <<-unique(unlist(sapply(origNodeNames, parseEval, env = model$modelDef$maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+									}
+								}))
 
-
+parseEval <- function(x, env){
+	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+	as.numeric(ans)
+}
 #' Class for NIMBLE model definition
 #'
 #' Class for NIMBLE model definition that is not usually needed directly by a user.
