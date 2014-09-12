@@ -1,2 +1,4 @@
 # emacs backup files
 *~
+ignoreWork
+.Rhistory
