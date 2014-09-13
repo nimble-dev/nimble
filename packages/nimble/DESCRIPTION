@@ -2,7 +2,7 @@ Package: nimble
 Title: Flexible BUGS-compatible system for hierarchical statistical modeling
     and algorithm development
 Description: 
-Version: 0.1-1
+Version: 0.1-2
 Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
 Depends:  R (>= 3.0.1)
