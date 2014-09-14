@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (9/14/14) gamma on my Linux desktop is finding (I think) the system gamma and somehow returning log(gamma(x)) instead of gamma(x); on my Mac, it's fine (CJP)
+
 * (9/4/14)  allow *expressions* to be used as arguments to dmnorm(), nimArr_dmnorm_chol(), and all other multivariate distributions.
 
 * (9/4/14)  handle for-loop indexes consistent with BUGS & jags.  e.g., for(i in 1:3+1) {}, should give lowest precendence to the ':' operator
