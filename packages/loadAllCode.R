@@ -91,7 +91,7 @@ NeedMakevarsFile = TRUE
 
 IncludeCodeDir <- "nimble/inst/include/nimble"
 NimbleCodeDir <- "nimble/inst/CppCode"
-options(nimble.Makevars.file = if(.Platform$OS.type == "windows" && file.exists("Makevars.win")) "Makevars.win" else "Makevars")
+options(nimble.Makevars.file = if(.Platform$OS.type == "windows" && file.exists("Makevars.win")) "Makevars.win" else "MyMakevars")
 
 if(Sys.getenv("NIMBLE_PKG_SRC_DIR") == "") {
     path = normalizePath("nimble/inst/CppCode")
