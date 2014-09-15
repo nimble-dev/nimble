@@ -9,3 +9,5 @@
 
 MyMakevars
 Eigen*
+
+config.*

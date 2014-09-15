@@ -8,6 +8,7 @@ ignoreWork
 *.o
 *.so
 *.dll
+*.dylib
 *.lnk
 *.tar.gz
 TEMP*
