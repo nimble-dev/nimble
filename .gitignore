@@ -1,6 +1,7 @@
 # emacs backup files
 *~
 .Rhistory
+.Rapp.history
 .Rdata
 ignoreWork
 .DS*
@@ -9,3 +10,5 @@ ignoreWork
 *.dll
 *.lnk
 *.tar.gz
+TEMP*
+MyMakevars
