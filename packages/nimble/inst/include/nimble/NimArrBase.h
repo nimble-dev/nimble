@@ -16,6 +16,7 @@ enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 	public:
 	nimType myType;
 	virtual nimType getNimType() const {return(myType);};
+	virtual ~NimArrType(){};
 	};
 
 
@@ -27,6 +28,7 @@ enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 	virtual int size() =0;
 	virtual void setRowDims(int row, vector<int> dims) = 0;
 	virtual vector<int> getRowDims(int row) = 0;
+	virtual ~NimVecType(){};
   };
 
 template<class T>
@@ -59,6 +61,7 @@ class NimArrBase: public NimArrType {
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
   }
+  ~NimArrBase(){};
  NimArrBase(const NimArrBase<T> &other) :
   NAdims(other.dim()),
     offset(0),
@@ -99,6 +102,8 @@ class VecNimArrBase : public NimVecType {
       if(typeid(T) == typeid(double) )
     	myType = DOUBLE;
     }
+
+    ~VecNimArrBase(){};
 };
 
 

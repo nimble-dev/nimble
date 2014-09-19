@@ -550,11 +550,13 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          cppProj <- cppProjects[[ generatorName ]]
                                          writeLines('Using previously generated C++ code.  This will not work if the current nimbleFunction specializations use types of modelValues or other nimbleFunctions that have not already been compiled in this project.  If that is the case, you should include these specializiations in the first compilation of the nimbleFunction.  You can compile all the specializations of this nimbleFunction together with reset = TRUE.')
                                      }
-                                     if(!nfCompInfos[[generatorName]]$cppCompiled) {
-                                         cppProj$compileFile(filename)
-                                         nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
+                                     if(!nfCompInfos[[generatorName]]$cppCompiled && control$compileCpp) {
+                                         if(control$compileCpp) {
+                                             cppProj$compileFile(filename)
+                                             nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
+                                         } else writeLines('Skipping compilation because control$compileCpp is FALSE')
                                      } else writeLines('Using previously compiled C++ code.')
-                                     if(!nfCompInfos[[generatorName]]$loaded) {
+                                     if(!nfCompInfos[[generatorName]]$loaded && control$loadSO) {
                                          cppProj$loadSO(filename)
                                          nfCompInfos[[generatorName]]$loaded <<- TRUE
                                      } else writeLines('Using previously loaded compilation unit.')
