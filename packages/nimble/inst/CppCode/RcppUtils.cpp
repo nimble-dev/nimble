@@ -736,8 +736,6 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
   		return(R_NilValue);
   	}
 	SEXP listElement;
-	SEXP nilReturn;
-	PROTECT(listElement);
 	NimVecType *typePtr = static_cast<NimVecType*>(R_ExternalPtrAddr(vNimPtr) );
 	nimType vecType = (*typePtr).getNimType();
 	int index;
@@ -746,7 +744,6 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
 		index = INTEGER(Sindices)[i];
 		cSetMVElementSingle(typePtr, vecType, index, listElement);
 	}
-	UNPROTECT(1);
   	return(R_NilValue);
   }
 
@@ -795,10 +792,8 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
  	PROTECT(sList = allocVector(VECSXP, nIndice) );
  	NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(SextPtr));
 	nimType vecType = (*typePtr).getNimType();
-	int nrowCpp = typePtr->size();
 	for(int i = 0; i < nIndice; i++)
 		SET_VECTOR_ELT(sList, i, cGetMVElementOneRow(typePtr, vecType, INTEGER(Sindices)[i]) );
-	//	SET_VECTOR_ELT(sList, i, cGetMVElementOneRow(typePtr, vecType, nrowCpp, INTEGER(Sindices)[i]) );
 	UNPROTECT(1);
 	return(sList);
  }
@@ -1174,6 +1169,10 @@ SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum){
         cPtr = static_cast<bool*>( vPtr );
     else if(cRefNum == 2)
         cPtr = (*static_cast<bool**> ( vPtr ) );
+    else {
+      PRINTF("Warning: bool_2_SEXP called with reNum != 1 or 2\n");
+      return(R_NilValue);
+    }
     SEXP Sans;
     PROTECT(Sans = allocVector(LGLSXP, 1));
     LOGICAL(Sans)[0] = (*cPtr);
@@ -1193,6 +1192,10 @@ SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
         cPtr = static_cast<double*>( vPtr );
     else if(cRefNum == 2)
         cPtr = (*static_cast<double**> ( vPtr ) );
+    else {
+      PRINTF("Warning: double_2_SEXP called with reNum != 1 or 2\n");
+      return(R_NilValue);
+    }
     SEXP Sans;
     PROTECT(Sans = allocVector(REALSXP, 1));
     REAL(Sans)[0] = (*cPtr);    
@@ -1272,7 +1275,7 @@ class sampleClass: public NamedObjects {
 		namedObjects["y"] = &y;
 		namedObjects["ind"] = &ind;
 	}
-
+  ~sampleClass(){};
 };
 
 
@@ -1539,7 +1542,7 @@ void row2NimArr(SEXP matrix, NimArrBase<int>* nimPtr, int startPoint, int len, i
 }
 
 SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims){
-	int cStart = INTEGER(listStartIndex)[0] - 1;
+  //int cStart = INTEGER(listStartIndex)[0] - 1;
 	int cNRows = INTEGER(RnRows)[0];
 	int len = 1;
 	for(int i = 0; i < LENGTH(dims); i++)
@@ -1557,7 +1560,7 @@ SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,
 }
 
 SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims){
-	int cStart = INTEGER(listStartIndex)[0] - 1;
+  //	int cStart = INTEGER(listStartIndex)[0] - 1;
 	int cNRows = INTEGER(RnRows)[0];
 	int len = 1;
 	for(int i = 0; i < LENGTH(dims); i++)

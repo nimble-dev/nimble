@@ -104,11 +104,11 @@ void rwish_chol(double *Z, double* chol, double df, int p, int scale_param) {
   // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
   char uplo('U');
   char sideL('L');
-  char sideR('R');
+  //  char sideR('R');
   char diag('N');
   char transT('T');
   char transN('N');
-  int info(0);
+  //  int info(0);
   double alpha(1.0);
   double beta(0.0);
 
@@ -229,8 +229,6 @@ SEXP C_ddirch(SEXP x, SEXP alpha, SEXP return_log)
   int give_log = (int) LOGICAL(return_log)[0];
   SEXP ans;
     
-  int i;
-
   if(K == 0) {
     return alpha;
   }
@@ -252,7 +250,6 @@ SEXP C_rdirch(SEXP alpha) {
   int K = LENGTH(alpha);
 
   SEXP ans;
-  int i;
 
   if(K == 0) {
     PROTECT(ans = allocVector(INTSXP, 0));
@@ -504,7 +501,6 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
     RBREAK("Error (C_dnorm_chol): invalid input type for one of the arguments.\n");
   int n_x = LENGTH(x);
   int n_mean = LENGTH(mean);
-  int n_chol = LENGTH(chol);
   int give_log = (int) LOGICAL(return_log)[0];
   int prec = (int) LOGICAL(prec_param)[0];
 
