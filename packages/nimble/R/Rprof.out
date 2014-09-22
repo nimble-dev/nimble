@@ -1,7 +1,0 @@
-sample.interval=20000
-"readLines" "summaryRprof" 
-"readLines" "summaryRprof" 
-"strsplit" "summaryRprof" 
-"strsplit" "summaryRprof" 
-"strsplit" "summaryRprof" 
-"unique.default" "FUN" "lapply" "summaryRprof" 

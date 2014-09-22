@@ -244,7 +244,8 @@ conjugacyClass <- setRefClass(
             
             ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- getLogProb(model, calcNodes)
             if(nimbleOptions$verifyConjugatePosteriors) {
-                functionBody$addCode({ modelLogProb0 <- getLogProb(model, calcNodes)
+                functionBody$addCode({ 
+                					   modelLogProb0 <- getLogProb(model, calcNodes)
                                        origValue <- model[[targetNode]] })
             }
             
@@ -264,7 +265,8 @@ conjugacyClass <- setRefClass(
                                       posteriorLogDensity0 <- DPOSTERIORCALL_ORIG
                                       posteriorLogDensity1 <- DPOSTERIORCALL_NEW
                                       posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
-                                      if(abs(posteriorVerification) > 1e-10)     { nimPrint('conjugate posterior density appears to be wrong') }
+                                      if(abs(posteriorVerification) > 1e-10)     {
+                                      nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification) }
                 }, list(DPOSTERIORCALL_ORIG = eval(substitute(substitute(expr, list(VALUE=quote(origValue))), list(expr=posteriorObject$dCallExpr))),
                         DPOSTERIORCALL_NEW  = eval(substitute(substitute(expr, list(VALUE=quote(newValue))),  list(expr=posteriorObject$dCallExpr)))))
             }

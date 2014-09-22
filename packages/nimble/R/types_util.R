@@ -105,6 +105,7 @@ nl_createVarsAndFlatIndexRanges <- function(nodeNames, symtab) {
 
 ## determines the (scalar) flatIndex, from numeric vectors of indicies, and max_indicies
 nl_determineFlatIndex = function(ind, maxs) {
+		
     if(length(ind) != length(maxs))   stop('number of indices and dimensions are different')
     if(any(ind > maxs))               stop('some indices exceed dimensions')
     if(any(ind < 1))                  stop('non-positive index')

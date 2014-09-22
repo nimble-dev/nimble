@@ -21,7 +21,7 @@ sampler_end <- nimbleFunction(
         ###  control list extraction  ###
         targetNode <- control$targetNode
         ###  node list generation  ###
-        calcNodes  <- model$getDependencies(targetNode)
+        calcNodes  <- model$getDependencies(targetNode, returnType = 'nodeSet')
     },
     run = function() {
         simulate(model, targetNode)
@@ -37,6 +37,7 @@ sampler_end <- nimbleFunction(
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
+
 
 sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
@@ -55,28 +56,29 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         scaleHistory          <- c(0, 0)
         acceptanceRateHistory <- c(0, 0)
-        ###  nested function and function list definitions  ###
-        my_setAndCalculateOne <- setAndCalculateOne(model, targetNode)
-        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor <- calcAdaptationFactor(1)
+
+		# new objects that were previously inside of nested nimble functions    
+    	optimalAR <- 0.44
+    	gamma1 <-0    
     },
     
     run = function() {
         modelLP0 <- getLogProb(model, calcNodes)
-        propValue <- generateProposalValue()
-        modelLP1 <- my_setAndCalculateOne(propValue)
-        jump <- my_decideAndJump(modelLP1, modelLP0, 0, 0)
+        propValue <- rnorm(1, mean = model[[targetNode]], sd = scale)
+      	model[[targetNode]] <<- propValue
+      	modelLP1 <- calculate(model, calcNodes)
+ 		logMHR <- modelLP1 - modelLP0
+ 		jump <- decide(logMHR)
+ 		if(jump)
+ 			nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+ 		else
+ 			nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE) 
+ 
         if(adaptive)     adaptiveProcedure(jump)
     },
     
     methods = list(
     
-        generateProposalValue = function() {
-            propValue <- rnorm(1, mean = model[[targetNode]], sd = scale)
-            returnType(double())
-            return(propValue)
-        },
-        
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
@@ -87,7 +89,10 @@ sampler_RW <- nimbleFunction(
                 setSize(acceptanceRateHistory, timesAdapted)
                 scaleHistory[timesAdapted] <<- scale
                 acceptanceRateHistory[timesAdapted] <<- acceptanceRate
-                adaptFactor <- my_calcAdaptationFactor(acceptanceRate)
+ #               adaptFactor <- my_calcAdaptationFactor(acceptanceRate)
+				gamma1 <<- 1/((timesAdapted + 3)^0.8)
+				gamma2 <- 10 * gamma1
+				adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
                 scale <<- scale * adaptFactor
                 timesRan <<- 0
                 timesAccepted <<- 0
@@ -101,10 +106,80 @@ sampler_RW <- nimbleFunction(
             timesAdapted  <<- 0
             scaleHistory          <<- scaleHistory          * 0
             acceptanceRateHistory <<- acceptanceRateHistory * 0
-            nfMethod(my_calcAdaptationFactor, 'reset')()
+      #      nfMethod(my_calcAdaptationFactor, 'reset')()
+      		gamma1 <<- 0
+      
         }
     ), where = getLoadingNamespace()
 )
+
+#sampler_RW <- nimbleFunction(
+#    contains = sampler_BASE,
+#    setup = function(model, mvSaved, control) {
+#        ###  control list extraction  ###
+#        targetNode    <- control$targetNode
+#        adaptive      <- control$adaptive
+#        adaptInterval <- control$adaptInterval
+#        scale         <- control$scale
+#        ###  node list generation  ###
+#        calcNodes  <- model$getDependencies(targetNode, returnType = 'nodeSet')
+#        ###  numeric value generation  ###
+#        scaleOriginal <- scale
+#        timesRan      <- 0
+#        timesAccepted <- 0
+#        timesAdapted  <- 0
+#        scaleHistory          <- c(0, 0)
+#        acceptanceRateHistory <- c(0, 0)
+#        ###  nested function and function list definitions  ###
+#        my_setAndCalculateOne <- setAndCalculateOne(model, targetNode)
+#        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+#        my_calcAdaptationFactor <- calcAdaptationFactor(1)
+#    },
+#    
+#    run = function() {
+#        modelLP0 <- getLogProb(model, calcNodes)
+#        propValue <- generateProposalValue()
+#        modelLP1 <- my_setAndCalculateOne(propValue)
+#        jump <- my_decideAndJump(modelLP1, modelLP0, 0, 0)
+#        if(adaptive)     adaptiveProcedure(jump)
+#    },
+#    
+#    methods = list(
+#    
+#        generateProposalValue = function() {
+#            propValue <- rnorm(1, mean = model[[targetNode]], sd = scale)
+#            returnType(double())
+#            return(propValue)
+#        },
+#        
+#        adaptiveProcedure = function(jump = logical()) {
+#            timesRan <<- timesRan + 1
+#            if(jump)     timesAccepted <<- timesAccepted + 1
+#            if(timesRan %% adaptInterval == 0) {
+#                acceptanceRate <- timesAccepted / timesRan
+#                timesAdapted <<- timesAdapted + 1
+#                setSize(scaleHistory,          timesAdapted)
+#                setSize(acceptanceRateHistory, timesAdapted)
+#                scaleHistory[timesAdapted] <<- scale
+#                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+#                adaptFactor <- my_calcAdaptationFactor(acceptanceRate)
+#                scale <<- scale * adaptFactor
+#                timesRan <<- 0
+#                timesAccepted <<- 0
+#            }
+#        },
+#        
+#        reset = function() {
+#            scale <<- scaleOriginal
+#            timesRan      <<- 0
+#            timesAccepted <<- 0
+#            timesAdapted  <<- 0
+#            scaleHistory          <<- scaleHistory          * 0
+#            acceptanceRateHistory <<- acceptanceRateHistory * 0
+#            nfMethod(my_calcAdaptationFactor, 'reset')()
+#        }
+#    ), where = getLoadingNamespace()
+#)
 
 
 ########################################################################

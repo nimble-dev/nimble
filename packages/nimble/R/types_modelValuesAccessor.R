@@ -26,11 +26,22 @@ modelValuesAccessorVector <- setRefClass(
                   length = 'ANY') ,		#'numeric'),
     methods = list(
         initialize = function(modelValues, nodeNames, logProb = FALSE, env = parent.frame()) {
-            nodeNames <- nl_expandNodeNames(nodeNames, modelValues$symTab, env)  # expands nodeNames to fully indexed form, including expanding variables using the symbolTable
+            nodeNames <- nl_expandNodeNames(nodeNames, modelValues$symTab, env)  
+            # expands nodeNames to fully indexed form, including expanding variables using the symbolTable
+            
+            #if(logProb){
+            #    nodeNames <- c(nodeNames, makeLogProbName(nodeNames))
+            #    nodeNames <- nl_removeNodeNamesNotInSymbolTable(nodeNames, modelValues$getSymbolTable())
+            #}
+            
             if(logProb){
-                nodeNames <- c(nodeNames, makeLogProbName(nodeNames))
-                nodeNames <- nl_removeNodeNamesNotInSymbolTable(nodeNames, modelValues$getSymbolTable())
-            }
+	        	if(!inherits(modelValues$modelDef,'modelDefClass'))
+	        		stop('calling logProb = TRUE on a modelValues object that was not built from a model')
+	        	logProbNames <- modelValues$modelDef$nodeName2LogProbName(nodeNames)
+        		nodeNames <- c(nodeNames, logProbNames)
+        	}
+
+            
             varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, modelValues$symTab)    # creates a list of variable names, and ranges of the flat index
             modelValues <<- modelValues
             nodes <<- nodeNames

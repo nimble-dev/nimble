@@ -90,7 +90,7 @@ sampler_conjugate_dbeta <- nimbleFunction(contains = sampler_BASE, setup = funct
     posteriorLogDensity1 <- dbeta(newValue, shape1 = prior_shape1 + contribution_shape1, shape2 = prior_shape2 + contribution_shape2, log = 1)
     posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
     if (abs(posteriorVerification) > 1e-10) {
-        nimPrint('conjugate posterior density appears to be wrong')
+        nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
     }
 }, methods = list(getPosteriorLogDensity = function() {
     prior_shape1 <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape1')()
@@ -328,7 +328,7 @@ sampler_conjugate_dgamma <- nimbleFunction(contains = sampler_BASE, setup = func
     posteriorLogDensity1 <- dgamma(newValue, shape = prior_shape + contribution_shape, scale = 1/(prior_rate + contribution_rate), log = 1)
     posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
     if (abs(posteriorVerification) > 1e-10) {
-        nimPrint('conjugate posterior density appears to be wrong')
+        nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
     }
 }, methods = list(getPosteriorLogDensity = function() {
     prior_shape <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_shape')()
@@ -547,7 +547,7 @@ sampler_conjugate_dnorm <- nimbleFunction(contains = sampler_BASE, setup = funct
     posteriorLogDensity1 <- dnorm(newValue, mean = (prior_mean * prior_tau + contribution_mean)/(prior_tau + contribution_tau), sd = (prior_tau + contribution_tau)^(-0.5), log = 1)
     posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
     if (abs(posteriorVerification) > 1e-10) {
-        nimPrint('conjugate posterior density appears to be wrong')
+        nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
     }
 }, methods = list(getPosteriorLogDensity = function() {
     prior_mean <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_mean')()
@@ -676,7 +676,7 @@ sampler_conjugate_dmnorm <- nimbleFunction(contains = sampler_BASE, setup = func
     posteriorLogDensity1 <- dmnorm(newValue, mean = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean), chol = chol(prior_prec + contribution_prec), prec_param = TRUE, log = 1)
     posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
     if (abs(posteriorVerification) > 1e-10) {
-        nimPrint('conjugate posterior density appears to be wrong')
+        nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
     }
 }, methods = list(getPosteriorLogDensity = function() {
     prior_prec <- nfMethod(targetNode_nodeFunctionList[[1]], 'get_prec')()

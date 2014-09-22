@@ -63,7 +63,8 @@ logProb: Logical argument specifying whether or not to include the logProb varia
                                   
                                   getNodeNames = function(determOnly = FALSE, stochOnly = FALSE,
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
-                                                          topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE) {
+                                                          topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE,
+                                                          returnType = 'names') {
                                       '
 Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
 
@@ -87,22 +88,50 @@ endOnly: Logical argument specifying whether to return only end nodes from the h
 
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
 '
-                                      nodeNames <- modelDef$maps$nodeNamesInModel
-                                      if(!includeRHSonly)   nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesLHSall)
-                                      if(determOnly)        nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesDeterm)
-                                      if(stochOnly)         nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesStoch)
-                                      if(!includeData)      nodeNames <- nodeNames[!isData(nodeNames)]
-                                      if(dataOnly)          nodeNames <- nodeNames[isData(nodeNames)]
-                                      if(topOnly)           nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesTop)
-                                      if(latentOnly)        nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesLatent)
-                                      if(endOnly)           nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesEnd)
-                                      return(nodeNames)
+										validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
+										if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
+										if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
+										if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
+										if(!includeData)		validValues[isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
+										if(dataOnly)			validValues[!isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
+										if(topOnly)				validValues[-modelDef$maps$top_IDs] <- FALSE
+										if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
+										if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
+										
+										if(returnType == 'names')
+											return(modelDef$maps$graphID_2_nodeName[modelDef$maps$graphIDs[validValues]])
+									
+										if(returnType == 'ids')
+											return(modelDef$maps$graphIDs[validValues])
+											
+										if(returnType == 'nodeVector'){
+											stop('returning nodeVector from model$getNodeNames not currently supported. Need to figure out how to determine if nodeVector is nodeFunctions or nodeValues')
+										}
+#                                      nodeNames <- modelDef$maps$nodeNamesInModel
+#                                      if(!includeRHSonly)   nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesLHSall)
+#                                      if(determOnly)        nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesDeterm)
+#                                      if(stochOnly)         nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesStoch)
+#                                      if(!includeData)      nodeNames <- nodeNames[!isData(nodeNames)]
+#                                      if(dataOnly)          nodeNames <- nodeNames[isData(nodeNames)]
+#                                      if(topOnly)           nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesTop)
+#                                      if(latentOnly)        nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesLatent)
+#                                      if(endOnly)           nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesEnd)
+#                                      return(nodeNames)
                                   },
                                   
-                                  expandNodeNames = function(nodeNames, env = parent.frame()) {
-                                      nodeNames <- nl_expandNodeNames(nodeNames, getSymbolTable(), env)
-                                      nodeNames <- intersect(nodeNames, getMaps('nodeNames'))
-                                      return(nodeNames)
+                                  expandNodeNames = function(nodeNames, env = parent.frame(), nodeFunctions = TRUE, returnType = 'names') {
+										# returnValue options = 'names', 'ids' or 'nodeVector'
+   #                                   nodeNames <- nl_expandNodeNames(nodeNames, getSymbolTable(), env)
+   #                                   nodeNames <- intersect(nodeNames, getMaps('nodeNames'))
+										if(returnType == 'names'){
+   											graphID <- modelDef$nodeName2GraphIDs(nodeNames, nodeFunctions)
+   											nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+                                      		return(nodeNames)
+                                      }
+                                      if(returnType == 'ids')
+                                         return(modelDef$nodeName2GraphIDs(nodeNames, nodeFunctions) )
+                                      if(returnType == 'nodeVector')
+                                      	 return(nodeVector(origNodeNames = nodeNames))	
                                   },
                                   
                                   topologicallySortNodes = function(nodeNames) {
@@ -203,17 +232,28 @@ nodeNames: A character vector of node names.  This must be entirely node names, 
 
 Details: Returns a logical vector with the same length as the input vector.  This function may be used for testing \'data\' flags, or for partitioning a list of nodes into data and non-data.
 '                                      ## nodeNames must be a vector of character node names in the model, e.g. 'x', 'x[4]', or 'x[1:10]'
-                                      if(!(all(nodeNames %in% getNodeNames()))) stop('isData() only operates on character vectors of nodeNames; no index expanding takes place')
-                                      ret <- unlist(lapply(as.list(nodeNames),
-                                                    function(nn)     return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]], envir=isDataEnv))[[1]])))
-                                      if(is.null(ret))   ret <- logical(0)
-                                      return(ret)
-                                  },
+                                  		g_id = modelDef$nodeName2GraphIDs(nodeNames)
+                                  		return(isDataFromGraphID(g_id))
                                   
+                                  #    if(!(all(nodeNames %in% getNodeNames()))) stop('isData() only operates on character vectors of nodeNames; no index expanding takes place')
+                                  #    ret <- unlist(lapply(as.list(nodeNames),
+                                  #                  function(nn)     return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]], envir=isDataEnv))[[1]])))
+                                 #     if(is.null(ret))   ret <- logical(0)
+                                 #     return(ret)
+                                  },
+                                  isDataFromGraphID = function(g_id){
+                                 	nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]	
+                                  	 ret <- unlist(lapply(as.list(nodeNames),
+                                                    function(nn)     return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]], envir=isDataEnv))[[1]])))
+                                     if(is.null(ret))   ret <- logical(0)
+                                      
+                                    	return(ret)
+                                  },
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                                              determOnly = FALSE, stochOnly = FALSE,
                                                              includeData = TRUE, dataOnly = FALSE,
-                                                             includeRHSonly = FALSE, downstream = FALSE) {
+                                                             includeRHSonly = FALSE, downstream = FALSE,
+                                                             nodeFunctionID = TRUE, returnType = 'names') {
 '
 Returns a character vector of the nodes dependent upon the input argument nodes, sorted topoloigically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
 
@@ -239,17 +279,51 @@ downstream: Logical argument specifying whether the downward search through the 
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-                                      nodeIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(nodes)]
-                                      omitIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(omit)]
-                                      dependentIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
-                                      depNodes <- unique(getMaps('graphID_2_originNodeName')[dependentIDs])
-                                      if(!includeRHSonly)   depNodes <- intersect(depNodes, getMaps('nodeNamesLHSall') )
-                                      if(determOnly)        depNodes <- intersect(depNodes, getMaps('nodeNamesDeterm') )
-                                      if(stochOnly)         depNodes <- intersect(depNodes, getMaps('nodeNamesStoch') )
-                                      if(!self)             depNodes <- setdiff(depNodes, getMaps('nodeName_2_originNodeName')[expandNodeNames(nodes)])
-                                      if(!includeData)      depNodes <- depNodes[!isData(depNodes)]
-                                      if(dataOnly)          depNodes <- depNodes[isData(depNodes)]
-                                      return(depNodes)
+                       #               nodeIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(nodes)]
+                       #               omitIDs <- getMaps('nodeName_2_graphID')[expandNodeNames(omit)]
+                        			if(inherits(nodes, 'character'))
+                        				nodeIDs <- modelDef$nodeName2GraphIDs(nodes, nodeFunctionID)
+                        			else if(inherits(nodes, 'numeric'))
+                        				nodeIDs <- nodes
+                        			else if(inherits(nodes, 'nodeVector')){ 
+                        				if(nodeFunctionID)
+                        					nodeIDs <- nodes$getOrigIDs_functions()
+                        				else
+                        					nodeIDs <- nodes$getOrigIDs_values()
+                        			}
+                        			
+                        			if(inherits(omit, 'character'))
+                        				omitIDs <- modelDef$nodeName2GraphIDs(omit, nodeFunctionID)
+									else if(inherits(omit, 'numeric'))
+										omitIDs <- omit
+                        			else if(inherits(omit, 'nodeVector')){ 
+                        				if(nodeFunctionID)
+                        					omitIDs <- omit$getOrigIDs_functions()
+                        				else
+                        					omitIDs <- omit$getOrigIDs_values()
+                        			}
+                        
+                                      depIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+                      				if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
+                       				if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
+                       				if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
+                                     if(!self)	depIDs <- setdiff(depIDs, nodeIDs)
+                     				 if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
+                       				 if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
+
+									if(returnType == 'nodeVector'){
+	                       				 if(nodeFunctionID)
+		                       				 depNodes <- nodeVector(origGraphIDs_functions = depIDs, model = .self)
+		                       			 else
+		                       			 	depNodes <- nodeVector(origGraphIDs_values = depIDs, model = .self)
+									}
+									
+									if(returnType == 'ids')
+										return(depIDs)
+											                       			 
+	                       			 if(returnType == 'names')
+	                       			 	return(modelDef$maps$nodeNames[depIDs])
+	                       			  
                                   },
                                   
                                   getDownstream = function(...) {
