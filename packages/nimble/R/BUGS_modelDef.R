@@ -19,6 +19,7 @@ graphNode <- setRefClass(
     )
 )
 
+
 #' Class for NIMBLE model definition
 #'
 #' Class for NIMBLE model definition that is not usually needed directly by a user.
@@ -98,8 +99,15 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genGraphNodesList              = function() {},
                                  buildMaps                      = function() {},
                                  
+                                 
                                  newModel   = function() {},
-                                 printDI    = function() {}
+                                 printDI    = function() {},
+                                 
+                                 
+                                 
+                                 #These functions are NOT run inside of setupModel
+                                 nodeName2GraphIDs = function(){},
+                                 nodeName2LogProbName = function(){}
                              ))
 
 
@@ -953,7 +961,7 @@ modelDefClass$methods(genGraphNodesList = function() {
 })
 modelDefClass$methods(buildMaps = function() {
     maps <<- mapsClass$new()
-    maps$setup(graphNodesList, graph)
+    maps$setup(graphNodesList, graph, varInfo, nodeInfo)
 })
 
 
@@ -971,7 +979,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
         classEnvironment <<- where
     }
     if(inherits(modelValuesClass, 'uninitializedField')) {
-        modelValuesClass <<- makeCustomModelValuesClass(symTab, modelValuesClassName, where = where, addUniqueID = FALSE)
+        modelValuesClass <<- makeCustomModelValuesClass(symTab, modelValuesClassName, where = where, addUniqueID = FALSE, modelDef = .self)
     }
     ## would be better to build this into the class
     ## if(missing(modelName)) modelName <- name
@@ -1002,4 +1010,136 @@ modelDefClass$methods(printDI = function() {
 })
 
 
+
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
+	if(length(nodeName) == 0)
+		return(NULL)	
+	if(nodeFunctionID)
+		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+	output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
+	return(output[!is.na(output)])
+})
+
+modelDefClass$methods(nodeName2LogProbName = function(nodeName){
+	if(length(nodeName) == 0)
+		return(NULL)
+	output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+	return(output[!is.na(output)])
+})
+
+
+
+parseEvalNumeric <- function(x, env){
+	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+	as.numeric(ans)
+}
+parseEvalCharacter <- function(x, env){
+	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+	as.character(ans)
+}
+
+
+
+#The class we use keep track of graphIDs
+nodeVector <- setRefClass(Class = "nodeVector",
+						fields = 
+							list(origNodeNames 				=	'ANY',
+								expandedNodeFunctionNames 	=	'ANY',
+								expandedNodeValuesNames 	=	'ANY',
+								origGraphIDs_values 		=	'ANY',
+								origGraphIDs_functions		=	'ANY',
+								sortedGraphIDs_values 		=	'ANY',
+								sortedGraphIDs_functions	=	'ANY',
+								sortOrder_values 			= 	'ANY',
+								sortOrder_functions 		= 	'ANY',
+								model 						=	'ANY'),
+						methods = 	#These methods need to check if objects are initiated. If not, it needs
+									#to initiate. If so, it just returns object
+							list(getOrigNames = function(){ 
+									if(!inherits(origNodeNames, 'uninitializedField') ) 
+										origNodeNames 
+									else stop('origNodeNames never initialized!')
+									},
+								getExpandedFunctionNames = function(){ 
+									if(!inherits(expandedNodeFunctionNames, 'uninitializedField') ) 
+										expandedNodeFunctionNames 
+									else {
+										expandedNodeFunctionNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_functions]
+										expandedNodeFunctionNames
+										}
+									},
+								getExpandedValuesNames = function(){ 
+									if(!inherits(expandedNodeValuesNames, 'uninitializedField') ) 
+										expandedNodeValuesNames 
+									else {
+										expandedNodeValuesNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values]
+										expandedNodeValuesNames
+										}
+									},
+								getOrigIDs_values = function() { 
+									if(!inherits(origGraphIDs_values, 'uninitializedField') ) 
+										origGraphIDs_values 
+									else stop('origGraphIDs_values never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
+									},
+								getOrigIDs_functions = function() { 
+									if(!inherits(origGraphIDs_functions, 'uninitializedField') ) 
+										origGraphIDs_functions 
+									else stop('origGraphIDs_functions never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
+									},
+								getSortedIDs_values = function() { 
+									if(!inherits(sortedGraphIDs_values, 'uninitializedField') ) 
+										sortedGraphIDs_values 
+									else{ 
+										if(inherits(sortOrder_values, 'uninitializedField') ) 
+											sortOrder_values <<- order(origGraphIDs_values)
+ 										sortedGraphIDs_values <<- origGraphIDs_values[sortOrder_values]
+										sortedGraphIDs_values
+									}
+								},
+								getSortedIDs_functions = function() { 
+									if(!inherits(sortedGraphIDs_functions, 'uninitializedField') ) 
+										sortedGraphIDs_functions 
+									else{
+										if(inherits(sortOrder_functions, 'uninitializedField') ) 
+											sortOrder_functions <<- order(origGraphIDs_functions)
+										sortedGraphIDs_functions <<- origGraphIDs_functions[sortOrder_functions]
+										sortedGraphIDs_functions
+									}
+								},
+								getSortOrder_values = function() { 
+									if(!inherits(sortOrder_values, 'uninitializedField') ) 
+										sortOrder_values 
+									else{
+										sortOrder_values <<- order(origGraphIDs_values)
+										sortOrder_values	
+									}
+								},	
+								getSortOrder_functions = function() { 
+									if(!inherits(sortOrder_functions, 'uninitializedField') ) 
+										sortOrder_functions 
+									else {
+										sortOrder_functions <<- order(origGraphIDs_functions)
+										sortOrder_functions
+									}
+								},	
+								initialize = function(...){
+									callSuper(...)
+									if(inherits(model, 'uninitializedField'))	
+										stop('model missing when creating nodeVector')
+									if(inherits(origGraphIDs_values, 'uninitializedField') )	{
+										if(!inherits(origNodeNames, 'uninitializedField') ){
+											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
+											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
+										}
+										else{
+											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_functions]
+											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
+										}
+									}										
+									else if(inherits(origGraphIDs_functions, 'uninitializedField')	){
+											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values]
+											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
+										}
+
+								}))
 

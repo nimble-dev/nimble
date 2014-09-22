@@ -93,7 +93,8 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         sizes = 'ANY',
                                         nrow = 'numeric',  ## nrow is the actually the length of the lists for each variable
                                         CobjectInterface = 'ANY',
-                                        mvSpec = 'ANY'),
+                                        mvSpec = 'ANY', 
+                                        modelDef = 'ANY'),
                                     methods = list(
                                         initialize = function(nrow = 1L,...) {
                                         	callSuper(...)
@@ -188,14 +189,14 @@ setMethod('[<-', 'modelValuesBaseClass',
 #'      [,1] [,2]
 #' [1,]   NA   NA
 #' [2,]   NA   NA
-modelValuesSpec <- function( symTab, className, vars, types, sizes, where = globalenv() ) {
+modelValuesSpec <- function( symTab, className, vars, types, sizes, modelDef = NA, where = globalenv() ) {
     if(missing(className)) className <- 'modelValuesSpec' ## uniqueID will be appended
-    makeCustomModelValuesClass(symTab, className, vars, types, sizes, where)
+    makeCustomModelValuesClass(symTab, className, vars, types, sizes, modelDef = modelDef, where)
 }
 
 ## Generates and evals a call to setRefClass with customized set of variables
 ## Input is EITHER symtab OR vars (which should be a character vector)
-makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, where = globalenv(), addUniqueID = TRUE){
+makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, modelDef, where = globalenv(), addUniqueID = TRUE){
 
     if(addUniqueID) className <- paste0(className, '_', nimbleUniqueID())
     ## if(exists(className, modelValuesLibrary, inherits = FALSE)) {
@@ -221,7 +222,8 @@ makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, wh
         	stop('Creation of modelValues aborted: length(types) != length(vars)')
         symTab <- buildSymbolTable(vars, types, sizes)
     }
-    
+    if(missing(modelDef))
+    	modelDef <- NA
     ans <- eval(substitute(newClass <- setRefClass(
         Class = className,
         contains = 'modelValuesBaseClass',
@@ -230,10 +232,11 @@ makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, wh
             show = function() {
                 writeLines(paste0("modelValues object with variables: ", paste(varNames, collapse = ", "), "."))
             },
-            initialize = function(symTab, vars, sizes, ...) {
+            initialize = function(symTab, vars, sizes, modelDef, ...) {
                 symTab <<- symTab
                 varNames <<- vars
                 sizes <<- sizes
+                modelDef <<- modelDef
                 callSuper(...)
             },
             resize = function(rows) {
@@ -270,7 +273,7 @@ makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, wh
     ##                                         cppClassName = cppClassName,
     ##                                         cppClass = NULL)
     ans <- function(nrow = 1L) {
-        res <- newClass(symTab, vars, sizes, nrow = nrow)
+        res <- newClass(symTab, vars, sizes, nrow = nrow, modelDef = modelDef)
         res$mvSpec <- ans
         res
     }
