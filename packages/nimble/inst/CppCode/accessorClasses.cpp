@@ -265,8 +265,6 @@ SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginInd
 	void* vPtr = R_ExternalPtrAddr(rModelPtr);
 	if(vPtr != NULL){
 		ModelBase* mPtr = static_cast<ModelBase*>(vPtr);
-		int begin = INTEGER(beginIndex)[0];
-		int end = INTEGER(endIndex)[0];
 		string eName = STRSEXP_2_string(elementName, 0);
 		sVAPtr = new SingleVariableAccess;
 		(*sVAPtr).flatIndexStart = INTEGER(beginIndex)[0] - 1;
@@ -288,8 +286,6 @@ SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP
 	void* vPtr = R_ExternalPtrAddr(rModelValuesPtr);
 	if(vPtr != NULL){
 		Values* MVPtr = static_cast<Values*>(vPtr);
-		int begin = INTEGER(beginIndex)[0];
-		int end = INTEGER(endIndex)[0];
 		int cRow = INTEGER(curRow)[0] - 1;
 		string eName = STRSEXP_2_string(elementName, 0);
 		sMVAPtr = new SingleModelValuesAccess;

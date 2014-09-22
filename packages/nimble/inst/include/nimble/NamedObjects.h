@@ -14,6 +14,7 @@ class NamedObjects {
 public:
   map< string, void * > namedObjects;
   virtual void* getObjectPtr( string &name );
+  virtual ~NamedObjects() {};
 };
 
 extern "C" {

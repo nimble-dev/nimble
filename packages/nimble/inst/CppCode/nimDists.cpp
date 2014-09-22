@@ -2,6 +2,12 @@
 #include "nimble/dists.h"
 #include "nimble/nimDists.h"
 
+bool R_IsNA(NimArr<1, double> &P) {
+  int s = P.size();
+  for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
+  return(false);
+}
+
 template<int nDim, class T>
 NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &possibleCopy) {
   if(orig.isMap()) {

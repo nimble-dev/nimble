@@ -16,6 +16,8 @@ public:
   int calculateIndex(int i){return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i);}
   T &operator()(int i) {return((*NimArrBase<T>::vPtr)[calculateIndex(i)]);} // could add asserts here
 
+  ~NimArr<1, T>() {};
+
   template<class Tother>
   NimArr<1, T> &mapCopy(const NimArr<1, Tother> &other) {
     //   std::cout<<"In NimArr<1,T> mapCopy\n";
@@ -161,6 +163,8 @@ public:
   int size1, size2, stride2;
   int calculateIndex(int i, int j) {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j);} // j * s1 + i);}
   T &operator()(int i, int j) {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);} // could add asserts here
+
+  ~NimArr<2, T>() {};
 
   NimArr<2, T> &mapCopy(const NimArr<2, T> &other) {
     // std::cout<<"In NimArr<2, T> mapCopy\n";
@@ -328,6 +332,8 @@ class NimArr<3, T> : public NimArrBase<T> {
   int size1, size2, size3, stride2, stride3;//s1s2;
   int calculateIndex(int i, int j, int k) {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k);} //k * s1s2 + j*s1 + i);}
   T &operator()(int i, int j, int k) {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)]);} // could add asserts here
+
+  ~NimArr<3, T>() {};
 
   NimArr<3, T> &mapCopy(const NimArr<3, T> &other) {
     // std::cout<<"In NimArr<3, T> mapCopy\n";
@@ -527,6 +533,7 @@ class NimArr<3, T> : public NimArrBase<T> {
 template<int ndim, class T>
 class VecNimArr : public VecNimArrBase<T>  {
  public:
+  ~VecNimArr<ndim, T>() {};
   std::vector< NimArr<ndim, T> > values;
   NimArr<ndim, T> &operator[](unsigned int i) {
     if(i >= values.size()) {
