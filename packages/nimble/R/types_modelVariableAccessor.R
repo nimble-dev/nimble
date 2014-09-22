@@ -25,15 +25,26 @@ modelVariableAccessorVector <- setRefClass(
                   length = 'ANY' ),		#'numeric'),
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-            if(logProb){
-                nodeNames <- c(nodeNames, makeLogProbName(nodeNames))
-                nodeNames <- nl_removeNodeNamesNotInSymbolTable(nodeNames, model$getSymbolTable())
-            }
-            nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env)  # expands nodeNames to fully indexed form, including expanding variables using the symbolTable
-            varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, model$getSymbolTable())  # creates a list of variable names, and ranges of the flat index
+
+            nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env) 
+       # 	expands nodeNames to fully indexed form, including expanding variables using the symbolTable
+    
+       #    if(logProb){
+       #        nodeNames <- c(nodeNames, makeLogProbName(nodeNames))
+       #        nodeNames <- nl_removeNodeNamesNotInSymbolTable(nodeNames, model$getSymbolTable())
+       #    }
+        	
+			if(logProb){
+	        	logProbNames <- model$modelDef$nodeName2LogProbName(nodeNames)
+        		nodeNames <- c(nodeNames, logProbNames)
+        	}
+            varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, model$getSymbolTable())  
+            	# creates a list of variable names, and ranges of the flat index
             model <<- model
             nodes <<- nodeNames
             modelVariableAccessors <<- lapply(varsAndFlatIndexRanges, function(vafir) modelVariableAccessor(model=model, var=vafir$var, first=vafir$ind[1], last=vafir$ind[2], length = vafir$ind[2] - vafir$ind[1] + 1))
+            
+            
             len = 0
             for(mv in modelVariableAccessors)
             	len = len + mv$length

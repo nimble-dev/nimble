@@ -143,7 +143,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 nodes <<- list()
                                           		isDataEnv <<- new.env()
                                           		classEnvironment <<- new.env()
-                                          		   
+                                          		
                                                 callSuper()
                                                 .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- getMVptr(.basePtr)
