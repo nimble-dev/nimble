@@ -52,9 +52,9 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
              dmnorm = list(param = 'mean', contribution_mean = 't(coeff) %*% prec %*% asCol(value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-         posterior = 'dmnorm(mean       = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean),
-                             chol       = chol(prior_prec + contribution_prec),
-                             prec_param = TRUE)')
+         posterior = 'dmnorm_chol(mean       = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean),
+                                  chol       = chol(prior_prec + contribution_prec),
+                                  prec_param = TRUE)')
 )
 
 
@@ -783,6 +783,11 @@ cc_checkLinearity <- function(expr, targetNode) {
     ## process the expression contents of the parentheses
     if(expr[[1]] == '(')
         return(cc_checkLinearity(expr[[2]], targetNode))
+    
+    ## we'll just have to skip over asRow() and asCol(), so they don't mess up the linearity check
+    if(expr[[1]] == 'asRow' || expr[[1]] == 'asCol') {
+        return(cc_checkLinearity(expr[[2]], targetNode))
+    }
     
     ## minus sign: change to a plus sign, and invert the sign of the RHS
     if(expr[[1]] == '-') {
