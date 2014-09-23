@@ -21,7 +21,7 @@ sampler_end <- nimbleFunction(
         ###  control list extraction  ###
         targetNode <- control$targetNode
         ###  node list generation  ###
-        calcNodes  <- model$getDependencies(targetNode)
+        calcNodes  <- model$getDependencies(targetNode, returnType = 'names')
     },
     run = function() {
         simulate(model, targetNode)
@@ -48,7 +48,7 @@ sampler_RW <- nimbleFunction(
         adaptInterval <- control$adaptInterval
         scale         <- control$scale
         ###  node list generation  ###
-        calcNodes  <- model$getDependencies(targetNode)
+        calcNodes  <- model$getDependencies(targetNode, returnType = 'names')
         ###  numeric value generation  ###
         scaleOriginal <- scale
         timesRan      <- 0

@@ -1064,7 +1064,7 @@ nodeVector <- setRefClass(Class = "nodeVector",
 									if(!inherits(expandedNodeFunctionNames, 'uninitializedField') ) 
 										expandedNodeFunctionNames 
 									else {
-										expandedNodeFunctionNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_functions]
+										expandedNodeFunctionNames <<- unique(model$modelDef$maps$graphID_2_nodeFunctionName[origGraphIDs_functions])
 										expandedNodeFunctionNames
 										}
 									},
@@ -1072,7 +1072,7 @@ nodeVector <- setRefClass(Class = "nodeVector",
 									if(!inherits(expandedNodeValuesNames, 'uninitializedField') ) 
 										expandedNodeValuesNames 
 									else {
-										expandedNodeValuesNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values]
+										expandedNodeValuesNames <<- unique(model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values])
 										expandedNodeValuesNames
 										}
 									},
