@@ -21,7 +21,7 @@ sampler_end <- nimbleFunction(
         ###  control list extraction  ###
         targetNode <- control$targetNode
         ###  node list generation  ###
-        calcNodes  <- model$getDependencies(targetNode, returnType = 'nodeSet')
+        calcNodes  <- model$getDependencies(targetNode)
     },
     run = function() {
         simulate(model, targetNode)

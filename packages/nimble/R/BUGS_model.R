@@ -106,6 +106,10 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
 											
 										if(returnType == 'nodeVector'){
 											stop('returning nodeVector from model$getNodeNames not currently supported. Need to figure out how to determine if nodeVector is nodeFunctions or nodeValues')
+											
+										if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+                                      		stop('instead getNodeNames, imporper returnType chosen')
+
 										}
 #                                      nodeNames <- modelDef$maps$nodeNamesInModel
 #                                      if(!includeRHSonly)   nodeNames <- intersect(nodeNames, modelDef$maps$nodeNamesLHSall)
@@ -132,6 +136,9 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                          return(modelDef$nodeName2GraphIDs(nodeNames, nodeFunctions) )
                                       if(returnType == 'nodeVector')
                                       	 return(nodeVector(origNodeNames = nodeNames))	
+                                      	 
+                                      if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+                                      	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
                                   
                                   topologicallySortNodes = function(nodeNames) {
@@ -323,7 +330,10 @@ Details: The downward search for dependent nodes propagates through deterministi
 											                       			 
 	                       			 if(returnType == 'names')
 	                       			 	return(modelDef$maps$nodeNames[depIDs])
-	                       			  
+	                       			                                        
+	                       			  if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+                                      	stop('instead getDependencies, imporper returnType chosen')
+
                                   },
                                   
                                   getDownstream = function(...) {
