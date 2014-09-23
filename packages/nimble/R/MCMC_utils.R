@@ -176,7 +176,8 @@ RHSonlyInit <- nimbleFunction(
     contains = RHSonlyInit_virtual,
     setup = function(model, node) {},
     run = function() {
-        if(is.na(model[[node]]) | is.nan(model[[node]]))     print('missing value in right-hand-side only node; cannot initialize model')
+        nv <- values(model, node)
+        if(is.na(nv) | is.nan(nv))     print('missing value in right-hand-side only node; cannot initialize model')
     }, where = getLoadingNamespace()
 )
 
@@ -191,11 +192,16 @@ mcmcNodeInit <- nimbleFunction(
     run = function() {
         if(isDeterm) {
             calculate(model, node)
-            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('deterministic model node is NA or NaN in model initialization')
+            nv <- values(model, node)
+            if(is.na(nv) | is.nan(nv))     print('deterministic model node is NA or NaN in model initialization')
         }
         if(isStoch) {
-            if(is.na(model[[node]])) simulate(model, node)
-            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('stochastic model node is NA or NaN in model initialization')
+            nv <- values(model, node)
+            if(is.na(nv)) {
+                simulate(model, node)
+                nv <- values(model, node)
+            }
+            if(is.na(nv) | is.nan(nv))     print('stochastic model node is NA or NaN in model initialization')
             lp <- calculate(model, node)
             if(is.na(lp) | is.nan(lp) | lp < -1e12)              print('stochastic model value is NA, NaN or too small in model initialization')
         }

@@ -105,7 +105,10 @@ if(Sys.getenv("NIMBLE_PKG_SRC_DIR") == "") {
          # in nimble/packages/nimble/
          # Do not put Eigen or MyMakevars under version control
        options(nimble.Makevars.file = "MyMakevars")
-    }
-    Sys.setenv("NIMBLE_PKG_SRC_DIR" = path)
-    NimbleCodeDir = path
+       Sys.setenv("NIMBLE_PKG_SRC_DIR" = path)
+       NimbleCodeDir = path
+   } else {
+       Sys.setenv("NIMBLE_PKG_SRC_DIR" = normalizePath("nimble/inst"))
+       NimbleCodeDir = path
+   }
 }
