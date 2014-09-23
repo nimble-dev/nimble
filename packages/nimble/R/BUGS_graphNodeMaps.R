@@ -108,10 +108,13 @@ mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
 	    	
 	    	nodeNames4Var <- nodeNames[strippedNodeNames == varName & isMultiVariateFunction]
 	    	if(length(nodeNames4Var) > 0){
-		    	var_GIDs = nodeName_2_graphID[nodeNames4Var]
-				nodeNamesWithCall <- paste0(nodeNames4Var, "<- var_GIDs")
-	    		var_GIDs = nodeName_2_graphID[nodeNames4Var]
-	    		eval(parse(text = nodeNamesWithCall)[[1]], envir = vars2GraphID_functions)		    	
+				uniqueNames <- unique(nodeName_2_nodeFunctionName[nodeNames4Var])
+				for(funName in uniqueNames){
+		    		var_GIDs = nodeName_2_graphID[funName]
+					nodeNamesWithCall <- paste0(funName, "<- var_GIDs")
+	    			var_GIDs = nodeName_2_graphID[nodeNames4Var]
+		    		eval(parse(text = nodeNamesWithCall[1])[[1]], envir = vars2GraphID_functions)		    	
+		    	}
 	    	}
 	    }
     }
