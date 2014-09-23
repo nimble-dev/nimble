@@ -56,24 +56,22 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         scaleHistory          <- c(0, 0)
         acceptanceRateHistory <- c(0, 0)
-
-		# new objects that were previously inside of nested nimble functions    
-    	optimalAR <- 0.44
-    	gamma1 <-0    
+	# variables previously inside of nested functions:
+        optimalAR <- 0.44
+        gamma1    <- 0
     },
     
     run = function() {
         modelLP0 <- getLogProb(model, calcNodes)
         propValue <- rnorm(1, mean = model[[targetNode]], sd = scale)
       	model[[targetNode]] <<- propValue
-      	modelLP1 <- calculate(model, calcNodes)
- 		logMHR <- modelLP1 - modelLP0
- 		jump <- decide(logMHR)
- 		if(jump)
- 			nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
- 		else
- 			nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE) 
- 
+        modelLP1 <- calculate(model, calcNodes)
+        logMHR <- modelLP1 - modelLP0
+        jump <- decide(logMHR)
+        if(jump)
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         if(adaptive)     adaptiveProcedure(jump)
     },
     
@@ -89,10 +87,9 @@ sampler_RW <- nimbleFunction(
                 setSize(acceptanceRateHistory, timesAdapted)
                 scaleHistory[timesAdapted] <<- scale
                 acceptanceRateHistory[timesAdapted] <<- acceptanceRate
- #               adaptFactor <- my_calcAdaptationFactor(acceptanceRate)
-				gamma1 <<- 1/((timesAdapted + 3)^0.8)
-				gamma2 <- 10 * gamma1
-				adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                gamma2 <- 10 * gamma1
+                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
                 scale <<- scale * adaptFactor
                 timesRan <<- 0
                 timesAccepted <<- 0
@@ -106,9 +103,7 @@ sampler_RW <- nimbleFunction(
             timesAdapted  <<- 0
             scaleHistory          <<- scaleHistory          * 0
             acceptanceRateHistory <<- acceptanceRateHistory * 0
-      #      nfMethod(my_calcAdaptationFactor, 'reset')()
-      		gamma1 <<- 0
-      
+            gamma1 <<- 0
         }
     ), where = getLoadingNamespace()
 )
