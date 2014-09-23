@@ -109,6 +109,6 @@ if(Sys.getenv("NIMBLE_PKG_SRC_DIR") == "") {
        NimbleCodeDir = path
    } else {
        Sys.setenv("NIMBLE_PKG_SRC_DIR" = normalizePath("nimble/inst"))
-       NimbleCodeDir = normalizePath("nimble/inst")
+       NimbleCodeDir = path
    }
 }
