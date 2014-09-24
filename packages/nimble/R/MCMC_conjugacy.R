@@ -52,9 +52,9 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
              dmnorm = list(param = 'mean', contribution_mean = 't(coeff) %*% prec %*% asCol(value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-         posterior = 'dmnorm_chol(mean       = inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean),
+         posterior = 'dmnorm_chol(mean       = (inverse( (prior_prec + contribution_prec) ) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean))[,1],
                                   chol       = chol(prior_prec + contribution_prec),
-                                  prec_param = TRUE)')
+                                  prec_param = 1)')
 )
 
 
@@ -903,8 +903,8 @@ cc_combineExprsDivision <- function(expr1, expr2) {
 conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList)
 
 conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()
-createNamedObjectsFromList(conjugateSamplerDefinitions)
-##createNamedObjectsFromList(conjugateSamplerDefinitions, writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
+##createNamedObjectsFromList(conjugateSamplerDefinitions)
+createNamedObjectsFromList(conjugateSamplerDefinitions, writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
 
 
 
