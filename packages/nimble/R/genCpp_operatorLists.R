@@ -130,8 +130,7 @@ cppCasts = list(as.numeric = 'double',
 
 ## Used to decide when to put parentheses around LHS or RHS based on operator precendence.
 operatorRank <- c(
-				  list('chol' = 3),
-				  list('<-' = 100, '^' = 4),
+				  list('<-' = 100, '^' = 4, llt = 3),
                   makeCallList(c('*','/','%*%', '%%'), 5),
                   makeCallList(c('+', '-'), 6),
                   makeCallList(c('>','<','<=', '>='), 7),
