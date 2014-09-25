@@ -27,7 +27,7 @@ exprClass <- setRefClass('exprClass',
                              assertions =  'ANY'		#'list'
                              ),
                          methods = list(
-                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); callSuper(...)},
+                             initialize = function(...) {sizeExprs <<- list(); args <<- list();toEigenize <<- 'unknown';assertions <<- list(); eigMatrix <<- logical(); callSuper(...)},
                              ## This displays the parse tree using indentation on multiple rows of output
                              ## It also checks that the caller and callerArgID fields are all correct
                              ## For deparsing, call nimDeparse
