@@ -68,7 +68,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
-                      topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL) {
+                      topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL,
+                      doR = TRUE, doCpp = TRUE) {
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
   # 2) if you pass 'results', it will compare MCMC output to known posterior summaries within tolerance specified in resultsTolerance
@@ -102,64 +103,77 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     tmp <- spec$addSampler(var[[1]], control = var[[2]], print = FALSE)
   }
 
-  Cmodel <- compileNimble(Rmodel)
+  if(doCpp) {
+      Cmodel <- compileNimble(Rmodel)
+  }
   if(!is.null(mcmcControl)) mcmcspec <- MCMCspec(Rmodel, control = mcmcControl) else mcmcspec <- MCMCspec(Rmodel)
   
   if(!is.null(samplers)) {
-    sapply(samplers, setSampler, mcmcspec)
-    if(verbose) {
-      cat("Setting samplers to:\n")
-      print(mcmcspec$getSamplers())
-    }
+      sapply(samplers, setSampler, mcmcspec)
+      if(verbose) {
+          cat("Setting samplers to:\n")
+          print(mcmcspec$getSamplers())
+      }
   }
   
   vars <- Rmodel$getDependencies(Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE), stochOnly = TRUE, includeData = FALSE, downstream = TRUE)
   vars <- unique(removeIndexing(vars))
   mcmcspec$addMonitors(vars)
-
+  
   Rmcmc <- buildMCMC(mcmcspec)
-  Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
-
+  if(doCpp) {
+      Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+  }
+      
   if(basic) {
-    # do short runs and compare R and C MCMC output
-    set.seed(seed);
-    Rmcmc(numItsR)
-    set.seed(seed)
-    Cmcmc(numItsC)
-    
-    RmvSample  <- nfVar(Rmcmc, 'mvSamples')
-    CmvSample <- nfVar(Cmcmc, 'mvSamples')
-    
-    R_samples <- as.matrix(RmvSample)
-    C_samples <- as.matrix(CmvSample)
-  # for some reason columns in different order in CmvSample...
-    C_subSamples <- C_samples[seq_len(numItsR), attributes(R_samples)$dimnames[[2]], drop = FALSE]
+    ## do short runs and compare R and C MCMC output
+      if(doR) {
+          set.seed(seed);
+          Rmcmc(numItsR)
+          RmvSample  <- nfVar(Rmcmc, 'mvSamples')
+          R_samples <- as.matrix(RmvSample)
+      }
+      if(doCpp) {
+          set.seed(seed)
+          Cmcmc(numItsC)
+          CmvSample <- nfVar(Cmcmc, 'mvSamples')    
+          C_samples <- as.matrix(CmvSample)
+          ## for some reason columns in different order in CmvSample...
+          C_subSamples <- C_samples[seq_len(numItsR), attributes(R_samples)$dimnames[[2]], drop = FALSE]
+      }
 
-    context(paste0("testing ", example, " MCMC"))
-    try(
-      test_that(paste0("test of equality of output from R and C versions of ", example, " MCMC"), {
-        expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
-      })
-      )
-
-    if(!is.null(exactSample)) {
-      for(varName in names(exactSample))
+      if(doR & doCpp) {
+          context(paste0("testing ", example, " MCMC"))
           try(
-            test_that(paste("Test of MCMC result against known samples for", example, ":", varName), {
-              expect_that(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), equals(round(exactSample[[varName]], 8))) })
-            )
-    }
+              test_that(paste0("test of equality of output from R and C versions of ", example, " MCMC"), {
+                  expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
+              })
+              )
+      }
+
+      if(doCpp) {
+          if(!is.null(exactSample)) {
+              for(varName in names(exactSample))
+                  try(
+                      test_that(paste("Test of MCMC result against known samples for", example, ":", varName), {
+                          expect_that(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), equals(round(exactSample[[varName]], 8))) })
+                      )
+          }
+      }
       
     summarize_posterior <- function(vals) 
       return(c(mean = mean(vals), sd = sd(vals), quantile(vals, .025), quantile(vals, .975)))
-  
-    if(verbose) {
-      start <- round(numItsC / 2) + 1
-      try(print(apply(C_samples[start:numItsC, , drop = FALSE], 2, summarize_posterior)))
-    }
+
+      if(doCpp) {
+          if(verbose) {
+              start <- round(numItsC / 2) + 1
+              try(print(apply(C_samples[start:numItsC, , drop = FALSE], 2, summarize_posterior)))
+          }
+      }
   }
 
-  if(!is.null(results)) {
+  ## assume doR and doCpp from here down
+  if(!is.null(results)) { 
     
     # do longer run and compare results to inputs given
     set.seed(seed)
