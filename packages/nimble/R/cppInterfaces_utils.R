@@ -74,12 +74,12 @@ setDoublePtrFromSinglePtr <- function(elementPtr, value) {
     value
 }
 
-setSinglePtrFromSinglePtr <- function(elementPtr, value) {
-    if(!inherits(elementPtr, 'externalptr')) return(NULL)
-    if(!inherits(value, 'externalptr')) return(NULL)
-    .Call('setSinglePtrFromSinglePtr', elementPtr, value)
-    value
-}
+# setSinglePtrFromSinglePtr <- function(elementPtr, value) {
+#     if(!inherits(elementPtr, 'externalptr')) return(NULL)
+#     if(!inherits(value, 'externalptr')) return(NULL)
+#     .Call('setSinglePtrFromSinglePtr', elementPtr, value)
+#     value
+# }
 
 
 getDoubleValue <- function(elementPtr, pointDepth = 1){
