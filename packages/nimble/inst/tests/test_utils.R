@@ -245,5 +245,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                 expect_that(miscoverage, is_less_than(tolerance))
               })
       )
+    if(miscoverage > tolerance && verbose)
+      cat("True values with 95% posterior interval:\n")
+      print(cbind(trueVals, t(interval)))
   }
 }

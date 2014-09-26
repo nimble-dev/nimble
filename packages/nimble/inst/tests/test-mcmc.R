@@ -5,36 +5,50 @@ context("Testing of default MCMC")
 ### Beginning of actual tests
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
-# was fine in 0.1-1 not in 0.1-2
+# was fine in 0.1-1 not in 0.1-2 - emailed DT/PdV
 
-test_mcmc('bones', numItsC = 1000, resampleData = TRUE)
-# stochastic model value is NA, NaN or too small in model initialization
-# stochastic model node is NA or NaN in model initialization
-#Error in quantile.default(vals, 0.025) : 
-#  missing values and NaN's not allowed if 'na.rm' is FALSE
-
-# HERE
+test_mcmc('bones', numItsC = 10000, resampleData = TRUE)
+# very low coverage
 
 test_mcmc('dyes', numItsC = 1000, resampleData = TRUE)
-# conjugate posterior density appears to be wrong
+# 100% coverage; looks fine
+
 
 test_mcmc('equiv', numItsC = 1000, resampleData = TRUE)
-# conjugate posterior density appears to be wrong
+# same error as blocker:
+#Error in if (abs(posteriorVerification) > 1e-10) { : 
+#  missing value where TRUE/FALSE needed
+#In addition: Warning message:
+#In rnorm(1, mean = (prior_mean * prior_tau + contribution_mean)/(prior_tau +  :
+#  NAs produced
 
+test_mcmc('line', numItsC = 1000, resampleData = TRUE)
+# same error as blocker:
 
+test_mcmc('oxford', numItsC = 1000, resampleData = TRUE)
+# b values post means are very small - CI too wide?
+# b's in classic-bugs param are top-level :(
+# they are estimated to be small in initial run
+# that said not sure why they are so small in initial run
+# sigma posterior looks like its prior
+# jags gives very different sigma post. and larger (though
+# not all that large) b values
+
+if(FALSE) {
 allModels <- c(# vol1
-               'blocker', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
+               'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                # 'bones',
                # vol2
                'dugongs', 'oxford')
 
 sapply(allModels, test_mcmc, numItsC = 1000)
+}
 
 
-# bones has issue "something went wrong in model initialization" when run the R or C MCMC nf and get NAs as samples
 # dyes, equiv, rats: "conjugate posterior density appears to be wrong"
 
 # add in the special cases for epil,seed,birats,ice,beetles,leuk,salm,air,jaw,dipper
+# add in basic MV norm test - see DT code
 
 test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
                     "theta[1]" = 0.06,
