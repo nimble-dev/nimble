@@ -4,7 +4,7 @@
 
 conjugacyRelationshipsInputList <- list(
     
-    ## beta distribution
+    ## beta
     list(prior = 'dbeta',
          link = 'identity',
          dependents = list(
@@ -14,7 +14,7 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
     
-    ## gamma distribution
+    ## gamma
     list(prior = 'dgamma',
          link = 'multiplicative',
          dependents = list(
@@ -28,7 +28,7 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
     
-    ## normal distribution
+    ## normal
     list(prior = 'dnorm',
          link = 'linear',
          dependents = list(
@@ -37,7 +37,7 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
                             sd   = (prior_tau + contribution_tau)^(-0.5))'),
     
-    ## pareto distribution
+    ## pareto
     # list(prior = 'dpar',      ##### waiting for dpar() distribution
     #      link = 'multiplicative',
     #      dependents = list(
@@ -47,14 +47,24 @@ conjugacyRelationshipsInputList <- list(
     #                        c     = max(prior_c, max(dependents_dunif_values/dependents_dunif_coeff)))'),
     #####
     
-    ## multivariate-normal distribution
+    ## multivariate-normal
     list(prior = 'dmnorm',
          link = 'linear',
          dependents = list(
              dmnorm = list(param = 'mean', contribution_mean = 't(coeff) %*% prec %*% asCol(value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
          posterior = 'dmnorm_chol(mean       = (inverse( (prior_prec + contribution_prec) ) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean))[,1],
                                   chol       = chol(prior_prec + contribution_prec),
-                                  prec_param = 1)')
+                                  prec_param = 1)'),
+
+    ## wishart
+    list(prior = 'dwish',
+         link = 'identity',  ## ?????????????????????????????????????
+         dependents = list(
+             dmnorm = list(.....)
+         ),
+         posterior = ''
+    )
+
 )
 
 
