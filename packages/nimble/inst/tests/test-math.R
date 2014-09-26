@@ -16,7 +16,7 @@ testsVaried = list(
   list(name = "sd of vector with addition", expr = quote(out <- sd(arg1 + 3)), inputDim = c(1), outputDim = 0),
   list(name = "sd of matrix-vector multiply", expr = quote(out <- sd(arg1 %*% arg2)), inputDim = c(2,1), outputDim = 0),
   list(name = "var of vector", expr = quote(out <- var(arg1)), inputDim = c(1), outputDim = 0),
-  list(name = "log determinant", expr = quote(out <- logdet(arg1)), inputDim = c(2), outputDim = 0, Rcode = quote(out <- determinant(arg1, log = TRUE)))
+  list(name = "log determinant", expr = quote(out <- logdet(arg1)), inputDim = c(2), outputDim = 0)
   )
 
 testsBasicMath = list(
@@ -169,10 +169,10 @@ testsComparison = list(
   
 
 set.seed(0)
-#sapply(testsVaried, test_math)
-#sapply(testsBasicMath, test_math)
-#sapply(testsMoreMath, test_math)
-#sapply(testsReduction, test_math)
+sapply(testsVaried, test_math)
+sapply(testsBasicMath, test_math)
+sapply(testsMoreMath, test_math)
+sapply(testsReduction, test_math)
 sapply(testsComparison, test_math)
 
 
