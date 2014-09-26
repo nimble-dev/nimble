@@ -366,7 +366,6 @@ conjugacyClass <- setRefClass(
                 switch(as.character(targetNodeNdim),
                        `0` = {
                            functionBody$addCode({
-                               x1 <- model[[targetNode]]
                                model[[targetNode]] <<- 0
                                calculate(model, calcNodesDeterm)
                            })
@@ -374,12 +373,25 @@ conjugacyClass <- setRefClass(
                                functionBody$addCode(
                                    for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                        DEP_OFFSET_VAR[i] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)()
-                                       DEP_COEFF_VAR[i] <- (DEP_PARAM_VAR[i] - DEP_OFFSET_VAR[i]) / x1
+                                       #DEP_COEFF_VAR[i] <- (DEP_PARAM_VAR[i] - DEP_OFFSET_VAR[i]) / x1
                                    }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                           GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
-                                           DEP_PARAM_VAR     = as.name(paste0('dependents_', distName, '_', dependents[[distName]]$param)),
                                            DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                           DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff'))))
+                                           GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
+                                           #DEP_PARAM_VAR     = as.name(paste0('dependents_', distName, '_', dependents[[distName]]$param)),
+                                           #DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
+                           }
+                           functionBody$addCode({
+                               model[[targetNode]] <<- 1
+                               calculate(model, calcNodesDeterm)
+                           })
+                           for(distName in dependentDistNames) {
+                               functionBody$addCode(
+                                   for(i in seq_along(DEP_NODEFUNCTIONS)) {
+                                       DEP_COEFF_VAR[i] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[i]
+                                   }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                           DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
+                                           GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
+                                           DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
                            }
                        },
                        `1` = {
