@@ -58,12 +58,12 @@ conjugacyRelationshipsInputList <- list(
 
     ## wishart
     list(prior = 'dwish',
-         link = 'identity',  ## ?????????????????????????????????????
+         link = 'linear',
          dependents = list(
-             dmnorm = list(.....)
-         ),
-         posterior = ''
-    )
+             dmnorm = list(param = 'prec', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) %*% coeff', contribution_df = '1')),
+         posterior = 'dwish_chol(chol        = chol(inverse( inverse(prior_S) + contribution_S )),
+                                 df          = prior_df + contribution_df,
+                                 scale_param = 1)')
 
 )
 
@@ -275,7 +275,7 @@ conjugacyClass <- setRefClass(
                                       posteriorLogDensity0 <- DPOSTERIORCALL_ORIG
                                       posteriorLogDensity1 <- DPOSTERIORCALL_NEW
                                       posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
-                                      if(abs(posteriorVerification) > 1e-10)     {
+                                      if(abs(posteriorVerification) > 1e-8)     {
                                       nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification) }
                 }, list(DPOSTERIORCALL_ORIG = eval(substitute(substitute(expr, list(VALUE=quote(origValue))), list(expr=posteriorObject$dCallExpr))),
                         DPOSTERIORCALL_NEW  = eval(substitute(substitute(expr, list(VALUE=quote(newValue))),  list(expr=posteriorObject$dCallExpr)))))
