@@ -5,11 +5,15 @@ context("Testing of default MCMC")
 ### Beginning of actual tests
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
+# was fine in 0.1-1 not in 0.1-2
 
 test_mcmc('bones', numItsC = 1000, resampleData = TRUE)
-# something went wrong in model initialization
+# stochastic model value is NA, NaN or too small in model initialization
+# stochastic model node is NA or NaN in model initialization
 #Error in quantile.default(vals, 0.025) : 
 #  missing values and NaN's not allowed if 'na.rm' is FALSE
+
+# HERE
 
 test_mcmc('dyes', numItsC = 1000, resampleData = TRUE)
 # conjugate posterior density appears to be wrong

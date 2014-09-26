@@ -337,7 +337,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   if(!is.null(inits)) {
     varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
     for(varName in varNames) {
-      Rmodel[[varName]] <- inits[[varName]]
+      # check for isData in case a node is a mix of data and non-data and inits are supplied such
+      # that they would overwrite the data nodes without this check
+      Rmodel[[varName]][!Rmodel$isData(varName)] <- inits[[varName]][!Rmodel$isData(varName)] 
     }
   }
   return(Rmodel)
