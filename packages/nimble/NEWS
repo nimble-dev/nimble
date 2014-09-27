@@ -1,0 +1,27 @@
+                  PLANNED CHANGES IN VERSION 0.3 
+
+-- use of model$calculate() rather than (or in addition to) calculate(model)
+
+-- nodeVectors as data structure for referring to collections of nodes as well as replacing nodeFunctionVectors
+
+-- implementation of is.na(values(model, nodes))
+
+
+
+
+                     CHANGES IN VERSION 0.2
+
+-- Internal changes to decrease time to build models and nimbleFunctions.
+
+-- Multivariate conjugate updaters now included in our MCMC implementation, as well as block updating on multivariate nodes.
+
+Bug fixes
+
+-- Fixed handling of NA and NaN.
+
+-- Fixed issue with specifying multivariate nodes as rows/columns of matrices
+
+-- Fixed an error in the conjugacy system
+
+-- Fixed an issue with building the NIMBLE package for Windows.
+
