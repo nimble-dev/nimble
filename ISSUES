@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (9/27/14 - from an old Perry email) What I've had in mind (for a long long time of thinking about this project :) ) is that we can have a compilation mode a little bit like "valgrind" for memory problems in R: one that does excessive computation to check for problems.  Specifically, we can compile to a "debugging" version of getLogProb that will always double check that the logProb value it is returning is in fact up to date with a new call to calculate.  That way we can validate an algorithm by execution, to some extent.
+
 * (9/14/14) norm() in R and C nimble functions differ as the R default seems to be the "1" norm (the 'type' argument) and the C version is the Frobenius
 
 * (9/14/14) gamma on my Linux desktop is finding (I think) the system gamma and somehow returning log(gamma(x)) instead of gamma(x); on my Mac, it's fine (CJP)
