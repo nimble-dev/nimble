@@ -37,7 +37,7 @@ testsBasicMath = list(
   list(name = 'tanh of scalar', expr = quote(out <- tanh(arg1)), inputDim = 0, outputDim = 0), 
   list(name = 'acosh of scalar', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 0, outputDim = 0), 
   list(name = 'asinh of scalar', expr = quote(out <- asinh(arg1)), inputDim = 0, outputDim = 0), 
-  list(name = 'atanh of scalar', expr = quote(out <- atanh(arg1%%1)), inputDim = 0, outputDim = 0), 
+  list(name = 'atanh of scalar', expr = quote(out <- atanh(abs(arg1)%%1)), inputDim = 0, outputDim = 0), 
   ###
   list(name = 'exp of vector', expr = quote(out <- exp(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'log of vector', expr = quote(out <- log(abs(arg1))), inputDim = 1, outputDim = 1),
