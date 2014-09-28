@@ -83,7 +83,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     if(file.exists(file.path(dir, "vol2", example))) vol <- "vol2"
     if(is.null(vol)) stop("Can't find path to ", example, ".\n")
     dir <- file.path(dir, vol, example)
-    Rmodel <- readBUGSmodel(example, dir = dir, useInits = TRUE)
+    if(missing(model)) model <- example
+    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE)
   } else {
     # code, data and inits specified directly where 'model' contains the code
     example = deparse(substitute(model))

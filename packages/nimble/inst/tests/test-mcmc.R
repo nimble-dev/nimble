@@ -48,11 +48,18 @@ allModels <- c(# vol1
 sapply(allModels, test_mcmc, numItsC = 1000)
 }
 
+test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
+              data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
+# similar story to oxford - random effects are very small with wide CIs
 
-# dyes, equiv, rats: "conjugate posterior density appears to be wrong"
+test_mcmc('epil', model = 'epil3.bug', inits = 'epil-inits.R',
+              data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
+
+
 
 # add in the special cases for epil,seed,birats,ice,beetles,leuk,salm,air,jaw,dipper
-# add in basic MV norm test - see DT code
+
+
 
 test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
                     "theta[1]" = 0.06,
@@ -70,7 +77,7 @@ test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
             beta = 0.1)))
 
 
-# Daniel's world's simplest MCMC demo
+### Daniel's world's simplest MCMC demo
 
 code <- modelCode({
     x ~ dnorm(0, 2)
@@ -85,7 +92,7 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
           resultsTolerance = list(mean = list(x = .1, z = .1),
             sd = list(x = .05, z = .05)))
 
-# basic block sampler example
+### basic block sampler example
 
 code <- modelCode({
     for(i in 1:3) {
@@ -123,7 +130,7 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
 
 
 
-# slice sampler example
+### slice sampler example
 
 code <- BUGScode({
     z ~ dnorm(0, 1)
@@ -155,7 +162,7 @@ test_mcmc(model = code, resampleData = FALSE, results = list(
 
 
 
-# demo2 of check conjugacy
+### demo2 of check conjugacy
 
 code <- BUGScode({
     x ~ dbeta(3, 13)
@@ -166,7 +173,7 @@ data = list(y = c(3,4))
 
 test_mcmc(model = code, data = data, exactSample = list(x = c(0.195510839527966, 0.332847482503424,0.247768152764931, 0.121748195439553, 0.157842271774841, 0.197566496350904, 0.216991517500577, 0.276609942874852, 0.165733872345582, 0.144695512780252)), seed = 0)
 
-# checkConjugacy_demo3_run.R - various conjugacies
+### checkConjugacy_demo3_run.R - various conjugacies
 
 code <- BUGScode({
     x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
@@ -189,7 +196,7 @@ sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738,
 test_mcmc(model = code, data = data, exactSample = sampleVals, seed = 0, mcmcCon
 trol = list(scale=0.01))
 
-# block sampler on MVN node
+### block sampler on MVN node
 
 code <- modelCode({
     mu[1] <- 10
@@ -209,15 +216,17 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
           samplers = list(
             list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
 # caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
-
+if(FALSE) {
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$scaleHistory
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$acceptanceRateHistory
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
 # why is the proposal cov w/ .99 cross-corrs?
 # also MCMC in C takes a surprisingly long time
+}
 
-# MVN conjugate update
+
+### MVN conjugate update
 
 set.seed(0)
 mu0 = 1:3
