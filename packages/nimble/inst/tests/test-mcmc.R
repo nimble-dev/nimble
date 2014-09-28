@@ -5,25 +5,20 @@ context("Testing of default MCMC")
 ### Beginning of actual tests
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
-# was fine in 0.1-1 not in 0.1-2 - emailed DT/PdV
+# 100% coverage; looks fine
 
 test_mcmc('bones', numItsC = 10000, resampleData = TRUE)
-# very low coverage
+# 100% coverage; looks fine
 
 test_mcmc('dyes', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
-
 test_mcmc('equiv', numItsC = 1000, resampleData = TRUE)
-# same error as blocker:
-#Error in if (abs(posteriorVerification) > 1e-10) { : 
-#  missing value where TRUE/FALSE needed
-#In addition: Warning message:
-#In rnorm(1, mean = (prior_mean * prior_tau + contribution_mean)/(prior_tau +  :
-#  NAs produced
+# 100% coverage; 'd' intervals are very large relative to values
+# should look into this
 
 test_mcmc('line', numItsC = 1000, resampleData = TRUE)
-# same error as blocker:
+# 100% coverage; looks fine
 
 test_mcmc('oxford', numItsC = 1000, resampleData = TRUE)
 # b values post means are very small - CI too wide?
@@ -34,12 +29,21 @@ test_mcmc('oxford', numItsC = 1000, resampleData = TRUE)
 # jags gives very different sigma post. and larger (though
 # not all that large) b values
 
+test_mcmc('pump', numItsC = 1000, resampleData = TRUE)
+# 100% coverage; looks fine
+
+test_mcmc('rats', numItsC = 1000, resampleData = TRUE)
+# 93.8% coverage; looks fine
+
+test_mcmc('dugongs', numItsC = 1000, resampleData = TRUE)
+# 100% coverage; looks fine
+
 if(FALSE) {
 allModels <- c(# vol1
                'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                # 'bones',
                # vol2
-               'dugongs', 'oxford')
+               'dugongs')
 
 sapply(allModels, test_mcmc, numItsC = 1000)
 }
@@ -182,6 +186,39 @@ code <- BUGScode({
 sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
   c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
 
-test_mcmc(model = code, data = data, exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
+test_mcmc(model = code, data = data, exactSample = sampleVals, seed = 0, mcmcCon
+trol = list(scale=0.01))
 
-}
+# block sampler on MVN node
+
+code <- modelCode({
+    mu[1] <- 10
+    mu[2] <- 20
+    mu[3] <- 30
+    x[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])    
+})
+
+Q = matrix(c(1.0,0.2,-1.0,0.2,4.04,1.6,-1.0,1.6,10.81), nrow=3)
+data = list(Q = Q)
+
+test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+          results = list(mean = list(x = c(10,20,30)),
+          var = list(x = diag(solve(Q)))),
+          resultsTolerance = list(mean = list(x = rep(1,3)),
+            var = list(x = c(.1, .03, .01))),
+          samplers = list(
+            list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
+# caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
+
+nfVar(Cmcmc, 'samplerFunctions')[[1]]$scaleHistory
+nfVar(Cmcmc, 'samplerFunctions')[[1]]$acceptanceRateHistory
+nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
+nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
+# why is the proposal cov w/ .99 cross-corrs?
+# also MCMC in C takes a surprisingly long time
+
+# MVN conjugate update
+
+
+
+

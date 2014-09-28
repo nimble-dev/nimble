@@ -247,7 +247,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     postBurnin <- (round(numItsC_results/2)):numItsC
     C_samples <- as.matrix(CmvSample)[postBurnin, nonDataNodes, drop = FALSE]
     interval <- apply(C_samples, 2, quantile, c(.025, .975))
-    covered <- trueVals < interval[2, ] & trueVals > interval[1, ]
+    covered <- trueVals <= interval[2, ] & trueVals >= interval[1, ]
     coverage <- sum(covered) / length(nonDataNodes)
     tolerance <- 0.1
     if(length(nonDataNodes) >= 20) tolerance <- 0.04
@@ -259,8 +259,9 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                 expect_that(miscoverage, is_less_than(tolerance))
               })
       )
-    if(miscoverage > tolerance && verbose)
+    if(miscoverage > tolerance || verbose) {
       cat("True values with 95% posterior interval:\n")
-      print(cbind(trueVals, t(interval)))
+      print(cbind(trueVals, t(interval), covered))
+    }
   }
 }
