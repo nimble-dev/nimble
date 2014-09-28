@@ -68,7 +68,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
-                      topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL,
+                      topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE, 
                       doR = TRUE, doCpp = TRUE) {
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
@@ -107,6 +107,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       Cmodel <- compileNimble(Rmodel)
   }
   if(!is.null(mcmcControl)) mcmcspec <- MCMCspec(Rmodel, control = mcmcControl) else mcmcspec <- MCMCspec(Rmodel)
+  if(removeAllDefaultSamplers) mcmcspec$removeSamplers()
   
   if(!is.null(samplers)) {
       sapply(samplers, setSampler, mcmcspec)
@@ -182,26 +183,41 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     postBurnin <- (round(numItsC_results/2)+1):numItsC_results
     C_samples <- as.matrix(CmvSample)[postBurnin, , drop = FALSE]
     for(metric in names(results)) {
-      if(!metric %in% c('mean', 'median', 'sd', 'var'))
-        stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', and 'var'.")
-      postResult <- apply(C_samples, 2, metric)
-      for(varName in names(results[[metric]])) {
-        varNameMangled <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
-        matched <- grep(varName, dimnames(C_samples)[[2]], fixed = TRUE)
-        diff <- abs(postResult[matched] - results[[metric]][[varName]])
-        for(ind in seq_along(diff)) {
-          strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
-          try(
-            test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"), {
-              expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
-            })
-            )
+      if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov'))
+        stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', 'var', and 'cov'.")
+      if(metric != 'cov') {
+        postResult <- apply(C_samples, 2, metric)       
+        for(varName in names(results[[metric]])) {
+          varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
+          matched <- grep(varName, dimnames(C_samples)[[2]], fixed = TRUE)
+          diff <- abs(postResult[matched] - results[[metric]][[varName]])
+          for(ind in seq_along(diff)) {
+            strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
+            try(
+              test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"), {
+                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+              })
+              )
+          }
+        }
+      } else  { # 'cov'
+        for(varName in names(results[[metric]])) {
+          matched <- grep(varName, dimnames(C_samples)[[2]], fixed = TRUE)
+          postResult <- cov(C_samples[ , matched])
+           # next bit is on vectorized form of matrix so a bit awkward
+          diff <- c(abs(postResult - results[[metric]][[varName]]))
+          for(ind in seq_along(diff)) {
+            strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
+            try(
+              test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
+                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+              })
+              )
+          }
         }
       }
     }
   }
-
-
   
   if(resampleData) {
     topNodes <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE)

@@ -219,6 +219,53 @@ nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
 
 # MVN conjugate update
 
+set.seed(0)
+mu0 = 1:3
+Q0 = matrix(c(1, .2, .8, .2, 2, 1, .8, 1, 2), nrow = 3)
+Q = solve(matrix(c(3, 1.7, .9, 1.7, 2, .6, .9, .6, 1), nrow = 3))
+a = c(-2, .5, 1)
+B = matrix(rnorm(9), 3)
 
+code <- modelCode({
+  mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
+  y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
+  y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
+})
+
+## a = rep(0,3)
+## B = diag(rep(1,3))
+## code <- modelCode({
+##   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
+##   y[1:3] ~ dmnorm(mu[1:3], Q[1:3, 1:3])
+## })
+
+
+mu <- mu0 + chol(solve(Q0)) %*% rnorm(3)
+# make sure y is a vec not a 1-col matrix or get a dimensionality error
+y <- c(a + B%*%mu + chol(solve(Q)) %*% rnorm(3))
+data = list(mu0 = mu0, Q0 = Q0, Q = Q, a = a, B = B, y = y)
+
+muQtrue = t(B) %*% Q%*%B + Q0
+muMeanTrue = c(solve(muQtrue, crossprod(B, Q%*%(y-a)) + Q0%*%mu0))
+
+test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+          results = list(mean = list(mu = muMeanTrue),
+                           cov = list(mu = solve(muQtrue))),
+          resultsTolerance = list(mean = list(mu = rep(.02,3)),
+            cov = list(mu = matrix(.01, 3, 3))))
+
+
+
+### scalar RW updates in place of conjugate mv update
+
+test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+          results = list(mean = list(mu = muMeanTrue),
+                           cov = list(mu = solve(muQtrue))),
+          resultsTolerance = list(mean = list(mu = rep(.02,3)),
+            cov = list(mu = matrix(.01, 3, 3))),
+          samplers = list(list(type = 'RW', control = list(targetNode = 'mu[1]')),
+            list(type = 'RW', control = list(targetNode = 'mu[2]')),
+            list(type = 'RW', control = list(targetNode = 'mu[3]'))),
+          removeAllDefaultSamplers = TRUE)
 
 
