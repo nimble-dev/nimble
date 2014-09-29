@@ -112,7 +112,6 @@ mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
 				for(funName in uniqueNames){
 		    		var_GIDs = nodeName_2_graphID[funName]
 					nodeNamesWithCall <- paste0(funName, "<- var_GIDs")
-	    			var_GIDs = nodeName_2_graphID[nodeNames4Var]
 		    		eval(parse(text = nodeNamesWithCall[1])[[1]], envir = vars2GraphID_functions)		    	
 		    	}
 	    	}
