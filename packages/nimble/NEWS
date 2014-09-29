@@ -13,7 +13,7 @@
 
 -- Internal changes to decrease time to build models and nimbleFunctions.
 
--- Multivariate conjugate updaters now included in our MCMC implementation, as well as block updating on multivariate nodes.
+-- Multivariate conjugate updaters now included in our MCMC implementation, as well as block updating on scalar and/or multivariate nodes.
 
 Bug fixes
 
@@ -23,5 +23,5 @@ Bug fixes
 
 -- Fixed an error in the conjugacy system
 
--- Fixed an issue with building the NIMBLE package for Windows.
+-- Fixed an issue with building the NIMBLE package for Windows, as well as removing compiler warnings.
 
