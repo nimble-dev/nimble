@@ -41,8 +41,11 @@ mapsClass <- setRefClass(
         ## Numeric Vectors containing the graphIDs's for the following node types
         top_IDs = 'ANY',
         latent_IDs = 'ANY',
-        end_IDs = 'ANY'
+        end_IDs = 'ANY',
         
+        
+        #logical vector indicating where graphID is a nodeFunction
+        is_NodeFunction = 'ANY'
     ),
     
     methods = list(
@@ -119,6 +122,10 @@ mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
     }
     assignLogProbName(nodeInfo, vars2LogProbName)
     setPositions(graph)
+    is_NodeFunction <<- rep(FALSE, length(graphIDs))
+    for(var in ls(vars2GraphID_functions))
+	    is_NodeFunction[unlist(as.list(vars2GraphID_functions[[var]]))] <<- TRUE
+	is_NodeFunction <<- which(is_NodeFunction)
 })
 
 assignLogProbName <- function(nodeInfo, nodeName2LogProbMap){
