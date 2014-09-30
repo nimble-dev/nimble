@@ -261,7 +261,7 @@ Details: Returns a logical vector with the same length as the input vector.  Thi
                                                              determOnly = FALSE, stochOnly = FALSE,
                                                              includeData = TRUE, dataOnly = FALSE,
                                                              includeRHSonly = FALSE, downstream = FALSE,
-                                                             returnType = 'names') {
+                                                             nodeFunctionID = TRUE, returnType = 'names') {
 '
 Returns a character vector of the nodes dependent upon the input argument nodes, sorted topoloigically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
 
