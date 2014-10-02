@@ -28,6 +28,7 @@ test_mcmc('oxford', numItsC = 1000, resampleData = TRUE)
 # sigma posterior looks like its prior
 # jags gives very different sigma post. and larger (though
 # not all that large) b values
+# note same thing happened in 0.1-1
 
 test_mcmc('pump', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
@@ -54,7 +55,7 @@ test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
 
 test_mcmc('epil', model = 'epil3.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
-
+# same deal as epil2.bug
 
 
 # add in the special cases for epil,seed,birats,ice,beetles,leuk,salm,air,jaw,dipper
@@ -202,11 +203,12 @@ code <- modelCode({
     mu[1] <- 10
     mu[2] <- 20
     mu[3] <- 30
-    x[1:3] ~ dmnorm(mu[1:3], Q[1:3,1:3])    
+    x[1:3] ~ dmnorm(mu[1:3], prec = Q[1:3,1:3])    
 })
 
 Q = matrix(c(1.0,0.2,-1.0,0.2,4.04,1.6,-1.0,1.6,10.81), nrow=3)
 data = list(Q = Q)
+inits = list(x = mu)
 
 test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
           results = list(mean = list(x = c(10,20,30)),
@@ -224,6 +226,29 @@ nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
 # why is the proposal cov w/ .99 cross-corrs?
 # also MCMC in C takes a surprisingly long time
 }
+
+### DT's model
+mu <- c(1,2,3)
+corr <- matrix(c(1,.8,0.3,.8,1,0,0.3,0,1), nrow=3)
+varr <- c(1,2,3)
+Sig <- diag(sqrt(varr))
+Q <- Sig %*% corr %*% Sig
+P <- solve(Q)
+
+code <- modelCode({
+#    x[1:3] ~ dmnorm(mu[1:3], cov = Q[1:3,1:3])
+    x[1:3] ~ dmnorm(mu[1:3], prec = P[1:3,1:3])
+})
+data = list(P = P, mu = mu)
+
+test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+          results = list(mean = list(x = mu),
+          var = list(x = varr)),
+          resultsTolerance = list(mean = list(x = rep(.1,3)),
+            var = list(x = c(.1,.1,.1))),
+          samplers = list(
+            list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
+
 
 
 ### MVN conjugate update

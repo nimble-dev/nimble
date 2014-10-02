@@ -102,27 +102,31 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     for(nodeName in nodeNames) {
       varName <- gsub("\\[.*\\]", "", nodeName)
       if(!(varName %in% names(inits)) && !Rmodel$isData(nodeName))  # only if not initialized and not data node
-        Rmodel$nodes[[nodeName]]$simulate() 
+        simulate(Rmodel, nodeName)
       if(!(nodeName %in% detNodeNames && varName %in% names(inits))) # don't overwrite det nodes that have init values
-        Rmodel$nodes[[nodeName]]$calculate()
+        calculate(Rmodel, nodeName)
     }
     
     set.seed(0)
     for(nodeName in nodeNames) {
       varName <- gsub("\\[.*\\]", "", nodeName)
       if(!(varName %in% names(inits)) && !Rmodel$isData(nodeName))   # only if not initialized and not data node
-        Cmodel$nodes[[nodeName]]$simulate()
+        simulate(Cmodel, nodeName)
       if(!(nodeName %in% detNodeNames && varName %in% names(inits))) # don't overwrite det nodes that have init values
-        Cmodel$nodes[[nodeName]]$calculate()
+        calculate(Cmodel, nodeName)
     }
                                         # test that vals are maintained at their initial values
     if(!is.null(inits)) {
       test_that(paste0(example, ": test of the test: are initial values maintained?"), {
         varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
-        for(varName in varNames)
-          expect_that(Rmodel[[varName]], equals(inits[[varName]]), info = paste0('Initial value not maintained in R model for variable ', varName))
-        for(varName in varNames) 
-          expect_that(Cmodel[[varName]], equals(inits[[varName]]), info = paste0('Initial value not maintained in C model for variable ', varName))
+        for(varName in varNames) {
+          Rvals <- Rmodel[[varName]]
+          Cvals <- Cmodel[[varName]]
+          initsVals <- inits[[varName]]
+          attributes(Rvals) <- attributes(Cvals) <- attributes(initsVals) <- NULL
+          expect_that(Rvals, equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
+          expect_that(Cvals, equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))
+        }
       })
     }
                                         # test that vals and logprobs are equal
@@ -132,7 +136,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     })
     test_that(paste0(example, ": test of logProbs"), {
       for(nodeName in nodeNames) 
-        expect_that(Rmodel$nodes[[nodeName]]$getLogProb(), equals(Cmodel$nodes[[nodeName]]$getLogProb()), info = paste0('Unexpected result for variable ', nodeName))
+        expect_that(getLogProb(Rmodel, nodeName), equals(getLogProb(Cmodel, nodeName)), info = paste0('Unexpected result for variable ', nodeName))
     })
     
     if(debug) browser()
