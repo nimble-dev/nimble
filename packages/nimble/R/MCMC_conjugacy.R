@@ -696,8 +696,12 @@ cc_getNodeParamExpr <- function(model, node, param)     return(model$getNodeInfo
 
 ##  returns the entire RHS valueExpr for 'node'
 cc_getNodeValueExpr <- function(model, node) {
-    if(!any(node == model$getNodeNames()))   stop(paste0('node not present in model: ', node))
-    return(model$getNodeInfo()[[node]]$getValueExpr())
+#    if(!any(node == model$getNodeNames()))   stop(paste0('node not present in model: ', node))			#Faster to just check if call fails
+	output <- NULL
+    try(output <- model$getNodeInfo()[[node]]$getValueExpr(), silent = TRUE)
+    if(is.null(output))
+    	stop(paste0('node not present in model: ', node) )
+    return(output)
 }
 
 ## special name used to represent vectors / arrays defined in terms of other stoch/determ nodes
@@ -708,11 +712,24 @@ cc_expandDetermNodesInExpr <- function(expr, model) {
     if(is.numeric(expr))     return(expr)     # return numeric
     if(is.name(expr)    ||    (is.call(expr) && (expr[[1]] == '['))) {    # expr is a name, or an indexed name
         exprText <- deparse(expr)
-        if(any(exprText == model$getMaps('nodeNamesStoch')))        return(expr)      # return stochastic nodes
-        if(any(exprText == model$getMaps('nodeNamesLHSinferred')))  return(expr)      # return LHS nodes inferred from a multivariate stochastic distribution
-        if(any(exprText == model$getMaps('nodeNamesDeterm')))
-            return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))   # precess and return the value expression for this deterministic node
-        if(any(exprText == model$getMaps('nodeNamesRHSonly')))      stop('something wrong with model; possible failure to specify constants = ..., for a RHS-only node')
+        
+        graphID = NULL
+        try(graphID <- model$modelDef$nodeName2GraphIDs(exprText), silent = TRUE)
+        if(is.numeric(graphID)){
+        	thisType <- model$modelDef$maps$types[graphID]
+        	if(thisType == 'stoch' || thisType == 'LHSinferred')
+        		return(expr)
+        	if(thisType == 'determ')
+				return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))
+			else
+				stop(paste0('something went wrong processing: ', deparse(expr)))
+			}
+        
+#        if(any(exprText == model$getMaps('nodeNamesStoch')))        return(expr)      # return stochastic nodes
+#        if(any(exprText == model$getMaps('nodeNamesLHSinferred')))  return(expr)      # return LHS nodes inferred from a multivariate stochastic distribution
+#        if(any(exprText == model$getMaps('nodeNamesDeterm')))
+#            return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))   # precess and return the value expression for this deterministic node
+#        if(any(exprText == model$getMaps('nodeNamesRHSonly')))      stop('something wrong with model; possible failure to specify constants = ..., for a RHS-only node')
         if(is.vectorized(exprText)) {
             newExpr <- cc_createStructureExpr(expr)
             for(i in seq_along(newExpr)[-1])    newExpr[[i]] <- cc_expandDetermNodesInExpr(newExpr[[i]], model)
