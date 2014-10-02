@@ -64,7 +64,7 @@ logProb: Logical argument specifying whether or not to include the logProb varia
                                   getNodeNames = function(determOnly = FALSE, stochOnly = FALSE,
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
                                                           topOnly = FALSE, latentOnly = FALSE, endOnly = FALSE,
-                                                          returnType = 'names') {
+                                                          returnType = 'names', nodeFunctionsOnly = TRUE) {
                                       '
 Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
 
@@ -89,6 +89,7 @@ endOnly: Logical argument specifying whether to return only end nodes from the h
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
 '
 										validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
+										if(nodeFunctionsOnly)	validValues[-modelDef$maps$is_NodeFunction] <- FALSE
 										if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
 										if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
 										if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE

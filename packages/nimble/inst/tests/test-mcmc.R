@@ -194,8 +194,7 @@ code <- BUGScode({
 sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
   c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
 
-test_mcmc(model = code, data = data, exactSample = sampleVals, seed = 0, mcmcCon
-trol = list(scale=0.01))
+test_mcmc(model = code, data = data, exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
 
 ### block sampler on MVN node
 
@@ -219,6 +218,24 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
             list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
 # caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
 if(FALSE) {
+    Rmodel <- nimbleModel(code, constants = list(Q=Q))
+    mcmcspec <- MCMCspec(Rmodel, nodes = NULL)
+    mcmcspec$addSampler(type = 'RW_block', control = list(targetNodes = 'x', adaptInterval=500))
+    mcmcspec$getMonitors()
+    Rmcmc <- buildMCMC(mcmcspec)
+    Cmodel <- compileNimble(Rmodel)
+    Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+    Cmcmc(200000)    ## this runs nearly instantaneously on my computer -DT
+    samples <- as.matrix(nfVar(Cmcmc, 'mvSamples'))
+    samples <- samples[50001:200000,]
+    dim(samples)
+    apply(samples, 2, mean)
+    solve(Q)
+    cov(samples)
+    propCov <- nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
+    scale <- nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
+    propCov * scale^2
+    
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$scaleHistory
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$acceptanceRateHistory
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
