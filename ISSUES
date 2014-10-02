@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (10/1/14) Chris requests something like getVars() that returns all the variable names in a model or a subset of variables if one passes in a set of nodes
+
 * (9/28/14) when the determinant is negative (odd number of negative eigenvalues), R returns the log of the abs value of determinant and Eigen returns NaN
 
 * (9/28/14) R's %% and C's fmod() differ when have, e.g., -0.8 %% 1 -- R gives 0.2, and C gives -0.8

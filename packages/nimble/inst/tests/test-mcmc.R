@@ -241,7 +241,7 @@ nfVar(Cmcmc, 'samplerFunctions')[[1]]$acceptanceRateHistory
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
 nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
 # why is the proposal cov w/ .99 cross-corrs?
-# also MCMC in C takes a surprisingly long time
+# also MCMC in C takes a surprisingly long time - this might be threaded lin alg behaving badly on small matrices
 }
 
 ### DT's model
