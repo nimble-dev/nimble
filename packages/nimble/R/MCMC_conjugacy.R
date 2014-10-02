@@ -60,10 +60,10 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dwish',
          link = 'linear',
          dependents = list(
-             dmnorm = list(param = 'prec', contribution_S = 'asCol(value-mean) %*% asRow(value-mean) %*% coeff', contribution_df = '1')),
-         posterior = 'dwish_chol(chol        = chol(inverse( inverse(prior_S) + contribution_S )),
+             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean) %*% coeff', contribution_df = '1')),
+         posterior = 'dwish_chol(chol        = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
-                                 scale_param = 1)')
+                                 scale_param = 0)')
 
 )
 

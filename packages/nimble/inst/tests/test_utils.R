@@ -266,8 +266,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     interval <- apply(C_samples, 2, quantile, c(.025, .975))
     covered <- trueVals <= interval[2, ] & trueVals >= interval[1, ]
     coverage <- sum(covered) / length(nonDataNodes)
-    tolerance <- 0.1
-    if(length(nonDataNodes) >= 20) tolerance <- 0.04
+    tolerance <- 0.15
     if(verbose) 
       cat("Coverage for model", example, "is", coverage*100, "%.\n")
     miscoverage <- abs(coverage - 0.95)
