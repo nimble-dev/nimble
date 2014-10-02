@@ -208,7 +208,7 @@ sampler_RW_block <- nimbleFunction(
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
-        statSums  <- rep(0, d)                   # sums of each node
+        statSums  <- matrix(0, nrow=1, ncol=d)   # sums of each node, stored as a row-matrix
         statProds <- matrix(0, nrow=d, ncol=d)   # sums of pairwise products of nodes
         ###  nested function and function list definitions  ###
         my_setAndCalculate <- setAndCalculate(model, targetNodes)
@@ -244,9 +244,8 @@ sampler_RW_block <- nimbleFunction(
             if(jump)     timesAccepted <<- timesAccepted + 1
             declare(newValues, double(1, d))
             getValues(newValues, model, targetNodes)
-            declare(statSums, double(1, d))    ## this declare() is important to keep; it forces statSums to be nDim=1, even when d=1
-            statSums  <<- statSums + newValues
-            statProds <<- statProds + newValues %*% asRow(newValues)
+            statSums  <<- statSums + asRow(newValues)
+            statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
@@ -258,7 +257,7 @@ sampler_RW_block <- nimbleFunction(
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 gamma1 <- nfVar(my_calcAdaptationFactor, 'gamma1')
-                empirCov <- (statProds - (asCol(statSums)%*%asRow(statSums))/timesRan) / (timesRan-1)
+                empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
                 propCov <<- propCov + gamma1 * (empirCov - propCov)
                 chol_propCov <<- chol(propCov)
                 timesRan <<- 0
@@ -283,6 +282,8 @@ sampler_RW_block <- nimbleFunction(
         }
     ),  where = getLoadingNamespace()
 )
+
+
 
 #############################################################################
 ### RW_llFunction, does a RW, but using a generic log-likelihood function ###
