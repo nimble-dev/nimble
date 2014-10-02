@@ -171,6 +171,43 @@ calcAdaptationFactor <- nimbleFunction(
 )
 
 
+
+## covToCor <- nimbleFunction(
+##     setup = function(d) {},
+##     run = function(cov = double(2)) {
+##         declare(tauMatrix, double(2, c(d,d)))
+##         for(i in 1:d) {
+##             for(j in 1:d) {
+##                 tauMatrix[i,j] <- 0
+##             }
+##             tauMatrix[i,i] <- 1/sqrt(cov[i,i])
+##         }
+##         declare(cor, double(2, c(d,d)))
+##         cor <- tauMatrix %*% cov %*% tauMatrix
+##         returnType(double(2))
+##         return(cor)
+##     }, where = getLoadingNamespace()
+## )
+
+
+## covToSDmatrix <- nimbleFunction(
+##     setup = function(d) {},
+##     run = function(cov = double(2)) {
+##         declare(sdMatrix, double(2, c(d,d)))
+##         for(i in 1:d) {
+##             for(j in 1:d) {
+##                 sdMatrix[i,j] <- 0
+##             }
+##             sdMatrix[i,i] <- sqrt(cov[i,i])
+##         }
+##         returnType(double(2))
+##         return(sdMatrix)
+##     }, where = getLoadingNamespace()
+## )
+
+
+
+
 RHSonlyInit_virtual <- nimbleFunctionVirtual()
 RHSonlyInit <- nimbleFunction(
     contains = RHSonlyInit_virtual,
