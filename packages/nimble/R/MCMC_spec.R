@@ -138,13 +138,11 @@ print: Boolean argument, specifying whether to print the ordered list of default
         
             for(i in seq_along(nodes) ) {
             	node <- nodes[i]
-            	isThisNodeEnd <- isNodeEnd[i]
                 discrete <- model$getNodeInfo()[[node]]$isDiscrete()
                 nodeLength <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                 
                 ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
-             	if(isThisNodeEnd) {
-                    addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
+             	if(isNodeEnd[i]) { addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
@@ -164,8 +162,7 @@ print: Boolean argument, specifying whether to print the ordered list of default
                     addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) {
-                    addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                if(discrete) { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
                 
                 ## default: 'RW' sampler
                 addSampler(type = 'RW', control = list(targetNode=node), print = print);     next
