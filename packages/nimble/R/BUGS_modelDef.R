@@ -1016,7 +1016,8 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
 		return(NULL)	
 	if(nodeFunctionID)
 		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-	output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
+	else
+		output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
 	return(output[!is.na(output)])
 })
 
