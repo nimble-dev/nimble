@@ -48,6 +48,8 @@ sampler_RW <- nimbleFunction(
         adaptInterval <- control$adaptInterval
         scale         <- control$scale
         ###  node list generation  ###
+        targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
+        if(length(targetNodeAsScalar) > 1)     stop('more than one targetNode; cannot use RW sampler, try RW_block sampler')
         calcNodes  <- model$getDependencies(targetNode, returnType = 'names')
         ###  numeric value generation  ###
         scaleOriginal <- scale

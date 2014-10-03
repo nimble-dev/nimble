@@ -94,8 +94,8 @@ decideAndJump <- nimbleFunction(
 #' lp <- my_setAndCalc(2)
 setAndCalculateOne <- nimbleFunction(
     setup = function(model, targetNode) {
-        targetNode <- model$expandNodeNames(targetNode)
-        if(length(targetNode) > 1)     stop('more than one targetNode; cannot use setAndCalculateOne()')
+        targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
+        if(length(targetNodeAsScalar) > 1)     stop('more than one targetNode; cannot use setAndCalculateOne()')
         calcNodes <- model$getDependencies(targetNode)
     },
     run = function(targetValue = double()) {
@@ -132,11 +132,11 @@ setAndCalculateOne <- nimbleFunction(
 #' lp <- my_setAndCalc(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
     setup = function(model, targetNodes) {
-        targetNodes <- model$expandNodeNames(targetNodes)
+        targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
     },
     run = function(targetValues = double(1)) {
-        setValues(targetValues, model, targetNodes)
+        setValues(targetValues, model, targetNodesAsScalar)
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
