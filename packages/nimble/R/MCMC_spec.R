@@ -140,27 +140,38 @@ print: Boolean argument, specifying whether to print the ordered list of default
             	node <- nodes[i]
             	isThisNodeEnd <- isNodeEnd[i]
                 discrete <- model$getNodeInfo()[[node]]$isDiscrete()
+                nodeLength <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                 
                 ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
-            #    if(node %in% model$getMaps('nodeNamesEnd') ) {
              	if(isThisNodeEnd){
                     if(length(model$getDependencies(node, self = FALSE, stochOnly = TRUE)) != 0)   stop('something went wrong')   ####  TEMPORARY CHECK OF maps$nodeNamesEnd
                     addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
                 
-                if(onlyRW && !discrete)   { addSampler(type = 'RW',    control = list(targetNode=node), print = print);     next }
-                if(onlySlice)             { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                if(nodeLength == 1) {
+                    if(onlyRW && !discrete)   { addSampler(type = 'RW',    control = list(targetNode=node), print = print);     next }
+                    if(onlySlice)             { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                    
+                    ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
+                    conjugacyResult <- model$checkConjugacy(node)
+                    if(!is.null(conjugacyResult) && useConjugacy) {
+                        addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                    
+                    ## if node distribution is discrete, assign 'slice' sampler
+                    if(discrete) {
+                        addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                    
+                    ## default: 'RW' sampler
+                    addSampler(type = 'RW', control = list(targetNode=node), print = print);     next
+                }
+
+                if(nodeLength > 1) {
+                    if(onlyRW)   { addSampler(type = 'RW_block',    control = list(targetNodes=node), print = print);     next }
+                    conjugacyResult <- model$checkConjugacy(node)
+                    if(!is.null(conjugacyResult) && useConjugacy) {
+                        addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                    addSampler(type = 'RW_block',    control = list(targetNodes=node), print = print);     next
+                }
                 
-                ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
-                conjugacyResult <- model$checkConjugacy(node)
-                if(!is.null(conjugacyResult) && useConjugacy) {
-                    addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
-                
-                ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) {
-                   addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
-                
-                ## default: 'RW' sampler
-                addSampler(type = 'RW', control = list(targetNode=node), print = print);     next
             }
         },
         
