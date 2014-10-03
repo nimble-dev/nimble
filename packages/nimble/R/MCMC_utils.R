@@ -132,11 +132,11 @@ setAndCalculateOne <- nimbleFunction(
 #' lp <- my_setAndCalc(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
     setup = function(model, targetNodes) {
-        targetNodes <- model$expandNodeNames(targetNodes)
+        targetNodes_asScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
     },
     run = function(targetValues = double(1)) {
-        setValues(targetValues, model, targetNodes)
+        setValues(targetValues, model, targetNodes_asScalars)
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)

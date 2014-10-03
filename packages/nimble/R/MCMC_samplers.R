@@ -191,7 +191,7 @@ sampler_RW_block <- nimbleFunction(
         scale         <- control$scale
         propCov       <- control$propCov
         ###  node list generation  ###
-        targetNodes <- model$expandNodeNames(targetNodes)
+        targetNodes_asScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
         ###  numeric value generation  ###
         scaleOriginal <- scale
@@ -200,7 +200,7 @@ sampler_RW_block <- nimbleFunction(
         timesAdapted  <- 0
         scaleHistory          <- c(0, 0)
         acceptanceRateHistory <- c(0, 0)
-        d <- length(targetNodes)
+        d <- length(targetNodes_asScalars)
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
