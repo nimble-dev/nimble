@@ -57,6 +57,8 @@ test_math <- function(input, verbose = TRUE, size = 3) {
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
   try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name), expect_that(out, equals(out_nfR))))
   try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name), expect_that(out, equals(out_nfC))))
+  # unload DLL as R doesn't like to have too many loaded
+  dyn.unload(getNimbleProject(nfR)$cppProjects[[1]]$getSOName())
   invisible(NULL)
 }
 
