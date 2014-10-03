@@ -94,7 +94,9 @@ conjugacyRelationshipsClass <- setRefClass(
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
         checkConjugacy = function(model, targetNode) {
-            if(!(targetNode %in% model$getNodeNames()))       stop('checking conjugacy of a node not in model')
+            gIDs_4_checking <- numeric(0)
+            try(gIDs_4_checking <- model$modelDef$nodeName2GraphIDs(targetNode), silent = TRUE)
+            if(length(gIDs_4_checking) == 0)       stop('checking conjugacy of a node not in model')
             if(model$getNodeInfo()[[targetNode]]$type != 'stoch')  stop('checking conjugacy of non-stochastic node')
             depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
             if(length(depNodes) == 0)  return(NULL)   # no dependent stochastic nodes: not conjugate, return NULL
