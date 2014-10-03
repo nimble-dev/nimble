@@ -19,6 +19,7 @@ specificCallReplacements <- list(
     lgamma = 'lgammafn',
     logfact = 'lfactorial',
     loggam = 'lgammafn',
+    gamma = 'gammafn',
     expit = 'ilogit',
     phi = 'iprobit',
     round = 'nimbleRound',
