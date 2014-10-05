@@ -14,8 +14,10 @@ test_mcmc('dyes', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
 test_mcmc('equiv', numItsC = 1000, resampleData = TRUE)
-# 100% coverage; 'd' intervals are very large relative to values
-# should look into this
+# looks good once fix issue with + on 2nd line
+
+# testing: tau[2]=97.95, 198.8 ; tau[1]=102.2,55
+# phi = -.008,.052; pi = -.1805,.052
 
 test_mcmc('line', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
@@ -309,11 +311,11 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
 
 ### scalar RW updates in place of conjugate mv update
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
           results = list(mean = list(mu = muMeanTrue),
                            cov = list(mu = solve(muQtrue))),
-          resultsTolerance = list(mean = list(mu = rep(.02,3)),
-            cov = list(mu = matrix(.01, 3, 3))),
+          resultsTolerance = list(mean = list(mu = rep(.03,3)),
+            cov = list(mu = matrix(.03, 3, 3))),
           samplers = list(list(type = 'RW', control = list(targetNode = 'mu[1]')),
             list(type = 'RW', control = list(targetNode = 'mu[2]')),
             list(type = 'RW', control = list(targetNode = 'mu[3]'))),

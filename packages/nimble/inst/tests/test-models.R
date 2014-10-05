@@ -198,4 +198,3 @@ testBUGSmodel(example = 'test', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
 
-

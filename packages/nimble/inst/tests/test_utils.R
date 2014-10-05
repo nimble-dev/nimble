@@ -71,7 +71,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
                       topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE, 
-                      doR = TRUE, doCpp = TRUE) {
+                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE) {
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
   # 2) if you pass 'results', it will compare MCMC output to known posterior summaries within tolerance specified in resultsTolerance
@@ -221,7 +221,11 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       }
     }
   }
-  
+  if(returnSamples) {
+    if(exists('CmvSample'))
+      returnVal <- as.matrix(CmvSample)
+  } else returnVal <- NULL
+
   if(resampleData) {
     topNodes <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
     if(is.null(topLevelValues)) {
@@ -282,4 +286,13 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       print(cbind(trueVals, t(interval), covered))
     }
   }
+
+
+  if(doCpp) {
+    # DTL is looking at issue with segFault when close R
+  #  dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName())
+  #  dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[1]]$getSOName())
+  }
+  return(returnVal)
+
 }
