@@ -48,7 +48,7 @@ sapply(allModels, test_mcmc, numItsC = 1000)
 
 test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
-# similar story to oxford - random effects are very small with wide CIs
+# looks ok
 
 test_mcmc('epil', model = 'epil3.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
@@ -338,10 +338,16 @@ B = matrix(rnorm(9), 3)
 
 code <- modelCode({
   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
-  y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
-  y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
+  y[1:3] ~ dmnorm(asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3]), Q[1:3, 1:3])
 })
 
+## code <- modelCode({
+##   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
+##   y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
+##   y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
+## })
+
+## Simplest version of model w/o 'a' and 'B'
 ## a = rep(0,3)
 ## B = diag(rep(1,3))
 ## code <- modelCode({
