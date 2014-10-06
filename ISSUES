@@ -7,13 +7,9 @@
 
 * (9/28/14) R's %% and C's fmod() differ when have, e.g., -0.8 %% 1 -- R gives 0.2, and C gives -0.8; one gross way to 'fix' would be to give an error if negative numbers are supplied
 
-* (9/27/14 - from an old Perry email) What I've had in mind (for a long long time of thinking about this project :) ) is that we can have a compilation mode a little bit like "valgrind" for memory problems in R: one that does excessive computation to check for problems.  Specifically, we can compile to a "debugging" version of getLogProb that will always double check that the logProb value it is returning is in fact up to date with a new call to calculate.  That way we can validate an algorithm by execution, to some extent.
+* (9/27/14 - possible "heavy debug/check" compilation mode.
 
 * (9/14/14) norm() in R and C nimble functions differ as the R default seems to be the "1" norm (the 'type' argument) and the C version is the Frobenius
-
-* (9/14/14) gamma on my Linux desktop is finding (I think) the system gamma and somehow returning log(gamma(x)) instead of gamma(x); on my Mac, it's fine; one option is to define gamma to be gammafn to ensure we get Rmath's version (CJP)
-
-* (9/4/14)  allow *expressions* to be used as arguments to dmnorm(), nimArr_dmnorm_chol(), and all other multivariate distributions.
 
 * (9/4/14)  handle for-loop indexes consistent with BUGS & jags.  e.g., for(i in 1:3+1) {}, should give lowest precendence to the ':' operator
 
@@ -71,28 +67,15 @@
 
 * (6/22/14) checking of pos-def for Chol, det, etc. and how to handle numerically non-p.d. matrices and pivoting
 
-* (6/22/14) does Eigen really get det on original scale and then log; test for numerical issues with decent-size matrices
-
 * (6/21/14) disable det,fact,gamma as numerically unstable?
 
-* (6/21/14) check nimbleStep vs nimStep
-
 * (6/20/14) additional helper fxns for manipulating models: getParents(), get size info from a model (extract from varInfo$maxes)
-
-* (6/20/14) should we systematize how we handle dim/size of scalars? e.g., mv uses 1 and stuff on the R side in the model uses 0
 
 * (6/19/14) handle initialization of nodes created by link functions - e.g. log(p) ~ dnorm() and a user initializes "p" but we need to initialize log_p as well
 
 * (6/16/14) probably good to provide svd in DSL before long
 
 * (6/16/14) change scalar | and & to || and && ?
-
-* (6/16/14) do we want to replace 
-nfMethod(targetRWSamplerFunction, 'generateProposalValue')()
-with
-targetRWSamplerFunction$generateProposalValue()
-
-I guess this is the same issue as calculate(model, node) vs model$calculate(node)
 
 * (6/11/14) add getPositions() functionality (DT)
 
@@ -123,14 +106,4 @@ In getPackageName(where) :
 Cmodel[['y[1,]']] is fine
 calculate(Cmodel, 'y[1,]') is not 
 
-* (6/5/14) should we have returnModel=TRUE be the default for BUGSmodel()?
-
 * (6/5/14) (DT/CP) desire to use 'constants' in 'dimensions' argument, e.g: BUGSmodel(model, constants = list(N = 5), dimensions = list(x = c(N,N))); DT had this and removed it as it was causing some other problem; might revisit this
-
-* (6/5/14) we may want that compileNimbleFunction by default should  just compile a single function as this is the easiest to explain to a new user rather than having to go into the fact that there may be multiple instances right off the bat
-
-* (6/12/14) (DT) checkConjugacy() will complain in multivariate case, when there are 'replacement' expressions in 'codeReplacedWithValues', which do not represent stochastic model nodes.
-
-* (6/13/14) (PDV) correct/consistent handling of is.na() and is.nan() in cpp
-
-* (6/13/14) (DT/PDV) handling cases (e.g., dipper) with nodes defined more than once
