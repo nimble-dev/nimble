@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (10/5/14) we don't detect conjugacy when we have a scalar node w/ a N prior that is in the mean for a MVN dependent node (e.g. beta0 in 'jaw')
+
 * (10/1/14) Chris requests something like getVars() that returns all the variable names in a model or a subset of variables if one passes in a set of nodes
 
 * (9/28/14) R's %% and C's fmod() differ when have, e.g., -0.8 %% 1 -- R gives 0.2, and C gives -0.8; one gross way to 'fix' would be to give an error if negative numbers are supplied

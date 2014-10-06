@@ -131,12 +131,20 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     }
                                         # test that vals and logprobs are equal
     test_that(paste0(example, ": test of variable values"), {
-      for(nodeName in nodeNames) 
-        expect_that(Rmodel[[nodeName]], equals(Cmodel[[nodeName]]), info = paste0('Unexpected result for variable ', nodeName))
+      for(nodeName in nodeNames) {
+          Rvals <- Rmodel[[nodeName]]
+          Cvals <- Cmodel[[nodeName]]
+          attributes(Rvals) <- attributes(Cvals) <- NULL        
+        expect_that(Rvals, equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+      }
     })
     test_that(paste0(example, ": test of logProbs"), {
-      for(nodeName in nodeNames) 
-        expect_that(getLogProb(Rmodel, nodeName), equals(getLogProb(Cmodel, nodeName)), info = paste0('Unexpected result for variable ', nodeName))
+      for(nodeName in nodeNames)  {
+        Rvals <- getLogProb(Rmodel, nodeName)
+        Cvals <- getLogProb(Cmodel, nodeName)
+        attributes(Rvals) <- attributes(Cvals) <- NULL        
+        expect_that(Rvals, equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+      }
     })
     
     if(debug) browser()

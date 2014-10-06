@@ -91,7 +91,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # code, data and inits specified directly where 'model' contains the code
     example = deparse(substitute(model))
     if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-    Rmodel <- readBUGSmodel(model, data = data, inits = inits, useInits = TRUE)
+    Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE)
   }
 
   setSampler <- function(var, spec) {
