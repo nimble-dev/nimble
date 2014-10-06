@@ -1,7 +1,7 @@
 allModels <- c(# vol1
                'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                # vol2
-               'dugongs', 'oxford')
+               'dugongs')
 
 sapply(allModels, testBUGSmodel, useInits = TRUE)
 

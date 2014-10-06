@@ -2,6 +2,9 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of default MCMC")
 
+### TODO: add in the special cases for leuk,salm,air,jaw,dipper
+
+
 ### Beginning of actual tests
 
 test_mcmc('blocker', numItsC = 1000, resampleData = TRUE)
@@ -14,8 +17,7 @@ test_mcmc('dyes', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
 test_mcmc('equiv', numItsC = 1000, resampleData = TRUE)
-# looks good once fix issue with + on 2nd line
-
+# looks good
 # testing: tau[2]=97.95, 198.8 ; tau[1]=102.2,55
 # phi = -.008,.052; pi = -.1805,.052
 
@@ -23,14 +25,7 @@ test_mcmc('line', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
 test_mcmc('oxford', numItsC = 1000, resampleData = TRUE)
-# b values post means are very small - CI too wide?
-# b's in classic-bugs param are top-level :(
-# they are estimated to be small in initial run
-# that said not sure why they are so small in initial run
-# sigma posterior looks like its prior
-# jags gives very different sigma post. and larger (though
-# not all that large) b values
-# note same thing happened in 0.1-1
+# looks good
 
 test_mcmc('pump', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
@@ -58,6 +53,32 @@ test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
 test_mcmc('epil', model = 'epil3.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
 # same deal as epil2.bug
+
+test_mcmc('seeds', model = 'seedsuni.bug', inits = 'seeds-init.R',
+              data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
+# looks fine - intervals for b's seem a bit large but probably ok
+test_mcmc('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
+              data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
+# looks fine - intervals for b's seem a bit large but probably ok
+
+test_mcmc('birats', model = 'birats1.bug', inits = 'birats-inits.R',
+              data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
+# seems fine
+test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
+              data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
+# seems fine
+if(FALSE) { # don't run w/ Wish conj issue
+  test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
+            data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
+}
+
+test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
+              data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
+# hmm - resampleData gives very large CIs - need to look into this
+
+test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
+              data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
+# have not run beetles yet
 
 system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
@@ -99,8 +120,6 @@ data =list(M=4,N=20, Y = matrix(c(47.8, 46.4, 46.3, 45.1, 47.6, 52.5, 51.2, 49.8
   ones = rep(1, 4))
 test_mcmc(model = model, data = data, inits = inits, numItsC = 1000)
 
-
-# add in the special cases for epil,seed,birats,ice,beetles,leuk,salm,air,jaw,dipper
   
 test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
                     "theta[1]" = 0.06,

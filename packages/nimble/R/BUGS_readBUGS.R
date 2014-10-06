@@ -15,6 +15,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     model <- md$newModel(data=data, inits=inits, where=where)
 }
 
+
 #' Create a NIMBLE BUGS model
 #' 
 #' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition
@@ -140,6 +141,26 @@ processModelFile <- function(fileName) {
   return(list(modelLines = modelLines, varLines = varLines, dataLines = dataLines))
 }
 
+
+mergeMultiLineStatementsAndParse <- function(text) {
+  # deals with BUGS syntax that allows multi-line statements where first line appears
+  # to be valid full statement (e.g., where '+' starts the 2nd line)
+  text <- unlist( strsplit(text, "\n") )  
+  firstNonWhiteSpaceIndex <- regexpr("[^[:blank:]]", text)
+  firstNonWhiteSpaceChar <- substr(text, firstNonWhiteSpaceIndex, firstNonWhiteSpaceIndex)
+  mergeUpward <- firstNonWhiteSpaceChar %in% c('+', '-', '*', '/')
+  if(length(text) > 1) {
+    for(i in seq.int(length(text), 2, by = -1)) {
+      if(mergeUpward[i]) {
+        text[i-1] <- paste(text[i-1], substring(text[i], firstNonWhiteSpaceIndex[i]) )
+      }
+    }
+  }
+  text <- text[!mergeUpward]
+  return(parse(text = text)[[1]])
+}
+
+
 #' Create a NIMBLE BUGS model from a variety of input formats, including BUGS model files
 #' 
 #' \code{readBUGSmodel} processes inputs providing the model and values for constants, data, initial values of the model in a variety of forms, returning a NIMBLE BUGS R model
@@ -185,7 +206,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # process model information
 
   modelFileOutput <- modelName <- NULL
-  if(is.function(model)) model <- body(model)
+  if(is.function(model)) model <- mergeMultiLineStatementsAndParse(deparse(body(model)))
   if(is.character(model)) {
     if(!is.null(dir) && dir == "") modelFile <- model else modelFile <- file.path(dir, model)  # check for "" avoids having "/model.bug" when user provides ""
     modelName <- gsub("\\..*", "", basename(model))
@@ -201,7 +222,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       }
     }
     modelFileOutput <- processModelFile(modelFile)
-    model <- parse(text = modelFileOutput$modelLines)[[1]]
+    model <- mergeMultiLineStatementsAndParse(modelFileOutput$modelLines)
   }
   if(! class(model) == "{")
     stop("readBUGSmodel: cannot process 'model' input.")
@@ -326,7 +347,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # create R model
   # 'data' will have constants and data, but BUGSmodel is written to be ok with this
   # we can't separate them before building model as we don't know names of nodes in model
-  Rmodel <- BUGSmodel(model, ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, debug = debug, returnModel = TRUE)
+  Rmodel <- nimbleModel(model, ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, debug = debug)
 
   # now provide values for data nodes from 'data' list
   dataNodes <- names(data)[(names(data) %in% Rmodel$getVarNames())]
