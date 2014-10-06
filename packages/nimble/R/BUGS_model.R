@@ -128,8 +128,6 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                   expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names') {
 										                if(returnType == 'names'){
    											              graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
-   											              if(returnScalarComponents)
-   												              graphID = unique(graphID)
    											              nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
                                       return(nodeNames)
                                       }
