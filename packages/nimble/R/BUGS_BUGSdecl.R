@@ -2,8 +2,8 @@
 
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
 nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%',
-                            'equals','inprod',
-                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'inverse',
+                            'equals','inprod','nimbleEquals',
+                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimbleStep', 'inverse',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
                             'ceiling', 'floor', 'round', 'trunc',
