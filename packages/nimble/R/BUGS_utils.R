@@ -137,6 +137,7 @@ nameMashupFromExpr <- function(expr, colonsOK = FALSE) {
     
     exprText <- gsub('\\+', '_plus_', exprText)
     exprText <- gsub('\\-', '_minus_', exprText)
+##    exprText <- gsub('%\\*%', '_matmult_', exprText) ## For when we lift matrix multiplication in future
     exprText <- gsub('\\*', '_times_', exprText)
     exprText <- gsub('\\/', '_over_', exprText)
     

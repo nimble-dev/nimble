@@ -124,7 +124,7 @@ modelDefClass <- setRefClass('modelDefClass',
 modelDefClass$methods(setupModel = function(code, constants, dimensions, debug) {
     if(debug) browser()
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
-    assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode
+    assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
     assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
@@ -160,7 +160,7 @@ modelDefClass$methods(setModelValuesClassName = function() {
 })
 modelDefClass$methods(assignBUGScode = function(code) {
     ## uses 'code' argument, assigns field: BUGScode
-    BUGScode <<- code
+    BUGScode <<- nf_changeNimKeywords(code)
 })
 modelDefClass$methods(assignConstants = function(constants) {
     ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
@@ -198,6 +198,7 @@ modelDefClass$methods(assignDimensions = function(dimensions) {
     }
     dimensionsList <<- dL
 })
+
 modelDefClass$methods(initializeContexts = function() {
     ## initializes the field: contexts
     ## there is always a context #1 that is the empty context. this sets it up.
@@ -205,6 +206,14 @@ modelDefClass$methods(initializeContexts = function() {
     BUGScontextClassObject$setup(singleContexts = list())
     contexts[[1]] <<- BUGScontextClassObject
 })
+
+reprioritizeColonOperator <- function(code) {
+    split.code <- strsplit(deparse(code), ":")
+    if(length(split.code[[1]]) == 2) return(parse(text = paste0("(", split.code[[1]][1], "):(", split.code[[1]][2], ")"), keep.source = FALSE)[[1]])
+    if(length(split.code[[1]]) > 2) stop(paste0('Error with this code: ', deparse(code)))
+    return(code)
+}
+
 modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lineNumber = 0) {
     ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID.
     ## all processing of code is done by BUGSdeclClass$setup(code, contextID).
@@ -225,6 +234,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == 'for') {        ## e.g. (for i in 1:N).  New context (for-loop info) needed
             indexVarExpr <- code[[i]][[2]]   ## This is the `i`
             indexRangeExpr <- code[[i]][[3]] ## This is the `1:N`
+            if(nimbleOptions$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
             
@@ -592,8 +602,12 @@ isExprLiftable <- function(paramExpr) {
     if(is.call(paramExpr)) {
         if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
         if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
-        if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...)
+        if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
         if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]
+        ##     if(is.name(paramExpr))          return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        ##                                     return(TRUE)    ## do lift foo(x)[...]
+        ## }
         if(is.vectorized(paramExpr))        return(FALSE)   ## don't lift any expression with vectorized indexing,  funName(x[1:10])
         return(TRUE)
     }
@@ -612,6 +626,7 @@ extractAnyVectorizedIndexExprs <- function(expr) {
     if(!(':' %in% all.names(expr)))    return(list())
     if(!is.call(expr))     return(list())
     if(expr[[1]] == ':')     return(expr)
+  ##  if(expr[[1]] == '[')    return(as.list(expr[-c(1,2)])) ## 
     ret <- unlist(lapply(expr[-1], function(i) extractAnyVectorizedIndexExprs(i)))
     if(is.null(ret)) return(list()) else return(ret)
 }
