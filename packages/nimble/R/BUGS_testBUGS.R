@@ -120,9 +120,9 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
       test_that(paste0(example, ": test of the test: are initial values maintained?"), {
         varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
         for(varName in varNames) {
-          Rvals <- Rmodel[[varName]]
-          Cvals <- Cmodel[[varName]]
-          initsVals <- inits[[varName]]
+          Rvals <- Rmodel[[varName]][!Rmodel$isData(varName)]
+          Cvals <- Cmodel[[varName]][!Rmodel$isData(varName)]
+          initsVals <- inits[[varName]][!Rmodel$isData(varName)]
           attributes(Rvals) <- attributes(Cvals) <- attributes(initsVals) <- NULL
           expect_that(Rvals, equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
           expect_that(Cvals, equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))

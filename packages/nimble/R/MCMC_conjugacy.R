@@ -56,7 +56,7 @@ conjugacyRelationshipsInputList <- list(
                                   chol       = chol(prior_prec + contribution_prec),
                                   prec_param = 1)'),
 
-    ## wishart
+    ## wishart - about to be commented out by CJP 10/6/14 until we can fix 2-point method
     list(prior = 'dwish',
          link = 'linear',
          dependents = list(
