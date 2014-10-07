@@ -712,18 +712,35 @@ cc_structureExprName <- quote(`_structureExpr`)
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
 cc_expandDetermNodesInExpr <- function(expr, model) {
     if(is.numeric(expr))     return(expr)     # return numeric
+  
+
     if(is.name(expr)    ||    (is.call(expr) && (expr[[1]] == '['))) {    # expr is a name, or an indexed name
         exprText <- deparse(expr)
+        
         
         graphID = NULL
         try(graphID <- model$modelDef$nodeName2GraphIDs(exprText), silent = TRUE)
         if(is.numeric(graphID)){
         	thisType <- model$modelDef$maps$types[graphID]
-        	if(thisType == 'stoch' || thisType == 'LHSinferred')
+        	if(any(thisType == 'stoch') || any(thisType == 'LHSinferred') )
         		return(expr)
-        	if(thisType == 'determ')
-				return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))
-			else
+        	if(any(thisType == 'determ') ){
+            if(length(model$expandNodeNames(exprText)) != 1){
+              newExpr <- cc_createStructureExpr_fromModel(expr, model)
+              for(i in seq_along(newExpr)[-1])    newExpr[[i]] <- cc_expandDetermNodesInExpr(newExpr[[i]], model)
+              return(newExpr)
+              }      
+#            }
+#        	  if(is.vectorized(exprText)) {
+#        	    newExpr <- cc_createStructureExpr(expr)
+#        	    for(i in seq_along(newExpr)[-1])    newExpr[[i]] <- cc_expandDetermNodesInExpr(newExpr[[i]], model)
+#        	    return(newExpr)
+#        	  }      
+        	  
+            return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))
+
+        }
+        else
 				stop(paste0('something went wrong processing: ', deparse(expr)))
 			}
         
@@ -732,11 +749,6 @@ cc_expandDetermNodesInExpr <- function(expr, model) {
 #        if(any(exprText == model$getMaps('nodeNamesDeterm')))
 #            return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))   # precess and return the value expression for this deterministic node
 #        if(any(exprText == model$getMaps('nodeNamesRHSonly')))      stop('something wrong with model; possible failure to specify constants = ..., for a RHS-only node')
-        if(is.vectorized(exprText)) {
-            newExpr <- cc_createStructureExpr(expr)
-            for(i in seq_along(newExpr)[-1])    newExpr[[i]] <- cc_expandDetermNodesInExpr(newExpr[[i]], model)
-            return(newExpr)
-        }
         return(expr)   # rather than throw an error, return expr; for the case where expr is the name of an array memberData object
     }
     if(is.call(expr)) {
@@ -753,6 +765,16 @@ cc_createStructureExpr <- function(expr) {
     structureExprCall <- as.call(structureExpr)
     return(structureExprCall)
 }
+
+## Same as above, but uses model to expandNodeNames
+cc_createStructureExpr_fromModel <- function(expr, model) {
+  expandedNodeNamesVector <- model$expandNodeNames(deparse(expr))
+  expandedNodeExprList <- lapply(expandedNodeNamesVector, function(x) parse(text=x)[[1]])
+  structureExpr <- c(cc_structureExprName, expandedNodeExprList)
+  structureExprCall <- as.call(structureExpr)
+  return(structureExprCall)
+}
+
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {
