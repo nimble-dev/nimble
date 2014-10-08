@@ -78,13 +78,15 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
-# have not run beetles yet
+# getting warning; deterministic model node is NA or NaN in model initialization
+# need to look into this
 
 system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
-# mcmcspec error with looking for mu[1:4] when checking conj of Omega
+# C MCMC runs (need to check numeric results); R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
 
-# vectorized version of jaw to try to deal with scalar/vec bug
+# vectorized version of jaw to try to deal with scalar/vec bug - not needed now that above works
+if(FALSE) {
 model <- function() {
   for (i in 1:N) {
      Y[i,1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);  # The 4 measurements for each  
@@ -119,6 +121,7 @@ data =list(M=4,N=20, Y = matrix(c(47.8, 46.4, 46.3, 45.1, 47.6, 52.5, 51.2, 49.8
   R = matrix(c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), 4 ,4),
   ones = rep(1, 4))
 test_mcmc(model = model, data = data, inits = inits, numItsC = 1000)
+}
 
   
 test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
