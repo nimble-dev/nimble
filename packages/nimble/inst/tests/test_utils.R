@@ -234,6 +234,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
   if(resampleData) {
     topNodes <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
+    topNodesElements <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE,
+                                            returnScalarComponents = TRUE)
     if(is.null(topLevelValues)) {
       if(is.null(results) && !basic) {
       # need to generate top-level node values so do a basic run
@@ -243,17 +245,18 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
         C_samples <- as.matrix(CmvSample)
       }
       postBurnin <- (round(numItsC/2)):numItsC
-      topLevelValues <- as.list(apply(C_samples[postBurnin, topNodes, drop = FALSE], 2, mean))
+      topLevelValues <- as.list(apply(C_samples[postBurnin, topNodesElements, drop = FALSE], 2, mean))
     }
     if(!is.list(topLevelValues)) {
       topLevelValues <- as.list(topLevelValues)
-      if(sort(names(topLevelValues)) != sort(topNodes))
+      if(sort(names(topLevelValues)) != sort(topNodesElements))
         stop("Values not provided for all top level nodes; possible name mismatch")
     }
-    sapply(topNodes, function(x) Cmodel[[x]] <- topLevelValues[[x]])
+    sapply(topNodesElements, function(x) Cmodel[[x]] <- topLevelValues[[x]])
     # check this works as side effect
     nontopNodes <- Rmodel$getDependencies(topNodes, self = FALSE, includeData = TRUE, downstream = TRUE, stochOnly = FALSE)
-    nonDataNodes <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE)
+    # nonDataNodes <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE)
+    nonDataNodesElements <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE, returnScalarComponents = TRUE)
     dataVars <- unique(removeIndexing(Rmodel$getDependencies(topNodes, dataOnly = TRUE, downstream = TRUE)))
     set.seed(seed)
     Cmodel$resetData()
@@ -267,17 +270,18 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     }
     Cmodel$setData(dataList)
 
-    trueVals <- values(Cmodel, nonDataNodes)
-    names(trueVals) <- nonDataNodes
+    trueVals <- values(Cmodel, nonDataNodesElements)
+    names(trueVals) <- nonDataNodesElements
     set.seed(seed)
     Cmcmc(numItsC_results)
     CmvSample <- nfVar(Cmcmc, 'mvSamples')
     
     postBurnin <- (round(numItsC_results/2)):numItsC
-    C_samples <- as.matrix(CmvSample)[postBurnin, nonDataNodes, drop = FALSE]
+    C_samples <- as.matrix(CmvSample)[postBurnin, nonDataNodesElements, drop = FALSE]
     interval <- apply(C_samples, 2, quantile, c(.025, .975))
+    interval <- interval[ , names(trueVals)]
     covered <- trueVals <= interval[2, ] & trueVals >= interval[1, ]
-    coverage <- sum(covered) / length(nonDataNodes)
+    coverage <- sum(covered) / length(nonDataNodesElements)
     tolerance <- 0.15
     if(verbose) 
       cat("Coverage for model", example, "is", coverage*100, "%.\n")

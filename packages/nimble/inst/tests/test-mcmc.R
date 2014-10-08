@@ -64,13 +64,14 @@ test_mcmc('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
 test_mcmc('birats', model = 'birats1.bug', inits = 'birats-inits.R',
               data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # seems fine
+
 test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
               data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # seems fine
-if(FALSE) { # don't run w/ Wish conj issue
-  test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
+
+test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
             data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
-}
+
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
@@ -79,7 +80,7 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
 # getting warning; deterministic model node is NA or NaN in model initialization
-# need to look into this
+# weirdness with llike.sat[8] being NaN on init, and with weird lifting of RHS of llike.sat
 
 system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
@@ -388,4 +389,43 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
             list(type = 'RW', control = list(targetNode = 'mu[3]'))),
           removeAllDefaultSamplers = TRUE)
 
+### test of conjugate Wishart
 
+set.seed(0)
+
+trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+covs <- c(3, 2, .5)
+
+trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+Omega = solve(trueCov)
+
+n = 20
+R = diag(rep(1,3))
+mu = 1:3
+Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+M = 3
+data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+
+code <- modelCode( {
+  for(i in 1:n) {
+    Y[i, 1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);
+  }
+  Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);	
+})
+
+newDf = 4 + n
+newR = R + tcrossprod(Y- mu)
+OmegaTrueMean = newDf * solve(newR)
+
+wishRV <- array(0, c(M, M, 10000))
+for(i in 1:10000) {
+  z <- t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf)
+  wishRV[ , , i] <- tcrossprod(z)
+}
+OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+
+test_mcmc(model = code, data = data, seed = 0, numItsC = 1000,
+          results = list(mean = list(Omega = OmegaTrueMean ),
+            sd = list(Omega = OmegaSimTrueSDs)),
+          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+            sd = list(Omega = matrix(0.06, M, M))))
