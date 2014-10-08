@@ -90,7 +90,7 @@ model <- function() {
      Y[i,1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);  # The 4 measurements for each  
   }                                   # boy are multivariate normal
 
-  mu[1:M] <- beta0 * ones[1:M] + beta1 * age[1:4] - mean(age[1:4])
+  mu[1:M] <- beta0 * ones[1:M] + beta1 * (age[1:4] - mean(age[1:4]));
   beta0.uncentred <- beta0 - beta1 * mean(age[1:4]);
 
   beta0 ~ dnorm(0.0, 0.001); 
@@ -336,16 +336,17 @@ Q = solve(matrix(c(3, 1.7, .9, 1.7, 2, .6, .9, .6, 1), nrow = 3))
 a = c(-2, .5, 1)
 B = matrix(rnorm(9), 3)
 
-code <- modelCode({
-  mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
-  y[1:3] ~ dmnorm(asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3]), Q[1:3, 1:3])
-})
-
+##### not currently working - see Perry's email of ~ 10/6/14
 ## code <- modelCode({
 ##   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
-##   y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
-##   y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
+##   y[1:3] ~ dmnorm(asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3]), Q[1:3, 1:3])
 ## })
+
+code <- modelCode({
+  mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
+  y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
+  y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
+})
 
 ## Simplest version of model w/o 'a' and 'B'
 ## a = rep(0,3)

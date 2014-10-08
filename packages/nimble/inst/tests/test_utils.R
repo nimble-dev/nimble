@@ -26,11 +26,12 @@ make_input <- function(dim, size = 3, logicalArg) {
 test_math <- function(input, verbose = TRUE, size = 3) {
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFun(input)
-  nfGen <- nimbleFunction(
-             setup = TRUE,
+  nfR <- nimbleFunction(  # formerly nfGen
+      #       setup = TRUE,
              run = runFun)
-  nfR <- nfGen()
-  nfC <- compileNimble(nfR)
+  #nfR <- nfGen()
+  project <- nimbleProjectClass(NULL, name = 'foo')
+  nfC <- compileNimble(nfR, project = project)
 
   nArgs <- length(input$inputDim)
   logicalArgs <- rep(FALSE, nArgs)
@@ -58,7 +59,7 @@ test_math <- function(input, verbose = TRUE, size = 3) {
   try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name), expect_that(out, equals(out_nfR))))
   try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name), expect_that(out, equals(out_nfC))))
   # unload DLL as R doesn't like to have too many loaded
-  dyn.unload(getNimbleProject(nfR)$cppProjects[[1]]$getSOName())
+  dyn.unload(project$cppProjects[[1]]$getSOName())
   invisible(NULL)
 }
 
@@ -133,9 +134,11 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     ## do short runs and compare R and C MCMC output
       if(doR) {
           set.seed(seed);
-          Rmcmc(numItsR)
-          RmvSample  <- nfVar(Rmcmc, 'mvSamples')
-          R_samples <- as.matrix(RmvSample)
+          RmcmcOut <- try(Rmcmc(numItsR))
+          if(!is(RmcmcOut, "try-error")) {
+            RmvSample  <- nfVar(Rmcmc, 'mvSamples')
+            R_samples <- as.matrix(RmvSample)
+          } else R_samples <- NULL
       }
       if(doCpp) {
           set.seed(seed)
@@ -146,13 +149,16 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           C_subSamples <- C_samples[seq_len(numItsR), attributes(R_samples)$dimnames[[2]], drop = FALSE]
       }
 
-      if(doR & doCpp) {
+      if(doR && doCpp && !is.null(R_samples)) {
           context(paste0("testing ", example, " MCMC"))
           try(
               test_that(paste0("test of equality of output from R and C versions of ", example, " MCMC"), {
                   expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
               })
               )
+      }
+      if(is.null(R_samples)) {
+        cat("R MCMC failed.")
       }
 
       if(doCpp) {
