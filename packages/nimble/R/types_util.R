@@ -125,7 +125,7 @@ nl_determineFlatIndex = function(ind, maxs) {
 ## If anyone has an implementation which beats O(n) linear time, then let's use it.
 nl_aggregateConsecutiveBlocks <- function(ind) {
     if(length(ind) == 0)     return(list())
-    ind <- unique(sort(ind))
+#    ind <- unique(sort(ind))
     indDiffLogical <- c(TRUE, diff(ind) != 1)
     aggregated <- list()
     for(i in seq_along(indDiffLogical)) {
