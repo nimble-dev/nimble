@@ -71,7 +71,7 @@ test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
 
 test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
             data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
-
+# issue with values returning elments out of order
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
@@ -80,7 +80,7 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
 # getting warning; deterministic model node is NA or NaN in model initialization
-# weirdness with llike.sat[8] being NaN on init, and with weird lifting of RHS of llike.sat
+# weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
 
 system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
