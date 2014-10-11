@@ -55,7 +55,8 @@ test_mcmc('pump', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
 test_mcmc('rats', numItsC = 1000, resampleData = TRUE)
-# 93.8% coverage; looks fine
+# 93.8% coverage; looks fine and compares well to JAGS
+# however in resampleData, one of the taus wildly misses
 
 test_mcmc('seeds', numItsC = 1000, resampleData = TRUE)
 # fine
@@ -368,7 +369,7 @@ code <- modelCode({
 })
 data = list(P = P, mu = mu)
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
           results = list(mean = list(x = mu),
           var = list(x = varr)),
           resultsTolerance = list(mean = list(x = rep(.1,3)),
