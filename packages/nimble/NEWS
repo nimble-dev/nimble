@@ -22,6 +22,12 @@
 
 -- More extensive suite of tests.
 
+-- Extension of node maps, which can be accessed via graphIDs, to increase speed of determining node types, checking if nodes in model, etc. 
+
+-- model$getNodeNames, expandNodeNames and getDependencies all return the full node function name, i.e. if 'x[1:2]' is multivariate, will return 'x[1:2]' rather than 'x[1]', 'x[2]', unless returnScalarComponents = TRUE
+
+-- Added class of nodeVectors, which save the graphIDs of a set of nodes. Use of these is minimal at the moment. 
+
 Bug fixes
 
 -- Fixed issue with specifying multivariate nodes as rows/columns of matrices
@@ -32,3 +38,6 @@ Bug fixes
 
 -- Fixed issue with building the NIMBLE package for Windows, as well as cleaning up causes of compiler warnings.
 
+-- Fixed issue that values(model, nodes) sorted the outcome. Remaining bug to be fixed: nimCopy(nodesFrom, nodesTo) will NOT work if nodesFrom and nodesTo have different number/different lengths of ordered contingent blocks of memory, i.e. nimCopy(nodesFrom = c('x[1]', 'x[2]'), nodesTo = c('y[2]', 'y[1]')) will fail because nodesFrom is one block but nodesTo is two blocks
+
+-- Fixed issue that chol(A+B) was being translated to chol(A) + B
