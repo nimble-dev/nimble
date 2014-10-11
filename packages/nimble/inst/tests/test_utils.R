@@ -237,15 +237,15 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     topNodesElements <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE,
                                             returnScalarComponents = TRUE)
     if(is.null(topLevelValues)) {
+      postBurnin <- (round(numItsC/2)):numItsC
       if(is.null(results) && !basic) {
       # need to generate top-level node values so do a basic run
         set.seed(seed)
         Cmcmc(numItsC)
         CmvSample <- nfVar(Cmcmc, 'mvSamples')
-        C_samples <- as.matrix(CmvSample)
+        C_samples <- as.matrix(CmvSample)[postBurnin, ]
       }
-      postBurnin <- (round(numItsC/2)):numItsC
-      topLevelValues <- as.list(apply(C_samples[postBurnin, topNodesElements, drop = FALSE], 2, mean))
+      topLevelValues <- as.list(apply(C_samples[ , topNodesElements, drop = FALSE], 2, mean))
     }
     if(!is.list(topLevelValues)) {
       topLevelValues <- as.list(topLevelValues)

@@ -2,8 +2,32 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of default MCMC")
 
-### TODO: add in the special cases for leuk,salm,air,jaw,dipper
+### TODO: add in the special cases for dipper
 
+if(FALSE) { # template for running JAGS for comparison
+  require(R2jags)
+    dir = system.file(file.path('classic-bugs', 'vol2', 'air'), package = 'nimble')
+  data = new.env(); inits = new.env()
+  source(file.path(dir, 'air-data.R'), data)
+  source(file.path(dir, 'air-init.R'), inits)
+  data = as.list(data)
+  inits = list(as.list(inits))
+  out1 <- jags(data = data, inits = inits,
+               parameters.to.save = c('X','theta'), n.chains = 1,
+               n.iter = 100000, n.burnin = 50000, n.thin = 1, model.file = file.path(dir, 'air.bug'),
+               DIC = FALSE, jags.seed = 0)
+  out <- as.mcmc(out1)
+}
+
+if(FALSE) {
+allModels <- c(# vol1
+               'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats', 'seeds',
+               # 'bones',
+               # vol2
+               'dugongs')
+
+sapply(allModels, test_mcmc, numItsC = 1000)
+}
 
 ### Beginning of actual tests
 
@@ -33,18 +57,12 @@ test_mcmc('pump', numItsC = 1000, resampleData = TRUE)
 test_mcmc('rats', numItsC = 1000, resampleData = TRUE)
 # 93.8% coverage; looks fine
 
+test_mcmc('seeds', numItsC = 1000, resampleData = TRUE)
+# fine
+
 test_mcmc('dugongs', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
-if(FALSE) {
-allModels <- c(# vol1
-               'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
-               # 'bones',
-               # vol2
-               'dugongs')
-
-sapply(allModels, test_mcmc, numItsC = 1000)
-}
 
 test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
@@ -52,11 +70,13 @@ test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
 
 test_mcmc('epil', model = 'epil3.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
-# same deal as epil2.bug
+# looks ok
 
 test_mcmc('seeds', model = 'seedsuni.bug', inits = 'seeds-init.R',
               data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine - intervals for b's seem a bit large but probably ok
+# particularly since default seeds.bug seems fine
+# results compared to JAGS look fine
 test_mcmc('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
               data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine - intervals for b's seem a bit large but probably ok
@@ -71,20 +91,47 @@ test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
 
 test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
             data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
-# issue with values returning elments out of order
+# looks fine now that values() returns in order
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
-# hmm - resampleData gives very large CIs - need to look into this
+# resampleData gives very large magnitude betas because beta[1],beta[2] are not
+# actually topNodes because of (weak) dependence on tau, and
+# are simulated from their priors to have large magnitude values
+
+# rework ice example so that beta[1] and beta[2] will be top nodes
+system(paste("sed 's/tau\\*1.0E-6/1.0E-6/g'", system.file('classic-bugs','vol2','ice','icear.bug', package = 'nimble'), ">", file.path(tempdir(), "icear.bug"))) 
+test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE)
+# looks fine
 
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
 # getting warning; deterministic model node is NA or NaN in model initialization
 # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
 
+
+system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
+system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
+# need nimbleStep in data block as we no longer have step
+system(paste("sed -i -e 's/step/nimbleStep/g'", file.path(tempdir(), "leuk.bug"))) 
+test_mcmc(model = file.path(tempdir(), "leuk.bug"), inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
+          results = list(mean = list(beta = 1.58), sd = list(beta = 0.43)),
+          resultsTolerance = list(mean = list(beta = 0.02), sd = list(beta = 0.02)))
+
+system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug"))) 
+system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
+test_mcmc(model = file.path(tempdir(), "salm.bug"), inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000)
+# looks good compared to JAGS
+
+system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
+system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug"))) 
+test_mcmc(model = file.path(tempdir(), "air.bug"), inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000)
+# theta[2] posterior is a bit off from JAGS - would be worth more investigation
+
 system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
-# C MCMC runs (need to check numeric results); R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
+# C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
+
 
 # vectorized version of jaw to try to deal with scalar/vec bug - not needed now that above works
 if(FALSE) {
@@ -181,7 +228,7 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
             list(type = 'RW_block', control = list(targetNodes = 'x[1]')),
             list(type = 'RW_block', control = list(targetNodes = 'x[2]')),
             list(type = 'RW_block', control = list(targetNodes = 'x[3]'))
-            ), numItsC = 10000)
+            ), removeAllDefaultSamplers = TRUE, numItsC = 10000)
 
 test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
                                        mean = list(x = c(-2/3,0,2/3)),
