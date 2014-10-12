@@ -17,6 +17,7 @@
 \alias{arithmeticOutputType}
 \alias{as.matrix.CmodelValues}
 \alias{as.matrix.modelValuesBaseClass}
+\alias{assignLogProbName}
 \alias{assignmentAsFirstArgFuns}
 \alias{assignmentOperators}
 \alias{assignmentTypeWarn}
@@ -40,7 +41,6 @@
 \alias{buildSymbolTable}
 \alias{cAddBlank}
 \alias{calcAdaptationFactor}
-\alias{calcCoeffAndOffset}
 \alias{calc_E_llk_gen}
 \alias{callsFromExternalUnaries}
 \alias{callToSkipInEigenization}
@@ -49,6 +49,8 @@
 \alias{cc_combineExprsDivision}
 \alias{cc_combineExprsMultiplication}
 \alias{cc_combineExprsSubtraction}
+\alias{cc_createStructureExpr}
+\alias{cc_createStructureExpr_fromModel}
 \alias{cc_expandDetermNodesInExpr}
 \alias{cc_getNodeDistributionText}
 \alias{cc_getNodeParamExpr}
@@ -56,13 +58,14 @@
 \alias{cc_getNodeValueExpr}
 \alias{cc_linkCheck}
 \alias{cc_makeConjugateSamplerName}
-\alias{cc_makeDDistributionName}
 \alias{cc_makeRDistributionName}
 \alias{cc_makeSamplerTypeName}
 \alias{cc_negateExpr}
 \alias{cc_nodeInExpr}
 \alias{cCopyVariableRows}
 \alias{cc_otherParamsCheck}
+\alias{cc_structureExprName}
+\alias{cc_vectorizedComponentCheck}
 \alias{C_dcat}
 \alias{C_ddirch}
 \alias{C_dmnorm_chol}
@@ -70,16 +73,19 @@
 \alias{C_dt_nonstandard}
 \alias{C_dwish_chol}
 \alias{cGetNRow}
+\alias{character2index}
 \alias{checkForDuplicateNodeDeclaration}
 \alias{checkNimbleFunctionListCpp}
 \alias{cleanWhite}
 \alias{cloglog}
+\alias{Cmatrix2mvOneVar}
 \alias{CmodelBaseClass}
 \alias{CmodelValues}
 \alias{CnimbleFunctionBase}
 \alias{CNumericList}
 \alias{codeBlockClass}
 \alias{codeSubstitute}
+\alias{combineIndices2Flat}
 \alias{compileBUGSmodel}
 \alias{compileNimbleFunction}
 \alias{compileRCfunction}
@@ -226,6 +232,7 @@
 \alias{example_fillInMissingIndices}
 \alias{example_getMissingDimensions}
 \alias{existsFunctionEnvVar}
+\alias{expandIndexSet4sapply}
 \alias{expandMVNames}
 \alias{expit}
 \alias{exprAsListDrop2}
@@ -242,6 +249,7 @@
 \alias{exprName2Cpp}
 \alias{exprTypeInfoClass}
 \alias{extractAnyVectorizedIndexExprs}
+\alias{extractFlatIndices_wVarInfo}
 \alias{gd_allNeighbors}
 \alias{gd_getDependencies_IDs}
 \alias{generalFunSizeHandler}
@@ -287,6 +295,7 @@
 \alias{ifOrWhile}
 \alias{ilogit}
 \alias{IncludeCodeDir}
+\alias{initialize}
 \alias{inprod}
 \alias{insertExprClassLayer}
 \alias{insertIndexingBracket}
@@ -299,6 +308,8 @@
 \alias{isExprLiftable}
 \alias{is.indexed}
 \alias{isModelValuesSpec}
+\alias{is.nan.vec}
+\alias{is.na.vec}
 \alias{is.nf}
 \alias{is.nfGenerator}
 \alias{isRbracket}
@@ -352,6 +363,7 @@
 \alias{makeStrideRexprs}
 \alias{makeVecName}
 \alias{mapsClass}
+\alias{matrix2mv}
 \alias{matrixEigenOperators}
 \alias{matrixFlipOperators}
 \alias{matrixMultOperators}
@@ -362,6 +374,7 @@
 \alias{mcmc_listContentsToStr}
 \alias{mcmcNodeInit}
 \alias{mcmcNodeInit_virtual}
+\alias{mergeMultiLineStatementsAndParse}
 \alias{midOperators}
 \alias{minMaxHandler}
 \alias{modelDefInfoClass}
@@ -474,6 +487,7 @@
 \alias{node_stoch_dunif}
 \alias{node_stoch_dweib}
 \alias{node_stoch_dwish}
+\alias{nodeVector}
 \alias{nonNativeEigenCalls}
 \alias{nonNativeEigenProxyCalls}
 \alias{numericList}
@@ -499,6 +513,8 @@
 \alias{outputEigenOperation2}
 \alias{outputGeneralCppFunction2}
 \alias{outputTypeCast2}
+\alias{parseEvalCharacter}
+\alias{parseEvalNumeric}
 \alias{parseTreeSubstitute}
 \alias{passThroughOperators}
 \alias{pasteSemicolon}
@@ -542,6 +558,7 @@
 \alias{replaceConstantsRecurse}
 \alias{replacementHandler}
 \alias{replaceWhatWeCan}
+\alias{reprioritizeColonOperator}
 \alias{resizeCModelAccessors}
 \alias{resizeCModelValuesAccessors}
 \alias{resizeManyModelValuesAccessor}
@@ -552,6 +569,7 @@
 \alias{RHSonlyInit}
 \alias{RHSonlyInit_virtual}
 \alias{RMakeCustomModelClass}
+\alias{Rmatrix2mvOneVar}
 \alias{rmFunHandler}
 \alias{rmnorm_chol}
 \alias{RModelBaseClass}
@@ -563,14 +581,15 @@
 \alias{R_setDoublePtrFromSinglePtr}
 \alias{R_setOnePtrVectorOfPtrs}
 \alias{R_setPtrVectorOfPtrs}
-\alias{R_setSinglePtrFromSinglePtr}
 \alias{rSimNodes}
 \alias{rt_nonstandard}
 \alias{rwish_chol}
 \alias{sampler_BASE}
-\alias{sampler_conjugate_beta}
-\alias{sampler_conjugate_gamma}
-\alias{sampler_conjugate_norm}
+\alias{sampler_conjugate_dbeta}
+\alias{sampler_conjugate_dgamma}
+\alias{sampler_conjugate_dmnorm}
+\alias{sampler_conjugate_dnorm}
+\alias{sampler_conjugate_dwish}
 \alias{sampler_crossLevel}
 \alias{sampler_end}
 \alias{sampler_RW}
@@ -590,11 +609,8 @@
 \alias{setIntValue}
 \alias{setMVElement}
 \alias{setNimValues}
-\alias{setNodeElement}
-\alias{setNodeModelPtr}
 \alias{setOnePtrVectorOfPtrs}
 \alias{setPtrVectorOfPtrs}
-\alias{setSinglePtrFromSinglePtr}
 \alias{setValuesAccess}
 \alias{SEXPscalarConvertFunctions}
 \alias{singleModelValuesAccess}
@@ -671,6 +687,7 @@
 \alias{varAndIndices2flatIndex}
 \alias{varAndIndices2mapParts}
 \alias{varInfoClass}
+\alias{vectorIndex_2_flat}
 \alias{virtualNFprocessing}
 \alias{virtualNodeFunctionDefinitions}
 \alias{wrapAsNumeric}

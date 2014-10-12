@@ -12,7 +12,7 @@
 
 
 
-                     CHANGES IN VERSION 0.2
+                     CHANGES IN VERSION 0.2 (Oct. 12, 2014)
 
 -- Internal changes to decrease time to build models and nimbleFunctions.
 
@@ -41,3 +41,14 @@ Bug fixes
 -- Fixed issue that values(model, nodes) sorted the outcome. Remaining bug to be fixed: nimCopy(nodesFrom, nodesTo) will NOT work if nodesFrom and nodesTo have different number/different lengths of ordered contingent blocks of memory, i.e. nimCopy(nodesFrom = c('x[1]', 'x[2]'), nodesTo = c('y[2]', 'y[1]')) will fail because nodesFrom is one block but nodesTo is two blocks
 
 -- Fixed issue that chol(A+B) was being translated to chol(A) + B
+
+
+                     CHANGES IN VERSION 0.1-1 (Aug. 28, 2014)
+
+
+Bug fixes
+
+-- handling of spaces in installed directory name on Windows
+
+-- ensured that various Makevars and Makevars.in and Makevars.win files are
+  provided in the package for proper installation on all platforms
