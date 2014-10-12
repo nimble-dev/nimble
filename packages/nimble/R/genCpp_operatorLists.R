@@ -7,7 +7,7 @@ binaryLeftOperators <- c('pow','pmin','pmax', 'nimMod', 'nimbleEquals','pairmin'
 binaryOperators <- c(binaryMidOperators, binaryLeftOperators)
 binaryOrUnaryOperators <- c('+','-')
 unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt',  ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
-                    'gamma','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
+                    'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
                     'lgamma1p', 'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
                     'abs','nimbleRound','ftrunc','ceil','floor','nimbleStep', 
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
@@ -105,7 +105,7 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
                                        eigIlogit = c('ilogit', 'double', 'double'),
                                        eigProbit = c('probit', 'double', 'double'),
                                        eigIprobit = c('iprobit', 'double', 'double'),
-                                       eigGamma = c('gamma', 'double', 'double'),
+                                       eigGammafn = c('gammafn', 'double', 'double'),
                                        eigLgammafn = c('lgammafn', 'double', 'double'),
                                        eigLgamma1p = c('lgamma1p', 'double', 'double'),
                                        eigLog1p = c('log1p', 'double', 'double'),
@@ -129,7 +129,8 @@ cppCasts = list(as.numeric = 'double',
 ##http://en.cppreference.com/w/cpp/language/operator_precedence
 
 ## Used to decide when to put parentheses around LHS or RHS based on operator precendence.
-operatorRank <- c(list('<-' = 100, '^' = 4),
+operatorRank <- c(
+				  list('<-' = 100, '^' = 4, llt = 3),
                   makeCallList(c('*','/','%*%', '%%'), 5),
                   makeCallList(c('+', '-'), 6),
                   makeCallList(c('>','<','<=', '>='), 7),

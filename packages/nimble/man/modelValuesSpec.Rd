@@ -3,7 +3,8 @@
 \alias{modelValuesSpec}
 \title{Create the specs for a custom NIMBLE modelValues Object}
 \usage{
-modelValuesSpec(symTab, className, vars, types, sizes, where = globalenv())
+modelValuesSpec(symTab, className, vars, types, sizes, modelDef = NA,
+  where = globalenv())
 }
 \arguments{
   \item{vars}{A vector of character strings naming each

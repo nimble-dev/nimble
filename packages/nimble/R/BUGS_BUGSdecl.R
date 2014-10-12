@@ -2,22 +2,23 @@
 
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
 nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%',
-                            'equals','inprod',
-                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'inverse',
+                            'equals','inprod','nimbleEquals',
+                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimbleStep', 'inverse',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
                             'ceiling', 'floor', 'round', 'trunc',
-                            'mean','sum','max','min','prod')
+                            'mean','sum','max','min','prod',
+                            'asRow', 'asCol')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass('BUGSdeclClass',
                              
                              fields = list(
                                  ###### the following are set in setup(), and never change.
-                                 contextID = 'numeric',
-                                 sourceLineNumber = 'numeric',
+                                 contextID = 'ANY',
+                                 sourceLineNumber = 'ANY',
                                  code = 'ANY',        ## original BUGS code line
-                                 type = 'character',
+                                 type = 'ANY',
                                  targetExpr = 'ANY',   ## LHS of code
                                  valueExpr = 'ANY',    ## RHS of code
                                  transExpr = 'ANY',
@@ -44,7 +45,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  
                                  ## the following are set in modelDefClass$genNodeInfo(), and never change:
                                  indexedNodeInfo = 'ANY',
-                                 indexedNodeNames = 'character'
+                                 indexedNodeNames = 'ANY'
                              ),   
                              
                              methods = list(

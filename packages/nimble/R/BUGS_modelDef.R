@@ -1,23 +1,24 @@
 ## A small class for information deduced about a variable in a BUGS model
 varInfoClass <- setRefClass('varInfoClass',
                             fields = list(
-                                varName = 'character',
-                                mins = 'numeric',
-                                maxs = 'numeric',
-                                nDim = 'numeric',
-                                anyStoch = 'logical'))
+                                varName = 'ANY',
+                                mins = 'ANY',
+                                maxs = 'ANY',
+                                nDim = 'ANY',
+                                anyStoch = 'ANY'))
 
 ## A small class for information about a node in the igraph
 graphNode <- setRefClass(
     Class = 'graphNode',
     fields = list(
-        nodeName         = 'character',
-        graphID          = 'numeric',
-        type             = 'character',
-        originNodeName   = 'character',
-        nodeFunctionName = 'character'
+        nodeName         = 'ANY',
+        graphID          = 'ANY',
+        type             = 'ANY',
+        originNodeName   = 'ANY',
+        nodeFunctionName = 'ANY'
     )
 )
+
 
 #' Class for NIMBLE model definition
 #'
@@ -28,34 +29,45 @@ modelDefClass <- setRefClass('modelDefClass',
                              
                              fields = list(
                                  ## set in the call modelDefClass$new(name)
-                                 name = 'character',
+                                 name = 'ANY',
                                  
                                  ## the following are all set in setupModel()
                                  BUGScode = 'ANY',  ## original BUGS code, set in assignBUGScode()
                                  constantsEnv = 'ANY', ## environment with constants, set in assignConstants()
                                  constantsList = 'ANY',  ## named list with constants, set in assignConstants()
                                  constantsNamesList = 'ANY', ## list of constants name objects, set in assignConstants()
-                                 dimensionsList = 'list',   ## list of provided dimension information, set in assignDimensions()
-                                 contexts = 'list', ## list of BUGScontextClass objects
-                                 declInfo = 'list', ## list of BUGSdeclInfo objects
-                                 nodeInfo = 'list', ## list of nodeInfoClass objects, set in genNodeInfo()
-                                 varInfo = 'list',  ## list of varInfoClass objects, set in genVarInfo()
-                                 logProbVarInfo = 'list',  ## list of varInfoClass objects, set in genLogProbVarInfo()
-                                 isDataVarInfo = 'list', ## list of varInfoClass objects, set in genIsDataVarInfo()
-                                 varNames = 'character',  ## vector of all model variable names, set in genVarNames()
+                                 dimensionsList = 'ANY',		#list		   ## list of provided dimension information, set in assignDimensions()
+                                 contexts = 'ANY',				#list 			 ## list of BUGScontextClass objects
+                                 declInfo = 'ANY',				#list				 ## list of BUGSdeclInfo objects
+                                 nodeInfo = 'ANY', 			#list				## list of nodeInfoClass objects, set in genNodeInfo()
+                                 varInfo = 'ANY',			#list	  ## list of varInfoClass objects, set in genVarInfo()
+                                 logProbVarInfo = 'ANY',	#list	  ## list of varInfoClass objects, set in genLogProbVarInfo()
+                                 isDataVarInfo = 'ANY', 	#list		## list of varInfoClass objects, set in genIsDataVarInfo()
+                                 varNames = 'ANY',  ## vector of all model variable names, set in genVarNames()
                                  symTab = 'ANY',  ## symbolTable object, set in buildSymbolTable()
                                  graph = 'ANY',     ## igraph object, set in buildIgraph()
                                  graphNodesList = 'ANY',   ## list of graphNode objects, set in genGraphNodesList()
                                  maps = 'ANY',   ## object of mapsClass, set in buildMaps()
                                  
                                  modelClass = 'ANY',   ## custom model class
-                                 modelValuesClassName = 'character',    ## set in setModelValuesClassName()
+                                 modelValuesClassName = 'ANY',    ## set in setModelValuesClassName()
                                  modelValuesClass = 'ANY', ## custom model values class
-                                 classEnvironment = 'environment' # environment in which the reference classes will be defined.
+                                 classEnvironment = 'ANY'	#environment		 # environment in which the reference classes will be defined.
                              ),
                              
                              methods = list(
-                                 
+                                 initialize = function(...){
+                                 	name <<- character()
+                                 	dimensionsList <<- list()
+                                 	contexts <<- list()
+                                 	declInfo <<- list()
+                                 	nodeInfo <<- list()
+                                 	varInfo <<- list()
+                                 	logProbVarInfo <<- list()
+                                 	isDataVarInfo <<- list()
+                                 	classEnvironment <<- new.env()
+                                 	callSuper(...)
+                                 },
                                  setupModel = function(code, constants, dimensions, debug) {},
                                  
                                  ## the following are all run, in this order, by setupModel():
@@ -87,8 +99,15 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genGraphNodesList              = function() {},
                                  buildMaps                      = function() {},
                                  
+                                 
                                  newModel   = function() {},
-                                 printDI    = function() {}
+                                 printDI    = function() {},
+                                 
+                                 
+                                 
+                                 #These functions are NOT run inside of setupModel
+                                 nodeName2GraphIDs = function(){},
+                                 nodeName2LogProbName = function(){}
                              ))
 
 
@@ -105,7 +124,7 @@ modelDefClass <- setRefClass('modelDefClass',
 modelDefClass$methods(setupModel = function(code, constants, dimensions, debug) {
     if(debug) browser()
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
-    assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode
+    assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
     assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
@@ -141,7 +160,7 @@ modelDefClass$methods(setModelValuesClassName = function() {
 })
 modelDefClass$methods(assignBUGScode = function(code) {
     ## uses 'code' argument, assigns field: BUGScode
-    BUGScode <<- code
+    BUGScode <<- nf_changeNimKeywords(code)
 })
 modelDefClass$methods(assignConstants = function(constants) {
     ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
@@ -179,6 +198,7 @@ modelDefClass$methods(assignDimensions = function(dimensions) {
     }
     dimensionsList <<- dL
 })
+
 modelDefClass$methods(initializeContexts = function() {
     ## initializes the field: contexts
     ## there is always a context #1 that is the empty context. this sets it up.
@@ -186,6 +206,14 @@ modelDefClass$methods(initializeContexts = function() {
     BUGScontextClassObject$setup(singleContexts = list())
     contexts[[1]] <<- BUGScontextClassObject
 })
+
+reprioritizeColonOperator <- function(code) {
+    split.code <- strsplit(deparse(code), ":")
+    if(length(split.code[[1]]) == 2) return(parse(text = paste0("(", split.code[[1]][1], "):(", split.code[[1]][2], ")"), keep.source = FALSE)[[1]])
+    if(length(split.code[[1]]) > 2) stop(paste0('Error with this code: ', deparse(code)))
+    return(code)
+}
+
 modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lineNumber = 0) {
     ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID.
     ## all processing of code is done by BUGSdeclClass$setup(code, contextID).
@@ -206,6 +234,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == 'for') {        ## e.g. (for i in 1:N).  New context (for-loop info) needed
             indexVarExpr <- code[[i]][[2]]   ## This is the `i`
             indexRangeExpr <- code[[i]][[3]] ## This is the `1:N`
+            if(nimbleOptions$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
             
@@ -247,7 +276,7 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
         for(i in seq_along(code))     code[[i]] <- addMissingIndexingRecurse(code[[i]], dimensionsList)
         return(code)
     }
-    if(code[[1]] != '[')   stop('something went wrong')
+    if(code[[1]] != '[')   stop('something went wrong: expecting a [')
     ## code must be an indexing call, e.g. x[.....]
     if(!any(code[[2]] == names(dimensionsList))) {
         ## dimension information was NOT provided for this variable
@@ -257,8 +286,8 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
                         'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
                         'There are two options to resolve this:', '\n',
                         '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
-                        '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to modelBUGS(), e.g.,', '\n',
-                        '    modelBUGS(modelCode, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
+                        '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
+                        '    nimbleModel(my_modelCode, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
                         'Thanks for bearing with us.'), call. = FALSE)
         }
         ## and to recurse on all elements
@@ -288,7 +317,7 @@ example_fillInMissingIndices <- function(code) {
 example_getMissingDimensions <- function(code) {
     cCall <- quote(c())
     for(i in seq_along(code)[-c(1,2)]) {
-        cCall[[i-1]] <- parse(text = paste0('DIM', i-2, '_MAX'))[[1]]
+        cCall[[i-1]] <- parse(text = paste0('dim', i-2, '_max'))[[1]]
     }
     return(cCall)
 }
@@ -573,8 +602,12 @@ isExprLiftable <- function(paramExpr) {
     if(is.call(paramExpr)) {
         if(paramExpr[[1]] == 'chol')        return(TRUE)    ## do lift calls to chol(...)
         if(paramExpr[[1]] == 'inverse')     return(TRUE)    ## do lift calls to inverse(...)
-        if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...)
+        if(length(paramExpr) == 1)          return(FALSE)   ## don't generally lift function calls:   fun(...) ## this comment seems incorrect
         if(getCallText(paramExpr) == '[')   return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        ## if(getCallText(paramExpr) == '[') { ## these lines are for future handling of foo()[]
+        ##     if(is.name(paramExpr))          return(FALSE)   ## don't lift simply indexed expressions:  x[...]
+        ##                                     return(TRUE)    ## do lift foo(x)[...]
+        ## }
         if(is.vectorized(paramExpr))        return(FALSE)   ## don't lift any expression with vectorized indexing,  funName(x[1:10])
         return(TRUE)
     }
@@ -593,6 +626,7 @@ extractAnyVectorizedIndexExprs <- function(expr) {
     if(!(':' %in% all.names(expr)))    return(list())
     if(!is.call(expr))     return(list())
     if(expr[[1]] == ':')     return(expr)
+  ##  if(expr[[1]] == '[')    return(as.list(expr[-c(1,2)])) ## 
     ret <- unlist(lapply(expr[-1], function(i) extractAnyVectorizedIndexExprs(i)))
     if(is.null(ret)) return(list()) else return(ret)
 }
@@ -676,6 +710,7 @@ genNodeInfo_singleDeclaration <- function(BUGSdecl, context, constantsEnv) {
         evaledTargetNodeExpr <- if(targetNodeExprHasBracket) evalBracketArgsKnownBracket(BUGSdecl$targetNodeExpr, constantsEnvCopy, targetNodeExpressionIsVectorized) else BUGSdecl$targetNodeExpr
         evaledSymbolicParentNodes <- lapply(BUGSdecl$symbolicParentNodes, evalBracketArgs, constantsEnvCopy)
         targetNodeIndexValuesList <- if(targetNodeExprHasBracket) exprAsListDrop2(evaledTargetNodeExpr)
+        targetNodeIndexSizes <- unlist(lapply(targetNodeIndexValuesList, function(ind) max(eval(ind)) - min(eval(ind)) + 1))
         replacementValues <- eval(replacementsOneBlock, constantsEnvCopy)
         replacementValuesScalar <- removeNonScalarElementsFromList(replacementValues)
         codeReplacedWithValues <- eval(substituteCodeReadyForValues)
@@ -691,6 +726,7 @@ genNodeInfo_singleDeclaration <- function(BUGSdecl, context, constantsEnv) {
                                                            targetNodeExpr = evaledTargetNodeExpr,
                                                            targetNodeName =  targetNodeName,
                                                            targetNodeIndexValuesList = targetNodeIndexValuesList,
+                                                           targetNodeIndexSizes = targetNodeIndexSizes,
                                                            logProbIndexValues = logProbIndexValues,
                                                            targetVarName = BUGSdecl$targetVarName,
                                                            parentNodeExprs = evaledSymbolicParentNodes,
@@ -786,7 +822,7 @@ modelDefClass$methods(genVarInfo = function() {
         dimVarName <- names(dimensionsList)[i]
         if(!(dimVarName %in% names(varInfo))) next
         if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions')
-        if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop('dimensions specified are smaller than model specification')
+        if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
 })
@@ -897,7 +933,7 @@ modelDefClass$methods(genGraphNodesList = function() {
         ## only these ones have a nodeFunction associated with them
         if(nodeCase == 1) {
             nI <- nodeInfo[[nodeName]]
-            if(is.null(nI))   stop('something went wrong')
+            if(is.null(nI))   stop('something went wrong: null value for nodeInfo for node named ', nodeName)
             gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
                                             graphID            = i,
                                             type               = nI$type,
@@ -912,7 +948,7 @@ modelDefClass$methods(genGraphNodesList = function() {
         if(nodeCase == 2) {
             declaredNodeName <- nodesLHFInferredLookupList[[nodeName]]
             nI <- nodeInfo[[declaredNodeName]]
-            if(is.null(nI))   stop('something went wrong')
+            if(is.null(nI))   stop('something went wrong: null value for node infor for ', declaredNodeName)
             gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
                                             graphID            = i,
                                             type               = 'LHSinferred',   ## idea: add these inferred nodes (e.g. x[1]) as deterministic dependents of the declared node (x[1:10])
@@ -940,7 +976,7 @@ modelDefClass$methods(genGraphNodesList = function() {
 })
 modelDefClass$methods(buildMaps = function() {
     maps <<- mapsClass$new()
-    maps$setup(graphNodesList, graph)
+    maps$setup(graphNodesList, graph, varInfo, nodeInfo)
 })
 
 
@@ -958,7 +994,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
         classEnvironment <<- where
     }
     if(inherits(modelValuesClass, 'uninitializedField')) {
-        modelValuesClass <<- makeCustomModelValuesClass(symTab, modelValuesClassName, where = where, addUniqueID = FALSE)
+        modelValuesClass <<- makeCustomModelValuesClass(symTab, modelValuesClassName, where = where, addUniqueID = FALSE, modelDef = .self)
     }
     ## would be better to build this into the class
     ## if(missing(modelName)) modelName <- name
@@ -989,4 +1025,137 @@ modelDefClass$methods(printDI = function() {
 })
 
 
+
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
+	if(length(nodeName) == 0)
+		return(NULL)	
+	if(nodeFunctionID)
+		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+	else
+		output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
+	return(output[!is.na(output)])
+})
+
+modelDefClass$methods(nodeName2LogProbName = function(nodeName){
+	if(length(nodeName) == 0)
+		return(NULL)
+	output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+	return(output[!is.na(output)])
+})
+
+
+
+parseEvalNumeric <- function(x, env){
+	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+	as.numeric(ans)
+}
+parseEvalCharacter <- function(x, env){
+	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+	as.character(ans)
+}
+
+
+
+#The class we use keep track of graphIDs
+nodeVector <- setRefClass(Class = "nodeVector",
+						fields = 
+							list(origNodeNames 				=	'ANY',
+								expandedNodeFunctionNames 	=	'ANY',
+								expandedNodeValuesNames 	=	'ANY',
+								origGraphIDs_values 		=	'ANY',
+								origGraphIDs_functions		=	'ANY',
+								sortedGraphIDs_values 		=	'ANY',
+								sortedGraphIDs_functions	=	'ANY',
+								sortOrder_values 			= 	'ANY',
+								sortOrder_functions 		= 	'ANY',
+								model 						=	'ANY'),
+						methods = 	#These methods need to check if objects are initiated. If not, it needs
+									#to initiate. If so, it just returns object
+							list(getOrigNames = function(){ 
+									if(!inherits(origNodeNames, 'uninitializedField') ) 
+										origNodeNames 
+									else stop('origNodeNames never initialized!')
+									},
+								getExpandedFunctionNames = function(){ 
+									if(!inherits(expandedNodeFunctionNames, 'uninitializedField') ) 
+										expandedNodeFunctionNames 
+									else {
+										expandedNodeFunctionNames <<- unique(model$modelDef$maps$graphID_2_nodeFunctionName[origGraphIDs_functions])
+										expandedNodeFunctionNames
+										}
+									},
+								getExpandedValuesNames = function(){ 
+									if(!inherits(expandedNodeValuesNames, 'uninitializedField') ) 
+										expandedNodeValuesNames 
+									else {
+										expandedNodeValuesNames <<- unique(model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values])
+										expandedNodeValuesNames
+										}
+									},
+								getOrigIDs_values = function() { 
+									if(!inherits(origGraphIDs_values, 'uninitializedField') ) 
+										origGraphIDs_values 
+									else stop('origGraphIDs_values never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
+									},
+								getOrigIDs_functions = function() { 
+									if(!inherits(origGraphIDs_functions, 'uninitializedField') ) 
+										origGraphIDs_functions 
+									else stop('origGraphIDs_functions never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
+									},
+								getSortedIDs_values = function() { 
+									if(!inherits(sortedGraphIDs_values, 'uninitializedField') ) 
+										sortedGraphIDs_values 
+									else{ 
+										if(inherits(sortOrder_values, 'uninitializedField') ) 
+											sortOrder_values <<- order(origGraphIDs_values)
+ 										sortedGraphIDs_values <<- origGraphIDs_values[sortOrder_values]
+										sortedGraphIDs_values
+									}
+								},
+								getSortedIDs_functions = function() { 
+									if(!inherits(sortedGraphIDs_functions, 'uninitializedField') ) 
+										sortedGraphIDs_functions 
+									else{
+										if(inherits(sortOrder_functions, 'uninitializedField') ) 
+											sortOrder_functions <<- order(origGraphIDs_functions)
+										sortedGraphIDs_functions <<- origGraphIDs_functions[sortOrder_functions]
+										sortedGraphIDs_functions
+									}
+								},
+								getSortOrder_values = function() { 
+									if(!inherits(sortOrder_values, 'uninitializedField') ) 
+										sortOrder_values 
+									else{
+										sortOrder_values <<- order(origGraphIDs_values)
+										sortOrder_values	
+									}
+								},	
+								getSortOrder_functions = function() { 
+									if(!inherits(sortOrder_functions, 'uninitializedField') ) 
+										sortOrder_functions 
+									else {
+										sortOrder_functions <<- order(origGraphIDs_functions)
+										sortOrder_functions
+									}
+								},	
+								initialize = function(...){
+									callSuper(...)
+									if(inherits(model, 'uninitializedField'))	
+										stop('model missing when creating nodeVector')
+									if(inherits(origGraphIDs_values, 'uninitializedField') )	{
+										if(!inherits(origNodeNames, 'uninitializedField') ){
+											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
+											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
+										}
+										else{
+											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_functions]
+											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
+										}
+									}										
+									else if(inherits(origGraphIDs_functions, 'uninitializedField')	){
+											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values]
+											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
+										}
+
+								}))
 

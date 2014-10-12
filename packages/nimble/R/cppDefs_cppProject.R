@@ -4,12 +4,14 @@ setClassUnion("DLLInfoOrNULL", c("NULL", "DLLInfo"))
 
 cppCodeFileClass <- setRefClass('cppCodeFileClass',
                              fields = list(
-                                 filename = 'character',
-                                 includes = 'character',
-                                 usings = 'character',
-                                 cppDefs = 'list'
+                                 filename = 'ANY',	#character
+                                 includes = 'ANY',	#character
+                                 usings = 'ANY',	#character
+                                 cppDefs = 'ANY'	#list()
                                  ),
                              methods = list(
+                             	initialize = function(...){filename <<- character(); includes <<- character(); usings <<- character(); cppDefs <<- list(); callSuper(...)},
+                             
                                  writeIncludes = function(con = stdout()) {
                                      if(length(includes) > 0) writeLines(paste0('#include ', includes), con)
                                      writeLines('#undef eval', con) ## remove R headers' #define eval Rf_eval
@@ -29,9 +31,10 @@ cppCodeFileClass <- setRefClass('cppCodeFileClass',
 cppHfileClass <- setRefClass('cppHfileClass',
                              contains = 'cppCodeFileClass',
                              fields = list(
-                                 ifndefName = 'character'
+                                 ifndefName = 'ANY' #'character'
                                  ),
                              methods = list(
+                             	initialize = function(...){ifndefName <<- character(); callSuper(...)},
                                  writeFile = function(con = filename, dir = character()) {
                                      if(is.character(con)) {
                                          con <- file.path(dir, paste0(con, '.h'))
@@ -60,9 +63,10 @@ cppHfileClass <- setRefClass('cppHfileClass',
 cppCPPfileClass <- setRefClass('cppCPPfileClass',
                                contains = 'cppCodeFileClass',
                                fields = list(
-                                   ifndefName = 'character'
+                                   ifndefName = 'ANY'
                                    ),
                                methods = list(
+                               		initialize = function(...){ifndefName <<- character(); callSuper(...)},
                                    writeFile = function(con = filename, dir = character()) {
                                        if(is.character(con)) {
                                            con <- file.path(dir, paste0(con,'.cpp'))
@@ -90,12 +94,13 @@ cppCPPfileClass <- setRefClass('cppCPPfileClass',
 
 cppProjectClass <- setRefClass('cppProjectClass',
                                fields = list(
-                                   dirName = 'character',
-                                   cppDefs = 'list',
-                                   dll = "DLLInfoOrNULL",
-                                   outputSOfile = "character"
+                                   dirName = 'ANY', #'character',
+                                   cppDefs = 'ANY', #'list',
+                                   dll = 'ANY', #"DLLInfoOrNULL",
+                                   outputSOfile = 'ANY'# "character"
                                    ),
                                methods = list(
+                               		initialize = function(...){dirName <<- character(); cppDefs <<- list(); dll <<- NULL; outputSOfile <<- character();callSuper(...)},
                                    addFunction = function(funDef, name, filename) {
                                        if(missing(name)) name <- funDef$name
                                        cppDefs[[name]] <<- funDef

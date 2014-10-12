@@ -15,10 +15,10 @@ controlDefaultList <- list(
 samplerSpec <- setRefClass(
     Class = 'samplerSpec',
     fields = list(
-        type    = 'character',
-        control = 'list'
-    ),
+        type    = 'ANY',
+        control = 'ANY'),
     methods = list(
+    	initialize =function(...){control <<- list(); callSuper(...)},
         buildSampler = function(model, mvSaved) {
             samplerNfName <- paste0('sampler_', type)
             eval(call(samplerNfName, model=model, mvSaved=mvSaved, control=control))
@@ -61,13 +61,13 @@ MCMCspec <- setRefClass(
     
     fields = list(
         model               = 'ANY',
-        monitors            = 'character',
-        monitors2           = 'character',
-        thin                = 'numeric',
-        thin2               = 'numeric',
-        samplerSpecs        = 'list',
-        controlDefaults     = 'list',
-        controlNamesLibrary = 'list'
+        monitors            = 'ANY', 		#'character',
+        monitors2           = 'ANY', 		#'character',
+        thin                = 'ANY', 		#'numeric',
+        thin2               = 'ANY', 		#'numeric',
+        samplerSpecs        = 'ANY', 		#'list',
+        controlDefaults     = 'ANY', 		#'list',
+        controlNamesLibrary = 'ANY' 		#'list'
     ),
     
     methods = list(
@@ -76,8 +76,8 @@ MCMCspec <- setRefClass(
                               monitors,                thin  = 1,
                               monitors2 = character(), thin2 = 1,
                               useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
-                              print = FALSE) {
-'
+                              print = FALSE) {	
+'	
 Creates a defaut MCMC specification for a given model.  The resulting mcmcspec object is suitable as an argument to buildMCMC().
 
 Arguments:
@@ -117,6 +117,7 @@ Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
 print: Boolean argument, specifying whether to print the ordered list of default samplers.
 '
             
+            samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list();monitors <<- character(); monitors2 <<- character();
             model <<- model
             addMonitors( monitors,  print = FALSE)
             addMonitors2(monitors2, print = FALSE)
@@ -131,16 +132,27 @@ print: Boolean argument, specifying whether to print the ordered list of default
             } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
                                  nl_checkVarNamesInModel(model, removeIndexing(nodes))
                                  nodes <- model$expandNodeNames(nodes)            }
+        
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            
-            for(node in nodes) {
+            isNodeEnd <- nodes %in% model$getMaps('nodeNamesEnd')
+        
+            for(i in seq_along(nodes) ) {
+            	node <- nodes[i]
                 discrete <- model$getNodeInfo()[[node]]$isDiscrete()
+                nodeLength <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
                 
                 ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
-                if(node %in% model$getMaps()$nodeNamesEnd) {
-                    if(length(model$getDependencies(node, self = FALSE, stochOnly = TRUE)) != 0)   stop('something went wrong')   ####  TEMPORARY CHECK OF maps$nodeNamesEnd
-                    addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
+             	if(isNodeEnd[i]) { addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
                 
+                ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
+                if(nodeLength > 1) {
+                    conjugacyResult <- model$checkConjugacy(node)
+                    if(!is.null(conjugacyResult) && useConjugacy) {
+                        addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                    addSampler(type = 'RW_block', control = list(targetNodes=node), print = print);     next
+                }
+
+                ## node is scalar, non-end node
                 if(onlyRW && !discrete)   { addSampler(type = 'RW',    control = list(targetNode=node), print = print);     next }
                 if(onlySlice)             { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
                 
@@ -150,13 +162,12 @@ print: Boolean argument, specifying whether to print the ordered list of default
                     addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) {
-                   addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                if(discrete) { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
                 
                 ## default: 'RW' sampler
                 addSampler(type = 'RW', control = list(targetNode=node), print = print);     next
             }
-        },
+},
         
         addSampler = function(type, control = list(), print = TRUE) {
 '
@@ -336,7 +347,7 @@ Details: See the initialize() function
             modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
             if(ind == 1)   monitorNames <- monitors
             if(ind == 2)   monitorNames <- monitors2
-            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('something went wrong; this should never occur')
+            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
             mv <- modelValues(symbolTable(symbols = modelSymbolObjects[monitorNames]))
             return(mv)
         }

@@ -7,12 +7,14 @@ RCfunctionCompileClass <- setRefClass('RCfunctionCompileClass',
                                           newLocalSymTab = 'ANY',
                                           returnSymbol = 'ANY',
                                           newRcode = 'ANY',
-                                          typeEnv = 'environment'
+                                          typeEnv = 'ANY'	#environment
+                                          ),
+                                          methods = list(initialize <- function(...){typeEnv <<- new.env(); callSuper(...)}
                                           ))
 
 RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                       fields = list(
-                                          name = 'character',
+                                          name = 'ANY',		#character
                                           RCfun = 'ANY', ##nfMethodRC
                                           compileInfo = 'ANY' ## RCfunctionCompileClass``
                                           ),

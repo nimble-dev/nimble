@@ -19,16 +19,7 @@
 
 using std::cout;
 
-#include "nodeFun.h" // will have:
-/* class nodeFun { */
-/*  public: */
-/*   virtual double calculate()=0; */
-/*   virtual void simulate()=0; */
-/*   virtual double getLogProb()=0; */
-/*   // In the future these could be templated */
-/*   virtual double getValue()=0; */
-/*   virtual void setValue(double v)=0; */
-/* }; */
+#include "nodeFun.h" 
 
 /////////////////////////////////
 // 1. NodeVectors:
@@ -38,6 +29,7 @@ class NodeVectorClass {
   vector<nodeFun *> nodeFunPtrs;
   virtual vector<nodeFun *> &getNodeFunctionPtrs() {return(nodeFunPtrs);}
   // to be inherited and implemented differently when we have dynamic dependencies
+  virtual ~NodeVectorClass() {};
 };
 
 ///// Using NodeVectors:
@@ -64,6 +56,7 @@ class SingleVariableAccessBase {
   int getIndexEnd() {return(flatIndexEnd);}
   int getLength() {return(length);}
   virtual NimArrType *getNimArrPtr()=0; //
+  virtual ~SingleVariableAccessBase() {};
 };
 
 // Derived class for access to one NimArr<> in a model
@@ -71,6 +64,7 @@ class SingleVariableAccess : public SingleVariableAccessBase {
  public:
   NimArrType **ppVar; // I think we have to do some casting when populating this
   virtual NimArrType *getNimArrPtr() {return(*ppVar);}
+  ~SingleVariableAccess() {};
 };
 
 // Base class for vector of single variables accessors
@@ -78,6 +72,7 @@ class ManyVariablesAccessorBase {
  public:
   virtual vector<SingleVariableAccessBase *> &getAccessVector()=0;
   virtual void  setRow(int i) = 0;
+  virtual ~ManyVariablesAccessorBase() {};
 };
 
 // Derived class for vector of single variable accessors to NimArr<>s in a model
@@ -85,7 +80,7 @@ class ManyVariablesAccessor : public ManyVariablesAccessorBase {
  public:
   vector<SingleVariableAccessBase *> varAccessors;
   virtual vector<SingleVariableAccessBase *> &getAccessVector() {return(varAccessors);}
-    ~ManyVariablesAccessor();
+  ~ManyVariablesAccessor();
   void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
 };
 
@@ -102,7 +97,7 @@ class SingleModelValuesAccess : public SingleVariableAccessBase {
   NimVecType *pVVar;   // Cliff and I talked about making a vecNimArrType base class
   int currentRow;
   virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} // Need to put a function like this in vecNimArrType base class
-  
+  ~SingleModelValuesAccess() {};
   void setRow(int i) {currentRow = i;}
   int getRow() {return(currentRow);}
 };
@@ -115,6 +110,7 @@ class ManyModelValuesAccessor : public ManyVariablesAccessorBase {
   vector<SingleVariableAccessBase *> varAccessors;
   virtual vector<SingleVariableAccessBase *> &getAccessVector() {return(varAccessors);}
   virtual void setRow(int i);// see .cpp
+  ~ManyModelValuesAccessor() {};
 };
 
 /////////////////////////////////

@@ -64,7 +64,7 @@ calculate <- function(model, nodes = NA)
 {
 	if(inherits(model, 'modelBaseClass') ){
 		if(is.na(nodes[1]) ) 
-			nodes <- model$getMaps()$nodeNamesLHSall
+			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
 		return(rCalcNodes(nfv$model, nfv$nodes))
 	}	
@@ -83,7 +83,7 @@ getLogProb <- function(model, nodes = NA)
 {
 	if( inherits(model, "modelBaseClass") ){		
 		if(is.na(nodes[1]) ) 
-                    nodes <- model$getMaps()$nodeNamesLHSall
+                    nodes <- model$getMaps('nodeNamesLHSall')
 
 		nfv <- nodeFunctionVector(model, nodes)
     	return(rGetLogProbsNodes(nfv$model, nfv$nodes))
@@ -102,7 +102,7 @@ simulate <- function(model, nodes = NA, includeData = FALSE)
 {
 	if( inherits(model, "modelBaseClass") ) {
 		if(is.na(nodes[1]) ) 
-			nodes <- model$getMaps()$nodeNamesLHSall
+			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
 		if(!includeData) {
 			nodes = nfv$nodes
@@ -286,24 +286,22 @@ values <- function(model, nodes){
 #' 
 #' cCopy() ## execute the copy with the compiled function
 nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
-	if(missing(nodes) ) 
-		nodes = allNodeNames(from)
-	if( inherits(from, "modelBaseClass") ){
-		accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
-		rowFrom = NA
-		}
-	else if(inherits(from, "modelValuesBaseClass"))
-		{
-		accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
-		if(is.na(row))
-			stop("Error: need to supply 'row' for a modelValues copy")
-		rowFrom = row
-		}
-		
-		
-	if( inherits(to, "modelBaseClass") ){
-		if(is.na(nodesTo[[1]]) ) 
-			accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
+    if(missing(nodes) ) 
+        nodes = allNodeNames(from)
+    if( inherits(from, "modelBaseClass") ){
+        accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
+        rowFrom = NA
+    }
+    else if(inherits(from, "modelValuesBaseClass"))
+    {
+        accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
+        if(is.na(row))
+            stop("Error: need to supply 'row' for a modelValues copy")
+        rowFrom = row
+    }
+    if( inherits(to, "modelBaseClass") ){
+        if(is.na(nodesTo[[1]]) ) 
+            accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
 		else
 			accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
 		rowTo = NA
@@ -376,7 +374,6 @@ allNodeNames <- function(object, logProb = FALSE){
 		}
 	if(inherits(object, 'modelBaseClass') ) {
 		all.Names = ls(object$vars)
-		if(logProb == TRUE)
 		if(logProb == TRUE)
 				return(all.Names)
 		for(i in 1:length(all.Names) ) {
@@ -581,6 +578,6 @@ declare <- function(name, def){
 }
 
 
+is.na.vec <- function(x) any(is.na(x))
 
-
-
+is.nan.vec <- function(x) any(is.nan(x))

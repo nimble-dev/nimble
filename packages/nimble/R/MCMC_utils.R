@@ -94,8 +94,8 @@ decideAndJump <- nimbleFunction(
 #' lp <- my_setAndCalc(2)
 setAndCalculateOne <- nimbleFunction(
     setup = function(model, targetNode) {
-        targetNode <- model$expandNodeNames(targetNode)
-        if(length(targetNode) > 1)     stop('more than one targetNode; cannot use setAndCalculateOne()')
+        targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
+        if(length(targetNodeAsScalar) > 1)     stop('more than one targetNode; cannot use setAndCalculateOne()')
         calcNodes <- model$getDependencies(targetNode)
     },
     run = function(targetValue = double()) {
@@ -132,11 +132,11 @@ setAndCalculateOne <- nimbleFunction(
 #' lp <- my_setAndCalc(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
     setup = function(model, targetNodes) {
-        targetNodes <- model$expandNodeNames(targetNodes)
+        targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
     },
     run = function(targetValues = double(1)) {
-        setValues(targetValues, model, targetNodes)
+        setValues(targetValues, model, targetNodesAsScalar)
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
@@ -171,12 +171,50 @@ calcAdaptationFactor <- nimbleFunction(
 )
 
 
+
+## covToCor <- nimbleFunction(
+##     setup = function(d) {},
+##     run = function(cov = double(2)) {
+##         declare(tauMatrix, double(2, c(d,d)))
+##         for(i in 1:d) {
+##             for(j in 1:d) {
+##                 tauMatrix[i,j] <- 0
+##             }
+##             tauMatrix[i,i] <- 1/sqrt(cov[i,i])
+##         }
+##         declare(cor, double(2, c(d,d)))
+##         cor <- tauMatrix %*% cov %*% tauMatrix
+##         returnType(double(2))
+##         return(cor)
+##     }, where = getLoadingNamespace()
+## )
+
+
+## covToSDmatrix <- nimbleFunction(
+##     setup = function(d) {},
+##     run = function(cov = double(2)) {
+##         declare(sdMatrix, double(2, c(d,d)))
+##         for(i in 1:d) {
+##             for(j in 1:d) {
+##                 sdMatrix[i,j] <- 0
+##             }
+##             sdMatrix[i,i] <- sqrt(cov[i,i])
+##         }
+##         returnType(double(2))
+##         return(sdMatrix)
+##     }, where = getLoadingNamespace()
+## )
+
+
+
+
 RHSonlyInit_virtual <- nimbleFunctionVirtual()
 RHSonlyInit <- nimbleFunction(
     contains = RHSonlyInit_virtual,
     setup = function(model, node) {},
     run = function() {
-        if(is.na(model[[node]]) | is.nan(model[[node]]))     print('missing value in right-hand-side only node; cannot initialize model')
+        nv <- values(model, node)
+        if(is.na.vec(nv) | is.nan.vec(nv))     print('missing value in right-hand-side only node; cannot initialize model')
     }, where = getLoadingNamespace()
 )
 
@@ -185,36 +223,50 @@ mcmcNodeInit_virtual <- nimbleFunctionVirtual()
 mcmcNodeInit <- nimbleFunction(
     contains = mcmcNodeInit_virtual,
     setup = function(model, node) {
-        isDeterm  <- if(node %in% model$getMaps()$nodeNamesDeterm)  TRUE else FALSE
-        isStoch   <- if(node %in% model$getMaps()$nodeNamesStoch)   TRUE else FALSE
+		gID <- model$modelDef$nodeName2GraphIDs(node)
+		type <- model$modelDef$maps$types[gID]
+		isDeterm = FALSE
+		isStoch = FALSE
+		if(type == 'stoch')
+			isStoch = TRUE
+		else if(type == 'determ')
+			isDeterm = TRUE
+#        isDeterm  <- if(node %in% model$getMaps('nodeNamesDeterm') )  TRUE else FALSE
+#        isStoch   <- if(node %in% model$getMaps('nodeNamesStoch') )   TRUE else FALSE
     },
     run = function() {
         if(isDeterm) {
             calculate(model, node)
-            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('something went wrong in model initialization')
+            nv <- values(model, node)
+            if(is.na.vec(nv) | is.nan.vec(nv))     print('deterministic model node is NA or NaN in model initialization')
         }
         if(isStoch) {
-            if(is.na(model[[node]])) simulate(model, node)
-            if(is.na(model[[node]]) | is.nan(model[[node]]))     print('something went wrong in model initialization')
+            nv <- values(model, node)
+            if(is.na.vec(nv)) {
+                simulate(model, node)
+                nv <- values(model, node)
+            }
+            if(is.na.vec(nv) | is.nan.vec(nv))     print('stochastic model node is NA or NaN in model initialization')
             lp <- calculate(model, node)
-            if(is.na(lp) | is.nan(lp) | lp < -1e12)              print('something went wrong in model initialization')
+            if(is.na(lp) | is.nan(lp) | lp < -1e12)              print('stochastic model value is NA, NaN or too small in model initialization')
         }
     }, where = getLoadingNamespace()
 )
 
 
-calcCoeffAndOffset <- nimbleFunction(
-    setup = TRUE,
-    run = function(x1=double(), x2=double(), y1=double(), y2=double()) {
-        coeff <- (y2-y1) / (x2-x1)
-        offset <- y1 - coeff*x1
-        declare(coeffAndOffset, double(1,2))
-        coeffAndOffset[1] <- coeff
-        coeffAndOffset[2] <- offset
-        returnType(double(1))
-        return(coeffAndOffset)
-    }, where = getLoadingNamespace()
-)
+## possibly obsolete, using the new (0, current) method for calculaating coefficients and offsets  -DT
+# calcCoeffAndOffset <- nimbleFunction(
+#     setup = TRUE,
+#     run = function(x1=double(), x2=double(), y1=double(), y2=double()) {
+#         coeff <- (y2-y1) / (x2-x1)
+#         offset <- y1 - coeff*x1
+#         declare(coeffAndOffset, double(1,2))
+#         coeffAndOffset[1] <- coeff
+#         coeffAndOffset[2] <- offset
+#         returnType(double(1))
+#         return(coeffAndOffset)
+#     }, where = getLoadingNamespace()
+# )
 
 
 codeBlockClass <- setRefClass(
@@ -247,7 +299,7 @@ codeBlockClass <- setRefClass(
 mcmc_listContentsToStr <- function(ls) {
     ls <- lapply(ls, function(el) if(is.function(el)) 'function' else el)
     ls2 <- list()
-    for(i in seq_along(ls))      if(length(ls[[i]])>0)     ls2[[i]] <- paste0(names(ls)[i], ': ', deparse(ls[[i]]))
+    for(i in seq_along(ls))      if(length(ls[[i]])>0)     ls2[[i]] <- paste0(names(ls)[i], ': ', deparse(ls[[i]], width.cutoff = 500))
     ls2 <- ls2[unlist(lapply(ls2, function(i) !is.null(i)))]
     str <- paste0(ls2, collapse = ',  ')
     str <- gsub('\"', '', str)

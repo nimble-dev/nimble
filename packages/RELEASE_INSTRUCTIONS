@@ -1,0 +1,24 @@
+make sure NEWS is updated with info on changes in latest release
+
+R CMD build nimble
+R CMD INSTALL nimble_${VERSION}.tar.gz
+./prep_pkg # this creates man pages and updates NAMESPACE
+
+login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
+cd /web/R-nimble/wordpress/src/contrib
+
+cp new .tar.gz there
+
+chmod go+w nimble_${VERSION}.tar.gz
+
+./writePackages
+
+go to website: R-nimble.org/login and login 
+
+change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
+
+update NEWS info on webpage as high-level summary of NEWS in package
+
+send notice to nimble-announce, nimble-users
+
+make sure to merge devel into master branch and create a branch for the new version

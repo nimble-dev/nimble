@@ -1,6 +1,60 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (10/5/14) we don't detect conjugacy when we have a scalar node w/ a N prior that is in the mean for a MVN dependent node (e.g. beta0 in 'jaw')
+
+* (10/1/14) Chris requests something like getVars() that returns all the variable names in a model or a subset of variables if one passes in a set of nodes
+
+* (9/28/14) R's %% and C's fmod() differ when have, e.g., -0.8 %% 1 -- R gives 0.2, and C gives -0.8; one gross way to 'fix' would be to give an error if negative numbers are supplied
+
+* (9/27/14 - possible "heavy debug/check" compilation mode.
+
+* (9/14/14) norm() in R and C nimble functions differ as the R default seems to be the "1" norm (the 'type' argument) and the C version is the Frobenius
+
+* (9/4/14)  handle for-loop indexes consistent with BUGS & jags.  e.g., for(i in 1:3+1) {}, should give lowest precendence to the ':' operator
+
+* (8/11/14) deal more elegantly with metropolis samples that fall outside the domain of a parameter - e.g. proposals for positive valued parameters that are proposed to be negative
+
+* (7/31/14) simulate(model, 'multivariateNodeName[1:10]') fails, because the multivariateNodeName is *incorrectly* expanded, none of which are names of model nodes
+
+* (7/24/14) Using 'equals(a,b)' in a model definition, when both a, b are constants, (correctly) attempts to evaluate 'equals(a,b)' at compile-time, but this errors-out because 'equals' refers to function in testthat package, rather than the intended 'nimbleEquals()' function.
+
+* (7/10/14) Revisit model-querying functions: e.g. getParents, get size infor from a model (extract from varInfo$maxes), others?
+
+* (7/10/14) Revisit linear algebra functionality, e.g. svd, eigen, others?
+
+* (7/10/14) Revisit use of `$` notation in the DSL.  This would break in normal R execution unless it is intercepted during nimbleFunction definition.
+
+* (7/10/14) Make simulate() default to including deterministic dependencies
+
+* (7/10/14) Multivariate default samplers. Multivariate conjugate samplers.
+
+* (7/10/14) Revisit efficiency of processing of node sets, especially arising from newSetupCode.
+
+* (7/10/14) Research CppAD/TMB/STAN code generation for automatic differentiation.
+
+* (7/10/14) More profiling
+
+* (7/10/14) Make run-time checking of Gibbs (conjugate) validity optional.
+
+* (7/10/14) Possible bug from state-space model case: incorrect conjugacy determination.
+
+* (7/10/14) Run some proper timing comparisons with MCMC suite, with run-time conjugate validity checking disabled.
+
+* (7/10/14) 1D Laplace and AGQ
+
+* (7/10/14) Generate "q" and "p" functions
+
+* (7/10/14) Make multiple parameterizations of distributions and default parameters available from the DSL.  This could be a time to create a general way of handling R-like argument processing.
+
+* (7/10/14) Fill in missing distributions
+
+* (7/10/14) Censoring: dinterval, I(), T(), etc.
+
+* (7/10/14) Make the inverse of as.matrix for a modelValues
+
+* (7/10/14) Fix length(model[[var]])
+
 * (6/27/14) possible error when compiling nf2 checks in functinalityChecks.R in manual directory
 
 * (6/27/14) using 'step' in data block of bugs model fails because we now use nimbleStep, so not backwards compatible... minor issue we may want to ignore so as not to mask R's step
@@ -13,28 +67,15 @@
 
 * (6/22/14) checking of pos-def for Chol, det, etc. and how to handle numerically non-p.d. matrices and pivoting
 
-* (6/22/14) does Eigen really get det on original scale and then log; test for numerical issues with decent-size matrices
-
 * (6/21/14) disable det,fact,gamma as numerically unstable?
 
-* (6/21/14) check nimbleStep vs nimStep
-
 * (6/20/14) additional helper fxns for manipulating models: getParents(), get size info from a model (extract from varInfo$maxes)
-
-* (6/20/14) should we systematize how we handle dim/size of scalars? e.g., mv uses 1 and stuff on the R side in the model uses 0
 
 * (6/19/14) handle initialization of nodes created by link functions - e.g. log(p) ~ dnorm() and a user initializes "p" but we need to initialize log_p as well
 
 * (6/16/14) probably good to provide svd in DSL before long
 
 * (6/16/14) change scalar | and & to || and && ?
-
-* (6/16/14) do we want to replace 
-nfMethod(targetRWSamplerFunction, 'generateProposalValue')()
-with
-targetRWSamplerFunction$generateProposalValue()
-
-I guess this is the same issue as calculate(model, node) vs model$calculate(node)
 
 * (6/11/14) add getPositions() functionality (DT)
 
@@ -65,14 +106,4 @@ In getPackageName(where) :
 Cmodel[['y[1,]']] is fine
 calculate(Cmodel, 'y[1,]') is not 
 
-* (6/5/14) should we have returnModel=TRUE be the default for BUGSmodel()?
-
 * (6/5/14) (DT/CP) desire to use 'constants' in 'dimensions' argument, e.g: BUGSmodel(model, constants = list(N = 5), dimensions = list(x = c(N,N))); DT had this and removed it as it was causing some other problem; might revisit this
-
-* (6/5/14) we may want that compileNimbleFunction by default should  just compile a single function as this is the easiest to explain to a new user rather than having to go into the fact that there may be multiple instances right off the bat
-
-* (6/12/14) (DT) checkConjugacy() will complain in multivariate case, when there are 'replacement' expressions in 'codeReplacedWithValues', which do not represent stochastic model nodes.
-
-* (6/13/14) (PDV) correct/consistent handling of is.na() and is.nan() in cpp
-
-* (6/13/14) (DT/PDV) handling cases (e.g., dipper) with nodes defined more than once

@@ -21,4 +21,8 @@ nimbleStep <- function(x) ifelse(x >= 0, 1, 0) ## We rename step to nimbleStep b
 inverse <- function(x) solve(x)
 cube <- function(x) x^3
 inprod <- function(v1, v2) sum(v1 * v2)
-logdet <- function(m) determinant(m, log = TRUE)$modulus
+logdet <- function(m) {
+  # this ensures that R returns NaN for negative determinants, to mimic C
+  out <- determinant(m, logarithm = TRUE)
+  if(out$sign == 1) return(out$modulus) else return(NaN)
+}

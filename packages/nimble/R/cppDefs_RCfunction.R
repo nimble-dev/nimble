@@ -3,11 +3,12 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                              contains = 'cppFunctionDef',
                              fields = list(
                                  SEXPinterfaceFun = 'ANY',
-                                 SEXPinterfaceCname = 'character',
+                                 SEXPinterfaceCname = 'ANY',	#character
                                  RCfunProc = 'ANY' ## a RCfunProcessing object
                                  ), 
                              methods = list(
                                  initialize = function(...) {
+                                 	 SEXPinterfaceCname <<- character()
                                      Hincludes <<- c(Hincludes,
                                                      nimbleIncludeFile("NimArr.h"),
                                                      "<Rinternals.h>",

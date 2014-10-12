@@ -43,7 +43,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     as.numeric = 'sizeUnaryCwise',
                     setAll = 'sizeOneEigenCommand'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
-               makeCallList(c('isnan','!','ISNA'), 'sizeScalarRecurse'),
+               makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_ddirch'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
                makeCallList(c('calculate', 'getLogProb', 'decide', 'size', 'getsize'), 'sizeScalar'),
@@ -679,6 +679,16 @@ sizeScalar <- function(code, symTab, typeEnv) {
 sizeScalarRecurse <- function(code, symTab, typeEnv) {
     ## use something different for distributionFuns
     asserts <- recurseSetSizes(code, symTab, typeEnv)
+
+    ## This just forces any argument expression to be lifted.  Can we life only things to be eigenized?
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(!code$args[[i]]$isName) {
+                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+            }
+        }
+    }
+    
     code$nDim <- 0
     outputType <- scalarOutputTypes[[code$name]]
     if(is.null(outputType)) code$type <- 'double'

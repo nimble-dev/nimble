@@ -4,32 +4,34 @@ projectNameCreator <- labelFunctionCreator('P')
 
 nfCompilationInfoClass <- setRefClass('nfCompilationInfoClass',
                                       fields = list(
-                                          nfProc = 'ANY',      ## an nfProcessing object 
+                                          nfProc = 		'ANY',      ## an nfProcessing object 
                                           nfGenerator = 'ANY', ## a nfGenerator, which is a function with special stuff in its environment
                                           cppDef = 'ANY',       ## a cppNimbleFunctionClass object
                                           labelMaker = 'ANY',    ## a label maker function
-                                          virtual = 'logical',
-                                          RinitTypesProcessed = 'logical', ## setupTypesForUsingFunction() 
-                                          Rcompiled = 'logical',
-                                          written = 'logical',
-                                          cppCompiled = 'logical',
-                                          loaded = 'logical',
-                                          fromModel = 'logical',
-                                          Rinstances = 'list'
+                                          virtual =  'ANY',		#'logical',
+                                          RinitTypesProcessed = 'ANY',		# 'logical', ## setupTypesForUsingFunction() 
+                                          Rcompiled =  'ANY',		#'logical',
+                                          written =  'ANY',		#'logical',
+                                          cppCompiled =  'ANY',		#'logical',
+                                          loaded =  'ANY',		#'logical',
+                                          fromModel =  'ANY',		#'logical',
+                                          Rinstances =  'ANY'		#'list'
                                           ),
                                       methods = list(
+                                      		initialize = function(...){Rinstances <<- list(); callSuper(...)},
                                           addRinstance = function(nfi) {Rinstances[[ length(Rinstances)+1 ]] <<- nfi}
                                           ))
 
 mvInfoClass <- setRefClass('mvInfoClass',
                            fields = list(
                                mvSpec = 'ANY', ## a custom modelValues class
-                               cppClassName = 'character',
+                               cppClassName =  'ANY',		#'character',
                                cppClass = 'ANY', ## a cppModelValuesClass object,
-                               fromModel = 'logical',
-                               RmvObjs = 'list'
+                               fromModel =  'ANY',		#'logical',
+                               RmvObjs =  'ANY'		#'list'
                                ),
                            methods = list(
+                           		initialize = function(...){RmvObjs <<- list(); callSuper(...)},
                                addRmv = function(Rmv) RmvObjs[[length(RmvObjs)+1]] <<- Rmv))
 
 RCfunInfoClass <- setRefClass('RCfunInfoClass',
@@ -37,7 +39,7 @@ RCfunInfoClass <- setRefClass('RCfunInfoClass',
                                   nfMethodRCobj = 'ANY', ## an mfMethodRC
                                   RCfunProc     = 'ANY', ## an RCfunProcessing or NULL
                                   cppClass      = 'ANY',  ## an RCfunctionDef or NULL
-                                  fromModel     = 'logical'
+                                  fromModel     =  'ANY'		#'logical'
                                   ))
 
 modelDefInfoClass <- setRefClass('modelDefInfoClass',
@@ -47,26 +49,37 @@ modelDefInfoClass <- setRefClass('modelDefInfoClass',
 
 nimbleProjectClass <- setRefClass('nimbleProjectClass',
                              fields = list(
-                                 RCfunInfos         = 'list', ## a list of RCfunInfoClass objects
-                                 RCfunCppInterfaces = 'list', 
-                                 mvInfos            = 'list', ## a list of mvInfoClass objects
-                                 modelDefInfos      = 'list',
-                                 modelCppInterfaces = 'list',
-                                 models             = 'list',
-                                 nimbleFunctions    = 'list',
-                                 nimbleFunctionCppInterfaces = 'list',
-                                 nfCompInfos        = 'list', ## list of nfCompilationInfoClass objects
-                                 cppProjects        = 'list', ## list of cppProjectClass objects, 1 for each dll to be produced
-                                 dirName            = 'character',
-                                 nimbleLabel        = 'character',
-                                 refClassDefsEnv    = 'environment',
-                                 projectName        = 'character'
+                                 RCfunInfos         =  'ANY',		#'list', ## a list of RCfunInfoClass objects
+                                 RCfunCppInterfaces =  'ANY',		#'list', 
+                                 mvInfos            =  'ANY',		#'list', ## a list of mvInfoClass objects
+                                 modelDefInfos      =  'ANY',		#'list',
+                                 modelCppInterfaces =  'ANY',		#'list',
+                                 models             =  'ANY',		#'list',
+                                 nimbleFunctions    =  'ANY',		#'list',
+                                 nimbleFunctionCppInterfaces =  'ANY',		#'list',
+                                 nfCompInfos        =  'ANY',		#'list', ## list of nfCompilationInfoClass objects
+                                 cppProjects        =  'ANY',		#'list', ## list of cppProjectClass objects, 1 for each dll to be produced
+                                 dirName            =  'ANY',		#'character',
+                                 nimbleLabel        =  'ANY',		#'character',
+                                 refClassDefsEnv    =  'ANY',		#'environment',
+                                 projectName        =  'ANY'		#'character'
                                  ),
                              methods = list(
                                  show = function() {
                                      writeLines(paste0('nimbleProject object'))
                                  },
                                  initialize = function(dir = NULL, name = '') {
+                                 	RCfunInfos <<- list()
+                                 	RCfunCppInterfaces <<- list()
+                                 	mvInfos <<- list()
+                                 	modelDefInfos <<- list()
+                                 	modelCppInterfaces <<- list()
+                                 	models <<- list()
+                                 	nimbleFunctions <<- list()
+                                 	nimbleFunctionCppInterfaces <<- list()
+                                 	nfCompInfos <<- list()
+                                 	cppProjects <<- list()
+                                 	refClassDefsEnv <<- new.env()
                                      dirName <<- if(is.null(dir)) makeDefaultDirName() else dir
                                      if(name == '') projectName <<- projectNameCreator() else projectName <<- name
                                   },
@@ -537,11 +550,13 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          cppProj <- cppProjects[[ generatorName ]]
                                          writeLines('Using previously generated C++ code.  This will not work if the current nimbleFunction specializations use types of modelValues or other nimbleFunctions that have not already been compiled in this project.  If that is the case, you should include these specializiations in the first compilation of the nimbleFunction.  You can compile all the specializations of this nimbleFunction together with reset = TRUE.')
                                      }
-                                     if(!nfCompInfos[[generatorName]]$cppCompiled) {
-                                         cppProj$compileFile(filename)
-                                         nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
+                                     if(!nfCompInfos[[generatorName]]$cppCompiled && control$compileCpp) {
+                                         if(control$compileCpp) {
+                                             cppProj$compileFile(filename)
+                                             nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
+                                         } else writeLines('Skipping compilation because control$compileCpp is FALSE')
                                      } else writeLines('Using previously compiled C++ code.')
-                                     if(!nfCompInfos[[generatorName]]$loaded) {
+                                     if(!nfCompInfos[[generatorName]]$loaded && control$loadSO) {
                                          cppProj$loadSO(filename)
                                          nfCompInfos[[generatorName]]$loaded <<- TRUE
                                      } else writeLines('Using previously loaded compilation unit.')

@@ -3,7 +3,7 @@
 \name{nimbleOptions}
 \alias{nimbleOptions}
 \title{options used for NIMBLE package}
-\format{\preformatted{List of 9
+\format{\preformatted{List of 10
  $ convertSingleVectorsToScalarsInSetupArgs  : logi TRUE
  $ messagesWhenBuildingOrFinalizingCppObjects: logi FALSE
  $ indexDrop                                 : logi TRUE
@@ -13,6 +13,7 @@
  $ verifyConjugatePosteriors                 : logi TRUE
  $ includeCPPdists                           : logi TRUE
  $ processBackwardsModelIndexRanges          : logi FALSE
+ $ prioritizeColonLikeBUGS                   : logi TRUE
 }}
 \usage{
 nimbleOptions

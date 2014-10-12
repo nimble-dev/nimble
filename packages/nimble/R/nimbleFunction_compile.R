@@ -1,10 +1,10 @@
 virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                    fields = list(
                                        name = 'ANY', ## character
-                                       nfGenerator = 'function',
-                                       compileInfos = 'list', ## A list of RCfunctionCompileClass objects
+                                       nfGenerator =  'ANY',		#'function',
+                                       compileInfos =  'ANY',		#'list', ## A list of RCfunctionCompileClass objects
                                        origMethods = 'ANY',
-                                       RCfunProcs = 'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
+                                       RCfunProcs =  'ANY',		#'list', ## A list of RCfunProcessing  or RCvirtualFunProcessing objects
                                       ## RCfuns = 'list', ## A list of RCfun objects
                                        cppDef = 'ANY'
                                        ),
@@ -18,6 +18,9 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
                                        initialize = function(f = NULL, className, virtual = TRUE) {
+                                       		compileInfos <<- list()
+                                       		RCfunProcs <<- list()
+                                       		
                                            if(!is.null(f)) { ## This allows successful default instantiation by R when defining nfProcessing below -- crazy
                                                ## nfGenerator allowed if it is a nimbleFunctionVirtual
                                                if(is.nf(f) | is.nfGenerator(f)) nfGenerator <<- nf_getGeneratorFunction(f)
@@ -68,19 +71,22 @@ nfProcessing <- setRefClass('nfProcessing',
                             fields = list(
                                 instances = 'ANY',
                                 setupSymTab = 'ANY',
-                                neededTypes = 'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
-                              neededObjectNames = 'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
-                                newSetupOutputNames = 'character',
-                                newSetupCode = 'list',
+                                neededTypes =  'ANY',		#'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
+                              neededObjectNames =  'ANY',		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
+                                newSetupOutputNames =  'ANY',		#'character',
+                                newSetupCode =  'ANY',		#'list',
                                 newSetupCodeOneExpr = 'ANY',
                                 nimbleProject = 'ANY',
-                                inModel = 'logical'
+                                inModel =  'ANY'		#'logical'
                               ),
                           methods = list(
                               show = function() {
                                   writeLines(paste0('nfProcessing object ', name))
                               },
                               initialize = function(f = NULL, className, fromModel = FALSE, project) {
+                              	neededTypes <<- list()
+                              	neededObjectNames <<- character()
+                              	newSetupCode <<- list()
                                   if(!is.null(f)) {
                                       ## in new system, f must be a specialized nf, or a list of them
                                       nimbleProject <<- project
@@ -662,7 +668,7 @@ nfProcessing$methods(replaceOneSimulate = function(code) {
         if(!(nodeNames %in% newSetupOutputNames) ){
             newSetupOutputNames <<- c(newSetupOutputNames, nodeNames)
             ## It is usually redundant to call getDependencies here, but it allows the includeData argument
-            newSetupLine = substitute(NODESNAME <- MODEL$getDependencies(MODEL$getMaps()$nodeNamesLHSall, includeData = SIMDATA), list(NODESNAME = as.name(nodeNames), MODEL = as.name(varName), SIMDATA = simData ) )
+            newSetupLine = substitute(NODESNAME <- MODEL$getDependencies(MODEL$getMaps('nodeNamesLHSall'), includeData = SIMDATA), list(NODESNAME = as.name(nodeNames), MODEL = as.name(varName), SIMDATA = simData ) )
             newSetupCode[[nodeNames]] <<- newSetupLine
         }
     }
@@ -694,7 +700,7 @@ nfProcessing$methods(replaceOneCalcGLP = function(code) {
             nodeNames <- as.character(matchCode[['nodes']])
 
         newName <- paste(varName, nodeNames, 'nodeFxnVector', sep = '_')
-        nodeArg <- substitute(MODEL$getMaps()$nodeNamesLHSall, list(MODEL = code[[2]]) )    
+        nodeArg <- substitute(MODEL$getMaps('nodeNamesLHSall'), list(MODEL = code[[2]]) )    
     } else {## end length(code)==2
         if(length(code) != 3) stop(paste("Error in processing code: unrecognized number of arguments for calculate, simulate or getLogProbs :", deparse(code)))
         newRunCode <- code[1:2]
@@ -930,7 +936,7 @@ nfProcessing$methods(replaceAccessorsOneFunction = function(code) {
 })
 
 singleVarAccessClass <- setRefClass('singleVarAccessClass',
-                                    fields = list(model = 'ANY', var = 'character', useSingleIndex = 'logical'),
+                                    fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
                                     methods = list(
                                         show = function() {
                                             writeLines(paste('singleVarAccess for model',model$name,'to var',var))
@@ -941,8 +947,9 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
     singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
 }
 
+
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
-                                    fields = list(modelValues = 'ANY', var = 'character'),
+                                    fields = list(modelValues = 'ANY', var = 'ANY'),
                                     methods = list(
                                         show = function() {
                                             writeLines(paste('singleModelValuesAccess for model to var',var))

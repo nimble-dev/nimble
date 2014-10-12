@@ -103,10 +103,10 @@ getModelValuesAccessorValues <- function(modelAccessor)
   .Call("getMVAccessorValues", modelAccessor)
 #   Same as above, but for singleModelValuesAccessors
 
-setNodeElement <- function(nodePtr, modelElementPtr, nodeElementName)
-	.Call("setNodeModelPtr", nodePtr, modelElementPtr, as.character(nodeElementName) ) 
-#	This function initializes a pointer to a model element for a node function. The nodeElementName must
-#	match the namedObjects name for the element in the nodeFunction.
+# setNodeElement <- function(nodePtr, modelElementPtr, nodeElementName)
+# 	.Call("setNodeModelPtr", nodePtr, modelElementPtr, as.character(nodeElementName) ) 
+# #	This function initializes a pointer to a model element for a node function. The nodeElementName must
+# #	match the namedObjects name for the element in the nodeFunction.
 
 	
 newNodeFxnVec <- function(size = 0) 

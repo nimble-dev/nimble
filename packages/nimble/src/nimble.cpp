@@ -13,7 +13,7 @@
 
 R_CallMethodDef CallEntries[] = {
  {"getModelValuesPtrFromModel", (DL_FUNC) &getModelValuesPtrFromModel, 1},
- FUN(setNodeModelPtr, 3),
+// FUN(setNodeModelPtr, 3),
  FUN(getAvailableNames, 1),
  FUN(getMVElement, 2),
  FUN(setMVElement, 3),
@@ -41,7 +41,7 @@ R_CallMethodDef CallEntries[] = {
  CFUN(setPtrVectorOfPtrs, 3),
  CFUN(setOnePtrVectorOfPtrs, 3),
  CFUN(setDoublePtrFromSinglePtr, 2),
- CFUN(setSinglePtrFromSinglePtr, 2),
+// CFUN(setSinglePtrFromSinglePtr, 2),
 // FUN(newModelValues, 1),
  {NULL, NULL, 0}
 };
