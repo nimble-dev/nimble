@@ -23,6 +23,6 @@ cube <- function(x) x^3
 inprod <- function(v1, v2) sum(v1 * v2)
 logdet <- function(m) {
   # this ensures that R returns NaN for negative determinants, to mimic C
-  out <- determinant(m, log = TRUE)
+  out <- determinant(m, logarithm = TRUE)
   if(out$sign == 1) return(out$modulus) else return(NaN)
 }
