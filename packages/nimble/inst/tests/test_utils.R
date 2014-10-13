@@ -123,7 +123,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   
   vars <- Rmodel$getDependencies(Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE), stochOnly = TRUE, includeData = FALSE, downstream = TRUE)
   vars <- unique(removeIndexing(vars))
-  mcmcspec$addMonitors(vars)
+  mcmcspec$addMonitors(vars, print = FALSE)
   
   Rmcmc <- buildMCMC(mcmcspec)
   if(doCpp) {
