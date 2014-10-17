@@ -1,0 +1,50 @@
+Notes from half-day retreat Aug 27, 2014
+Attending: de Valpine, Turek, Anderson-Bergman, Paciorek, Temple Lang, Bodik (partial)
+
+Big picture items:
+
+Logs from Gary
+(1) Installation
+Efficiency
+        Profiling
+        Improvement
+Functionality
+Algorithms
+User base devel/user support
+     education, benchmarks, demos, webinar
+Establish release cycles
+(3) Papers
+(2) Future funding 
+    DiffEq
+    parallelization/big data
+    auto-diff
+Testing
+Rstudio bug/support
+(4) Get on CRAN
+Provide example algo package that depends on NIMBLE
+
+Functionality: 
+
+more dimensions
+(1) stoch indexing
+(1) multivar updating in MCMC
+(1) details of current implementation/bugs
+user-defined dists and fxns (in BUGS code)
+use of distribution fxns in NIMBLE
+processing of NIMBLE function args flexibly
+revisit `$` and nimbleFunction$run and model$simulate
+auto-diff
+(1/2) censoring/truncation, q&p fxns
+linear algebra (flesh out)
+graph querying
+optim() and integrate() in NIMBLE
+general external C wrapper
+
+Algo dvpt:
+
+core MCMC (multivar)
+     positive RVs, asymmetric proposals
+MCEM - convergence criteria
+PF - fix up
+PMCMC
+LaPlace

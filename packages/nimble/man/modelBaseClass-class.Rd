@@ -41,7 +41,8 @@ Details: The return value will be NULL when the input node does not appear in a 
 
 \item{\code{getDependencies(nodes, omit = character(), self = TRUE,
   determOnly = FALSE, stochOnly = FALSE, includeData = TRUE,
-  dataOnly = FALSE, includeRHSonly = FALSE, downstream = FALSE)}}{Returns a character vector of the nodes dependent upon the input argument nodes, sorted topoloigically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
+  dataOnly = FALSE, includeRHSonly = FALSE, downstream = FALSE,
+  returnType = "names", returnScalarComponents = FALSE)}}{Returns a character vector of the nodes dependent upon the input argument nodes, sorted topoloigically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
 
 Arguments:
 
@@ -63,6 +64,10 @@ includeRHSonly: Logical argument specifying whether to include right-hand-side-o
 
 downstream: Logical argument specifying whether the downward search through the model hierarchical structure should continue beyond the first and subsequent stochastic nodes encountered, hence returning all nodes downstream of the input nodes.  Default is FALSE.
 
+returnType: Character argument specific type object returned. Options are 'names' (returns character vector) and 'ids' (returns numeric graph IDs for model)
+
+returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. 'x[1:2]') or should break down into scalar componenets (i.e. 'x[1]' and 'x[2]')
+
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.}
 
 \item{\code{getDownstream(...)}}{Identical to getDependencies(..., downstream = TRUE)
@@ -71,7 +76,8 @@ Details: See documentation for member method getDependencies.}
 
 \item{\code{getNodeNames(determOnly = FALSE, stochOnly = FALSE, includeData = TRUE,
   dataOnly = FALSE, includeRHSonly = FALSE, topOnly = FALSE,
-  latentOnly = FALSE, endOnly = FALSE)}}{Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
+  latentOnly = FALSE, endOnly = FALSE, returnType = "names",
+  returnScalarComponents = FALSE)}}{Returns a character vector of all node names in the model, in topologically sorted order.  A variety of logical arguments allow for flexible subsetting of all model nodes.
 
 Arguments:
 
@@ -91,13 +97,19 @@ latentOnly: Logical argument specifying whether to return only latent (mid-level
 
 endOnly: Logical argument specifying whether to return only end nodes from the hierarchical model structure.
 
+returnType: Character argument specific type object returned. Options are 'names' (returns character vector) and 'ids' (returns numeric graph IDs for model)
+
+returnScalar Componenets: Logical argument specifying whether multivariate nodes should return full node name (i.e. 'x[1:2]') or should break down into scalar componenets (i.e. 'x[1]' and 'x[2]')
+
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as 'data'.}
 
-\item{\code{getVarNames(logProb = FALSE)}}{Returns the names of all variables in a model, optionally including the logProb variables
+\item{\code{getVarNames(logProb = FALSE, nodes)}}{Returns the names of all variables in a model, optionally including the logProb variables
 
 Arguments:
 
-logProb: Logical argument specifying whether or not to include the logProb variables.  Default is FALSE.}
+logProb: Logical argument specifying whether or not to include the logProb variables.  Default is FALSE.
+
+nodes: An optional character vector supplying a subset of nodes for which to extract the variable names and return the unique set of variable names}
 
 \item{\code{isData(nodeNames)}}{Returns a vector of logical TRUE / FALSE values, corresponding to the 'data' flags of the input node names. 
 

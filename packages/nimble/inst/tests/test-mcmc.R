@@ -2,8 +2,32 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of default MCMC")
 
-### TODO: add in the special cases for leuk,salm,air,jaw,dipper
+### TODO: add in the special cases for dipper
 
+if(FALSE) { # template for running JAGS for comparison
+  require(R2jags)
+    dir = system.file(file.path('classic-bugs', 'vol2', 'air'), package = 'nimble')
+  data = new.env(); inits = new.env()
+  source(file.path(dir, 'air-data.R'), data)
+  source(file.path(dir, 'air-init.R'), inits)
+  data = as.list(data)
+  inits = list(as.list(inits))
+  out1 <- jags(data = data, inits = inits,
+               parameters.to.save = c('X','theta'), n.chains = 1,
+               n.iter = 100000, n.burnin = 50000, n.thin = 1, model.file = file.path(dir, 'air.bug'),
+               DIC = FALSE, jags.seed = 0)
+  out <- as.mcmc(out1)
+}
+
+if(FALSE) {
+allModels <- c(# vol1
+               'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats', 'seeds',
+               # 'bones',
+               # vol2
+               'dugongs')
+
+sapply(allModels, test_mcmc, numItsC = 1000)
+}
 
 ### Beginning of actual tests
 
@@ -31,20 +55,15 @@ test_mcmc('pump', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
 test_mcmc('rats', numItsC = 1000, resampleData = TRUE)
-# 93.8% coverage; looks fine
+# 93.8% coverage; looks fine and compares well to JAGS
+# however in resampleData, one of the taus wildly misses
+
+test_mcmc('seeds', numItsC = 1000, resampleData = TRUE)
+# fine
 
 test_mcmc('dugongs', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
-if(FALSE) {
-allModels <- c(# vol1
-               'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
-               # 'bones',
-               # vol2
-               'dugongs')
-
-sapply(allModels, test_mcmc, numItsC = 1000)
-}
 
 test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
@@ -52,11 +71,13 @@ test_mcmc('epil', model = 'epil2.bug', inits = 'epil-inits.R',
 
 test_mcmc('epil', model = 'epil3.bug', inits = 'epil-inits.R',
               data = 'epil-data.R', numItsC = 1000, resampleData = TRUE)
-# same deal as epil2.bug
+# looks ok
 
 test_mcmc('seeds', model = 'seedsuni.bug', inits = 'seeds-init.R',
               data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine - intervals for b's seem a bit large but probably ok
+# particularly since default seeds.bug seems fine
+# results compared to JAGS look fine
 test_mcmc('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
               data = 'seeds-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine - intervals for b's seem a bit large but probably ok
@@ -64,33 +85,63 @@ test_mcmc('seeds', model = 'seedssig.bug', inits = 'seeds-init.R',
 test_mcmc('birats', model = 'birats1.bug', inits = 'birats-inits.R',
               data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # seems fine
+
 test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
               data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # seems fine
-if(FALSE) { # don't run w/ Wish conj issue
-  test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
+
+test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
             data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
-}
+# looks fine now that values() returns in order
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
-# hmm - resampleData gives very large CIs - need to look into this
+# resampleData gives very large magnitude betas because beta[1],beta[2] are not
+# actually topNodes because of (weak) dependence on tau, and
+# are simulated from their priors to have large magnitude values
+
+# rework ice example so that beta[1] and beta[2] will be top nodes
+system(paste("sed 's/tau\\*1.0E-6/1.0E-6/g'", system.file('classic-bugs','vol2','ice','icear.bug', package = 'nimble'), ">", file.path(tempdir(), "icear.bug"))) 
+test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE)
+# looks fine
 
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
-# have not run beetles yet
+# getting warning; deterministic model node is NA or NaN in model initialization
+# weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
+
+
+system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
+system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
+# need nimbleStep in data block as we no longer have step
+system(paste("sed -i -e 's/step/nimbleStep/g'", file.path(tempdir(), "leuk.bug"))) 
+test_mcmc(model = file.path(tempdir(), "leuk.bug"), inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
+          results = list(mean = list(beta = 1.58), sd = list(beta = 0.43)),
+          resultsTolerance = list(mean = list(beta = 0.02), sd = list(beta = 0.02)))
+
+system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug"))) 
+system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
+test_mcmc(model = file.path(tempdir(), "salm.bug"), inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000)
+# looks good compared to JAGS
+
+system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
+system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug"))) 
+test_mcmc(model = file.path(tempdir(), "air.bug"), inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000)
+# theta[2] posterior is a bit off from JAGS - would be worth more investigation
 
 system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
-# mcmcspec error with looking for mu[1:4] when checking conj of Omega
+# C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
 
-# vectorized version of jaw to try to deal with scalar/vec bug
+
+# vectorized version of jaw to try to deal with scalar/vec bug - not needed now that above works
+if(FALSE) {
 model <- function() {
   for (i in 1:N) {
      Y[i,1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);  # The 4 measurements for each  
   }                                   # boy are multivariate normal
 
-  mu[1:M] <- beta0 * ones[1:M] + beta1 * age[1:4] - mean(age[1:4])
+  mu[1:M] <- beta0 * ones[1:M] + beta1 * (age[1:4] - mean(age[1:4]));
   beta0.uncentred <- beta0 - beta1 * mean(age[1:4]);
 
   beta0 ~ dnorm(0.0, 0.001); 
@@ -119,6 +170,7 @@ data =list(M=4,N=20, Y = matrix(c(47.8, 46.4, 46.3, 45.1, 47.6, 52.5, 51.2, 49.8
   R = matrix(c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), 4 ,4),
   ones = rep(1, 4))
 test_mcmc(model = model, data = data, inits = inits, numItsC = 1000)
+}
 
   
 test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
@@ -177,7 +229,7 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
             list(type = 'RW_block', control = list(targetNodes = 'x[1]')),
             list(type = 'RW_block', control = list(targetNodes = 'x[2]')),
             list(type = 'RW_block', control = list(targetNodes = 'x[3]'))
-            ), numItsC = 10000)
+            ), removeAllDefaultSamplers = TRUE, numItsC = 10000)
 
 test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
                                        mean = list(x = c(-2/3,0,2/3)),
@@ -253,7 +305,7 @@ code <- BUGScode({
 sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
   c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
 
-test_mcmc(model = code, data = data, exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
+test_mcmc(model = code, exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
 
 ### block sampler on MVN node
 
@@ -317,7 +369,7 @@ code <- modelCode({
 })
 data = list(P = P, mu = mu)
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
           results = list(mean = list(x = mu),
           var = list(x = varr)),
           resultsTolerance = list(mean = list(x = rep(.1,3)),
@@ -336,16 +388,17 @@ Q = solve(matrix(c(3, 1.7, .9, 1.7, 2, .6, .9, .6, 1), nrow = 3))
 a = c(-2, .5, 1)
 B = matrix(rnorm(9), 3)
 
-code <- modelCode({
-  mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
-  y[1:3] ~ dmnorm(asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3]), Q[1:3, 1:3])
-})
-
+##### not currently working - see Perry's email of ~ 10/6/14
 ## code <- modelCode({
 ##   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
-##   y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
-##   y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
+##   y[1:3] ~ dmnorm(asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3]), Q[1:3, 1:3])
 ## })
+
+code <- modelCode({
+  mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
+  y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
+  y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
+})
 
 ## Simplest version of model w/o 'a' and 'B'
 ## a = rep(0,3)
@@ -384,4 +437,43 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
             list(type = 'RW', control = list(targetNode = 'mu[3]'))),
           removeAllDefaultSamplers = TRUE)
 
+### test of conjugate Wishart
 
+set.seed(0)
+
+trueCor <- matrix(c(1, .3, .7, .3, 1, -0.2, .7, -0.2, 1), 3)
+covs <- c(3, 2, .5)
+
+trueCov = diag(sqrt(covs)) %*% trueCor %*% diag(sqrt(covs))
+Omega = solve(trueCov)
+
+n = 20
+R = diag(rep(1,3))
+mu = 1:3
+Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
+M = 3
+data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
+
+code <- modelCode( {
+  for(i in 1:n) {
+    Y[i, 1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);
+  }
+  Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);	
+})
+
+newDf = 4 + n
+newR = R + tcrossprod(Y- mu)
+OmegaTrueMean = newDf * solve(newR)
+
+wishRV <- array(0, c(M, M, 10000))
+for(i in 1:10000) {
+  z <- t(chol(solve(newR))) %*% matrix(rnorm(3*newDf), ncol = newDf)
+  wishRV[ , , i] <- tcrossprod(z)
+}
+OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
+
+test_mcmc(model = code, data = data, seed = 0, numItsC = 1000,
+          results = list(mean = list(Omega = OmegaTrueMean ),
+            sd = list(Omega = OmegaSimTrueSDs)),
+          resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
+            sd = list(Omega = matrix(0.06, M, M))))
