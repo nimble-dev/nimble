@@ -1081,6 +1081,7 @@ nodeVector <- setRefClass(Class = "nodeVector",
 										expandedNodeFunctionNames 
 									else {
 										expandedNodeFunctionNames <<- unique(model$modelDef$maps$graphID_2_nodeFunctionName[origGraphIDs_functions])
+										expandedNodeFunctionNames <<- expandedNodeFunctionNames[expandedNodeFunctionNames != 'DOES_NOT_EXIST']
 										expandedNodeFunctionNames
 										}
 									},
@@ -1089,6 +1090,7 @@ nodeVector <- setRefClass(Class = "nodeVector",
 										expandedNodeValuesNames 
 									else {
 										expandedNodeValuesNames <<- unique(model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values])
+										expandedNodeFunctionNames <<- expandedNodeFunctionNames[expandedNodeFunctionNames != 'DOES_NOT_EXIST']
 										expandedNodeValuesNames
 										}
 									},

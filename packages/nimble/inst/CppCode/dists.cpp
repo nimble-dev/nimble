@@ -274,8 +274,10 @@ double dmulti(int* x, int size, double* prob, int K, int give_log) // Calling fu
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   double dens = lgammafn(size + 1);
-  for(int i = 0; i < K; i++) 
+  for(int i = 0; i < K; i++) {
+   	if(x[i] != 0 & prob[i] != 0)
     dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
+  }
   return give_log ? dens : exp(dens);
 }
 
