@@ -388,7 +388,8 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         vPtrNames <- 	paste0('.', cppNames, '_Ptr')	
         for(vn in seq_along(cppNames) ){
 #            vPtrName <- paste(".", vn, "_Ptr", sep = "")
-            eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, cppNames[vn]), list(.DUMMY = as.name(vPtrNames[vn]) ) ) ) 
+#            eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, cppNames[vn]), list(.DUMMY = as.name(vPtrNames[vn]) ) ) ) 
+            .self[[vPtrNames[vn]]] <- newObjElementPtr(.basePtr, cppNames[vn])
             #.self[[vPtrName]] <- newObjElementPtr(.basePtr, vn)
         }
         if(!missing(nfObject)) {
