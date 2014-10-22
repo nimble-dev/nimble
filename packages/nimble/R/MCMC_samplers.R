@@ -187,11 +187,12 @@ sampler_RW_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, control) {
         ###  control list extraction  ###
-        targetNodes   <- control$targetNodes
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
-        propCov       <- control$propCov
+        targetNodes    <- control$targetNodes
+        adaptive       <- control$adaptive
+        adaptScaleOnly <- control$adaptScaleOnly
+        adaptInterval  <- control$adaptInterval
+        scale          <- control$scale
+        propCov        <- control$propCov
         ###  node list generation  ###
         targetNodes_asScalars <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(targetNodes)
@@ -244,10 +245,12 @@ sampler_RW_block <- nimbleFunction(
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
-            declare(newValues, double(1, d))
-            getValues(newValues, model, targetNodes)
-            statSums  <<- statSums + asRow(newValues)
-            statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
+            if(!adaptScaleOnly) {
+                declare(newValues, double(1, d))
+                getValues(newValues, model, targetNodes)
+                statSums  <<- statSums + asRow(newValues)
+                statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
+            }
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
@@ -258,14 +261,16 @@ sampler_RW_block <- nimbleFunction(
                 adaptFactor <- my_calcAdaptationFactor(acceptanceRate)
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
-                gamma1 <- nfVar(my_calcAdaptationFactor, 'gamma1')
-                empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
-                propCov <<- propCov + gamma1 * (empirCov - propCov)
-                chol_propCov <<- chol(propCov)
+                if(!adaptScaleOnly) {
+                    gamma1 <- nfVar(my_calcAdaptationFactor, 'gamma1')
+                    empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
+                    propCov <<- propCov + gamma1 * (empirCov - propCov)
+                    chol_propCov <<- chol(propCov)
+                    statSums  <<- statSums  * 0
+                    statProds <<- statProds * 0      ##  setAll(statProds, 0)    ## setAll() doesn't work in R, and doesn't work for vectors (only works for dim=2 objects)
+                }
                 timesRan <<- 0
                 timesAccepted <<- 0
-                statSums  <<- statSums  * 0
-                statProds <<- statProds * 0      ##  setAll(statProds, 0)    ## setAll() doesn't work in R, and doesn't work for vectors (only works for dim=2 objects)
             }
         },
         
