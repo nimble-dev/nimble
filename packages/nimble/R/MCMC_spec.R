@@ -3,6 +3,7 @@
 
 controlDefaultList <- list(
     adaptive = TRUE,
+    adaptScaleOnly = FALSE,
     adaptInterval = 200,
     scale = 1,
     propCov = 'identity',
