@@ -1,6 +1,10 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (10/23/14) expansion of RHSonly nodes into their scalar components (this is done by default for all RHSonly nodes) causes a huge increase in the time for building a modelDef, when RHSonly nodes include a large, constant matrix.  e.g. NxN for N=200, takes a very long time.  Might consider not fully expaninds RHSonly nodes to their components.  Not sure why this was important to do, in retrospect (DT).
+
+* (10/23/14) Interested in having nimble$unload() available, since bumping up against the max number of dynamically loaded libraries in R (100?).  This hampers any big-scale automation with NIMBLE.
+
 * (10/5/14) we don't detect conjugacy when we have a scalar node w/ a N prior that is in the mean for a MVN dependent node (e.g. beta0 in 'jaw')
 
 * (10/1/14) Chris requests something like getVars() that returns all the variable names in a model or a subset of variables if one passes in a set of nodes
