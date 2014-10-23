@@ -172,42 +172,6 @@ calcAdaptationFactor <- nimbleFunction(
 
 
 
-## covToCor <- nimbleFunction(
-##     setup = function(d) {},
-##     run = function(cov = double(2)) {
-##         declare(tauMatrix, double(2, c(d,d)))
-##         for(i in 1:d) {
-##             for(j in 1:d) {
-##                 tauMatrix[i,j] <- 0
-##             }
-##             tauMatrix[i,i] <- 1/sqrt(cov[i,i])
-##         }
-##         declare(cor, double(2, c(d,d)))
-##         cor <- tauMatrix %*% cov %*% tauMatrix
-##         returnType(double(2))
-##         return(cor)
-##     }, where = getLoadingNamespace()
-## )
-
-
-## covToSDmatrix <- nimbleFunction(
-##     setup = function(d) {},
-##     run = function(cov = double(2)) {
-##         declare(sdMatrix, double(2, c(d,d)))
-##         for(i in 1:d) {
-##             for(j in 1:d) {
-##                 sdMatrix[i,j] <- 0
-##             }
-##             sdMatrix[i,i] <- sqrt(cov[i,i])
-##         }
-##         returnType(double(2))
-##         return(sdMatrix)
-##     }, where = getLoadingNamespace()
-## )
-
-
-
-
 RHSonlyInit_virtual <- nimbleFunctionVirtual()
 RHSonlyInit <- nimbleFunction(
     contains = RHSonlyInit_virtual,
@@ -231,8 +195,6 @@ mcmcNodeInit <- nimbleFunction(
 			isStoch = TRUE
 		else if(type == 'determ')
 			isDeterm = TRUE
-#        isDeterm  <- if(node %in% model$getMaps('nodeNamesDeterm') )  TRUE else FALSE
-#        isStoch   <- if(node %in% model$getMaps('nodeNamesStoch') )   TRUE else FALSE
     },
     run = function() {
         if(isDeterm) {
@@ -253,20 +215,6 @@ mcmcNodeInit <- nimbleFunction(
     }, where = getLoadingNamespace()
 )
 
-
-## possibly obsolete, using the new (0, current) method for calculaating coefficients and offsets  -DT
-# calcCoeffAndOffset <- nimbleFunction(
-#     setup = TRUE,
-#     run = function(x1=double(), x2=double(), y1=double(), y2=double()) {
-#         coeff <- (y2-y1) / (x2-x1)
-#         offset <- y1 - coeff*x1
-#         declare(coeffAndOffset, double(1,2))
-#         coeffAndOffset[1] <- coeff
-#         coeffAndOffset[2] <- offset
-#         returnType(double(1))
-#         return(coeffAndOffset)
-#     }, where = getLoadingNamespace()
-# )
 
 
 codeBlockClass <- setRefClass(
@@ -331,3 +279,52 @@ mcmc_findControlListNamesInCode <- function(code) {
 }
 
 
+
+
+## possibly obsolete, using the new (0, current) method for calculaating coefficients and offsets  -DT
+# calcCoeffAndOffset <- nimbleFunction(
+#     setup = TRUE,
+#     run = function(x1=double(), x2=double(), y1=double(), y2=double()) {
+#         coeff <- (y2-y1) / (x2-x1)
+#         offset <- y1 - coeff*x1
+#         declare(coeffAndOffset, double(1,2))
+#         coeffAndOffset[1] <- coeff
+#         coeffAndOffset[2] <- offset
+#         returnType(double(1))
+#         return(coeffAndOffset)
+#     }, where = getLoadingNamespace()
+# )
+
+
+## covToCor <- nimbleFunction(
+##     setup = function(d) {},
+##     run = function(cov = double(2)) {
+##         declare(tauMatrix, double(2, c(d,d)))
+##         for(i in 1:d) {
+##             for(j in 1:d) {
+##                 tauMatrix[i,j] <- 0
+##             }
+##             tauMatrix[i,i] <- 1/sqrt(cov[i,i])
+##         }
+##         declare(cor, double(2, c(d,d)))
+##         cor <- tauMatrix %*% cov %*% tauMatrix
+##         returnType(double(2))
+##         return(cor)
+##     }, where = getLoadingNamespace()
+## )
+
+
+## covToSDmatrix <- nimbleFunction(
+##     setup = function(d) {},
+##     run = function(cov = double(2)) {
+##         declare(sdMatrix, double(2, c(d,d)))
+##         for(i in 1:d) {
+##             for(j in 1:d) {
+##                 sdMatrix[i,j] <- 0
+##             }
+##             sdMatrix[i,i] <- sqrt(cov[i,i])
+##         }
+##         returnType(double(2))
+##         return(sdMatrix)
+##     }, where = getLoadingNamespace()
+## )

@@ -352,13 +352,16 @@ sampler_slice <- nimbleFunction(
         width         <- control$sliceWidth
         maxSteps      <- control$sliceMaxSteps
         ###  node list generation  ###
+        targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
+        if(length(targetNodeAsScalar) > 1)     stop(paste0('more than one targetNode: ', targetNode, '; cannot use slice sampler'))
+        targetNodeFunction <- model$expandNodeNames(targetNode)
         calcNodes <- model$getDependencies(targetNode)
         ###  numeric value generation  ###
         widthOriginal <- width
         timesRan      <- 0
         timesAdapted  <- 0
         sumJumps      <- 0
-        discrete      <- model$getNodeInfo()[[targetNode]]$isDiscrete()
+        discrete      <- model$getNodeInfo()[[targetNodeFunction]]$isDiscrete()
     },
     
     run = function() {
@@ -398,9 +401,7 @@ sampler_slice <- nimbleFunction(
     methods = list(
         
         setAndCalculateTarget = function(value = double()) {
-            ##print('value = ', value)
             if(discrete)     value <- floor(value)
-            ##print('floor(value) = ', value)
             model[[targetNode]] <<- value
             lp <- calculate(model, calcNodes)
             returnType(double())
