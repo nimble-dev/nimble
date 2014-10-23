@@ -19,7 +19,10 @@ samplerSpec <- setRefClass(
         type    = 'ANY',
         control = 'ANY'),
     methods = list(
-    	initialize =function(...){control <<- list(); callSuper(...)},
+    	initialize =function(...) {
+            control <<- list()
+            callSuper(...)
+        },
         buildSampler = function(model, mvSaved) {
             samplerNfName <- paste0('sampler_', type)
             eval(call(samplerNfName, model=model, mvSaved=mvSaved, control=control))
