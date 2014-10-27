@@ -56,8 +56,11 @@ MCMCsuite <- setRefClass(
         
         ## set in initialize()
         niter = 'numeric',    ## number of MCMC iterations to run    --- ORIGINAL ARGUMENT
-        thin = 'numeric',   ## thinning interval (ORIGINAL ARGUMENT)
-        nkeep = 'numeric',   ## number of samples we'll keep. equal to niter/thin
+        burnin = 'numeric',   ## burn-in period, the number of initial samples to discard, prior to thinning    --- ORIGINAL ARGUMENT
+        thin = 'numeric',   ## thinning interval    --- ORIGINAL ARGUMENT
+
+        ## set in setNkeep()
+        nkeep = 'numeric',   ## number of samples we'll keep. equal to (niter/thin - burnin)
         
         ## setSummaryStats()
         summaryStats = 'character',    ## character vector of parseable summary statistic functions    --- ORIGINAL ARGUMENT
@@ -106,6 +109,7 @@ MCMCsuite <- setRefClass(
                               inits          = list(),
                               monitors       = character(),
                               niter          = 10000,
+                              burnin         = 2000,
                               thin           = 1,
                               summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
                               MCMCs          = c('bugs', 'jags', 'nimble', 'nimble_RW', 'nimble_slice'),
@@ -149,8 +153,11 @@ niter: Number of MCMC iterations to run.
 This applies to all MCMC algorithms in the suite.
 Default value is 10,000.
 
+burnin: Number of initial, post-thinning, MCMC iterations to discard.
+Default value is 2,000.
+
 thin: Thinning interval for the MCMC samples.
-This applies to all MCMC algorithms in the suite.
+This applies to all MCMC algorithms in the suite.  The thinning occurs prior to the burnin samples being discarded.
 Default value is 1.
 
 summaryStats: A character vector, specifying the summary statistics to calculate on the MCMC samples.
@@ -205,8 +212,9 @@ Default value is TRUE.
             setInits(inits)
             setMonitors(monitors)
             niter <<- niter
+            burnin <<- burnin
             thin <<- thin
-            nkeep <<- floor(niter/thin)
+            setNkeep()
             setSummaryStats(summaryStats)
             setMCMCs(MCMCs)
             setMCMCdefs(MCMCdefs)
@@ -247,12 +255,21 @@ Default value is TRUE.
         
         setNiter = function(newNiter) {
             niter <<- newNiter
-            nkeep <<- floor(newNiter/thin)
+            setNkeep()
+        },
+
+        setBurnin = function(newBurnin) {
+            burnin <<- newBurnin
+            setNkeep()
         },
         
         setThin = function(newThin) {
             thin <<- newThin
-            nkeep <<- floor(niter/newThin)
+            setNkeep()
+        },
+
+        setNkeep = function() {
+            nkeep <<- floor(niter/thin) - burnin
         },
         
         setSummaryStats = function(summaryStats) {
@@ -313,7 +330,7 @@ Default value is TRUE.
                                   n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=bugs_directory, program=bugs_program)
             })
             tempArray <- bugs_out$sims.array[, 1, ]        ## must use sims.array
-            samplesArray <- tempArray[, monitorNodesBUGS, drop=FALSE]
+            samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
             addToOutput('bugs', samplesArray, timeResult)
         },
         
@@ -324,7 +341,7 @@ Default value is TRUE.
                 jags_mod <<- jags.model(file=modelFileName, data=BUGSdata, inits=inits, n.chains=1, quiet=FALSE)
                 jags_out <<- coda.samples(model=jags_mod, variable.names=monitorVars, n.iter=niter, thin=thin)
             })
-            samplesArray <- jags_out[[1]][, monitorNodesBUGS, drop=FALSE]
+            samplesArray <- jags_out[[1]][(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
             addToOutput('jags', samplesArray, timeResult)
         },
         
@@ -354,34 +371,9 @@ Default value is TRUE.
                 timeResult <- system.time({ Cmcmc(niter) })
                 CmvSamples <- nfVar(Cmcmc, 'mvSamples')
                 samplesArray <- as.matrix(CmvSamples, varNames = monitorVars)
-                samplesArray <- samplesArray[, monitorNodesNIMBLE, drop=FALSE]
+                samplesArray <- samplesArray[(burnin+1):floor(niter/thin), monitorNodesNIMBLE, drop=FALSE]
                 addToOutput(mcmcTag, samplesArray, timeResult)
             }
-            
-            ### compiling each MCMC individually, and timing each one.  Much nicer, if this could work.....
-            #if(debug) browser()
-            #timeResult <- system.time(Cmodel <<- compileNimble(Rmodel))
-            #output$timing['nimble_compileModel'] <<- timeResult[[3]]
-            #RmcmcFunctionList <<- list()
-            #CmcmcFunctionList <<- list()
-            #for(iMCMC in seq_along(nimbleMCMCs)) {
-            #    mcmcTag <- nimbleMCMCs[iMCMC]
-            #    mcmcDef <- MCMCdefs[[mcmcTag]]
-            #    mcmcspec <- eval(mcmcDef)
-            #    mcmcspec$addMonitors(monitorVars, print = FALSE)
-            #    mcmcspec$setThin(thin)
-            #    Rmcmc <- buildMCMC(mcmcspec)
-            #    timeResult <- system.time({
-            #        Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
-            #        Cmcmc(niter)
-            #    })
-            #    CmvSamples <- nfVar(Cmcmc, 'mvSamples')
-            #    samplesArray <- modelValues2Matrix(CmvSamples, varNames = monitorVars)
-            #    samplesArray <- samplesArray[, monitorNodesNIMBLE]
-            #    addToOutput(mcmcTag, samplesArray, timeResult)
-            #    RmcmcFunctionList[[mcmcTag]] <<- Rmcmc
-            #    CmcmcFunctionList[[mcmcTag]] <<- Cmcmc
-            #}
         },
         
         addToOutput = function(MCMCtag, samplesArray, timeResult) {

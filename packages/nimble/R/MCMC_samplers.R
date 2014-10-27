@@ -457,11 +457,12 @@ sampler_crossLevel <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, control) {
         ###  control list extraction  ###
-        topNodes      <- control$topNodes
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
-        propCov       <- control$propCov
+        topNodes       <- control$topNodes
+        adaptive       <- control$adaptive
+        adaptScaleOnly <- control$adaptScaleOnly
+        adaptInterval  <- control$adaptInterval
+        scale          <- control$scale
+        propCov        <- control$propCov
         ###  node list generation  ###
         topNodes     <- model$expandNodeNames(topNodes)
         lowNodes     <- model$getDependencies(topNodes, self = FALSE, stochOnly = TRUE, includeData = FALSE)
@@ -469,7 +470,7 @@ sampler_crossLevel <- nimbleFunction(
         calcNodes    <- model$getDependencies(c(topNodes, lowNodes))
         ###  nested function and function list definitions  ###
         mvInternal <- modelValues(model)
-        RWblockControl <- list(targetNodes = topNodes, adaptive = adaptive, adaptInterval = adaptInterval, scale = scale, propCov = propCov)
+        RWblockControl <- list(targetNodes = topNodes, adaptive = adaptive, adaptScaleOnly = adaptScaleOnly, adaptInterval = adaptInterval, scale = scale, propCov = propCov)
         topRWblockSamplerFunction <- sampler_RW_block(model, mvInternal, RWblockControl)
         lowConjugateSamplerFunctions <- nimbleFunctionList(sampler_BASE)
         lowConjugateGetLogDensityFunctions <- nimbleFunctionList(getPosteriorDensityFromConjSampler_virtual)
