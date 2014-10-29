@@ -78,17 +78,28 @@ nl_checkVarNamesInModel <- function(model, varNames) {
     if(!all(varNames %in% model$getVarNames(logProb = TRUE)))      stop('all variable names are not in model')
 }
 
+#nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
+#	expandedNames <- model$expandNodeNames(nodeNames)
+#	sortedNames = model$topologicallySortNodes(expandedNames)
+#	if(!includeData){
+#		keepNodes = rep(NA, length(sortedNames) ) 
+#		for(i in seq_along(keepNodes) ) 
+#			keepNodes[i] <- !(model$isData(sortedNames[i]) )
+#		sortedNames <- sortedNames[keepNodes]
+#	}
+#	return(sortedNames)
+#}
+
 nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
-	expandedNames <- model$expandNodeNames(nodeNames)
-	sortedNames = model$topologicallySortNodes(expandedNames)
-	if(!includeData){
-		keepNodes = rep(NA, length(sortedNames) ) 
-		for(i in seq_along(keepNodes) ) 
-			keepNodes[i] <- !(model$isData(sortedNames[i]) )
-		sortedNames <- sortedNames[keepNodes]
-	}
-	return(sortedNames)
+	GIDs <- model$modelDef$nodeName2GraphIDs(nodeNames)
+	sortedIDs <- sort(GIDs)
+	if(includeData == FALSE)
+		sortedIDs = sortedIDs[model$isDataFromGraphID(GIDs)]
+	return(model$modelDef$maps$graphID_2_nodeFunctionName[GIDs])
 }
+
+
+
 
 ## returns a list of variable names, and flat index ranges
 nl_createVarsAndFlatIndexRanges <- function(nodeNames, symtab) {

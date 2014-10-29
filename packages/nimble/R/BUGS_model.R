@@ -125,15 +125,19 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
 
                     										},
 
-                                  expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names') {
+                                  expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
 										                if(returnType == 'names'){
    											              graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
+   											              if(sort)
+   											              	graphID <- sort(graphID)
    											              nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
                                       return(nodeNames)
                                       }
-                                      if(returnType == 'ids')
+                                      if(returnType == 'ids'){
+                                         if(sort)
+                                         	return(sort(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)))
                                          return(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents))
-									                      
+									    }                  
                                       if(returnType == 'nodeVector')
                                       	 return(nodeVector(origNodeNames = nodeNames))	
                                       	 

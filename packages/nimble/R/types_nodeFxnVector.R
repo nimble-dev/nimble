@@ -10,31 +10,18 @@ nodeFunctionVector <- setRefClass(
                   nodes = 'ANY'),
                #   nodeFunctionRefClassObjects = 'ANY'),
     methods = list(
-        initialize = function(model, nodeNames, env = parent.frame()) {
-#            nodeNames <- model$expandNodeNames(nodeNames, env)  # expands nodeNames to fully indexed form, including expanding variables using the symbolTable, and only keep ones in the model
-#            nl_checkNodeNamesInModel(model, nodeNames)           # checks that all nodeNames are present in model
-#            nodeNames <- model$topologicallySortNodes(nodeNames)    # topological sort of nodeNames
-#            nodeFunctionNames <- unique(model$getMaps('nodeName_2_nodeFunctionName')[nodeNames])
-#			if(inherits(nodeNames, 'character'))
-#				nodeNames <-
+        initialize = function(model, nodeNames, excludeData = FALSE, env = parent.frame()) {
 			if(inherits(nodeNames, 'numeric'))
-				nodeNames <- nodeVector(origGraphIDs_functions = nodeNames, model = model)
+				nodeFunctionNames <- unique(model$modelDef$maps$graphID_2_nodeFunctionName[sort(nodeNames)])
 			else if(inherits(nodeNames, 'character'))
-				nodeNames <- nodeVector(origNodeNames = nodeNames, model = model)
-			
-			nodeFunctionNames <- nodeNames$getExpandedFunctionNames()
-
+        	nodeFunctionNames <- model$expandNodeNames(nodeNames, sort = TRUE)
+        	if(excludeData){
+        		nodeIsData <- model$isData(nodeFunctionNames)
+        		nodeFunctionNames[!nodeIsData]
+        	}
             model <<- model
             nodes <<- nodeFunctionNames
-         ##   nodeFunctionRefClassObjects <<- lapply(model$nodeFunctions[nodeFunctionNames], nf_getRefClassObject)
-
         },
-       # getNodeFunctions = function() {  ## We haven't actually needed this.  This will NOT work if the model is a Cmodel 
-       #     if(inherits(nodeFunctionRefClassObjects, 'uninitializedField') ) {
-       #         nodeFunctionRefClassObjects <<- lapply(model$nodeFunctions[nodes], nf_getRefClassObject)
-       #     }
-       #     return(nodeFunctionRefClassObjects)
-       # },
         show = function() cat(paste0('nodeFunctionVector: ', paste(nodes, collapse=', '), '\n'))
     )
 )

@@ -106,8 +106,13 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         },
                                         getSymbolTable = function() {
                                             return(symTab)
+                                        },
+                                        getVarNames = function(includeLogProb = FALSE){
+                                        	if(!includeLogProb)
+                                        		return(varNames)
+                                        	return(varNames[!grepl('logProb_', varNames)])
                                         }
-                                        )
+                                      )
                                     )
 
 
