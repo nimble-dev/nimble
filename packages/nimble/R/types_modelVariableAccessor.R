@@ -26,7 +26,8 @@ modelVariableAccessorVector <- setRefClass(
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
 
-            nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env) 
+       #     nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env) 
+       		nodeNames <- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE)
        # 	expands nodeNames to fully indexed form, including expanding variables using the symbolTable
     
        #    if(logProb){

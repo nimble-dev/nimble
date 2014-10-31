@@ -94,8 +94,8 @@ nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
 	GIDs <- model$modelDef$nodeName2GraphIDs(nodeNames)
 	sortedIDs <- sort(GIDs)
 	if(includeData == FALSE)
-		sortedIDs = sortedIDs[model$isDataFromGraphID(GIDs)]
-	return(model$modelDef$maps$graphID_2_nodeFunctionName[GIDs])
+		sortedIDs = sortedIDs[!model$isDataFromGraphID(GIDs)]
+	return(model$modelDef$maps$graphID_2_nodeFunctionName[sortedIDs])
 }
 
 

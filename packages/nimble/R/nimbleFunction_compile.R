@@ -105,6 +105,16 @@ nfProcessing <- setRefClass('nfProcessing',
                                   }
                               },
                               replaceAccessors = function(){},
+
+
+								##NEW PROCESSING TOOLS.   
+								processKeywords_all = function(){},
+								processKeywords_one = function(){},
+								matchKeywords_all = function(){},
+								matchKeywords_one = function(){},
+
+  
+  
                               doSetupTypeInference_processNF = function() {},
                               makeTypeObject = function() {},
                               replaceCall = function() {},
@@ -187,7 +197,16 @@ nfProcessing <- setRefClass('nfProcessing',
                                   if(debug) browser()
                                   addBaseClassTypes()
                                   
-                                  replaceAccessors()
+                            #      replaceAccessors()
+								
+								
+									##NEW PROCESSING TOOLS.   
+									matchKeywords_all()
+									processKeywords_all()
+
+							#		print(newSetupCode)
+
+
                                   if(debug) browser()
 
                                   makeNewSetupLinesOneExpr()
@@ -719,9 +738,71 @@ nfProcessing$methods(replaceOneCalcGLP = function(code) {
 
 
 
+nfProcessing$methods(processKeywords_all = function(){
+	for(i in seq_along(compileInfos)){
+		compileInfos[[i]]$newRcode <<- processKeywords_one(compileInfos[[i]]$origRcode)
+		}
+})
+
+nfProcessing$methods(processKeywords_one = function(code){
+	cl = length(code)
+	if(cl == 1){
+		if(is.call(code)){
+			if(length(code[[1]]) > 1)	code[[1]] <- processKeywords_one(code[[1]])
+		}
+		return(code)
+	}
+
+	if(length(code[[1]]) == 1)
+		{
+		code <- processKeyword(code, .self)
+		}
+
+	cl = length(code)
+
+  if(is.call(code)) {
+        if(length(code[[1]]) > 1) code[[1]] <- processKeywords_one(code[[1]])
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- processKeywords_one(code[[i]])
+            }
+        }
+    }
+	return(code)
+})
+
+nfProcessing$methods(matchKeywords_all = function(){
+	for(i in seq_along(compileInfos))
+	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
+})
+
+nfProcessing$methods(matchKeywords_one = function(code){
+	cl = length(code)
+	if(cl == 1){
+		if(is.call(code)){
+			if(length(code[[1]]) > 1)	code[[1]] <- matchKeywords_one(code[[1]])
+		}
+		return(code)
+	}
+	if(length(code[[1]]) == 1)
+		code <- matchKeywordCode(code) 
+	if(is.call(code)) {
+        if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_one(code[[1]])
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- matchKeywords_one(code[[i]])
+            }
+        }
+    }
+    return(code)
+})
+
+
+
 nfProcessing$methods(replaceAccessors = function() {
     for(i in seq_along(compileInfos)) {
         compileInfos[[i]]$newRcode <<- replaceAccessorsOneFunction(compileInfos[[i]]$origRcode)
+		print(compileInfos[[i]]$newRcode)
     }
 })
 
@@ -730,15 +811,14 @@ nfProcessing$methods(replaceAccessors = function() {
 ## These are for variables
 ## For nodes we will use m['x[1]'] or m[n]
 nfProcessing$methods(replaceAccessorsOneFunction = function(code) {
-    cl <- length(code)
-
+    cl <- length(code)	
     if(cl==1) {
         if(is.call(code)) { ## Catches a case like A[[i]]() which has length 1 but A[[i]] should be processed
             if(length(code[[1]]) > 1) code[[1]] <- replaceAccessorsOneFunction(code[[1]])
         }
         return(code)
     }
-    if(length(code[[1]]) == 1) {
+    if(length(code[[1]]) == 1) {    	
         charCode1 <- as.character(code[[1]])
         if(charCode1 %in% c('$', '[[')) {
             varExpr <- code[[2]]
