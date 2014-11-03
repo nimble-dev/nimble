@@ -69,23 +69,23 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      writeLines(paste0('nimbleProject object'))
                                  },
                                  initialize = function(dir = NULL, name = '') {
-                                 	RCfunInfos <<- list()
-                                 	RCfunCppInterfaces <<- list()
-                                 	mvInfos <<- list()
-                                 	modelDefInfos <<- list()
-                                 	modelCppInterfaces <<- list()
-                                 	models <<- list()
-                                 	nimbleFunctions <<- list()
-                                 	nimbleFunctionCppInterfaces <<- list()
-                                 	nfCompInfos <<- list()
-                                 	cppProjects <<- list()
+                                 	RCfunInfos <<- new.env()						# list()
+                                 	RCfunCppInterfaces <<- new.env()				# list()
+                                 	mvInfos <<- new.env()							# list()
+                                 	modelDefInfos <<- new.env()						# list()
+                                 	modelCppInterfaces <<- new.env()				# list()
+                                 	models <<- new.env()							# list()
+                                 	nimbleFunctions <<- new.env()					# list()	
+                                 	nimbleFunctionCppInterfaces <<- new.env()		# list()
+                                 	nfCompInfos <<- new.env()						# list()
+                                 	cppProjects <<- new.env()						#list()
                                  	refClassDefsEnv <<- new.env()
                                      dirName <<- if(is.null(dir)) makeDefaultDirName() else dir
                                      if(name == '') projectName <<- projectNameCreator() else projectName <<- name
                                   },
                                  resetFunctions = function() {
                                      ## clear everything except models and nimbleFunctions from models
-                                     for(i in names(mvInfos)) {
+                                     for(i in ls(mvInfos)) {
                                          if(length(mvInfos[[i]]$fromModel) > 0) {
                                              if(!mvInfos[[i]]$fromModel) {
                                                  mvInfos[[i]]$cppClass <<- NULL
@@ -95,7 +95,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                              }
                                          }
                                      }
-                                     for(i in names(RCfunInfos)) {
+                                     for(i in ls(RCfunInfos)) {
                                          if(length(RCfunInfos[[i]]$fromModel) > 0) {
                                              if(!RCfunInfos[[i]]$fromModel) {
                                                  thisName <- RCfunInfos[[i]]$uniqueName
@@ -105,7 +105,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                              }
                                          }
                                      }
-                                     for(i in names(nfCompInfos)) {
+                                     for(i in ls(nfCompInfos)) {
                                          if(length(nfCompInfos[[i]]$fromModel) > 0) {
                                              if(!nfCompInfos[[i]]$fromModel) {
                                                  for(j in seq_along(nfCompInfos[[i]]$Rinstances)) {
@@ -114,7 +114,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                      if(exists('name', envir = thisRCO, inherits = FALSE)) {
                                                          thisname <- thisRCO$name
                                                          nimbleFunctions[[ thisname ]] <<- NULL
-                                                         nimbleFunctionCppInterfaces[ thisname ] <<- NULL
+                                                         nimbleFunctionCppInterfaces[[ thisname ]] <<- NULL
                                                          rm('name', envir = thisRCO)
                                                      }
                                                      thisRCO[['nimbleProject']] <- NULL
@@ -165,7 +165,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          } 
                                          model$nimbleProject <- .self
                                          models[[ model$name ]] <<- model
-                                         modelCppInterfaces[ model$name ] <<- list(NULL)
+                                         modelCppInterfaces[[ model$name ]] <<- new.env()	#list(NULL)
                                      }
                                  },
                                  addNimbleFunction = function(fun, fromModel = FALSE) {
@@ -193,7 +193,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                      nimbleFunctions[[ nf_getRefClassObject(fun)$name ]] <<- fun
                                      nfCompInfos[[generatorName]]$addRinstance(fun)
-                                     nimbleFunctionCppInterfaces[ nf_getRefClassObject(fun)$name ] <<- list(NULL)
+                                     nimbleFunctionCppInterfaces[[ nf_getRefClassObject(fun)$name ]] <<- new.env()		#list(NULL)
                                     
                                      if(!exists('Cname', envir = nf_getRefClassObject(fun), inherits = FALSE)) {
                                          assign('Cname', Rname2CppName(nf_getRefClassObject(fun)$name), envir = nf_getRefClassObject(fun))
@@ -459,7 +459,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      uniqueGeneratorNames <- unique(allGeneratorNames)
                                      if(initialTypeInferenceOnly || returnCppClass) {
                                          ans <- list()
-                                         if(initialTypeInferenceOnly) oldKnownGeneratorNames <- names(nfCompInfos)
+                                         if(initialTypeInferenceOnly) oldKnownGeneratorNames <- ls(nfCompInfos)	#names(nfCompInfos)
                                      } else ans <- vector('list', length(funList))
                                      for(uGN in uniqueGeneratorNames) {
                                          thisBool <- allGeneratorNames == uGN
