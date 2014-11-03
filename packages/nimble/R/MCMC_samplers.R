@@ -66,7 +66,7 @@ sampler_RW <- nimbleFunction(
     run = function() {
         modelLP0 <- getLogProb(model, calcNodes)
         propValue <- rnorm(1, mean = model[[targetNode]], sd = scale)
-      	model[[targetNode]] <<- propValue
+     	model[[targetNode]] <<- propValue
         modelLP1 <- calculate(model, calcNodes)
         logMHR <- modelLP1 - modelLP0
         jump <- decide(logMHR)

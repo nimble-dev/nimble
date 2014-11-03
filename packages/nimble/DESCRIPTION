@@ -52,6 +52,7 @@ Collate: config.R
  nimbleFunction_nodeFunction.R
  nimbleFunction_Rexecution.R
  nimbleFunction_compile.R
+ nimbleFunction_keywordProcessing.R
  types_util.R
  types_symbolTable.R
  types_modelValues.R
