@@ -362,7 +362,10 @@ nimCopyAccess <- function(accessFrom, accessTo,  rowFrom = NA, rowTo = NA){
 
 allNodeNames <- function(object, logProb = FALSE){
 	if(inherits(object, 'modelValuesBaseClass') ) {	
-		all.Names = object$varNames
+		if(!is.null(object$modelDef))
+			all.Names <- ls(object$modelDef$nodeInfo)
+		else
+			all.Names = object$varNames
 		if(logProb == TRUE)
 				return(all.Names)
 		for(i in 1:length(all.Names) ) {
@@ -373,7 +376,7 @@ allNodeNames <- function(object, logProb = FALSE){
 		return(all.Names)	
 		}
 	if(inherits(object, 'modelBaseClass') ) {
-		all.Names = ls(object$vars)
+		all.Names <- object$getNodeNames()	
 		if(logProb == TRUE)
 				return(all.Names)
 		for(i in 1:length(all.Names) ) {
