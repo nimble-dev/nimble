@@ -11,7 +11,7 @@ calc_E_llk_gen = nimbleFunction(
 		declare(sample_LL, double() )
 		declare(mean_LL, double() )
 		declare(nSamples, integer() )
-		setValues(paramValues, model, fixedNodes)
+		values(model, fixedNodes) <<- paramValues
 		if(areFixedDetermNodes){
 			simulate(model, paramDepDetermNodes_fixed)	#	Fills in the deterministic nodes
 			}
@@ -176,7 +176,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         if(burnIn >= m2)
         	stop('mcem quitting: burnIn > m2')
         cmcmc_Latent(1, reset = TRUE)	# To get valid initial values 
-        getValues(theta, cModel, maxNodes)
+        theta <- values(cModel, maxNodes)
         
         for(i in seq_along(theta) ) {
         	if(!(theta[i] >= low_limits[i] & theta[i] <= hi_limits[i]) )

@@ -115,29 +115,29 @@ simulate <- function(model, nodes = NA, includeData = FALSE)
 }
 
 
-##		This function populates a C++ nodeFunctionVector with a list of nodes
+# Fill a vector with flattened values from a set of model nodes
+#
+# Take a vector of node names for a model and fill a vector by concatenating their values.  Works in R and NIMBLE.
+#
+# @param vals        the variable in the calling function to receive the values
+# @param model       a NIMBLE model object, either compiled or uncompiled
+# @param nodes       a vector of node names, allowing index blocks that will be expanded
+#
+# @author NIMBLE development team
+# @export
+# @details
+# Calling \code{getValues(P, model, nodes)} will modify P in the calling function.  This is being deprecated by
+# \code{P <- values(model, nodes)}, but the development syntax of \code{getValues(P, model, nodes)} is still supported.
+#
+# The result P will be the concatenation of values from the nodes requested.  When requested nodes are from matrices or arrays, the values will be flattened into a vector following column-wise order.
+#
+# The reverse of \code{getValues(P, model, nodes)} is \code{setValues(P, model, nodes)}, which is being deprecated by \code{values(model, nodes) <- P}.
+#
+# These functions work in R and in NIMBLE run-time code that can be compiled.
+#
+# @return NULL, but this function works by the side-effect of modifying P in the calling environment.
 
-#' Fill a vector with flattened values from a set of model nodes
-#'
-#' Take a vector of node names for a model and fill a vector by concatenating their values.  Works in R and NIMBLE.
-#'
-#' @param vals        the variable in the calling function to receive the values
-#' @param model       a NIMBLE model object, either compiled or uncompiled
-#' @param nodes       a vector of node names, allowing index blocks that will be expanded
-#'
-#' @author NIMBLE development team
-#' @export
-#' @details
-#' Calling \code{getValues(P, model, nodes)} will modify P in the calling function.  This is being deprecated by
-#' \code{P <- values(model, nodes)}, but the development syntax of \code{getValues(P, model, nodes)} is still supported.
-#'
-#' The result P will be the concatenation of values from the nodes requested.  When requested nodes are from matrices or arrays, the values will be flattened into a vector following column-wise order.
-#'
-#' The reverse of \code{getValues(P, model, nodes)} is \code{setValues(P, model, nodes)}, which is being deprecated by \code{values(model, nodes) <- P}.
-#'
-#' These functions work in R and in NIMBLE run-time code that can be compiled.
-#'
-#' @return NULL, but this function works by the side-effect of modifying P in the calling environment.
+
 getValues <- function(vals, model, nodes)
 	{
 	valsExp = substitute(vals)
@@ -174,27 +174,29 @@ setValuesAccess <- function(input, access){
 	}
 }	
 
-#' Fill a set of nodes in a model from a vector of values
-#'
-#' Take a vector of node names for a model and fill them sequentially from the values in a vector.  Works in R and NIMBLE.
-#'
-#' @param input        a vector of values to be put in the model's nodes
-#' @param model       a NIMBLE model object, either compiled or uncompiled
-#' @param nodes       a vector of node names, allowing index blocks that will be expanded
-#'
-#' @author NIMBLE development team
-#' @export
-#' @details
-#' Calling setValues(P, model, nodes) will place values from P, in order, into the nodes provided for the model.  This is being deprecated by
-#' values(model, nodes) <- P, but the development syntax of setValues(P, model, nodes) is still supported.
-#'
-#' When provided nodes are from matrices or arrays, the values will filled following column-wise order.
-#'
-#' The reverse of setValues(P, model, nodes) is getValues(P, model, nodes), which is being deprecated by P <- values(model, nodes)
-#'
-#' These functions work in R and in NIMBLE run-time code that can be compiled.
-#'
-#' @return NULL, but this function works by the side-effect of modifying the model.
+# Fill a set of nodes in a model from a vector of values
+#
+# Take a vector of node names for a model and fill them sequentially from the values in a vector.  Works in R and NIMBLE.
+#
+# @param input        a vector of values to be put in the model's nodes
+# @param model       a NIMBLE model object, either compiled or uncompiled
+# @param nodes       a vector of node names, allowing index blocks that will be expanded
+#
+# @author NIMBLE development team
+# @export
+# @details
+# Calling setValues(P, model, nodes) will place values from P, in order, into the nodes provided for the model.  This is being deprecated by
+# values(model, nodes) <- P, but the development syntax of setValues(P, model, nodes) is still supported.
+#
+# When provided nodes are from matrices or arrays, the values will filled following column-wise order.
+#
+# The reverse of setValues(P, model, nodes) is getValues(P, model, nodes), which is being deprecated by P <- values(model, nodes)
+#
+# These functions work in R and in NIMBLE run-time code that can be compiled.
+#
+# @return NULL, but this function works by the side-effect of modifying the model.
+
+
 setValues <- function(input, model, nodes){
 	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
 	setValuesAccess(input, access)

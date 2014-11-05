@@ -136,7 +136,7 @@ setAndCalculate <- nimbleFunction(
         calcNodes <- model$getDependencies(targetNodes)
     },
     run = function(targetValues = double(1)) {
-        setValues(targetValues, model, targetNodesAsScalar)
+        values(model, targetNodesAsScalar) <<- targetValues
         lp <- calculate(model, calcNodes)
         returnType(double())
         return(lp)
