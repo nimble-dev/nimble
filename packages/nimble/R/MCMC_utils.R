@@ -247,7 +247,13 @@ codeBlockClass <- setRefClass(
 mcmc_listContentsToStr <- function(ls) {
     ls <- lapply(ls, function(el) if(is.function(el)) 'function' else el)
     ls2 <- list()
-    for(i in seq_along(ls))      if(length(ls[[i]])>0)     ls2[[i]] <- paste0(names(ls)[i], ': ', deparse(ls[[i]], width.cutoff = 500))
+    for(i in seq_along(ls)) {
+        if(length(ls[[i]]) > 0) {
+            deparsedItem <- deparse(ls[[i]])
+            if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
+            ls2[[i]] <- paste0(names(ls)[i], ': ', deparsedItem)
+        }
+    }
     ls2 <- ls2[unlist(lapply(ls2, function(i) !is.null(i)))]
     str <- paste0(ls2, collapse = ',  ')
     str <- gsub('\"', '', str)
