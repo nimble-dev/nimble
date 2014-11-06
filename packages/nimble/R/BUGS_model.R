@@ -501,7 +501,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
         fields = FIELDS,
         methods = list(
             initialize = function(inputList, ...) {
-				nodes <<- list()
+				nodes <<- new.env()		# list()
 				classEnvironment <<- new.env()
 				isDataEnv <<- new.env()
 				nodeFunctions <<- list()

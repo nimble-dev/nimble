@@ -1,6 +1,7 @@
 import(igraph)
 import(methods) 
  useDynLib(nimble, .registration = TRUE) 
+
  export(addNodeFxn)
 export(addSingleModelValuesAccess)
 export(addSingleVarAccess)

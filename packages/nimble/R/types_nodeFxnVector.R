@@ -14,7 +14,7 @@ nodeFunctionVector <- setRefClass(
 			if(inherits(nodeNames, 'numeric'))
 				nodeFunctionNames <- unique(model$modelDef$maps$graphID_2_nodeFunctionName[sort(nodeNames)])
 			else if(inherits(nodeNames, 'character'))
-        	nodeFunctionNames <- model$expandNodeNames(nodeNames, sort = TRUE)
+        		nodeFunctionNames <- model$expandNodeNames(nodeNames, sort = TRUE)
         	if(excludeData){
         		nodeIsData <- model$isData(nodeFunctionNames)
         		nodeFunctionNames[!nodeIsData]
