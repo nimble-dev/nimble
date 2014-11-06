@@ -427,7 +427,13 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 map_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are code, model
 	makeName  = code2Name_fromArgList,
-	
+	makeOtherNames = function(name, argList){
+		output <- character()
+		output[1] = paste0(name, '_strides')
+		output[2] = paste0(name, '_offset')
+		output[3] = paste0(name, '_sizes')
+		return(output)
+	},
 	codeTemplate = quote({
 		VARANDINDICES <- getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
@@ -439,7 +445,7 @@ map_SetupTemplate <- setupCodeTemplateClass(
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(VARACCESSOR = as.name(resultName),
-		NODEVARNAME = as.name(paste0(resultName, '_newVarName')),
+		NODEVARNAME =	argList$nodeExpr,		# as.name(paste0(resultName, '_newVarName')),
 		NEWVARNAME = as.name(paste0(resultName, '_newVarName')),
 		VARANDINDICES = as.name(paste0(resultName, '_varAndIndices')),
 		MODEL = argList$model,

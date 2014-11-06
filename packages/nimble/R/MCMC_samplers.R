@@ -231,8 +231,7 @@ sampler_RW_block <- nimbleFunction(
         
         generateProposalVector = function() {
             declare(origValueVector, double(1, d))
-         #   getValues(origValueVector, model, targetNodes)
-         	origValueVector <- values(model, targetNodes)
+            origValueVector <- values(model, targetNodes)
             ######## propValueVector <- rmnorm(1, mean = origValueVector, chol = chol_propCov * scale)
             ######## propValueVector <- rmnorm(1, mean = origValueVector, sigma = chol_propCov %*% t(chol_propCov) * scale^2, method = 'chol')
             declare(normalVarVector, double(1, d))
@@ -248,8 +247,8 @@ sampler_RW_block <- nimbleFunction(
             if(jump)     timesAccepted <<- timesAccepted + 1
             if(!adaptScaleOnly) {
                 declare(newValues, double(1, d))
-            #    getValues(newValues, model, targetNodes)
-             	newValues <- values(model, targetNodes)
+
+                newValues <- values(model, targetNodes)
                 statSums  <<- statSums + asRow(newValues)
                 statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
             }
