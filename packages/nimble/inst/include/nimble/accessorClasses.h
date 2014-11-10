@@ -212,7 +212,9 @@ extern "C" {
 	SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
 	 
 	SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
-	 
+
+	SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
+  
 }
 void  SingleVA_Finalizer ( SEXP Sv );
 void  SingleMVA_Finalizer ( SEXP Sv );

@@ -393,6 +393,64 @@ SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size){
 	return(R_NilValue);
 }
 
+SEXP getListElement(SEXP list, const char *str){
+	SEXP ans = R_NilValue, names = getAttrib(list, R_NamesSymbol);
+	PROTECT(ans);
+	PROTECT(names);
+	for(int i = 0; i < LENGTH(list); i++){
+		if(strcmp(CHAR(STRING_ELT(names, i) ), str) == 0){
+			ans = VECTOR_ELT(list, i);
+			break;
+		}
+	}
+	UNPROTECT(2);
+	return(ans);
+}
+
+/*
+SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeList){
+	int numNodes = LENGTH(nodeNames);
+	const char* thisName;
+	SEXP thisNodeInfo, thisPtr, basePtrName;
+	PROTECT(basePtrName);
+	PROTECT(thisPtr);
+	PROTECT(thisNodeInfo);
+	SEXP trueObj = PROTECT( ScalarLogical(TRUE) );
+	SEXP indexObj = PROTECT( ScalarInteger(0) );
+	SEXP names = PROTECT( getAttrib(nodeList, R_NamesSymbol) );
+	basePtrName = mkChar(".basePtr");
+	for(int i = 0; i < numNodes; i++){
+		INTEGER(indexObj)[0]++;
+		thisName = CHAR(STRING_ELT(nodeNames, i) );
+		thisNodeInfo = getListElement(nodeList, thisName);
+		thisPtr = findVar(basePtrName, thisNodeInfo );	//Should be correct if nodeInfo is an environment
+//		thisPtr = getListElement(thisNodeInfo, CHAR(basePtrName) );	//Should be correct if nodeInfo is a list
+		thisPtr = addNodeFun(nodeFxnVec, thisPtr, trueObj, indexObj );
+	}
+	UNPROTECT(6);
+	return(R_NilValue);
+}
+*/
+
+SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeEnv){
+	int numNodes = LENGTH(nodeNames);
+	SEXP thisPtr;
+	PROTECT(thisPtr);
+	SEXP thisName = PROTECT(allocVector(STRSXP, 1) );
+	SEXP falseObj = PROTECT( ScalarLogical(FALSE) );
+	SEXP indexObj = PROTECT( ScalarInteger(0) );
+	for(int i = 0; i < numNodes; i++){
+		INTEGER(indexObj)[0]++;
+		thisPtr = getEnvVar_Sindex(nodeNames, nodeEnv, indexObj );
+		if(TYPEOF(thisPtr) != EXTPTRSXP)
+			error("trying to copy a non-existant pointer");
+		thisPtr = addNodeFun(nodeFxnVec, thisPtr, falseObj, indexObj );
+	}
+	UNPROTECT(4);
+	return(R_NilValue);
+}
+
+
 
 void cAddNodeFun(NodeVectorClass* nVPtr, nodeFun* nFPtr, bool addAtEnd, int index){
 	int size = (*nVPtr).nodeFunPtrs.size();
@@ -490,10 +548,6 @@ SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName
 SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index){
 	void* vNVPtr = R_ExternalPtrAddr(nVPtr);
 	void* vNFPtr = R_ExternalPtrAddr(nFPtr);
-	if((vNVPtr == NULL) | (vNFPtr == NULL)){
-		PRINTF("Warning: pointer to null passed to addNodeFun\n");
-		return(R_NilValue);
-	}
 	int cIndex = - 1;
 	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
 	if(cAddAtEnd == FALSE)

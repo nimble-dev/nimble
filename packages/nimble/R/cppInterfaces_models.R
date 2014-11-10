@@ -35,7 +35,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    cppNames = 'ANY',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
                                    ##CnodeFunClasses = 'list',
-                                   compiledModel = 'ANY'
+                                   compiledModel = 'ANY',
+                                   .nodeFxnPointersEnv = 'ANY'
                                    ),
                                methods = list(
                                    show = function() {
@@ -65,6 +66,9 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        for(i in names(Rmodel$nodeFunctions)) {
                                            nodes[[i]] <<- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
                                        }
+                                       .nodeFxnPointersEnv <<- new.env()
+                                       for(nodeName in ls(nodes))
+                                       		.nodeFxnPointersEnv[[nodeName]] <<- nodes[[nodeName]]$.basePtr
                                        ## for(i in seq_along(Rmodel$nodeGenerators)) {
                                        ##     nodeGenName <- names(Rmodel$nodeGenerators)[i]
                                        ##     nfName <- environment(compiledModel$nodeFuns[[nodeGenName]]$Rgenerator)$refName
@@ -161,7 +165,8 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 for(vn in cppNames)
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
-                                                        eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, vn), list(.DUMMY = as.name(vPtrName)) ) ) 
+                                                     	.self[[vPtrName]] <<- newObjElementPtr(.basePtr, vn)
+                                                      #  eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, vn), list(.DUMMY = as.name(vPtrName)) ) ) 
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)

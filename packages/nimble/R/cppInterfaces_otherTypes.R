@@ -65,23 +65,23 @@ populateManyModelValuesAccess <- function(fxnPtr, Robject, manyAccessName){
 	}
 }
 
+#populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
+#	fxnVecPtr = .Call("getModelObjectPtr", fxnPtr, fxnVecName)
+#	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes) )
+#	cNodes <- Robject[[fxnVecName]]$model$CobjectInterface$nodes
+#	countInf <- new.env()
+#	countInf$count <- 0
+#	nodeNames <- Robject[[fxnVecName]]$nodes
+#	nil <- lapply(nodeNames, addNodeFxn_LOOP, nodes = cNodes, fxnVecPtr = fxnVecPtr, countInf = countInf)
+#}
+
 populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
-	fxnVecPtr = .Call("getModelObjectPtr", fxnPtr, fxnVecName)
-	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes) )
-	cNodes <- Robject[[fxnVecName]]$model$CobjectInterface$nodes
-	countInf <- new.env()
-	countInf$count <- 0
-	nodeNames <- Robject[[fxnVecName]]$nodes
-	nil <- lapply(nodeNames, addNodeFxn_LOOP, nodes = cNodes, fxnVecPtr = fxnVecPtr, countInf = countInf)
-#	cModel <- Robject[[fxnVecName]]$model$CobjectInterface	#$.basePtr
-##	allNodePtrs = getNodeFxnPtrs(cModel)
-#	count = 0	
-#	for(node in Robject[[fxnVecName]]$nodes){
-#		count = count + 1
-#		nodeP = cNodes[[node]]$.basePtr ##allNodePtrs[[node]]
-#		addNodeFxn(fxnVecPtr, nodeP, addAtEnd = FALSE, index = count)
-#		}
+	fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
+	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes))	
+	nodePtrsEnv <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointersEnv
+	nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
 }
+
 
 addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
 	countInf$count <- countInf$count + 1
