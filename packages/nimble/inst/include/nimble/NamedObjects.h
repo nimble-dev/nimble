@@ -22,7 +22,23 @@ extern "C" {
   SEXP getAvailableNames(SEXP Sextptr);
 }
 
+class NumberedObjects {
+public:
+	vector<void*> numberedObjects;
+	void* getObjectPtr(int index);
+	void setObjectPtr(int index, void* newPtr);
+	void resize(int size);
+	virtual ~NumberedObjects(){};
+};
 
+extern "C" {
+	SEXP getNumberedObject(SEXP Snp, SEXP index);
+	SEXP setNumberedObject(SEXP Snp, SEXP index, SEXP val);
+	SEXP resizeNumberedObjects(SEXP Snp, SEXP size);
+	SEXP getSizeNumberedObjects(SEXP Snp);
+	SEXP newNumberedObjects();
+}
 
+void numberedObjects_Finalizer(SEXP Snp);
 
 #endif

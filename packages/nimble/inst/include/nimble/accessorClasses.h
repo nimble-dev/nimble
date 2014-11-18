@@ -214,7 +214,7 @@ extern "C" {
 	SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
 
 	SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
-  
+    SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj);
 }
 void  SingleVA_Finalizer ( SEXP Sv );
 void  SingleMVA_Finalizer ( SEXP Sv );

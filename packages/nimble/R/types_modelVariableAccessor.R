@@ -25,16 +25,7 @@ modelVariableAccessorVector <- setRefClass(
                   length = 'ANY' ),		#'numeric'),
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-
-       #     nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env) 
        		nodeNames <- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE)
-       # 	expands nodeNames to fully indexed form, including expanding variables using the symbolTable
-    
-       #    if(logProb){
-       #        nodeNames <- c(nodeNames, makeLogProbName(nodeNames))
-       #        nodeNames <- nl_removeNodeNamesNotInSymbolTable(nodeNames, model$getSymbolTable())
-       #    }
-        	
 			if(logProb){
 	        	logProbNames <- model$modelDef$nodeName2LogProbName(nodeNames)
         		nodeNames <- c(nodeNames, logProbNames)

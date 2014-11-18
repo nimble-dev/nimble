@@ -554,3 +554,142 @@ matchKeywordCode <- function(code){
 		return(matchAndFill.call(thisFunctionMatch, code ) )
 	return(code)
 }
+
+
+
+
+
+
+
+
+
+makeSingleIndexAccessExpr <- function(newName, newNameExpr) {
+    codeNames <- makeSingleIndexAccessCodeNames(newName)
+    subList <- lapply(codeNames, as.name)
+    ans <- substitute( name[MflatIndex], c(list(name = newNameExpr), subList))
+    ans
+}
+
+## want map(name, nDim, offset, sizelist, stridelist)
+## this is a unique case, where sizelist and stridelist are just lists
+## stuck in there
+makeMapAccessExpr <- function(newName, newNameExpr, nDim) { ## newNameExpr not used any more!
+    codeNames <- makeMapSetupCodeNames(newName)
+    subList <- lapply(codeNames, as.name)
+    if(nDim == 0) { ## not sure this can happen
+        sizeExprList <- strideExprList <- list()
+    }
+    if(nDim == 1) {
+        sizeExprList <- list(substitute(Msizes, subList))
+        strideExprList <- list(substitute(Mstrides, subList))
+    }
+    if(nDim >= 2) {
+        sizeExprList <- rep(list( substitute(Msizes[1], subList)), nDim)
+        for(i in 1:nDim) sizeExprList[[i]][[3]] <- i
+        strideExprList <- rep(list( substitute(Mstrides[1], subList)), nDim)
+        for(i in 1:nDim) strideExprList[[i]][[3]] <- i
+    }
+    ans <- substitute(map( name, nDim, Moffset, sizes, strides),
+                      c(subList, list(nDim = nDim, name = newName, sizes = sizeExprList, strides = strideExprList)))
+    ans
+}
+
+determineNdimFromOneCase <- function(model, varAndIndices) {
+    varInfo <- try(model$getVarInfo(as.character(varAndIndices$varName)))
+    if(inherits(varInfo, 'try-error')) browser()
+    varNdim <- varInfo$nDim
+    if(length(varAndIndices$indices) == 0) return(varNdim)
+    if(length(varAndIndices$indices) != varNdim) {
+        stop(paste0('Error, wrong number of dimensions in a node label for ', varAndIndices$varName, '.  Expected ',varNdim,' indices but got ', length(varAndIndices$indices),'.'))
+    }
+    dropNdim <- sum(unlist(lapply(varAndIndices$indices, is.numeric)))
+    return(varNdim - dropNdim)
+}
+
+
+
+## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
+
+varAndIndices2mapParts <- function(varAndIndices, varInfo) {
+    varName <- varAndIndices$name
+    indices <- varAndIndices$indices
+    ## put together offsetExpr, sizeExprs, strideExprs
+    ## need sizes to get strides
+    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
+    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
+        nDim <- varInfo$nDim
+        blockBool <- rep(TRUE, nDim)
+        firstIndexRexprs <- rep(list(1), nDim)
+        targetSizes <- sizes
+    } else {
+        nDim <- length(indices)
+        firstIndexRexprs <- vector('list', nDim)
+        targetSizes <- integer(nDim)
+        blockBool <- rep(FALSE, nDim)
+        for(i in seq_along(indices)) {
+            if(is.blank(indices[[i]])) {
+                blockBool[i] <- TRUE
+                firstIndexRexprs[[i]] <- 1
+                targetSizes[i] <- sizes[i]
+            }
+            else if(is.numeric(indices[[i]])) {
+                firstIndexRexprs[[i]] <- indices[[i]]
+            } else {
+                ## better be :
+                if(indices[[i]][[1]] != ":") stop("error, expecting : here")
+                blockBool[i] <- TRUE
+                firstIndexRexprs[[i]] <- indices[[i]][[2]]
+                targetSizes[i] <- indices[[i]][[3]] - indices[[i]][[2]] + 1
+            }
+        }
+    }
+    strides <- c(1, cumprod(sizes[-length(sizes)]))
+    sourceStrideRexprs <- as.list(strides)
+    targetOffsetRexpr <- makeOffsetRexpr(firstIndexRexprs, sourceStrideRexprs)
+    targetStrides <- strides[blockBool]
+    targetSizes <- targetSizes[blockBool]
+    list(offset = eval(targetOffsetRexpr),
+         sizes = targetSizes,
+         strides = targetStrides)
+}
+
+
+getVarAndIndices <- function(code) {
+    if(is.character(code)) code <- parse(text = code, keep.source = FALSE)[[1]]
+    if(length(code) > 1) {
+        if(code[[1]] == '[') {
+            varName <- code[[2]]
+            indices <- as.list(code[-c(1,2)])
+        } else {
+            stop(paste('Error:', deparse(code), 'is a malformed node label.'))
+        }
+    } else {
+        varName <- code
+        indices <- list()
+    }
+    list(varName = varName, indices = indices)
+}
+
+## This takes the indices field returned by getVarAndIndices and turns it into a matrix
+## e.g. from getVarAndIndices('x[1:3, 2:4]'), we have varName = 'x' and indices = list(quote(1:3), quote(2:4))
+## indexExprs2matrix takes the indices and makes [1 3; 2 4]
+
+varAndIndices2flatIndex <- function(varAndIndices, varInfo) {
+    if(length(varInfo$maxs) == 0) return(1) ## A -1 is done automatically, later, so here we should stay in R's 1-based indexing
+    sizes <- varInfo$maxs
+    strides <- c(1, cumprod(sizes[-length(sizes)]))
+    flatIndex <- 1 + sum((unlist(varAndIndices$indices)-1) * strides)
+    flatIndex
+}
+
+
+makeMapSetupCodeNames <- function(baseName) {
+    list(Mstrides = paste0(baseName, '_strides'),
+         Msizes = paste0(baseName, '_sizes'),
+         Moffset = paste0(baseName, '_offset'))
+}
+
+
+makeSingleIndexAccessCodeNames <- function(baseName) {
+    list(MflatIndex = paste0(baseName, '_flatIndex'))
+}

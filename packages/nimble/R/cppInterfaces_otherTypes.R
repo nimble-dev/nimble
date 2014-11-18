@@ -18,8 +18,7 @@
 # addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, addAtEnd, index)
 # removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll)
 
-
-
+# NumberedObjects 
 
 
 makeCSingleVariableAccessor <- function(rModelPtr, elementName, beginIndex, endIndex){
@@ -75,12 +74,6 @@ populateManyModelValuesAccess <- function(fxnPtr, Robject, manyAccessName){
 #	nil <- lapply(nodeNames, addNodeFxn_LOOP, nodes = cNodes, fxnVecPtr = fxnVecPtr, countInf = countInf)
 #}
 
-populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
-	fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
-	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes))	
-	nodePtrsEnv <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointersEnv
-	nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
-}
 
 
 addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
@@ -88,6 +81,39 @@ addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
 	addNodeFxn(fxnVecPtr, nodes[[x]]$.basePtr, addAtEnd = FALSE, index = countInf$count)
 }
 
+
+getFxnVectorPtr <- function(fxnPtr, fxnVecName)
+	.Call('getModelObjectPtr', fxnPtr, fxnVecName)
+
+populateNodeFxnVec_OLD <- function(fxnPtr, Robject, fxnVecName){
+	fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
+	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes))	
+	nodePtrsEnv <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointersEnv
+	nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
+}
+
+getNamedObjected <- function(objectPtr, fieldName)
+	.Call('getModelObjectPtr', objectPtr, fieldName)
+
+inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs)
+	nil <- .Call('populateNodeFxnVector_byGID', fxnVecPtr, as.integer(gids), numberedPtrs)
+	
+populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
+#	fxnVecPtr <- getFxnVectorPtr(fxnPtr, fxnVecName)
+
+#	fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
+	
+	fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
+	
+	gids <- Robject[[fxnVecName]]$gids
+	numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byGID$.ptr
+
+	# This is not really the most efficient way to do things; eventually 
+	# we want to have nodeFunctionVectors contain just the gids, not nodeNames
+	#gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
+	
+	inner_populateNodeFxnVec(fxnVecPtr, gids, numberedPtrs)
+}
 
 
 # Currently requires: addSingleModelValuesAccess
@@ -166,3 +192,62 @@ addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValu
 removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll = FALSE)
   nil <- .Call("removeModelValuesAccessor", ManyModelValuesAccessPtr, as.integer(index), as.logical(removeAll) ) 
 #   Same as removeNodeFxn, but for ManyModelValuessAccessor
+
+
+
+
+# NumberedObjects is a reference class which contains a pointer to a C++ object. This C++ object
+# stores void pointers. This pointers are indexed by integers and can be accessesed in R via `[` and `[<-`
+# However, the intent is that the pointers will actually be accessed more directly in C++ 
+# At this time, used to store pointers to nodeFunctions, which will allow for fast
+# population of nodeFunctionVectors. They are indexed by graphID's
+numberedObjects <- setRefClass('numberedObjects', fields = c('.ptr' = 'ANY'), 
+	methods = list(
+		initialize = function(){
+			.ptr <<- newNumberedObjects()
+		},
+		getSize = function(){
+			getSize_NumberedObjects(.ptr)
+		},
+		resize = function(size){
+			resize_NumberedObjects(.ptr, size)
+		}
+	)
+)
+
+setMethod('[', 'numberedObjects', function(x, i){
+			getNumberedObject(x$.ptr, i)
+		})
+
+setMethod('[<-', 'numberedObjects', function(x, i, value){
+			assignNumberedObject(x$.ptr, i, value)
+			return(x)
+		})
+
+
+
+newNumberedObjects <- function(){
+	.Call('newNumberedObjects')
+}
+
+getSize_NumberedObjects <- function(numberedObject){
+	.Call('getSizeNumberedObjects', numberedObject)
+}
+
+resize_NumberedObjects <- function(numberedObject, size){
+	nil <- .Call('resizeNumberedObjects', numberedObject, as.integer(size) )
+}
+
+assignNumberedObject <- function(numberedObject, index, val){
+	if(!is(val, 'externalptr'))
+		stop('Attempting to assign a val which is not an externalptr to a NumberedObjects')
+	if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
+		stop('Invalid index')
+	nil <- .Call('setNumberedObject', numberedObject, as.integer(index), val)
+}
+
+getNumberedObject <- function(numberedObject, index){
+	if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
+		stop('Invalid index')
+	.Call('getNumberedObject', numberedObject, as.integer(index))	
+}

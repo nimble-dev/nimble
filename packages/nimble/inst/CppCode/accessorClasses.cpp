@@ -407,30 +407,6 @@ SEXP getListElement(SEXP list, const char *str){
 	return(ans);
 }
 
-/*
-SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeList){
-	int numNodes = LENGTH(nodeNames);
-	const char* thisName;
-	SEXP thisNodeInfo, thisPtr, basePtrName;
-	PROTECT(basePtrName);
-	PROTECT(thisPtr);
-	PROTECT(thisNodeInfo);
-	SEXP trueObj = PROTECT( ScalarLogical(TRUE) );
-	SEXP indexObj = PROTECT( ScalarInteger(0) );
-	SEXP names = PROTECT( getAttrib(nodeList, R_NamesSymbol) );
-	basePtrName = mkChar(".basePtr");
-	for(int i = 0; i < numNodes; i++){
-		INTEGER(indexObj)[0]++;
-		thisName = CHAR(STRING_ELT(nodeNames, i) );
-		thisNodeInfo = getListElement(nodeList, thisName);
-		thisPtr = findVar(basePtrName, thisNodeInfo );	//Should be correct if nodeInfo is an environment
-//		thisPtr = getListElement(thisNodeInfo, CHAR(basePtrName) );	//Should be correct if nodeInfo is a list
-		thisPtr = addNodeFun(nodeFxnVec, thisPtr, trueObj, indexObj );
-	}
-	UNPROTECT(6);
-	return(R_NilValue);
-}
-*/
 
 SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeEnv){
 	int numNodes = LENGTH(nodeNames);
@@ -451,6 +427,19 @@ SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeEnv){
 }
 
 
+SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj){
+	int len = LENGTH(S_GIDs);
+	int* gids = INTEGER(S_GIDs);
+	int index;
+	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
+	NodeVectorClass* nfv = static_cast<NodeVectorClass*>(R_ExternalPtrAddr(SnodeFxnVec) ) ;
+	(*nfv).nodeFunPtrs.resize(len);
+	for(int i = 0; i < len; i++){
+		index = gids[i] - 1;
+		(*nfv).nodeFunPtrs[i] = static_cast<nodeFun*>(numObj->getObjectPtr(index));
+		}
+	return(R_NilValue);
+}
 
 void cAddNodeFun(NodeVectorClass* nVPtr, nodeFun* nFPtr, bool addAtEnd, int index){
 	int size = (*nVPtr).nodeFunPtrs.size();

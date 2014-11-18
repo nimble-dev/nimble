@@ -58,7 +58,7 @@ modelDefClass <- setRefClass('modelDefClass',
                              methods = list(
                                  initialize = function(...){
                                  	name <<- character()
-                                 	dimensionsList <<- list()
+                                 	dimensionsList <<- list() 	
                                  	contexts <<- list()
                                  	declInfo <<- list()
                                  	nodeInfo <<- list()
@@ -843,6 +843,7 @@ modelDefClass$methods(genLogProbVarInfo = function() {
         
         lhsVar <- BUGSdecl$targetVarName
         lhsLogProbVar <- makeLogProbName(lhsVar)
+        
         
         if(varInfo[[lhsVar]]$nDim > 0) {
             if(logProbVarInfo[[lhsLogProbVar]]$nDim != varInfo[[lhsVar]]$nDim)   stop('mismatch in nDim, this should never occur')

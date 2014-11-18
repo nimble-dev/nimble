@@ -36,7 +36,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
                                    ##CnodeFunClasses = 'list',
                                    compiledModel = 'ANY',
-                                   .nodeFxnPointersEnv = 'ANY'
+                                   #.nodeFxnPointersEnv = 'ANY',
+                                   .nodeFxnPointers_byGID = 'ANY'
                                    ),
                                methods = list(
                                    show = function() {
@@ -66,9 +67,15 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        for(i in names(Rmodel$nodeFunctions)) {
                                            nodes[[i]] <<- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
                                        }
-                                       .nodeFxnPointersEnv <<- new.env()
-                                       for(nodeName in ls(nodes))
-                                       		.nodeFxnPointersEnv[[nodeName]] <<- nodes[[nodeName]]$.basePtr
+                                      # .nodeFxnPointersEnv <<- new.env()
+                                       .nodeFxnPointers_byGID <<- new('numberedObjects') 
+                                       maxID = max(modelDef$maps$graphIDs)
+                                       .nodeFxnPointers_byGID$resize(maxID)
+                                       for(nodeName in ls(nodes)){
+                                       	#	.nodeFxnPointersEnv[[nodeName]] <<- nodes[[nodeName]]$.basePtr
+                                       		gID <- modelDef$nodeName2GraphIDs(nodeName)
+                                       		.self$.nodeFxnPointers_byGID[gID] <- nodes[[nodeName]]$.basePtr
+                                       		}
                                        ## for(i in seq_along(Rmodel$nodeGenerators)) {
                                        ##     nodeGenName <- names(Rmodel$nodeGenerators)[i]
                                        ##     nfName <- environment(compiledModel$nodeFuns[[nodeGenName]]$Rgenerator)$refName
