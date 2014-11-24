@@ -19,28 +19,38 @@ modelVariableAccessor <- setRefClass(
 
 modelVariableAccessorVector <- setRefClass(
     Class = 'modelVariableAccessorVector',
-    fields = list(model = 'ANY',
-                  nodes ='ANY', 		#'character',
-                  modelVariableAccessors = 'ANY',
-                  length = 'ANY' ),		#'numeric'),
+    fields = list(model = 	'ANY',
+    			  gids = 	'ANY',
+    			  l_gids = 	'ANY',
+                  length = 	'ANY'
+                  
+                  #nodes ='ANY', 		#'character',
+                  #modelVariableAccessors = 'ANY',
+                   ),		#'numeric'),
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-       		nodeNames <- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE)
-			if(logProb){
-	        	logProbNames <- model$modelDef$nodeName2LogProbName(nodeNames)
-        		nodeNames <- c(nodeNames, logProbNames)
-        	}
-            varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, model$getSymbolTable())  
+        	gids <<- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE, returnType = 'ids')
+        	l_gids <<- numeric(0)
+        	if(logProb)
+        		l_gids <<- model$modelDef$nodeName2LogProbID(nodeNames)
+            length <<- length(gids) + length(l_gids)
+   			model <<- model
+   
+       	#	nodeNames <- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE)
+		#	if(logProb){
+	    #    	logProbNames <- model$modelDef$nodeName2LogProbName(nodeNames)
+        #		nodeNames <- c(nodeNames, logProbNames)
+        #	}
+#            varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, model$getSymbolTable())  
             	# creates a list of variable names, and ranges of the flat index
-            model <<- model
-            nodes <<- nodeNames
-            modelVariableAccessors <<- lapply(varsAndFlatIndexRanges, function(vafir) modelVariableAccessor(model=model, var=vafir$var, first=vafir$ind[1], last=vafir$ind[2], length = vafir$ind[2] - vafir$ind[1] + 1))
+#            model <<- model
+#            nodes <<- nodeNames
+#            modelVariableAccessors <<- lapply(varsAndFlatIndexRanges, function(vafir) modelVariableAccessor(model=model, var=vafir$var, first=vafir$ind[1], last=vafir$ind[2], length = vafir$ind[2] - vafir$ind[1] + 1))
             
             
-            len = 0
-            for(mv in modelVariableAccessors)
-            	len = len + mv$length
-            length <<- len
+ #           len = 0
+ #           for(mv in modelVariableAccessors)
+ #           	len = len + mv$length
         },
         getAccessors = function() return(modelVariableAccessors),
         show = function() cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))
