@@ -1044,7 +1044,12 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){
 	return(output[!is.na(output)])
 })
 
-
+modelDefClass$methods(nodeName2LogProbID = function(nodeName){
+	if(length(nodeName) == 0)
+		return(NULL)
+	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 
+	return(output[!is.na(output)])
+})
 
 parseEvalNumeric <- function(x, env){
 	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
