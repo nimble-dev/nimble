@@ -257,3 +257,52 @@ getNumberedObject <- function(numberedObject, index){
 		stop('Invalid index')
 	.Call('getNumberedObject', numberedObject, as.integer(index))	
 }
+
+
+numberedModelValuesAccessors <- setRefClass('numberedModelValuesAccessors',
+									fields = c('.ptr' = 'ANY'),
+									methods = list(initialize = function(){ 
+										.ptr  <<- .Call('new_SingleModelValuesAccessor_NumberedObjects')
+										},
+										
+										getSize = function(){
+											getSize_NumberedObjects(.ptr)
+										},
+										
+										resize = function(size){
+										resize_NumberedObjects(.ptr, size)
+		}))
+
+setMethod('[', 'numberedModelValuesAccessors', function(x, i){
+			getNumberedObject(x$.ptr, i)
+		})
+
+setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
+			assignNumberedObject(x$.ptr, i, value)
+			return(x)
+		})
+		
+		
+		
+numberedModelVariableAccessors <- setRefClass('numberedModelVariableAccessors',
+									fields = c('.ptr' = 'ANY'),
+									methods = list(initialize = function(){ 
+										.ptr  <<- .Call('new_SingleModelVariablesAccessor_NumberedObjects')
+										},
+										
+										getSize = function(){
+											getSize_NumberedObjects(.ptr)
+										},
+										
+										resize = function(size){
+										resize_NumberedObjects(.ptr, size)
+		}))
+
+setMethod('[', 'numberedModelValuesAccessors', function(x, i){
+			getNumberedObject(x$.ptr, i)
+		})
+
+setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
+			assignNumberedObject(x$.ptr, i, value)
+			return(x)
+		})

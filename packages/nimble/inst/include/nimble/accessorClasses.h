@@ -224,6 +224,9 @@ extern "C" {
 	
 	SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj);
 	SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_LP_GIDs, SEXP S_LP_numberedObj);
+
+	SEXP new_SingleModelValuesAccessor_NumberedObjects();
+	SEXP new_SingleModelVariablesAccessor_NumberedObjects();
 }
 void  SingleVA_Finalizer ( SEXP Sv );
 void  SingleMVA_Finalizer ( SEXP Sv );

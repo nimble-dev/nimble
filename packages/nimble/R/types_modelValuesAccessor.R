@@ -40,6 +40,10 @@ modelValuesAccessorVector <- setRefClass(
         	gids <<- modelValues$expandNodeNames(nodeNames, returnType = 'ids')
         	modelValues <<- modelValues
         	length <<- length(gids)
+        	
+        	if(length < 1)
+        		cat('Warning: you have created a modelValuesAccessor of length < 0. This is probably a mistake. Original nodeNames = ', nodeNames, '\n')
+        	
        # 	modelValuesAccessors <<- lapply(gids, makeSingleModelValuesAccessor, modelValues = modelValues)
             #nodeNames <- nl_expandNodeNames(nodeNames, modelValues$symTab, env)  
             # expands nodeNames to fully indexed form, including expanding variables using the symbolTable

@@ -36,6 +36,9 @@ modelVariableAccessorVector <- setRefClass(
             length <<- length(gids) + length(l_gids)
    			model <<- model
    
+   			if(length < 1)
+   				cat('warning: created a modelVariableAccessor of length less than one. Probably a mistake. Original nodeNames = ', nodeNames, '\n')
+   
        	#	nodeNames <- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE)
 		#	if(logProb){
 	    #    	logProbNames <- model$modelDef$nodeName2LogProbName(nodeNames)

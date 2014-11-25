@@ -525,7 +525,7 @@ SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_
 	(*accessVector).varAccessors.resize(len);
 	for(int i = 0; i < len; i++){
 		index = gids[i] - 1;
-		(*accessVector).varAccessors[i] = static_cast<SingleVariableAccessBase *>(numObj->getObjectPtr(index));
+		(*accessVector).varAccessors[i] = static_cast<SingleModelValuesAccess*>(numObj->getObjectPtr(index));
 		}
 	return(R_NilValue);
 }
@@ -751,6 +751,38 @@ SEXP manualSetNRows(SEXP Sextptr, SEXP nRows){
   }
 
 
+void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
+
+	Rprintf("a modelValuesAccessor finalizer called\n");
+	SpecialNumberedObjects<SingleModelValuesAccess>* np 
+	= static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
+	delete np;		
+}
+
+SEXP new_SingleModelValuesAccessor_NumberedObjects(){
+	SpecialNumberedObjects<SingleModelValuesAccess>* np = new SpecialNumberedObjects<SingleModelValuesAccess>;
+	SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
+	PROTECT(rPtr);
+	R_RegisterCFinalizerEx(rPtr, &SingleModelValuesAccessor_NumberedObjects_Finalizer, TRUE);
+	UNPROTECT(1);
+	return(rPtr);
+	}
+
+void SingleVariableAccessBase_NumberedObjects_Finalizer(SEXP Snp){
+	Rprintf("another modelVariablesAccessor finalizer called\n");
+	SpecialNumberedObjects<SingleVariableAccessBase>* np 
+	= static_cast<SpecialNumberedObjects<SingleVariableAccessBase>*>(R_ExternalPtrAddr(Snp));
+	delete np;	
+}
+
+SEXP new_SingleModelVariablesAccessor_NumberedObjects(){
+	SpecialNumberedObjects<SingleVariableAccessBase>* np = new SpecialNumberedObjects<SingleVariableAccessBase>;
+	SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
+	PROTECT(rPtr);
+	R_RegisterCFinalizerEx(rPtr, &SingleVariableAccessBase_NumberedObjects_Finalizer, TRUE);
+	UNPROTECT(1);
+	return(rPtr);
+	}
 
 void  SingleMVA_Finalizer ( SEXP Sv ) {
 	SingleModelValuesAccess* oldObj;

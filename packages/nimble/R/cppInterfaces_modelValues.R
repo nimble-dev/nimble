@@ -66,7 +66,7 @@ CmodelValues <- setRefClass(
             for(comp in varNames) 
                 componentExtptrs[[comp]] <<- .Call(getNativeSymbolInfo('getModelObjectPtr'), extptr, comp)
                 
-            .nodePtrs_byGID <<- numberedObjects()
+            .nodePtrs_byGID <<- new('numberedObjects')
             
             if(length(sizes) > 0){
             	varLengths <- sapply(sizes, prod)
