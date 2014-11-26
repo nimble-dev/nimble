@@ -79,7 +79,7 @@ MCMCspec <- setRefClass(
         initialize = function(model, nodes, control = list(),
                               monitors,                thin  = 1,
                               monitors2 = character(), thin2 = 1,
-                              useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE,
+                              useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
                               print = FALSE) {	
 '	
 Creates a defaut MCMC specification for a given model.  The resulting mcmcspec object is suitable as an argument to buildMCMC().
@@ -118,6 +118,8 @@ Discrete-valued nodes are assigned a slice sampler (sampler_slice), and terminal
 onlySlice: A boolean argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
 Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
 
+multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
+
 print: Boolean argument, specifying whether to print the ordered list of default samplers.
 '
             
@@ -143,7 +145,8 @@ print: Boolean argument, specifying whether to print the ordered list of default
             for(i in seq_along(nodes) ) {
             	node <- nodes[i]
                 discrete <- model$getNodeInfo()[[node]]$isDiscrete()
-                nodeLength <- length(model$expandNodeNames(node, returnScalarComponents = TRUE))
+                nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
+                nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
              	if(isNodeEnd[i]) { addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
@@ -153,8 +156,10 @@ print: Boolean argument, specifying whether to print the ordered list of default
                     conjugacyResult <- model$checkConjugacy(node)
                     if(!is.null(conjugacyResult) && useConjugacy) {
                         addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
-                    addSampler(type = 'RW_block', control = list(targetNodes=node), print = print);     next
-                }
+                    if(multivariateNodesAsScalars) {
+                        for(scalarNode in nodeScalarComponents) {
+                            addSampler(type = 'RW', control = list(targetNode=scalarNode), print = print) };     next }
+                    addSampler(type = 'RW_block', control = list(targetNodes=node), print = print);     next }
 
                 ## node is scalar, non-end node
                 if(onlyRW && !discrete)   { addSampler(type = 'RW',    control = list(targetNode=node), print = print);     next }
