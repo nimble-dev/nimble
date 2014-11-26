@@ -42,7 +42,8 @@ populateManyModelVarAccess <- function(fxnPtr, Robject, manyAccessName)
 	gids <- Robject[[manyAccessName]]$gids
 	l_gids <- Robject[[manyAccessName]]$l_gids
 	cModel <- Robject[[manyAccessName]]$model$CobjectInterface
-	.Call('populateModelVariablesAccessors_byGID', manyAccessPtr, as.integer(gids), cModel$.nodeValPointers_byGID$.ptr, as.integer(l_gids), cModel$.nodeLogProbPointers_byGID$.ptr)
+	if(length(gids) + length(l_gids) > 0)	
+		.Call('populateModelVariablesAccessors_byGID', manyAccessPtr, as.integer(gids), cModel$.nodeValPointers_byGID$.ptr, as.integer(l_gids), cModel$.nodeLogProbPointers_byGID$.ptr)
 #	resizeCModelAccessors(manyAccessPtr, length(Robject[[manyAccessName]]$modelVariableAccessors) )
 #	rModelPtr <- Robject[[manyAccessName]]$model$CobjectInterface$.basePtr
 #	for(i in seq_along(Robject[[manyAccessName]]$modelVariableAccessors) ){

@@ -37,11 +37,13 @@ void simulate(NodeVectorClass &nodes) {
 
 
 // 2. We will only delete the singleVariableAccessors when we delete the ManyVariablesAccesor that they are contained in
-
+		// Cliff's note: actually, we have changed the paradigm. We now make one variable accessor per node, which can appear in many different
+		// ManyVariableAccessors. All unique singleAccessors will be held in a single SpecializedNumberedObjects, which takes care of the finalizer. 
 ManyVariablesAccessor::~ManyVariablesAccessor(){
-	int k = varAccessors.size();
-	for(int i = 0; i < k; i++)
-		delete static_cast<SingleVariableAccess*>(varAccessors[i]);
+//	int k = varAccessors.size();
+//	Rprintf("skipping the deletion of singleVariableAccesses for debugging purposes\n");
+//	for(int i = 0; i < k; i++)
+//		delete static_cast<SingleVariableAccess*>(varAccessors[i]);
 }
 
 
@@ -327,60 +329,6 @@ SingleVariableAccess* cMakeSingleVariableAccessor(NimArrType** varPtr, int begin
 	return(sVAPtr);
 }
 
-SEXP populateNumberedObject_withSingleVariableAccessors(SEXP modelPtr, SEXP varName, SEXP Sgids, SEXP SnumbObj){
-	int len = LENGTH(Sgids);
-	int* gids = INTEGER(Sgids);
-	string vName = STRSEXP_2_string(varName, 0);
-	ModelBase* cModPtr = static_cast<ModelBase*>(R_ExternalPtrAddr(modelPtr) );
-	NimArrType** varPtr = static_cast<NimArrType**>(cModPtr->getObjectPtr(vName) );
-	SingleVariableAccess* smva;
-	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumbObj));
-	void* vPtr;
-	for(int i = 0; i < len; i++){
-		smva = cMakeSingleVariableAccessor(varPtr, i, i);
-		vPtr = static_cast<void*>(smva);
-		numObj->numberedObjects[gids[i] - 1] = vPtr;
-	}
-	return(R_NilValue);
-}
-
-SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj){
-	int cIndex = INTEGER(beginIndex)[0] - 1;
-	int len = INTEGER(varLength)[0];
-	int cRow = INTEGER(curRow)[0] - 1;
-	string vName = STRSEXP_2_string(varName, 0);
-	Values* modelValuesPtr = static_cast<Values*>(R_ExternalPtrAddr(mvPtr));
-	NimVecType* nimPtr = static_cast<NimVecType*> (modelValuesPtr->getObjectPtr(vName));
-	SingleModelValuesAccess* smva;
-	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumbObj) );
-	void* vPtr;
-	for(int i = 0; i < len; i++){
-		smva = cMakeSingleModelValuesAccessor(nimPtr, i, i, cRow);
-		vPtr = static_cast<void*>(smva);
-		numObj->numberedObjects[i + cIndex] = vPtr;
-	}
-	return(R_NilValue);
-}
-
-SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj){
-	int len = LENGTH(sGIDS);
-	int* validIndices = INTEGER(SvalidIndices);
-	int* gids = INTEGER(sGIDS);
-	string vName = STRSEXP_2_string(varName, 0);
-	ModelBase* modelValuesPtr = static_cast<ModelBase*>(R_ExternalPtrAddr(modelPtr));
-	NimArrType** nimPtr = static_cast<NimArrType**> (modelValuesPtr->getObjectPtr(vName));
-	SingleVariableAccess* smva;
-	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumbObj) );
-	void* vPtr;
-	for(int i = 0; i < len; i++){
-		smva = cMakeSingleVariableAccessor(nimPtr, validIndices[i] - 1, validIndices[i] - 1);
-		vPtr = static_cast<void*>(smva);
-		numObj->numberedObjects[gids[i] - 1] = vPtr;
-	}
-	return(R_NilValue);
-}
-
-
 SEXP getMVAccessorValues(SEXP accessor){
 	void* vPtr = R_ExternalPtrAddr(accessor);
 	if(vPtr == NULL)
@@ -483,6 +431,64 @@ SEXP getListElement(SEXP list, const char *str){
 }
 
 
+/*
+SEXP populateNumberedObject_withSingleVariableAccessors(SEXP modelPtr, SEXP varName, SEXP Sgids, SEXP SnumbObj){
+	int len = LENGTH(Sgids);
+	int* gids = INTEGER(Sgids);
+	string vName = STRSEXP_2_string(varName, 0);
+	ModelBase* cModPtr = static_cast<ModelBase*>(R_ExternalPtrAddr(modelPtr) );
+	NimArrType** varPtr = static_cast<NimArrType**>(cModPtr->getObjectPtr(vName) );
+	SingleVariableAccess* smva;
+	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumbObj));
+	void* vPtr;
+	for(int i = 0; i < len; i++){
+		smva = cMakeSingleVariableAccessor(varPtr, i, i);
+		vPtr = static_cast<void*>(smva);
+		numObj->numberedObjects[gids[i] - 1] = vPtr;
+	}
+	return(R_NilValue);
+}
+*/
+
+SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj){
+	int cIndex = INTEGER(beginIndex)[0] - 1;
+	int len = INTEGER(varLength)[0];
+	int cRow = INTEGER(curRow)[0] - 1;
+	string vName = STRSEXP_2_string(varName, 0);
+	Values* modelValuesPtr = static_cast<Values*>(R_ExternalPtrAddr(mvPtr));
+	NimVecType* nimPtr = static_cast<NimVecType*> (modelValuesPtr->getObjectPtr(vName));
+	SingleModelValuesAccess* smva;
+	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumbObj) );
+	void* vPtr;
+	for(int i = 0; i < len; i++){
+		smva = cMakeSingleModelValuesAccessor(nimPtr, i, i, cRow);
+		vPtr = static_cast<void*>(smva);
+		numObj->numberedObjects[i + cIndex] = vPtr;
+	}
+	return(R_NilValue);
+}
+
+SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj){
+	int len = LENGTH(sGIDS);
+	int* validIndices = INTEGER(SvalidIndices);
+	int* gids = INTEGER(sGIDS);
+	string vName = STRSEXP_2_string(varName, 0);
+	ModelBase* modelValuesPtr = static_cast<ModelBase*>(R_ExternalPtrAddr(modelPtr));
+	NimArrType** nimPtr = static_cast<NimArrType**> (modelValuesPtr->getObjectPtr(vName));
+	SingleVariableAccess* smva;
+	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumbObj) );
+	void* vPtr;
+	for(int i = 0; i < len; i++){
+		smva = cMakeSingleVariableAccessor(nimPtr, validIndices[i] - 1, validIndices[i] - 1);
+		vPtr = static_cast<void*>(smva);
+		numObj->numberedObjects[gids[i] - 1] = vPtr;
+	}
+	return(R_NilValue);
+}
+
+
+
+
 SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeEnv){
 	int numNodes = LENGTH(nodeNames);
 	SEXP thisPtr;
@@ -543,10 +549,12 @@ SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SE
 	for(int i = 0; i < len; i++){
 		index = gids[i] - 1;
 		accessVector->varAccessors[i] = static_cast<SingleVariableAccessBase*>(numObj->getObjectPtr(index));
+	//	Rprintf("skipping the initialization of modelVariable accessor for debugging purposes");
 	}
 	for(int i = 0; i < len_LP; i++){
 		index = LP_gids[i] - 1;
 		accessVector->varAccessors[len + i] = static_cast<SingleVariableAccessBase*>(LP_numObj->getObjectPtr(index) ) ;
+	//	Rprintf("skipping the initialization of logProbs for debugging purposes\n");
 	}
 	return(R_NilValue);
 }
@@ -752,8 +760,6 @@ SEXP manualSetNRows(SEXP Sextptr, SEXP nRows){
 
 
 void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
-
-	Rprintf("a modelValuesAccessor finalizer called\n");
 	SpecialNumberedObjects<SingleModelValuesAccess>* np 
 	= static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
 	delete np;		
@@ -769,7 +775,6 @@ SEXP new_SingleModelValuesAccessor_NumberedObjects(){
 	}
 
 void SingleVariableAccessBase_NumberedObjects_Finalizer(SEXP Snp){
-	Rprintf("another modelVariablesAccessor finalizer called\n");
 	SpecialNumberedObjects<SingleVariableAccessBase>* np 
 	= static_cast<SpecialNumberedObjects<SingleVariableAccessBase>*>(R_ExternalPtrAddr(Snp));
 	delete np;	

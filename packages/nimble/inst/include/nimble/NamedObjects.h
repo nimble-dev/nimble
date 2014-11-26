@@ -53,15 +53,10 @@ class SpecialNumberedObjects : public NumberedObjects{
 		T* ptr;
 		for(int i = 0; i < len; i++){
 			ptr = static_cast<T*>(getObjectPtr(i));
-			if(ptr == 0){
-				Rprintf("pointer skipped\n");
-			}
 			if(ptr != 0){
-				Rprintf("pointer deleted\n");
-//				delete ptr;	
+				delete ptr;	
 				}
 		}
-		Rprintf("finished specialNumberedObjects finalizer\n");
 	}
 };
 

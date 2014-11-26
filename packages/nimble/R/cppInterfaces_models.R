@@ -79,11 +79,11 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        		.self$.nodeFxnPointers_byGID[gID] <- nodes[[nodeName]]$.basePtr
                                        		}
                                        		
-                                    #   .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
-                                    .nodeValPointers_byGID <<- new('numberedObjects')
+                                       .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
+                                   # .nodeValPointers_byGID <<- new('numberedObjects')
                                        .nodeValPointers_byGID$resize(maxID)
-                                    #   .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       .nodeLogProbPointers_byGID <<- new('numberedObjects')
+                                       .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
+                                    #   .nodeLogProbPointers_byGID <<- new('numberedObjects')
                                        .nodeLogProbPointers_byGID$resize(maxID)
                                        for(vName in Rmodel$getVarNames()){
                                        		flatIndices = 1
@@ -98,7 +98,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        		logVNames <- modelDef$nodeName2LogProbName(vName)
                                        		if(length(logVNames) > 0){
                                        			logVName <- nl_getVarNameFromNodeName(logVNames[1])
-                                       			LP_gIDs_withNAs =  unlist(sapply(nodeName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
+                                       			LP_gIDs_withNAs =  unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
+	                                       		validIndices = which(!is.na(LP_gIDs_withNAs) ) 
 	                                       		l_gIDs = Rmodel$modelDef$nodeName2LogProbID(vName)
 	                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), 1:length(l_gIDs), .nodeLogProbPointers_byGID$.ptr)
 	                                       		}
