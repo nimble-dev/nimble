@@ -18,8 +18,7 @@
 # addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, addAtEnd, index)
 # removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll)
 
-
-
+# NumberedObjects 
 
 
 makeCSingleVariableAccessor <- function(rModelPtr, elementName, beginIndex, endIndex){
@@ -40,13 +39,18 @@ resizeCModelAccessors <- function(modelAccessPtr, size)
 populateManyModelVarAccess <- function(fxnPtr, Robject, manyAccessName)
 	{
 	manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-	resizeCModelAccessors(manyAccessPtr, length(Robject[[manyAccessName]]$modelVariableAccessors) )
-	rModelPtr <- Robject[[manyAccessName]]$model$CobjectInterface$.basePtr
-	for(i in seq_along(Robject[[manyAccessName]]$modelVariableAccessors) ){
-		acc = Robject[[manyAccessName]]$modelVariableAccessors[[i]]
-		singleAccPtr = makeCSingleVariableAccessor(rModelPtr = rModelPtr, elementName = acc$var, beginIndex = acc$first, endIndex = acc$last)
-		addSingleVarAccess(manyAccessPtr, singleAccPtr, addAtEnd = FALSE, index = i)
-	}
+	gids <- Robject[[manyAccessName]]$gids
+	l_gids <- Robject[[manyAccessName]]$l_gids
+	cModel <- Robject[[manyAccessName]]$model$CobjectInterface
+	if(length(gids) + length(l_gids) > 0)	
+		.Call('populateModelVariablesAccessors_byGID', manyAccessPtr, as.integer(gids), cModel$.nodeValPointers_byGID$.ptr, as.integer(l_gids), cModel$.nodeLogProbPointers_byGID$.ptr)
+#	resizeCModelAccessors(manyAccessPtr, length(Robject[[manyAccessName]]$modelVariableAccessors) )
+#	rModelPtr <- Robject[[manyAccessName]]$model$CobjectInterface$.basePtr
+#	for(i in seq_along(Robject[[manyAccessName]]$modelVariableAccessors) ){
+#		acc = Robject[[manyAccessName]]$modelVariableAccessors[[i]]
+#		singleAccPtr = makeCSingleVariableAccessor(rModelPtr = rModelPtr, elementName = acc$var, beginIndex = acc$first, endIndex = acc$last)
+#		addSingleVarAccess(manyAccessPtr, singleAccPtr, addAtEnd = FALSE, index = i)
+#	}
 }
 # Populates a manyModelVariablesAccessor, as called from copyFromRobject() in the CnimbleFunctionBase
 
@@ -56,29 +60,67 @@ resizeCModelValuesAccessors <- function(modelValuesAccessPtr, size)
 
 populateManyModelValuesAccess <- function(fxnPtr, Robject, manyAccessName){
 	manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-	resizeCModelValuesAccessors(manyAccessPtr, length(Robject[[manyAccessName]]$modelValuesAccessors) )
-	rModelValuesPtr <- Robject[[manyAccessName]]$modelValues$CobjectInterface$extptr
-	for(i in seq_along(Robject[[manyAccessName]]$modelValuesAccessors) ){
-		acc = Robject[[manyAccessName]]$modelValuesAccessors[[i]]
-		singleAccPtr = makeCSingleModelValuesAccessor(rModelValuesPtr = rModelValuesPtr, elementName = acc$var, beginIndex = acc$first, endIndex = acc$last)
-		addSingleModelValuesAccess(manyAccessPtr, singleAccPtr, addAtEnd = FALSE, index = i)
-	}
+#	resizeCModelValuesAccessors(manyAccessPtr, length(Robject[[manyAccessName]]$modelValuesAccessors) )
+	cModelValues <- Robject[[manyAccessName]]$modelValues$CobjectInterface
+	gids <- Robject[[manyAccessName]]$gids
+	.Call('populateModelValuesAccessors_byGID',  manyAccessPtr, as.integer(gids), cModelValues$.nodePtrs_byGID$.ptr)
+#	for(i in seq_along(Robject[[manyAccessName]]$modelValuesAccessors) ){
+#		acc = Robject[[manyAccessName]]$modelValuesAccessors[[i]]
+#		singleAccPtr = makeCSingleModelValuesAccessor(rModelValuesPtr = rModelValuesPtr, elementName = acc$var, beginIndex = acc$first, endIndex = acc$last)
+#		addSingleModelValuesAccess(manyAccessPtr, singleAccPtr, addAtEnd = FALSE, index = i)
+#	}
 }
 
+#populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
+#	fxnVecPtr = .Call("getModelObjectPtr", fxnPtr, fxnVecName)
+#	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes) )
+#	cNodes <- Robject[[fxnVecName]]$model$CobjectInterface$nodes
+#	countInf <- new.env()
+#	countInf$count <- 0
+#	nodeNames <- Robject[[fxnVecName]]$nodes
+#	nil <- lapply(nodeNames, addNodeFxn_LOOP, nodes = cNodes, fxnVecPtr = fxnVecPtr, countInf = countInf)
+#}
+
+
+
+addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
+	countInf$count <- countInf$count + 1
+	addNodeFxn(fxnVecPtr, nodes[[x]]$.basePtr, addAtEnd = FALSE, index = countInf$count)
+}
+
+
+getFxnVectorPtr <- function(fxnPtr, fxnVecName)
+	.Call('getModelObjectPtr', fxnPtr, fxnVecName)
+
+populateNodeFxnVec_OLD <- function(fxnPtr, Robject, fxnVecName){
+	fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
+	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes))	
+	nodePtrsEnv <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointersEnv
+	nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
+}
+
+getNamedObjected <- function(objectPtr, fieldName)
+	.Call('getModelObjectPtr', objectPtr, fieldName)
+
+inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs)
+	nil <- .Call('populateNodeFxnVector_byGID', fxnVecPtr, as.integer(gids), numberedPtrs)
+	
 populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
-	fxnVecPtr = .Call("getModelObjectPtr", fxnPtr, fxnVecName)
-	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes) )
-	cModel <- Robject[[fxnVecName]]$model$CobjectInterface	#$.basePtr
-##	allNodePtrs = getNodeFxnPtrs(cModel)
-	count = 0	
-	for(node in Robject[[fxnVecName]]$nodes){
-		count = count + 1
-		nodeP = cModel$nodes[[node]]$.basePtr ##allNodePtrs[[node]]
-		addNodeFxn(fxnVecPtr, nodeP, addAtEnd = FALSE, index = count)
-		}
+#	fxnVecPtr <- getFxnVectorPtr(fxnPtr, fxnVecName)
+
+#	fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
+	
+	fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
+	
+	gids <- Robject[[fxnVecName]]$gids
+	numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byGID$.ptr
+
+	# This is not really the most efficient way to do things; eventually 
+	# we want to have nodeFunctionVectors contain just the gids, not nodeNames
+	#gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
+	
+	inner_populateNodeFxnVec(fxnVecPtr, gids, numberedPtrs)
 }
-
-
 
 
 # Currently requires: addSingleModelValuesAccess
@@ -157,3 +199,111 @@ addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValu
 removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll = FALSE)
   nil <- .Call("removeModelValuesAccessor", ManyModelValuesAccessPtr, as.integer(index), as.logical(removeAll) ) 
 #   Same as removeNodeFxn, but for ManyModelValuessAccessor
+
+
+
+
+# NumberedObjects is a reference class which contains a pointer to a C++ object. This C++ object
+# stores void pointers. This pointers are indexed by integers and can be accessesed in R via `[` and `[<-`
+# However, the intent is that the pointers will actually be accessed more directly in C++ 
+# At this time, used to store pointers to nodeFunctions, which will allow for fast
+# population of nodeFunctionVectors. They are indexed by graphID's
+numberedObjects <- setRefClass('numberedObjects', fields = c('.ptr' = 'ANY'), 
+	methods = list(
+		initialize = function(){
+			.ptr <<- newNumberedObjects()
+		},
+		getSize = function(){
+			getSize_NumberedObjects(.ptr)
+		},
+		resize = function(size){
+			resize_NumberedObjects(.ptr, size)
+		}
+	)
+)
+
+setMethod('[', 'numberedObjects', function(x, i){
+			getNumberedObject(x$.ptr, i)
+		})
+
+setMethod('[<-', 'numberedObjects', function(x, i, value){
+			assignNumberedObject(x$.ptr, i, value)
+			return(x)
+		})
+
+
+
+newNumberedObjects <- function(){
+	.Call('newNumberedObjects')
+}
+
+getSize_NumberedObjects <- function(numberedObject){
+	.Call('getSizeNumberedObjects', numberedObject)
+}
+
+resize_NumberedObjects <- function(numberedObject, size){
+	nil <- .Call('resizeNumberedObjects', numberedObject, as.integer(size) )
+}
+
+assignNumberedObject <- function(numberedObject, index, val){
+	if(!is(val, 'externalptr'))
+		stop('Attempting to assign a val which is not an externalptr to a NumberedObjects')
+	if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
+		stop('Invalid index')
+	nil <- .Call('setNumberedObject', numberedObject, as.integer(index), val)
+}
+
+getNumberedObject <- function(numberedObject, index){
+	if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
+		stop('Invalid index')
+	.Call('getNumberedObject', numberedObject, as.integer(index))	
+}
+
+
+numberedModelValuesAccessors <- setRefClass('numberedModelValuesAccessors',
+									fields = c('.ptr' = 'ANY'),
+									methods = list(initialize = function(){ 
+										.ptr  <<- .Call('new_SingleModelValuesAccessor_NumberedObjects')
+										},
+										
+										getSize = function(){
+											getSize_NumberedObjects(.ptr)
+										},
+										
+										resize = function(size){
+										resize_NumberedObjects(.ptr, size)
+		}))
+
+setMethod('[', 'numberedModelValuesAccessors', function(x, i){
+			getNumberedObject(x$.ptr, i)
+		})
+
+setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
+			assignNumberedObject(x$.ptr, i, value)
+			return(x)
+		})
+		
+		
+		
+numberedModelVariableAccessors <- setRefClass('numberedModelVariableAccessors',
+									fields = c('.ptr' = 'ANY'),
+									methods = list(initialize = function(){ 
+										.ptr  <<- .Call('new_SingleModelVariablesAccessor_NumberedObjects')
+										},
+										
+										getSize = function(){
+											getSize_NumberedObjects(.ptr)
+										},
+										
+										resize = function(size){
+										resize_NumberedObjects(.ptr, size)
+		}))
+
+setMethod('[', 'numberedModelValuesAccessors', function(x, i){
+			getNumberedObject(x$.ptr, i)
+		})
+
+setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
+			assignNumberedObject(x$.ptr, i, value)
+			return(x)
+		})

@@ -58,7 +58,7 @@ modelDefClass <- setRefClass('modelDefClass',
                              methods = list(
                                  initialize = function(...){
                                  	name <<- character()
-                                 	dimensionsList <<- list()
+                                 	dimensionsList <<- list() 	
                                  	contexts <<- list()
                                  	declInfo <<- list()
                                  	nodeInfo <<- list()
@@ -844,6 +844,7 @@ modelDefClass$methods(genLogProbVarInfo = function() {
         lhsVar <- BUGSdecl$targetVarName
         lhsLogProbVar <- makeLogProbName(lhsVar)
         
+        
         if(varInfo[[lhsVar]]$nDim > 0) {
             if(logProbVarInfo[[lhsLogProbVar]]$nDim != varInfo[[lhsVar]]$nDim)   stop('mismatch in nDim, this should never occur')
             
@@ -1043,7 +1044,12 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){
 	return(output[!is.na(output)])
 })
 
-
+modelDefClass$methods(nodeName2LogProbID = function(nodeName){
+	if(length(nodeName) == 0)
+		return(NULL)
+	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 
+	return(output[!is.na(output)])
+})
 
 parseEvalNumeric <- function(x, env){
 	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)

@@ -22,7 +22,46 @@ extern "C" {
   SEXP getAvailableNames(SEXP Sextptr);
 }
 
+class NumberedObjects {
+public:
+	vector<void*> numberedObjects;
+	void* getObjectPtr(int index);
+	void setObjectPtr(int index, void* newPtr);
+	void resize(int size);
+	virtual ~NumberedObjects(){};
+};
 
+extern "C" {
+	SEXP getNumberedObject(SEXP Snp, SEXP index);
+	SEXP setNumberedObject(SEXP Snp, SEXP index, SEXP val);
+	SEXP resizeNumberedObjects(SEXP Snp, SEXP size);
+	SEXP getSizeNumberedObjects(SEXP Snp);
+	SEXP newNumberedObjects();
+}
+
+void numberedObjects_Finalizer(SEXP Snp);
+
+
+// This is a class which is basically identical to NumberedObjects,
+// but it is for items of class <T> which are built on the spot with
+// no external pointer. Thus, the finalizer must be specialized for class<T>
+template<class T>
+class SpecialNumberedObjects : public NumberedObjects{
+	public:
+	virtual ~SpecialNumberedObjects(){
+		int len = numberedObjects.size();
+		T* ptr;
+		for(int i = 0; i < len; i++){
+			ptr = static_cast<T*>(getObjectPtr(i));
+			if(ptr != 0){
+				delete ptr;	
+				}
+		}
+	}
+};
+
+template<class T>
+void Special_NumberedObjects_Finalizer(SEXP Snp);
 
 
 #endif

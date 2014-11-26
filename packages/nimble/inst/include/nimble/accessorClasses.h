@@ -188,6 +188,9 @@ void cRemoveAccessor(T* aPtr, int index, bool removeAll);
 void setModelValuesAccessorRow(ManyVariablesAccessorBase &access);
 
 
+SingleModelValuesAccess* cMakeSingleModelValuesAccessor(NimVecType* varPtr, int beginIndex, int endIndex, int row);
+SingleVariableAccess* cMakeSingleVariableAccessor(NimArrType** varPtr, int beginIndex, int endIndex);
+
 extern "C" {
 	SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex);
 	SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex);
@@ -212,7 +215,18 @@ extern "C" {
 	SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
 	 
 	SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
-	 
+
+	SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
+    SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj);
+	
+	SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj);
+	SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj);
+	
+	SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj);
+	SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_LP_GIDs, SEXP S_LP_numberedObj);
+
+	SEXP new_SingleModelValuesAccessor_NumberedObjects();
+	SEXP new_SingleModelVariablesAccessor_NumberedObjects();
 }
 void  SingleVA_Finalizer ( SEXP Sv );
 void  SingleMVA_Finalizer ( SEXP Sv );

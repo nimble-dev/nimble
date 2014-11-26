@@ -247,6 +247,7 @@ sampler_RW_block <- nimbleFunction(
             if(jump)     timesAccepted <<- timesAccepted + 1
             if(!adaptScaleOnly) {
                 declare(newValues, double(1, d))
+
                 newValues <- values(model, targetNodes)
                 statSums  <<- statSums + asRow(newValues)
                 statProds <<- statProds + asCol(newValues) %*% asRow(newValues)

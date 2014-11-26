@@ -1604,3 +1604,27 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 	}
 	return(R_NilValue);
 }
+
+
+SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex){
+	SEXP ans;
+	int cIndex = INTEGER(sIndex)[0] - 1;
+	ans = findVar(install(CHAR(STRING_ELT(sString, cIndex ))), sEnv);
+	PROTECT(ans);
+	UNPROTECT(1);
+	return(ans);
+	}
+
+SEXP getEnvVar(SEXP sString, SEXP sEnv){
+  	return(getEnvVar_Sindex(sString, sEnv, ScalarInteger(1)));
+}
+
+SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
+	int cIndex = INTEGER(sIndex)[0] - 1;
+	setVar(install(CHAR(STRING_ELT(sString, cIndex ))), sVal, sEnv);
+	return(R_NilValue);
+}
+
+ SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal){						
+  	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
+  }

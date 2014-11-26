@@ -113,6 +113,18 @@ extern "C" {
   
   SEXP rankSample(SEXP p, SEXP n);
   
+  
+  SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);// This is a utility for looking up a field of an environment
+  														 // sString is a character vector with the field name we want
+  														 // sEnv is the environment
+  														 // sIndex is the index of the sString that contains the name
+  														 // we actually want to use. 
+  														 //	Look up by sString[sIndex] is done to allow for easy looping
+  														 //Important Note: sIndex = 1 looks up the first name (i.e. use R indexing, not C) 
+  SEXP getEnvVar(SEXP sString, SEXP sEnv);	// Same as above, but uses sIndex = 1 (i.e. sString is a single character string)
+  														 
+  SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex);	//Same as getEnvVar_Sindex, but this function sets rather than gets														
+  SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal);						//Same as above but uses sIndex = 1
 }
 
 class vectorOfPtrsAccessBase {
