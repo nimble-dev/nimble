@@ -117,7 +117,7 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         expandNodeNames = function(nodeNames, returnType = "names", flatIndices = TRUE) 
 										{
 	    									return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
-	    								}                                        
+	    								}                          
                                       )
                                     )
 

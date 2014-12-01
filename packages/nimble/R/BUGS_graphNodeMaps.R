@@ -33,6 +33,8 @@ mapsClass <- setRefClass(
         vars2GraphID_functions =	'ANY',
         vars2LogProbName =			'ANY',
         vars2LogProbID = 			'ANY',
+        
+        logProbIDs_2_LogProbName =	'ANY',
         ## positions vectors of nodeNames (top, latent, end)
         nodeNamesTop = 'ANY',
         nodeNamesLatent = 'ANY',
@@ -125,7 +127,7 @@ mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
 	    }
     }
     assignLogProbName(nodeInfo, vars2LogProbName)
-    assignLogProbID(vars2LogProbName, vars2LogProbID)
+    logProbIDs_2_LogProbName <<- assignLogProbID(vars2LogProbName, vars2LogProbID)
     setPositions(graph)
     is_NodeFunction <<- rep(FALSE, length(graphIDs))
     for(var in ls(vars2GraphID_functions))
@@ -146,13 +148,17 @@ assignLogProbName <- function(nodeInfo, nodeName2LogProbMap){
 assignLogProbID <- function(nodeName2LogProbMap, nodeName2LogProbIDMap){
 	numIDs = 0
 	varNames <- ls(nodeName2LogProbMap)
+	logProbIDs_2_LogProbName = character(0)
 	for(vName in varNames){
 		hasLogProb = which(!is.na(nodeName2LogProbMap[[vName]] ) )
 		if(length(hasLogProb) > 0){
-			nodeName2LogProbIDMap[[vName]][hasLogProb] <- numIDs + 1:length(hasLogProb)
+			theseIDs <- numIDs + 1:length(hasLogProb)
+			nodeName2LogProbIDMap[[vName]][hasLogProb] <- theseIDs
+			logProbIDs_2_LogProbName[theseIDs] <- nodeName2LogProbMap[[vName]][hasLogProb]
 			numIDs = numIDs + length(hasLogProb)
 		}
 	}
+	return(logProbIDs_2_LogProbName)
 }
 
 mapsClass$methods(setPositions = function(graph) {

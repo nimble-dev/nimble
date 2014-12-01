@@ -488,7 +488,7 @@ SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEX
 
 
 
-
+/*			This is no longer used
 SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeEnv){
 	int numNodes = LENGTH(nodeNames);
 	SEXP thisPtr;
@@ -506,7 +506,7 @@ SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP nodeEnv){
 	UNPROTECT(4);
 	return(R_NilValue);
 }
-
+*/
 
 SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj){
 	int len = LENGTH(S_GIDs);

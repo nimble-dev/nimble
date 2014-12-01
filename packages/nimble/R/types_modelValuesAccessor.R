@@ -26,8 +26,8 @@ modelValuesAccessorVector <- setRefClass(
     Class = 'modelValuesAccessorVector',
     fields = list(modelValues = 'ANY',
                   gids = 'ANY', 		#'character',
-                 # modelValuesAccessors = 'ANY',
-                  length = 'ANY') ,		#'numeric'),
+                  length = 'ANY'		#'numeric'),
+                  ),
     methods = list(
         initialize = function(modelValues, nodeNames, logProb = FALSE, env = parent.frame()) {
         	
@@ -41,35 +41,34 @@ modelValuesAccessorVector <- setRefClass(
         	modelValues <<- modelValues
         	length <<- length(gids)
         	        	
-       # 	modelValuesAccessors <<- lapply(gids, makeSingleModelValuesAccessor, modelValues = modelValues)
-            #nodeNames <- nl_expandNodeNames(nodeNames, modelValues$symTab, env)  
-            # expands nodeNames to fully indexed form, including expanding variables using the symbolTable
-                       
-            #if(logProb){
-	        #	if(!inherits(modelValues$modelDef,'modelDefClass'))
-	        #		stop('calling logProb = TRUE on a modelValues object that was not built from a model')
-	        #	logProbNames <- modelValues$modelDef$nodeName2LogProbName(nodeNames)
-        	#	nodeNames <- c(nodeNames, logProbNames)
-        	#}            
-            
-            #varNames <- nl_getVarNameFromNodeName(nodeNames)
-            #flatIndices <- sapply(nodeNames, function(x) parse(text = x)[[1]][[3]])
-            
-            #varsPlusFlatIndices <- list(varNames = varNames, flatIndices = flatIndices)
-            
-            ## THIS IS WHAT YOU'RE WORKING ON RIGHT NOW
-            
-            
- #           varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, modelValues$symTab)    # creates a list of variable names, and ranges of the flat index
-            #modelValues <<- modelValues
-            #nodes <<- nodeNames
-            #modelValuesAccessors <<- lapply(varsAndFlatIndexRanges, function(vafir) modelValuesAccessor(modelValues=modelValues, var=vafir$var, first=vafir$ind[1], last=vafir$ind[2], length = vafir$ind[2] - vafir$ind[1] + 1))
-           # len = 0
-           # for(mv in modelValuesAccessors)
-           # 	len = len + mv$length
-           # length <<- len
         },
         getAccessors = function() return(modelValuesAccessors),
+        getSingleValue_fromGID = function(accessID, row){
+        	valueName <- modelValues$expandNodeNames(gids[accessID])
+        	parseInfo <- parse(text = valueName)[[1]]
+        	if(length(parseInfo) == 1){
+        		vName = as.character(parseInfo)
+        		index = 1
+        	}
+        	else{
+        		vName = as.character(parseInfo[[2]])
+        		index = parseInfo[[3]]
+        	}
+        	return(modelValues[vName, row][index])
+        },
+        setSingleValue_fromGID = function(value, accessID, row){
+        	valueName <- modelValues$expandNodeNames(gids[accessID])
+        	parseInfo <- parse(text = valueName)[[1]]
+        	if(length(parseInfo) == 1){
+        		vName = as.character(parseInfo)
+        		index = 1
+        	}
+        	else{
+        		vName = as.character(parseInfo[[2]])
+        		index = parseInfo[[3]]
+        	}
+        	modelValues[vName, row][index] <<- value
+        },
         show = function() cat(paste0('modelValuesAccessorVector: ', paste0(lapply(modelValuesAccessors, function(x) x$toStr()), collapse=', '), '\n'))
     )
 )

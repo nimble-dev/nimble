@@ -298,11 +298,15 @@ values <- function(model, nodes){
 #' 
 #' cCopy() ## execute the copy with the compiled function
 nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
+
+	isFromModel = NA
+	isToModel = NA
     if(missing(nodes) ) 
         nodes = allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
         accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
         rowFrom = NA
+        isFromModel = TRUE
     }
     else if(inherits(from, "modelValuesBaseClass"))
     {
@@ -310,6 +314,7 @@ nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb
         if(is.na(row))
             stop("Error: need to supply 'row' for a modelValues copy")
         rowFrom = row
+        isFromModel = FALSE
     }
     if( inherits(to, "modelBaseClass") ){
         if(is.na(nodesTo[[1]]) ) 
@@ -317,6 +322,7 @@ nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb
 		else
 			accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
 		rowTo = NA
+		isToModel = TRUE
 		}
 	else if(inherits(to, "modelValuesBaseClass"))
 		{
@@ -326,51 +332,33 @@ nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb
 			accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
 		if(is.na(rowTo))
 			rowTo = row
+		isToModel = FALSE
 		}
-	nimCopyAccess(accessFrom, accessTo, rowFrom, rowTo)
+		if(is.na(isFromModel))
+			stop('argument "from" in nimCopy is neither a model nor modelValues')
+		if(is.na(isToModel))
+			stop('argument "to" in nimCopy is neither a model nor modelValues')
+
+		
+		lengthTo = accessTo$length
+		lengthFrom = accessFrom$length
+		if(lengthTo != lengthFrom)
+			stop('lengths not equal in nimCopy') 
+		if(lengthTo > 0){
+			for(i in 1:lengthTo){
+				if(isFromModel)
+					valueFrom = accessFrom$getSingleValue_fromGID(i)
+				else
+					valueFrom = accessFrom$getSingleValue_fromGID(i, rowFrom)
+				
+				if(isToModel)
+					accessTo$setSingleValue_fromGID(valueFrom, i)
+				else
+					accessTo$setSingleValue_fromGID(valueFrom, i, rowTo)
+			}
+		}
 }
 
-nimCopyAccess <- function(accessFrom, accessTo,  rowFrom = NA, rowTo = NA){
-	
-	if(length(accessTo) != length(accessFrom) ){
-		cat("accessTo length = ", length(accessTo), " accessFrom length = ", length(accessFrom), "\n")
-		stop("Size of access's not equivalent")
-	}
-	if(inherits(accessTo, "modelValuesAccessorVector") ){
-		MVTo = accessTo$modelValues
-		if(is.na(rowTo))
-			stop("need to specify rowTo for modelValues")
-	}
-	if(inherits(accessTo, "modelVariableAccessorVector") )
-		MVTo = accessTo$model
-	if(inherits(accessFrom, "modelValuesAccessorVector") ){
-		MVFrom = accessFrom$modelValues
-		if(is.na(rowFrom))
-			stop("need to specify rowFrom for modelValues")
-
-	}
-	if(inherits(accessFrom, "modelVariableAccessorVector") )
-		MVFrom = accessFrom$model
-	accTo = accessTo$getAccessors()
-	accFrom = accessFrom$getAccessors()
-	if(inherits(accessTo, "modelValuesAccessorVector") & inherits(accessFrom, "modelValuesAccessorVector")){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][[rowTo]][accTo[[i]]$first:accTo[[i]]$last] <- MVFrom[[accFrom[[i]]$var]][[rowFrom]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-	else if(inherits(accessTo, "modelVariableAccessorVector") & inherits(accessFrom, "modelVariableAccessorVector")){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][accTo[[i]]$first:accTo[[i]]$last] <- MVFrom[[accFrom[[i]]$var]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-	else if(inherits(accessTo, "modelValuesAccessorVector") & inherits(accessFrom, "modelVariableAccessorVector") ){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][[rowTo]][accTo[[i]]$first:accTo[[i]]$last] <-MVFrom[[accFrom[[i]]$var]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-	else if(inherits(accessTo, "modelVariableAccessorVector") & inherits(accessFrom, "modelValuesAccessorVector")){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][accTo[[i]]$first:accTo[[i]]$last] <-MVFrom[[accFrom[[i]]$var]][[rowFrom]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-
-}
 
 allNodeNames <- function(object, logProb = FALSE){
 	if(inherits(object, 'modelValuesBaseClass') ) {	
