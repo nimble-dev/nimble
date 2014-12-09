@@ -42,7 +42,9 @@ modelValuesAccessorVector <- setRefClass(
         	length <<- length(gids)
         	        	
         },
-        getAccessors = function() return(modelValuesAccessors),
+       getNodeNames = function() {
+       	modelValues$expandNodeNames(gids)
+       	},
         getSingleValue_fromGID = function(accessID, row){
         	valueName <- modelValues$expandNodeNames(gids[accessID])
         	parseInfo <- parse(text = valueName)[[1]]

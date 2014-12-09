@@ -31,6 +31,9 @@ nodeFunctionVector <- setRefClass(
             	temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
             gids <<- temp_gids
         },
+        getNodeNames = function(){
+        	model$expandNodeNames(gids)	
+        },
         show = function() cat(paste0('nodeFunctionVector: ', paste(nodes, collapse=', '), '\n'))
     )
 )

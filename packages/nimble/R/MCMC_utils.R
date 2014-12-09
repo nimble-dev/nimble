@@ -351,8 +351,8 @@ mcmcStochNode_Init <- nimbleFunction(
 #		theseVals <<- model[[node]]
 		theseVals <- values(model, node)
 		if(is.na.vec(theseVals))
-			simulate(nodeFunctionVector = nodeFxnVector)
-		lp <- calculate(nodeFunctionVector = nodeFxnVector)
+			simulate(nodeFxnVector = nodeFxnVector)
+		lp <- calculate(nodeFxnVector = nodeFxnVector)
 		if(is.na(lp) | lp < -1e12)
 			print('Problem when attempting to initialize stochastic node')
 	},

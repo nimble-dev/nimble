@@ -37,7 +37,7 @@ values_keywordInfo <- keywordInfoClass(
 calculate_keywordInfo <- keywordInfoClass(
 	keyword = 'calculate',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFunctionVector'))
+		if(!isCodeArgBlank(code, 'nodeFxnVector'))
 			return(code)
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
 		if(isCodeArgBlank(code, 'model'))
@@ -60,7 +60,7 @@ calculate_keywordInfo <- keywordInfoClass(
 simulate_keywordInfo <- keywordInfoClass(
 	keyword = 'simulate',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFunctionVector'))
+		if(!isCodeArgBlank(code, 'nodeFxnVector'))
 			return(code)
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
 		if(isCodeArgBlank(code, 'model'))
@@ -82,7 +82,7 @@ simulate_keywordInfo <- keywordInfoClass(
 getLogProb_keywordInfo <- keywordInfoClass(
 	keyword = 'getLogProb',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFunctionVector'))
+		if(!isCodeArgBlank(code, 'nodeFxnVector'))
 			return(code)
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
 		if(isCodeArgBlank(code, 'model'))
@@ -104,9 +104,9 @@ getLogProb_keywordInfo <- keywordInfoClass(
 nimCopy_keywordInfo <- keywordInfoClass(
 	keyword = 'nimCopy',
 	processor = function(code, nfProc){
-		possibleObjects <- c('Model', 'ModelValues', 'ModelVariableAccessorVector', 'ModelValuesAccessorVector')
-		modelValuesTypes <- c('ModelValues', 'ModelValuesAccessorVector')
-		accessTypes <- c('ModelVariableAccessorVector', 'ModelValuesAccessorVector')
+		possibleObjects <- c('symbolModel', 'symbolModelValues', 'symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
+		modelValuesTypes <- c('symbolModelValues', 'symbolModelValuesAccessorVector')
+		accessTypes <- c('symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
 		from_ArgList <- list(name = code$from, class = symTypeFromSymTab(code$from, nfProc$setupSymTab, options = possibleObjects))
 		to_ArgList <- list(name = code$to, class = symTypeFromSymTab(code$to, nfProc$setupSymTab, options = possibleObjects))
 		if(from_ArgList$class %in% modelValuesTypes){
@@ -121,12 +121,12 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			else		to_ArgList$row = code$rowTo
 		}
 		if(isCodeArgBlank(code, 'nodes')){
-			if(from_ArgList$class == 'Model'){
+			if(from_ArgList$class == 'symbolModel'){
 				node_ArgList <- list(model = from_ArgList$name)
 				allNodes_name <- allModelNodes_SetupTemplate$makeName( node_ArgList )
 				addNecessarySetupCode(allNodes_name, node_ArgList, allModelNodes_SetupTemplate, nfProc)
 			}
-			else if(from_ArgList$class == 'ModelValues'){
+			else if(from_ArgList$class == 'symbolModelValues'){
 				from_ArgList$row = code$row
 				mvVar_ArgList <- list(modelValues = from_ArgList$name)
 				allNodes_name <- allModelValuesVars_SetupTemplate$makeName(mvVar_ArgList)
@@ -139,12 +139,12 @@ nimCopy_keywordInfo <- keywordInfoClass(
 		if(isCodeArgBlank(code, 'nodesTo'))		to_ArgList$nodes <- from_ArgList$nodes
 		else									to_ArgList$nodes <- code$nodesTo
 				
-		if(from_ArgList$class == 'Model'){
+		if(from_ArgList$class == 'symbolModel'){
 			accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
 			accessFrom_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
-		else if(from_ArgList$class == 'ModelValues'){
+		else if(from_ArgList$class == 'symbolModelValues'){
 			accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
 			accessFrom_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
@@ -152,12 +152,12 @@ nimCopy_keywordInfo <- keywordInfoClass(
 		else if(from_ArgList$class %in% accessTypes)
 			accessFrom_name <- as.character(code$from)
 		
-		if(to_ArgList$class == 'Model'){
+		if(to_ArgList$class == 'symbolModel'){
 			accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
 			accessTo_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
 			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
-		else if(to_ArgList$class == 'ModelValues'){
+		else if(to_ArgList$class == 'symbolModelValues'){
 			accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
 			accessTo_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
 			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
@@ -181,11 +181,11 @@ nimCopy_keywordInfo <- keywordInfoClass(
 doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
 	processor = function(code, nfProc){
-		possibleObjects <- c('Model', 'NimPtrList', 'NimbleFunctionList')
+		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList')
 		class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
-		if(class == 'NimPtrList' || class == 'NimbleFunctionList')
+		if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
 			return(code)
-		if(class == 'Model'){
+		if(class == 'symbolModel'){
 			singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
 			nodeArg <- code[[3]]
 			if(is.character(nodeArg)){
@@ -217,15 +217,46 @@ doubleBracket_keywordInfo <- keywordInfoClass(
 dollarSign_keywordInfo <- keywordInfoClass(
 	keyword = '$',
 	processor = function(code, nfProc){
-		possibleObjects <- c('Model', 'NimPtrList')
+		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction')
 		class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
-		if(class == 'NimPtrList')
+		if(class == 'symbolNimPtrList')
 			return(code)
-		if(class == 'Model'){
+		if(class == 'symbolModel'){
 			singleAccess_ArgList <- list(code = code, model = code[[2]], var = as.character(code[[3]]) )
 			accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
 			addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
 			return(as.name(accessName))
+		}
+		if(class == 'symbolNimbleFunction'){
+			#	Code is of the form myNimbleFunction$myMethod
+			#   or myNimbleFunction$myVar
+			
+			#	First thing we need to do is remove 'run', for backward compatibility, i.e.
+			#   replace myNimbleFunction$run() -> myNimbleFunction()
+			#   Probably a better way to handle this
+			
+			if(code[[3]] == 'run'){
+				newRunCode <- code[[2]]
+				return(newRunCode)
+			}
+				
+			
+			#	Note that we have cut off '()' in the case of myMethod, so we must inspect the
+			#   nested symbol for myMethod to determine whether it is a method or variable
+			
+			nf_charName <- as.character(code[[2]])
+			nf_fieldName <-as.character(code[[3]])
+			objectSymbol = nfProc$setupSymTab$symbols[[nf_charName]]$nfProc$setupSymTab$symbols[[nf_fieldName]]
+			if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
+				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))
+				return(newRunCode)
+			}
+			else{
+				# I *assume* that if its not a member function, it should be treated with 
+				# nfVar
+				newRunCode <- substitute(nfVar(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))
+				return(newRunCode)
+			}
 		}
 	}
 )
@@ -234,7 +265,7 @@ singleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[',
 	processor = function(code, nfProc){
 		class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
-		if(class == 'ModelValues'){
+		if(class == 'symbolModelValues'){
 			singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
 			accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
 			addNecessarySetupCode(accessName, singleMVAccess_ArgList, singleModelValuesAccessor_SetupTemplate, nfProc)
@@ -501,7 +532,7 @@ symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
 		codeName <- as.character(codeName)
 	if(length(codeName) > 1)
 		return('NULL')
-	class <- gsub('symbol', '', class(symTab$symbols[[codeName]])[1])
+	class <- class(symTab$symbols[[codeName]])[1]
 	if(length(options) == 0)
 		return(class)
 	if(!(class %in% options))
@@ -543,9 +574,9 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
 
 matchFunctions <- new.env()
 matchFunctions[['values']] <- function(model, nodes, accessor){}
-matchFunctions[['calculate']] <- function(model, nodes, nodeFunctionVector){}
-matchFunctions[['simulate']] <- function(model, nodes, includeData = FALSE, nodeFunctionVector){}
-matchFunctions[['getLogProb']] <- function(model, nodes, nodeFunctionVector){}
+matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
+matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
+matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
 
 matchKeywordCode <- function(code){
@@ -554,6 +585,7 @@ matchKeywordCode <- function(code){
 		return(matchAndFill.call(thisFunctionMatch, code ) )
 	return(code)
 }
+
 
 
 

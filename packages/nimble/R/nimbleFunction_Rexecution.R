@@ -29,7 +29,7 @@ asCol <- function(x) {
 rCalcNodes <- function(model, nodes){
 	l_Prob = 0
 	for(nName in nodes)
-		l_Prob = l_Prob + model$nodes[[nName]]$calculate()
+		l_Prob = l_Prob + model$nodeFunctions[[nName]]$calculate()
 	return(l_Prob)
 }
 
@@ -60,68 +60,67 @@ rCalcNodes <- function(model, nodes){
 #' @examples
 #' calculate(model, c('x', 'y[2:4]', 'z[2:5, 1:10]'))
 #' 
-calculate <- function(model, nodes = NA)		
+calculate <- function(model, nodes = NA, nodeFxnVector)		
 {
+	if(!missing(nodeFxnVector)){
+			model <- nodeFxnVector$model
+			nodes <- nodeFxnVector$getNodeNames()
+		return(rCalcNodes(model, nodes))
+		}
 	if(inherits(model, 'modelBaseClass') ){
 		if(is.na(nodes[1]) ) 
 			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
-		nodeNames <- model$modelDef$maps$graphID_2_nodeFunctionName[nfv$gids]
+		nodeNames <- model$expandNodeNames(nfv$gids)
 		return(rCalcNodes(nfv$model, nodeNames))
 	}	
-	if(inherits(model, 'nodeFunctionVector') ){ #This seems like a bad name for the argument but the user will not be using
-		realModel <- model$model
-		nodeNames <- realModel$modelDef$maps$graphID_2_nodeFunctionName[nfv$gids]
-
-		return(rCalcNodes(realModel, nodeNames))	# nodeFunctionVectors, so the names of the arguments will be reasonable to them		
-    }							# but our partially processed code can still work	
 }
 
 rGetLogProbsNodes <- function(model, nodes){
 	l_Prob = 0
 	for(nName in nodes)
-		l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
+		l_Prob = l_Prob + model$nodeFunctions[[nName]]$getLogProb()
 	return(l_Prob)
 }
 
-getLogProb <- function(model, nodes = NA)		
+getLogProb <- function(model, nodes = NA, nodeFxnVector)		
 {
+	if(!missing(nodeFxnVector)){
+		model <- nodeFxnVector$model
+		nodes <- nodeFxnVector$getNodeNames()
+		return(rGetLogProbsNodes(model, nodes))
+	}
 	if( inherits(model, "modelBaseClass") ){		
 		if(is.na(nodes[1]) ) 
                     nodes <- model$getMaps('nodeNamesLHSall')
 
 		nfv <- nodeFunctionVector(model, nodes)
-		nodeNames <- model$modelDef$maps$graphID_2_nodeFunctionName[nfv$gids]
+		nodeNames <- model$expandNodeNames(nfv$gids)
 
     	return(rGetLogProbsNodes(nfv$model, nodeNames))
     }        
-	if( inherits(model, "nodeFunctionVector") ){
-		realModel <- model$model
-		nodeNames <- realModel$modelDef$maps$graphID_2_nodeFunctionName[nfv$gids]
-		return(rGetLogProbsNodes(realModel, nodeNames))
-	}
 }
 
 
 rSimNodes <- function(model, nodes){
 	for(nName in nodes)
-		model$nodes[[nName]]$simulate()
+		model$nodeFunctions[[nName]]$simulate()
 }
 
-simulate <- function(model, nodes = NA, includeData = FALSE)		
+simulate <- function(model, nodes = NA, includeData = FALSE, nodeFxnVector)		
 {
+	if(!missing(nodeFxnVector)){
+		model <- nodeFxnVector$model
+		nodes <- nodeFxnVector$getNodeNames()
+		rSimNodes(model, nodes)
+	}
 	if( inherits(model, "modelBaseClass") ) {
 		if(is.na(nodes[1]) ) 
 			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes, excludeData = !includeData)
-		nodeNames <- model$modelDef$maps$graphID_2_nodeFunctionName[nfv$gids]			
+		nodeNames <- model$expandNodeNames(nfv$gids)			
 		rSimNodes(nfv$model, nodeNames)
 	}
-	if( inherits(model, "nodeFunctionVector") ){
-		realModel <- model$model
-		nodeNames <- realModel$modelDef$maps$graphID_2_nodeFunctionName[nfv$gids]
-		rSimNodes(realModel, nodeNames)
-		}
 }
 
 
@@ -162,10 +161,8 @@ getValuesAccess <- function(vals, access){
 #	}
 	output = as.numeric(NA)
 	
-	accVals <- access$getAccessors()
-		for(acc in accVals)
-			output <- c(output, access$model[[acc$var]][acc$first:acc$last])
-	output <- output[-1]	#Removing the NA from above
+	for(i in seq_along(access$gids) )
+		output[i] <- access$getSingleValue_fromGID(i)
 	return(output)
 }
 
@@ -175,12 +172,8 @@ setValuesAccess <- function(input, access){
 	if(length(input)!= length(access) ) 
 		writeLines('Length of input does not match accessor')
 	else{
-		curIndex = 1
-		accVals <- access$getAccessors()
-		for(acc in accVals){
-			access$model[[acc$var]][acc$first:acc$last] = input[curIndex:(curIndex + acc$length - 1)]
-			curIndex = curIndex + acc$length
-			}
+		for(i in seq_along(access$gids) )
+			access$setSingleValue_fromGID(input[i], i)
 	}
 }	
 

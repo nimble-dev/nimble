@@ -1,6 +1,8 @@
 import(igraph)
 import(methods) 
  useDynLib(nimble, .registration = TRUE) 
+
+export(nimbleFunctionBase)
 export(parseEvalNumeric)
 export(makeMV_GID_Map)
 export(addNodeFxn)

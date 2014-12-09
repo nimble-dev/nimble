@@ -37,7 +37,7 @@ modelVariableAccessorVector <- setRefClass(
         	len_variables <- length(gids)
         	if(accessID <= len_variables){
 	        	thisExpr <- parse(text = model$expandNodeNames(gids[accessID]))[[1]]
-	        	return( eval(thisExpr, envir = myModel) )
+	        	return( eval(thisExpr, envir = model) )
 	        	}
 	        else{
 	        	logVarID <- l_gids[accessID - len_variables]
@@ -51,14 +51,17 @@ modelVariableAccessorVector <- setRefClass(
         	len_variables <- length(gids)
         	if(accessID <= len_variables){
 	        	thisExpr <- parse(text = paste0(model$expandNodeNames(gids[accessID]), '<-', value))		
-	        	eval(thisExpr, envir = myModel)
+	        	eval(thisExpr, envir = model)
 	        }
 	        else{
 	        	logVarID <- l_gids[accessID - len_variables]
 	        	logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
 	        	thisExpr <- parse(text = paste0(logProbName, '<-', value))[[1]]
-				eval(thisExpr, envir = myModel)
+				eval(thisExpr, envir = model)
 	        }
+        },
+        getNodeNames = function(){
+        	model$expandNodeNames(gids, returnScalarComponents = TRUE)	
         },
         show = function(){
 	        cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))
