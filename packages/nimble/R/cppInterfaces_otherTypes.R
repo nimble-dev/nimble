@@ -106,13 +106,12 @@ inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs)
 	nil <- .Call('populateNodeFxnVector_byGID', fxnVecPtr, as.integer(gids), numberedPtrs)
 	
 populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
-#	fxnVecPtr <- getFxnVectorPtr(fxnPtr, fxnVecName)
-
-#	fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
 	
 	fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
 	
 	gids <- Robject[[fxnVecName]]$gids
+	if(length(gids) == 0)
+		browser()
 	numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byGID$.ptr
 
 	# This is not really the most efficient way to do things; eventually 

@@ -474,7 +474,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                    },
                                     buildNodesList = function() {   ## DANGEROUS!!  CAUSES R Studio TO CRASH!!  Unless the option NOT to try to inspect objects is used.
                                         nodes <<- nodeFunctions
-                                        nodes <<- lapply(nodes, function(nf) getFunctionEnvVar(nf, 'nfRefClassObject'))
+                                    #    nodes <<- lapply(nodes, function(nf) getFunctionEnvVar(nf, 'nfRefClassObject'))
                                         return(NULL)
                                     },
                                    show = function() {

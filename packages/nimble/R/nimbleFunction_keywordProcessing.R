@@ -60,8 +60,9 @@ calculate_keywordInfo <- keywordInfoClass(
 simulate_keywordInfo <- keywordInfoClass(
 	keyword = 'simulate',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFxnVector'))
-			return(code)
+		if(!isCodeArgBlank(code, 'nodeFxnVector')){
+			return(substitute(simulate(nodeFxnVector = NODEFXNVECTOR), list(NODEFXNVECTOR = code$nodeFxnVector) ) )
+			}
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
 		if(isCodeArgBlank(code, 'model'))
 			stop('model argument missing from simulate, with no accessor argument supplied')
@@ -75,6 +76,7 @@ simulate_keywordInfo <- keywordInfoClass(
 		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
 		newRunCode <- substitute(simulate(nodeFunctionVector = NODEFUNVEC_NAME),
 											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+											
 		return(newRunCode)	
 		}
 	)
@@ -217,10 +219,25 @@ doubleBracket_keywordInfo <- keywordInfoClass(
 dollarSign_keywordInfo <- keywordInfoClass(
 	keyword = '$',
 	processor = function(code, nfProc){
+
+
+			#	First thing we need to do is remove 'run', for backward compatibility, i.e.
+			#   replace myNimbleFunction$run() -> myNimbleFunction() or
+			#	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
+			#   Probably a better way to handle this
+			
+					
+		if(code[[3]] == 'run'){
+			newRunCode <- code[[2]]
+			return(newRunCode)
+		}
+				
 		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction')
 		class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
-		if(class == 'symbolNimPtrList')
+				
+		if(class == 'symbolNimPtrList'){
 			return(code)
+			}
 		if(class == 'symbolModel'){
 			singleAccess_ArgList <- list(code = code, model = code[[2]], var = as.character(code[[3]]) )
 			accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
@@ -228,17 +245,9 @@ dollarSign_keywordInfo <- keywordInfoClass(
 			return(as.name(accessName))
 		}
 		if(class == 'symbolNimbleFunction'){
+			
 			#	Code is of the form myNimbleFunction$myMethod
 			#   or myNimbleFunction$myVar
-			
-			#	First thing we need to do is remove 'run', for backward compatibility, i.e.
-			#   replace myNimbleFunction$run() -> myNimbleFunction()
-			#   Probably a better way to handle this
-			
-			if(code[[3]] == 'run'){
-				newRunCode <- code[[2]]
-				return(newRunCode)
-			}
 				
 			
 			#	Note that we have cut off '()' in the case of myMethod, so we must inspect the

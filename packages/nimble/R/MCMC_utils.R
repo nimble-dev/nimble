@@ -343,8 +343,8 @@ mcmcStochNode_Init <- nimbleFunction(
 	contains = nimble:::mcmcNodeInit_virtual,	## remove the nimble:::, dummy
 
 	setup = function(model, node){
-		depStochNodes_plusSelf <- c(node, model$getDependencies(node, determOnly = TRUE) )
-		nodeFxnVector <- nodeFunctionVector(model = model, nodeNames = depStochNodes_plusSelf)
+		depDataOrStochNodes_plusSelf <- c(node, model$getDependencies(node, determOnly = TRUE), model$getDependencies(node, dataOnly = TRUE) )
+		nodeFxnVector <- nodeFunctionVector(model = model, nodeNames = depDataOrStochNodes_plusSelf)
 #		theseVals <- c(0,0)		this is preferred, but not working...
 	},
 	run = function(){

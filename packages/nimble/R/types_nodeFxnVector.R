@@ -12,16 +12,6 @@ nodeFunctionVector <- setRefClass(
                #   nodeFunctionRefClassObjects = 'ANY'),
     methods = list(
         initialize = function(model, nodeNames, excludeData = FALSE, env = parent.frame()) {
-	#		if(inherits(nodeNames, 'numeric'))
-	#			nodeFunctionNames <- unique(model$modelDef$maps$graphID_2_nodeFunctionName[sort(nodeNames)])
-	#		else if(inherits(nodeNames, 'character'))
-    #    		nodeFunctionNames <- model$expandNodeNames(nodeNames, sort = TRUE)
-    #    	if(excludeData){
-    #    		nodeIsData <- model$isData(nodeFunctionNames)
-    #    		nodeFunctionNames[!nodeIsData]
-    #    	}
-    #        nodes <<- nodeFunctionNames
-
             model <<- model
             if(is.numeric(nodeNames))		#In case we start with graph ids instead of names
             	temp_gids <- unique( sort(nodeNames) )

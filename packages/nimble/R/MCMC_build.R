@@ -90,6 +90,7 @@ buildMCMC <- nimbleFunction(
         if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
         if(reset) {
             for(i in seq_along(initFunctionList))  {   initFunctionList[[i]]$run()   }
+            calculate(model)
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
             for(i in seq_along(samplerFunctions))      {   nfMethod(samplerFunctions[[i]], 'reset')()   }
             mvSamples_offset  <- 0

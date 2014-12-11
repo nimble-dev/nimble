@@ -29,7 +29,7 @@ asCol <- function(x) {
 rCalcNodes <- function(model, nodes){
 	l_Prob = 0
 	for(nName in nodes)
-		l_Prob = l_Prob + model$nodeFunctions[[nName]]$calculate()
+		l_Prob = l_Prob + model$nodes[[nName]]$calculate()
 	return(l_Prob)
 }
 
@@ -60,7 +60,7 @@ rCalcNodes <- function(model, nodes){
 #' @examples
 #' calculate(model, c('x', 'y[2:4]', 'z[2:5, 1:10]'))
 #' 
-calculate <- function(model, nodes = NA, nodeFxnVector)		
+calculate <- function(model, nodes, nodeFxnVector)		
 {
 	if(!missing(nodeFxnVector)){
 			model <- nodeFxnVector$model
@@ -68,7 +68,7 @@ calculate <- function(model, nodes = NA, nodeFxnVector)
 		return(rCalcNodes(model, nodes))
 		}
 	if(inherits(model, 'modelBaseClass') ){
-		if(is.na(nodes[1]) ) 
+		if(missing(nodes) ) 
 			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
 		nodeNames <- model$expandNodeNames(nfv$gids)
@@ -79,11 +79,11 @@ calculate <- function(model, nodes = NA, nodeFxnVector)
 rGetLogProbsNodes <- function(model, nodes){
 	l_Prob = 0
 	for(nName in nodes)
-		l_Prob = l_Prob + model$nodeFunctions[[nName]]$getLogProb()
+		l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
 	return(l_Prob)
 }
 
-getLogProb <- function(model, nodes = NA, nodeFxnVector)		
+getLogProb <- function(model, nodes, nodeFxnVector)		
 {
 	if(!missing(nodeFxnVector)){
 		model <- nodeFxnVector$model
@@ -91,7 +91,7 @@ getLogProb <- function(model, nodes = NA, nodeFxnVector)
 		return(rGetLogProbsNodes(model, nodes))
 	}
 	if( inherits(model, "modelBaseClass") ){		
-		if(is.na(nodes[1]) ) 
+		if(missing(nodes) ) 
                     nodes <- model$getMaps('nodeNamesLHSall')
 
 		nfv <- nodeFunctionVector(model, nodes)
@@ -104,10 +104,10 @@ getLogProb <- function(model, nodes = NA, nodeFxnVector)
 
 rSimNodes <- function(model, nodes){
 	for(nName in nodes)
-		model$nodeFunctions[[nName]]$simulate()
+		model$nodes[[nName]]$simulate()
 }
 
-simulate <- function(model, nodes = NA, includeData = FALSE, nodeFxnVector)		
+simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
 {
 	if(!missing(nodeFxnVector)){
 		model <- nodeFxnVector$model
@@ -115,7 +115,7 @@ simulate <- function(model, nodes = NA, includeData = FALSE, nodeFxnVector)
 		rSimNodes(model, nodes)
 	}
 	if( inherits(model, "modelBaseClass") ) {
-		if(is.na(nodes[1]) ) 
+		if(missing(nodes) ) 
 			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes, excludeData = !includeData)
 		nodeNames <- model$expandNodeNames(nfv$gids)			
