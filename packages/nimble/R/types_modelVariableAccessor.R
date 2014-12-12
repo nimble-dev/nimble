@@ -26,10 +26,17 @@ modelVariableAccessorVector <- setRefClass(
                    ),		
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-        	gids <<- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE, returnType = 'ids')
+        	isLogProbName <- grepl('logProb_', nodeNames)
+        	nodeOnlyNames <- nodeNames[!isLogProbName]
+        	logProbNames <- nodeNames[isLogProbName]
+        	gids <<- model$expandNodeNames(nodeOnlyNames, returnScalarComponents = TRUE, returnType = 'ids')
         	l_gids <<- numeric(0)
+			if(length(logProbNames) > 0){
+				nodeName_fromLogProbName <- gsub('logProb_', '', logProbNames)
+				l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeName_fromLogProbName))
+			}
         	if(logProb)
-        		l_gids <<- model$modelDef$nodeName2LogProbID(nodeNames)
+        		l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeOnlyNames))
             length <<- length(gids) + length(l_gids)
    			model <<- model
          },
