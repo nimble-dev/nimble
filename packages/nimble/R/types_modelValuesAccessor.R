@@ -30,10 +30,9 @@ modelValuesAccessorVector <- setRefClass(
                   ),
     methods = list(
         initialize = function(modelValues, nodeNames, logProb = FALSE, env = parent.frame()) {
-        	
 	        isLogProbName <- grepl('logProb_', nodeNames)
 	        nodeOnlyNames <- nodeNames[!isLogProbName]
-	        suppliedLogProbNames <-nodeNames[isLogProbName]
+	        suppliedLogProbNames <- nodeNames[isLogProbName]
         	inferredLogProbNames <- character(0)
         	if(logProb){
         		if(!inherits(modelValues$modelDef,'modelDefClass'))
@@ -44,7 +43,6 @@ modelValuesAccessorVector <- setRefClass(
         	gids <<- modelValues$expandNodeNames(nodeNames, returnType = 'ids')
         	modelValues <<- modelValues
         	length <<- length(gids)
-        	        	
         },
        getNodeNames = function() {
        	modelValues$expandNodeNames(gids)

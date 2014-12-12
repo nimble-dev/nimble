@@ -101,7 +101,16 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
-nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase')	#	$runRelated
+nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase', 
+									fields = list(
+										.generatorFunction = 'ANY',
+										.CobjectInterface = 'ANY', 
+										.newSetupLinesProcessed = 'ANY'
+									),
+									methods = list(
+									initialize = function(...)
+										callSuper(...)
+									))	#	$runRelated
 
 
 ## template for the reference class internal to all nimble functions
@@ -130,9 +139,9 @@ nf_createRefClassDef_fields <- function(setup, methodList) {
     if(FALSE) print(setupOutputNames)
     fields <- as.list(rep('ANY', length(setupOutputNames)))
     names(fields) <- setupOutputNames
-    fields$.generatorFunction = 'ANY'
-    fields$.CobjectInterface <- 'ANY'
-    fields$.newSetupLinesProcessed <- 'ANY'
+  #  fields$.generatorFunction = 'ANY'
+  #  fields$.CobjectInterface <- 'ANY'
+  #  fields$.newSetupLinesProcessed <- 'ANY'
     return(fields)
 }
 
