@@ -101,6 +101,9 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
+nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase')	#	$runRelated
+
+
 ## template for the reference class internal to all nimble functions
 nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker()) {
     finalMethodList <- lapply(methodList, function(nfMethodRCobject) nfMethodRCobject$generateFunctionObject())
@@ -110,6 +113,7 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
         setRefClass(Class   = NFREFCLASS_CLASSNAME,
                     fields  = NFREFCLASS_FIELDS,
                     methods = NFREFCLASS_METHODS, 
+                    contains = 'nimbleFunctionBase',	#	$runRelated
                     where   = where),
         list(NFREFCLASS_CLASSNAME = className,
              NFREFCLASS_FIELDS    = nf_createRefClassDef_fields(setup, methodList),
@@ -177,10 +181,17 @@ nf_createGeneratorFunctionDef <- function(setup) {
             nfRefClassObject$.generatorFunction <- generatorFunction   # link upwards to get the generating function of this nf
             for(.var_unique_name_1415927 in nf_namesNotHidden(names(nfRefClass$fields())))    { nfRefClassObject[[.var_unique_name_1415927]] <- get(.var_unique_name_1415927) }     # assign setupOutputs into reference class object
             ## instances[[length(instances)+1]] <<- nfRefClassObject   # record this instance of the reference class
-            nf <- function(...) { nfRefClassObject$run(...) }       # create the wrapper function to hold the reference class object
-            environment(nf) <- new.env(parent = parent.frame())
-            environment(nf)$nfRefClassObject <- nfRefClassObject    # assign reference class object into function environment
-            return(nf)
+            
+            #	$runRelated	
+            
+            return(nfRefClassObject)
+            
+            
+            
+    #        nf <- function(...) { nfRefClassObject$run(...) }       # create the wrapper function to hold the reference class object
+   #         environment(nf) <- new.env(parent = parent.frame())
+   #         environment(nf)$nfRefClassObject <- nfRefClassObject    # assign reference class object into function environment
+   #         return(nf)
         },
         list(SETUPCODE = nf_processSetupFunctionBody(setup, returnCode = TRUE)))
     generatorFunctionDef[[4]] <- NULL

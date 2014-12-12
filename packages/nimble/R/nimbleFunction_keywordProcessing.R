@@ -37,7 +37,7 @@ values_keywordInfo <- keywordInfoClass(
 calculate_keywordInfo <- keywordInfoClass(
 	keyword = 'calculate',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFunctionVector'))
+		if(!isCodeArgBlank(code, 'nodeFxnVector'))
 			return(code)
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
 		if(isCodeArgBlank(code, 'model'))
@@ -60,8 +60,9 @@ calculate_keywordInfo <- keywordInfoClass(
 simulate_keywordInfo <- keywordInfoClass(
 	keyword = 'simulate',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFunctionVector'))
-			return(code)
+		if(!isCodeArgBlank(code, 'nodeFxnVector')){
+			return(substitute(simulate(nodeFxnVector = NODEFXNVECTOR), list(NODEFXNVECTOR = code$nodeFxnVector) ) )
+			}
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
 		if(isCodeArgBlank(code, 'model'))
 			stop('model argument missing from simulate, with no accessor argument supplied')
@@ -75,6 +76,7 @@ simulate_keywordInfo <- keywordInfoClass(
 		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
 		newRunCode <- substitute(simulate(nodeFunctionVector = NODEFUNVEC_NAME),
 											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+											
 		return(newRunCode)	
 		}
 	)
@@ -82,7 +84,7 @@ simulate_keywordInfo <- keywordInfoClass(
 getLogProb_keywordInfo <- keywordInfoClass(
 	keyword = 'getLogProb',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFunctionVector'))
+		if(!isCodeArgBlank(code, 'nodeFxnVector'))
 			return(code)
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
 		if(isCodeArgBlank(code, 'model'))
@@ -104,9 +106,9 @@ getLogProb_keywordInfo <- keywordInfoClass(
 nimCopy_keywordInfo <- keywordInfoClass(
 	keyword = 'nimCopy',
 	processor = function(code, nfProc){
-		possibleObjects <- c('Model', 'ModelValues', 'ModelVariableAccessorVector', 'ModelValuesAccessorVector')
-		modelValuesTypes <- c('ModelValues', 'ModelValuesAccessorVector')
-		accessTypes <- c('ModelVariableAccessorVector', 'ModelValuesAccessorVector')
+		possibleObjects <- c('symbolModel', 'symbolModelValues', 'symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
+		modelValuesTypes <- c('symbolModelValues', 'symbolModelValuesAccessorVector')
+		accessTypes <- c('symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
 		from_ArgList <- list(name = code$from, class = symTypeFromSymTab(code$from, nfProc$setupSymTab, options = possibleObjects))
 		to_ArgList <- list(name = code$to, class = symTypeFromSymTab(code$to, nfProc$setupSymTab, options = possibleObjects))
 		if(from_ArgList$class %in% modelValuesTypes){
@@ -121,12 +123,12 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			else		to_ArgList$row = code$rowTo
 		}
 		if(isCodeArgBlank(code, 'nodes')){
-			if(from_ArgList$class == 'Model'){
+			if(from_ArgList$class == 'symbolModel'){
 				node_ArgList <- list(model = from_ArgList$name)
 				allNodes_name <- allModelNodes_SetupTemplate$makeName( node_ArgList )
 				addNecessarySetupCode(allNodes_name, node_ArgList, allModelNodes_SetupTemplate, nfProc)
 			}
-			else if(from_ArgList$class == 'ModelValues'){
+			else if(from_ArgList$class == 'symbolModelValues'){
 				from_ArgList$row = code$row
 				mvVar_ArgList <- list(modelValues = from_ArgList$name)
 				allNodes_name <- allModelValuesVars_SetupTemplate$makeName(mvVar_ArgList)
@@ -139,12 +141,12 @@ nimCopy_keywordInfo <- keywordInfoClass(
 		if(isCodeArgBlank(code, 'nodesTo'))		to_ArgList$nodes <- from_ArgList$nodes
 		else									to_ArgList$nodes <- code$nodesTo
 				
-		if(from_ArgList$class == 'Model'){
+		if(from_ArgList$class == 'symbolModel'){
 			accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
 			accessFrom_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
-		else if(from_ArgList$class == 'ModelValues'){
+		else if(from_ArgList$class == 'symbolModelValues'){
 			accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
 			accessFrom_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
@@ -152,12 +154,12 @@ nimCopy_keywordInfo <- keywordInfoClass(
 		else if(from_ArgList$class %in% accessTypes)
 			accessFrom_name <- as.character(code$from)
 		
-		if(to_ArgList$class == 'Model'){
+		if(to_ArgList$class == 'symbolModel'){
 			accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
 			accessTo_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
 			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
-		else if(to_ArgList$class == 'ModelValues'){
+		else if(to_ArgList$class == 'symbolModelValues'){
 			accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
 			accessTo_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
 			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
@@ -181,11 +183,11 @@ nimCopy_keywordInfo <- keywordInfoClass(
 doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
 	processor = function(code, nfProc){
-		possibleObjects <- c('Model', 'NimPtrList', 'NimbleFunctionList')
+		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList')
 		class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
-		if(class == 'NimPtrList' || class == 'NimbleFunctionList')
+		if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
 			return(code)
-		if(class == 'Model'){
+		if(class == 'symbolModel'){
 			singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
 			nodeArg <- code[[3]]
 			if(is.character(nodeArg)){
@@ -217,15 +219,53 @@ doubleBracket_keywordInfo <- keywordInfoClass(
 dollarSign_keywordInfo <- keywordInfoClass(
 	keyword = '$',
 	processor = function(code, nfProc){
-		possibleObjects <- c('Model', 'NimPtrList')
+
+
+			#	First thing we need to do is remove 'run', for backward compatibility, i.e.
+			#   replace myNimbleFunction$run() -> myNimbleFunction() or
+			#	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
+			#   Probably a better way to handle this
+			
+					
+		if(code[[3]] == 'run'){
+			newRunCode <- code[[2]]
+			return(newRunCode)
+		}
+				
+		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction')
 		class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
-		if(class == 'NimPtrList')
+				
+		if(class == 'symbolNimPtrList'){
 			return(code)
-		if(class == 'Model'){
+			}
+		if(class == 'symbolModel'){
 			singleAccess_ArgList <- list(code = code, model = code[[2]], var = as.character(code[[3]]) )
 			accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
 			addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
 			return(as.name(accessName))
+		}
+		if(class == 'symbolNimbleFunction'){
+			
+			#	Code is of the form myNimbleFunction$myMethod
+			#   or myNimbleFunction$myVar
+				
+			
+			#	Note that we have cut off '()' in the case of myMethod, so we must inspect the
+			#   nested symbol for myMethod to determine whether it is a method or variable
+			
+			nf_charName <- as.character(code[[2]])
+			nf_fieldName <-as.character(code[[3]])
+			objectSymbol = nfProc$setupSymTab$symbols[[nf_charName]]$nfProc$setupSymTab$symbols[[nf_fieldName]]
+			if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
+				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))
+				return(newRunCode)
+			}
+			else{
+				# I *assume* that if its not a member function, it should be treated with 
+				# nfVar
+				newRunCode <- substitute(nfVar(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))
+				return(newRunCode)
+			}
 		}
 	}
 )
@@ -234,7 +274,7 @@ singleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[',
 	processor = function(code, nfProc){
 		class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
-		if(class == 'ModelValues'){
+		if(class == 'symbolModelValues'){
 			singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
 			accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
 			addNecessarySetupCode(accessName, singleMVAccess_ArgList, singleModelValuesAccessor_SetupTemplate, nfProc)
@@ -501,7 +541,7 @@ symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
 		codeName <- as.character(codeName)
 	if(length(codeName) > 1)
 		return('NULL')
-	class <- gsub('symbol', '', class(symTab$symbols[[codeName]])[1])
+	class <- class(symTab$symbols[[codeName]])[1]
 	if(length(options) == 0)
 		return(class)
 	if(!(class %in% options))
@@ -543,9 +583,9 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
 
 matchFunctions <- new.env()
 matchFunctions[['values']] <- function(model, nodes, accessor){}
-matchFunctions[['calculate']] <- function(model, nodes, nodeFunctionVector){}
-matchFunctions[['simulate']] <- function(model, nodes, includeData = FALSE, nodeFunctionVector){}
-matchFunctions[['getLogProb']] <- function(model, nodes, nodeFunctionVector){}
+matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
+matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
+matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
 
 matchKeywordCode <- function(code){
@@ -553,4 +593,144 @@ matchKeywordCode <- function(code){
 	if(!is.null(thisFunctionMatch))
 		return(matchAndFill.call(thisFunctionMatch, code ) )
 	return(code)
+}
+
+
+
+
+
+
+
+
+
+
+makeSingleIndexAccessExpr <- function(newName, newNameExpr) {
+    codeNames <- makeSingleIndexAccessCodeNames(newName)
+    subList <- lapply(codeNames, as.name)
+    ans <- substitute( name[MflatIndex], c(list(name = newNameExpr), subList))
+    ans
+}
+
+## want map(name, nDim, offset, sizelist, stridelist)
+## this is a unique case, where sizelist and stridelist are just lists
+## stuck in there
+makeMapAccessExpr <- function(newName, newNameExpr, nDim) { ## newNameExpr not used any more!
+    codeNames <- makeMapSetupCodeNames(newName)
+    subList <- lapply(codeNames, as.name)
+    if(nDim == 0) { ## not sure this can happen
+        sizeExprList <- strideExprList <- list()
+    }
+    if(nDim == 1) {
+        sizeExprList <- list(substitute(Msizes, subList))
+        strideExprList <- list(substitute(Mstrides, subList))
+    }
+    if(nDim >= 2) {
+        sizeExprList <- rep(list( substitute(Msizes[1], subList)), nDim)
+        for(i in 1:nDim) sizeExprList[[i]][[3]] <- i
+        strideExprList <- rep(list( substitute(Mstrides[1], subList)), nDim)
+        for(i in 1:nDim) strideExprList[[i]][[3]] <- i
+    }
+    ans <- substitute(map( name, nDim, Moffset, sizes, strides),
+                      c(subList, list(nDim = nDim, name = newName, sizes = sizeExprList, strides = strideExprList)))
+    ans
+}
+
+determineNdimFromOneCase <- function(model, varAndIndices) {
+    varInfo <- try(model$getVarInfo(as.character(varAndIndices$varName)))
+    if(inherits(varInfo, 'try-error')) browser()
+    varNdim <- varInfo$nDim
+    if(length(varAndIndices$indices) == 0) return(varNdim)
+    if(length(varAndIndices$indices) != varNdim) {
+        stop(paste0('Error, wrong number of dimensions in a node label for ', varAndIndices$varName, '.  Expected ',varNdim,' indices but got ', length(varAndIndices$indices),'.'))
+    }
+    dropNdim <- sum(unlist(lapply(varAndIndices$indices, is.numeric)))
+    return(varNdim - dropNdim)
+}
+
+
+
+## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
+
+varAndIndices2mapParts <- function(varAndIndices, varInfo) {
+    varName <- varAndIndices$name
+    indices <- varAndIndices$indices
+    ## put together offsetExpr, sizeExprs, strideExprs
+    ## need sizes to get strides
+    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
+    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
+        nDim <- varInfo$nDim
+        blockBool <- rep(TRUE, nDim)
+        firstIndexRexprs <- rep(list(1), nDim)
+        targetSizes <- sizes
+    } else {
+        nDim <- length(indices)
+        firstIndexRexprs <- vector('list', nDim)
+        targetSizes <- integer(nDim)
+        blockBool <- rep(FALSE, nDim)
+        for(i in seq_along(indices)) {
+            if(is.blank(indices[[i]])) {
+                blockBool[i] <- TRUE
+                firstIndexRexprs[[i]] <- 1
+                targetSizes[i] <- sizes[i]
+            }
+            else if(is.numeric(indices[[i]])) {
+                firstIndexRexprs[[i]] <- indices[[i]]
+            } else {
+                ## better be :
+                if(indices[[i]][[1]] != ":") stop("error, expecting : here")
+                blockBool[i] <- TRUE
+                firstIndexRexprs[[i]] <- indices[[i]][[2]]
+                targetSizes[i] <- indices[[i]][[3]] - indices[[i]][[2]] + 1
+            }
+        }
+    }
+    strides <- c(1, cumprod(sizes[-length(sizes)]))
+    sourceStrideRexprs <- as.list(strides)
+    targetOffsetRexpr <- makeOffsetRexpr(firstIndexRexprs, sourceStrideRexprs)
+    targetStrides <- strides[blockBool]
+    targetSizes <- targetSizes[blockBool]
+    list(offset = eval(targetOffsetRexpr),
+         sizes = targetSizes,
+         strides = targetStrides)
+}
+
+
+getVarAndIndices <- function(code) {
+    if(is.character(code)) code <- parse(text = code, keep.source = FALSE)[[1]]
+    if(length(code) > 1) {
+        if(code[[1]] == '[') {
+            varName <- code[[2]]
+            indices <- as.list(code[-c(1,2)])
+        } else {
+            stop(paste('Error:', deparse(code), 'is a malformed node label.'))
+        }
+    } else {
+        varName <- code
+        indices <- list()
+    }
+    list(varName = varName, indices = indices)
+}
+
+## This takes the indices field returned by getVarAndIndices and turns it into a matrix
+## e.g. from getVarAndIndices('x[1:3, 2:4]'), we have varName = 'x' and indices = list(quote(1:3), quote(2:4))
+## indexExprs2matrix takes the indices and makes [1 3; 2 4]
+
+varAndIndices2flatIndex <- function(varAndIndices, varInfo) {
+    if(length(varInfo$maxs) == 0) return(1) ## A -1 is done automatically, later, so here we should stay in R's 1-based indexing
+    sizes <- varInfo$maxs
+    strides <- c(1, cumprod(sizes[-length(sizes)]))
+    flatIndex <- 1 + sum((unlist(varAndIndices$indices)-1) * strides)
+    flatIndex
+}
+
+
+makeMapSetupCodeNames <- function(baseName) {
+    list(Mstrides = paste0(baseName, '_strides'),
+         Msizes = paste0(baseName, '_sizes'),
+         Moffset = paste0(baseName, '_offset'))
+}
+
+
+makeSingleIndexAccessCodeNames <- function(baseName) {
+    list(MflatIndex = paste0(baseName, '_flatIndex'))
 }

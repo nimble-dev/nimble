@@ -94,7 +94,8 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         nrow = 'numeric',  ## nrow is the actually the length of the lists for each variable
                                         CobjectInterface = 'ANY',
                                         mvSpec = 'ANY', 
-                                        modelDef = 'ANY'),
+                                        modelDef = 'ANY', 
+                                        GID_map = 'ANY'),
                                     methods = list(
                                         initialize = function(nrow = 1L,...) {
                                         	callSuper(...)
@@ -103,6 +104,7 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                             for(vN in varNames) {
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
+                                            GID_map <<- makeMV_GID_Map(.self)
                                         },
                                         getSymbolTable = function() {
                                             return(symTab)
@@ -111,7 +113,11 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         	if(!includeLogProb)
                                         		return(varNames)
                                         	return(varNames[!grepl('logProb_', varNames)])
-                                        }
+                                        },
+                                        expandNodeNames = function(nodeNames, returnType = "names", flatIndices = TRUE) 
+										{
+	    									return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
+	    								}                          
                                       )
                                     )
 
@@ -316,4 +322,58 @@ pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb 
       model[[makeNameName(vars[i])]] <- toVars[i]
       model[[makeRowName(vars[i])]] <- as.integer(index)
   }
+}
+
+
+
+makeMV_GID_Map <- function(mv){
+	sizeList = mv$sizes
+    varNames = mv$varNames
+    nodeNames = NA
+    nodeIndex = 0
+    nodeNames2GID_maps <- new.env()
+    all.names <- character()
+    all.flatIndexNames <- character()
+    for (i in seq_along(varNames)) {
+        baseName = varNames[i]
+        dims = sizeList[[baseName]]
+        if (length(dims) == 1 & dims[1] == 1) {
+            nodeNames[nodeIndex + 1] = baseName
+            nodeIndex <- nodeIndex + 1
+            nodeNames2GID_maps[[baseName]] <- nodeIndex
+            all.names <- c(all.names, baseName)
+            all.flatIndexNames <- c(all.flatIndexNames, baseName)
+        }
+        else {
+            mins <- rep(1, length(dims))
+            indexStuff <- paste(mins, dims, sep = ":", collapse = ", ")
+            compactNodeNames <- paste0(baseName, "[", indexStuff, 
+                "]")
+            expandedNodeNames <- nl_expandNodeIndex(compactNodeNames)
+            nodeNames[nodeIndex + 1:length(expandedNodeNames)] <- expandedNodeNames
+            
+            nodeNames2GID_maps[[baseName]] <- array(dim = dims)
+            nodeNames2GID_maps[[baseName]][1:length(expandedNodeNames)] <- nodeIndex + 1:length(expandedNodeNames)
+            nodeIndex = nodeIndex + length(expandedNodeNames)
+        	all.names <- c(all.names, expandedNodeNames)
+        	all.flatIndexNames <- c(all.flatIndexNames, paste0(baseName, '[', 1:length(expandedNodeNames) ,']' ))
+        }
+    	
+    }
+    GID_Map <- new.env()
+    GID_Map[['nodeNames2GID_maps']] <- nodeNames2GID_maps
+    GID_Map[['graphID_2_nodeName']] <- all.names
+    GID_Map[['graphID_2_flatIndexNames']] <- all.flatIndexNames
+    GID_Map[['expandNodeNames']] <- function(nodeNames, returnType = 'names', flatIndices = TRUE){
+    	if(length(nodeNames) == 0)	return(NULL)
+    	gIDs <- unlist(sapply(nodeNames, parseEvalNumeric, env = GID_Map$nodeNames2GID_maps, USE.NAMES = FALSE) )
+    	gIDs <- gIDs[!is.na(gIDs)]
+    	if(returnType == 'names'){
+    		if(flatIndices == TRUE)
+    			return(GID_Map$graphID_2_flatIndexNames[gIDs])
+    		return(GID_Map$graphID_2_nodeName[gIDs])
+    		}
+    	return(gIDs)
+    }
+    return(GID_Map)
 }

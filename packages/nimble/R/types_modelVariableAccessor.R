@@ -19,40 +19,53 @@ modelVariableAccessor <- setRefClass(
 
 modelVariableAccessorVector <- setRefClass(
     Class = 'modelVariableAccessorVector',
-    fields = list(model = 'ANY',
-                  nodes ='ANY', 		#'character',
-                  modelVariableAccessors = 'ANY',
-                  length = 'ANY' ),		#'numeric'),
+    fields = list(model = 	'ANY',
+    			  gids = 	'ANY',
+    			  l_gids = 	'ANY',	#graph IDS for log probabilities, which is a different set of graph IDs than for nodes
+                  length = 	'ANY'
+                   ),		
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-
-       #     nodeNames <- nl_expandNodeNames(nodeNames, model$getSymbolTable(), env) 
-       		nodeNames <- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE)
-       # 	expands nodeNames to fully indexed form, including expanding variables using the symbolTable
-    
-       #    if(logProb){
-       #        nodeNames <- c(nodeNames, makeLogProbName(nodeNames))
-       #        nodeNames <- nl_removeNodeNamesNotInSymbolTable(nodeNames, model$getSymbolTable())
-       #    }
-        	
-			if(logProb){
-	        	logProbNames <- model$modelDef$nodeName2LogProbName(nodeNames)
-        		nodeNames <- c(nodeNames, logProbNames)
-        	}
-            varsAndFlatIndexRanges <- nl_createVarsAndFlatIndexRanges(nodeNames, model$getSymbolTable())  
-            	# creates a list of variable names, and ranges of the flat index
-            model <<- model
-            nodes <<- nodeNames
-            modelVariableAccessors <<- lapply(varsAndFlatIndexRanges, function(vafir) modelVariableAccessor(model=model, var=vafir$var, first=vafir$ind[1], last=vafir$ind[2], length = vafir$ind[2] - vafir$ind[1] + 1))
-            
-            
-            len = 0
-            for(mv in modelVariableAccessors)
-            	len = len + mv$length
-            length <<- len
+        	gids <<- model$expandNodeNames(nodeNames, returnScalarComponents = TRUE, returnType = 'ids')
+        	l_gids <<- numeric(0)
+        	if(logProb)
+        		l_gids <<- model$modelDef$nodeName2LogProbID(nodeNames)
+            length <<- length(gids) + length(l_gids)
+   			model <<- model
+         },
+        getSingleValue_fromGID = function(accessID){
+        	len_variables <- length(gids)
+        	if(accessID <= len_variables){
+	        	thisExpr <- parse(text = model$expandNodeNames(gids[accessID]))[[1]]
+	        	return( eval(thisExpr, envir = model) )
+	        	}
+	        else{
+	        	logVarID <- l_gids[accessID - len_variables]
+	        	logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
+	        	thisExpr <- parse(text = logProbName)[[1]]
+	        	return(eval(thisExpr, envir = model))
+	        	}
+	        	
         },
-        getAccessors = function() return(modelVariableAccessors),
-        show = function() cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))
+        setSingleValue_fromGID = function(value, accessID){
+        	len_variables <- length(gids)
+        	if(accessID <= len_variables){
+	        	thisExpr <- parse(text = paste0(model$expandNodeNames(gids[accessID]), '<-', value))		
+	        	eval(thisExpr, envir = model)
+	        }
+	        else{
+	        	logVarID <- l_gids[accessID - len_variables]
+	        	logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
+	        	thisExpr <- parse(text = paste0(logProbName, '<-', value))[[1]]
+				eval(thisExpr, envir = model)
+	        }
+        },
+        getNodeNames = function(){
+        	model$expandNodeNames(gids, returnScalarComponents = TRUE)	
+        },
+        show = function(){
+	        cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))
+	        }
     )
 )
 

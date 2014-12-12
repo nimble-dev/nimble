@@ -60,17 +60,21 @@ rCalcNodes <- function(model, nodes){
 #' @examples
 #' calculate(model, c('x', 'y[2:4]', 'z[2:5, 1:10]'))
 #' 
-calculate <- function(model, nodes = NA)		
+calculate <- function(model, nodes, nodeFxnVector)		
 {
+	if(!missing(nodeFxnVector)){
+			model <- nodeFxnVector$model
+			nodes <- nodeFxnVector$getNodeNames()
+		return(rCalcNodes(model, nodes))
+		}
 	if(inherits(model, 'modelBaseClass') ){
-		if(is.na(nodes[1]) ) 
+		if(missing(nodes) ) 
 			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
-		return(rCalcNodes(nfv$model, nfv$nodes))
+		nodeNames <- model$expandNodeNames(nfv$gids)
+		return(rCalcNodes(nfv$model, nodeNames))
 	}	
-	if(inherits(model, 'nodeFunctionVector') ) #This seems like a bad name for the argument but the user will not be using
-		return(rCalcNodes(model$model, model$nodes))	# nodeFunctionVectors, so the names of the arguments will be reasonable to them		
-    }							# but our partially processed code can still work	
+}
 
 rGetLogProbsNodes <- function(model, nodes){
 	l_Prob = 0
@@ -79,17 +83,22 @@ rGetLogProbsNodes <- function(model, nodes){
 	return(l_Prob)
 }
 
-getLogProb <- function(model, nodes = NA)		
+getLogProb <- function(model, nodes, nodeFxnVector)		
 {
+	if(!missing(nodeFxnVector)){
+		model <- nodeFxnVector$model
+		nodes <- nodeFxnVector$getNodeNames()
+		return(rGetLogProbsNodes(model, nodes))
+	}
 	if( inherits(model, "modelBaseClass") ){		
-		if(is.na(nodes[1]) ) 
+		if(missing(nodes) ) 
                     nodes <- model$getMaps('nodeNamesLHSall')
 
 		nfv <- nodeFunctionVector(model, nodes)
-    	return(rGetLogProbsNodes(nfv$model, nfv$nodes))
+		nodeNames <- model$expandNodeNames(nfv$gids)
+
+    	return(rGetLogProbsNodes(nfv$model, nodeNames))
     }        
-	if( inherits(model, "nodeFunctionVector") )
-		return(rGetLogProbsNodes(model$model, model$nodes))
 }
 
 
@@ -98,20 +107,20 @@ rSimNodes <- function(model, nodes){
 		model$nodes[[nName]]$simulate()
 }
 
-simulate <- function(model, nodes = NA, includeData = FALSE)		
+simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
 {
-	if( inherits(model, "modelBaseClass") ) {
-		if(is.na(nodes[1]) ) 
-			nodes <- model$getMaps('nodeNamesLHSall')
-		nfv <- nodeFunctionVector(model, nodes)
-		if(!includeData) {
-			nodes = nfv$nodes
-                        nfv <- nodeFunctionVector(model, nodes[!model$isData(nodes)])
-		}		
-	rSimNodes(nfv$model, nfv$nodes)
+	if(!missing(nodeFxnVector)){
+		model <- nodeFxnVector$model
+		nodes <- nodeFxnVector$getNodeNames()
+		rSimNodes(model, nodes)
 	}
-	if( inherits(model, "nodeFunctionVector") )
-		rSimNodes(model$model, model$nodes)
+	if( inherits(model, "modelBaseClass") ) {
+		if(missing(nodes) ) 
+			nodes <- model$getMaps('nodeNamesLHSall')
+		nfv <- nodeFunctionVector(model, nodes, excludeData = !includeData)
+		nodeNames <- model$expandNodeNames(nfv$gids)			
+		rSimNodes(nfv$model, nodeNames)
+	}
 }
 
 
@@ -152,10 +161,8 @@ getValuesAccess <- function(vals, access){
 #	}
 	output = as.numeric(NA)
 	
-	accVals <- access$getAccessors()
-		for(acc in accVals)
-			output <- c(output, access$model[[acc$var]][acc$first:acc$last])
-	output <- output[-1]	#Removing the NA from above
+	for(i in seq_along(access$gids) )
+		output[i] <- access$getSingleValue_fromGID(i)
 	return(output)
 }
 
@@ -165,12 +172,8 @@ setValuesAccess <- function(input, access){
 	if(length(input)!= length(access) ) 
 		writeLines('Length of input does not match accessor')
 	else{
-		curIndex = 1
-		accVals <- access$getAccessors()
-		for(acc in accVals){
-			access$model[[acc$var]][acc$first:acc$last] = input[curIndex:(curIndex + acc$length - 1)]
-			curIndex = curIndex + acc$length
-			}
+		for(i in seq_along(access$gids) )
+			access$setSingleValue_fromGID(input[i], i)
 	}
 }	
 
@@ -288,11 +291,15 @@ values <- function(model, nodes){
 #' 
 #' cCopy() ## execute the copy with the compiled function
 nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
+
+	isFromModel = NA
+	isToModel = NA
     if(missing(nodes) ) 
         nodes = allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
         accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
         rowFrom = NA
+        isFromModel = TRUE
     }
     else if(inherits(from, "modelValuesBaseClass"))
     {
@@ -300,6 +307,7 @@ nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb
         if(is.na(row))
             stop("Error: need to supply 'row' for a modelValues copy")
         rowFrom = row
+        isFromModel = FALSE
     }
     if( inherits(to, "modelBaseClass") ){
         if(is.na(nodesTo[[1]]) ) 
@@ -307,6 +315,7 @@ nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb
 		else
 			accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
 		rowTo = NA
+		isToModel = TRUE
 		}
 	else if(inherits(to, "modelValuesBaseClass"))
 		{
@@ -316,51 +325,33 @@ nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb
 			accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
 		if(is.na(rowTo))
 			rowTo = row
+		isToModel = FALSE
 		}
-	nimCopyAccess(accessFrom, accessTo, rowFrom, rowTo)
+		if(is.na(isFromModel))
+			stop('argument "from" in nimCopy is neither a model nor modelValues')
+		if(is.na(isToModel))
+			stop('argument "to" in nimCopy is neither a model nor modelValues')
+
+		
+		lengthTo = accessTo$length
+		lengthFrom = accessFrom$length
+		if(lengthTo != lengthFrom)
+			stop('lengths not equal in nimCopy') 
+		if(lengthTo > 0){
+			for(i in 1:lengthTo){
+				if(isFromModel)
+					valueFrom = accessFrom$getSingleValue_fromGID(i)
+				else
+					valueFrom = accessFrom$getSingleValue_fromGID(i, rowFrom)
+				
+				if(isToModel)
+					accessTo$setSingleValue_fromGID(valueFrom, i)
+				else
+					accessTo$setSingleValue_fromGID(valueFrom, i, rowTo)
+			}
+		}
 }
 
-nimCopyAccess <- function(accessFrom, accessTo,  rowFrom = NA, rowTo = NA){
-	
-	if(length(accessTo) != length(accessFrom) ){
-		cat("accessTo length = ", length(accessTo), " accessFrom length = ", length(accessFrom), "\n")
-		stop("Size of access's not equivalent")
-	}
-	if(inherits(accessTo, "modelValuesAccessorVector") ){
-		MVTo = accessTo$modelValues
-		if(is.na(rowTo))
-			stop("need to specify rowTo for modelValues")
-	}
-	if(inherits(accessTo, "modelVariableAccessorVector") )
-		MVTo = accessTo$model
-	if(inherits(accessFrom, "modelValuesAccessorVector") ){
-		MVFrom = accessFrom$modelValues
-		if(is.na(rowFrom))
-			stop("need to specify rowFrom for modelValues")
-
-	}
-	if(inherits(accessFrom, "modelVariableAccessorVector") )
-		MVFrom = accessFrom$model
-	accTo = accessTo$getAccessors()
-	accFrom = accessFrom$getAccessors()
-	if(inherits(accessTo, "modelValuesAccessorVector") & inherits(accessFrom, "modelValuesAccessorVector")){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][[rowTo]][accTo[[i]]$first:accTo[[i]]$last] <- MVFrom[[accFrom[[i]]$var]][[rowFrom]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-	else if(inherits(accessTo, "modelVariableAccessorVector") & inherits(accessFrom, "modelVariableAccessorVector")){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][accTo[[i]]$first:accTo[[i]]$last] <- MVFrom[[accFrom[[i]]$var]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-	else if(inherits(accessTo, "modelValuesAccessorVector") & inherits(accessFrom, "modelVariableAccessorVector") ){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][[rowTo]][accTo[[i]]$first:accTo[[i]]$last] <-MVFrom[[accFrom[[i]]$var]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-	else if(inherits(accessTo, "modelVariableAccessorVector") & inherits(accessFrom, "modelValuesAccessorVector")){
-		for(i in seq_along(accTo) )
-			MVTo[[accTo[[i]]$var]][accTo[[i]]$first:accTo[[i]]$last] <-MVFrom[[accFrom[[i]]$var]][[rowFrom]][accFrom[[i]]$first:accFrom[[i]]$last]
-	}
-
-}
 
 allNodeNames <- function(object, logProb = FALSE){
 	if(inherits(object, 'modelValuesBaseClass') ) {	

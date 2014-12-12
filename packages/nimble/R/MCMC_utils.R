@@ -334,3 +334,46 @@ mcmc_findControlListNamesInCode <- function(code) {
 ##         return(sdMatrix)
 ##     }, where = getLoadingNamespace()
 ## )
+
+
+
+
+
+mcmcStochNode_Init <- nimbleFunction(
+	contains = nimble:::mcmcNodeInit_virtual,	## remove the nimble:::, dummy
+
+	setup = function(model, node){
+		depDataOrStochNodes_plusSelf <- c(node, model$getDependencies(node, determOnly = TRUE), model$getDependencies(node, dataOnly = TRUE) )
+		nodeFxnVector <- nodeFunctionVector(model = model, nodeNames = depDataOrStochNodes_plusSelf)
+#		theseVals <- c(0,0)		this is preferred, but not working...
+	},
+	run = function(){
+#		theseVals <<- model[[node]]
+		theseVals <- values(model, node)
+		if(is.na.vec(theseVals))
+			simulate(nodeFxnVector = nodeFxnVector)
+		lp <- calculate(nodeFxnVector = nodeFxnVector)
+		if(is.na(lp) | lp < -1e12)
+			print('Problem when attempting to initialize stochastic node')
+	},
+	where = getLoadingNamespace()
+)
+
+mcmcFillDetermTop_Init <- nimbleFunction(
+	contains  = nimble:::mcmcNodeInit_virtual,	##remove the nimble:::, dummy
+	setup = function(model, node){},
+	run = function(){
+		nil <- calculate(model, node)
+	}, where = getLoadingNamespace()
+)
+
+mcmcCheckRHS_Init <- nimbleFunction(
+	contains  = nimble:::mcmcNodeInit_virtual,	##	remove the nimble:::, dummy
+	setup = function(model, node){},			##	note: node is really a list of the RHS only nodes
+	run = function(){
+		vals <- values(model, node)
+		if(is.na.vec(vals))
+			print('Value of right hand side only node not initialized')
+	},
+	where = getLoadingNamespace()
+)

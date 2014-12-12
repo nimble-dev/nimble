@@ -35,7 +35,11 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    cppNames = 'ANY',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
                                    ##CnodeFunClasses = 'list',
-                                   compiledModel = 'ANY'
+                                   compiledModel = 'ANY',
+                                   #.nodeFxnPointersEnv = 'ANY',
+                                   .nodeFxnPointers_byGID = 'ANY',
+                                   .nodeValPointers_byGID = 'ANY',
+                                   .nodeLogProbPointers_byGID = 'ANY'
                                    ),
                                methods = list(
                                    show = function() {
@@ -64,6 +68,41 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ##browser()
                                        for(i in names(Rmodel$nodeFunctions)) {
                                            nodes[[i]] <<- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
+                                       }
+                                      # .nodeFxnPointersEnv <<- new.env()
+                                       .nodeFxnPointers_byGID <<- new('numberedObjects') 
+                                       maxID = max(modelDef$maps$graphIDs)
+                                       .nodeFxnPointers_byGID$resize(maxID)
+                                       for(nodeName in ls(nodes)){
+                                       	#	.nodeFxnPointersEnv[[nodeName]] <<- nodes[[nodeName]]$.basePtr
+                                       		gID <- modelDef$nodeName2GraphIDs(nodeName)
+                                       		.self$.nodeFxnPointers_byGID[gID] <- nodes[[nodeName]]$.basePtr
+                                       		}
+                                       		
+                                       .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
+                                   # .nodeValPointers_byGID <<- new('numberedObjects')
+                                       .nodeValPointers_byGID$resize(maxID)
+                                       .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
+                                    #   .nodeLogProbPointers_byGID <<- new('numberedObjects')
+                                       .nodeLogProbPointers_byGID$resize(maxID)
+                                       for(vName in Rmodel$getVarNames()){
+                                       		flatIndices = 1
+                                       		if(length(vars[vName]) > 0)
+	                                       		flatIndices = 1:prod(unlist(vars[vName]))
+                                       		
+                                       		gIDs_withNAs = unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2GraphID_values, USE.NAMES = FALSE))
+                                       		validIndices = which(!is.na(gIDs_withNAs))
+                                       		gIDs = gIDs_withNAs[validIndices] 	#Rmodel$expandNodeNames(namesWflatIndices, returnScalarComponents = TRUE, returnType = 'ids')
+											
+                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr , vName, as.integer(gIDs), as.integer(validIndices), .nodeValPointers_byGID$.ptr)
+                                       		logVNames <- modelDef$nodeName2LogProbName(vName)
+                                       		if(length(logVNames) > 0){
+                                       			logVName <- nl_getVarNameFromNodeName(logVNames[1])
+                                       			LP_gIDs_withNAs =  unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
+	                                       		validIndices = which(!is.na(LP_gIDs_withNAs) ) 
+	                                       		l_gIDs = Rmodel$modelDef$nodeName2LogProbID(vName)
+	                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), 1:length(l_gIDs), .nodeLogProbPointers_byGID$.ptr)
+	                                       		}
                                        }
                                        ## for(i in seq_along(Rmodel$nodeGenerators)) {
                                        ##     nodeGenName <- names(Rmodel$nodeGenerators)[i]
@@ -161,7 +200,8 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 for(vn in cppNames)
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
-                                                        eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, vn), list(.DUMMY = as.name(vPtrName)) ) ) 
+                                                     	.self[[vPtrName]] <<- newObjElementPtr(.basePtr, vn)
+                                                      #  eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, vn), list(.DUMMY = as.name(vPtrName)) ) ) 
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)

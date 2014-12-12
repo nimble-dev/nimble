@@ -186,11 +186,14 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL){
                                               		nfRefClassObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)             
-                                              		callFxn = function(...)
-                                              			nfRefClassObject$run(...)
-                                              		environment(callFxn) = new.env(parent = parent.frame() ) 
-                                              		environment(callFxn)$nfRefClassObject = nfRefClassObject
-                                              		return(callFxn)
+                                              		return(nfRefClassObject)
+                                              
+                                              #		$runRelated
+                                              #		callFxn = function(...)
+                                              #			nfRefClassObject$run(...)
+                                              #		environment(callFxn) = new.env(parent = parent.frame() ) 
+                                              #		environment(callFxn)$nfRefClassObject = nfRefClassObject
+                                              #		return(callFxn)
                                               },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains

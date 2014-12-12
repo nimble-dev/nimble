@@ -11,8 +11,13 @@ nfGetDefVar <- function(f, var) {
 }
 
 is.nf <- function(f) {
+	#		$runRelated
+	if(inherits(f, 'nimbleFunctionBase'))
+		return(TRUE)
+		
     return(is.function(f) && 
-               existsFunctionEnvVar(f, 'nfRefClassObject'))
+               existsFunctionEnvVar(f, 'nfRefClassObject') )
+ 	
 }
 
 is.nfGenerator <- function(f) {
@@ -24,6 +29,10 @@ is.nfGenerator <- function(f) {
 
 nf_getRefClassObject <- function(f) {
     if(is.nfGenerator(f))     stop('trying to access RefClassObject from nimbleFunction generator.\nError: need to use the specialized nimbleFunction')
+    
+    #	$runRelated
+    if(inherits(f, 'nimbleFunctionBase')) 	return(f)
+    
     if(!is.nf(f))             stop('invalid nimbleFunction argument\n')
     return(getFunctionEnvVar(f, 'nfRefClassObject'))
 }
@@ -31,6 +40,9 @@ nf_getRefClassObject <- function(f) {
 nf_getGeneratorFunction <- function(f) {
     if(is.nfGenerator(f))    return(f)
     if(is.nf(f))             return(nf_getRefClassObject(f)$.generatorFunction)
+    
+ 	if(is.refObject(f))		return(f$.generatorFunction)
+    
     stop('invalid nimbleFunction argument\n')
 }
 

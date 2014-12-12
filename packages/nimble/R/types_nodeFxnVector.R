@@ -7,20 +7,22 @@
 nodeFunctionVector <- setRefClass(
     Class = 'nodeFunctionVector',
     fields = list(model = 'ANY',
-                  nodes = 'ANY'),
+               	   gids = 'ANY'),
+               #   nodes = 'ANY'),
                #   nodeFunctionRefClassObjects = 'ANY'),
     methods = list(
         initialize = function(model, nodeNames, excludeData = FALSE, env = parent.frame()) {
-			if(inherits(nodeNames, 'numeric'))
-				nodeFunctionNames <- unique(model$modelDef$maps$graphID_2_nodeFunctionName[sort(nodeNames)])
-			else if(inherits(nodeNames, 'character'))
-        	nodeFunctionNames <- model$expandNodeNames(nodeNames, sort = TRUE)
-        	if(excludeData){
-        		nodeIsData <- model$isData(nodeFunctionNames)
-        		nodeFunctionNames[!nodeIsData]
-        	}
             model <<- model
-            nodes <<- nodeFunctionNames
+            if(is.numeric(nodeNames))		#In case we start with graph ids instead of names
+            	temp_gids <- unique( sort(nodeNames) )
+            else
+            	temp_gids <- unique( sort(model$modelDef$nodeName2GraphIDs(nodeNames)))
+            if(excludeData == TRUE)
+            	temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
+            gids <<- temp_gids
+        },
+        getNodeNames = function(){
+        	model$expandNodeNames(gids)	
         },
         show = function() cat(paste0('nodeFunctionVector: ', paste(nodes, collapse=', '), '\n'))
     )
