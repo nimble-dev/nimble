@@ -97,8 +97,8 @@ modelDefClass <- setRefClass('modelDefClass',
                                  buildSymbolTable               = function() {},
                                  buildIgraph                    = function() {},
                                  genGraphNodesList              = function() {},
-                                 buildMaps                      = function() {},
-                                 
+                          #       buildMaps                      = function() {},
+                                 buildMaps2						= function() {},
                                  
                                  newModel   = function() {},
                                  printDI    = function() {},
@@ -148,8 +148,12 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug) 
     genVarNames()                     ## uses varInfo and logProbVarInfo to set field: varNames
     buildSymbolTable()                ## uses varInfo and logProbVarInfo to set field: symTab
     buildIgraph()      #*             ## uses declInfo and declInfo[[i]]$indexedNodeInfo to set field: graph
-    genGraphNodesList()  #*           ## uses graphIDs, nodeInfo and varInfo to create graphNodesList, which is accessed by modeDef$graphNodes()
-    buildMaps()                       ## uses everything above to set field: maps
+     ## old: use next two lines
+    ##    genGraphNodesList()  #*           ## uses graphIDs, nodeInfo and varInfo to create graphNodesList, which is accessed by modeDef$graphNodes()
+    ##    buildMaps()
+    ## uses everything above to set field: maps
+    ## new: use next one line
+    buildMaps2()
 })
 
 modelDefClass$methods(setModelValuesClassName = function() {
@@ -902,8 +906,86 @@ modelDefClass$methods(buildIgraph = function() {
     
     graph <<- permute.vertices(graph, sort(topological.sort(graph, mode = 'out'), index = TRUE)$ix)  #* ## topological sort
 })
-modelDefClass$methods(genGraphNodesList = function() {
-    
+
+#modelDefClass$methods(genGraphNodesList = function() {
+#    
+#    ## ditto - and this is repeated work from buildIgraph
+#    nodesLHS <- unique(unlist(lapply(declInfo, function(x) x$allTargetNodeNames())))
+#    nodesLHSVec <- nodesLHS[grepl(':', nodesLHS)]
+#    nodesLHSInferred <- nl_vectorizedExpandNodeIndex(nodesLHSVec)
+#    if(any(nodesLHSInferred %in% nodesLHS))    stop('duplicate declaration of some nodes')
+#    nodesLHSAll <- c(nodesLHS, nodesLHSInferred)
+#    
+#    nodesLHFInferredLookupList <- list()
+#    for(nnVec in nodesLHSVec) nodesLHFInferredLookupList[nl_expandNodeIndex(nnVec)] <- nnVec
+#    
+#    ##ditto    - and ditto on repeated work
+#    nodesRHSExprs <- unique(unlist(lapply(declInfo, function(x) x$allParentNodeExprs())))
+#    nodesRHSAll <- nl_vectorizedExpandNodeIndexExprs(nodesRHSExprs)
+#    
+#    nodeNamesAll <- unique(c(nodesLHSAll, nodesRHSAll))
+#    nodeNamesRHSOnly <- setdiff(nodesRHSAll, nodesLHSAll)
+#    
+#    gn <- list()
+#    
+#    nodeCases <- c(rep(1, length(nodesLHS)), rep(2, length(nodesLHSInferred)), rep(3, length(nodeNamesRHSOnly)))
+#    names(nodeCases) <- c(nodesLHS, nodesLHSInferred, nodeNamesRHSOnly)
+#    graphNames <- V(graph)$name
+#    
+#    for(i in seq_along(graphNames)) {
+#        nodeName <- graphNames[i]
+#        nodeCase <- nodeCases[nodeName]
+#        ## handle the LHS nodes which were actually declared in BUGS code
+#        ## only these ones have a nodeFunction associated with them
+#        if(nodeCase == 1) {
+#            nI <- nodeInfo[[nodeName]]
+#            if(is.null(nI))   stop('something went wrong: null value for nodeInfo for node named ', nodeName)
+#            gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
+#                                            graphID            = i,
+#                                            type               = nI$type,
+#                                            originNodeName     = nodeName,
+#                                            nodeFunctionName   = nI$nodeFunctionName
+#            )
+#            next
+#        }
+#        
+#        ## handle nodes which were inferred from a vectorized LHS BUGS declaration
+#        ## have to lookup the vectorized declaration from which it came
+#        if(nodeCase == 2) {
+#            declaredNodeName <- nodesLHFInferredLookupList[[nodeName]]
+#            nI <- nodeInfo[[declaredNodeName]]
+#            if(is.null(nI))   stop('something went wrong: null value for node infor for ', declaredNodeName)
+#            gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
+#                                            graphID            = i,
+#                                            type               = 'LHSinferred',   ## idea: add these inferred nodes (e.g. x[1]) as #deterministic dependents of the declared node (x[1:10])
+ #                                           originNodeName     = nI$nodeFunctionName,
+ #                                           nodeFunctionName   = nI$nodeFunctionName
+ #           )
+ #           next
+ #       }
+ #       
+ #       ## RHS-only nodes.  these are ONLY in the graph, and don't have an associated nodeFunction
+ #       if(nodeCase == 3) {
+ #           gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
+ #                                           graphID            = i,
+ #                                           type               = 'RHSonly',    ## idea: these RHS-only 'data type' nodes are fixed #values
+ #                                           originNodeName     = nodeName,
+ #                                           nodeFunctionName   = 'DOES_NOT_EXIST' ##nodeName
+ #           )
+ #           next
+ #       }
+ #       
+ #       stop(paste0('something went wrong, could\'t find: ', nodeName))
+ #   }
+ #   
+ #   graphNodesList <<- gn
+#})
+#modelDefClass$methods(buildMaps = function() {
+#    maps <<- mapsClass$new()
+#    maps$setup(graphNodesList, graph, varInfo, nodeInfo)
+#})
+
+modelDefClass$methods(buildMaps2 = function() {
     ## ditto - and this is repeated work from buildIgraph
     nodesLHS <- unique(unlist(lapply(declInfo, function(x) x$allTargetNodeNames())))
     nodesLHSVec <- nodesLHS[grepl(':', nodesLHS)]
@@ -921,66 +1003,43 @@ modelDefClass$methods(genGraphNodesList = function() {
     nodeNamesAll <- unique(c(nodesLHSAll, nodesRHSAll))
     nodeNamesRHSOnly <- setdiff(nodesRHSAll, nodesLHSAll)
     
-    gn <- list()
+##    gn <- list()
     
-    nodeCases <- c(rep(1, length(nodesLHS)), rep(2, length(nodesLHSInferred)), rep(3, length(nodeNamesRHSOnly)))
-    names(nodeCases) <- c(nodesLHS, nodesLHSInferred, nodeNamesRHSOnly)
-    graphNames <- V(graph)$name
+##    nodeCases <- c(rep(1, length(nodesLHS)), rep(2, length(nodesLHSInferred)), rep(3, length(nodeNamesRHSOnly)))
+##    names(nodeCases) <- c(nodesLHS, nodesLHSInferred, nodeNamesRHSOnly)
+##    graphNames <- V(graph)$name
+
+    ## this new version cuts out the "middle person" of graphNodesList
+    nodeNames <- V(graph)$name ## formerly graphNames
+    graphIDs <- seq_along(nodeNames)
+    ##case1indices <- seq_along(nodesLHS)
+    ##case2indices <- length(nodesLHS) + seq_along(nodesLHSInferred)
+    numCase2 <- length(nodesLHSInferred)
+    ##case3indices <- length(nodesLHS) + length(nodesLHSInferred) + seq_along(nodeNamesRHSOnly)
+    numCase3 <- length(nodeNamesRHSOnly)
     
-    for(i in seq_along(graphNames)) {
-        nodeName <- graphNames[i]
-        nodeCase <- nodeCases[nodeName]
-        ## handle the LHS nodes which were actually declared in BUGS code
-        ## only these ones have a nodeFunction associated with them
-        if(nodeCase == 1) {
-            nI <- nodeInfo[[nodeName]]
-            if(is.null(nI))   stop('something went wrong: null value for nodeInfo for node named ', nodeName)
-            gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
-                                            graphID            = i,
-                                            type               = nI$type,
-                                            originNodeName     = nodeName,
-                                            nodeFunctionName   = nI$nodeFunctionName
-            )
-            next
-        }
-        
-        ## handle nodes which were inferred from a vectorized LHS BUGS declaration
-        ## have to lookup the vectorized declaration from which it came
-        if(nodeCase == 2) {
-            declaredNodeName <- nodesLHFInferredLookupList[[nodeName]]
-            nI <- nodeInfo[[declaredNodeName]]
-            if(is.null(nI))   stop('something went wrong: null value for node infor for ', declaredNodeName)
-            gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
-                                            graphID            = i,
-                                            type               = 'LHSinferred',   ## idea: add these inferred nodes (e.g. x[1]) as deterministic dependents of the declared node (x[1:10])
-                                            originNodeName     = nI$nodeFunctionName,
-                                            nodeFunctionName   = nI$nodeFunctionName
-            )
-            next
-        }
-        
-        ## RHS-only nodes.  these are ONLY in the graph, and don't have an associated nodeFunction
-        if(nodeCase == 3) {
-            gn[[nodeName]] <- graphNode$new(nodeName           = nodeName,
-                                            graphID            = i,
-                                            type               = 'RHSonly',    ## idea: these RHS-only 'data type' nodes are fixed values
-                                            originNodeName     = nodeName,
-                                            nodeFunctionName   = 'DOES_NOT_EXIST' ##nodeName
-            )
-            next
-        }
-        
-        stop(paste0('something went wrong, could\'t find: ', nodeName))
-    }
+    case2Names <- unlist(lapply(nodesLHSInferred, function(x) nodeInfo[[ nodesLHFInferredLookupList[[x]] ]]$nodeFunctionName))
+    nodeFunctionNamesRaw <- c(unlist(lapply(nodesLHS, function(x) nodeInfo[[x]]$nodeFunctionName)),
+                              case2Names,
+                              rep('DOES_NOT_EXIST', numCase3))
+    names(nodeFunctionNamesRaw) <- c(nodesLHS, nodesLHSInferred, nodeNamesRHSOnly)
+    nodeFunctionNamesRaw <- nodeFunctionNamesRaw[ nodeNames ]
     
-    graphNodesList <<- gn
-})
-modelDefClass$methods(buildMaps = function() {
+    originNodeNamesRaw <- nodeNames
+    names(originNodeNamesRaw) <- nodeNames
+    originNodeNamesRaw[nodesLHSInferred] <- case2Names
+
+    types <- c(unlist(lapply(nodesLHS, function(x) nodeInfo[[x]]$type)),
+               rep('LHSinferred', numCase2),
+               rep('RHSonly', numCase3))
+    names(types) <-  c(nodesLHS, nodesLHSInferred, nodeNamesRHSOnly)
+    types <- types[ nodeNames ]
+##    nodeFunctionNames  not needed
+    
     maps <<- mapsClass$new()
-    maps$setup(graphNodesList, graph, varInfo, nodeInfo)
+    maps$setup2(nodeNames, graphIDs, nodeFunctionNamesRaw, originNodeNamesRaw, types, graph, varInfo, nodeInfo)
+
 })
-
-
 
 modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character()) {
     if(inherits(modelClass, 'uninitializedField')) {

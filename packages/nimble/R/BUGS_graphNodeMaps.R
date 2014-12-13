@@ -5,7 +5,7 @@ mapsClass <- setRefClass(
         ## set directly from graphNodesList:
         nodeNames = 'ANY',
         graphIDs = 'ANY',
-        nodeFunctionNames = 'ANY',
+##        nodeFunctionNames = 'ANY',
         types = 'ANY',
         
         ## vectors of nodeNames, representing different subsets of 'types'
@@ -54,20 +54,16 @@ mapsClass <- setRefClass(
     
     methods = list(
         setup = function() {},
+        setup2 = function() {},
         setPositions = function() {}
     )
 )
 
 
-
-mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
-    
-    nodeNames <<- names(graphNodesList)
-    graphIDs <<- unlist(lapply(graphNodesList, function(gn) gn$graphID), use.names = FALSE)
-    nodeFunctionNamesRaw <- lapply(graphNodesList, function(gn) gn$nodeFunctionName)
-    originNodeNamesRaw <- lapply(graphNodesList, function(gn) gn$originNodeName)
-    types <<- unlist(lapply(graphNodesList, function(gn) gn$type), use.names = FALSE)
-    nodeFunctionNames <<- unlist(nodeFunctionNamesRaw[types != 'RHSonly'], use.names = FALSE)
+mapsClass$methods(setup2 = function(nodeNames, graphIDs, nodeFunctionNamesRaw, originNodeNamesRaw, types, graph, varInfo, nodeInfo) {
+    types <<- types
+    nodeNames <<- nodeNames
+    graphIDs <<- graphIDs
 
     nodeNamesStoch <<- nodeNames[types == 'stoch']
     nodeNamesDeterm <<- nodeNames[types == 'determ']
@@ -75,25 +71,29 @@ mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
     nodeNamesLHSall <<- nodeNames[types != 'RHSonly']
     nodeNamesRHSonly <<- nodeNames[types == 'RHSonly']
     nodeNamesInModel <<- nodeNames[types != 'LHSinferred']
-    
+
     ## nodeName_2_xxxx maps
     nodeName_2_graphID <<- graphIDs
     names(nodeName_2_graphID) <<- nodeNames
     nodeName_2_type <<- types
     names(nodeName_2_type) <<- nodeNames
-    nodeName_2_nodeFunctionName <<- unlist(nodeFunctionNamesRaw[types != 'RHSonly']) 
-    nodeName_2_originNodeName <<- unlist(originNodeNamesRaw)
+    boolRHSonly <- types != 'RHSonly'
+    nodeName_2_nodeFunctionName <<- nodeFunctionNamesRaw[boolRHSonly] # need names
+    names(nodeName_2_nodeFunctionName) <<- nodeNames[boolRHSonly]
+    nodeName_2_originNodeName <<- originNodeNamesRaw
+    names(nodeName_2_originNodeName) <<- nodeNames
     
     ## graphID_2_xxxx maps
     graphID_2_nodeName <<- nodeNames
     graphID_2_type <<- types
-    graphID_2_nodeFunctionName <<- unlist(nodeFunctionNamesRaw, use.names = FALSE)
-    graphID_2_originNodeName <<- unlist(originNodeNamesRaw, use.names = FALSE)
-    
+    graphID_2_nodeFunctionName <<- nodeFunctionNamesRaw
+    graphID_2_originNodeName <<- originNodeNamesRaw
+
     vars2GraphID_values <<- new.env()
     vars2GraphID_functions <<- new.env()
     vars2LogProbName <<- new.env()
     vars2LogProbID <<- new.env()
+
     isMultiVariateFunction <- grepl(':', nodeNames)
     strippedNodeNames <- removeIndexing(nodeNames)
     for(var in varInfo){
@@ -133,7 +133,85 @@ mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
     for(var in ls(vars2GraphID_functions))
 	    is_NodeFunction[unlist(as.list(vars2GraphID_functions[[var]]))] <<- TRUE
 	is_NodeFunction <<- which(is_NodeFunction)
+
 })
+
+
+
+#mapsClass$methods(setup = function(graphNodesList, graph, varInfo, nodeInfo) {
+#    
+#    nodeNames <<- names(graphNodesList)
+#    graphIDs <<- unlist(lapply(graphNodesList, function(gn) gn$graphID), use.names = FALSE)
+#    nodeFunctionNamesRaw <- lapply(graphNodesList, function(gn) gn$nodeFunctionName)
+#    originNodeNamesRaw <- lapply(graphNodesList, function(gn) gn$originNodeName)
+#    types <<- unlist(lapply(graphNodesList, function(gn) gn$type), use.names = FALSE)
+#    nodeFunctionNames <<- unlist(nodeFunctionNamesRaw[types != 'RHSonly'], use.names = FALSE)
+#
+#    nodeNamesStoch <<- nodeNames[types == 'stoch']
+#    nodeNamesDeterm <<- nodeNames[types == 'determ']
+#    nodeNamesLHSinferred <<- nodeNames[types == 'LHSinferred']
+#    nodeNamesLHSall <<- nodeNames[types != 'RHSonly']
+#    nodeNamesRHSonly <<- nodeNames[types == 'RHSonly']
+#    nodeNamesInModel <<- nodeNames[types != 'LHSinferred']
+#    
+#    ## nodeName_2_xxxx maps
+#    nodeName_2_graphID <<- graphIDs
+#    names(nodeName_2_graphID) <<- nodeNames
+#    nodeName_2_type <<- types
+#    names(nodeName_2_type) <<- nodeNames
+#    nodeName_2_nodeFunctionName <<- unlist(nodeFunctionNamesRaw[types != 'RHSonly']) 
+#    nodeName_2_originNodeName <<- unlist(originNodeNamesRaw)
+#    
+#    ## graphID_2_xxxx maps
+#    graphID_2_nodeName <<- nodeNames
+#    graphID_2_type <<- types
+#    graphID_2_nodeFunctionName <<- unlist(nodeFunctionNamesRaw, use.names = FALSE)
+#    graphID_2_originNodeName <<- unlist(originNodeNamesRaw, use.names = FALSE)
+#    
+#    vars2GraphID_values <<- new.env()
+#    vars2GraphID_functions <<- new.env()
+#    vars2LogProbName <<- new.env()
+#    vars2LogProbID <<- new.env()
+#    isMultiVariateFunction <- grepl(':', nodeNames)
+#    strippedNodeNames <- removeIndexing(nodeNames)
+#    for(var in varInfo){
+#    	varName = var[['varName']]
+#    	if(var$nDim == 0){
+#    		vars2GraphID_values[[varName]] <<- nodeName_2_graphID[[varName]]
+#    		vars2GraphID_functions[[varName]] <<- nodeName_2_graphID[[varName]]
+#    		vars2LogProbName[[varName]] <<- as.character(NA)
+#    		vars2LogProbID[[varName]] <<- as.numeric(NA)
+#    	}
+#    	else{
+#	    	vars2GraphID_values[[varName]] <<- array(dim = var$maxs)
+#	    	vars2LogProbName[[varName]] <<- array(dim = var$maxs)
+#	    	vars2LogProbID[[varName]] <<- array(dim = var$maxs)
+#	    	storage.mode(vars2LogProbName[[varName]]) <<- 'character'
+#	    	nodeNames4Var <- nodeNames[strippedNodeNames == varName & !isMultiVariateFunction]
+#	    	var_GIDs = as.numeric(nodeName_2_graphID[nodeNames4Var])		#The only reason 'as.numeric' is used is to strip off names
+#	    	flatIndices = extractFlatIndices_wVarInfo(nodeNames4Var, var)
+#	    	vars2GraphID_values[[varName]][flatIndices] <<- var_GIDs
+#	    	vars2GraphID_functions[[varName]] <<- vars2GraphID_values[[varName]]
+#	    	
+#	    	nodeNames4Var <- nodeNames[strippedNodeNames == varName & isMultiVariateFunction]
+#	    	if(length(nodeNames4Var) > 0){
+#				uniqueNames <- unique(nodeName_2_nodeFunctionName[nodeNames4Var])
+#				for(funName in uniqueNames){
+#		    		var_GIDs = nodeName_2_graphID[funName]
+#					nodeNamesWithCall <- paste0(funName, "<- var_GIDs")
+#		    		eval(parse(text = nodeNamesWithCall[1])[[1]], envir = vars2GraphID_functions)		    	
+#		    	}
+#	    	}
+#	    }
+#    }
+#    assignLogProbName(nodeInfo, vars2LogProbName)
+#    logProbIDs_2_LogProbName <<- assignLogProbID(vars2LogProbName, vars2LogProbID)
+#    setPositions(graph)
+#    is_NodeFunction <<- rep(FALSE, length(graphIDs))
+#    for(var in ls(vars2GraphID_functions))
+#	    is_NodeFunction[unlist(as.list(vars2GraphID_functions[[var]]))] <<- TRUE
+#	is_NodeFunction <<- which(is_NodeFunction)
+#})
 
 assignLogProbName <- function(nodeInfo, nodeName2LogProbMap){
 	allLogProbNames <- as.character(unlist(lapply(nodeInfo, function(ni) ni$logProbNodeReplacedWithValues )))
