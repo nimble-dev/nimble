@@ -450,10 +450,11 @@ SEXP populateNumberedObject_withSingleVariableAccessors(SEXP modelPtr, SEXP varN
 }
 */
 
-SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj){
-	int cIndex = INTEGER(beginIndex)[0] - 1;
-	int len = INTEGER(varLength)[0];
+SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP GIDs, SEXP curRow, SEXP SnumbObj){
+//	int cIndex = INTEGER(beginIndex)[0] - 1;
+	int len = LENGTH(GIDs);
 	int cRow = INTEGER(curRow)[0] - 1;
+	int* cGIDs = INTEGER(GIDs);
 	string vName = STRSEXP_2_string(varName, 0);
 	Values* modelValuesPtr = static_cast<Values*>(R_ExternalPtrAddr(mvPtr));
 	NimVecType* nimPtr = static_cast<NimVecType*> (modelValuesPtr->getObjectPtr(vName));
@@ -463,7 +464,7 @@ SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varN
 	for(int i = 0; i < len; i++){
 		smva = cMakeSingleModelValuesAccessor(nimPtr, i, i, cRow);
 		vPtr = static_cast<void*>(smva);
-		numObj->numberedObjects[i + cIndex] = vPtr;
+		numObj->numberedObjects[cGIDs[i] - 1] = vPtr;
 	}
 	return(R_NilValue);
 }

@@ -31,6 +31,7 @@ CmodelValues <- setRefClass(
         componentExtptrs = 'ANY',
         blankAns = 'ANY',
         .nodePtrs_byGID = 'ANY',
+        GID_map = 'ANY',
     	sizes = function(){
     		if(length(varNames) == 0)
     			return(NULL)
@@ -44,6 +45,11 @@ CmodelValues <- setRefClass(
         show = function() {
             writeLines(paste0("CmodelValues object with variables: ", paste(varNames, collapse = ", "), "."))
         },
+        expandNodeNames = function (nodeNames, returnType = "names", flatIndices = TRUE) 
+			{
+    			return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
+        flatIndices = flatIndices))
+			},
         initialize = function(buildCall, existingPtr ) {
             if(missing(existingPtr) ) {
                 if(is.character(buildCall)) {
@@ -67,7 +73,7 @@ CmodelValues <- setRefClass(
                 componentExtptrs[[comp]] <<- .Call(getNativeSymbolInfo('getModelObjectPtr'), extptr, comp)
                 
             .nodePtrs_byGID <<- new('numberedObjects')
-            
+            GID_map <<- makeMV_GID_Map(.self)
             if(length(sizes) > 0){
             	varLengths <- sapply(sizes, prod)
             	totLength <- sum(varLengths)
@@ -75,7 +81,7 @@ CmodelValues <- setRefClass(
             	index = 1
             	for(i in seq_along(varNames)){
           		  	vName <- varNames[i]
-          		  	.Call('populateNumberedObject_withSingleModelValuesAccessors', extptr, vName, as.integer(index), as.integer(varLengths[i]), as.integer(1) , .nodePtrs_byGID$.ptr)
+          		  	.Call('populateNumberedObject_withSingleModelValuesAccessors', extptr, vName, as.integer(expandNodeNames(vName, returnType = 'ids')), as.integer(1) , .nodePtrs_byGID$.ptr)
             		index = index + varLengths[i]
             	}
             }

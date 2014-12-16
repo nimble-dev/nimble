@@ -71,8 +71,8 @@ calculate <- function(model, nodes, nodeFxnVector)
 		if(missing(nodes) ) 
 			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes)
-		nodeNames <- model$expandNodeNames(nfv$gids)
-		return(rCalcNodes(nfv$model, nodeNames))
+		nodeNames <- nfv$getNodeNames()
+		return(rCalcNodes(model, nodeNames))
 	}	
 }
 
@@ -95,9 +95,9 @@ getLogProb <- function(model, nodes, nodeFxnVector)
                     nodes <- model$getMaps('nodeNamesLHSall')
 
 		nfv <- nodeFunctionVector(model, nodes)
-		nodeNames <- model$expandNodeNames(nfv$gids)
+		nodeNames <- nfv$getNodeNames()
 
-    	return(rGetLogProbsNodes(nfv$model, nodeNames))
+    	return(rGetLogProbsNodes(model, nodeNames))
     }        
 }
 
@@ -160,20 +160,27 @@ getValuesAccess <- function(vals, access){
 #		writeLines('Length of object to copy into does not match')
 #	}
 	output = as.numeric(NA)
-	
+	totValues <- length(access$gids) + length(access$l_gids)
 	for(i in seq_along(access$gids) )
 		output[i] <- access$getSingleValue_fromGID(i)
+	gid_len = length(access$gids)
+	for(i in seq_along(access$l_gids))
+		output[i + gid_len] = access$getSingleValue_fromGID(i + gid_len)
 	return(output)
 }
 
 
 
 setValuesAccess <- function(input, access){
-	if(length(input)!= length(access) ) 
+	tot_length = length(access$gids) + length(access$l_gids)
+	if(length(input)!= tot_length ) 
 		writeLines('Length of input does not match accessor')
 	else{
 		for(i in seq_along(access$gids) )
 			access$setSingleValue_fromGID(input[i], i)
+		gid_len = length(access$gids)
+		for(i in seq_along(access$l_gids) )
+			access$setSingleValue_fromGID(input[i+gid_len], i + gid_len)
 	}
 }	
 

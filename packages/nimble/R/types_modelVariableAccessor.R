@@ -68,7 +68,7 @@ modelVariableAccessorVector <- setRefClass(
 	        }
         },
         getNodeNames = function(){
-        	model$expandNodeNames(gids, returnScalarComponents = TRUE)	
+        	c(model$expandNodeNames(gids, returnScalarComponents = TRUE), 	model$modelDef$maps$logProbIDs_2_LogProbName[l_gids])
         },
         show = function(){
 	        cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))

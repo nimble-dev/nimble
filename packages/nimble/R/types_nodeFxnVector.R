@@ -22,7 +22,7 @@ nodeFunctionVector <- setRefClass(
     	        	temp_gids <- unique( sort(model$modelDef$nodeName2GraphIDs(nodeNames)))
     	        if(excludeData == TRUE)
     	        	temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
-    	        gids <<- sort(temp_gids)
+    	        gids <<- temp_gids
     	        }
         },
         getNodeNames = function(){

@@ -342,13 +342,11 @@ mcmc_findControlListNamesInCode <- function(code) {
 mcmcStochNode_Init <- nimbleFunction(
 	contains = nimble:::mcmcNodeInit_virtual,	## remove the nimble:::, dummy
 
-	setup = function(model, node){
-		depDeterNodes_plusSelf <- c(node, model$getDependencies(node, determOnly = TRUE) )
-	},
+	setup = function(model, node){},
 	run = function(){
 		theseVals <- values(model, node)
 		if(is.na.vec(theseVals))
-			simulate(model, depDeterNodes_plusSelf)
+			simulate(model, node)
 		lp <- calculate(model, node)
 		if(is.na(lp) | lp < -1e12)
 			print('Problem when attempting to initialize stochastic node')

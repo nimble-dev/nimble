@@ -328,7 +328,7 @@ pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb 
 
 makeMV_GID_Map <- function(mv){
 	sizeList = mv$sizes
-    varNames = mv$varNames
+    varNames = sort(mv$varNames)
     nodeNames = NA
     nodeIndex = 0
     nodeNames2GID_maps <- new.env()
