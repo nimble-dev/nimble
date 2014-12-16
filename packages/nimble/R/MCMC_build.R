@@ -43,7 +43,13 @@
 #' Rmcmc(100, reset = FALSE)
 buildMCMC <- nimbleFunction(
     
-    setup = function(mcmcspec) {
+    setup = function(mcmcspec, ...) {
+    	if(inherits(mcmcspec, 'modelBaseClass'))
+    		mcmcspec <- configureMCMC(mcmcspec, ...)
+    	
+    	else if(!inherits(mcmcspec, 'MCMCspec'))	
+    		stop('mcmcspec must either be a nimbleModel or a MCMCspec object (created by configureMCMC(...) )')
+    		
         model <- mcmcspec$model
         
    	    RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')

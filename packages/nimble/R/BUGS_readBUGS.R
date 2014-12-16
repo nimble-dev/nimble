@@ -60,13 +60,13 @@ nimbleModel <- function(code, name, constants=list(), dimensions=list(), data=li
 #'  x ~ dnorm(mu, sd = 1)
 #'  mu ~ dnorm(0, sd = prior_sd)
 #' })
-modelCode <- function(code) {
+nimbleCode <- function(code) {
   code <- substitute(code)
   return(code)
 }
 
 
-BUGScode <- modelCode
+BUGScode <- nimbleCode
 
 processVarBlock <- function(lines) {
   # processes a var block from a BUGS file, determining variable names, dimensions, and sizes

@@ -110,8 +110,6 @@ populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
 	fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
 	
 	gids <- Robject[[fxnVecName]]$gids
-	if(length(gids) == 0)
-		browser()
 	numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byGID$.ptr
 
 	# This is not really the most efficient way to do things; eventually 

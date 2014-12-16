@@ -110,7 +110,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)
   }
-  if(!is.null(mcmcControl)) mcmcspec <- MCMCspec(Rmodel, control = mcmcControl) else mcmcspec <- MCMCspec(Rmodel)
+  if(!is.null(mcmcControl)) mcmcspec <- configureMCMC(Rmodel, control = mcmcControl) else mcmcspec <- configureMCMC(Rmodel)
   if(removeAllDefaultSamplers) mcmcspec$removeSamplers()
   
   if(!is.null(samplers)) {
@@ -134,7 +134,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     ## do short runs and compare R and C MCMC output
       if(doR) {
           set.seed(seed);
-          RmcmcOut <- try(Rmcmc(numItsR))
+          RmcmcOut <- try(Rmcmc$run(numItsR))
           if(!is(RmcmcOut, "try-error")) {
             RmvSample  <- nfVar(Rmcmc, 'mvSamples')
             R_samples <- as.matrix(RmvSample)
@@ -142,7 +142,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       }
       if(doCpp) {
           set.seed(seed)
-          Cmcmc(numItsC)
+          Cmcmc$run(numItsC)
           CmvSample <- nfVar(Cmcmc, 'mvSamples')    
           C_samples <- as.matrix(CmvSample)
           ## for some reason columns in different order in CmvSample...
@@ -187,7 +187,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     
     # do longer run and compare results to inputs given
     set.seed(seed)
-    Cmcmc(numItsC_results)
+    Cmcmc$run(numItsC_results)
     CmvSample <- nfVar(Cmcmc, 'mvSamples')
     postBurnin <- (round(numItsC_results/2)+1):numItsC_results
     C_samples <- as.matrix(CmvSample)[postBurnin, , drop = FALSE]
@@ -241,7 +241,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       if(is.null(results) && !basic) {
       # need to generate top-level node values so do a basic run
         set.seed(seed)
-        Cmcmc(numItsC)
+        Cmcmc$run(numItsC)
         CmvSample <- nfVar(Cmcmc, 'mvSamples')
         C_samples <- as.matrix(CmvSample)[postBurnin, ]
       }
@@ -273,7 +273,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     trueVals <- values(Cmodel, nonDataNodesElements)
     names(trueVals) <- nonDataNodesElements
     set.seed(seed)
-    Cmcmc(numItsC_results)
+    Cmcmc$run(numItsC_results)
     CmvSample <- nfVar(Cmcmc, 'mvSamples')
     
     postBurnin <- (round(numItsC_results/2)):numItsC

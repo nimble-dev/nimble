@@ -59,7 +59,7 @@ samplerSpec <- setRefClass(
 #' mcmcspec$addMonitors2('x', thin2 = 10)
 #' mcmcspec$getMonitors()
 #' mccmspec$getSamplers()
-MCMCspec <- setRefClass(
+configureMCMC <- setRefClass(
     
     Class = 'MCMCspec',                           
     

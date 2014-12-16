@@ -114,7 +114,7 @@ simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)
 		nodes <- nodeFxnVector$getNodeNames()
 		rSimNodes(model, nodes)
 	}
-	if( inherits(model, "modelBaseClass") ) {
+	else if( inherits(model, "modelBaseClass") ) {
 		if(missing(nodes) ) 
 			nodes <- model$getMaps('nodeNamesLHSall')
 		nfv <- nodeFunctionVector(model, nodes, excludeData = !includeData)

@@ -32,6 +32,7 @@ nf_getRefClassObject <- function(f) {
     
     #	$runRelated
     if(inherits(f, 'nimbleFunctionBase')) 	return(f)
+    if(inherits(f, 'CnimbleFunctionBase'))	return(f)
     
     if(!is.nf(f))             stop('invalid nimbleFunction argument\n')
     return(getFunctionEnvVar(f, 'nfRefClassObject'))

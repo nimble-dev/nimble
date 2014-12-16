@@ -343,16 +343,13 @@ mcmcStochNode_Init <- nimbleFunction(
 	contains = nimble:::mcmcNodeInit_virtual,	## remove the nimble:::, dummy
 
 	setup = function(model, node){
-		depDataOrStochNodes_plusSelf <- c(node, model$getDependencies(node, determOnly = TRUE), model$getDependencies(node, dataOnly = TRUE) )
-		nodeFxnVector <- nodeFunctionVector(model = model, nodeNames = depDataOrStochNodes_plusSelf)
-#		theseVals <- c(0,0)		this is preferred, but not working...
+		depDeterNodes_plusSelf <- c(node, model$getDependencies(node, determOnly = TRUE) )
 	},
 	run = function(){
-#		theseVals <<- model[[node]]
 		theseVals <- values(model, node)
 		if(is.na.vec(theseVals))
-			simulate(nodeFxnVector = nodeFxnVector)
-		lp <- calculate(nodeFxnVector = nodeFxnVector)
+			simulate(model, depDeterNodes_plusSelf)
+		lp <- calculate(model, node)
 		if(is.na(lp) | lp < -1e12)
 			print('Problem when attempting to initialize stochastic node')
 	},

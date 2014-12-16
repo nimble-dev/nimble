@@ -13,13 +13,17 @@ nodeFunctionVector <- setRefClass(
     methods = list(
         initialize = function(model, nodeNames, excludeData = FALSE, env = parent.frame()) {
             model <<- model
-            if(is.numeric(nodeNames))		#In case we start with graph ids instead of names
-            	temp_gids <- unique( sort(nodeNames) )
-            else
-            	temp_gids <- unique( sort(model$modelDef$nodeName2GraphIDs(nodeNames)))
-            if(excludeData == TRUE)
-            	temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
-            gids <<- temp_gids
+            if(length(nodeNames) == 0)
+            	gids <<- numeric(0)
+            else{
+	            if(is.numeric(nodeNames))		#In case we start with graph ids instead of names
+ 		           	temp_gids <- unique( sort(nodeNames) )
+    	        else
+    	        	temp_gids <- unique( sort(model$modelDef$nodeName2GraphIDs(nodeNames)))
+    	        if(excludeData == TRUE)
+    	        	temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
+    	        gids <<- sort(temp_gids)
+    	        }
         },
         getNodeNames = function(){
         	model$expandNodeNames(gids)	
