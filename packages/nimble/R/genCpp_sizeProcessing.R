@@ -362,6 +362,7 @@ arithmeticOutputType <- function(t1, t2) {
 
 ## Generate R code for an equality assertion
 identityAssert <- function(lhs, rhs, msg = "") {
+    if(identical(lhs, rhs)) return(NULL)
     msg <- gsub("\"", "\\\\\"", msg)
     substitute(if(lhs != rhs) nimPrint(msg), list(lhs = lhs, rhs = rhs, msg = msg))
 }
@@ -1111,7 +1112,11 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
     code$type <- arithmeticOutputType(a1$type, a2$type)
     code$toEigenize <- 'yes'
     assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[2]]), " == ", deparse(a2$sizeExprs[[1]]))
-    return(c(list(identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)), asserts))
+    newAssert <- identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)
+    if(is.null(newAssert))
+        return(asserts)
+    else
+        return(c(list(identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)), asserts))
 }
 
 sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or forwardsolve(A, b). For inverse, use inverse(A), not solve(A)
@@ -1303,7 +1308,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
                 a1ind <- if(a1IsCol) 1 else 2
                 if(!is.numeric(a1sizeExprs[[a1ind]]) | !is.numeric(a2sizeExprs[[1]])) { ## Really do want original a2sizeExprs
                     assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[a1ind]]), " == ", deparse(a2sizeExprs[[1]]))
-                    asserts[[length(asserts) + 1]] <- identityAssert(a1sizeExprs[[a1ind]], a2sizeExprs[[1]], assertMessage)
+                    thisAssert <- identityAssert(a1sizeExprs[[a1ind]], a2sizeExprs[[1]], assertMessage)
+                    if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert
                 } else {
                     if(a1sizeExprs[[a1ind]] != a2sizeExprs[[1]]) stop('Fixed size mismatch', call. = FALSE)
                 }
@@ -1320,7 +1326,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
                 a2ind <- if(a2IsCol) 1 else 2
                 if(!is.numeric(a1sizeExprs[[1]]) | !is.numeric(a2sizeExprs[[a2ind]])) { ## Really do want the original a1sizeExprs[[1]], not the modified one.
                     assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[1]]), " == ", deparse(a2sizeExprs[[a2ind]]))
-                    asserts[[length(asserts) + 1]] <- identityAssert(a1sizeExprs[[1]], a2sizeExprs[[a2ind]], assertMessage)
+                    thisAssert <- identityAssert(a1sizeExprs[[1]], a2sizeExprs[[a2ind]], assertMessage)
+                    if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert 
                 } else {
                     if(a1sizeExprs[[1]] != a2sizeExprs[[a2ind]]) stop('Fixed size mismatch', call. = FALSE)
                 }
@@ -1336,7 +1343,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
             for(i in 1:nDim) {
                 if(!is.numeric(a1sizeExprs[[i]]) | !is.numeric(a2sizeExprs[[i]])) {
                     assertMessage <- paste0("Run-time size error: expected ", deparse(a1sizeExprs[[i]]), " == ", deparse(a2sizeExprs[[i]]))
-                    asserts[[length(asserts) + 1]] <- identityAssert(a1sizeExprs[[i]], a2sizeExprs[[i]], assertMessage)
+                    thisAssert <- identityAssert(a1sizeExprs[[i]], a2sizeExprs[[i]], assertMessage)
+                    if(!is.null(thisAssert)) asserts[[length(asserts) + 1]] <- thisAssert 
                 } else {
                     if(a1sizeExprs[[i]] != a2sizeExprs[[i]]) stop('Fixed size mismatch', call. = FALSE)
                 }
