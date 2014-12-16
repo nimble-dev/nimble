@@ -55,13 +55,16 @@ buildMCMC <- nimbleFunction(
    	    RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
    	    hasRHSonlyNodes <- length(RHSonlyNodes) > 0
 
-		topDetermNodes <- model$getNodeNames(determOnly = TRUE, topOnly = TRUE)
-		hasTopDetermNodes <- length(topDetermNodes) > 0
+		AllDetermNodes <- model$getNodeNames(determOnly = TRUE)
+		determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = AllDetermNodes)			
+		
+#		topDetermNodes <- model$getNodeNames(determOnly = TRUE, topOnly = TRUE)
+#		hasTopDetermNodes <- length(topDetermNodes) > 0
 		
 		stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
 		
 		initFunctionList <- nimbleFunctionList(mcmcNodeInit_virtual)
-		tot_length = hasRHSonlyNodes + hasTopDetermNodes + length(stochNonDataNodes)
+		tot_length = hasRHSonlyNodes + length(stochNonDataNodes)
 		
 		iter = 1
 		if(hasRHSonlyNodes){
@@ -69,10 +72,10 @@ buildMCMC <- nimbleFunction(
 			iter = iter + 1
 		}
 		
-		if(hasTopDetermNodes){
-			initFunctionList[[iter]] <- mcmcFillDetermTop_Init(model, topDetermNodes)
-			iter = iter + 1
-		}
+	#	if(hasTopDetermNodes){
+	#		initFunctionList[[iter]] <- mcmcFillDetermTop_Init(model, topDetermNodes)
+	#		iter = iter + 1
+	#	}
 		
 		for(i in seq_along(stochNonDataNodes)){
 			initFunctionList[[iter + i - 1]] <- mcmcStochNode_Init(model, stochNonDataNodes[i])
@@ -96,9 +99,10 @@ buildMCMC <- nimbleFunction(
         if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
         if(reset) {
             for(i in seq_along(initFunctionList))  {   
+            	calculate(nodeFxnVector = determNodesNodeFxnVector)
             	initFunctionList[[i]]$run()
-            	calculate(model)
    			}
+            calculate(model)
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
             for(i in seq_along(samplerFunctions))      {   nfMethod(samplerFunctions[[i]], 'reset')()   }
             mvSamples_offset  <- 0

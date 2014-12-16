@@ -309,7 +309,7 @@ test_mcmc(model = code, exactSample = sampleVals, seed = 0, mcmcControl = list(s
 
 ### block sampler on MVN node
 
-code <- modelCode({
+code <- nimbleCode({
     mu[1] <- 10
     mu[2] <- 20
     mu[3] <- 30
