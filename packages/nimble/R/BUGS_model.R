@@ -125,7 +125,21 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
 
                     										},
 
-                                  expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE) {
+                                  expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE){
+'
+Takes a vector of nodeNames and returns the unique and expanded names in the model, i.e. \'x\' expands to \'x[1]\', \'x[2]\', ...
+
+Arguments:
+
+nodeNames: a vector of characters of nodes to be expanded. Alternatively, can be a vector of integer graph IDs, but this use is intended only for advanced users 
+
+returnScalarComponents: should multivariate nodes (i.e. dmnorm or dmulti) be broken up into scalar components?
+
+returnType: return type. Options are \'names\' (character vector) or \'ids\' (graph IDs)
+
+sort: should names be topologically sorted before being returned?
+'
+														
                                   						if(length(nodeNames) == 0)	return(NULL)
 										                if(returnType == 'names'){
    											              graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
@@ -157,7 +171,7 @@ nodeNames: A character vector of node names, which is to be topologically sorted
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
 '
                               		  nodeIDs <- modelDef$maps$nodeName_2_graphID[nodeNames]
-                                    nodeIDs <- sort(nodeIDs)
+                                      nodeIDs <- sort(nodeIDs)
                                		  nodeNames <- modelDef$maps$graphID_2_nodeName[nodeIDs]
                                     return(nodeNames)
                                   },

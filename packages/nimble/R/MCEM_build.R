@@ -174,7 +174,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         	stop('mcem quitting: burnIn > m1')
         if(burnIn >= m2)
         	stop('mcem quitting: burnIn > m2')
-        cmcmc_Latent(1, reset = TRUE)	# To get valid initial values 
+        cmcmc_Latent$run(1, reset = TRUE)	# To get valid initial values 
         theta <- values(cModel, maxNodes)
         
         for(i in seq_along(theta) ) {
@@ -188,10 +188,10 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         for(it in 1:maxit){
             if(it > maxit/2)
                 sampleSize = m2
-            cmcmc_Latent(sampleSize, reset = TRUE)
+            cmcmc_Latent$run(sampleSize, reset = TRUE)
             optimOutput = optim(par = theta, fn = cCalc_E_llk, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
             theta = optimOutput$par            
-            comp_llk <- cCalc_E_llk(theta) 	#actually doing this to set values. wasteful, but optim is going to be several fold longer
+            comp_llk <- cCalc_E_llk$run(theta) 	#actually doing this to set values. wasteful, but optim is going to be several fold longer
         }
         output = optimOutput$par
         names(output) = maxNodes
@@ -272,7 +272,7 @@ buildParticleFilter <- nimbleFunction(
         resize(sampledHiddenValues, m)
         logProb <- 0
         for(i in 1:numSteps) {
-            logProb <- logProb + steppers[[i]](m)
+            logProb <- logProb + steppers[[i]]$run(m)
         }
         returnType(double())
         return(logProb)
