@@ -511,7 +511,7 @@ sampler_crossLevel <- nimbleFunction(
         reset = function() {
             topRWblockSamplerFunction$reset()
             for(iSF in seq_along(lowConjugateSamplerFunctions)) {
-                nfMethod(lowConjugateSamplerFunctions[[iSF]], 'reset')()
+                lowConjugateSamplerFunctions[[iSF]]$reset()
             }
         }
     ),  where = getLoadingNamespace()
