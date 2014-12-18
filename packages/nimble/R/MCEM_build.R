@@ -189,7 +189,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
             if(it > maxit/2)
                 sampleSize = m2
             cmcmc_Latent$run(sampleSize, reset = TRUE)
-            optimOutput = optim(par = theta, fn = cCalc_E_llk, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
+            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
             theta = optimOutput$par            
             comp_llk <- cCalc_E_llk$run(theta) 	#actually doing this to set values. wasteful, but optim is going to be several fold longer
         }

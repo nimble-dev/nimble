@@ -163,7 +163,7 @@ Default value is 1.
 summaryStats: A character vector, specifying the summary statistics to calculate on the MCMC samples.
 Each element may be the character name of an exisiting R function (possibly user-defined) which acts on a numeric vector and returns a scalar (e.g., \'mean\' or \'sd\'),
 or a character string which when parsed and evaluted will define such a function (e.g., \'function(x) mean(sqrt(x))\').
-Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95% Bayesian credible interval.
+Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
 
 MCMCs: A character vector specifying the MCMC algorithms to run.
 \'bugs\' specifies a WinBUGS/BUGS MCMC, and \'jags\' specifies a JAGS MCMC.
