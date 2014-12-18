@@ -291,7 +291,7 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
                         'There are two options to resolve this:', '\n',
                         '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
                         '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
-                        '    nimbleModel(my_modelCode, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
+                        '    nimbleModel(code, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
                         'Thanks for bearing with us.'), call. = FALSE)
         }
         ## and to recurse on all elements

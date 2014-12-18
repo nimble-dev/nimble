@@ -173,7 +173,7 @@ sampler_RW <- nimbleFunction(
 #            timesAdapted  <<- 0
 #            scaleHistory          <<- scaleHistory          * 0
 #            acceptanceRateHistory <<- acceptanceRateHistory * 0
-#            nfMethod(my_calcAdaptationFactor, 'reset')()
+#            my_calcAdaptationFactor$reset()
 #        }
 #    ), where = getLoadingNamespace()
 #)
@@ -263,7 +263,7 @@ sampler_RW_block <- nimbleFunction(
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
-                    gamma1 <- nfVar(my_calcAdaptationFactor, 'gamma1')
+                    gamma1 <- my_calcAdaptationFactor$gamma1
                     empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
                     propCov <<- propCov + gamma1 * (empirCov - propCov)
                     chol_propCov <<- chol(propCov)
@@ -286,7 +286,7 @@ sampler_RW_block <- nimbleFunction(
             acceptanceRateHistory <<- acceptanceRateHistory * 0
             statSums  <<- statSums  * 0
             statProds <<- statProds * 0
-            nfMethod(my_calcAdaptationFactor, 'reset')()
+            my_calcAdaptationFactor$reset()
         }
     ),  where = getLoadingNamespace()
 )
@@ -320,17 +320,17 @@ sampler_RW_llFunction <- nimbleFunction(
     run = function() {
         modelLP0 <- llFunction$run()
         if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, targetNode)
-        propValue <- nfMethod(targetRWSamplerFunction, 'generateProposalValue')()
+        propValue <- targetRWSamplerFunction$generateProposalValue()
         my_setAndCalculateOne$run(propValue)
         modelLP1 <- llFunction()
         if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, targetNode)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
-        if(adaptive)     nfMethod(targetRWSamplerFunction, 'adaptiveProcedure')(jump)
+        if(adaptive)     targetRWSamplerFunction$adaptiveProcedure(jump)
     },
     
     methods = list(
         reset = function() {
-            nfMethod(targetRWSamplerFunction, 'reset')()
+            targetRWSamplerFunction$reset()
         }
     ),  where = getLoadingNamespace()
 )
@@ -447,7 +447,7 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
     contains = getPosteriorDensityFromConjSampler_virtual,
     setup = function(conjugateSamplerFunction) {},
     run = function() {
-        posteriorLogDensity <- nfMethod(conjugateSamplerFunction, 'getPosteriorLogDensity')()
+        posteriorLogDensity <- conjugateSamplerFunction$getPosteriorLogDensity()
         returnType(double())
         return(posteriorLogDensity)
     },
@@ -492,7 +492,7 @@ sampler_crossLevel <- nimbleFunction(
         propLP0 <- 0
         
         for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP0 <- propLP0 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
-        propValueVector <- nfMethod(topRWblockSamplerFunction, 'generateProposalVector')()
+        propValueVector <- topRWblockSamplerFunction$generateProposalVector()
         
         topLP <- my_setAndCalculateTop$run(propValueVector)
         if(is.na(topLP))
@@ -504,12 +504,12 @@ sampler_crossLevel <- nimbleFunction(
 	        for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
 	        jump <- my_decideAndJump$run(modelLP1, modelLP0, propLP1, propLP0) 
     	}    
-        if(adaptive)     nfMethod(topRWblockSamplerFunction, 'adaptiveProcedure')(jump)
+        if(adaptive)     topRWblockSamplerFunction$adaptiveProcedure(jump)
     },
     
     methods = list(
         reset = function() {
-            nfMethod(topRWblockSamplerFunction, 'reset')()
+            topRWblockSamplerFunction$reset()
             for(iSF in seq_along(lowConjugateSamplerFunctions)) {
                 nfMethod(lowConjugateSamplerFunctions[[iSF]], 'reset')()
             }

@@ -8,12 +8,12 @@
 #' See documentation for \code{nimbleModel} for details of creating an R model object.
 #' @author Daniel Turek
 #' @examples
-#' mCode <- modelCode({
-#' mu ~ dnorm(0, 1)
-#' x[1] ~ dnorm(mu, 1)
-#' x[2] ~ dnorm(mu, 1)
+#' code <- nimbleCode({
+#'     mu ~ dnorm(0, 1)
+#'     x[1] ~ dnorm(mu, 1)
+#'     x[2] ~ dnorm(mu, 1)
 #' })
-#' Rmodel <- nimbleModel(mCode)
+#' Rmodel <- nimbleModel(code)
 #' modelVars <- Rmodel$getVarNames()   ## returns 'mu' and 'x'
 #' modelNodes <- Rmodel$getNodeNames()   ## returns 'mu', 'x[1]' and 'x[2]'
 #' Rmodel$resetData()

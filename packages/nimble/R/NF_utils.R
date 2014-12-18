@@ -98,7 +98,7 @@ getLogProbNodes <- nimbleFunction(
 #' 
 #'	
 #' @examples
-#' code <- modelCode({
+#' code <- nimbleCode({
 #'	for(i in 1:5)
 #'	x[i] ~ dnorm(0,1)
 #' })
@@ -162,7 +162,7 @@ simNodesMV <- nimbleFunction(
 ## ###	}
 ## ###	
 ## ### @examples
-## ### code <- modelCode({
+## ### code <- nimbleCode({
 ## ###	for(i in 1:5)
 ## ###	x[i] ~ dnorm(0,1)
 ## ### })
@@ -228,9 +228,10 @@ where = getLoadingNamespace())
 ## ### none
 ## ###	
 ## ### @examples
-## ### code <- modelCode({
-## ###	for(i in 1:5)
-## ###	x[i] ~ dnorm(0,1)
+## ### code <- nimbleCode({
+## ###     for(i in 1:5) {
+## ###         x[i] ~ dnorm(0,1)
+## ###     }
 ## ### })
 ## ###
 ## ### myModel <- nimbleModel(code)

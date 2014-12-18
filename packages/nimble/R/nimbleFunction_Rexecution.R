@@ -271,7 +271,7 @@ values <- function(model, nodes){
 #'
 #' @examples
 #'	# Building model and modelValues object
-#' simpleModelCode <- modelCode({
+#' simpleModelCode <- nimbleCode({
 #'	for(i in 1:100)
 #'		x[i] ~ dnorm(0,1)
 #'})

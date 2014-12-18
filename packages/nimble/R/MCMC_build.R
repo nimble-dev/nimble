@@ -1,13 +1,14 @@
 
 #' Create an MCMC function, from an MCMCspec object
 #' 
-#' Accepts a single required argument, which must be an object of class MCMCspec.  Returns an MCMC function; see details section.
+#' Accepts a single required argument, which may be of class MCMCspec, or inherit from class modelBaseClass (a NIMBLE model obejct).  Returns an MCMC function; see details section.
 #' 
-#' @param mcmcspec An object of class MCMCspec, which specifys the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{MCMCspec} for details of this argument.
+#' @param obj An object of class MCMCspec, which specifys the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCspec objects.  Alternatively, \code{obj} may a NIMBLE model object, in which case an MCMC function corresponding to the defult MCMC specification for this model is returned.
+#' 
 #' @author Daniel Turek
 #' @export
 #' @details
-#' Calling buildMCMC(mcmcspec) will produce an R mcmc function object, say 'Rmcmc'.
+#' Calling buildMCMC(obj) will produce an R mcmc function object, say 'Rmcmc'.
 #'
 #' The Rmcmc function will have arguments:
 #'
@@ -22,25 +23,26 @@
 #' simulateAll: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes.
 #' 
 #' Samples corresponding to the 'monitors' and 'monitors2' from the MCMCspec are stored into the interval variables 'mvSamples' and 'mvSamples2', respectively.
-#' These may be accessed using:
-#' nfVar(Rmcmc, 'mvSamples')
+#' These may be accessed via:
+#' Rmcmc$mvSamples
+#' Rmcmc$mvSamples2
 #' 
 #' The Rmcmc function may be compiled to a C MCMC object, taking care to compile in the same project as the R model object, using:
 #' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
 #' 
-#' The Cmcmc function will function identically as the Rmcmc object, except acting on the C model object.
+#' The Cmcmc function will function identically to the Rmcmc object, except acting on the C model object.
 #' @examples
-#' mCode <- modelCode({
+#' code <- nimbleCode({
 #'  mu ~ dnorm(0, 1)
 #'  x ~ dnorm(mu, 1)
 #' })
-#' Rmodel <- nimbleModel(mCode)
-#' mcmcspec <- MCMCspec(Rmodel)
-#' Rmcmc <- buildMCMC(mcmcspec)
-#' Rmcmc(10)
-#' samples <- nfVar(Rmcmc, 'mvSamples')
+#' Rmodel <- nimbleModel(code)
+#' spec <- configureMCMC(Rmodel)
+#' Rmcmc <- buildMCMC(spec)
+#' Rmcmc$run(10)
+#' samples <- Rmcmc$mvSamples
 #' samples[['x']]
-#' Rmcmc(100, reset = FALSE)
+#' Rmcmc$run(100, reset = FALSE)
 buildMCMC <- nimbleFunction(
     
     setup = function(mcmcspec, ...) {
@@ -48,36 +50,36 @@ buildMCMC <- nimbleFunction(
     		mcmcspec <- configureMCMC(mcmcspec, ...)
     	
     	else if(!inherits(mcmcspec, 'MCMCspec'))	
-    		stop('mcmcspec must either be a nimbleModel or a MCMCspec object (created by configureMCMC(...) )')
-    		
+            stop('mcmcspec must either be a nimbleModel or a MCMCspec object (created by configureMCMC(...) )')
+        
         model <- mcmcspec$model
         
-   	    RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
-   	    hasRHSonlyNodes <- length(RHSonlyNodes) > 0
+        RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
+        hasRHSonlyNodes <- length(RHSonlyNodes) > 0
 
-		topDetermNodes <- model$getNodeNames(determOnly = TRUE, topOnly = TRUE)
-		hasTopDetermNodes <- length(topDetermNodes) > 0
-		
-		stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-		
-		initFunctionList <- nimbleFunctionList(mcmcNodeInit_virtual)
-		tot_length = hasRHSonlyNodes + hasTopDetermNodes + length(stochNonDataNodes)
-		
-		iter = 1
-		if(hasRHSonlyNodes){
-			initFunctionList[[iter]] <- mcmcCheckRHS_Init(model = model, node = RHSonlyNodes)
-			iter = iter + 1
-		}
-		
-		if(hasTopDetermNodes){
-			initFunctionList[[iter]] <- mcmcFillDetermTop_Init(model, topDetermNodes)
-			iter = iter + 1
-		}
-		
-		for(i in seq_along(stochNonDataNodes)){
-			initFunctionList[[iter + i - 1]] <- mcmcStochNode_Init(model, stochNonDataNodes[i])
-		}
-		
+        topDetermNodes <- model$getNodeNames(determOnly = TRUE, topOnly = TRUE)
+        hasTopDetermNodes <- length(topDetermNodes) > 0
+        
+        stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+        
+        initFunctionList <- nimbleFunctionList(mcmcNodeInit_virtual)
+        tot_length = hasRHSonlyNodes + hasTopDetermNodes + length(stochNonDataNodes)
+        
+        iter = 1
+        if(hasRHSonlyNodes){
+            initFunctionList[[iter]] <- mcmcCheckRHS_Init(model = model, node = RHSonlyNodes)
+            iter = iter + 1
+        }
+        
+        if(hasTopDetermNodes){
+            initFunctionList[[iter]] <- mcmcFillDetermTop_Init(model, topDetermNodes)
+            iter = iter + 1
+        }
+        
+        for(i in seq_along(stochNonDataNodes)){
+            initFunctionList[[iter + i - 1]] <- mcmcStochNode_Init(model, stochNonDataNodes[i])
+        }
+        
 
         
         mvSaved <- modelValues(model)
@@ -119,28 +121,6 @@ buildMCMC <- nimbleFunction(
         }
     },  where = getLoadingNamespace()
 )
-
-
-##### OLD (v0.1) machinery for handling samplerOrdering (e.g., samplerCalls: c(1,2,1,3,1,4,1))
-##### this code below was in the setup():
-## create a list of the unique sampler functions
-# samplerOrder       <- mcmcspec$samplerOrder
-# uniqueSamplerOrder <- unique(samplerOrder)
-# numSamplers        <- length(uniqueSamplerOrder)
-# samplerFunctions   <- vector('list', numSamplers)
-# for(i in seq_along(uniqueSamplerOrder)) {
-#     uspec <- mcmcspec$samplerSpecs[[uniqueSamplerOrder[i]]]
-#     samplerFunctions[[i]] <- uspec$buildSampler(model=model, mvSaved=mvSaved)
-# }
-# ## create a list of sampler function calls
-# numSamplerCalls <- length(samplerOrder)
-# samplerMap <- array(0, c(numSamplerCalls,1))
-# for(i in 1:numSamplerCalls) samplerMap[i,1] <- which(uniqueSamplerOrder==samplerOrder[i])
-#
-#
-#### this code in runtime, calling of the samplers:
-# for(fc in seq_along(samplerOrder)) {
-#     samplerFunctions[[samplerMap[fc,1]]](scale = scales[samplerMap[fc,1]]) }
 
 
 

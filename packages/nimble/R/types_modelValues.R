@@ -21,14 +21,14 @@
 #'
 #' @examples
 #'	#From model object:
-#' modelCode <- BUGScode({
+#' code <- nimbleCode({
 #'  a ~ dnorm(0,1)
 #'  for(i in 1:3){
 #'		for(j in 1:3)
 #'			b[i,j] ~ dnorm(0,1)
 #'		}
 #' })
-#' Rmodel <- nimbleModel(modelCode)
+#' Rmodel <- nimbleModel(code)
 #' Rmodel_mv <- modelValues(Rmodel, m = 2)
 #'	#Custom modelValues object:
 #' mvSpec <- modelValuesSpec(vars = c('x', 'y'), types = c('double', 'int'), sizes = list(x = 3, y = c(2,2)))
@@ -77,7 +77,7 @@ modelValues <- function(spec, m = 1) {
 #'mv['b',2] <- matrix(1, nrow = 2, ncol = 2)
 #'mv['a',]
 #'as.matrix(mv)
-#'basicModelCode <- modelCode({
+#'basicModelCode <- nimbleCode({
 #'	a ~ dnorm(0,1)
 #'	for(i in 1:4)
 #'		b[i] ~ dnorm(0,1)

@@ -20,7 +20,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' 
 #' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition
 #' 
-#' @param code code for the model in the form returned by \code{modelCode} or (equivalently) \code{quote}
+#' @param code code for the model in the form returned by \code{nimbleCode} or (equivalently) \code{quote}
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
 #' @param constants named list of constants in the model (not including data values).  Constants cannot be subsequently modified.
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
@@ -35,14 +35,13 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #'
 #' The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
 #' @examples
-#' modelCode <- BUGScode({
-#'  x ~ dnorm(mu, sd = 1)
-#'  mu ~ dnorm(0, sd = prior_sd)
+#' code <- nimbleCode({
+#'     x ~ dnorm(mu, sd = 1)
+#'     mu ~ dnorm(0, sd = prior_sd)
 #' })
 #' constants = list(prior_sd = 1)
 #' data = list(x = 4)
-#' dimensions = list(
-#' Rmodel <- nimbleModel(modelCode, constants = constants, data = data)
+#' Rmodel <- nimbleModel(code, constants = constants, data = data)
 nimbleModel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnDef = FALSE, where=globalenv(), debug=FALSE)
     BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug)
 
@@ -54,11 +53,11 @@ nimbleModel <- function(code, name, constants=list(), dimensions=list(), data=li
 #' @param code expression providing the code for the model 
 #' @author Daniel Turek
 #' @export
-#' @details It is equivalent to use the R function \code{quote}.  \code{modelCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
+#' @details It is equivalent to use the R function \code{quote}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
 #' @examples
-#' modelCode <- BUGScode({
-#'  x ~ dnorm(mu, sd = 1)
-#'  mu ~ dnorm(0, sd = prior_sd)
+#' code <- nimbleCode({
+#'     x ~ dnorm(mu, sd = 1)
+#'     mu ~ dnorm(0, sd = prior_sd)
 #' })
 nimbleCode <- function(code) {
   code <- substitute(code)
@@ -165,7 +164,7 @@ mergeMultiLineStatementsAndParse <- function(text) {
 #' 
 #' \code{readBUGSmodel} processes inputs providing the model and values for constants, data, initial values of the model in a variety of forms, returning a NIMBLE BUGS R model
 #' 
-#' @param model one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{modelCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
+#' @param model one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
 #' @param data (optional) (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named \{modelName\}-data including extensions .R, .r, or .txt.
 #' @param inits (optional) (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the input constants and data
 #' @param dir (optional) character string giving the directory where the (optional) files are located
@@ -175,12 +174,12 @@ mergeMultiLineStatementsAndParse <- function(text) {
 #' @author Christopher Paciorek
 #' @export
 #' @examples
-#' modelCode <- BUGScode({
-#'  x ~ dnorm(mu, sd = 1)
-#'  mu ~ dnorm(0, sd = prior_sd)
+#' code <- nimbleCode({
+#'     x ~ dnorm(mu, sd = 1)
+#'     mu ~ dnorm(0, sd = prior_sd)
 #' })
 #' data = list(prior_sd = 1, x = 4)
-#' Rmodel <- readBUGSmodel(modelCode, data = data, inits = list(mu = 0))
+#' Rmodel <- readBUGSmodel(code, data = data, inits = list(mu = 0))
 #' Rmodel$setData(data['x'])
 #' Rmodel[['mu']]
 #' Rmodel$nodes[['x']]$calculate()

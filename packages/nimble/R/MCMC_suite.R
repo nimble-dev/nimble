@@ -17,11 +17,11 @@
 #' See the NIMBLE User Manual for more information about these \code{output} list elements.
 #' @author Daniel Turek
 #' @examples
-#' mCode <- modelCode({
-#'  mu ~ dnorm(0, 1)
-#'  x ~ dnorm(mu, 1)
+#' code <- nimbleCode({
+#'     mu ~ dnorm(0, 1)
+#'     x ~ dnorm(mu, 1)
 #' })
-#' suite <- MCMCsuite(mCode,
+#' suite <- MCMCsuite(code,
 #'                    data = list(x=3),
 #'                    inits = list(mu=0),
 #'                    niter = 10000,
@@ -130,7 +130,7 @@ See the NIMBLE User Manual for more information about these \'output\' list obje
 
 Arguments:
 
-model: The quoted code expression representing the model, such as the return value from a call to modelCode({...}).
+model: The quoted code expression representing the model, such as the return value from a call to nimbleCode({...}).
 No default value, this is a required argument.
 
 constants: A named list giving values of constants for the model.
@@ -293,9 +293,9 @@ Default value is TRUE.
         },
         
         setMCMCdefs = function(newMCMCdefs) {
-            MCMCdefs <<- list(nimble       = quote(MCMCspec(Rmodel)),
-                              nimble_RW    = quote(MCMCspec(Rmodel, onlyRW    = TRUE)),
-                              nimble_slice = quote(MCMCspec(Rmodel, onlySlice = TRUE)))
+            MCMCdefs <<- list(nimble       = quote(configureMCMC(Rmodel)),
+                              nimble_RW    = quote(configureMCMC(Rmodel, onlyRW    = TRUE)),
+                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
         },
@@ -369,7 +369,7 @@ Default value is TRUE.
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 Cmcmc <- CmcmcFunctionList[[mcmcTag]]
                 timeResult <- system.time({ Cmcmc(niter) })
-                CmvSamples <- nfVar(Cmcmc, 'mvSamples')
+                CmvSamples <- Cmcmc$mvSamples
                 samplesArray <- as.matrix(CmvSamples, varNames = monitorVars)
                 samplesArray <- samplesArray[(burnin+1):floor(niter/thin), monitorNodesNIMBLE, drop=FALSE]
                 addToOutput(mcmcTag, samplesArray, timeResult)

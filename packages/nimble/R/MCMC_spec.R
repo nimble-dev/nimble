@@ -39,26 +39,26 @@ samplerSpec <- setRefClass(
 # NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
 
 #' Class \code{MCMCspec}
-#' @aliases MCMCspec addSampler removeSamplers setSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors setThin setThin2
+#' @aliases MCMCspec configureMCMC addSampler removeSamplers setSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors setThin setThin2
 #' @export
 #' @description
 #' Objects of this class fully specify an MCMC algorithm, specific to a particular model.
-#' Given an object mcmcspec of class MCMCspec, the actual MCMC function may subsequently be built by calling buildMCMC(mcmcspec).
-#' See documentation for method initialize(), for details of creating an MCMCspec object.
+#' Given an object spec of class MCMCspec, the actual MCMC function may subsequently be built by calling buildMCMC(spec).
+#' See documentation for method initialize() or configureMCMC(), for details of creating an MCMCspec object.
 #' @author Daniel Turek
 #' @examples
-#' mCode <- modelCode({
+#' code <- nimbleCode({
 #'  mu ~ dnorm(0, 1)
 #'  x ~ dnorm(mu, 1)
 #' })
-#' Rmodel <- nimbleModel(mCode)
-#' mcmcspec <- MCMCspec(Rmodel)
-#' mcmcspec$setSamplers(1)
-#' mcmcspec$addSampler(type = 'slice', control = list(targetNode = 'x'))
-#' mcmcspec$addMonitors('mu', thin = 1)
-#' mcmcspec$addMonitors2('x', thin2 = 10)
-#' mcmcspec$getMonitors()
-#' mccmspec$getSamplers()
+#' Rmodel <- nimbleModel(code)
+#' spec <- configureMCMC(Rmodel)
+#' spec$setSamplers(1)
+#' spec$addSampler(type = 'slice', control = list(targetNode = 'x'))
+#' spec$addMonitors('mu', thin = 1)
+#' spec$addMonitors2('x', thin2 = 10)
+#' spec$getMonitors()
+#' spec$getSamplers()
 configureMCMC <- setRefClass(
     
     Class = 'MCMCspec',                           
@@ -82,7 +82,7 @@ configureMCMC <- setRefClass(
                               useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
                               print = FALSE) {	
 '	
-Creates a defaut MCMC specification for a given model.  The resulting mcmcspec object is suitable as an argument to buildMCMC().
+Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC().
 
 Arguments:
 
@@ -95,8 +95,8 @@ If NULL, then no samplers are added.
 
 control: An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
 For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\', 
-and also \'targetNode\' however this should not generally be provided as a control list element to MCMCspec.
-The default values for control list arguments for samplers (if not otherwise provided as an argument to MCMCspec) are contained in the \'controlDefaultList\' object.
+and also \'targetNode\' however this should not generally be provided as a control list element to configureMCMC().
+The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are contained in the \'controlDefaultList\' object.
 
 monitors: A character vector of node names or variable names, to record during MCMC sampling.
 This set of monitors will be recorded with thinning interval \'thin\', and the samples will be stored into the \'mvSamples\' object.
@@ -123,7 +123,7 @@ multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If sp
 print: Boolean argument, specifying whether to print the ordered list of default samplers.
 '
             
-            samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list();monitors <<- character(); monitors2 <<- character();
+            samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
             model <<- model
             addMonitors( monitors,  print = FALSE)
             addMonitors2(monitors2, print = FALSE)
@@ -187,9 +187,9 @@ Arguments:
 type: The type of sampler to add.  If type=\'newSamplerType\', then sampler_newSamplertype must correspond to a nimbleFunction generator.  Otherwise an error results.
 
 control: A list of control arguments for sampler_newSamplertype.
-These will override the defaults contained in the \'controlDefaultList\' object, and any specified in the control list argument to MCMCspec().
+These will override the defaults contained in the \'controlDefaultList\' object, and any specified in the control list argument to configureMCMC().
 An error results if sampler_newSamplertype requires any control elements which are 
-not present in this argument, the control list argument to MCMCspec, or in the \'controlDefaultList\' object.
+not present in this argument, the control list argument to configureMCMC(), or in the \'controlDefaultList\' object.
 
 print: Boolean argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 

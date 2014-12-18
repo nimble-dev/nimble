@@ -78,7 +78,7 @@ calc_E_llk_gen = nimbleFunction(
 #'
 #' @examples
 #' 
-#' pumpCode <- modelCode({ 
+#' pumpCode <- nimbleCode({ 
 #'  for (i in 1:N){
 #'      theta[i] ~ dgamma(alpha,beta);
 #'      lambda[i] <- theta[i]*t[i];
@@ -107,7 +107,6 @@ calc_E_llk_gen = nimbleFunction(
 #' pumpMCEM(maxit = 40, m1 = 1000, m2 = 5000)
 #'
 #' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
-#' # nfVar(pumpMCEM) NOT valid: pumpMCEM is a R-function that uses nimble functions, not a nimble function
 buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20), boxConstraints = list(), buffer = 10^-6) {
     latentNodes = model$expandNodeNames(latentNodes)
     latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
@@ -160,9 +159,9 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         }
 
 
-    mcmc_Latent_Spec <- MCMCspec(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
+    mcmc_Latent_Spec <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
     Rmcmc_Latent <- buildMCMC(mcmc_Latent_Spec)
-    sampledMV = nfVar(Rmcmc_Latent, 'mvSamples')
+    sampledMV = Rmcmc_Latent$mvSamples
     Rcalc_E_llk <- calc_E_llk_gen(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
 
 
@@ -220,7 +219,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
 #'	}
 #'
 #'@examples
-#'timeModelCode <- modelCode({
+#'timeModelCode <- nimbleCode({
 #'	x[1] ~ dnorm(mu_0, 1)
 #'	y[1] ~ dnorm(x[1], 1)
 #'	for(i in 2:t){
