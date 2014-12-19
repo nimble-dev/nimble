@@ -47,6 +47,10 @@ modelDefInfoClass <- setRefClass('modelDefInfoClass',
                                      labelMaker = 'ANY'
                                      ))
 
+
+removeVariableFromEnv <- function(name, env)
+	eval(substitute(remove(VAR, envir = env), list(VAR = name)))
+
 nimbleProjectClass <- setRefClass('nimbleProjectClass',
                              fields = list(
                                  RCfunInfos         =  'ANY',		#'list', ## a list of RCfunInfoClass objects
@@ -77,8 +81,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  	models <<- new.env()							# list()
                                  	nimbleFunctions <<- new.env()					# list()	
                                  	nimbleFunctionCppInterfaces <<- new.env()		# list()
-                                 	nfCompInfos <<- new.env()						# list()
-                                 	cppProjects <<- new.env()						#list()
+                                 	nfCompInfos <<- list()							# list()
+                                 	cppProjects <<- list()							#new.env()						#list()
                                  	refClassDefsEnv <<- new.env()
                                      dirName <<- if(is.null(dir)) makeDefaultDirName() else dir
                                      if(name == '') projectName <<- projectNameCreator() else projectName <<- name
@@ -91,7 +95,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                  mvInfos[[i]]$cppClass <<- NULL
                                                  for(j in seq_along(mvInfos[[i]]$RmvObjs))
                                                      mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface <<- NULL
-                                                 mvInfos[[i]] <<- NULL
+                                                mvInfos[[i]] <<- NULL
                                              }
                                          }
                                      }
