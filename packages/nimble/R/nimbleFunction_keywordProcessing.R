@@ -214,6 +214,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
 			}
 			return(ans)			
 		}
+		stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
 	})
 
 dollarSign_keywordInfo <- keywordInfoClass(
@@ -286,20 +287,27 @@ dollarSign_keywordInfo <- keywordInfoClass(
 								
 				nf_name <-code[[2]]
 				nf_fieldName <- as.character(code[[3]])
-				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))				
+				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
+				return(newRunCode)				
 			}
+			stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
 	}
 )
     
 singleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[',
-	processor = function(code, nfProc){
+	processor = function(code, nfProc){		
 		class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
 		if(class == 'symbolModelValues'){
 			singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
 			accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
 			addNecessarySetupCode(accessName, singleMVAccess_ArgList, singleModelValuesAccessor_SetupTemplate, nfProc)
-			return(as.name(accessName))
+			if(length(code) == 4)
+				indexExpr = code[[4]]
+			else
+				indexExpr = substitute(1)
+	
+			return(substitute(ACCESS[INDEX], list(ACCESS = as.name(accessName), INDEX = indexExpr) ) )
 		}
 	return(code)
 	}

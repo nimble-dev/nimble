@@ -194,6 +194,8 @@ nfProcessing <- setRefClass('nfProcessing',
 									matchKeywords_all()
 									processKeywords_all()
 
+
+
                                   if(debug) browser()
 
                                   makeNewSetupLinesOneExpr()
@@ -534,11 +536,11 @@ nfProcessing$methods(determineNdimsFromInstances = function(modelExpr, varOrNode
 
 
 
-nfProcessing$methods(processKeywords_all = function(){
+nfProcessing$methods(processKeywords_all = function(){	
 	for(i in seq_along(compileInfos)){
 		compileInfos[[i]]$newRcode <<- processKeywords_one(compileInfos[[i]]$origRcode)
 		}
-})
+	})
 
 nfProcessing$methods(processKeywords_one = function(code){
 	cl = length(code)
