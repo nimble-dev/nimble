@@ -7,9 +7,22 @@ individualExportClassNames = c(
  'CmodelBaseClass',
  'CnimbleFunctionBase', 
  'modelBaseClass',
- 'modelValuesBaseClass')
+ 'modelValuesBaseClass', 
+ 'codeBlockClass')
 
-individualExportNames = c('modelCode', 'BUGScode', 'nimbleModel', 'readBUGSmodel', 'testBUGSmodel', 'populateNodeFxnVec', 'simulate', 'calculate', 'getLogProb', 'nfVar',
+individualExportNames = c(
+ 'parseEvalNumeric',
+ 'makeMV_GID_Map',
+ 'nimbleCode', 
+ 'BUGScode', 
+ 'nimbleModel', 
+ 'readBUGSmodel', 
+ 'testBUGSmodel',
+ 'populateNodeFxnVec',
+ 'simulate',
+ 'calculate',
+ 'getLogProb',
+ 'nfVar',
  'BUGScontextClass',
  'BUGSdeclClass',
  'BUGSsingleContextClass',

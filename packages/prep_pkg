@@ -30,7 +30,7 @@ cat(paste(imports, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
 
 system("R CMD build nimble")
 
-system("R CMD INSTALL nimble_0.1.tar.gz")
+system("R CMD INSTALL nimble_0.3.tar.gz")
 
 # need to remove existing Rd files or get errors with
 # recursion and walking graph for classes
