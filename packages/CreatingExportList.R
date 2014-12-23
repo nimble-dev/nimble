@@ -8,7 +8,8 @@ individualExportClassNames = c(
  'CnimbleFunctionBase', 
  'modelBaseClass',
  'modelValuesBaseClass', 
- 'codeBlockClass')
+ 'codeBlockClass',
+ 'nimbleFunctionBase')
 
 individualExportNames = c(
  'parseEvalNumeric',

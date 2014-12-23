@@ -191,7 +191,7 @@ test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
 
 ### Daniel's world's simplest MCMC demo
 
-code <- modelCode({
+code <- nimbleCode({
     x ~ dnorm(0, 2)
     y ~ dnorm(x+1, 3)
     z ~ dnorm(y+2, 4)
@@ -206,7 +206,7 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
 
 ### basic block sampler example
 
-code <- modelCode({
+code <- nimbleCode({
     for(i in 1:3) {
         x[i] ~ dnorm(0, 1)
         y[i] ~ dnorm(x[i], 2)
