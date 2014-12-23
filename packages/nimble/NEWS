@@ -1,33 +1,34 @@
-		  	CHANGES IN VERSION 0.3
+		  	CHANGES IN VERSION 0.3 (Dec. 23, 2014)
 
 USER LEVEL CHANGES
 
-—- VERY IMPORTANT SYNTAX CHANGE: nimble functions are run via myNimbleFunction$run() instead of myNimbleFunction(). This means code written in v0.2 and below will not run without adding $run. (Note: model$calculate() was NOT implemented)
+-- IMPORTANT SYNTAX CHANGE: nimbleFunctions are run via myNimbleFunction$run() instead of myNimbleFunction(). This means code written in v0.2 and earlier will not run without adding $run. (Note: model$calculate() was NOT implemented)
 
-—- VERY IMPORTANT SYNTAX CHANGED: writing code for nimble models is now done with nimbleCode (previously modelCode), to customize MCMC use myMCMCspec <- configureMCMC(myModel) (previously MCMCspec). To build an MCMC algorithm, either myGenericMCMC <- buildMCMC(myModel) for a generic build or myCustomizedMCMC <- buildMCMC(myMCMCspec) for a customized MCMC algorithm can be used (previously always had to build an MCMCspec, even for generic build)
+-- IMPORTANT SYNTAX CHANGE: writing code for nimble models is now done with nimbleCode (previously modelCode), to customize MCMC use myMCMCspec <- configureMCMC(myModel) (previously MCMCspec). To build an MCMC algorithm, either myGenericMCMC <- buildMCMC(myModel) for a generic build or myCustomizedMCMC <- buildMCMC(myMCMCspec) for a customized MCMC algorithm can be used (previously always had to build an MCMCspec, even for generic build)
 
-—- Variables and methods of a nimbleFunction can be accessed by myNimbleFunction$myVariable or myNimbleFunction$myMethod() rather than nfVar(myNimbleFunction, ‘myVariable’) or nfMethod(myNimbleFunction, ‘myMethod’)(). Similarly, names of objects/methods of a nimble function can be queried by ls(myNimbleFunction)
+-- Variables and methods of a nimbleFunction can be accessed by myNimbleFunction$myVariable or myNimbleFunction$myMethod() rather than nfVar(myNimbleFunction, ‘myVariable’) or nfMethod(myNimbleFunction, ‘myMethod’)(). Similarly, names of objects/methods of a nimble function can be queried by ls(myNimbleFunction)
 
-—- faster compiling, most notably when compiling MCMC algorithms
-
-—- Fixed bug regarding calculating log probabilities for multinomial distribution with probabilities equal to 0
-
+-- faster compiling, most notably when compiling MCMC algorithms
  
 DEVELOPER LEVEL CHANGES
 
-—- Addition of graphIDs for logProb’s for model (separate set than graphIDs for nodes) and  graphIDs for modelValue variables
+-- Addition of graphIDs for logProbs for models (separate set than graphIDs for nodes) and graphIDs for modelValue variables
 
-—- Addition of $expandNodeNames() for modelValues
+-- Addition of $expandNodeNames() for modelValues
 
-—- $expandNodeNames() now evals nodeNames text array to quickly retrieve graphIDs.  ExpandNodeNames can also accept graphIDs and return names. Also can return multivariate nodes as either ‘x[1:10]’ or ‘x[1]’,’x[2]’, etc.
+-- $expandNodeNames() now evals nodeNames text array to quickly retrieve graphIDs.  expandNodeNames can also accept graphIDs and return names. Also can return multivariate nodes as either ‘x[1:10]’ or ‘x[1]’,’x[2]’, etc.
 
-—- Addition of numberedObjects (both at R and C++ level) currently used for fast construction of C++ nodeFunctionVectors, modelVariableAccessors and modelValuesAccessors
+-- Addition of numberedObjects (both at R and C++ level) currently used for fast construction of C++ nodeFunctionVectors, modelVariableAccessors and modelValuesAccessors
 
-—- Reduction of nimbleFunctions required for initialization functions of MCMC’s
+-- Reduction of nimbleFunctions required for initialization functions of MCMCs
 
-—- nimCopy now only requires that the number of nodes are equal, not that the sets of consecutive nodes be equal (i.e. previous nimCopy(…, nodes = c(‘x[1]’, ‘x[2]’), nodesTo = c(‘y[1,1]’, ‘y[2,2]’)) was not allowed). 
+-- nimCopy now only requires that the number of nodes are equal, not that the sets of consecutive nodes be equal (i.e. previous nimCopy(…, nodes = c(‘x[1]’, ‘x[2]’), nodesTo = c(‘y[1,1]’, ‘y[2,2]’)) was not allowed). 
 
-—- Addition of keywordProcessing system for more organized compiling of nimbleFunctions
+-- Addition of keywordProcessing system for more organized compiling of nimbleFunctions
+
+Bug fixes
+
+-- Fixed bug regarding calculating log probabilities for multinomial distribution with probabilities equal to 0
 
 
                      CHANGES IN VERSION 0.2 (Oct. 12, 2014)
