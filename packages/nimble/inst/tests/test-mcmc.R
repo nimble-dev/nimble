@@ -363,7 +363,7 @@ Sig <- diag(sqrt(varr))
 Q <- Sig %*% corr %*% Sig
 P <- solve(Q)
 
-code <- modelCode({
+code <- nimbleCode({
 #    x[1:3] ~ dmnorm(mu[1:3], cov = Q[1:3,1:3])
     x[1:3] ~ dmnorm(mu[1:3], prec = P[1:3,1:3])
 })
@@ -389,12 +389,12 @@ a = c(-2, .5, 1)
 B = matrix(rnorm(9), 3)
 
 ##### not currently working - see Perry's email of ~ 10/6/14
-## code <- modelCode({
+## code <- nimbleCode({
 ##   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
 ##   y[1:3] ~ dmnorm(asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3]), Q[1:3, 1:3])
 ## })
 
-code <- modelCode({
+code <- nimbleCode({
   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
   y_mean[1:3] <- asCol(a[1:3]) + B[1:3, 1:3] %*% asCol(mu[1:3])
   y[1:3] ~ dmnorm(y_mean[1:3], Q[1:3, 1:3])
@@ -403,7 +403,7 @@ code <- modelCode({
 ## Simplest version of model w/o 'a' and 'B'
 ## a = rep(0,3)
 ## B = diag(rep(1,3))
-## code <- modelCode({
+## code <- nimbleCode({
 ##   mu[1:3] ~ dmnorm(mu0[1:3], Q0[1:3, 1:3])
 ##   y[1:3] ~ dmnorm(mu[1:3], Q[1:3, 1:3])
 ## })
@@ -454,7 +454,7 @@ Y = mu + t(chol(trueCov)) %*% matrix(rnorm(3*n), ncol = n)
 M = 3
 data <- list(Y = t(Y), n = n, M = M, mu = mu, R = R)
 
-code <- modelCode( {
+code <- nimbleCode( {
   for(i in 1:n) {
     Y[i, 1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);
   }
