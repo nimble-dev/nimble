@@ -1065,6 +1065,20 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     model$setData(data)
     model$setInits(inits)
+
+	# Below is the code that checks if an index is missing    
+#    allVarNames <- model$getVarNames()
+#    for(var in allVarNames){
+#    	varExpandedNodeNameLength = length(model$expandNodeNames(var, returnScalarComponents = TRUE))
+#       	varValuesLength = length(model[[var]])
+#        if(varExpandedNodeNameLength != varValuesLength){
+#        	warningText <- paste('missing node detected, i.e. something like x[2] declared but not x[1]')
+#        	warningText <- paste(warningText, '\n variable name = ', var)
+#         	warningText <- paste(warningText, '\n Can be remedied by adding dummy nodes, i.e. x[1] <- 0')
+#           	warning(warningText)
+#            }
+#         }
+
     return(model)
 })
 
