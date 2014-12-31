@@ -2,6 +2,7 @@ make sure NEWS is updated with info on changes in latest release
 
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
+# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions
 ./prep_pkg # this creates man pages and updates NAMESPACE
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
