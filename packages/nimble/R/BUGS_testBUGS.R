@@ -91,7 +91,8 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
       warning("testBUGSmodel: 'useInits' is TRUE but 'inits' is NULL and could not find file of initial values in directory provided; proceeding without initial values.")  
                                         # for C model
 ##    Cmodel <- compileBUGSmodel(Rmodel)
-    Cmodel <- compileNimble(Rmodel)
+    project <- nimbleProjectClass(NULL, name = 'foo')
+    Cmodel <- compileNimble(Rmodel, project = project)
                                         # topo-sorted nodes
     nodeNames <- Rmodel$getNodeNames()
     detNodeNames <- Rmodel$getNodeNames(determOnly = TRUE)
@@ -146,7 +147,9 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
         expect_that(Rvals, equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
       }
     })
-    
+
+    # dyn.unload(project$cppProjects[[1]]$getSOName())
+    # this works to avoid having too many DLLs, but gives segfault when one quits R afterwards
     if(debug) browser()
   } else warning("testBUGSmodel: testthat package is required")
 }
