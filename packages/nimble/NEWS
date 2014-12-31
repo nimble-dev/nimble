@@ -1,10 +1,13 @@
-		  	CHANGES IN VERSION 0.3 (Dec. 23, 2014)
+		  	CHANGES IN VERSION 0.3 (Dec. 31, 2014)
 
 USER LEVEL CHANGES
 
--- IMPORTANT SYNTAX CHANGE: nimbleFunctions are run via myNimbleFunction$run() instead of myNimbleFunction(). This means code written in v0.2 and earlier will not run without adding $run. (Note: model$calculate() was NOT implemented)
+-- IMPORTANT SYNTAX CHANGE: nimbleFunctions are run via myNimbleFunction$run() instead of myNimbleFunction(). This means code written in v0.2 and earlier will not run without adding $run. 
 
--- IMPORTANT SYNTAX CHANGE: writing code for nimble models is now done with nimbleCode (previously modelCode), to customize MCMC use myMCMCspec <- configureMCMC(myModel) (previously MCMCspec). To build an MCMC algorithm, either myGenericMCMC <- buildMCMC(myModel) for a generic build or myCustomizedMCMC <- buildMCMC(myMCMCspec) for a customized MCMC algorithm can be used (previously always had to build an MCMCspec, even for generic build)
+-- IMPORTANT SYNTAX CHANGES: 
+  --- writing code for nimble models is now done with nimbleCode (previously modelCode)
+  --- to customize MCMC use myMCMCspec <- configureMCMC(myModel) (previously MCMCspec)
+  --- to build an MCMC algorithm, either myGenericMCMC <- buildMCMC(myModel) for a generic build or myCustomizedMCMC <- buildMCMC(myMCMCspec) for a customized MCMC algorithm can be used (previously one always had to build an MCMCspec, even for generic build)
 
 -- Variables and methods of a nimbleFunction can be accessed by myNimbleFunction$myVariable or myNimbleFunction$myMethod() rather than nfVar(myNimbleFunction, ‘myVariable’) or nfMethod(myNimbleFunction, ‘myMethod’)(). Similarly, names of objects/methods of a nimble function can be queried by ls(myNimbleFunction)
 
