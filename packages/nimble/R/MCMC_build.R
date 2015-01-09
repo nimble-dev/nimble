@@ -83,8 +83,10 @@ buildMCMC <- nimbleFunction(
         monitors2 <- processMonitorNames(model, mcmcspec$monitors2)
         thin  <- mcmcspec$thin
         thin2 <- mcmcspec$thin2
-        mvSamples  <- mcmcspec$newMvSamples()
-        mvSamples2 <- mcmcspec$newMvSamples2()
+        mvSamplesSpec  <- mcmcspec$getMvSamplesSpec(1)
+        mvSamples2Spec <- mcmcspec$getMvSamplesSpec(2)
+        mvSamples <- modelValues(mvSamplesSpec)
+        mvSamples2 <- modelValues(mvSamples2Spec)
     },
     
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE)) {

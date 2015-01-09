@@ -71,7 +71,9 @@ configureMCMC <- setRefClass(
         thin2               = 'ANY', 		#'numeric',
         samplerSpecs        = 'ANY', 		#'list',
         controlDefaults     = 'ANY', 		#'list',
-        controlNamesLibrary = 'ANY' 		#'list'
+        controlNamesLibrary = 'ANY', 		#'list'
+        mvSamples1Spec 		= 'ANY',
+        mvSamples2Spec		= 'ANY'
     ),
     
     methods = list(
@@ -349,22 +351,52 @@ Details: See the initialize() function
             return(invisible(NULL))
         },
         
-        newMvSamples  = function()     internal_newMv(ind = 1),
-        newMvSamples2 = function()     internal_newMv(ind = 2),
+        getMvSamplesSpec  = function(ind = 1){
+        	
+        	cat("\nNote to developers: need to decide exactly what to do with monitors in rebuild of MCMC.\n")
+        	cat("Current course of action: build modelValuesSpec for monitors only once when newMvSamplesSpec is built. \nAll later calls to newMvSamplesSpec just grabs the same unchanged spec (even if user alters monitors)\n")
+        	
+             if(isMvSamplesReady(ind) == TRUE) {
+             		if(ind == 1) return(mvSamples1Spec)
+             		return(mvSamples2Spec)
+             	}
+             	else{
+             		makeMvSamplesSpec(ind)
+             		if(ind == 1)
+             			output <- mvSamples1Spec
+             		if(ind == 2)
+             			output <- mvSamples2Spec
+             		return(output)
+             		}
+        },
         
-        internal_newMv = function(ind) {
-            modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
-            if(ind == 1)   monitorNames <- monitors
-            if(ind == 2)   monitorNames <- monitors2
-            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
-            mv <- modelValues(symbolTable(symbols = modelSymbolObjects[monitorNames]))
-            return(mv)
+        isMvSamplesReady = function(ind){
+        	if(ind == 1) return(is(mvSamples1Spec, 'function'))		#Probably really want to give mvSpecs there own class...
+        	if(ind == 2) return(is(mvSamples2Spec, 'function'))
+        	stop('invalid indicator for isMvSsamplesReady')
+        },
+        
+        makeMvSamplesSpec = function(ind){
+        	cat("makeMvSamplesSpecCalled\n")
+			modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()
+			if(ind == 1) monitorNames = monitors
+			if(ind == 2) monitorNames = monitors2
+			if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
+			thisModelValuesSpec = modelValuesSpec(symbolTable(symbols = modelSymbolObjects[monitorNames]))
+			if(ind == 1) mvSamples1Spec <<- thisModelValuesSpec
+			if(ind == 2) mvSamples2Spec <<- thisModelValuesSpec     	
         }
+        
+#        internal_newMv = function(ind) {
+#            modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
+#            if(ind == 1)   monitorNames <- monitors
+#            if(ind == 2)   monitorNames <- monitors2
+#            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
+#            mv <- modelValues(symbolTable(symbols = modelSymbolObjects[monitorNames]))
+#            return(mv)
+#        }
     )
 )
-
-
-
 
 ##### things (from v0.1) for dealing with samplerOrder:
 #
