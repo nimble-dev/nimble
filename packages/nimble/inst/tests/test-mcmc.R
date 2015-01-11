@@ -49,7 +49,10 @@ test_mcmc('line', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
 
 test_mcmc('oxford', numItsC = 1000, resampleData = TRUE)
-# looks good
+# probably ok; seems to overcover for 'b', but 'b' in this
+# parameteriz'n is a top-level node and the multiplic'n
+# by sigma seems to lead to frequentist overcoverage
+# similar results in JAGS
 
 test_mcmc('pump', numItsC = 1000, resampleData = TRUE)
 # 100% coverage; looks fine
@@ -103,7 +106,7 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 # rework ice example so that beta[1] and beta[2] will be top nodes
 system(paste("sed 's/tau\\*1.0E-6/1.0E-6/g'", system.file('classic-bugs','vol2','ice','icear.bug', package = 'nimble'), ">", file.path(tempdir(), "icear.bug"))) 
 test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE)
-# looks fine
+# looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results
 
 test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
               data = 'beetles-data.R', numItsC = 1000, resampleData = TRUE)
