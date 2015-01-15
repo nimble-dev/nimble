@@ -15,7 +15,7 @@ conjugacyRelationshipsInputList <- list(
                             shape2 = prior_shape2 + contribution_shape2)'),
     
     ## Dirichlet - added by CJP 1/14/15
-    ##   need to consult with DT on dcat contribution
+    ## at moment can't do dcat because of limitations of conjugacy processing relying on nimble code
     list(prior = 'ddirch',
          link = 'identity',
          dependents = list(
