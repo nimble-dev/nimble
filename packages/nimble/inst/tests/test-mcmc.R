@@ -310,6 +310,65 @@ sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738,
 
 test_mcmc(model = code, exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
 
+### Dirichlet-multinomial conjugacy
+
+# single multinomial
+set.seed(0)
+n <- 100
+alpha <- c(10, 30, 15, 60, 1)
+K <- length(alpha)
+p <- c(.12, .24, .09, .54, .01)
+y <- rmulti(1, n, p)
+
+code <- function() {
+    y[1:K] ~ dmulti(p[1:K], n);
+    p[1:K] ~ ddirch(alpha[1:K]);
+    for(i in 1:K) {
+        alpha[i] ~ dgamma(.001, .001);
+    }
+}
+
+inits <- list(p = rep(1/K, K), alpha = rep(K, K))
+data <- list(n = n, K = K, y = y)
+
+test_mcmc(model = code, data= data, seed = 0, numItsC = 10000,
+          inits = inits,
+          results = list(mean = list(p = p)),
+          resultsTolerance = list(mean = list(p = rep(.06, K))))
+
+# with replication
+if(F){
+set.seed(0)
+n <- 100
+m <- 20
+alpha <- c(10, 30, 15, 60, 1)
+K <- length(alpha)
+y <- p <- matrix(0, m, K)
+for(i in 1:m) {
+    p[i, ] <- rdirch(1, alpha)
+    y[i, ] <- rmulti(1, n, p[i, ])
+}
+
+code <- function() {
+    for(i in 1:m) {
+        y[i, 1:K] ~ dmulti(p[i, 1:K], n);
+        p[i, 1:K] ~ ddirch(alpha[1:K]);
+    }
+    for(i in 1:K) {
+        alpha[i] ~ dgamma(.001, .001);
+    }
+}
+
+inits <- list(p = matrix(1/K, m, K), alpha = rep(1/K, K))
+data <- list(n = n, K = K, m = m, y = y)
+
+test_mcmc(model = code, data= data, seed = 0, numItsC = 10000,
+          inits = inits,
+          results = list(mean = list(p = p, alpha = alpha)),
+          resultsTolerance = list(mean = list(p = matrix(.03, m, K),
+                                      alpha = rep(2, K))))
+}
+
 ### block sampler on MVN node
 
 code <- nimbleCode({

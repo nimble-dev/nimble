@@ -198,7 +198,10 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
         postResult <- apply(C_samples, 2, metric)       
         for(varName in names(results[[metric]])) {
           varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
-          matched <- grep(varName, dimnames(C_samples)[[2]], fixed = TRUE)
+          samplesNames <- dimnames(C_samples)[[2]]
+          if(!grepl(varName, "\\[", fixed = TRUE)) 
+             samplesNames <- gsub("\\[.*\\]", "", samplesNames)
+          matched <- which(varName == samplesNames) 
           diff <- abs(postResult[matched] - results[[metric]][[varName]])
           for(ind in seq_along(diff)) {
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")

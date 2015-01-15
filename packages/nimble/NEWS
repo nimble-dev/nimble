@@ -1,3 +1,9 @@
+                        CHANGES IN VERSION 0.4
+
+-- added Dir/multi conjugacy
+-- fixed naming issue in checking posterior summaries against known values in test_mcmc
+-- fixed initialization in testBUGSmodel to use nimbleModel inits arg
+
 		  	CHANGES IN VERSION 0.3 (Dec. 31, 2014)
 
 USER LEVEL CHANGES

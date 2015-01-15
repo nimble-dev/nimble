@@ -14,6 +14,16 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dbeta(shape1 = prior_shape1 + contribution_shape1,
                             shape2 = prior_shape2 + contribution_shape2)'),
     
+    ## Dirichlet - added by CJP 1/14/15
+    ##   need to consult with DT on dcat contribution
+    list(prior = 'ddirch',
+         link = 'identity',
+         dependents = list(
+             dmulti    = list(param = 'prob', contribution_alpha = 'value')),
+        #     dcat      = list(param = 'prob', contribution_alpha = as.numeric((1:length(prob)) == value)'),
+        #     dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
+          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'), 
+    
     ## gamma
     list(prior = 'dgamma',
          link = 'multiplicative',
