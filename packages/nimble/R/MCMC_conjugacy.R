@@ -251,8 +251,10 @@ conjugacyClass <- setRefClass(
             }
             
             ## if this conjugate sampler is for a multivariate node (i.e., nDim > 0), then we need to determine the size (d)
+            ## changing the determination of 'd' to: max(targetNodeIndexSizes)
+            ## originally was: targetNodeIndexSizes[1], which broke for MV declarations of the form: node[i, 1:d] ~ multivariateDistribution(...)
             if(distributions[[prior]]$types$value$nDim > 0) {
-                functionBody$addCode(d <- model$getNodeInfo()[[targetNode]]$targetNodeIndexSizes[1])
+                functionBody$addCode(d <- max(model$getNodeInfo()[[targetNode]]$targetNodeIndexSizes))
             }
             
             functionDef <- quote(function(model, mvSaved, control) {})
