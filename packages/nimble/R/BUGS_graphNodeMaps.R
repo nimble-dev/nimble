@@ -5,28 +5,20 @@ mapsClass <- setRefClass(
         ## set directly from graphNodesList:
         nodeNames = 'ANY',
         graphIDs = 'ANY',
-##        nodeFunctionNames = 'ANY',
         types = 'ANY',
         
         ## vectors of nodeNames, representing different subsets of 'types'
-        nodeNamesStoch = 'ANY',                  ## names of all LHS declared 'stoch' nodes
-        nodeNamesDeterm = 'ANY',                 ## names of all LHS declared 'determ' nodes
-        nodeNamesLHSinferred = 'ANY',            ## names of all nodes inferred from LHS multivariate stochastic distributions
+
         nodeNamesLHSall = 'ANY',                 ## names of all nodes with node functions, i.e. all node names *except* RHSonly nodes
         nodeNamesRHSonly = 'ANY',                ## names of all nodes appearing on RHS only
-        nodeNamesInModel = 'ANY',                ## names of all nodes in the model; everything *except* LHSinferred (graph-only) nodes
         
         ## nodeName_2_xxxx maps
         nodeName_2_graphID = 'ANY',                ## named vector of numeric graphIDs
-        nodeName_2_type = 'ANY',                 ## named vector of character types
         nodeName_2_nodeFunctionName = 'ANY',     ## named vector of character nodeFunctionNames
-        nodeName_2_originNodeName = 'ANY',       ## named vector of character nodeNames
         
         ## graphID_2_xxxx maps
         graphID_2_nodeName = 		'ANY',              ## vector of character nodeNames
-        graphID_2_type = 			'ANY',                  ## vector of character types
         graphID_2_nodeFunctionName ='ANY',      ## vector of character nodeFunctionNames
-        graphID_2_originNodeName = 	'ANY',        ## vector of character nodeNames
 
         ## varName2GraphID maps
         vars2GraphID_values = 		'ANY',
@@ -36,18 +28,12 @@ mapsClass <- setRefClass(
         
         logProbIDs_2_LogProbName =	'ANY',
         ## positions vectors of nodeNames (top, latent, end)
-        nodeNamesTop = 'ANY',
-        nodeNamesLatent = 'ANY',
-        nodeNamesEnd = 'ANY',
-        
+        isEndNode_byGID = 'ANY',
+
         ## Numeric Vectors containing the graphIDs's for the following node types
         top_IDs = 'ANY',
         latent_IDs = 'ANY',
-        end_IDs = 'ANY',
-        
-        
-        #logical vector indicating where graphID is a nodeFunction
-        is_NodeFunction = 'ANY'
+        end_IDs = 'ANY'
         
         
     ),
@@ -65,29 +51,20 @@ mapsClass$methods(setup2 = function(nodeNames, graphIDs, nodeFunctionNamesRaw, o
     nodeNames <<- nodeNames
     graphIDs <<- graphIDs
 
-    nodeNamesStoch <<- nodeNames[types == 'stoch']
-    nodeNamesDeterm <<- nodeNames[types == 'determ']
-    nodeNamesLHSinferred <<- nodeNames[types == 'LHSinferred']
+
     nodeNamesLHSall <<- nodeNames[types != 'RHSonly']
     nodeNamesRHSonly <<- nodeNames[types == 'RHSonly']
-    nodeNamesInModel <<- nodeNames[types != 'LHSinferred']
 
     ## nodeName_2_xxxx maps
     nodeName_2_graphID <<- graphIDs
     names(nodeName_2_graphID) <<- nodeNames
-    nodeName_2_type <<- types
-    names(nodeName_2_type) <<- nodeNames
     boolRHSonly <- types != 'RHSonly'
     nodeName_2_nodeFunctionName <<- nodeFunctionNamesRaw[boolRHSonly] # need names
     names(nodeName_2_nodeFunctionName) <<- nodeNames[boolRHSonly]
-    nodeName_2_originNodeName <<- originNodeNamesRaw
-    names(nodeName_2_originNodeName) <<- nodeNames
     
     ## graphID_2_xxxx maps
     graphID_2_nodeName <<- nodeNames
-    graphID_2_type <<- types
     graphID_2_nodeFunctionName <<- nodeFunctionNamesRaw
-    graphID_2_originNodeName <<- originNodeNamesRaw
 
     vars2GraphID_values <<- new.env()
     vars2GraphID_functions <<- new.env()
@@ -129,10 +106,7 @@ mapsClass$methods(setup2 = function(nodeNames, graphIDs, nodeFunctionNamesRaw, o
     assignLogProbName(nodeInfo, vars2LogProbName)
     logProbIDs_2_LogProbName <<- assignLogProbID(vars2LogProbName, vars2LogProbID)
     setPositions(graph)
-    is_NodeFunction <<- rep(FALSE, length(graphIDs))
-    for(var in ls(vars2GraphID_functions))
-	    is_NodeFunction[unlist(as.list(vars2GraphID_functions[[var]]))] <<- TRUE
-	is_NodeFunction <<- which(is_NodeFunction)
+
 
 })
 
@@ -262,9 +236,9 @@ mapsClass$methods(setPositions = function(graph) {
     end_IDs <<- end
     latent_IDs <<- latent
     
-    nodeNamesTop <<- nodeNames[top]
-    nodeNamesLatent <<- nodeNames[latent]
-    nodeNamesEnd <<- nodeNames[end]
+	isEndNodebyGID <- rep(FALSE, length(nodeNames))
+	isEndNodebyGID[end_IDs] <- TRUE
+	isEndNode_byGID <<- isEndNodebyGID
 })
 
 
