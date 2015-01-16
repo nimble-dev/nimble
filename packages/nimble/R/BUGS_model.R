@@ -44,6 +44,11 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   	if(all == TRUE)		return(modelDef$maps)
                                   	return(modelDef$maps[[mapName]])
                                    },
+                                   isNodeEnd = function(nodeNames){  #Note: it says nodeNames, but graphIDs are fine too. Actually they are better
+                                   	if(is.character(nodeNames))
+                                   		nodeNames = expandNodeNames(nodeNames, returnType = 'ids')
+                                   	return(modelDef$maps$isEndNode_byGID[nodeNames])
+                                   },
                                   getNodeInfo = function() modelDef$nodeInfo,
                                   
                                   

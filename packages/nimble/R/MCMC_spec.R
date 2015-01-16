@@ -142,7 +142,8 @@ print: Boolean argument, specifying whether to print the ordered list of default
                                  nodes <- model$expandNodeNames(nodes)            }
         
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            isNodeEnd <- nodes %in% model$getMaps('nodeNamesEnd')
+            isNodeEnd <- model$isNodeEnd(nodes)
+            #   nodes %in% model$getMaps('nodeNamesEnd')
         
             for(i in seq_along(nodes) ) {
             	node <- nodes[i]
@@ -353,9 +354,6 @@ Details: See the initialize() function
         
         getMvSamplesSpec  = function(ind = 1){
         	
-        	cat("\nNote to developers: need to decide exactly what to do with monitors in rebuild of MCMC.\n")
-        	cat("Current course of action: build modelValuesSpec for monitors only once when newMvSamplesSpec is built. \nAll later calls to newMvSamplesSpec just grabs the same unchanged spec (even if user alters monitors)\n")
-        	
              if(isMvSamplesReady(ind) == TRUE) {
              		if(ind == 1) return(mvSamples1Spec)
              		return(mvSamples2Spec)
@@ -377,7 +375,6 @@ Details: See the initialize() function
         },
         
         makeMvSamplesSpec = function(ind){
-        	cat("makeMvSamplesSpecCalled\n")
 			modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()
 			if(ind == 1) monitorNames = monitors
 			if(ind == 2) monitorNames = monitors2
