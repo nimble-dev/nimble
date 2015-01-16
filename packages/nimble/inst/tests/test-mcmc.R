@@ -337,7 +337,7 @@ test_mcmc(model = code, data= data, seed = 0, numItsC = 10000,
           resultsTolerance = list(mean = list(p = rep(.06, K))))
 
 # with replication
-if(F){
+
 set.seed(0)
 n <- 100
 m <- 20
@@ -362,12 +362,16 @@ code <- function() {
 inits <- list(p = matrix(1/K, m, K), alpha = rep(1/K, K))
 data <- list(n = n, K = K, m = m, y = y)
 
-test_mcmc(model = code, data= data, seed = 0, numItsC = 10000,
-          inits = inits,
+test_mcmc(model = code, data= data, seed = 0, numItsC = 1000,
+          inits = inits, numItsC_results = 100000,
           results = list(mean = list(p = p, alpha = alpha)),
-          resultsTolerance = list(mean = list(p = matrix(.03, m, K),
-                                      alpha = rep(2, K))))
-}
+          resultsTolerance = list(mean = list(p = matrix(.05, m, K),
+                                      alpha = c(5,10,10,20,.5))))
+
+# note alphas mix poorly (and are highly correlated),
+# presumably because of cross-level dependence between
+# p's and alphas.  cross-level sampler would probably work well here,
+# or, of course, integrating over the p's
 
 ### block sampler on MVN node
 

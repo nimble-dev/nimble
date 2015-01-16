@@ -184,14 +184,13 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
   ## assume doR and doCpp from here down
   if(!is.null(results)) { 
-    
-    # do longer run and compare results to inputs given
+     # do (potentially) longer run and compare results to inputs given
     set.seed(seed)
     Cmcmc$run(numItsC_results)
     CmvSample <- nfVar(Cmcmc, 'mvSamples')
     postBurnin <- (round(numItsC_results/2)+1):numItsC_results
     C_samples <- as.matrix(CmvSample)[postBurnin, , drop = FALSE]
-    for(metric in names(results)) {
+     for(metric in names(results)) {
       if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov'))
         stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', 'var', and 'cov'.")
       if(metric != 'cov') {
