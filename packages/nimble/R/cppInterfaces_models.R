@@ -28,6 +28,8 @@ getMVptr <- function(rPtr)
 getMVName <- function(modelValuePtr)
   .Call("getMVBuildName", modelValuePtr)
 
+
+
 CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                contains = 'modelBaseClass',
                                fields = list(
@@ -36,7 +38,6 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
                                    ##CnodeFunClasses = 'list',
                                    compiledModel = 'ANY',
-                                   #.nodeFxnPointersEnv = 'ANY',
                                    .nodeFxnPointers_byGID = 'ANY',
                                    .nodeValPointers_byGID = 'ANY',
                                    .nodeLogProbPointers_byGID = 'ANY'
@@ -66,24 +67,34 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ## 1. generate CnodeFunClasses
                                        ##     - by iterating through the nodeGenerators in the Rmodel
                                        ##browser()
+                                       
+        #                               nodeFxnNames <- names(Rmodel$nodeFunctions)
+        #                               nodesEnv <- new.env()
+        #                              for(i in seq_along(nodeFxnNames)){
+        #                              	thisName <- nodeFxnNames[i]
+        #                              	nodesEnv[[thisName]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
+        #                              }
+                                       
+                                       nodesEnv <- new.env()
                                        for(i in names(Rmodel$nodeFunctions)) {
-                                           nodes[[i]] <<- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
+                                           nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll)
                                        }
-                                      # .nodeFxnPointersEnv <<- new.env()
+										nodes <<- nodesEnv
+                                       
+#                                       for(i in names(Rmodel$nodeFunctions)) {
+#                                           nodes[[i]] <<- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
+#                                       }
                                        .nodeFxnPointers_byGID <<- new('numberedObjects') 
                                        maxID = max(modelDef$maps$graphIDs)
                                        .nodeFxnPointers_byGID$resize(maxID)
                                        for(nodeName in ls(nodes)){
-                                       	#	.nodeFxnPointersEnv[[nodeName]] <<- nodes[[nodeName]]$.basePtr
                                        		gID <- modelDef$nodeName2GraphIDs(nodeName)
                                        		.self$.nodeFxnPointers_byGID[gID] <- nodes[[nodeName]]$.basePtr
                                        		}
                                        		
                                        .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
-                                   # .nodeValPointers_byGID <<- new('numberedObjects')
                                        .nodeValPointers_byGID$resize(maxID)
                                        .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
-                                    #   .nodeLogProbPointers_byGID <<- new('numberedObjects')
                                        .nodeLogProbPointers_byGID$resize(maxID)
                                        for(vName in Rmodel$getVarNames()){
                                        		flatIndices = 1
