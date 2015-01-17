@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (1/15/15) deal with initialization of lifted nodes created as parents of LHS functions, e.g. initialize log_alpha when log(alpha)~dnorm(0,1)
+
 * (10/23/14) expansion of RHSonly nodes into their scalar components (this is done by default for all RHSonly nodes) causes a huge increase in the time for building a modelDef, when RHSonly nodes include a large, constant matrix.  e.g. NxN for N=200, takes a very long time.  Might consider not fully expaninds RHSonly nodes to their components.  Not sure why this was important to do, in retrospect (DT).
 
 * (10/23/14) Interested in having nimble$unload() available, since bumping up against the max number of dynamically loaded libraries in R (100?).  This hampers any big-scale automation with NIMBLE.
