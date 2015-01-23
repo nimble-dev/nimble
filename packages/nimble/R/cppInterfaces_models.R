@@ -112,7 +112,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        			LP_gIDs_withNAs =  unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
 	                                       		validIndices = which(!is.na(LP_gIDs_withNAs) ) 
 	                                       		l_gIDs = Rmodel$modelDef$nodeName2LogProbID(vName)
-	                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), 1:length(l_gIDs), .nodeLogProbPointers_byGID$.ptr)
+	                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), as.integer(validIndices), .nodeLogProbPointers_byGID$.ptr)
 	                                       		}
                                        }
                                        ## for(i in seq_along(Rmodel$nodeGenerators)) {
