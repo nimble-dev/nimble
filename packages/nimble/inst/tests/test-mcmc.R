@@ -192,6 +192,24 @@ test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
             beta = 0.1)))
 
 
+## LogProb gap: bug fixed in after v0.3
+## Problem that occurred in v0.3: because of gap in logProb_a (i.e. logProb_a[2]
+## is defined but logProb_a[1] is not)
+## Because logProbs get scrambled, the random walk sampler would always accept, 
+## meaning the sd of proposal steps approaches Inf
+gapCode <- nimbleCode({
+	a[1] <- 1
+	a[2] ~ dnorm(0,1)
+})
+
+test_mcmc(model = gapCode, seed = 0, numItsC = 100000,
+				results = list(mean = list(`a[2]` = 0) ),
+				resultsTolerance = list(mean = list(`a[2]` = 0.1)),
+				samplers = list(list(type = 'RW', control = list(targetNode = 'a[2]')))
+				)
+
+
+
 ### Daniel's world's simplest MCMC demo
 
 code <- nimbleCode({
