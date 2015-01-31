@@ -6,6 +6,8 @@ USER LEVEL CHANGES
 
 -- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMC's without the need to recompile code
 
+-- Now allow for up to 4D arrays
+
 DEVELOPER LEVEL CHANGES
 
 -- fixed naming issue in checking posterior summaries against known values in test_mcmc (internal change we might remove from the published NEWS in the package...)
