@@ -11,6 +11,8 @@ mapsClass <- setRefClass(
 
         nodeNamesLHSall = 'ANY',                 ## names of all nodes with node functions, i.e. all node names *except* RHSonly nodes
         nodeNamesRHSonly = 'ANY',                ## names of all nodes appearing on RHS only
+
+        vertexID_2_nodeID = 'ANY',  ## new
         
         ## nodeName_2_xxxx maps
         nodeName_2_graphID = 'ANY',                ## named vector of numeric graphIDs
@@ -33,7 +35,10 @@ mapsClass <- setRefClass(
         ## Numeric Vectors containing the graphIDs's for the following node types
         top_IDs = 'ANY',
         latent_IDs = 'ANY',
-        end_IDs = 'ANY'
+        end_IDs = 'ANY',
+
+        edgesFrom = 'ANY',
+        edgesTo = 'ANY'
         
         
     ),
@@ -41,7 +46,8 @@ mapsClass <- setRefClass(
     methods = list(
         setup = function() {},
         setup2 = function() {},
-        setPositions = function() {}
+        setPositions = function(graph) {},
+        setPositions3 = function() {}
     )
 )
 
@@ -106,8 +112,6 @@ mapsClass$methods(setup2 = function(nodeNames, graphIDs, nodeFunctionNamesRaw, o
     assignLogProbName(nodeInfo, vars2LogProbName)
     logProbIDs_2_LogProbName <<- assignLogProbID(vars2LogProbName, vars2LogProbID)
     setPositions(graph)
-
-
 })
 
 
@@ -213,11 +217,50 @@ assignLogProbID <- function(nodeName2LogProbMap, nodeName2LogProbIDMap){
 	return(logProbIDs_2_LogProbName)
 }
 
-mapsClass$methods(setPositions = function(graph) {
+mapsClass$methods(setPositions3 = function(graph) {
+    ## new version to work with XXX3 system from modelDefClass
+
+    ## determine who has any stochastic dependents (descendents)
+    from2toSplit <- split(edgesTo, edgesFrom)
+    from2to <- vector('list', length = length(nodeNames))
+    from2to[as.integer(names(from2toSplit))] <- from2toSplit
+    anyStochDep <- function(IDs) { ## needs to go through nodeID
+        if(any(types[IDs]=='stoch')) return(TRUE)
+        deps <- unlist(from2to[IDs])
+        if(length(deps)==0) return(FALSE)
+        return(anyStochDep(deps))
+    }
+    boolAnyStochDep <- unlist(lapply(from2to, anyStochDep))
+ 
+    ## determine who has any stochastic parents
+    to2fromSplit <- split(edgesFrom, edgesTo)
+    to2from <- vector('list', length = length(nodeNames))
+    to2from[as.integer(names(to2fromSplit))] <- to2fromSplit
+    anyStochParent <- function(IDs) {
+        if(any(types[IDs]=='stoch')) return(TRUE)
+        parents <- unlist(to2from[IDs])
+        if(length(parents)==0) return(FALSE)
+        return(anyStochParent(parents))
+    }
+    boolAnyStochParent <- unlist(lapply(to2from, anyStochParent))
+
+    ## end nodes have no stochastic dependents
+    ## top nodes have no stochastic ancestor
+    ## latent nodes have a stochastic descendent and ancestor
+
+    top_IDs <<- which(!boolAnyStochParent)
+    end_IDs <<- which(!boolAnyStochDep)
+    latent_IDs <<- which(boolAnyStochParent & boolAnyStochDep)
+
+    NULL
     
+})
+
+## old version
+mapsClass$methods(setPositions = function(graph) {
     non_top <- numeric(0)
     end <- numeric(0)
-    
+    graphIDs <<- seq_along(graphID_2_nodeName)
     for(id in graphIDs) {
         type <- types[id]
         if(type == 'RHSonly')         next
@@ -236,9 +279,9 @@ mapsClass$methods(setPositions = function(graph) {
     end_IDs <<- end
     latent_IDs <<- latent
     
-	isEndNodebyGID <- rep(FALSE, length(nodeNames))
-	isEndNodebyGID[end_IDs] <- TRUE
-	isEndNode_byGID <<- isEndNodebyGID
+	## isEndNodebyGID <- rep(FALSE, length(nodeNames))
+	## isEndNodebyGID[end_IDs] <- TRUE
+	## isEndNode_byGID <<- isEndNodebyGID
 })
 
 

@@ -104,34 +104,34 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: Multiple logical input arguments may be used simultaneously.  For example, model$getNodeNames(endOnly = TRUE, dataOnly = TRUE) will return all end-level nodes from the model which are designated as \'data\'.
 '
-										                                  validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
-										                                  if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
-										                                  if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
-										                                  if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
-										                                  if(!includeData)		validValues[isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
-										                                  if(dataOnly)			validValues[!isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
-										                                  if(topOnly)				validValues[-modelDef$maps$top_IDs] <- FALSE
-										                                  if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
-										                                  if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
-										
-										                                  validNames <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], returnScalarComponents = returnScalarComponents) 
-										
-										                                  if(returnType == 'names')
-											                                  return(validNames)
-										
-										                                  if(returnType == 'ids')
-											                                  return(modelDef$maps$nodeName_2_graphID[validNames])
-												
-										                                  if(returnType == 'nodeVector')
-											                                  stop('returning nodeVector from model$getNodeNames not currently supported. Need to figure out how to determine if nodeVector is nodeFunctions or nodeValues')
-											
-		                                  								if(!(returnType %in% c('ids', 'nodeVector', 'names')))
-                                      		              stop('instead getNodeNames, imporper returnType chosen')
-
-                    										},
-
+                                      validValues = rep(TRUE, length(modelDef$maps$graphIDs) )
+                                      if(!includeRHSonly)		validValues[modelDef$maps$types == 'RHSonly'] <- FALSE
+                                      if(determOnly)			validValues[modelDef$maps$types != 'determ']	<- FALSE
+                                      if(stochOnly)			validValues[modelDef$maps$types != 'stoch']	<- FALSE
+                                      if(!includeData)		validValues[isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
+                                      if(dataOnly)			validValues[!isDataFromGraphID(modelDef$maps$graphIDs)] <- FALSE
+                                      if(topOnly)				validValues[-modelDef$maps$top_IDs] <- FALSE
+                                      if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
+                                      if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
+                                      
+                                      validNames <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], returnScalarComponents = returnScalarComponents) 
+                                      
+                                      if(returnType == 'names')
+                                          return(validNames)
+                                      
+                                      if(returnType == 'ids')
+                                          return(modelDef$maps$nodeName_2_graphID[validNames])
+                                      
+                                      if(returnType == 'nodeVector')
+                                          stop('returning nodeVector from model$getNodeNames not currently supported. Need to figure out how to determine if nodeVector is nodeFunctions or nodeValues')
+                                      
+                                      if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+                                          stop('instead getNodeNames, imporper returnType chosen')
+                                      
+                                  },
+                                  
                                   expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE){
-'
+                                      '
 Takes a vector of nodeNames and returns the unique and expanded names in the model, i.e. \'x\' expands to \'x[1]\', \'x[2]\', ...
 
 Arguments:
@@ -221,7 +221,6 @@ Details: If a list element contains some number of NA values, then the model nod
                                       for(iData in seq_along(data)) {
                                           varName <- names(data)[iData]
                                           varValue <- data[[iData]]
-                                          isDataVarValue <- !is.na(varValue)
                                           if(!(varName %in% names(isDataVars))) {
                                               ## when data is from modelDef$constantsList,
                                               ## it is possible that the constants don't exist on LHS of BUGS decls
@@ -233,9 +232,10 @@ Details: If a list element contains some number of NA values, then the model nod
                                           if(length(dimOrLength(varValue)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
                                           if(!(all(dimOrLength(varValue) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           assign(varName, varValue, inherits = TRUE)
+                                          isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
                                       }
-                                      testDataFlags()
+                                   ##   testDataFlags()  ## this is slow for large models.  it could be re-written if we want to use it routinely
                                       return(invisible(NULL))
                                   },
                                   
@@ -464,7 +464,11 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                        pointAt(.self, defaultModelValues, index = 1)
                                    },
                                    
-                                   buildNodeFunctions = function(where = globalenv()) {
+                                   buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
+                                       if(debug) browser()
+                                       iNextNodeFunction <- 1
+                                       nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)
+                                       nodeGenerators <<- vector('list', length = length(modelDef$declInfo))
                                        for(i in seq_along(modelDef$declInfo)) {
                                            BUGSdecl <- modelDef$declInfo[[i]]
                                            type <- BUGSdecl$type
@@ -474,21 +478,29 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            altParams <- BUGSdecl$altParamExprs
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
-                                           thisNodeGeneratorName <- paste0(Rname2CppName(BUGSdecl$indexedNodeInfo[[1]]$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimbleUniqueID())
+
+                                           thisNodeGeneratorName <- paste0(Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimbleUniqueID())
                                            nfGenerator <- nodeFunction(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
-                                           nodeFunctionNames <- lapply(BUGSdecl$indexedNodeInfo, '[[', 'nodeFunctionName')
+
+                                           newNodeFunctionNames <- BUGSdecl$nodeFunctionNames
                                            ## We include "_L[source line number]" in the names for the nodeGenerators so we can trace what line of BUGS code they came from
                                            ## This propagates to the C++ class names
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
-                                           for(j in seq_along(BUGSdecl$indexedNodeInfo)) {
-                                               nfGeneratorArgs <- c(list(model = .self), BUGSdecl$indexedNodeInfo[[j]]$replacementValues)
-   #? exploring non-eval approaches:  nodeFunctions[[nodeFunctionNames[[j]]]] <<- do.call(nfGenerator, nfGeneratorArgs)
-                                               nfGeneratorCall <- as.call(c(quote(nfGenerator), nfGeneratorArgs))
-   # this nfGeneratorCall calls nfGenerator and we need to be able to find this function. It is in this 
-   # call frame.  However, where is nfRefClass to which it refers. Is this line nimbDSL_nimbleFunction.R:@37
-                                               nodeFunctions[[nodeFunctionNames[[j]]]] <<- eval(nfGeneratorCall)
+                                           if(nrow(BUGSdecl$unrolledIndicesMatrix)==0) {
+                                               nodeFunctions[[iNextNodeFunction]] <<- nfGenerator(.self)
+                                               names(nodeFunctions)[iNextNodeFunction] <<- newNodeFunctionNames
+                                               iNextNodeFunction <- iNextNodeFunction + 1
+                                               next
                                            }
+                                           cn <- colnames(BUGSdecl$unrolledIndicesMatrix)
+                                           nfGenCall <- as.call(c(list(quote(nfGenerator)), list(model = quote(.self)), lapply(names(setupOutputExprs), function(z) substitute(x[i], list(i = which(z == cn))))))
+                                           nfGenWrap <- function(x) x
+                                           body(nfGenWrap) <- nfGenCall
+                                           numNewFunctions <- nrow(BUGSdecl$unrolledIndicesMatrix)
+                                           nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- apply(BUGSdecl$unrolledIndicesMatrix, 1, nfGenWrap)
+                                           names(nodeFunctions)[iNextNodeFunction-1+(1:numNewFunctions)] <<- BUGSdecl$nodeFunctionNames
+                                           iNextNodeFunction <- iNextNodeFunction + numNewFunctions
                                        }
                                    },
                                     buildNodesList = function() {   ## DANGEROUS!!  CAUSES R Studio TO CRASH!!  Unless the option NOT to try to inspect objects is used.
@@ -520,11 +532,11 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
         fields = FIELDS,
         methods = list(
             initialize = function(inputList, ...) {
-				nodes <<- new.env()		# list()
-				classEnvironment <<- new.env()
-				isDataEnv <<- new.env()
-				nodeFunctions <<- list()
-				nodeGenerators <<- list()
+                nodes <<- new.env()		# list()
+                classEnvironment <<- new.env()
+                isDataEnv <<- new.env()
+                nodeFunctions <<- list()
+                nodeGenerators <<- list()
                 vars <<- inputList$vars
                 isDataVars <<- inputList$isDataVars
                 callSuper(modelDef = inputList$modelDef, ...)
@@ -533,8 +545,8 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
             }
         ), where = where),
-        list(FIELDS = makeBUGSclassFields(varnames)
-             )))
+                    list(FIELDS = makeBUGSclassFields(varnames)
+                         )))
     ans <- function(name = character()) {
         newClass(inputList = inputList, name = name)
     }

@@ -45,7 +45,22 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  
                                  ## the following are set in modelDefClass$genNodeInfo(), and never change:
                                  indexedNodeInfo = 'ANY',
-                                 indexedNodeNames = 'ANY'
+                                 indexedNodeNames = 'ANY',
+
+                                 ## new for version 3
+                                 targetExprReplaced = 'ANY',
+                                 valueExprReplaced = 'ANY',
+                                 symbolicParentNodesReplaced = 'ANY',
+                                 rhsVars = 'ANY',
+                                 targetIndexNamePieces = 'ANY',
+                                 parentIndexNamePieces = 'ANY',
+                                 replacementsEnv = 'ANY',
+                                 nodeFunctionNames = 'ANY',
+
+                                 outputSize = 'ANY',
+                                 origIDs = 'ANY',
+                                 unrolledIndicesMatrix = 'ANY'
+                                                                  
                              ),   
                              
                              methods = list(
@@ -54,7 +69,9 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  genSymbolicParentNodes         = function() {},
                                  genReplacementsAndCodeReplaced = function() {},
                                  genAltParamsModifyCodeReplaced = function() {},
-                                 
+
+                                 genReplacedTargetValueAndParentInfo = function() {},
+
                                  allParentVarNames = function() {
                                      unlist(lapply(symbolicParentNodes, function(x) if(length(x) == 1) as.character(x) else if(x[[1]] == '[') as.character(x[[2]]) else stop('Error in allParentVarNames')))
                                  },
@@ -164,7 +181,31 @@ BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, cont
     symbolicParentNodes <<- unique(getSymbolicParentNodes(valueExpr, constantsNamesList, context$indexVarExprs, nimFunNames)) 
 })
 
+## move this to a util file when everything is working.  It is convenient here for now
+makeIndexNamePieces <- function(indexCode) {
+    if(length(indexCode) == 1) return(if(is.numeric(indexCode)) indexCode else as.character(indexCode))
+    p1 <- indexCode[[2]]
+    p2 <- indexCode[[3]]
+    list( if(is.numeric(p1)) p1 else as.character(p1),
+      if(is.numeric(p2)) p2 else as.character(p2))
+    ## e.g. makeIndexNamePieces(quote(i))
+    ##      makeIndexNamePieces(quote(i:100))
+}
 
+BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNamesList, context, nimFunNames) { ## assuming codeReplaced is there
+    ## generate hasBracket info
+    
+    targetExprReplaced <<- codeReplaced[[2]] ## shouldn't have any link functions at this point
+    valueExprReplaced <<- codeReplaced[[3]]
+
+    symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
+    rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) if(length(x) == 1) as.character(x) else as.character(x[[2]])))
+    
+    targetIndexNamePieces <<- if(length(targetExprReplaced) > 1) lapply(targetExprReplaced[-c(1,2)], makeIndexNamePieces) else NULL
+    parentIndexNamePieces <<- lapply(symbolicParentNodesReplaced, function(x) if(length(x) > 1) lapply(x[-c(1,2)], makeIndexNamePieces) else NULL)
+    NULL
+})
+                      
 BUGSdeclClass$methods(genReplacementsAndCodeReplaced = function(constantsNamesList, context, nimFunNames) {
     replacementsAndCode <- genReplacementsAndCodeRecurse(code, c(constantsNamesList,context$indexVarExprs), nimFunNames)
     replacements <<- replacementsAndCode$replacements
@@ -178,6 +219,7 @@ BUGSdeclClass$methods(genReplacementsAndCodeReplaced = function(constantsNamesLi
     }
     
     replacementNameExprs <<- lapply(as.list(names(replacements)), as.name)
+    names(replacementNameExprs) <<- names(replacements)
 })
 
 ## only affects stochastic nodes
@@ -363,7 +405,6 @@ replaceWhatWeCan <- function(code, contentsCodeReplaced, contentsReplacements, c
     list(codeReplaced = codeReplaced, replacements = replacements, replaceable = replaceable)
 }
 genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs) {
-    
     logProbNodeExpr <- codeReplaced[[2]]   ## initially, we'll use the replaced version
     replacements <- list()
     
