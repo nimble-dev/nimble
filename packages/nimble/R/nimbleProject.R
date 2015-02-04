@@ -283,7 +283,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  instantiateCmodelValues = function(mv, dll) {
                                      mvClassName <- class(mv)
                                      cppDef <- mvInfos[[mvClassName]]$cppClass
-                                     if(is.null(cppDef)) stop('Trying to instantiate a modelValues type that the project has no record of.')
+                                     if(is.null(cppDef)) stop('Trying to instantiate a modelValues type that the project has no record of. Try setting option resetFunctions = TRUE in compileNimble')
                                      generatorName <- cppDef$SEXPgeneratorFun$name
                                      sym = if(!is.null(dll))
                                          getNativeSymbolInfo(generatorName, dll)
@@ -349,9 +349,12 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          generatorName <- environment(nfProc$nfGenerator)[['name']]
                                          if(is.null(generatorName)) stop('Invalid generatorName', call. = FALSE)
                                      }
-                                     if(is.null(nfCompInfos[[generatorName]])) return(NULL)
+                                     if(is.null(nfCompInfos[[generatorName]])){
+                                     	cat('note: cppDef missing for nimble function. If error occurs, try compileNimble with option resetFunctions = TRUE\n')
+                                     	 return(NULL)
+                                    }
                                      ans <- nfCompInfos[[generatorName]]$cppDef
-                                     if(inherits(ans, 'uninitializedField')) return(NULL)
+                                     if(inherits(ans, 'uninitializedField') )  return(NULL)                                     	 
                                      ans
                                  },
                                  getNimbleFunctionNFproc = function(fun) {
@@ -552,18 +555,18 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$written <<- TRUE
                                      } else {
                                          cppProj <- cppProjects[[ generatorName ]]
-                                         writeLines('Using previously generated C++ code.  This will not work if the current nimbleFunction specializations use types of modelValues or other nimbleFunctions that have not already been compiled in this project.  If that is the case, you should include these specializiations in the first compilation of the nimbleFunction.  You can compile all the specializations of this nimbleFunction together with reset = TRUE.')
+                                   #      writeLines('Using previously generated C++ code.  This will not work if the current nimbleFunction specializations use types of modelValues or other nimbleFunctions that have not already been compiled in this project.  If that is the case, you should include these specializiations in the first compilation of the nimbleFunction.  You can compile all the specializations of this nimbleFunction together with reset = TRUE.')
                                      }
                                      if(!nfCompInfos[[generatorName]]$cppCompiled && control$compileCpp) {
                                          if(control$compileCpp) {
                                              cppProj$compileFile(filename)
                                              nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
                                          } else writeLines('Skipping compilation because control$compileCpp is FALSE')
-                                     } else writeLines('Using previously compiled C++ code.')
+                                     } else {}#writeLines('Using previously compiled C++ code.')
                                      if(!nfCompInfos[[generatorName]]$loaded && control$loadSO) {
                                          cppProj$loadSO(filename)
                                          nfCompInfos[[generatorName]]$loaded <<- TRUE
-                                     } else writeLines('Using previously loaded compilation unit.')
+                                     } else{}# writeLines('Using previously loaded compilation unit.')
                                      
                                      ans <- vector('list', length(funList))
 
