@@ -252,6 +252,11 @@ mapsClass$methods(setPositions3 = function(graph) {
     end_IDs <<- which(!boolAnyStochDep)
     latent_IDs <<- which(boolAnyStochParent & boolAnyStochDep)
 
+
+	isEndNode_byGID <<- rep(FALSE, length(nodeNames))
+	isEndNode_byGID[end_IDs] <<- TRUE
+
+
     NULL
     
 })
@@ -279,9 +284,8 @@ mapsClass$methods(setPositions = function(graph) {
     end_IDs <<- end
     latent_IDs <<- latent
     
-	## isEndNodebyGID <- rep(FALSE, length(nodeNames))
-	## isEndNodebyGID[end_IDs] <- TRUE
-	## isEndNode_byGID <<- isEndNodebyGID
+	 isEndNode_byGID <<- rep(FALSE, length(nodeNames))
+	 isEndNode_byGID[end_IDs] <<- TRUE
 })
 
 

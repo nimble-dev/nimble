@@ -114,18 +114,20 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       if(latentOnly)			validValues[-modelDef$maps$latent_IDs] <- FALSE
                                       if(endOnly)				validValues[-modelDef$maps$end_IDs] <- FALSE
                                       
-                                      validNames <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], returnScalarComponents = returnScalarComponents) 
+                                      ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
+                                      						 returnScalarComponents = returnScalarComponents,
+                                      						 returnType = returnType) 
+                                      return(ans)
+#                                      if(returnType == 'names')
+#                                          return(validNames)
+#                                      
+#                                      if(returnType == 'ids')
+#                                          return(modelDef$maps$nodeName_2_graphID[validNames])
                                       
-                                      if(returnType == 'names')
-                                          return(validNames)
+#                                      if(returnType == 'nodeVector')
+#                                          stop('returning nodeVector from model$getNodeNames not currently supported. Need to figure out how to determine if nodeVector is nodeFunctions or nodeValues')
                                       
-                                      if(returnType == 'ids')
-                                          return(modelDef$maps$nodeName_2_graphID[validNames])
-                                      
-                                      if(returnType == 'nodeVector')
-                                          stop('returning nodeVector from model$getNodeNames not currently supported. Need to figure out how to determine if nodeVector is nodeFunctions or nodeValues')
-                                      
-                                      if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+ #                                     if(!(returnType %in% c('ids', 'nodeVector', 'names')))
                                           stop('instead getNodeNames, imporper returnType chosen')
                                       
                                   },
@@ -165,19 +167,21 @@ sort: should names be topologically sorted before being returned?
                                       	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
                                   
-                                  topologicallySortNodes = function(nodeNames) {
+                                  topologicallySortNodes = function(nodeNames, returnType = 'names') {
 '
 Sorts the input list of node names according to the topological dependence ordering of the model structure. 
 
 Arguments:
 
-nodeNames: A character vector of node names, which is to be topologically sorted.
+nodeNames: A character vector of node names, which is to be topologically sorted. Alternatively can be a numeric vector of graphIDs
+
+returnType: character vector indicating return type. Choices are "names" or "ids"
 
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
 '
-                              		  nodeIDs <- modelDef$maps$nodeName_2_graphID[nodeNames]
+                              		  nodeIDs <- expandNodeNames(nodeNames, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodeNames]
                                       nodeIDs <- sort(nodeIDs)
-                               		  nodeNames <- modelDef$maps$graphID_2_nodeName[nodeIDs]
+                               		  nodeNames <-expandNodeNames(nodeIDs, returnType = returnType)
                                     return(nodeNames)
                                   },
                                   
