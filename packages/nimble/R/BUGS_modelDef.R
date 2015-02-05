@@ -1847,6 +1847,7 @@ modelDefClass$methods(buildIgraph = function() {
 })
 
 modelDefClass$methods(buildMaps2 = function() {
+	
     ## ditto - and this is repeated work from buildIgraph
     nodesLHS <- unique(unlist(lapply(declInfo, function(x) x$allTargetNodeNames())))
     nodesLHSVec <- nodesLHS[grepl(':', nodesLHS)]

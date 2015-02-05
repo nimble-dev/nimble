@@ -472,7 +472,8 @@ class NimArr<3, T> : public NimArrBase<T> {
     NimArrBase<T>::NAlength = size1 * size2 * size3;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
-    NimArrBase<T>::NAstrides[1] = stride2 = str3;
+  //  NimArrBase<T>::NAstrides[1] = stride2 = str3;   This has to be a bug -Cliff
+  	NimArrBase<T>::NAstrides[2] = stride3 = str3;
   }
 
 
@@ -524,6 +525,253 @@ class NimArr<3, T> : public NimArrBase<T> {
     }
   }
 };
+
+
+// Here is the specialization for 4 dimensions.
+
+template<class T>
+class NimArr<4, T> : public NimArrBase<T> {
+ public:
+  int size1, size2, size3, size4, stride2, stride3, stride4;//s1s2;
+  int calculateIndex(int i, int j, int k, int l) {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k + stride4 * l );} //k * s1s2 + j*s1 + i);}
+  T &operator()(int i, int j, int k, int l) {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)]);} // could add asserts here
+
+  ~NimArr<4, T>() {};
+
+  NimArr<4, T> &mapCopy(const NimArr<4, T> &other) {
+    // std::cout<<"In NimArr<3, T> mapCopy\n";
+    if(size1 != other.size1) {
+      std::cout<<"Error in mapCopy.  Sizes 1 don't match: "<<size1<<" != "<<other.size1<<"\n";
+    }
+    if(size2 != other.size2) {
+      std::cout<<"Error in mapCopy.  Sizes 2 don't match: "<<size2<<" != "<<other.size2<<"\n";
+    }
+    if(size3 != other.size3) {
+      std::cout<<"Error in mapCopy.  Sizes 3 don't match: "<<size3<<" != "<<other.size3<<"\n";
+    }
+	if(size4 != other.size4){
+		std::cout << "Error in mapCopy.  Sizes 4 don't match: "<<size4<<" != "<<other.size4<<"\n";
+	}
+    typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset);
+    typename vector<T>::iterator from = other.vPtr->begin() + other.offset;
+    int otherStride1 = other.stride1;
+    int otherStride2 = other.stride2;
+    int otherStride3 = other.stride3;
+    int otherStride4 = other.stride4;
+    for(int i4th = 0; i4th < size4; ++i4th){
+		for(int i3rd = 0; i3rd < size3; ++i3rd) {
+	    	for(int iCol = 0; iCol < size2; ++iCol) {
+				for(int iRow = 0; iRow < size1; ++iRow) {
+			  		*to = *from;
+	  		   		to += NimArrBase<T>::stride1;
+	  		   		from += otherStride1;
+				}
+				from += (-size1 * otherStride1) + otherStride2;
+				to += (-size1 * NimArrBase<T>::stride1) + stride2;
+      		}
+	    	from += (-size2 * otherStride2) + otherStride3;
+      		to += (-size2 * stride2 + stride2);
+    	}
+    	from += (-size3 *otherStride3) + otherStride4;
+    	to += (-size3 * stride3 + stride3);
+    }
+    // std::cout<<"Leaving NimArr<3, T> mapCopy\n";
+    return(*this);
+  }
+
+  NimArr<4, T> &operator=(const NimArr<3, T> &other) {
+    // std::cout<<"Using operator= for a NimArr<3, T>\n";
+
+    if(NimArrBase<T>::isMap()) {
+      return(mapCopy(other));
+    }
+
+    NimArrBase<T>::NAdims = other.dim();
+    size1 = NimArrBase<T>::NAdims[0];
+    size2 = NimArrBase<T>::NAdims[1];
+    size3 = NimArrBase<T>::NAdims[2];
+	size4 = NimArrBase<T>::NAdims[3];
+
+    NimArrBase<T>::NAlength = other.size();
+    NimArrBase<T>::myType = other.getNimType();
+
+    NimArrBase<T>::boolMap = false;
+    NimArrBase<T>::offset = 0;
+   
+    // vPtr, NAstrides, offset, stride1, boolMap
+    //    NimArrBase<T>::NAstrides.resize(2); 
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;   
+    NimArrBase<T>::NAstrides[1] = stride2 = size1;   
+    NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;   
+    NimArrBase<T>::NAstrides[3] = stride4 = size1 * size2 * size3;
+    if(other.boolMap) {
+    	NimArrBase<T>::v.resize(NimArrBase<T>::NAlength);
+    	typename vector<T>::iterator to = NimArrBase<T>::v.begin();
+    	typename vector<T>::iterator from = (*other.vPtr).begin() + other.offset;
+      	int otherStride1 = other.stride1;
+      	int otherStride2 = other.stride2;
+      	int otherStride3 = other.stride3;
+      	int otherStride4 = other.stride4;
+      	for(int i4th = 0; i4th < size4; ++i4th){
+	  		for(int i3rd = 0; i3rd < size3; ++i3rd) {
+				for(int iCol = 0; iCol < size2; ++iCol) {
+		  			for(int iRow = 0; iRow < size1; ++iRow) {
+		    			*to = *from;
+		    			++to;
+		    			from += otherStride1;
+					}
+		  			from += (-size1 * otherStride1) + otherStride2;
+				}
+				from += (-size2 * otherStride2) + otherStride3;
+    	  	}
+    	  	from += (-size3 * otherStride3) + otherStride4;
+    	}	
+    } else {
+      NimArrBase<T>::v = other.v;
+    }
+    NimArrBase<T>::setVptr();
+    // std::cout<<"Leaving operator= for a NimArr<3, T>\n";
+    return(*this);
+  }
+
+  NimArr<4, T> (const NimArr<4, T> &other) :
+  NimArrBase<T>(other)
+  {
+    NimArrBase<T>::NAdims = other.dim();
+    // std::cout<<"Using copy constructor for a NimArr<3, T>\n";
+    size1 = NimArrBase<T>::NAdims[0];
+    size2 = NimArrBase<T>::NAdims[1];
+    size3 = NimArrBase<T>::NAdims[2];
+	size4 = NimArrBase<T>::NAdims[3];
+
+    NimArrBase<T>::NAstrides.resize(4); 
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;   
+    NimArrBase<T>::NAstrides[1] = stride2 = size1;   
+    NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;   
+	NimArrBase<T>::NAstrides[3] = stride4 = size1 * size2 * size3;
+    if(other.boolMap) {
+      NimArrBase<T>::v.resize(NimArrBase<T>::NAlength);
+      typename vector<T>::iterator to = NimArrBase<T>::v.begin();
+      typename vector<T>::iterator from = (*other.vPtr).begin() + other.offset;
+      int otherStride1 = other.stride1;
+      int otherStride2 = other.stride2;
+      int otherStride3 = other.stride3;
+      int otherStride4 = other.stride4;
+      for(int i4th = 0; i4th <size4; ++i4th){
+	      for(int i3rd = 0; i3rd < size3; ++i3rd) {
+			for(int iCol = 0; iCol < size2; ++iCol) {
+				for(int iRow = 0; iRow < size1; ++iRow) {
+	    			*to = *from;
+	    			++to;
+	    			from += otherStride1;
+	  			}
+	  			from += (-size1 * otherStride1) + otherStride2;
+			}
+			from += (-size2 * otherStride2) + otherStride3;
+      	}
+      	from += (-size3 * otherStride3) + otherStride4;
+    }
+    
+  }else {
+      NimArrBase<T>::v = other.v;
+    }
+    NimArrBase<T>::setVptr();
+  }
+
+  NimArr<4, T> () : NimArrBase<T>() {
+    NimArrBase<T>::NAdims.resize(4); 
+    NimArrBase<T>::NAstrides.resize(4); 
+    setSize(0, 0, 0, 0);
+  }
+
+  void setMap(NimArrBase<T> &source, int off, int str1, int str2, int str3, int str4, int is1, int is2, int is3, int is4) {
+    NimArrBase<T>::boolMap = true;
+    NimArrBase<T>::offset = off;
+    NimArrBase<T>::vPtr = source.getVptr();
+    NimArrBase<T>::NAdims[0] =  size1 = is1;
+    NimArrBase<T>::NAdims[1] = size2 = is2;
+    NimArrBase<T>::NAdims[2] = size3 = is3;
+	NimArrBase<T>::NAdims[3] = size4 = is4;
+
+    NimArrBase<T>::NAlength = size1 * size2 * size3 * size4;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
+    NimArrBase<T>::NAstrides[1] = stride2 = str2;
+    NimArrBase<T>::NAstrides[2] = stride3 = str3;
+    NimArrBase<T>::NAstrides[3] = stride4 = str4;
+  }
+
+
+  NimArr<4, T>(vector<T> &vm, int off, int str1, int str2, int str3, int str4, int is1, int is2, int is3, int is4) : NimArrBase<T>(vm, off) {
+    NimArrBase<T>::NAdims.resize(4);
+    NimArrBase<T>::NAdims[0] = size1 = is1;
+    NimArrBase<T>::NAdims[1] = size2 = is2;
+    NimArrBase<T>::NAdims[2] = size3 = is3;
+	NimArrBase<T>::NAdims[3] = size4 = is4;
+    // not setSize because it uses the allocated vm
+    NimArrBase<T>::NAstrides.resize(4);
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
+    NimArrBase<T>::NAstrides[1] = stride2 = str2;
+    NimArrBase<T>::NAstrides[2] = stride3 = str3;
+	NimArrBase<T>::NAstrides[3] = stride4 = str4;
+
+    NimArrBase<T>::NAlength = size1 * size2 * size3 * size4;
+  }  
+
+  NimArr<4, T>(int is1, int is2, int is3, int is4) : NimArrBase<T>() {
+    NimArrBase<T>::NAdims.resize(4);
+    NimArrBase<T>::NAstrides.resize(4);
+    setSize(is1, is2, is3, is4);
+  }
+
+  void setSize(int is1, int is2, int is3, int is4) {
+    NimArrBase<T>::NAdims[0] = size1 = is1;
+    NimArrBase<T>::NAdims[1] = size2 = is2;
+    NimArrBase<T>::NAdims[2] = size3 = is3;
+    NimArrBase<T>::NAdims[3] = size4 = is4;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
+    NimArrBase<T>::NAstrides[1] = stride2 = is1;    
+    NimArrBase<T>::NAstrides[2] = stride3 = is1*is2;
+    NimArrBase<T>::NAstrides[3] = stride4 = is1 * is2 * is3;
+    NimArrBase<T>::setLength(stride4 * size4);
+  }
+
+  
+  virtual void setSize(vector<int> sizeVec) {setSize(sizeVec[0], sizeVec[1], sizeVec[2], sizeVec[3]);}
+  virtual int numDims() const {return(4);}
+  virtual int dimSize(int i) const {
+    switch(i) {
+    case 0:
+      return(size1); break;
+    case 1:
+      return(size2); break;
+    case 2:
+      return(size3); break;
+    case 3:
+      return(size4); break;
+    default:
+      PRINTF("Error, incorrect dimension given to dimSize\n");
+      return(0);
+    }
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

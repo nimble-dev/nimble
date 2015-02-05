@@ -59,7 +59,8 @@ samplerSpec <- setRefClass(
 #' spec$addMonitors2('x', thin2 = 10)
 #' spec$getMonitors()
 #' spec$getSamplers()
-configureMCMC <- setRefClass(
+
+MCMCspec <- setRefClass(
     
     Class = 'MCMCspec',                           
     
@@ -136,7 +137,7 @@ print: Boolean argument, specifying whether to print the ordered list of default
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             controlNamesLibrary <<- list()
             
-            if(missing(nodes)) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
+            if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
             } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
                                  nl_checkVarNamesInModel(model, removeIndexing(nodes))
                                  nodes <- model$expandNodeNames(nodes)            }
@@ -274,7 +275,18 @@ print: A boolean variable, specifying whether to print all current monitors.
 
 Details: See the initialize() function
             '
-            if(missing(vars))  vars <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
+            
+            if(isMvSamplesReady(ind)){
+            	cat('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option\n')
+            	if(ind == 1)
+            		mvSamples1Spec <<- NULL
+            	if(ind == 2)
+            		mvSamples2Spec <<- NULL
+            }
+            
+            
+            
+            if(is.null(vars))  vars <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
             vars <- unique(removeIndexing(vars))
             nl_checkVarNamesInModel(model, vars)
             if(ind == 1)     monitors  <<- unique(c(monitors,  vars))
@@ -306,6 +318,14 @@ Details: See the initialize() function
             '
             monitors  <<- character()
             monitors2 <<- character()
+            
+            if(isMvSamplesReady(1) || isMvSamplesReady(2)){
+            	cat('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option\n')
+            	mvSamples1Spec <<- NULL
+            	mvSamples2Spec <<- NULL
+            }
+
+            
             return(invisible(NULL))
         },
         
@@ -394,6 +414,100 @@ Details: See the initialize() function
 #        }
     )
 )
+
+
+
+#' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
+#'
+#' Simply keeps model code as an R call object, the form needed by \code{nimbleModel} and optionally usable by \code{readBUGSmodel}
+#' 
+#' @param code expression providing the code for the model 
+#' @author Daniel Turek
+#' @export
+#' @details It is equivalent to use the R function \code{quote}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
+#' @examples
+#' code <- nimbleCode({
+#'     x ~ dnorm(mu, sd = 1)
+#'     mu ~ dnorm(0, sd = prior_sd)
+#' })
+
+
+
+
+#' Build the MCMCspec object for construction of an MCMC object
+#'
+#' Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC(). 
+#'
+#'@param model A NIMBLE model object, created from nimbleModel(...)
+#'@param nodes An optional character vector, specifying the nodes for which samplers should be created.
+#'Nodes may be specified in their indexed form, \'y[1, 3]\', or nodes specified without indexing will be expanded fully, e.g., \'x\' will be expanded to \'x[1]\', \'x[2]\', etc.
+#'If missing, the default value is all non-data stochastic nodes.
+#'If NULL, then no samplers are added.
+#'@param control An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
+#'For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\', 
+#'and also \'targetNode\' however this should not generally be provided as a control list element to configureMCMC().
+#'The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are contained in the \'controlDefaultList\' object.
+#'@param monitors A character vector of node names or variable names, to record during MCMC sampling.
+#'This set of monitors will be recorded with thinning interval \'thin\', and the samples will be stored into the \'mvSamples\' object.
+#'The default value is all top-level stochastic nodes of the model -- those having no stochastic parent nodes.
+#'@param monitors2 A character vector of node names or variable names, to record during MCMC sampling.
+#'This set of monitors will be recorded with thinning interval \'thin2\', and the samples will be stored into the \'mvSamples2\' object.
+#'The default value is an empty character vector, i.e. no values will be recorded.
+#'@param thin The thinning interval for \'monitors\'.  Default value is one.
+#'@param thin2 The thinning interval for \'monitors2\'.  Default value is one.
+#'@param useConjugacy A boolean argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
+#'@param onlyRW A boolean argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (sampler_RW) will be assigned for all non-terminal continuous-valued nodes nodes.
+#'Discrete-valued nodes are assigned a slice sampler (sampler_slice), and terminal (predictive) nodes are assigned an end sampler (sampler_end).
+#'@param onlySlice A boolean argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
+#'Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
+#'@param multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
+#'@param print Boolean argument, specifying whether to print the ordered list of default samplers.
+#'@author Daniel Turek
+#'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
+configureMCMC <- function(model, oldSpec, nodes, control = list(), 
+						  monitors, thin = 1, monitors2 = character(), thin2=1,
+						  useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+						  print = FALSE){
+						  	if(!missing(oldSpec)){
+						  		if(!is(oldSpec, 'MCMCspec'))
+						  			stop('oldSpec must be an MCMCspec object, as built by the configureMCMC function')
+						  		return(makeNewSpecFromOldSpec(oldSpec))	
+						  	}
+						  	
+						  if(missing(model))
+						  	stop('Either oldSpec or model must be supplied')
+						  if(missing(nodes))
+						  	nodes <- character()
+						  if(missing(monitors))
+						  	monitors <- NULL
+						  
+						  thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
+						  					monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
+						  					useConjugacy = useConjugacy, onlyRW = onlyRW, onlySlice = onlySlice,
+						  					multivariateNodesAsScalars = multivariateNodesAsScalars, print = print)
+						  return(thisSpec)	
+						  }
+
+
+
+# This is function which builds a new MCMCspec from an old MCMCspec
+# This is required to be able to a new C-based MCMC without recompiling
+makeNewSpecFromOldSpec <- function(oldMCMCspec){
+	newMCMCspec <- configureMCMC(oldMCMCspec$model, nodes = NULL)
+	newMCMCspec$monitors <- oldMCMCspec$monitors
+	newMCMCspec$monitors2 <- oldMCMCspec$monitors2
+	newMCMCspec$thin <- oldMCMCspec$thin
+	newMCMCspec$thin2 <- oldMCMCspec$thin2
+	newMCMCspec$samplerSpecs <- oldMCMCspec$samplerSpecs
+	newMCMCspec$controlDefaults <- oldMCMCspec$controlDefaults
+	newMCMCspec$controlNamesLibrary <- oldMCMCspec$controlNamesLibrary
+	newMCMCspec$mvSamples1Spec <- oldMCMCspec$mvSamples1Spec
+	newMCMCspec$mvSamples2Spec <- oldMCMCspec$mvSamples2Spec
+	return(newMCMCspec)	
+}
+
+
+
 
 ##### things (from v0.1) for dealing with samplerOrder:
 #

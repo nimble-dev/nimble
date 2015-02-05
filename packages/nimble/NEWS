@@ -1,14 +1,18 @@
-                        CHANGES IN VERSION 0.4
+                        CHANGES IN VERSION 0.3-1 (Feb. 4, 2015)
 
 USER LEVEL CHANGES
 
--- added Dir/multi conjugacy
+-- added Dirichelt-multinomial conjugacy handling
 
--- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMC's without the need to recompile code
+-- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMCs without the need to recompile code
+
+-- Now allow for up to 4D arrays
 
 DEVELOPER LEVEL CHANGES
 
 -- fixed naming issue in checking posterior summaries against known values in test_mcmc (internal change we might remove from the published NEWS in the package...)
+
+BUG FIXES 
 
 -- fixed bug regarding logProbs with gaps (i.e. if logProb_x[1] and logProb_x[3] are defined but not logProb_x[2])
 
@@ -64,7 +68,7 @@ Bug fixes
 
 -- Added class of nodeVectors, which save the graphIDs of a set of nodes. Use of these is minimal at the moment. 
 
-Bug fixes
+BUG FIXES
 
 -- Fixed issue with specifying multivariate nodes as rows/columns of matrices
 
@@ -82,7 +86,7 @@ Bug fixes
                      CHANGES IN VERSION 0.1-1 (Aug. 28, 2014)
 
 
-Bug fixes
+BUG FIXES
 
 -- handling of spaces in installed directory name on Windows
 

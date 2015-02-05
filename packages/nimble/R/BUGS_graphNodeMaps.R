@@ -56,8 +56,7 @@ mapsClass$methods(setup2 = function(nodeNames, graphIDs, nodeFunctionNamesRaw, o
     types <<- types
     nodeNames <<- nodeNames
     graphIDs <<- graphIDs
-
-
+	
     nodeNamesLHSall <<- nodeNames[types != 'RHSonly']
     nodeNamesRHSonly <<- nodeNames[types == 'RHSonly']
 
