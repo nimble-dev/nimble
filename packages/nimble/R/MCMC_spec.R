@@ -157,9 +157,11 @@ print: Boolean argument, specifying whether to print the ordered list of default
                 
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
-                    conjugacyResult <- model$checkConjugacy(node)
-                    if(!is.null(conjugacyResult) && useConjugacy) {
-                        addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                    if(useConjugacy) {
+                        conjugacyResult <- model$checkConjugacy(node)
+                        if(!is.null(conjugacyResult)) {
+                            addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                    }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
                             addSampler(type = 'RW', control = list(targetNode=scalarNode), print = print) };     next }
@@ -170,9 +172,11 @@ print: Boolean argument, specifying whether to print the ordered list of default
                 if(onlySlice)             { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
                 
                 ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
-                conjugacyResult <- model$checkConjugacy(node)
-                if(!is.null(conjugacyResult) && useConjugacy) {
-                    addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                if(useConjugacy) {
+                    conjugacyResult <- model$checkConjugacy(node)
+                    if(!is.null(conjugacyResult)) {
+                        addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
                 if(discrete) { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
