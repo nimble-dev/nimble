@@ -409,7 +409,8 @@ isEigScalar <- function(code) {
 eigenize_cWiseMultDiv <- function(code, symTab, typeEnv, workEnv) {
     ## first see if one or both arguments are scalar
     scalar1 <- isEigScalar(code$args[[1]])
-    scalar2 <- isEigScalar(code$args[[2]])
+    scalar2 <- isEigScalar(code$args[[2]]) 
+ 
     if(scalar1 | scalar2) {
         if(scalar1 & scalar2) return(invisible(NULL))
         if(code$name == '*' | scalar2) {
@@ -428,6 +429,8 @@ eigenize_cWiseMultDiv <- function(code, symTab, typeEnv, workEnv) {
 
 eigenize_cWiseAddSub <- function(code, symTab, typeEnv, workEnv) {
     ## first see if one argument is scalar
+    if(length(code$args)==1) return(eigenize_cWiseUnaryEither(code, symTab, typeEnv, workEnv))
+    
     if(isEigScalar(code$args[[1]]) | isEigScalar(code$args[[2]])) {
         for(i in 1:2) { 
             if(!isEigScalar(code$args[[i]])) { 
