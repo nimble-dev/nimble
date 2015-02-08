@@ -10,11 +10,13 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
--- fixed naming issue in checking posterior summaries against known values in test_mcmc (internal change we might remove from the published NEWS in the package...)
+-- fixed naming issue in checking posterior summaries against known values in test_mcmc 
 
 BUG FIXES 
 
--- fixed bug regarding logProbs with gaps (i.e. if logProb_x[1] and logProb_x[3] are defined but not logProb_x[2])
+-- fixed bug in naming of nodes in as.matrix() when there is a variable with a single indexed node (e.g. x[1], but no other nodes in the variable 'x')
+
+-- fixed bug regarding logProbs with gaps (e.g., if logProb_x[1] and logProb_x[3] are defined but not logProb_x[2])
 
 		  	CHANGES IN VERSION 0.3 (Dec. 31, 2014)
 
