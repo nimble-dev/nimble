@@ -561,3 +561,4 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 1000,
             sd = list(Omega = OmegaSimTrueSDs)),
           resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
             sd = list(Omega = matrix(0.06, M, M))))
+# issue with Chol in R MCMC - probably same issue as in jaw-linear
