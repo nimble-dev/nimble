@@ -60,6 +60,7 @@ eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigAcos = 'acos',
                        eigAsin = 'asin',
                        eigExp = 'exp',
+                       eigPow = 'pow',
                        eigLog = 'log',
                        eigCube = 'cube',
                        eiginprod = 'eigenInprod', ## need lowercase i for nonNativeEigCalls files

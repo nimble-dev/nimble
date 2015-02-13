@@ -320,12 +320,15 @@ sampler_RW_llFunction <- nimbleFunction(
     run = function() {
         modelLP0 <- llFunction$run()
         if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, targetNode)
-        propValue <- targetRWSamplerFunction$generateProposalValue()
+        propValue <- rnorm(1, mean = model[[targetNode]], sd = scale) ##targetRWSamplerFunction$generateProposalValue()
         my_setAndCalculateOne$run(propValue)
         modelLP1 <- llFunction()
         if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, targetNode)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
-        if(adaptive)     targetRWSamplerFunction$adaptiveProcedure(jump)
+        if(adaptive) {
+            targetRWSamplerFunction$adaptiveProcedure(jump)
+            scale <<- targetRWSamplerFunction$scale
+        }
     },
     
     methods = list(

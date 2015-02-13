@@ -1,6 +1,10 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (2/13/15) use of R distribution functions from DSL still requires all arguments, including a 1.
+
+* (2/13/15) manual is not very clear on use of R distribution functions from DSL or on how to get a blank MCMC configuration.
+
 * (1/15/15) deal with initialization of lifted nodes created as parents of LHS functions, e.g. initialize log_alpha when log(alpha)~dnorm(0,1)
 
 * (10/23/14) expansion of RHSonly nodes into their scalar components (this is done by default for all RHSonly nodes) causes a huge increase in the time for building a modelDef, when RHSonly nodes include a large, constant matrix.  e.g. NxN for N=200, takes a very long time.  Might consider not fully expaninds RHSonly nodes to their components.  Not sure why this was important to do, in retrospect (DT).
