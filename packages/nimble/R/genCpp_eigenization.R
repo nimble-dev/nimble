@@ -63,7 +63,8 @@ exprClasses_labelForEigenization <- function(code) {
 callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternalUnary, `[`, 1)))
 
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
-                   makeCallList(c('abs','square','sqrt','('), 'eigenize_cWiseUnaryEither'),
+    makeCallList(c('abs','square','sqrt','('), 'eigenize_cWiseUnaryEither'),
+    makeCallList('pow', 'eigenize_cWiseByScalarArray'),
                    makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
                       ## component-wise unarys valid only for only Eigen array
                    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
@@ -389,6 +390,16 @@ eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
 
+eigenize_cWiseByScalarArray <- function(code, symTab, typeEnv, workEnv) {
+    if(code$nDim == 0) return(NULL)
+    if(code$args[[2]]$nDim != 0) stop(paste0('Error, the second argument to pow must be a scalar in ', nimDeparse(code)))
+    newName <- eigenizeTranslate[[code$name]]
+    if(is.null(newName)) stop(paste0('Error, missing eigenizeTranslate entry for ', code$name,' in ', nimDeparse(code)))
+    code$name <- newName
+    code$eigMatrix <- FALSE
+    if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    invisible(NULL)
+}
 
 eigenize_cWiseBinaryMatrix <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
