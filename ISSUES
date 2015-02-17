@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (2/17/15) when a variable is a mix of data and parameters (e.g., missing values, censoring), nimbleModel does not cleanly handling setting data and initial values. e.g. passing data = list(y = c(3, NA, 7)) and inits = list(y = c(NA, 9, NA)) will overwrite data. one needs to have inits be the actual data values for nodes that are data; should have nimbleModel not overwrite values passed by data
+
 * (2/13/15) use of R distribution functions from DSL still requires all arguments, including a 1.
 
 * (2/13/15) manual is not very clear on use of R distribution functions from DSL or on how to get a blank MCMC configuration.
