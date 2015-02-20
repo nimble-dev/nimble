@@ -368,7 +368,7 @@ Default value is TRUE.
                 Cmodel$setInits(inits);     calculate(Cmodel)
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 Cmcmc <- CmcmcFunctionList[[mcmcTag]]
-                timeResult <- system.time({ Cmcmc(niter) })
+                timeResult <- system.time({ Cmcmc$run(niter) })
                 CmvSamples <- Cmcmc$mvSamples
                 samplesArray <- as.matrix(CmvSamples, varNames = monitorVars)
                 samplesArray <- samplesArray[(burnin+1):floor(niter/thin), monitorNodesNIMBLE, drop=FALSE]
