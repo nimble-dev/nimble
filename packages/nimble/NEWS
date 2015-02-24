@@ -1,4 +1,4 @@
-                        CHANGES IN VERSION 0.3-1 (Feb. 4, 2015)
+                        CHANGES IN VERSION 0.3-1 (Feb. 26, 2015)
 
 USER LEVEL CHANGES
 
@@ -7,6 +7,8 @@ USER LEVEL CHANGES
 -- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMCs without the need to recompile code
 
 -- Now allow for up to 4D arrays
+
+-- Added handling of raising a vector of values to a scalar power in nimble functions (i.e., the NIMBLE DSL)
 
 DEVELOPER LEVEL CHANGES
 
@@ -17,6 +19,8 @@ BUG FIXES
 -- fixed bug in naming of nodes in as.matrix() when there is a variable with a single indexed node (e.g. x[1], but no other nodes in the variable 'x')
 
 -- fixed bug regarding logProbs with gaps (e.g., if logProb_x[1] and logProb_x[3] are defined but not logProb_x[2])
+
+-- fixed bug in handling of unary minus
 
 		  	CHANGES IN VERSION 0.3 (Dec. 31, 2014)
 

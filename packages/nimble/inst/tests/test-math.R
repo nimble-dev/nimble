@@ -64,6 +64,8 @@ testsBasicMath = list(
   list(name = 'ratio of scalars', expr = quote(out <- arg1 / arg2), inputDim = c(0,0), outputDim = 0), 
   list(name = 'power of scalars via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(0,0), outputDim = 0), 
   list(name = 'power of scalars via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(0,0), outputDim = 0), 
+  list(name = 'power of scalars via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(0,0), outputDim = 0), 
+  list(name = 'power of scalars via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(0,0), outputDim = 0), 
   list(name = 'modulo of scalars', expr = quote(out <- arg1 %% arg2), inputDim = c(0,0), outputDim = 0), 
   list(name = 'min of scalars', expr = quote(out <- min(arg1, arg2)), inputDim = c(0,0), outputDim = 0), 
   list(name = 'max of scalars', expr = quote(out <- max(arg1, arg2)), inputDim = c(0,0), outputDim = 0), 
@@ -81,9 +83,11 @@ testsBasicMath = list(
   list(name = 'sum of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
   list(name = 'diff of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
   list(name = 'product of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
-  list(name = 'ratio of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1) 
-##  list(name = 'power of vector and scalar via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,0), outputDim = 1), ## FAILS with Eigen casting 
-  ## list(name = 'power of vector and scalar via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,0), outputDim = 1), ## FAILS with Eigen casting 
+  list(name = 'ratio of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
+  list(name = 'power of vector and scalar via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,0), outputDim = 1), 
+  list(name = 'power of vector and scalar via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,0), outputDim = 1),
+  list(name = 'power of vector and scalar via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(1,0), outputDim = 1), 
+  list(name = 'power of vector and scalar via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(1,0), outputDim = 1) 
   ## list(name = 'modulo of vector and scalar', expr = quote(out <- arg1 %% arg2), inputDim = c(1,0), outputDim = 1) ## FAILS with Eigen casting 
   )
 
