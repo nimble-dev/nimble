@@ -1,6 +1,10 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (2/25/15) dbinom appears twice in sizeCalls - see genCpp_sizeProcessing
+
+* (2/25/15) need to add {p,q} functions for dt_nonstandard
+
 * (2/25/15) when a variable has a missing node (e.g., for(i in 2:3) x[i] ~dnorm(0,1)), on the R side x[1] in modelValues of an MCMC will be NA, but on the C side only the first value (from initialization) is NA; the rest are 0s. Might confuse a user and it also makes our testing of MCMC in which we compare R and C a bit messier.
 
 * (2/25/15) need to add 'var' to dlnorm as alt param
