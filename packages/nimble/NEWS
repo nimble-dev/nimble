@@ -4,7 +4,7 @@ USER LEVEL CHANGES
 
 -- added Dirichelt-multinomial conjugacy handling
 
--- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMCs without the need to recompile code
+-- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMCs without the need to recompile code if there are no new types of samplers.
 
 -- Now allow for up to 4D arrays
 
@@ -20,7 +20,7 @@ BUG FIXES
 
 -- fixed bug regarding logProbs with gaps (e.g., if logProb_x[1] and logProb_x[3] are defined but not logProb_x[2])
 
--- fixed bug in handling of unary minus
+-- fixed bug in handling of unary minus for non-scalars
 
 		  	CHANGES IN VERSION 0.3 (Dec. 31, 2014)
 
