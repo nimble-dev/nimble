@@ -1,6 +1,12 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (2/25/15) when a variable has a missing node (e.g., for(i in 2:3) x[i] ~dnorm(0,1)), on the R side x[1] in modelValues of an MCMC will be NA, but on the C side only the first value (from initialization) is NA; the rest are 0s. Might confuse a user and it also makes our testing of MCMC in which we compare R and C a bit messier.
+
+* (2/25/15) need to add 'var' to dlnorm as alt param
+
+* (2/25/15) help(nimbleModel) is missing info on some args
+
 * (2/17/15) when a variable is a mix of data and parameters (e.g., missing values, censoring), nimbleModel does not cleanly handling setting data and initial values. e.g. passing data = list(y = c(3, NA, 7)) and inits = list(y = c(NA, 9, NA)) will overwrite data. one needs to have inits be the actual data values for nodes that are data; should have nimbleModel not overwrite values passed by data
 
 * (2/13/15) use of R distribution functions from DSL still requires all arguments, including a 1.
