@@ -392,7 +392,8 @@ eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
 
 eigenize_cWiseByScalarArray <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
-    if(code$args[[2]]$nDim != 0) stop(paste0('Error, the second argument to pow must be a scalar in ', nimDeparse(code)))
+    if(!is.numeric(code$args[[2]]))
+        if(code$args[[2]]$nDim != 0) stop(paste0('Error, the second argument to pow must be a scalar in ', nimDeparse(code)))
     newName <- eigenizeTranslate[[code$name]]
     if(is.null(newName)) stop(paste0('Error, missing eigenizeTranslate entry for ', code$name,' in ', nimDeparse(code)))
     code$name <- newName
