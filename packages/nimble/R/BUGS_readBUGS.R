@@ -183,7 +183,7 @@ mergeMultiLineStatementsAndParse <- function(text) {
 #' Rmodel$setData(data['x'])
 #' Rmodel[['mu']]
 #' Rmodel$nodes[['x']]$calculate()
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, useData = TRUE, debug = FALSE) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, useData = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE) {
 
   # helper function
   doEval <- function(vec, env) {
@@ -343,6 +343,11 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   if(length(dims) && sum(names(dims) == ""))
     stop("readBUGSmodel: something is wrong; 'dims' object is not a named list")
 
+  #returning BUGS parts if we don't want to build model, i.e. rather we want to provide info to MCMCsuite
+  if(returnModelComponentsOnly == TRUE){
+  	return( list(modelName = modelName, model = model, dims = dims, data = data, inits = inits) )
+  }
+
   # create R model
   # 'data' will have constants and data, but BUGSmodel is written to be ok with this
   # we can't separate them before building model as we don't know names of nodes in model
@@ -364,3 +369,19 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   }
   return(Rmodel)
 }
+
+
+
+
+### Function for finding directory with examples
+
+getBUGSexampleDir <- function(example){
+	dir <- system.file("classic-bugs", package = "nimble")
+    vol <- NULL
+    if(file.exists(file.path(dir, "vol1", example))) vol <- "vol1"
+    if(file.exists(file.path(dir, "vol2", example))) vol <- "vol2"
+    if(is.null(vol)) stop("Can't find path to ", example, ".\n")
+    dir <- file.path(dir, vol, example)
+    return(dir)
+}
+
