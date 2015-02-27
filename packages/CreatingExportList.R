@@ -49,6 +49,7 @@ individualExportNames = c(
     'nfMethod',
     'declare',
     'asRow',
+    'getBUGSexampleDir',
     'asCol'
 )
 

@@ -232,6 +232,19 @@ symbolNimbleFunction <-
                     }
                     ))
 
+symbolOptimObject <- 
+	setRefClass(Class = 'symbolOptimObject',
+				contains = 'symbolBase',
+				fields = list(nfSymbol = 'ANY'),
+				methods = list(
+					initialize = function(...){callSuper(...)},
+					show = function() writeLines(paste('symbolOptimObject', name)),
+					genCppVar = function(...){
+						return(cppOptimObject(name = name, nfSymbol = nfSymbol))
+					}
+					)
+				)
+
 symbolModelVariableAccessorVector <- 
     setRefClass(Class = 'symbolModelVariableAccessorVector',
                 contains = 'symbolBase',
