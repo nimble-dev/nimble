@@ -418,7 +418,7 @@ modelDefClass$methods(reparameterizeDists = function() {
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
                 stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
-            for(nm in nonReqdArgs)
+            for(nm in c(nonReqdArgs, distRule$reqdArgs))
                 # loop thru possible non-canonical parameters in the expression for the canonical parameter
                 transformedParameterPT <- parseTreeSubstitute(pt = transformedParameterPT, pattern = as.name(nm), replacement = params[[nm]])
             newValueExpr[[iArg + 1]] <- transformedParameterPT

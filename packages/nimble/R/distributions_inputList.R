@@ -63,16 +63,18 @@ distributionsInputList <- list(
     
     dgamma  = list(BUGSdist = 'dgamma(shape, rate, scale, mean, sd)',
                    Rdist    = c('dgamma(shape, scale = 1/rate)', 'dgamma(shape = mean^2/sd^2, scale = sd^2/mean)'),
-                   altParams= 'rate = 1/scale'),
+                   altParams= 'rate = 1/scale', 'mean = scale*shape', 'sd = scale * sqrt(shape)'),
     
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
     dlnorm  = list(BUGSdist = 'dlnorm(meanlog, tau, sdlog)',
                    Rdist    = 'dlnorm(meanlog, sdlog = 1/sqrt(tau))',
                    altParams= c('tau = sdlog^-2', 'var = sdlog^2')),
+    # need to add var as alternate parameter
     
     dlogis  = list(BUGSdist = 'dlogis(location, rate, scale)',
-                   Rdist    = 'dlogis(location, scale = 1/rate)'),
+                   Rdist    = 'dlogis(location, scale = 1/rate)',
+                   altParams = 'rate = 1/scale'),
     
     dnorm   = list(BUGSdist = 'dnorm(mean, tau, sd, var)',
                    Rdist    = c('dnorm(mean, sd = 1/sqrt(tau))', 'dnorm(mean, sd = sqrt(var))'),
@@ -83,12 +85,13 @@ distributionsInputList <- list(
     dt      = list(BUGSdist = 'dt(mu, tau, df)',
                    Rdist    = 'dt_nonstandard(df, mu, sigma = 1/sqrt(tau))',
                    altParams = c('tau = sd^-2')),
+    # note because we wrote nonstandard dt, we don't at the moment have access to pt, qt
     
     dunif   = list(BUGSdist = 'dunif(min, max)'),
     
     dweib   = list(BUGSdist = 'dweib(shape, lambda, scale, rate)',
                    Rdist    = c('dweibull(shape, scale = lambda^(-1/shape))', 'dweibull(shape, scale = 1/rate)'),
-                   altParams= 'rate = 1/scale'),
+                   altParams= 'rate = 1/scale', 'lambda = scale^(-shape)'),
     
     
     ####################################
@@ -101,20 +104,20 @@ distributionsInputList <- list(
                    Rdist    = 'ddirch(alpha)',
                    types    = c('value = double(1)', 'alpha = double(1)')),
     
-    dmnorm  = list(BUGSdist = 'dmnorm(mean, prec, cov, chol, prec_param)',
-                   Rdist    = c('dmnorm_chol(mean, chol = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, chol = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, chol, prec_param)'),
-##                   altParams= c('prec = if(prec_param) crossprod(chol) else inverse(crossprod(chol))', 'cov = if(prec_param) inverse(crossprod(chol)) else crossprod(chol)'),
-        altParams= c('prec = chol', 'cov = chol'), ## NOT CORRECT. These are placeholders to get other parts working
-        types    = c('value = double(1)', 'mean = double(1)', 'chol = double(2)', 'prec_param = integer()', 'prec = double(2)', 'cov = double(2)')),
+    dmnorm  = list(BUGSdist = 'dmnorm(mean, prec, cov, cholesky, prec_param)',
+                   Rdist    = c('dmnorm_chol(mean, cholesky = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, cholesky = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, cholesky, prec_param)'),
+##                   altParams= c('prec = if(prec_param) crossprod(cholesky) else inverse(crossprod(cholesky))', 'cov = if(prec_param) inverse(crossprod(cholesky)) else crossprod(cholesky)'),
+        altParams= c('prec = cholesky', 'cov = cholesky'), ## NOT CORRECT. These are placeholders to get other parts working
+        types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec_param = integer()', 'prec = double(2)', 'cov = double(2)')),
     
     ## dmt     = list(BUGSdist = 'dmt(mu, T, k)'),   ## not sure the state of this?  -DT
     
     dwish   = list(BUGSdist = 'dwish(R, df, S)',
-                   ##Rdist    = c('dwish_chol(chol = chol(R), df, p = dim(R)[1], scale_param = 0)', 'dwish_chol(chol = chol(S), df, p = dim(S)[1], scale_param = 1)'),
-                   Rdist    = c('dwish_chol(chol = chol(R), df, scale_param = 0)', 'dwish_chol(chol = chol(S), df, scale_param = 1)'),
+                   ##Rdist    = c('dwish_chol(cholesky = chol(R), df, p = dim(R)[1], scale_param = 0)', 'dwish_chol(cholesky = chol(S), df, p = dim(S)[1], scale_param = 1)'),
+                   Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)', 'dwish_chol(cholesky = chol(S), df, scale_param = 1)'),
                    ##types    = c('value = double(2)', 'chol = double(2)', 'p = integer()', 'scale_param = integer()'))
-                   altParams = c('R = chol', 'S = chol'), ##NOT CORRECT. These are placeholders to get other parts working.
-                   types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'chol = double(2)', 'scale_param = integer()'))
+                   altParams = c('R = cholesky', 'S = cholesky'), ##NOT CORRECT. These are placeholders to get other parts working.
+                   types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)', 'scale_param = integer()'))
 )
 
 
