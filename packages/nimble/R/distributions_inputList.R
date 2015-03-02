@@ -91,7 +91,7 @@ distributionsInputList <- list(
     
     dweib   = list(BUGSdist = 'dweib(shape, lambda, scale, rate)',
                    Rdist    = c('dweibull(shape, scale = lambda^(-1/shape))', 'dweibull(shape, scale = 1/rate)'),
-                   altParams= 'rate = 1/scale', 'lambda = scale^(-shape)'),
+                   altParams= c('rate = 1/scale', 'lambda = scale^(-shape)')),
     
     
     ####################################
