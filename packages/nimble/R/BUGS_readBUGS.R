@@ -22,7 +22,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' 
 #' @param code code for the model in the form returned by \code{nimbleCode} or (equivalently) \code{quote}
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
-#' @param constants named list of constants in the model (not including data values).  Constants cannot be subsequently modified.
+#' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE). 
 #' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
@@ -34,6 +34,10 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' See the User Manual or \code{help(modelBaseClass)} for information about manipulating NIMBLE models created by \code{nimbleModel}, including methods that operate on models, such as \code{getDependencies}.
 #'
 #' The user may need to provide dimensions for certain variables as in some cases NIMBLE cannot automatically determine the dimensions and sizes of variables. See the User Manual for more information.
+#'
+#' As noted above, one may lump together constants and data (as part of the \code{constants} argument (unlike R interfaces to JAGS and BUGS where they are provided as the \code{data} argument). One may not provide lumped constants and data as the \code{data} argument.
+#'
+#' For variables that are a mixture of data nodes and non-data nodes, any values passed in via \code{inits} for components of the variable that are data will be ignored. All data values should be passed in through \code{data} (or \code{constants} as just discussed).
 #' @examples
 #' code <- nimbleCode({
 #'     x ~ dnorm(mu, sd = 1)
@@ -351,9 +355,10 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # create R model
   # 'data' will have constants and data, but BUGSmodel is written to be ok with this
   # we can't separate them before building model as we don't know names of nodes in model
-  Rmodel <- nimbleModel(model, ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, debug = debug)
+  Rmodel <- nimbleModel(model, ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug)
 
   # now provide values for data nodes from 'data' list
+  if(FALSE) { # now handled within nimbleModel
   dataNodes <- names(data)[(names(data) %in% Rmodel$getVarNames())]
   data <- data[dataNodes]
   names(data) <- dataNodes
@@ -367,6 +372,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       Rmodel[[varName]][!Rmodel$isData(varName)] <- inits[[varName]][!Rmodel$isData(varName)] 
     }
   }
+}
   return(Rmodel)
 }
 
