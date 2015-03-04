@@ -198,3 +198,71 @@ testBUGSmodel(example = 'test', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
 
+# test handling of lumped data and constants
+
+test_that("test of the distinguishing lumped data and constants:"), {
+
+code <- nimbleCode({
+    x ~ dnorm(mu,sig)
+    mu ~ dnorm(0, 1)
+    y ~ dunif(0,1)
+})
+xVal <- 0.5
+m <- nimbleModel(code, constants = list(sig = 1, x = xVal, y = 0.1))
+expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in first test")
+expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in first test")
+expect_that('sig' %in% m$getVarNames(), equals(FALSE), info = "sig not set as constant in first test")
+
+code <- nimbleCode({
+    x ~ dnorm(mu,1)
+    mu ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(x = xVal))
+expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in second test")
+expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in second test")
+
+code <- nimbleCode({
+    x ~ dnorm(mu,1)
+    mu ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, constants = list(x = xVal))
+expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in third test")
+expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in third test")
+
+code <- nimbleCode({
+    x[1] ~ dnorm(mu,1)
+    x[2] ~ dnorm(mu,1)
+    mu ~ dnorm(0, 1)
+})
+xVal <- c(3, NA)
+xInit <- c(4, 4)
+m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit))
+expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flag is not set correctly in fourth test")
+expect_that(m$x, equals(c(xVal[1], xInit[2])), info = "value of 'x' not correctly set in fourth test")
+expect_that(c('x[1]','x[2]') %in% m$getNodeNames(), equals(c(TRUE, TRUE)), info = "'x' nodes note correctly set in fourth test")
+
+
+code <- nimbleCode({
+    x[1] ~ dnorm(mu,1)
+    x[2] ~ dnorm(mu,1)
+    mu ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(x = xVal), inits = xInit)
+expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flag is not set correctly in fifth test")
+expect_that(m$x, equals(c(xVal[1], xInit[2])), info = "value of 'x' not correctly set in fifth test")
+expect_that(c('x[1]','x[2]') %in% m$getNodeNames(), equals(c(TRUE, TRUE)), info = "'x' nodes note correctly set in fifth test")
+
+
+code <- nimbleCode({
+    x[1] ~ dnorm(mu,1)
+    x[2] ~ dnorm(mu,1)
+    mu ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, constants = list(x = xVal),
+                 data = list(x = c(NA, 4)))
+expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flag is not set correctly in fifth test")
+expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in sixth test")
+expect_that(c('x[1]','x[2]') %in% m$getNodeNames(), equals(c(TRUE, TRUE)), info = "'x' nodes note correctly set in fifth test")
+
+}
+

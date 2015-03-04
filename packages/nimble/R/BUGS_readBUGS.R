@@ -12,6 +12,14 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     md <- modelDefClass$new(name = name)
     md$setupModel(code=code, constants=constants, dimensions=dimensions, debug=debug)
     if(!returnModel) return(md)
+    # move any data lumped in 'constants' into 'data' for
+    # backwards compatibility with JAGS/BUGS
+    vars <- names(md$varInfo) # varNames contains logProb vars too...
+    dataVarIndices <- names(constants) %in% vars & !names(constants) %in% names(data)  # don't overwrite anything in 'data'
+    if(sum(dataVarIndices)) {   
+        data <- c(data, constants[dataVarIndices])
+        cat("Adding ", paste(names(constants)[dataVarIndices], collapse = ','), " as data for building model.\n")
+    }
     model <- md$newModel(data=data, inits=inits, where=where)
 }
 

@@ -77,6 +77,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  assignDimensions               = function() {},
                                  initializeContexts             = function() {},
                                  processBUGScode                = function() {},
+                                 splitConstantsAndData          = function() {},
                                  addMissingIndexing             = function() {},
                                  expandDistributions            = function() {},
                                  processLinks                   = function() {},
@@ -129,6 +130,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug) 
     assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode()                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
+    splitConstantsAndData()           ## deals with case when data is passed in as constants
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
@@ -263,6 +265,26 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+modelDefClass$methods(splitConstantsAndData = function() {
+    # removes items from constantsNamesList that appear as variables in declInfo
+    # also, move detected data to 'data'
+    # this deals with case when 'data' are passed in as 'constants'
+    if(length(constantsNamesList)) {
+        vars <- sapply(declInfo, function(x) x$targetVarName)
+        constantsNames <- as.character(constantsNamesList)
+        newDataVars <- constantsNames[constantsNames %in% vars]
+        if(length(newDataVars)) {
+            cat("Detected ", paste(newDataVars, collapse = ','), " as data within 'constants'.\n")
+            constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
+            constantsList[newDataVars] <<- NULL
+            for(varName in newDataVars) eval(substitute(rm(varName, envir = constantsEnv), list(varName = varName)))
+        }
+    }
+})
+ 
+
+
 modelDefClass$methods(addMissingIndexing = function() {
     ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     for(i in seq_along(declInfo)) {
@@ -1065,6 +1087,15 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$buildNodeFunctions(where = where)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     model$setData(data)
+    # prevent overwriting of data values by inits
+    for(varName in names(inits)) {
+        dataVars <- model$isData(varName)
+        if(sum(dataVars) & sum(data[[varName]][dataVars] !=
+                                   inits[[varName]][dataVars])) {
+            inits[[varName]][dataVars] <- data[[varName]][dataVars]
+            warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+        }
+    }
     model$setInits(inits)
 
 	# Below is the code that checks if an index is missing    

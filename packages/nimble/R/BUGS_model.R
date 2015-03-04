@@ -530,7 +530,8 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 callSuper(modelDef = inputList$modelDef, ...)
                 setupDefaultMV()
                 init_isDataEnv()
-                setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
+                # setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
+                # removed given new handling of lumped data and constants
             }
         ), where = where),
         list(FIELDS = makeBUGSclassFields(varnames)
