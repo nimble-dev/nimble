@@ -275,7 +275,7 @@ modelDefClass$methods(splitConstantsAndData = function() {
         constantsNames <- as.character(constantsNamesList)
         newDataVars <- constantsNames[constantsNames %in% vars]
         if(length(newDataVars)) {
-            cat("Detected ", paste(newDataVars, collapse = ','), " as data within 'constants'.\n")
+            cat("Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.\n")
             constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
             constantsList[newDataVars] <<- NULL
             for(varName in newDataVars) eval(substitute(rm(varName, envir = constantsEnv), list(varName = varName)))
@@ -1103,7 +1103,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     nonVarIndices <- !names(inits) %in% model$getVarNames()
     if(sum(nonVarIndices))
         warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
-                " is/are not variables in the model; ignoring their initial values.")
+                " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
 
 	# Below is the code that checks if an index is missing    

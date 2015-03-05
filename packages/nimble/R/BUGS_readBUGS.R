@@ -20,7 +20,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
         warning("BUGSmodel: found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
     if(sum(dataVarIndices)) {   
         data <- c(data, constants[dataVarIndices])
-        cat("Adding ", paste(names(constants)[dataVarIndices], collapse = ','), " as data for building model.\n")
+        cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
     }
     model <- md$newModel(data=data, inits=inits, where=where)
 }
