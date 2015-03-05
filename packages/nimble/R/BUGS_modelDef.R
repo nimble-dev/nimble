@@ -1090,10 +1090,14 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     # prevent overwriting of data values by inits
     for(varName in names(inits)) {
         dataVars <- model$isData(varName)
-        if(sum(dataVars) & sum(data[[varName]][dataVars] !=
-                                   inits[[varName]][dataVars])) {
+        if(sum(dataVars) && !identical(data[[varName]][dataVars],
+                                      inits[[varName]][dataVars])) {
             inits[[varName]][dataVars] <- data[[varName]][dataVars]
-            warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+            nonNAinits <- !is.na(inits[[varName]][dataVars])
+            # only warn if user passed conflicting actual values
+            if(!identical(data[[varName]][dataVars][nonNAinits],
+                                      inits[[varName]][dataVars][nonNAinits]))
+                warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
         }
     }
     model$setInits(inits)
