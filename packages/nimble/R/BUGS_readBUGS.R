@@ -369,20 +369,20 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   # now provide values for data nodes from 'data' list
   if(FALSE) { # now handled within nimbleModel
-  dataNodes <- names(data)[(names(data) %in% Rmodel$getVarNames())]
-  data <- data[dataNodes]
-  names(data) <- dataNodes
-  Rmodel$setData(data)
-
-  if(!is.null(inits)) {
-    varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
-    for(varName in varNames) {
-      # check for isData in case a node is a mix of data and non-data and inits are supplied such
-      # that they would overwrite the data nodes without this check
-      Rmodel[[varName]][!Rmodel$isData(varName)] <- inits[[varName]][!Rmodel$isData(varName)] 
-    }
+      dataNodes <- names(data)[(names(data) %in% Rmodel$getVarNames())]
+      data <- data[dataNodes]
+      names(data) <- dataNodes
+      Rmodel$setData(data)
+      
+      if(!is.null(inits)) {
+          varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
+          for(varName in varNames) {
+          # check for isData in case a node is a mix of data and non-data and inits are supplied such
+          # that they would overwrite the data nodes without this check
+              Rmodel[[varName]][!Rmodel$isData(varName)] <- inits[[varName]][!Rmodel$isData(varName)] 
+          }
+      }
   }
-}
   return(Rmodel)
 }
 

@@ -258,3 +258,25 @@ expect_that(c('x[1]','x[2]') %in% m$getNodeNames(), equals(c(TRUE, TRUE)), info 
 
 })
 
+code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
+
+code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+    x[2] ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
+
+code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+    x[2] ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))

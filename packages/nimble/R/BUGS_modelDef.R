@@ -1088,7 +1088,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     model$setData(data)
     # prevent overwriting of data values by inits
-    for(varName in names(inits)) {
+    for(varName in intersect(names(inits), model$getVarNames())) {
         dataVars <- model$isData(varName)
         if(sum(dataVars) && !identical(data[[varName]][dataVars],
                                       inits[[varName]][dataVars])) {
