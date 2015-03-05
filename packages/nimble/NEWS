@@ -18,7 +18,7 @@ DEVELOPER LEVEL CHANGES
 
 BUG FIXES 
 
--- fixed bug that allowed inits to overwrite data values in variables that are mixtures of data and parameters
+-- fixed bug that allowed inits to overwrite data values in variables that are mixtures of data and parameters. Also now detect elements of initial values that are not variables in the model.
 
 -- fixed bug in naming of nodes in as.matrix() when there is a variable with a single indexed node (e.g. x[1], but no other nodes in the variable 'x')
 

@@ -1100,7 +1100,11 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
                 warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
         }
     }
-    model$setInits(inits)
+    nonVarIndices <- !names(inits) %in% model$getVarNames()
+    if(sum(nonVarIndices))
+        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
+                " is/are not variables in the model; ignoring their initial values.")
+    model$setInits(inits[!nonVarIndices])
 
 	# Below is the code that checks if an index is missing    
 #    allVarNames <- model$getVarNames()
