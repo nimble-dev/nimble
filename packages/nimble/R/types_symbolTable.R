@@ -245,6 +245,17 @@ symbolOptimObject <-
 					)
 				)
 
+
+symbolVoidPtr <- setRefClass(Class = 'symbolVoidPtr',
+                             contains = 'symbolBase',
+                             methods = list(
+                                 initialize = function(...) callSuper(...),
+                                 show = function() writeLines(paste('symbolVoidPtr', name)),
+                                 genCppVar = function(...) {
+                                     return(cppVarFull(name = name, baseType = 'void', ptr = 1))
+                                 }))
+
+
 symbolModelVariableAccessorVector <- 
     setRefClass(Class = 'symbolModelVariableAccessorVector',
                 contains = 'symbolBase',
@@ -354,6 +365,7 @@ symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               )
                               )
 
+                                     
 
 ## nDim is set to length(size) unless provided, which is how scalar (nDim = 0) must be set
 symbolDouble <- function(name, size = numeric(), nDim = length(size)) {
