@@ -41,7 +41,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimPrint = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
-                    setAll = 'sizeOneEigenCommand'),
+                    setAll = 'sizeOneEigenCommand',
+                    voidPtr = 'sizeVoidPtr'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_ddirch'), 'sizeScalarRecurse'),
@@ -459,7 +460,8 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
     ## I think it is valid and general to catch maps here.
     ## For most variables, creating an intermediate involves interN <- expression being lifted
     ## But for map, which will be using a NimArr if it is lifted here, what we need to generate is setMap call
-    if(code$args[[argID]]$name == 'map' & !forceAssign) {
+    mapcase <- if(is.numeric(code$args[[argID]])) FALSE else (code$args[[argID]]$name == 'map' & !forceAssign) 
+    if(mapcase) {
         ans <- nimArrMapExpr(code$args[[argID]], symTab, typeEnv, newName)
         ## That should create the symTab entry
         ans <- RparseTree2ExprClasses(ans)
@@ -528,8 +530,12 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                 if(RHStype %in% c('double','integer', 'logical')) {  ## valid type to create here
                     assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                     symTab$addSymbol(symbolBasic(name = LHS$name, nDim = RHSnDim, type = RHStype))
-                } else { ## not valid type ot create here
-                    stop(paste('Error, LHS of ', nimDeparse(code),' is not in typeEnv or symTab but it cannot be added now.'), call. = FALSE)
+                } else { ## not valid type to create here
+                    if(RHStype == 'voidPtr') {
+                        assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
+                        symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
+                    } 
+                    else stop(paste('Error, LHS of ', nimDeparse(code),' is not in typeEnv or symTab but it cannot be added now.'), call. = FALSE)
                 }
             } else { ## yes in symTab
                 ## This case is ok.  It is in the symbol table but not the typeEnv.  So it is something like ptr <- getPtr(A)
@@ -1407,6 +1413,26 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
 
     return(asserts)
 }
+
+sizeVoidPtr <- function(code, symTab, typeEnv) {
+    ## lift any argument that is an expression or scalar.  
+    ## We expect only one argument
+    ## Lift it if it is an expression, a numeric, or a scalar
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+
+    lift <- TRUE
+    if(inherits(code$args[[1]], 'exprClass')) {
+        if(code$args[[1]]$isName & code$args[[1]]$nDim > 0) lift <- FALSE ## will already be a pointer
+    }
+    if(lift) {
+         asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv) )
+     }
+    code$type <- 'voidPtr'
+    code$nDim <- 0
+    code$toEigenize <- 'no'
+    return(asserts)
+}
+
 ###
 ## This function would be called with arguments from an RCfunction or nimbleFunction
 ## the functions dim and length would be taken over to work on the sizeExprs.
