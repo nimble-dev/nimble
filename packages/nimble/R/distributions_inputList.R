@@ -18,11 +18,13 @@ distributionsInputList <- list(
     
     dbern   = list(BUGSdist = 'dbern(prob)',
                    Rdist    = 'dbinom(size = 1, prob)',
-                   discrete = TRUE),
+                   discrete = TRUE,
+                   pqAvail = TRUE),
     
     dbin    = list(BUGSdist = 'dbin(prob, size)',
                    Rdist    = 'dbinom(size, prob)',
-                   discrete = TRUE),
+                   discrete = TRUE,
+                   pqAvail = TRUE),
     
     dcat    = list(BUGSdist = 'dcat(prob)',
                    ##Rdist    = 'dcat(prob, K = length(prob))',
@@ -30,6 +32,17 @@ distributionsInputList <- list(
                    types    = c('value = integer()', 'prob = double(1)'), 
                    discrete = TRUE),
     
+    dconstraint   = list(BUGSdist = 'dconstraint(cond)',
+                         discrete = TRUE),
+    # construct used to enforce constraints - 0/1 random variable depending on if cond is TRUE
+
+    dinterval     = list(BUGSdist = 'dinterval(t, c)',
+                         types    = c('value = integer()', 't = double()',
+                             'c = double(1)'),
+                         discrete = TRUE),
+    # construct used to enforce censoring - takes values 0,1,...,len(c)
+    # depending on which interval t falls into
+
     dmulti  = list(BUGSdist = 'dmulti(prob, size)',
    ##                Rdist    = 'dmulti(size, prob, K = length(prob))',
                    Rdist    = 'dmulti(size, prob)',
@@ -38,10 +51,12 @@ distributionsInputList <- list(
     
     dnegbin = list(BUGSdist = 'dnegbin(prob, size)',
                    Rdist    = 'dnbinom(size, prob)',
-                   discrete = TRUE),
+                   discrete = TRUE,
+                   pqAvail = TRUE),
     
     dpois   = list(BUGSdist = 'dpois(lambda)',
-                   discrete = TRUE),
+                   discrete = TRUE,
+                   pqAvail = TRUE),
     
     
     ##############################################
@@ -51,34 +66,41 @@ distributionsInputList <- list(
     
     dbeta   = list(BUGSdist = 'dbeta(shape1, shape2, mean, sd)',
                    Rdist    = 'dbeta(shape1 = mean^2*(1-mean)/sd^2-mean, shape2 = mean*(1-mean)^2/sd^2+mean-1)',
-                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1*shape2)^2*(shape1+shape2+1)))')),
+                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1*shape2)^2*(shape1+shape2+1)))'),
+                   pqAvail = TRUE),
     
-    dchisq  = list(BUGSdist = 'dchisq(df)'),
+    dchisq  = list(BUGSdist = 'dchisq(df)',
+                   pqAvail = TRUE),
     
     ## ddexp   = list('ddexp(location, scale, rate)'),   ## 'ddexp' function not implemented yet?  -DT
     
     dexp    = list(BUGSdist = 'dexp(rate, scale)',
                    Rdist    = 'dexp(rate = 1/scale)',
-                   altParams= 'scale = 1/rate'),
+                   altParams= 'scale = 1/rate',
+                   pqAvail = TRUE),
     
     dgamma  = list(BUGSdist = 'dgamma(shape, rate, scale, mean, sd)',
                    Rdist    = c('dgamma(shape, scale = 1/rate)', 'dgamma(shape = mean^2/sd^2, scale = sd^2/mean)'),
-                   altParams= c('rate = 1/scale', 'mean = scale*shape', 'sd = scale * sqrt(shape)')),
+                   altParams= c('rate = 1/scale', 'mean = scale*shape', 'sd = scale * sqrt(shape)'),
+                   pqAvail = TRUE),
     
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
     dlnorm  = list(BUGSdist = 'dlnorm(meanlog, tau, sdlog)',
                    Rdist    = 'dlnorm(meanlog, sdlog = 1/sqrt(tau))',
-                   altParams= c('tau = sdlog^-2', 'var = sdlog^2')),
+                   altParams= c('tau = sdlog^-2', 'var = sdlog^2'),
+                   pqAvail = TRUE),
     # need to add var as alternate parameter
     
     dlogis  = list(BUGSdist = 'dlogis(location, rate, scale)',
                    Rdist    = 'dlogis(location, scale = 1/rate)',
-                   altParams = 'rate = 1/scale'),
+                   altParams = 'rate = 1/scale',
+                   pqAvail = TRUE),
     
     dnorm   = list(BUGSdist = 'dnorm(mean, tau, sd, var)',
                    Rdist    = c('dnorm(mean, sd = 1/sqrt(tau))', 'dnorm(mean, sd = sqrt(var))'),
-                   altParams= c('tau = sd^-2', 'var = sd^2')),
+                   altParams= c('tau = sd^-2', 'var = sd^2'),
+                   pqAvail = TRUE),
     
     ## dpar    = list(BUGSdist = 'dpar(alpha, c)'),   ## not sure the state of this?  -DT
     
@@ -87,11 +109,13 @@ distributionsInputList <- list(
                    altParams = c('tau = sd^-2')),
     # note because we wrote nonstandard dt, we don't at the moment have access to pt, qt
     
-    dunif   = list(BUGSdist = 'dunif(min, max)'),
+    dunif   = list(BUGSdist = 'dunif(min, max)',
+                   pqAvail = TRUE),
     
     dweib   = list(BUGSdist = 'dweib(shape, lambda, scale, rate)',
                    Rdist    = c('dweibull(shape, scale = lambda^(-1/shape))', 'dweibull(shape, scale = 1/rate)'),
-                   altParams= c('rate = 1/scale', 'lambda = scale^(-shape)')),
+                   altParams= c('rate = 1/scale', 'lambda = scale^(-shape)'),
+                   pqAvail = TRUE),
     
     
     ####################################
