@@ -63,7 +63,7 @@ distributionsInputList <- list(
     
     dgamma  = list(BUGSdist = 'dgamma(shape, rate, scale, mean, sd)',
                    Rdist    = c('dgamma(shape, scale = 1/rate)', 'dgamma(shape = mean^2/sd^2, scale = sd^2/mean)'),
-                   altParams= 'rate = 1/scale', 'mean = scale*shape', 'sd = scale * sqrt(shape)'),
+                   altParams= c('rate = 1/scale', 'mean = scale*shape', 'sd = scale * sqrt(shape)')),
     
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
