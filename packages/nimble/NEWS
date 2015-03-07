@@ -1,10 +1,10 @@
-                        CHANGES IN VERSION 0.3-1 (Feb. 26, 2015)
+                        CHANGES IN VERSION 0.3-1 (Mar. 7, 2015)
 
 USER LEVEL CHANGES
 
 -- fully allow data to be provided as part of constants argument in nimbleModel for compatibility with JAGS and BUGS, which mix data and constants
 
--- added Dirichelt-multinomial conjugacy handling
+-- added Dirichlet-multinomial conjugacy handling
 
 -- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMCs without the need to recompile code if there are no new types of samplers.
 
