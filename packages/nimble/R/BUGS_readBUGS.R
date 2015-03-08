@@ -337,7 +337,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
     # process data block in context of data objects
     if(is.null(data))
       data = new.env()
-  
+
+    origVars <- ls(data)
+    
     # create vectors/matrices/arrays for all objects in var block in case data block tries to fill objects
     vars <- varInfo$varNames[varInfo$dim > 0]
     vars <- vars[!(vars %in% ls(data))]
@@ -349,7 +351,6 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       assign(thisVar, tmp, envir = data)
     }
 
-    origVars <- ls(data)
     eval(parse(text = modelFileOutput$dataLines), envir = data)
     newVars <- nf_assignmentLHSvars(parse(text = modelFileOutput$dataLines)[[1]])
     data <- as.list(data)[c(origVars, newVars)]

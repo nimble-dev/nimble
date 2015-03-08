@@ -18,8 +18,9 @@ testBUGSmodel('lsat', dir = "", model = file.path(tempdir(), "lsat.bug"), data =
 sapply(models, test_mcmc, numItsC = 1000)
 
 # this takes forever because of MCMC - rewrite to not do basic
-
-test_mcmc(model = file.path(tempdir(), "lsat.bug"), inits = system.file('classic-bugs', 'vol1', 'lsat','lsat-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'lsat','lsat-data.R', package = 'nimble'), numItsC = 1000)
+if(FALSE) {
+    test_mcmc(model = file.path(tempdir(), "lsat.bug"), inits = system.file('classic-bugs', 'vol1', 'lsat','lsat-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'lsat','lsat-data.R', package = 'nimble'), numItsC = 1000)
+}
 
 ### test truncation
 
