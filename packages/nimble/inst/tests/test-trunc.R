@@ -7,6 +7,10 @@ models <- c('kidney', 'litters', 'mice')
 ### test basic model building
 sapply(models, testBUGSmodel, useInits = TRUE)
 
+# at the moment we haven't updated conjugacy to deal with truncation
+# so litters is reporting conj post density as wrong since
+# otherwise p[i,j] is a standard conjugate update
+
 # lsat has non-explicit indexing
 system(paste("cat", system.file('classic-bugs','vol1','lsat','lsat.bug', package = 'nimble'), ">>", file.path(tempdir(), "lsat.bug")))
 system(paste("sed -i -e 's/mean(alpha\\[\\])/mean(alpha\\[1:T\\])/g'", file.path(tempdir(), "lsat.bug"))) 
