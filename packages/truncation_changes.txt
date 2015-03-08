@@ -3,9 +3,17 @@ last merge before added trunc/cens/constraint (trunc+) functionality was tagged 
 
 distributions_inputList.R:
 this file now has element 'pqAvail' added to the (univariate) distributions that have p and q distribution functions available for computation
+unrelated to trunc+:
+chol changed to cholesky as name of parameter in dmnorm, dwishart 
 
-distributions_processInputList.R
+
+distributions_processInputList.R:
 added 'pqAvail' as field of distClass, plus initialize it with a line of code in distClass$initialize (line 77 of file)
+
+distributions_implementations.R:
+added {d,r}{interval,constraint}
+unrelated to trunc+:
+chol changed to cholesky as name of parameter in dmnorm, dwishart 
 
 dists.h
 added C_{d,r}interval

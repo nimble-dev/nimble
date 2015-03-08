@@ -56,3 +56,21 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
     .Call('C_rmnorm_chol', as.double(mean), as.double(cholesky), as.logical(prec_param))
 }
+
+dinterval <- function(x, t, c, log = FALSE) {
+    .Call('C_dinterval', as.integer(x), as.double(t), as.double(c), as.logical(log))
+}
+
+rinterval <- function(n = 1, t, c) {
+    .Call('C_rinterval', as.integer(n), as.double(t), as.double(c))
+}
+
+dconstraint <- function(x, cond, log = FALSE) {
+    if(x == cond || x == 0) result <- 1 else result <- 0
+    if(log) return(log(result)) else return(result)
+}
+
+rconstraint <- function(n = 1, cond) {
+    if(n != 1) stop('rconstraint only handles n = 1 at the moment')
+    return(cond)
+}
