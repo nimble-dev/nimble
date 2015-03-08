@@ -197,7 +197,7 @@ double ddirch(double* x, double* alpha, int K, int give_log)
     sumX += x[i];
   }
   if(sumX > 1.0 + 10*DBL_EPSILON || sumX < 1.0 - 10*DBL_EPSILON) {
-    return R_NegInf;
+    return give_log ? R_NegInf : 0.0;
   }
   // should return error instead?
 
