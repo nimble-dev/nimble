@@ -406,7 +406,13 @@ Details: See the initialize() function
 			thisModelValuesSpec = modelValuesSpec(symbolTable(symbols = modelSymbolObjects[monitorNames]))
 			if(ind == 1) mvSamples1Spec <<- thisModelValuesSpec
 			if(ind == 2) mvSamples2Spec <<- thisModelValuesSpec     	
+                    },
+
+        show = function() {
+            cat('MCMC specification object')
         }
+
+        
         
 #        internal_newMv = function(ind) {
 #            modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
