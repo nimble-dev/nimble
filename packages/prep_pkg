@@ -8,6 +8,8 @@ require(methods)
 
 ## NAMESPACE 
 
+nimble_version <- system("grep 'Version:' nimble/DESCRIPTION | cut -d' ' -f2", intern = TRUE)
+
 # do this first as it empties the global env
 source("CreatingExportList.R")
 # (I tried to do the sourcing into a new.env() but had weird errors when sourcing some of the files)
@@ -30,7 +32,7 @@ cat(paste(imports, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
 
 system("R CMD build nimble")
 
-system("R CMD INSTALL nimble_0.3.tar.gz")
+system(paste0("R CMD INSTALL nimble_", nimble_version, ".tar.gz"))
 
 # need to remove existing Rd files or get errors with
 # recursion and walking graph for classes

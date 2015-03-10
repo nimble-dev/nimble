@@ -230,9 +230,20 @@ m <- nimbleModel(code, constants = list(x = xVal))
 expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in third test")
 expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in third test")
 
+code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+ })
+m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, 5)))
+expect_that(m$isData('x'), equals(c(TRUE, TRUE)), info = "'x' not set as data in fourth test")
+expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in fourth test")
+expect_that(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), equals(0), info = "'x[1]' appears incorrectly in nodes in fourth test")
+
+
 })
 
-test_that("test of the distinguishing lumped data and constants:", {
+test_that("test of preventing overwriting of data values by inits:", {
 
 code <- nimbleCode({
     x[1] ~ dnorm(mu,1)
@@ -257,4 +268,51 @@ expect_that(m$x, equals(c(xVal[1], xInit[2])), info = "value of 'x' not correctl
 expect_that(c('x[1]','x[2]') %in% m$getNodeNames(), equals(c(TRUE, TRUE)), info = "'x' nodes note correctly set in fifth test")
 
 })
+
+test_that("test of the handling of missing covariates:", {
+
+    code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
+expect_that('x' %in% m$getVarNames(), equals(FALSE), info = "'x' is not set as constant in first test")
+
+code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
+expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in second test")
+expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flags are not set correctly in second test")
+expect_that(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), equals(0), info = "'x' appears incorrectly in nodes in second test")
+    
+code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+    x[2] ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
+expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in second test")
+expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flags are not set correctly in second test")
+expect_that(sum("x[1]" %in% m$getNodeNames()), equals(0), info = "'x[1]' appears incorrectly in nodes in second test")
+expect_that(sum("x[2]" %in% m$getNodeNames()), equals(1), info = "'x[2]' does not appears in nodes in second test")
+
+code <- nimbleCode({
+    y[1] ~ dnorm(beta*x[1], 1)
+    y[2] ~ dnorm(beta*x[2], 1)
+    beta ~ dnorm(0, 1)
+    x[2] ~ dnorm(0, 1)
+})
+m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
+expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in second test")
+expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flags are not set correctly in second test")
+expect_that(sum("x[1]" %in% m$getNodeNames()), equals(0), info = "'x[1]' appears incorrectly in nodes in second test")
+expect_that(sum("x[2]" %in% m$getNodeNames()), equals(1), info = "'x[2]' does not appears in nodes in second test")
+    
+})
+
 

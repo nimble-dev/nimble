@@ -63,7 +63,7 @@ conjugacyRelationshipsInputList <- list(
          dependents = list(
              dmnorm = list(param = 'mean', contribution_mean = 't(coeff) %*% prec %*% asCol(value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
          posterior = 'dmnorm_chol(mean       = (inverse( (prior_prec + contribution_prec) ) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean))[,1],
-                                  chol       = chol(prior_prec + contribution_prec),
+                                  cholesky       = chol(prior_prec + contribution_prec),
                                   prec_param = 1)'),
 
     ## wishart
@@ -71,7 +71,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
              dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean) %*% coeff', contribution_df = '1')),
-         posterior = 'dwish_chol(chol        = chol(prior_R + contribution_R),
+         posterior = 'dwish_chol(cholesky        = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
                                  scale_param = 0)')
 

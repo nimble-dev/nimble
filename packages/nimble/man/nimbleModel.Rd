@@ -15,9 +15,12 @@ nimbleModel(code, name, constants = list(), dimensions = list(),
   the model for internal use.  If omitted, a name will be
   provided.}
 
-  \item{constants}{named list of constants in the model
-  (not including data values).  Constants cannot be
-  subsequently modified.}
+  \item{constants}{named list of constants in the model.
+  Constants cannot be subsequently modified. For
+  compatibility with JAGS and BUGS, one can include data
+  values with constants and \code{nimbleModel} will
+  automatically distinguish them based on what appears on
+  the left-hand side of expressions in \code{code}.}
 
   \item{dimensions}{named list of dimensions for variables.
   Only needed for variables used with empty indices in
@@ -56,6 +59,18 @@ The user may need to provide dimensions for certain
 variables as in some cases NIMBLE cannot automatically
 determine the dimensions and sizes of variables. See the
 User Manual for more information.
+
+As noted above, one may lump together constants and data
+(as part of the \code{constants} argument (unlike R
+interfaces to JAGS and BUGS where they are provided as the
+\code{data} argument). One may not provide lumped constants
+and data as the \code{data} argument.
+
+For variables that are a mixture of data nodes and non-data
+nodes, any values passed in via \code{inits} for components
+of the variable that are data will be ignored. All data
+values should be passed in through \code{data} (or
+\code{constants} as just discussed).
 }
 \examples{
 code <- nimbleCode({

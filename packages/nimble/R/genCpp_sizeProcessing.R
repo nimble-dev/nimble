@@ -38,19 +38,20 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     setSize = 'sizeSetSize', ## OK but not done for numericLists
                     resizeNoPtr = 'sizeResizeNoPtr', ## 
                     nimArr_rcat = 'sizeScalarRecurse',
+                    nimArr_rinterval = 'sizeScalarRecurse',
                     nimPrint = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
                     setAll = 'sizeOneEigenCommand'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_ddirch'), 'sizeScalarRecurse'),
+               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
                makeCallList(c('calculate', 'getLogProb', 'decide', 'size', 'getsize'), 'sizeScalar'),
                makeCallList(c('simulate', 'blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
                )
 
-scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical', nimArr_rcat = 'integer')
+scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical', nimArr_rcat = 'integer', nimArr_rinterval = 'integer')
 
 ## exprClasses_setSizes fills in the type information of exprClass code
 ## code is an exprClas object

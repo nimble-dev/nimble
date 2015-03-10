@@ -173,6 +173,7 @@
 \alias{cppVarFull}
 \alias{cppVecNimArr}
 \alias{cppVecNimArrPtr}
+\alias{cppVecVoidPtr}
 \alias{cppVirtualNimbleFunctionClass}
 \alias{cppVoid}
 \alias{C_rcat}
@@ -219,6 +220,7 @@
 \alias{eigenize_cWiseBinaryArray}
 \alias{eigenize_cWiseBinaryEitherMatch}
 \alias{eigenize_cWiseBinaryMatrix}
+\alias{eigenize_cWiseByScalarArray}
 \alias{eigenize_cWiseMultDiv}
 \alias{eigenize_cWiseUnaryArray}
 \alias{eigenize_cWiseUnaryEither}
@@ -279,6 +281,7 @@
 \alias{genReplacementsAndCodeRecurse}
 \alias{getAvailableNames}
 \alias{getBoolValue}
+\alias{getBUGSexampleDir}
 \alias{getCallText}
 \alias{getCNumericListValue}
 \alias{getCRows}
@@ -375,6 +378,7 @@
 \alias{makeModelValuesClassFields}
 \alias{makeMV_GID_Map}
 \alias{makeNameName}
+\alias{makeNewSpecFromOldSpec}
 \alias{makeNFBindingFields}
 \alias{makeNimbleFxnCppCopyTypes}
 \alias{makeNimbleFxnInterfaceCallMethodCode}
@@ -633,6 +637,7 @@
 \alias{rwish_chol}
 \alias{sampler_BASE}
 \alias{sampler_conjugate_dbeta}
+\alias{sampler_conjugate_ddirch}
 \alias{sampler_conjugate_dgamma}
 \alias{sampler_conjugate_dmnorm}
 \alias{sampler_conjugate_dnorm}
@@ -729,6 +734,7 @@
 \alias{symbolNimPtrList}
 \alias{symbolNodeFunctionVector}
 \alias{symbolNumericList}
+\alias{symbolOptimObject}
 \alias{symbolPtr}
 \alias{symbolTable}
 \alias{symbolTable2cppVars}

@@ -4,7 +4,8 @@
 \title{Create a NIMBLE BUGS model from a variety of input formats, including BUGS model files}
 \usage{
 readBUGSmodel(model, data = NULL, inits = NULL, dir = NULL,
-  useInits = TRUE, useData = TRUE, debug = FALSE)
+  useInits = TRUE, useData = TRUE, debug = FALSE,
+  returnModelComponentsOnly = FALSE)
 }
 \arguments{
   \item{model}{one of (1) a character string giving the
