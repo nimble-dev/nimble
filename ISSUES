@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (3/10/15) would be good to add progress bar for compilation steps and for MCMC
+
 * (2/25/15) dbinom appears twice in sizeCalls - see genCpp_sizeProcessing
 
 * (2/25/15) need to add {p,q} functions for dt_nonstandard
