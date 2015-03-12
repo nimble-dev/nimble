@@ -232,15 +232,15 @@ symbolNimbleFunction <-
                     }
                     ))
 
-symbolOptimObject <- 
-	setRefClass(Class = 'symbolOptimObject',
+symbolOptimReadyFunction <- 
+	setRefClass(Class = 'symbolOptimReadyFunction',
 				contains = 'symbolBase',
-				fields = list(nfSymbol = 'ANY'),
+				fields = list(nfName = 'ANY', nfProc = 'ANY'),
 				methods = list(
 					initialize = function(...){callSuper(...)},
 					show = function() writeLines(paste('symbolOptimObject', name)),
 					genCppVar = function(...){
-						return(cppOptimObject(name = name, nfSymbol = nfSymbol))
+						return(cppOptimObject(name = name, nfSymbol = nfProc$setupSymTab$symbols[[nfName]]))
 					}
 					)
 				)

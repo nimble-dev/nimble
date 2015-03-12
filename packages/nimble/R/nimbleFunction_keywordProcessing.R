@@ -5,13 +5,57 @@
 
 
 
-
-
 keywordInfoClass <- setRefClass('keywordInfoClass',
                                 fields = list(
                                     keyword = 'ANY',
                                     processor = 'ANY'))
                                     
+
+
+
+nimOptim_keywordInfo <- keywordInfoClass(
+	keyword = 'nimOptim',
+	processor = function(code, nfProc){
+		rawFunName <- as.character(code$optFun)
+		optimFunName <- funName2OptimFunName(rawFunName)
+		
+		optimFunSym <- nfProc$setupSymTab$symbols[[rawFunName]]
+		argInfo <- getArgInfoFromNFSym(optimFunSym)
+		
+		voidPointerNFName <- makeVoidPointerName_fromObjName(rawFunName)
+		voidPointerForNFLine <- paste0(voidPointerNFName, ' <- voidPtr(', rawFunName, ')')
+		
+		argPointInfo <- makeDSLCallforVoidPtr_fromArgInfAndCall(code, argInfo)
+		argPointerRunCode <- argPointInfo$newRunCode
+		argVPtrNames <- as.character(argPointInfo$pointerNames)
+								
+		allNewBuildCode <- c(voidPointerForNFLine, argPointerRunCode)
+		code$optFun <- parse(text = optimFunName)[[1]]
+		cNimCall_to_use <- parse(text = 'bareBonesOptim')[[1]]	#As we update the flexbility of optim, we are going to be
+																#changing the cNimCall_to_use
+																#this is currently in place to bypass issues such as 
+																#getting the optimAns and optimControl into the DSL
+		code[[1]] <-cNimCall_to_use	
+		
+		code[[4]] <- parse(text = voidPointerNFName)[[1]]
+		names(code)[4] <- 'voidNimFunPtr'
+		code[[5]] <- parse(text = length(argPointInfo$pointerNames))[[1]]
+		names(code)[5] <- 'numAdditionalArgs'
+		
+		for(argName in names(argPointInfo$pointerNames) )
+			code[[argName]] <- parse(text = argPointInfo$pointerNames[[argName]])[[1]]
+
+		newRunCode <- quote({})
+		for(i in seq_along(allNewBuildCode))
+			newRunCode[[i+1]] <- parse(text = allNewBuildCode[[i]])[[1]]
+		newRunCode[[length(newRunCode) + 1]] <- code
+		
+		setupArgList <- list(name = optimFunName, nimbleFunctionName = rawFunName)
+		addNecessarySetupCode(optimFunName, setupArgList, optimReadyFun_setupCodeTemplate, nfProc)
+		return(newRunCode)
+	}
+)
+                            
                                     
 values_keywordInfo <- keywordInfoClass(
     keyword = 'values',
@@ -324,6 +368,7 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
+keywordList[['nimOptim']] <- nimOptim_keywordInfo
 # necessary keywords:
 #	calculate 	(done)
 #	simulate	(done)
@@ -370,6 +415,16 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
                                           }
                                           ) )
                                           
+
+optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
+	makeName = function(argList){Rname2CppName(argList$name)},
+	codeTemplate = quote(OPTIM_FUN <- OptimReadyFunction(name = OPTIM_FUN_INQUOTES, nimbleFunction = NFNAME)),
+	makeCodeSubList = function(resultName, argList){
+		list(OPTIM_FUN = as.name(argList$name),
+			OPTIM_FUN_INQUOTES = argList$name, 
+			NFNAME = as.name(argList$nimbleFunctionName))
+	})
+
                                           
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
@@ -616,6 +671,8 @@ matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunction
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
 matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
+matchFunctions[['double']] <- function(dim, default){}
+matchFunctions[['int']] <- function(dim, default){}
 
 matchKeywordCode <- function(code){
 	thisFunctionMatch <- matchFunctions[[ as.character( code[[1]] ) ]]

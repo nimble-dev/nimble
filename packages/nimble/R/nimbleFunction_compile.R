@@ -359,6 +359,13 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         }
         return(newSym)
     }
+    if(inherits(instances[[1]][[name]], 'OptimReadyFunction')){
+    	thisObj <- instances[[1]][[name]]
+    	nfName <- thisObj$getOriginalName()
+        nfp <- getnfProcFromProject_fromnfClassName(nfName, nimbleProject) ## will return existing nfProc if it exists
+    	newSym <- symbolOptimReadyFunction(name = name, type = 'OptimReadyFunction', nfName = nfName, nfProc = nfp)
+    	return(newSym)
+    }
     if(is.character(instances[[1]][[name]])) {
         return(symbolBase(name = name, type = 'Ronly'))
     }
@@ -627,4 +634,18 @@ singleModelValuesAccess <- function(modelValues, var) {
 
 
 
-
+getnfProcFromProject_fromnfClassName <- function(nfClassName, nimbleProject){
+	compInfoNames <- names(nimbleProject$nfCompInfos)
+	i = 0
+	foundClass = FALSE
+	while(i < length(compInfoNames) & !foundClass){
+		i = i+1
+		foundClass <- grepl(pattern = compInfoNames[i], x = nfClassName)
+	}
+	if(!foundClass){
+		errorMessage <-paste0("class not found in available names. nfClassName = ", nfClassName, " available names = ", compInfoNames)
+		stop(errorMessage)
+	}
+	nfProc <- nimbleProject$nfCompInfos[[compInfoNames[i] ]]$nfProc
+	return(nfProc)
+}
