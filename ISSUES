@@ -1,6 +1,8 @@
 # A list of bugs, desired features, possible changes to the system, etc.
 # please list with newest issues at the top
 
+* (3/13/15) Suppose someone wants to specify a model without priors on top-level params (e.g., they are doing ML); does this cause any problems in our system - investigate this
+
 * (3/12/15) try to enhance usability of MCMC spec - name the elements of spec$samplerSpecs(); perhaps give user more ability (or info in manual) of how to modify elements of the spec
 
 * (3/10/15) would be good to add progress bar for compilation steps and for MCMC
