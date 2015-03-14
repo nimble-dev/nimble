@@ -1415,6 +1415,8 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
 }
 
 sizeVoidPtr <- function(code, symTab, typeEnv) {
+	
+	
     ## lift any argument that is an expression or scalar.  
     ## We expect only one argument
     ## Lift it if it is an expression, a numeric, or a scalar
@@ -1422,7 +1424,9 @@ sizeVoidPtr <- function(code, symTab, typeEnv) {
 
     lift <- TRUE
     if(inherits(code$args[[1]], 'exprClass')) {
-        if(code$args[[1]]$isName & code$args[[1]]$nDim > 0) lift <- FALSE ## will already be a pointer
+    	if(code$args[[1]]$type == 'symbolNimbleFunction') lift <- FALSE
+        else if(code$args[[1]]$isName & code$args[[1]]$nDim > 0) lift <- FALSE ## will already be a pointer
+        
     }
     if(lift) {
          asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv) )

@@ -116,17 +116,15 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           next
                                                       }
                                                       
-                                                      if(inherits(neededType, 'symbolOptimObject')){
-                                                      	 cat("Cliff: fill in psuedo code here\n")
-                                                      	 generatorName <- getGeneratorNameFromOptimSymbol(neededType)
-                                                     	 thisCppDef <- nimbleProject$getOptimObjectCppDef(generatorName)
+                                                      if(inherits(neededType, 'symbolOptimReadyFunction')){
+                                                      	 typeName <- neededType$genName
+                                                         thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = typeName)                                                     	 
                                                      	 if(is.null(thisCppDef)){
-                                                     	 	thisCppDef <- nimbleProject$buildOptimObjectCppDef(nfSymbol = neededType)
-                                                			neededTypeDefs[[ names(nfProc$neededTypes)[i] ]] <<- thisCppDef
+                                                     	 	thisCppDef <- cppOptimObject(name = typeName, nfSym = neededType)
+                                                			neededTypeDefs[[ typeName ]] <<- thisCppDef
                                                 			} else {
                                                 				Hincludes <<- c(Hincludes, thisCppDef)
                                                 				CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                				
                                                 			}
                                                 			
                                                       }

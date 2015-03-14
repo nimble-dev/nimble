@@ -16,14 +16,17 @@ keywordInfoClass <- setRefClass('keywordInfoClass',
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
 	processor = function(code, nfProc){
+		
+		
 		rawFunName <- as.character(code$optFun)
-		optimFunName <- funName2OptimFunName(rawFunName)
-		
 		optimFunSym <- nfProc$setupSymTab$symbols[[rawFunName]]
-		argInfo <- getArgInfoFromNFSym(optimFunSym)
+
+		optimFunName <- funName2OptimFunName(optimFunSym$nfProc$name)		
 		
+		argInfo <- getArgInfoFromNFSym(optimFunSym)
+				
 		voidPointerNFName <- makeVoidPointerName_fromObjName(rawFunName)
-		voidPointerForNFLine <- paste0(voidPointerNFName, ' <- voidPtr(', rawFunName, ')')
+		voidPointerForNFLine <- paste0(voidPointerNFName, ' <- voidPtr(', rawFunName, ', nimbleFunction)')
 		
 		argPointInfo <- makeDSLCallforVoidPtr_fromArgInfAndCall(code, argInfo)
 		argPointerRunCode <- argPointInfo$newRunCode
@@ -49,8 +52,14 @@ nimOptim_keywordInfo <- keywordInfoClass(
 		for(i in seq_along(allNewBuildCode))
 			newRunCode[[i+1]] <- parse(text = allNewBuildCode[[i]])[[1]]
 		newRunCode[[length(newRunCode) + 1]] <- code
+				
+	#	thisOptReadyFunSym <-  symbolOptimReadyFunction(name = optimFunName, type = 'OptimReadyFunction', 
+	#													nfName = rawFunName, nfProc = optimFunSym$nfProc, 
+	#													genName = optimFunName)
 		
-		setupArgList <- list(name = optimFunName, nimbleFunctionName = rawFunName)
+	#	nfProc$neededTypes[[optimFunName]] <- thisOptReadyFunSym
+		
+		setupArgList <- list(name = optimFunName, nimbleFunctionName = rawFunName)			
 		addNecessarySetupCode(optimFunName, setupArgList, optimReadyFun_setupCodeTemplate, nfProc)
 		return(newRunCode)
 	}
@@ -418,11 +427,12 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 
 optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 	makeName = function(argList){Rname2CppName(argList$name)},
-	codeTemplate = quote(OPTIM_FUN <- OptimReadyFunction(name = OPTIM_FUN_INQUOTES, nimbleFunction = NFNAME)),
+	codeTemplate = quote(OPTIM_FUN <- OptimReadyFunction(name = OPTIM_FUN_INQUOTES, nimbleFunction = NFNAME, localNimbleFunctionName = LOCALORGNAME)),
 	makeCodeSubList = function(resultName, argList){
 		list(OPTIM_FUN = as.name(argList$name),
 			OPTIM_FUN_INQUOTES = argList$name, 
-			NFNAME = as.name(argList$nimbleFunctionName))
+			NFNAME = as.name(argList$nimbleFunctionName),
+			LOCALORGNAME = argList$nimbleFunctionName)
 	})
 
                                           

@@ -10,12 +10,14 @@ funName2OptimFunName <- function(nameChar){
 	paste0('OPTIMREADY_', nameChar)
 }
 
+
+
 argInfo2PointerStaticCast <- function(argInf){
 	
 	argInf <- matchKeywordCode(argInf)
 	charInf <- as.character(argInf)
-	if(length(charInf) == 1 || charInf == '0')
-		return(paste0(charInf, '*'))
+	if(length(charInf) == 1 || charInf[2] == '0')
+		return(paste0(charInf[1], '*'))
 	
 #	if(length(charInf) > 2)		#actually, args could have defaults...
 #		stop('too many arguments in argInfo2PointerStaticCast')
@@ -75,7 +77,7 @@ makeDSLCallforVoidPtr_fromArgInfAndCall <- function(call, argInfo){
 		pointerNames[[thisName]] <- vptrName
 		if(!vptrName %in% uniquePointerNames ){
 			uniquePointerNames <- c(vptrName, uniquePointerNames)
-			runLine <- paste0(vptrName, ' <- voidPtr(',objName, ')' )
+			runLine <- paste0(vptrName, ' <- voidPtr(',objName, ', ',deparse(argInfo[[thisName]]), ')' )
 			newRunCode[[thisName]] <- runLine
 			}
 		}
@@ -123,7 +125,7 @@ makeStaticCastingChunk <- function(argInfo){
 	for(i in 1:length(argInfo)){
 		thisType <- argInfo[[i]]
 		thisName <- argNames[i]
-		thisLine <- paste(thisType, thisName, ' = static_cast<', thisType, '>(*argInfoPtr)[', i - 1, '];')
+		thisLine <- paste(thisType, thisName, ' = static_cast<', thisType, '>( (*argInfoPtr)[', i - 1, ']);')
 		ans[[i+1]] <- cppLiteral(thisLine)
 	}
 	return(ans)
@@ -140,11 +142,12 @@ makeFixedParameterCallCodeForOptim <- function(argInfo){
 }
 
 makeOptimFunctionCallLine <- function(funName, argInfo){
-	callChar <- paste0('(*', funName,') ( newpars ', makeFixedParameterCallCodeForOptim(argInfo), ');')
+	callChar <- paste0('double ans = (*', funName,') ( (*newpars) ', makeFixedParameterCallCodeForOptim(argInfo), ');')
 	return(cppLiteral(callChar))	
 }
 
-makeWrappedFunctionDef <- function(nfSym){
+cppOptimObject <- function(name, nfSym){
+		
 	castingExLine <- cppLiteral('vector<void*>* vP = static_cast<vector<void*>*>(ex);')
 	thisNimbleCppTypeNamePtr <- paste0( nfSym$nfProc$name, '*')
 	thisFunName <- nfSym$name
@@ -162,7 +165,7 @@ makeWrappedFunctionDef <- function(nfSym){
 	deleteParsLine <- cppLiteral('delete newpars;')
 	newCodeLinesList <- c(list(castingExLine, castingNFLine, castingNewParLine, copyingNewParLine), castingArgsChunk, list(callLine, fnScaleLine, deleteParsLine,  returnLine))
 	codeBlock <- putCodeLinesInBrackets(code = newCodeLinesList)
-	ans <- cppFunctionDef(name = funName2OptimFunName,
+	ans <- cppFunctionDef(name = name,
 											args = OptimFun_argDefs,
 											code = cppCodeBlock(code = codeBlock, skipBrackets = TRUE),
 											returnType = cppDouble(),
@@ -174,12 +177,20 @@ makeWrappedFunctionDef <- function(nfSym){
 
 OptimReadyFunction <- setRefClass("OptimReadyFunction", 
 							fields = list(name = 'ANY',
-										  nimbleFunction = 'ANY'),
+										  nimbleFunction = 'ANY',
+										  localNimbleFunctionName = 'ANY',
+										  generatorName = 'ANY'),
 							methods = list(
 							getName = function() return(name),
 							getNimbleFunction = function() return(nimbleFunction),
-							getOriginalName = function() return(nimbleFunction$name)
+							getOriginalName = function() return(localNimbleFunctionName),
+							getGeneratorName = function(){
+								if(inherits(generatorName, 'uninitializedField'))	generatorName <<- paste0('OPTIMREADY_',environment(nf_getGeneratorFunction(nimbleFunction) )$name)
+								return(generatorName)
+							}
 							)
 )
 
 #OptimReadyFunction <- function(name, nimbleFunction) new('OptimReadyFunction', name = name, nimbleFunction = nimbleFunction)
+
+
