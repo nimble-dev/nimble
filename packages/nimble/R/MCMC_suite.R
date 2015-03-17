@@ -6,7 +6,7 @@
 #' @export
 #' @description
 #' Creates, runs, and compiles samples from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
-#' This can include BUGS and JAGS MCMCs, as well as NIMBLE MCMC algorithms.
+#' This can include BUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be plotted.
 #' See documentation for method \code{initialize()}, for details of creating and running an MCMC Suite.
 #' Upon executing the MCMC algorithms, an internal \code{output} variable is created, which may be accessed via \code{suite$output}.
@@ -36,16 +36,12 @@ MCMCsuite <- setRefClass(
     
     fields = list(
         ## set in initialize()
-        model = 'ANY',   ## parsed expression for the model code; must be contained in { ... }    --- ORIGINAL ARGUMENT
+        code = 'ANY',   ## parsed expression for the model code; must be contained in { ... }    --- ORIGINAL ARGUMENT
         constants = 'list',   ## list of the constants (ORIGINAL ARGUMENT)
-        Rmodel = 'ANY',   ## Rmodel object
-        
-        ## setData()
         data = 'list',   ## list of the data    --- ORIGINAL ARGUMENT
-        BUGSdata = 'list',   ## data list used for BUGS and JAGS.  is equal to c(constantList, dataList)
-        
-        ## setInits()
         inits = 'list',  ## named list of initial values used for all MCMC algorithms    --- ORIGINAL ARGUMENT
+        constantsAndData = 'list',   ## data list used for BUGS and JAGS.  is equal to c(constantList, dataList)
+        Rmodel = 'ANY',   ## Rmodel object
         
         ## setMonitors()
         monitors = 'character',    ## the original character vector argument to initialize()    --- ORIGINAL ARGUMENT --- SLIGHTLY MODIFIED
@@ -58,8 +54,6 @@ MCMCsuite <- setRefClass(
         niter = 'numeric',    ## number of MCMC iterations to run    --- ORIGINAL ARGUMENT
         burnin = 'numeric',   ## burn-in period, the number of initial samples to discard, prior to thinning    --- ORIGINAL ARGUMENT
         thin = 'numeric',   ## thinning interval    --- ORIGINAL ARGUMENT
-
-        ## set in setNkeep()
         nkeep = 'numeric',   ## number of samples we'll keep. equal to (niter/thin - burnin)
         
         ## setSummaryStats()
@@ -69,9 +63,10 @@ MCMCsuite <- setRefClass(
         nSummaryStats = 'numeric',   ## the number of summary statistics
         
         ## setMCMCs()
-        MCMCs = 'character',   ## character vector of the MCMC analyses.  'bugs', 'jags', or anything else is nimble    --- ORIGINAL ARGUMENT
+        MCMCs = 'character',   ## character vector of the MCMC analyses.  'bugs', 'jags', 'stan', or anything else is nimble    --- ORIGINAL ARGUMENT
         bugsMCMCflag = 'logical',   ## whether 'bugs' is in MCMCs
         jagsMCMCflag = 'logical',   ## whether 'jags' is in MCMCs
+        stanMCMCflag = 'logical',   ## whether 'stan' is in MCMCs
         nimbleMCMCs = 'character',    ## the names of the remaining (presumably nimble) MCMCs
         nNimbleMCMCs = 'numeric',    ## the number of remaining (nimble) MCMCs
         nimbleMCMCflag = 'logical',   ## a flag indicating whether there are any remaining (nimble) MCMCs
@@ -84,17 +79,14 @@ MCMCsuite <- setRefClass(
         ## set in initialize()
         bugs_directory = 'character',    ## directory for BUGS program    --- ORIGINAL ARGUMENT
         bugs_program = 'character',     ## program for BUGS    --- ORIGINAL ARGUMENT
+        stan_model = 'character',     ## .stan model file    --- ORIGINAL ARGUMENT
         makePlot = 'logical',    ## whether to generate plots    --- ORIGINAL ARGUMENT
         savePlot = 'logical',   ## whether or not to save plot PDFs    --- ORIGINAL ARGUMENT
         plotName = 'character',     ## name of the file where we save density and trace plots    --- ORIGINAL ARGUMENT
         debug = 'logical',   ## whether to enter browser() before running each algorithm    --- ORIGINAL ARGUMENT
         modelFileName = 'character',     ## name of the text file where we write the model code, set to a fixed value
-        cols = 'numeric',   ## vector of the colors used for plotting, set to a fixed value
-        
+
         ## set in run()
-        bugs_out = 'ANY',    ## output from bugs()
-        jags_mod = 'ANY',   ## jags model object
-        jags_out = 'ANY',    ## output from coda.samples() for jags
         Cmodel = 'ANY',   ## compiled Cmodel object
         RmcmcFunctionList = 'list',    ## list of the R (nimble) MCMC functions
         CmcmcFunctionList = 'list',    ## list of the C (nimble) MCMC functions
@@ -103,24 +95,25 @@ MCMCsuite <- setRefClass(
     
     methods = list(
         
-        initialize = function(model,
-                              constants      = list(),
-                              data           = list(),
-                              inits          = list(),
-                              monitors       = character(),
-                              niter          = 10000,
-                              burnin         = 2000,
-                              thin           = 1,
-                              summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
-                              MCMCs          = c('bugs', 'jags', 'nimble', 'nimble_RW', 'nimble_slice'),
-                              MCMCdefs       = list(),
-                              bugs_directory = 'C:/WinBUGS14',
-                              bugs_program   = 'WinBUGS',
-                              makePlot       = TRUE,
-                              savePlot       = TRUE,
-                              plotName       = 'MCMCsuite',
-                              debug          = FALSE,
-                              runNow         = TRUE) {
+        initialize = function(
+            code,
+            constants      = list(),
+            data           = list(),
+            inits          = list(),
+            monitors       = character(),
+            niter          = 10000,
+            burnin         = 2000,
+            thin           = 1,
+            summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
+            MCMCs          = c('bugs', 'jags', 'nimble', 'nimble_RW', 'nimble_slice'),
+            MCMCdefs       = list(),
+            bugs_directory = 'C:/WinBUGS14',
+            bugs_program   = 'WinBUGS',
+            stan_model     = '',
+            makePlot       = TRUE,
+            savePlot       = TRUE,
+            plotName       = 'MCMCsuite',
+            debug          = FALSE) {
 '
 Creates and runs an MCMC Suite.
 By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
@@ -130,7 +123,7 @@ See the NIMBLE User Manual for more information about these \'output\' list obje
 
 Arguments:
 
-model: The quoted code expression representing the model, such as the return value from a call to nimbleCode({...}).
+code: The quoted code expression representing the model, such as the return value from a call to nimbleCode({...}).
 No default value, this is a required argument.
 
 constants: A named list giving values of constants for the model.
@@ -166,7 +159,7 @@ or a character string which when parsed and evaluted will define such a function
 Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
 
 MCMCs: A character vector specifying the MCMC algorithms to run.
-\'bugs\' specifies a WinBUGS/BUGS MCMC, and \'jags\' specifies a JAGS MCMC.
+\'bugs\' specifies a WinBUGS/BUGS, \'jags\' specifies a JAGS, and \'stan\' and Stan MCMC.
 All other entries will be interpreted as NIMBLE MCMC algorithms.
 All NIMBLE algorithms must have an associated entry in the MCMCdefs argument.
 The MCMCdefs provides, by default, definitions for \'nimble\', \'nimble_RW\', and \'nimble_slice\'.
@@ -185,6 +178,10 @@ bugs_program: A character string giving the name of the BUGS program, for the Wi
 This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
 Default value is \'WinBUGS\'.
 
+stan_model: A charater string specifing the location and name of the *.stan model file,
+for use with the Stan MCMC program.  This argument must specify the appropriate file whenever
+MCMCs argument includes \'stan\'.
+
 makePlot: Logical argument, specifying whether to generate the trace plots and posterior density plots, for each monitored node.
 Default value is TRUE.
 
@@ -200,46 +197,31 @@ Default value is \'MCMCsuite\'.
 debug: Logical argument, specifying whether to enter a broswer() at the onset of executing each MCMC algrithm.
 For use in debugging individual MCMC algorithms, if necessary.
 Default value is FALSE.
-
-runNow: Logical argument, specifying whether to run the MCMC algorithms straight away.
-If FALSE, the MCMC algorithms may be executed by calling suiteObject$run().
-Default value is TRUE.
 '
-            model <<- model
-            constants <<- constants
-            Rmodel <<- nimbleModel(model, constants = constants)
-            setData(data)
-            setInits(inits)
-            setMonitors(monitors)
-            niter <<- niter
-            burnin <<- burnin
-            thin <<- thin
-            setNkeep()
-            setSummaryStats(summaryStats)
-            setMCMCs(MCMCs)
-            setMCMCdefs(MCMCdefs)
-            bugs_directory <<- bugs_directory
-            bugs_program <<- bugs_program
-            makePlot <<- makePlot
-            savePlot <<- savePlot
-            plotName <<- plotName
-            debug <<- debug
-            modelFileName <<- 'model.txt'
-            cols <<- c(2:6, 8:9)
-            if(runNow) run()
-        },
-        
-        setData = function(data) {
-            data <<- data
-            BUGSdata <<- c(constants, data)
-            Rmodel$resetData()
-            Rmodel$setData(data = data)
-        },
-        
-        setInits = function(inits) {
-            inits <<- inits
-            Rmodel$setInits(inits)
-        },
+code <<- code
+constants <<- constants
+data <<- data
+inits <<- inits
+constantsAndData <<- c(constants, data)
+Rmodel <<- nimbleModel(code=code, constants=constants, data=data, inits=inits)
+niter <<- niter
+burnin <<- burnin
+thin <<- thin
+nkeep <<- floor(niter/thin) - burnin
+setMonitors(monitors)
+setSummaryStats(summaryStats)
+setMCMCs(MCMCs)
+setMCMCdefs(MCMCdefs)
+bugs_directory <<- bugs_directory
+bugs_program <<- bugs_program
+stan_model <<- stan_model
+makePlot <<- makePlot
+savePlot <<- savePlot
+plotName <<- plotName
+debug <<- debug
+modelFileName <<- 'model.txt'
+run()
+},
         
         setMonitors = function(newMonitors) {
             if(length(newMonitors) == 0) newMonitors <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -251,25 +233,6 @@ Default value is TRUE.
             monitorNodesNIMBLE <<- monitors
             monitorNodesBUGS <<- gsub(' ', '', monitorNodesNIMBLE)
             nMonitorNodes <<- length(monitorNodesNIMBLE)
-        },
-        
-        setNiter = function(newNiter) {
-            niter <<- newNiter
-            setNkeep()
-        },
-
-        setBurnin = function(newBurnin) {
-            burnin <<- newBurnin
-            setNkeep()
-        },
-        
-        setThin = function(newThin) {
-            thin <<- newThin
-            setNkeep()
-        },
-
-        setNkeep = function() {
-            nkeep <<- floor(niter/thin) - burnin
         },
         
         setSummaryStats = function(summaryStats) {
@@ -286,7 +249,8 @@ Default value is TRUE.
             MCMCs <<- unique(MCMCs)
             bugsMCMCflag <<- 'bugs' %in% MCMCs
             jagsMCMCflag <<- 'jags' %in% MCMCs
-            nimbleMCMCs <<- setdiff(MCMCs, c('bugs', 'jags'))
+            stanMCMCflag <<- 'stan' %in% MCMCs
+            nimbleMCMCs <<- setdiff(MCMCs, c('bugs', 'jags', 'stan'))
             nNimbleMCMCs <<- length(nimbleMCMCs)
             nimbleMCMCflag <<- if(nNimbleMCMCs > 0) TRUE else FALSE
             nMCMCs <<- length(MCMCs)
@@ -304,8 +268,10 @@ Default value is TRUE.
             checkMCMCdefNames()
             init_output()
             writeModelFile()
+            if(debug) browser()
             if(bugsMCMCflag)     run_bugs()
             if(jagsMCMCflag)     run_jags()
+            if(stanMCMCflag)     run_stan()
             if(nimbleMCMCflag)   run_nimble()
             unlink(modelFileName)
             if(makePlot) generate_plots()
@@ -323,11 +289,10 @@ Default value is TRUE.
         },
         
         run_bugs = function() {
-            library(R2WinBUGS)
-            if(debug) browser()
+            require(R2WinBUGS)
             timeResult <- system.time({
-                bugs_out <<- bugs(data=BUGSdata, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
-                                  n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=bugs_directory, program=bugs_program)
+                bugs_out <- bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
+                                 n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=bugs_directory, program=bugs_program)
             })
             tempArray <- bugs_out$sims.array[, 1, ]        ## must use sims.array
             samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
@@ -335,18 +300,35 @@ Default value is TRUE.
         },
         
         run_jags = function() {
-            library(rjags)
-            if(debug) browser()
+            require(rjags)
+            jags_mod <- jags.model(file=modelFileName, data=constantsAndData, inits=inits, n.chains=1, quiet=FALSE)
             timeResult <- system.time({
-                jags_mod <<- jags.model(file=modelFileName, data=BUGSdata, inits=inits, n.chains=1, quiet=FALSE)
-                jags_out <<- coda.samples(model=jags_mod, variable.names=monitorVars, n.iter=niter, thin=thin)
+                jags_out <- coda.samples(model=jags_mod, variable.names=monitorVars, n.iter=niter, thin=thin)
             })
             samplesArray <- jags_out[[1]][(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
             addToOutput('jags', samplesArray, timeResult)
         },
+
+        run_stan = function() {
+            require(rstan)
+            constantsAndDataStan <- constantsAndData
+            initsStan            <- inits
+            names(constantsAndDataStan) <- gsub('\\.', '_', names(constantsAndData))
+            names(initsStan)            <- gsub('\\.', '_', names(inits))
+            monitorVarsStan             <- gsub('\\.', '_', monitorVars)
+            if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
+            stan_mod <- stan_model(file = stan_model)
+            timeResult <- system.time({
+                stan_out <- sampling(stan_mod, data=constantsAndDataStan, init=list(initsStan), chains=1, iter=niter, thin=thin, pars=monitorVarsStan)
+            })
+            tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
+            dimnames(tempArray)[[2]] <- gsub('_', '\\.', dimnames(tempArray)[[2]])
+            if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) { warning('problem with Stan sample node names'); browser() }
+            samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
+            addToOutput('stan', samplesArray, timeResult)
+        },
         
         run_nimble = function() {
-            if(debug) browser()
             for(iMCMC in seq_along(nimbleMCMCs)) {
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 mcmcDef <- MCMCdefs[[mcmcTag]]
@@ -355,7 +337,6 @@ Default value is TRUE.
                 mcmcspec$setThin(thin, print = FALSE)
                 RmcmcFunctionList[[mcmcTag]] <<- buildMCMC(mcmcspec)
             }
-            
             timeResult <- system.time({
                 Cmodel <<- compileNimble(Rmodel)
                 CmcmcFunctionList_temp <- compileNimble(RmcmcFunctionList, project = Rmodel)
@@ -391,6 +372,7 @@ Default value is TRUE.
         },
         
         generate_plots = function() {
+            cols <- c(2:6, 8:9)
             if(nMCMCs > length(cols))    { cat('too many MCMCs to plot'); return() }
             
             ## for each monitorNode, generate traceplot for each MCMC
@@ -429,7 +411,7 @@ Default value is TRUE.
         },
         
         writeModelFile = function() {
-            writeLines(paste0('model\n', paste0(deparse(model), collapse='\n')), con=modelFileName)
+            writeLines(paste0('model\n', paste0(deparse(code), collapse='\n')), con=modelFileName)
         },
         
         show = function() {
@@ -441,32 +423,6 @@ Default value is TRUE.
         }
     )
 )
-
-
-
-
-
-
-# 
-# artificial generation of output$samples
-# 
-# monitorNodesNIMBLE <- c('x', 'y', 'z')
-# MCMCs <- c('bugs', 'jags', 'nimble', 'nimble_slice', 'df')
-# niter <- 1000
-# plotName <- 'MCMCsuite'
-# nMonitorNodes <- length(monitorNodesNIMBLE)
-# nMCMCs <- length(MCMCs)
-# nkeep <- niter
-# samples <- array(NA, dim = c(nMCMCs, nMonitorNodes, nkeep))
-# dimnames(samples) <- list(MCMCs, monitorNodesNIMBLE, NULL)
-# for(iMonitor in 1:nMonitorNodes) {
-#     for(iMCMC in 1:nMCMCs) {
-#         samples[iMCMC, iMonitor, ] <- rnorm(nkeep, mean=iMonitor, sd=iMCMC)
-#     }
-# }
-# output <- list(samples=samples)
-# 
-
 
 
 
