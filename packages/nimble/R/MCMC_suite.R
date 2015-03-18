@@ -311,20 +311,31 @@ run()
 
         run_stan = function() {
             require(rstan)
-            constantsAndDataStan <- constantsAndData
-            initsStan            <- inits
-            names(constantsAndDataStan) <- gsub('\\.', '_', names(constantsAndData))
-            names(initsStan)            <- gsub('\\.', '_', names(inits))
-            monitorVarsStan             <- gsub('\\.', '_', monitorVars)
             if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
+            ## constantsAndDataStan <- constantsAndData
+            ## initsStan            <- inits
+            ## names(constantsAndDataStan) <- gsub('\\.', '_', names(constantsAndData))
+            ## names(initsStan)            <- gsub('\\.', '_', names(inits))
+            ## monitorVarsStan             <- gsub('\\.', '_', monitorVars)
+            dataFile <- gsub('stan$', 'data.R', stan_model)
+            initFile <- gsub('stan$', 'init.R', stan_model)
+            constantsAndDataStan <- fileToList(dataFile)
+            initsStan <- fileToList(initFile)
+            ##
             stan_mod <- stan_model(file = stan_model)
             timeResult <- system.time({
-                stan_out <- sampling(stan_mod, data=constantsAndDataStan, init=list(initsStan), chains=1, iter=niter, thin=thin, pars=monitorVarsStan)
+                stan_out <- sampling(stan_mod, data=constantsAndDataStan, init=list(initsStan), chains=1, iter=niter, thin=thin)
             })
             tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
-            dimnames(tempArray)[[2]] <- gsub('_', '\\.', dimnames(tempArray)[[2]])
-            if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) { warning('problem with Stan sample node names'); browser() }
-            samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
+            dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
+            if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
+                missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])
+                warning(paste0('Stan output is missing values for: ', paste0(missingNames,collapse=', ')))
+            }
+            samplesArray <- array(0, dim = c(nkeep, length(monitorNodesBUGS)))
+            dimnames(samplesArray)[[2]] <- monitorNodesBUGS
+            monitorsWeHave <- intersect(monitorNodesBUGS, dimnames(tempArray)[[2]])
+            samplesArray[, monitorsWeHave] <- tempArray[(burnin+1):floor(niter/thin), monitorsWeHave, drop=FALSE]
             addToOutput('stan', samplesArray, timeResult)
         },
         
@@ -412,6 +423,15 @@ run()
         
         writeModelFile = function() {
             writeLines(paste0('model\n', paste0(deparse(code), collapse='\n')), con=modelFileName)
+        },
+
+        fileToList = function(file) {
+            if(!file.exists(file)) stop(paste0('missing Stan input file: ', file))
+            env <- new.env()
+            source(file, local = env)
+            lst <- list()
+            for(name in ls(env))   lst[[name]] <- get(name, env)
+            return(lst)
         },
         
         show = function() {
