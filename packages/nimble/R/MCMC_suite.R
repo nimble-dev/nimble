@@ -323,9 +323,15 @@ run()
             initsStan <- fileToList(initFile)
             ##
             stan_mod <- stan_model(file = stan_model)
-            timeResult <- system.time({
-                stan_out <- sampling(stan_mod, data=constantsAndDataStan, init=list(initsStan), chains=1, iter=niter, thin=thin)
-            })
+            
+            if(is.null(initsStan)) {
+                ## missing model.init.R file (stan inits file)
+                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
+            } else {
+                ## we have the model.init.R file
+                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))  ## this one includes inits = ...
+            }
+
             tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
             dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
             if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
@@ -426,7 +432,10 @@ run()
         },
 
         fileToList = function(file) {
-            if(!file.exists(file)) stop(paste0('missing Stan input file: ', file))
+            if(!file.exists(file)) {
+                warning(paste0('missing Stan input file: \'', file, '\''))
+                return(NULL)
+            }
             env <- new.env()
             source(file, local = env)
             lst <- list()
