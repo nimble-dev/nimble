@@ -10,8 +10,46 @@ keywordInfoClass <- setRefClass('keywordInfoClass',
                                     keyword = 'ANY',
                                     processor = 'ANY'))
                                     
+## We may want this if we allow for reparameterizations in the DSL...
 
 
+#dnorm_keywordInfo <- keywordInfoClass(
+#	keyword = 'dnorm',
+#	processor = function(code, nfProc){
+#		if('tau' %in% names(code)){								#checks if tau is an argument of this call
+#			tauArg <- code[['tau']]								#grabs tau argument
+#			sdArg <- parse(text = paste0('1/', tauArg))[[1]]	#inverts the argument
+#			code[['tau']] <- NULL								#deletes the tau argument
+#			code[['sd']] <- sdArg								#inserts the sd argument
+#		}
+#		else if('var' %in%)
+#		return(code)
+#	})
+
+d_dist_keywordInfo <- keywordInfoClass(
+	keyword = 'd',
+	processor = function(code, nfProc){
+		logArg <- code$log
+		if(logArg == TRUE)	code$log <- 1
+			else code$log <- 0
+			
+		return(code)
+	}
+)
+
+p_dist_keywordInfo <- keywordInfoClass(
+	keyword = 'p',
+	processor = function(code, nfProc){
+		lower.tailArg	<- code$lower.tail
+		if(lower.tailArg == TRUE) code$lower.tail <- 1
+			else code$lower.tail <- 0
+			
+		logArg <- code$log.p
+		if(logArg == TRUE)	code$log.p <- 1
+			else code$log.p <- 0
+		return(code)		
+	}
+	)
 
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
@@ -53,11 +91,6 @@ nimOptim_keywordInfo <- keywordInfoClass(
 			newRunCode[[i+1]] <- parse(text = allNewBuildCode[[i]])[[1]]
 		newRunCode[[length(newRunCode) + 1]] <- code
 				
-	#	thisOptReadyFunSym <-  symbolOptimReadyFunction(name = optimFunName, type = 'OptimReadyFunction', 
-	#													nfName = rawFunName, nfProc = optimFunSym$nfProc, 
-	#													genName = optimFunName)
-		
-	#	nfProc$neededTypes[[optimFunName]] <- thisOptReadyFunSym
 		
 		setupArgList <- list(name = optimFunName, nimbleFunctionName = rawFunName)			
 		addNecessarySetupCode(optimFunName, setupArgList, optimReadyFun_setupCodeTemplate, nfProc)
@@ -365,8 +398,9 @@ singleBracket_keywordInfo <- keywordInfoClass(
 	return(code)
 	}
 )    
-    
-    
+
+
+
 #	KeywordList
 keywordList <- new.env()
 keywordList[['values']] <- values_keywordInfo
@@ -393,6 +427,57 @@ keywordList[['nimOptim']] <- nimOptim_keywordInfo
 #	setSize		(special processing only for numericLists, not really used)
 #	getSize		(special processing only for numericLists, not really used)
 #	Also see replaceAccessorsOneFunction
+
+
+
+matchFunctions <- new.env()
+matchFunctions[['values']] <- function(model, nodes, accessor){}
+matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
+matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
+matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
+matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
+matchFunctions[['double']] <- function(dim, default){}
+matchFunctions[['int']] <- function(dim, default){}
+
+
+# Missing distributions: cat, dirch, logis, multi, mnorm, negbin, wish
+matchDistList <- list('beta', 'binom', 'chisq', 'gamma', 'lnorm', 'norm', 'pois', 't', 'unif', 'weibull')
+
+addDistList2matchFunctions <- function(distList, matchFunEnv){
+	for(thisDist in distList){
+		pFun <- paste0('p', thisDist)
+		qFun <- paste0('q', thisDist)
+		rFun <- paste0('r', thisDist)
+		dFun <- paste0('d', thisDist)
+		
+		eval(substitute(matchFunctions[[pFun]] <- PFUN, list(PFUN = as.name(pFun))))
+		eval(substitute(matchFunctions[[qFun]] <- QFUN, list(QFUN = as.name(qFun))))
+		eval(substitute(matchFunctions[[rFun]] <- RFUN, list(RFUN = as.name(rFun))))
+		eval(substitute(matchFunctions[[dFun]] <- DFUN, list(DFUN = as.name(dFun))))
+	}
+}
+
+addDistKeywordProcessors <- function(distList, keywordEnv){
+		for(thisDist in distList){
+		pFun <- paste0('p', thisDist)
+		qFun <- paste0('q', thisDist)
+		rFun <- paste0('r', thisDist)
+		dFun <- paste0('d', thisDist)
+		
+		keywordEnv[[dFun]] <- d_dist_keywordInfo
+		keywordEnv[[pFun]] <- p_dist_keywordInfo
+		}
+		
+}
+
+
+addDistList2matchFunctions(matchDistList, matchFunctions)
+addDistKeywordProcessors(matchDistList, keywordList)
+
+
+
+    
+    
 
 
 #	processKeyword function to be called by nfProc
@@ -648,6 +733,7 @@ isSymbolType <- function(symTab, varName, symType)
 
 matchAndFill.call <- function(def, call){
   theseFormals <- formals(def)
+  formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
   theseFormals <- theseFormals[nchar(theseFormals) > 0]
   matchedCall <- match.call(def, call)
   missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
@@ -655,7 +741,25 @@ matchAndFill.call <- function(def, call){
     name <- names(theseFormals)[ind]
     matchedCall[[name]] <- theseFormals[[name]]    
   }
-  return(matchedCall)
+    
+  newCall <- matchedCall[1]
+
+  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly
+  	thisArg <- matchedCall[[thisArgName]]
+	if(!is.null(thisArg))
+	  	newCall[[thisArgName]] <- thisArg
+  }
+  
+  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
+ 		# i.e. are there any "..." args? if so, adds them on in the end
+  		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
+  		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
+  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
+
+  for(thisArg in informalArgNames)
+  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+    	
+  return(newCall)
 }
 
 pasteExpr <- function(expr1, expr2)
@@ -675,14 +779,8 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     return(allNDims)
 }
 
-matchFunctions <- new.env()
-matchFunctions[['values']] <- function(model, nodes, accessor){}
-matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
-matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
-matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
-matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
-matchFunctions[['double']] <- function(dim, default){}
-matchFunctions[['int']] <- function(dim, default){}
+
+
 
 matchKeywordCode <- function(code){
 	thisFunctionMatch <- matchFunctions[[ as.character( code[[1]] ) ]]
