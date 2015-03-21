@@ -37,7 +37,7 @@ d_dist_keywordInfo <- keywordInfoClass(
 	}
 )
 
-p_dist_keywordInfo <- keywordInfoClass(
+qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
 	keyword = 'p',
 	processor = function(code, nfProc){
 		lower.tailArg	<- code$lower.tail
@@ -465,7 +465,8 @@ addDistKeywordProcessors <- function(distList, keywordEnv){
 		dFun <- paste0('d', thisDist)
 		
 		keywordEnv[[dFun]] <- d_dist_keywordInfo
-		keywordEnv[[pFun]] <- p_dist_keywordInfo
+		keywordEnv[[pFun]] <- qp_dist_keywordInfo
+		keywordEnv[[qFun]] <- qp_dist_keywordInfo
 		}
 		
 }
