@@ -1568,8 +1568,17 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(varInfo[[iV]]$nDim > 0) dim(vars_2_nodeID[[varInfo[[iV]]$varName]]) <- dim(vars_2_vertexID[[varInfo[[iV]]$varName]]) <- dim(vars_2_vertexOrigID[[varInfo[[iV]]$varName]])        
     }
 
+    ## 11b. re-index the graphIDs in the BUGSdecl objects and record graphID_2_declID
+    graphID_2_declID <- numeric(numVertices)
+    for(iDI in seq_along(declInfo)) {
+        BUGSdecl <- declInfo[[iDI]]
+        BUGSdecl$graphIDs <- oldGraphID_2_newGraphID[ BUGSdecl$origIDs ]
+        graphID_2_declID[ BUGSdecl$graphIDs ] <- iDI
+    }
+
     ## 12. Set up things needed for maps.
     maps <<- mapsClass$new()
+    maps$graphID_2_declID <<- graphID_2_declID
     maps$graphID_2_nodeName <<- allVertexNames[newGraphID_2_oldGraphID]
     maps$types <<- types[newGraphID_2_oldGraphID]
     maps$nodeNamesLHSall <<- nodeNamesLHSall

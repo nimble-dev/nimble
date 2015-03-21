@@ -21,7 +21,8 @@ mapsClass <- setRefClass(
         ## graphID_2_xxxx maps
         graphID_2_nodeName = 		'ANY',              ## vector of character nodeNames
         graphID_2_nodeFunctionName ='ANY',      ## vector of character nodeFunctionNames
-
+        graphID_2_declID   =  'ANY',
+        
         ## varName2GraphID maps
         vars2GraphID_values = 		'ANY',
         vars2GraphID_functions =	'ANY',

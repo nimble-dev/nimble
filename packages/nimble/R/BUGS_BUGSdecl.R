@@ -59,6 +59,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
 
                                  outputSize = 'ANY',
                                  origIDs = 'ANY',
+                                 graphIDs = 'ANY',
                                  unrolledIndicesMatrix = 'ANY'
                                                                   
                              ),   
