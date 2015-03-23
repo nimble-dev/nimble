@@ -1594,8 +1594,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphID_2_nodeFunctionName[bool] <<- maps$graphID_2_nodeName[ newVertexID_2_nodeID ]
 
      if(debug) browser()
-    maps$vars2GraphID_values <<- vars_2_nodeID
-    maps$vars2GraphID_functions <<- vars_2_vertexID
+    maps$vars2GraphID_values <<- vars_2_vertexID
+    maps$vars2GraphID_functions <<- vars_2_nodeID
 
     if(debug) browser()
 
