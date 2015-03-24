@@ -285,6 +285,7 @@ run()
             dimnames(summary) <- list(MCMCs, summaryStatDimNames, monitorNodesNIMBLE)
             timing <- rep(NA, nMCMCs+1)
             names(timing) <- c(MCMCs, 'nimble_compile')
+            if(stanMCMCflag) timing['stan_compile'] <- NA
             output <<- list(samples=samples, summary=summary, timing=timing)
         },
         
@@ -312,26 +313,19 @@ run()
         run_stan = function() {
             require(rstan)
             if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
-            ## constantsAndDataStan <- constantsAndData
-            ## initsStan            <- inits
-            ## names(constantsAndDataStan) <- gsub('\\.', '_', names(constantsAndData))
-            ## names(initsStan)            <- gsub('\\.', '_', names(inits))
-            ## monitorVarsStan             <- gsub('\\.', '_', monitorVars)
             dataFile <- gsub('stan$', 'data.R', stan_model)
             initFile <- gsub('stan$', 'init.R', stan_model)
             constantsAndDataStan <- fileToList(dataFile)
             initsStan <- fileToList(initFile)
-            ##
-            stan_mod <- stan_model(file = stan_model)
-            
-            if(is.null(initsStan)) {
-                ## missing model.init.R file (stan inits file)
-                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
-            } else {
-                ## we have the model.init.R file
-                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))  ## this one includes inits = ...
-            }
 
+            timeResult <- system.time(stan_mod <- stan_model(file = stan_model))
+            addTimeResult('stan_compile', timeResult)
+            
+            if(is.null(initsStan)) { ## missing model.init.R file (stan inits file)
+                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
+            } else { ## we have the model.init.R file
+                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan))) } ## this one includes inits = ...
+            
             tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
             dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
             if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
