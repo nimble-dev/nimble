@@ -1,38 +1,133 @@
 
 
 
-#' Class \code{MCMCsuite}
-#' @aliases MCMCsuite
-#' @export
-#' @description
-#' Creates, runs, and compiles samples from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
+
+#' Executes multiple MCMC algorithms and organizes results.
+#'
+#' Creates, runs, and organizes output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
 #' This can include BUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
-#' Trace plots and density plots for the MCMC samples may also be plotted.
-#' See documentation for method \code{initialize()}, for details of creating and running an MCMC Suite.
-#' Upon executing the MCMC algorithms, an internal \code{output} variable is created, which may be accessed via \code{suite$output}.
-#' \code{output} is a named list containing three elements:
-#' \code{output$samples} is a 3-dimensional array containing all MCMC samples.
-#' \code{output$summary} is a 3-dimensional array containing all summary statistics.
-#' \code{output$timing} is a numeric vector containing timing information.
-#' See the NIMBLE User Manual for more information about these \code{output} list elements.
-#' @author Daniel Turek
+#' Trace plots and density plots for the MCMC samples may also be generated and saved.
+#'
+#' @details		
+#' Creates and runs an MCMC Suite.
+#' By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
+#' This default behavior can ben altered via a variety of arguments.
+#' Following execution of the MCMC algorithms, returns a named list containing \'samples\', \'summary\', and \'timing\' elements.
+#' See the NIMBLE User Manual for more information about the organization of the return object.
+#' 
+#' @param code The quoted code expression representing the model, such as the return value from a call to nimbleCode({...}).
+#' No default value, this is a required argument.
+#' 
+#' @param constants A named list giving values of constants for the model.
+#' This is the same as the \'constants\' argument which would be passed to nimbleModel(...).
+#' Default value is list().
+#' 
+#' @param data A named list giving the data values for the model.
+#' This is the same as the \'data\' argument which would be passed to nimbleModel(...) or model$setData(...).
+#' Default value is list().
+#' 
+#' @param inits A named list giving the initial values for the model.
+#' This is the same as the \'inits\' argument which would be passed to nimbleModel(...) or model$setInits(...).
+#' Default value is list().
+#' 
+#' @param monitors A character vector giving the node names or variable names to monitor.
+#' The samples corresponding to these nodes will be stored in the output samples, will have summary statistics calculated, and density and trace plots generated.
+#' Default value is all top-level stochastic nodes of the model.
+#' 
+#' @param niter Number of MCMC iterations to run.
+#' This applies to all MCMC algorithms in the suite.
+#' Default value is 10,000.
+#' 
+#' @param burnin Number of initial, post-thinning, MCMC iterations to discard.
+#' Default value is 2,000.
+#' 
+#' @param thin Thinning interval for the MCMC samples.
+#' This applies to all MCMC algorithms in the suite.  The thinning occurs prior to the burnin samples being discarded.
+#' Default value is 1.
+#' 
+#' @param summaryStats A character vector, specifying the summary statistics to calculate on the MCMC samples.
+#' Each element may be the character name of an exisiting R function (possibly user-defined) which acts on a numeric vector and returns a scalar (e.g., \'mean\' or \'sd\'),
+#' or a character string which when parsed and evaluted will define such a function (e.g., \'function(x) mean(sqrt(x))\').
+#' Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
+#' 
+#' @param MCMCs A character vector specifying the MCMC algorithms to run.
+#' \'bugs\' specifies WinBUGS/BUGS;
+#' \'jags\' specifies JAGS;
+#' \'stan\' specifies Stan; in this case, must also provide the \'stan_model\' argument;
+#' \'nimble\' specifies NIMBLE\'s default MCMC algorithm,
+#' \'nimble_RW\' specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\'RW\') samplers,
+#' \'nimble_slice\' specifies NIMBLE MCMC algorithm using only slice (\'slice\') samplers.
+#' Anything else will be interpreted as NIMBLE MCMC algorithms, and must have associated entries in the MCMCdefs argument.
+#' Default value is c(\'jags\', \'nimble\', \'nimble_RW\', \'nimble_slice\').
+#' 
+#' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \'MCMCs\' argument.
+#' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
+#' specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \'Rmodel\',
+#' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalong \'mcmcspec\', to return this object.
+#' 
+#' @param bugs_directory A character string giving the directory of the executable BUGS program for the WinBUGS/BUGS MCMC.
+#' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
+#' Default value is \'C:/WinBUGS14\'.
+#' 
+#' @param bugs_program A character string giving the name of the BUGS program, for the WinBUGS/BUGS MCMC.
+#' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
+#' Default value is \'WinBUGS\'.
+#' 
+#' @param stan_model A character string specifying the location and name of the model file (\'modelName.stan\') for use with the Stan MCMC program.
+#' This argument must include the \'.stan\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
+#' In addition, the Stan data file (\'modelName.data.R\') must also reside in the same directory as the Stan model file.
+#' Optionally, the Stan initial values file (\'modelName.init.R\') may also be in this same directory; it will be used if present.
+#' 
+#' @param makePlot Logical argument, specifying whether to generate the trace plots and posterior density plots, for each monitored node.
+#' Default value is TRUE.
+#' 
+#' @param savePlot Logical argument, specifying whether to save the trace plots and density plots.
+#' Plots will be saved into the current working directory.
+#' Only used when makePlot == TRUE.
+#' Default value is TRUE.
+#' 
+#' @param plotName Character string, giving the file name for saving the trace plots and density plots.
+#' Only used when makePlot == TRUE and savePlot == TRUE.
+#' Default value is \'MCMCsuite\'.
+#' 
+#' @param debug Logical argument, specifying whether to enter a broswer() at the onset of executing each MCMC algrithm.
+#' For use in debugging individual MCMC algorithms, if necessary.
+#' Default value is FALSE.
+#'
+#' @return Retuns a named list containing three elements:
+#' samples: A 3-dimensional array containing samples from each MCMC algorithm.
+#' summary: A 3-dimensional array containing summary statistics for each variable and algorithm.
+#' timing: A numeric vector containing timing information.
+#' See the NIMBLE User Manual for more information about the organization of the return object.
+#'  
 #' @examples
 #' code <- nimbleCode({
 #'     mu ~ dnorm(0, 1)
 #'     x ~ dnorm(mu, 1)
 #' })
-#' suite <- MCMCsuite(code,
-#'                    data = list(x=3),
-#'                    inits = list(mu=0),
-#'                    niter = 10000,
-#'                    thin = 10,
-#'                    monitors = 'mu',
-#'                    MCMCs = c('bugs', 'jags', 'nimble'),
-#'                    summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
-#'                    plotName = 'example')
-MCMCsuite <- setRefClass(
+#' output <- MCMCsuite(code,
+#'                     data = list(x=3),
+#'                     inits = list(mu=0),
+#'                     niter = 10000,
+#'                     monitors = 'mu',
+#'                     MCMCs = c('bugs', 'jags', 'nimble'),
+#'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
+#'                     plotName = 'example')
+#' 
+#' @author Daniel Turek
+#' @export
+MCMCsuite <- function(...) {
+    suite <- MCMCsuiteClass(...)
+    return(suite$output)
+}
 
-    Class = 'MCMCsuite',
+
+
+
+
+MCMCsuiteClass <- setRefClass(
+
+    Class = 'MCMCsuiteClass',
     
     fields = list(
         ## set in initialize()
@@ -79,7 +174,7 @@ MCMCsuite <- setRefClass(
         ## set in initialize()
         bugs_directory = 'character',    ## directory for BUGS program    --- ORIGINAL ARGUMENT
         bugs_program = 'character',     ## program for BUGS    --- ORIGINAL ARGUMENT
-        stan_model = 'character',     ## .stan model file    --- ORIGINAL ARGUMENT
+        stan_model = 'character',     ## *.stan model file    --- ORIGINAL ARGUMENT
         makePlot = 'logical',    ## whether to generate plots    --- ORIGINAL ARGUMENT
         savePlot = 'logical',   ## whether or not to save plot PDFs    --- ORIGINAL ARGUMENT
         plotName = 'character',     ## name of the file where we save density and trace plots    --- ORIGINAL ARGUMENT
@@ -105,7 +200,7 @@ MCMCsuite <- setRefClass(
             burnin         = 2000,
             thin           = 1,
             summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
-            MCMCs          = c('bugs', 'jags', 'nimble', 'nimble_RW', 'nimble_slice'),
+            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice'),
             MCMCdefs       = list(),
             bugs_directory = 'C:/WinBUGS14',
             bugs_program   = 'WinBUGS',
@@ -114,114 +209,42 @@ MCMCsuite <- setRefClass(
             savePlot       = TRUE,
             plotName       = 'MCMCsuite',
             debug          = FALSE) {
-'
-Creates and runs an MCMC Suite.
-By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
-This default behavior can ben altered via a variety of input arguments.
-Following execution of the MCMC algorithms, the interal \'output\' list is created, which contains named \'samples\', \'summary\', and \'timing\' elements.
-See the NIMBLE User Manual for more information about these \'output\' list objects.
+            
+            code <<- code
+            constants <<- constants
+            data <<- data
+            inits <<- inits
+            constantsAndData <<- c(constants, data)
+            Rmodel <<- nimbleModel(code=code, constants=constants, data=data, inits=inits)
+            niter <<- niter
+            burnin <<- burnin
+            thin <<- thin
+            nkeep <<- floor(niter/thin) - burnin
+            setMonitors(monitors)
+            setSummaryStats(summaryStats)
+            setMCMCs(MCMCs)
+            setMCMCdefs(MCMCdefs)
+            bugs_directory <<- bugs_directory
+            bugs_program <<- bugs_program
+            stan_model <<- stan_model
+            makePlot <<- makePlot
+            savePlot <<- savePlot
+            plotName <<- plotName
+            debug <<- debug
+            modelFileName <<- 'model.txt'
 
-Arguments:
-
-code: The quoted code expression representing the model, such as the return value from a call to nimbleCode({...}).
-No default value, this is a required argument.
-
-constants: A named list giving values of constants for the model.
-This is the same as the \'constants\' argument which would be passed to nimbleModel(...).
-Default value is list().
-
-data: A named list giving the data values for the model.
-This is the same as the \'data\' argument which would be passed to nimbleModel(...) or model$setData(...).
-Default value is list().
-
-inits: A named list giving the initial values for the model.
-This is the same as the \'inits\' argument which would be passed to nimbleModel(...) or model$setInits(...).
-Default value is list().
-
-monitors: A character vector giving the node names or variable names to monitor.
-The samples corresponding to these nodes will be stored in the output samples, will have summary statistics calculated, and density and trace plots generated.
-Default value is all top-level stochastic nodes of the model.
-
-niter: Number of MCMC iterations to run.
-This applies to all MCMC algorithms in the suite.
-Default value is 10,000.
-
-burnin: Number of initial, post-thinning, MCMC iterations to discard.
-Default value is 2,000.
-
-thin: Thinning interval for the MCMC samples.
-This applies to all MCMC algorithms in the suite.  The thinning occurs prior to the burnin samples being discarded.
-Default value is 1.
-
-summaryStats: A character vector, specifying the summary statistics to calculate on the MCMC samples.
-Each element may be the character name of an exisiting R function (possibly user-defined) which acts on a numeric vector and returns a scalar (e.g., \'mean\' or \'sd\'),
-or a character string which when parsed and evaluted will define such a function (e.g., \'function(x) mean(sqrt(x))\').
-Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
-
-MCMCs: A character vector specifying the MCMC algorithms to run.
-\'bugs\' specifies a WinBUGS/BUGS, \'jags\' specifies a JAGS, and \'stan\' and Stan MCMC.
-All other entries will be interpreted as NIMBLE MCMC algorithms.
-All NIMBLE algorithms must have an associated entry in the MCMCdefs argument.
-The MCMCdefs provides, by default, definitions for \'nimble\', \'nimble_RW\', and \'nimble_slice\'.
-Default value is c(\'bugs\', \'jags\', \'nimble\', \'nimble_RW\', \'nimble_slice\').
-
-MCMCdefs: A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \'MCMCs\' argument.
-The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
-specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \'Rmodel\',
-and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalong \'mcmcspec\', to return this object.
-
-bugs_directory: A character string giving the directory of the executable BUGS program for the WinBUGS/BUGS MCMC.
-This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
-Default value is \'C:/WinBUGS14\'.
-
-bugs_program: A character string giving the name of the BUGS program, for the WinBUGS/BUGS MCMC.
-This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
-Default value is \'WinBUGS\'.
-
-stan_model: A charater string specifing the location and name of the *.stan model file,
-for use with the Stan MCMC program.  This argument must specify the appropriate file whenever
-MCMCs argument includes \'stan\'.
-
-makePlot: Logical argument, specifying whether to generate the trace plots and posterior density plots, for each monitored node.
-Default value is TRUE.
-
-savePlot: Logical argument, specifying whether to save the trace plots and density plots.
-Plots will be saved into the current working directory.
-Only used when makePlot == TRUE.
-Default value is TRUE.
-
-plotName: Character string, giving the file name for saving the trace plots and density plots.
-Only used when makePlot == TRUE and savePlot == TRUE.
-Default value is \'MCMCsuite\'.
-
-debug: Logical argument, specifying whether to enter a broswer() at the onset of executing each MCMC algrithm.
-For use in debugging individual MCMC algorithms, if necessary.
-Default value is FALSE.
-'
-code <<- code
-constants <<- constants
-data <<- data
-inits <<- inits
-constantsAndData <<- c(constants, data)
-Rmodel <<- nimbleModel(code=code, constants=constants, data=data, inits=inits)
-niter <<- niter
-burnin <<- burnin
-thin <<- thin
-nkeep <<- floor(niter/thin) - burnin
-setMonitors(monitors)
-setSummaryStats(summaryStats)
-setMCMCs(MCMCs)
-setMCMCdefs(MCMCdefs)
-bugs_directory <<- bugs_directory
-bugs_program <<- bugs_program
-stan_model <<- stan_model
-makePlot <<- makePlot
-savePlot <<- savePlot
-plotName <<- plotName
-debug <<- debug
-modelFileName <<- 'model.txt'
-run()
-},
+            ## run
+            checkMCMCdefNames()
+            init_output()
+            writeModelFile()
+            if(debug) browser()
+            if(bugsMCMCflag)     run_bugs()
+            if(jagsMCMCflag)     run_jags()
+            if(stanMCMCflag)     run_stan()
+            if(nimbleMCMCflag)   run_nimble()
+            unlink(modelFileName)
+            if(makePlot) generate_plots()
+        },
         
         setMonitors = function(newMonitors) {
             if(length(newMonitors) == 0) newMonitors <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
@@ -262,20 +285,6 @@ run()
                               nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
-        },
-        
-        run = function() {
-            checkMCMCdefNames()
-            init_output()
-            writeModelFile()
-            if(debug) browser()
-            if(bugsMCMCflag)     run_bugs()
-            if(jagsMCMCflag)     run_jags()
-            if(stanMCMCflag)     run_stan()
-            if(nimbleMCMCflag)   run_nimble()
-            unlink(modelFileName)
-            if(makePlot) generate_plots()
-            return(output)
         },
         
         init_output = function() {
@@ -441,7 +450,7 @@ run()
             cat(paste0('MCMCsuite object\n',
                        'algorithms:  ', paste0(MCMCs, collapse=', '), '\n',
                        'monitors:  ', paste0(monitorNodesNIMBLE, collapse=', '), '\n',
-                       'model:\n',
+                       'model code:\n',
                        paste0(deparse(model), collapse='\n')))
         }
     )
