@@ -11,6 +11,7 @@ sampler_BASE <- nimbleFunctionVirtual(
 )
 
 
+
 ####################################################################
 ### end sampler for trailing stochastic (predictive) nodes #########
 ####################################################################
@@ -34,10 +35,10 @@ sampler_end <- nimbleFunction(
 )
 
 
+
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
-
 
 sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
@@ -110,73 +111,6 @@ sampler_RW <- nimbleFunction(
     ), where = getLoadingNamespace()
 )
 
-#sampler_RW <- nimbleFunction(
-#    contains = sampler_BASE,
-#    setup = function(model, mvSaved, control) {
-#        ###  control list extraction  ###
-#        targetNode    <- control$targetNode
-#        adaptive      <- control$adaptive
-#        adaptInterval <- control$adaptInterval
-#        scale         <- control$scale
-#        ###  node list generation  ###
-#        calcNodes  <- model$getDependencies(targetNode, returnType = 'nodeSet')
-#        ###  numeric value generation  ###
-#        scaleOriginal <- scale
-#        timesRan      <- 0
-#        timesAccepted <- 0
-#        timesAdapted  <- 0
-#        scaleHistory          <- c(0, 0)
-#        acceptanceRateHistory <- c(0, 0)
-#        ###  nested function and function list definitions  ###
-#        my_setAndCalculateOne <- setAndCalculateOne(model, targetNode)
-#        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-#        my_calcAdaptationFactor <- calcAdaptationFactor(1)
-#    },
-#    
-#    run = function() {
-#        modelLP0 <- getLogProb(model, calcNodes)
-#        propValue <- generateProposalValue()
-#        modelLP1 <- my_setAndCalculateOne(propValue)
-#        jump <- my_decideAndJump(modelLP1, modelLP0, 0, 0)
-#        if(adaptive)     adaptiveProcedure(jump)
-#    },
-#    
-#    methods = list(
-#    
-#        generateProposalValue = function() {
-#            propValue <- rnorm(1, mean = model[[targetNode]], sd = scale)
-#            returnType(double())
-#            return(propValue)
-#        },
-#        
-#        adaptiveProcedure = function(jump = logical()) {
-#            timesRan <<- timesRan + 1
-#            if(jump)     timesAccepted <<- timesAccepted + 1
-#            if(timesRan %% adaptInterval == 0) {
-#                acceptanceRate <- timesAccepted / timesRan
-#                timesAdapted <<- timesAdapted + 1
-#                setSize(scaleHistory,          timesAdapted)
-#                setSize(acceptanceRateHistory, timesAdapted)
-#                scaleHistory[timesAdapted] <<- scale
-#                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
-#                adaptFactor <- my_calcAdaptationFactor(acceptanceRate)
-#                scale <<- scale * adaptFactor
-#                timesRan <<- 0
-#                timesAccepted <<- 0
-#            }
-#        },
-#        
-#        reset = function() {
-#            scale <<- scaleOriginal
-#            timesRan      <<- 0
-#            timesAccepted <<- 0
-#            timesAdapted  <<- 0
-#            scaleHistory          <<- scaleHistory          * 0
-#            acceptanceRateHistory <<- acceptanceRateHistory * 0
-#            my_calcAdaptationFactor$reset()
-#        }
-#    ), where = getLoadingNamespace()
-#)
 
 
 ########################################################################
@@ -230,14 +164,13 @@ sampler_RW_block <- nimbleFunction(
     methods = list(
         
         generateProposalVector = function() {
-            declare(origValueVector, double(1, d))
-            origValueVector <- values(model, targetNodes)
-            ######## propValueVector <- rmnorm(1, mean = origValueVector, chol = chol_propCov * scale)
-            ######## propValueVector <- rmnorm(1, mean = origValueVector, sigma = chol_propCov %*% t(chol_propCov) * scale^2, method = 'chol')
-            declare(normalVarVector, double(1, d))
-            for(i in 1:d)     {   normalVarVector[i] <- rnorm(1, 0, 1)   }
-            propValueMatrix <- asRow(origValueVector) + asRow(normalVarVector) %*% chol_propCov * scale
-            propValueVector <- propValueMatrix[1, ]
+            ##declare(origValueVector, double(1, d))
+            ##origValueVector <- values(model, targetNodes)
+            ##declare(normalVarVector, double(1, d))
+            ##for(i in 1:d)     {   normalVarVector[i] <- rnorm(1, 0, 1)   }
+            ##propValueMatrix <- asRow(origValueVector) + asRow(normalVarVector) %*% chol_propCov * scale
+            ##propValueVector <- propValueMatrix[1, ]
+            propValueVector <- rmnorm_chol(1, values(model,targetNodes), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
             returnType(double(1))
             return(propValueVector)
         },
@@ -320,7 +253,7 @@ sampler_RW_llFunction <- nimbleFunction(
     run = function() {
         modelLP0 <- llFunction$run()
         if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, targetNode)
-        propValue <- rnorm(1, mean = model[[targetNode]], sd = scale) ##targetRWSamplerFunction$generateProposalValue()
+        propValue <- rnorm(1, mean = model[[targetNode]], sd = scale)
         my_setAndCalculateOne$run(propValue)
         modelLP1 <- llFunction$run()
         if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, targetNode)
@@ -337,8 +270,6 @@ sampler_RW_llFunction <- nimbleFunction(
         }
     ),  where = getLoadingNamespace()
 )
-
-
 
 
 
@@ -433,8 +364,6 @@ sampler_slice <- nimbleFunction(
         }
     ),  where = getLoadingNamespace()
 )
-
-
 
 
 
