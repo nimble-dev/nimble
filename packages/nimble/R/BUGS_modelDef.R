@@ -1568,8 +1568,17 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(varInfo[[iV]]$nDim > 0) dim(vars_2_nodeID[[varInfo[[iV]]$varName]]) <- dim(vars_2_vertexID[[varInfo[[iV]]$varName]]) <- dim(vars_2_vertexOrigID[[varInfo[[iV]]$varName]])        
     }
 
+    ## 11b. re-index the graphIDs in the BUGSdecl objects and record graphID_2_declID
+    graphID_2_declID <- numeric(numVertices)
+    for(iDI in seq_along(declInfo)) {
+        BUGSdecl <- declInfo[[iDI]]
+        BUGSdecl$graphIDs <- oldGraphID_2_newGraphID[ BUGSdecl$origIDs ]
+        graphID_2_declID[ BUGSdecl$graphIDs ] <- iDI
+    }
+
     ## 12. Set up things needed for maps.
     maps <<- mapsClass$new()
+    maps$graphID_2_declID <<- graphID_2_declID
     maps$graphID_2_nodeName <<- allVertexNames[newGraphID_2_oldGraphID]
     maps$types <<- types[newGraphID_2_oldGraphID]
     maps$nodeNamesLHSall <<- nodeNamesLHSall
@@ -1585,8 +1594,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphID_2_nodeFunctionName[bool] <<- maps$graphID_2_nodeName[ newVertexID_2_nodeID ]
 
      if(debug) browser()
-    maps$vars2GraphID_values <<- vars_2_nodeID
-    maps$vars2GraphID_functions <<- vars_2_vertexID
+    maps$vars2GraphID_values <<- vars_2_vertexID
+    maps$vars2GraphID_functions <<- vars_2_nodeID
 
     if(debug) browser()
 

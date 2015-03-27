@@ -147,22 +147,22 @@ returnType: return type. Options are \'names\' (character vector) or \'ids\' (gr
 sort: should names be topologically sorted before being returned?
 '
 														
-                                  						if(length(nodeNames) == 0)	return(NULL)
-										                if(returnType == 'names'){
-   											              graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
-   											              if(sort)
-   											              	graphID <- sort(graphID)
-   											              nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
-                                      return(nodeNames)
+                                      if(length(nodeNames) == 0)	return(NULL)
+                                      if(returnType == 'names'){
+                                          graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
+                                          if(sort)
+                                              graphID <- sort(graphID)
+                                          nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+                                          return(nodeNames)
                                       }
                                       if(returnType == 'ids'){
-                                         if(sort)
-                                         	return(sort(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)))
-                                         return(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents))
+                                          if(sort)
+                                              return(sort(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)))
+                                          return(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents))
 									    }                  
                                       if(returnType == 'nodeVector')
-                                      	 return(nodeVector(origNodeNames = nodeNames))	
-                                      	 
+                                          return(nodeVector(origNodeNames = nodeNames))	
+                                      
                                       if(!(returnType %in% c('ids', 'nodeVector', 'names')))
                                       	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
@@ -384,6 +384,11 @@ inits: A named list.  The names of list elements must correspond to model variab
 '
                                       origInits <<- inits
                                       for(i in seq_along(inits))     { .self[[names(inits)[i]]] <- inits[[i]] }
+                                  },
+
+                                  checkConjugacyAll = function(nodes) {
+                                      ## new version to handle a batch of nodes together
+                                      
                                   },
                                   
                                   checkConjugacy = function(node) {

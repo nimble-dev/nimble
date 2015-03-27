@@ -80,10 +80,10 @@ MCMCspec <- setRefClass(
     methods = list(
         
         initialize = function(model, nodes, control = list(),
-                              monitors,                thin  = 1,
-                              monitors2 = character(), thin2 = 1,
-                              useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
-                              print = FALSE) {	
+            monitors,                thin  = 1,
+            monitors2 = character(), thin2 = 1,
+            useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+            print = FALSE) {	
 '	
 Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC().
 
@@ -145,7 +145,11 @@ print: Boolean argument, specifying whether to print the ordered list of default
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             isNodeEnd <- model$isNodeEnd(nodes)
             #   nodes %in% model$getMaps('nodeNamesEnd')
-        
+browser()
+            if(useConjugacy) {
+                conjugacyInfo <- model$checkConjugacyAll(nodes)
+            }
+browser()
             for(i in seq_along(nodes) ) {
             	node <- nodes[i]
                 discrete <- model$getNodeInfo()[[node]]$isDiscrete()
