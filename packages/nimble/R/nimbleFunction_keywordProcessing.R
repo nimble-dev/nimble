@@ -1,30 +1,84 @@
 ######	KEYWORD PROCESSING OBJECTS
 
-#Keyword Class and objects
 
 
+###		CLASSES
 
-
+# keywordInfoClass is a class which contains the processor for each keyword
 keywordInfoClass <- setRefClass('keywordInfoClass',
                                 fields = list(
                                     keyword = 'ANY',
                                     processor = 'ANY'))
-                                    
-## We may want this if we allow for reparameterizations in the DSL...
 
 
-#dnorm_keywordInfo <- keywordInfoClass(
-#	keyword = 'dnorm',
-#	processor = function(code, nfProc){
-#		if('tau' %in% names(code)){								#checks if tau is an argument of this call
-#			tauArg <- code[['tau']]								#grabs tau argument
-#			sdArg <- parse(text = paste0('1/', tauArg))[[1]]	#inverts the argument
-#			code[['tau']] <- NULL								#deletes the tau argument
-#			code[['sd']] <- sdArg								#inserts the sd argument
-#		}
-#		else if('var' %in%)
-#		return(code)
-#	})
+# setupCodeTemplateClass is a class that contains the template for generating 
+# new setupCode. Objects of this class are used by the function addNecessarySetupCode
+setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
+                                      fields = list(
+                                          makeName = 'ANY',
+                                          codeTemplate = 'ANY',
+                                          makeCodeSubList = 'ANY',
+                                          makeOtherNames = 'ANY'),
+                                          methods = list(
+                                          initialize = function(...){
+                                          	makeOtherNames <<- function(name, argList)	return(character(0))
+                                          	callSuper(...)
+                                          }
+                                          ) )
+
+
+### KEYWORD INFO OBJECTS
+
+#		Current objects:
+#		d_gamma_keywordInfo
+#		pq_gamma_keywordInfo
+#		rgamma_keywordInfo
+#		d_dist_keywordInfo
+#		qp_dist_keywordInfo
+#		nimOptim_keywordInfo
+#		values_keywordInfo
+#		calculate_keywordInfo
+#		simulate_keywordInfo
+#		getLogProb_keywordInfo
+#		nimCopy_keywordInfo
+#		doubleBracket_keywordInfo
+#		dollarSign_keywordInfo
+#		singleBracket_keywordInfo
+		
+		
+		
+d_gamma_keywordInfo <- keywordInfoClass(
+	keyword = 'dgamma',
+	processor = function(code, nfProc){
+		logArg <- code$log
+		if(logArg == TRUE)	code$log <- 1
+			else code$log <- 0
+		code <- handleScaleAndRateForGamma(code)
+	return(code)
+	}) 
+
+pq_gamma_keywordInfo <- keywordInfoClass(
+	keyword = 'pq_gamma',
+	processor = function(code, nfProc){
+		lower.tailArg <- code$lower.tail
+		if(lower.tailArg == TRUE) code$lower.tail <- 1
+			else code$lower.tail <- 0
+			
+		logArg <- code$log.p
+		if(logArg == TRUE)	code$log.p <- 1
+			else code$log.p <- 0
+		code <- handleScaleAndRateForGamma(code)
+	return(code)
+})
+
+rgamma_keywordInfo <- keywordInfoClass(
+	keyword = 'rgamma',
+	processor = function(code, nfProc){
+		code <- handleScaleAndRateForGamma(code)
+		return(code)
+	}
+)
+
 
 d_dist_keywordInfo <- keywordInfoClass(
 	keyword = 'd',
@@ -56,28 +110,32 @@ nimOptim_keywordInfo <- keywordInfoClass(
 	processor = function(code, nfProc){
 		
 		
-		rawFunName <- as.character(code$optFun)
-		optimFunSym <- nfProc$setupSymTab$symbols[[rawFunName]]
+		rawFunName <- as.character(code$optFun)		#grabs the run code name of the function to be optimized
+		optimFunSym <- nfProc$setupSymTab$symbols[[rawFunName]]		#gets the symbol associated with this function
 
-		optimFunName <- funName2OptimFunName(optimFunSym$nfProc$name)		
-		
-		argInfo <- getArgInfoFromNFSym(optimFunSym)
+		optimFunName <- funName2OptimFunName(optimFunSym$nfProc$name)		#makes the name of the C++ function
+		argInfo <- getArgInfoFromNFSym(optimFunSym)							#extracts the information about the function to be optimized from it's symbol
 				
-		voidPointerNFName <- makeVoidPointerName_fromObjName(rawFunName)
-		voidPointerForNFLine <- paste0(voidPointerNFName, ' <- voidPtr(', rawFunName, ', nimbleFunction)')
+		voidPointerNFName <- makeVoidPointerName_fromObjName(rawFunName)	#Makes the name for the void* that will ultimately be passed to nimble_optim
+		voidPointerForNFLine <- paste0(voidPointerNFName, ' <- voidPtr(', rawFunName, ', nimbleFunction)')		#line of run code for making the void pointer
 		
-		argPointInfo <- makeDSLCallforVoidPtr_fromArgInfAndCall(code, argInfo)
-		argPointerRunCode <- argPointInfo$newRunCode
-		argVPtrNames <- as.character(argPointInfo$pointerNames)
+		argPointInfo <- makeDSLCallforVoidPtr_fromArgInfAndCall(code, argInfo)			#Makes the lines of code that create the void*'s for the arguments to be passed to optimized function
+		argPointerRunCode <- argPointInfo$newRunCode									#run code for void pointers to arguments
+		argVPtrNames <- as.character(argPointInfo$pointerNames)							#names of pointers
 								
-		allNewBuildCode <- c(voidPointerForNFLine, argPointerRunCode)
-		code$optFun <- parse(text = optimFunName)[[1]]
+		allNewBuildCode <- c(voidPointerForNFLine, argPointerRunCode)					#combining all the code for wrapping the void pointers
+		code$optFun <- parse(text = optimFunName)[[1]]									#replacing the optFun argument with the name of the new wrapper
+		
+		
 		cNimCall_to_use <- parse(text = 'bareBonesOptim')[[1]]	#As we update the flexbility of optim, we are going to be
 																#changing the cNimCall_to_use
 																#this is currently in place to bypass issues such as 
 																#getting the optimAns and optimControl into the DSL
+																
+																#When we get those working, the C++ function we will use (i.e. no longer bareBonesOptim) 
+																#will need different arguments, and so the next few lines of code will probably need expanding
+
 		code[[1]] <-cNimCall_to_use	
-		
 		code[[4]] <- parse(text = voidPointerNFName)[[1]]
 		names(code)[4] <- 'voidNimFunPtr'
 		code[[5]] <- parse(text = length(argPointInfo$pointerNames))[[1]]
@@ -412,6 +470,10 @@ keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
+keywordList[['dgamma']] <-d_gamma_keywordInfo
+keywordList[['pgamma']] <- pq_gamma_keywordInfo
+keywordList[['qgamma']] <- pq_gamma_keywordInfo
+keywordList[['rgamma']] <- rgamma_keywordInfo
 # necessary keywords:
 #	calculate 	(done)
 #	simulate	(done)
@@ -438,10 +500,15 @@ matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctio
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
 matchFunctions[['double']] <- function(dim, default){}
 matchFunctions[['int']] <- function(dim, default){}
+matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
+matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
+matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
+matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 
+# Missing distributions: cat, dirch, logis, multi, mnorm, negbin, wish, gamma
+matchDistList <- list('beta', 'binom', 'chisq', 'lnorm', 'norm', 'pois', 't', 'unif', 'weibull')
 
-# Missing distributions: cat, dirch, logis, multi, mnorm, negbin, wish
-matchDistList <- list('beta', 'binom', 'chisq', 'gamma', 'lnorm', 'norm', 'pois', 't', 'unif', 'weibull')
 
 addDistList2matchFunctions <- function(distList, matchFunEnv){
 	for(thisDist in distList){
@@ -470,7 +537,7 @@ addDistKeywordProcessors <- function(distList, keywordEnv){
 		}
 		
 }
-
+          
 
 addDistList2matchFunctions(matchDistList, matchFunctions)
 addDistKeywordProcessors(matchDistList, keywordList)
@@ -497,19 +564,23 @@ processKeyword <- function(code, nfProc){
 
 #####	SETUPCODE TEMPLATES
 
-setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
-                                      fields = list(
-                                          makeName = 'ANY',
-                                          codeTemplate = 'ANY',
-                                          makeCodeSubList = 'ANY',
-                                          makeOtherNames = 'ANY'),
-                                          methods = list(
-                                          initialize = function(...){
-                                          	makeOtherNames <<- function(name, argList)	return(character(0))
-                                          	callSuper(...)
-                                          }
-                                          ) )
-                                          
+#		Current Available Templates:
+#		optimReadyFun_setupCodeTemplate
+#		modelVariableAccessorVector_setupCodeTemplate
+#		modelValuesAccessorVector_setupCodeTemplate
+#		accessorVectorLength_setupCodeTemplate
+#		nodeFunctionVector_SetupTemplate
+#		allLHSNodes_SetupTemplate
+#		allModelNodes_SetupTemplate
+#		allModelValuesVars_SetupTemplate
+#		singleVarAccess_SetupTemplate
+#		singleModelIndexAccess_SetupTemplate
+#		map_SetupTemplate
+#       singleModelValuesAccessor_SetupTemplate
+        
+        
+        
+                                         
 
 optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 	makeName = function(argList){Rname2CppName(argList$name)},
@@ -928,4 +999,15 @@ makeMapSetupCodeNames <- function(baseName) {
 
 makeSingleIndexAccessCodeNames <- function(baseName) {
     list(MflatIndex = paste0(baseName, '_flatIndex'))
+}
+
+handleScaleAndRateForGamma <- function(code){
+		scaleArg <- code$scale
+		rateArg <- code$rate
+		if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma')
+		if(is.null(scaleArg))
+			scaleArg <- parse(text = paste0('1/', code$rate))[[1]]
+		code$scale <- scaleArg
+		code$rate <- NULL
+		return(code)
 }

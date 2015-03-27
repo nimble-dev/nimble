@@ -437,9 +437,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  instantiateNimbleFunction = function(nf, dll) {
                                      if(!is.nf(nf)) stop("Can't instantiateNimbleFunction, nf is not a nimbleFunction")
                                      generatorName <- nfGetDefVar(nf, 'name')
-                                     
-                                     cat('REMOVEME, but anyways generatorName = ', generatorName, '\n')
-                                     
+                                                                          
                                      ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
                                      ## This was wrong (goes in the refClassObject now) and it is set in Rgenerator
 ##                                     environment(nf)$.CobjectInterface <- ans

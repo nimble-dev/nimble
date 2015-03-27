@@ -68,22 +68,15 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ##     - by iterating through the nodeGenerators in the Rmodel
                                        ##browser()
                                        
-        #                               nodeFxnNames <- names(Rmodel$nodeFunctions)
-        #                               nodesEnv <- new.env()
-        #                              for(i in seq_along(nodeFxnNames)){
-        #                              	thisName <- nodeFxnNames[i]
-        #                              	nodesEnv[[thisName]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
-        #                              }
+
                                        
                                        nodesEnv <- new.env()
                                        for(i in names(Rmodel$nodeFunctions)) {
                                            nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll)
                                        }
-										nodes <<- nodesEnv
-                                       
-#                                       for(i in names(Rmodel$nodeFunctions)) {
-#                                           nodes[[i]] <<- nimbleProject$instantiateNimbleFunction(Rmodel$nodeFunctions[[i]], dll = dll)
-#                                       }
+										nodes <<- nodesEnv	
+
+
                                        .nodeFxnPointers_byGID <<- new('numberedObjects') 
                                        maxID = max(modelDef$maps$graphIDs)
                                        .nodeFxnPointers_byGID$resize(maxID)

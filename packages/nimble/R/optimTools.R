@@ -1,5 +1,57 @@
-nimOptim <- function(initPar, optFun, ...){} 
-matchFunctions[['nimOptim']] <- nimOptim
+##		For the code that generates the run function for nimOptim, see nimOptim_keywordInfo$processor
+##		When we update the interface to actually work (i.e. pass the results back to an object that can be manipulated in the DSL)
+##		we will need to change $processor so that it changes the run code 
+
+##		This is the class that represents the generated C++ wrapper to a nimbleFunction that fits the optim
+##		framework, i.e. three arguments are int n, double* par and void* ex
+OptimReadyFunction <- setRefClass("OptimReadyFunction", 
+							fields = list(name = 'ANY',
+										  nimbleFunction = 'ANY',
+										  localNimbleFunctionName = 'ANY',
+										  generatorName = 'ANY'),
+							methods = list(
+							getName = function() return(name),
+							getNimbleFunction = function() return(nimbleFunction),
+							getOriginalName = function() return(localNimbleFunctionName),
+							getGeneratorName = function(){
+								if(inherits(generatorName, 'uninitializedField'))	generatorName <<- paste0('OPTIMREADY_',environment(nf_getGeneratorFunction(nimbleFunction) )$name)
+								return(generatorName)
+							}
+							)
+)
+
+
+##		This is where the actual C++ wrapper is actually built
+cppOptimObject <- function(name, nfSym){
+		
+	castingExLine <- cppLiteral('vector<void*>* vP = static_cast<vector<void*>*>(ex);')
+	thisNimbleCppTypeNamePtr <- paste0( nfSym$nfProc$name, '*')
+	thisFunName <- nfSym$name
+	castingNFChar <- paste(thisNimbleCppTypeNamePtr, thisFunName, ' = static_cast<', thisNimbleCppTypeNamePtr, '>( (*vP)[0]);')
+	castingNFLine <- cppLiteral(castingNFChar)	
+	castingNewParLine <- cppLiteral('NimArr<1, double>* newpars = new NimArr<1, double>(n);')
+	copyingNewParLine <- cppLiteral(makeNewParsCharCopyLine())
+
+	argInfo <- getAdditonalArgsListForOptim(nfSym)
+
+	castingArgsChunk <- makeStaticCastingChunk(argInfo)
+	callLine <- makeOptimFunctionCallLine(thisFunName, argInfo)	
+	fnScaleLine <-cppLiteral(makefnScaleLine()) 
+	returnLine <- cppLiteral('return(ans);')
+	deleteParsLine <- cppLiteral('delete newpars;')
+	newCodeLinesList <- c(list(castingExLine, castingNFLine, castingNewParLine, copyingNewParLine), castingArgsChunk, list(callLine, fnScaleLine, deleteParsLine,  returnLine))
+	codeBlock <- putCodeLinesInBrackets(code = newCodeLinesList)
+	ans <- cppFunctionDef(name = name,
+											args = OptimFun_argDefs,
+											code = cppCodeBlock(code = codeBlock, skipBrackets = TRUE),
+											returnType = cppDouble(),
+											externC = FALSE
+											)
+	return(ans)
+}
+
+
+
 
 OptimFun_argDefs <- list(cppInt('n'),
 				cppDouble('par', ptr = 1),
@@ -32,6 +84,8 @@ argInfo2PointerStaticCast <- function(argInf){
 getArgInfoFromNFSym <- function(nfSym){
 	nfSym$nfProc$setupSymTab$getSymbolObject('operator()')$nfMethodRCobj$argInfo
 }
+
+nimOptim <- matchFunctions[['nimOptim']]
 
 getArgsFromOptimCallForTargetFun <- function(call){
 	optSpecificNames <- names(formals(nimOptim))
@@ -146,50 +200,9 @@ makeOptimFunctionCallLine <- function(funName, argInfo){
 	return(cppLiteral(callChar))	
 }
 
-cppOptimObject <- function(name, nfSym){
-		
-	castingExLine <- cppLiteral('vector<void*>* vP = static_cast<vector<void*>*>(ex);')
-	thisNimbleCppTypeNamePtr <- paste0( nfSym$nfProc$name, '*')
-	thisFunName <- nfSym$name
-	castingNFChar <- paste(thisNimbleCppTypeNamePtr, thisFunName, ' = static_cast<', thisNimbleCppTypeNamePtr, '>( (*vP)[0]);')
-	castingNFLine <- cppLiteral(castingNFChar)	
-	castingNewParLine <- cppLiteral('NimArr<1, double>* newpars = new NimArr<1, double>(n);')
-	copyingNewParLine <- cppLiteral(makeNewParsCharCopyLine())
-
-	argInfo <- getAdditonalArgsListForOptim(nfSym)
-
-	castingArgsChunk <- makeStaticCastingChunk(argInfo)
-	callLine <- makeOptimFunctionCallLine(thisFunName, argInfo)	
-	fnScaleLine <-cppLiteral(makefnScaleLine()) 
-	returnLine <- cppLiteral('return(ans);')
-	deleteParsLine <- cppLiteral('delete newpars;')
-	newCodeLinesList <- c(list(castingExLine, castingNFLine, castingNewParLine, copyingNewParLine), castingArgsChunk, list(callLine, fnScaleLine, deleteParsLine,  returnLine))
-	codeBlock <- putCodeLinesInBrackets(code = newCodeLinesList)
-	ans <- cppFunctionDef(name = name,
-											args = OptimFun_argDefs,
-											code = cppCodeBlock(code = codeBlock, skipBrackets = TRUE),
-											returnType = cppDouble(),
-											externC = FALSE
-											)
-	return(ans)
-}
 
 
-OptimReadyFunction <- setRefClass("OptimReadyFunction", 
-							fields = list(name = 'ANY',
-										  nimbleFunction = 'ANY',
-										  localNimbleFunctionName = 'ANY',
-										  generatorName = 'ANY'),
-							methods = list(
-							getName = function() return(name),
-							getNimbleFunction = function() return(nimbleFunction),
-							getOriginalName = function() return(localNimbleFunctionName),
-							getGeneratorName = function(){
-								if(inherits(generatorName, 'uninitializedField'))	generatorName <<- paste0('OPTIMREADY_',environment(nf_getGeneratorFunction(nimbleFunction) )$name)
-								return(generatorName)
-							}
-							)
-)
+
 
 #OptimReadyFunction <- function(name, nimbleFunction) new('OptimReadyFunction', name = name, nimbleFunction = nimbleFunction)
 

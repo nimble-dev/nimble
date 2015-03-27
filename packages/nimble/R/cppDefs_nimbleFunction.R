@@ -66,7 +66,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       if(inherits(neededType, 'nfMethodRC')) {
                                                           thisCppDef <- nimbleProject$getRCfunCppDef(neededType, NULLok = TRUE)
                                                           if(is.null(thisCppDef)) {
-                                                              thisCppDef <- nimbleProject$needRCfunCppClass(neededType, genNeededTypes = TRUE, fromModel = fromMoel)
+                                                              thisCppDef <- nimbleProject$needRCfunCppClass(neededType, genNeededTypes = TRUE, fromModel = fromModel)
                                                               neededTypeDefs[[neededType$uniqueName]] <<- thisCppDef
                                                           } else {
                                                               Hincludes <<- c(Hincludes, thisCppDef)
