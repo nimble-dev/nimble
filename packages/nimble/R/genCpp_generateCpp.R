@@ -48,7 +48,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          numListAccess = 'cppOutputNumList',
                          blank = 'cppOutputBlank',
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
-                         eigBlank = 'cppOutputEigBlank'
+                         eigBlank = 'cppOutputEigBlank',
+                         voidPtr = 'cppOutputVoidPtr'
                          )
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
@@ -109,6 +110,10 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
     } else {
         return(code$name)
     }
+}
+
+cppOutputVoidPtr <- function(code, symTab) {
+    paste('static_cast<void *>(&',code$args[[1]]$name,')')
 }
 
 cppOutputBlank <- function(code, symTab) NULL

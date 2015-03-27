@@ -26,6 +26,7 @@ argTypeList2symbolTable <- function(ATL) {
 ## The second argument is a vector of the sizes, defaulting to rep(NA, nDim)
 ## If only some sizes are known, something like double(2, c(5, NA)) should be valid, but we'll have to check later handling to be sure.
 argType2symbol <- function(AT, name = character()) {
+	
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
     nDim <- if(length(AT)==1) 0 else AT[[2]]
@@ -35,6 +36,7 @@ argType2symbol <- function(AT, name = character()) {
         else
             eval(AT[[3]])
     }
+        
     symbolBasic(name = name, type = type, nDim = nDim, size = size)
 }
 
@@ -232,18 +234,30 @@ symbolNimbleFunction <-
                     }
                     ))
 
-symbolOptimObject <- 
-	setRefClass(Class = 'symbolOptimObject',
+symbolOptimReadyFunction <- 
+	setRefClass(Class = 'symbolOptimReadyFunction',
 				contains = 'symbolBase',
-				fields = list(nfSymbol = 'ANY'),
+				fields = list(nfName = 'ANY', nfProc = 'ANY', genName = 'ANY'),
 				methods = list(
 					initialize = function(...){callSuper(...)},
 					show = function() writeLines(paste('symbolOptimObject', name)),
 					genCppVar = function(...){
-						return(cppOptimObject(name = name, nfSymbol = nfSymbol))
+						cat('note: in genCppVar for symbolOptimReadyFunction, need to figure out how to get unique names\n')
+						return(cppVarFull(name = name, baseType = genName, ptr = 0))
 					}
 					)
 				)
+
+
+symbolVoidPtr <- setRefClass(Class = 'symbolVoidPtr',
+                             contains = 'symbolBase',
+                             methods = list(
+                                 initialize = function(...) callSuper(...),
+                                 show = function() writeLines(paste('symbolVoidPtr', name)),
+                                 genCppVar = function(...) {
+                                     return(cppVarFull(name = name, baseType = 'void', ptr = 1))
+                                 }))
+
 
 symbolModelVariableAccessorVector <- 
     setRefClass(Class = 'symbolModelVariableAccessorVector',
@@ -354,6 +368,7 @@ symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               )
                               )
 
+                                     
 
 ## nDim is set to length(size) unless provided, which is how scalar (nDim = 0) must be set
 symbolDouble <- function(name, size = numeric(), nDim = length(size)) {

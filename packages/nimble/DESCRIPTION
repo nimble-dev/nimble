@@ -84,6 +84,7 @@ Collate: config.R
  MCMC_conjugacy.R
  MCMC_suite.R
  MCEM_build.R
+ optimTools.R
  NF_utils.R
  makevars.R
  registration.R

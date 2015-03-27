@@ -8,6 +8,11 @@
 #include <string>
 #include <vector>
 #include <Rinternals.h>
+
+#include <R_ext/Applic.h>	/* this is required for optim */
+#include <stdarg.h> 		/* this is required for variable number of arguments */
+
+
 using namespace std;
 #define Inf R_PosInf
 #define NA 0
@@ -327,4 +332,64 @@ bool compareOrderedPair(orderedPair a, orderedPair b);			//function called for s
 
 void rawSample(double* p, int c_samps, int N, int* ans, bool unsort);
 void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);		
+
+
+/*	optim tools	*/
+
+
+//	 NEW CLASSES (may be classes for which nimble functions can inherit from to allow for easy 
+
+
+//This is a class that will be used to store outcome of a call to optim
+//By giving the optim functions pointers to these elements, 
+//there is actually no need to "unpack" the results
+//The following two classes COULD be a nimbleFunction
+class OptimAns{
+	public: 
+	NimArr<1, double> par;
+	double Fmin;
+	int fail, fncount;
+	OptimAns(int n){
+		par = NimArr<1, double> (n);
+	};
+};		
+
+
+//This is a class that will be used to store inputs to various optims
+//Will further specialize classes for each version of optim!
+
+
+class OptimControl{
+	public:
+	int optimType, maxit, trace;
+	//Choices of optimType: 1 = Nelder Mead, 2 = BFG, 3 = BFG with Box Constraints, 4 = Conjugate Gradient, 5 = Simulated Annealing
+};		
+					
+					
+//	This is a specialized control specifically for Nelder Mead optimizer						
+class NM_OptimControl : public OptimControl{
+	public:
+	double alpha, beta, gamma, abstol, intol;
+	NM_OptimControl(double ialpha, double ibeta, double igamma, double iabstol, double iintol, int imaxit, int itrace){
+		alpha = ialpha; beta = ibeta; gamma = igamma; abstol = iabstol; intol = iintol;
+		maxit = imaxit; trace = itrace;
+		optimType = 1;
+	};
+};
+
+
+void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int nargs,  ...);
+
+void nimble_optim(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, void* otherArgs,
+				 	optimfn objFxn);
+
+void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, optimfn objFxn,
+				 	int numOtherArgs, ...);
+
+
+
 #endif
+
+

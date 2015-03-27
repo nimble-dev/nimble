@@ -312,6 +312,7 @@ nfProcessing$methods(doSetupTypeInference_processNF = function(symTab, setupOutp
     }
     for(name in setupOutputNames) {
         symbolRCobject <- makeTypeObject(name, instances, firstOnly)
+        if(is.null(symbolRCobject)) next
         if(is.logical(symbolRCobject)) {
             warning(paste0('There is an error involving the type of ', name,'.  Going into browser(). Press Q to exit.'), call. = FALSE)
             browser()
@@ -359,6 +360,20 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         }
         return(newSym)
     }
+    if(inherits(instances[[1]][[name]], 'OptimReadyFunction')){
+    	    	
+    	thisObj <- instances[[1]][[name]]
+    	nfName <- thisObj$getOriginalName()
+   		funList <- lapply(instances, `[[`, nfName)
+        nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
+    	newSym <- symbolOptimReadyFunction(name = name, type = 'OptimReadyFunction', nfName = nfName, nfProc = nfp, genName = thisObj$getGeneratorName())
+    	
+    	baseClassName <- class(nf_getRefClassObject(funList[[1]]))
+    	optReadyClassName <- paste0('OPTIMREADY_', baseClassName)
+    	    	
+    	if(!(optReadyClassName %in% names(neededTypes))) neededTypes[[optReadyClassName]] <<- newSym
+    	return(NULL)
+    }
     if(is.character(instances[[1]][[name]])) {
         return(symbolBase(name = name, type = 'Ronly'))
     }
@@ -370,6 +385,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         neededObjectNames <<- c(neededObjectNames, name)
         newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunction', nfProc = nfp)
         if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+
         return(newSym)
     }
     if(inherits(instances[[1]][[name]], 'modelValuesBaseClass')) { ## In some cases these could be different derived classes.  If locally defined they must be the same
@@ -627,4 +643,18 @@ singleModelValuesAccess <- function(modelValues, var) {
 
 
 
-
+#getnfProcFromProject_fromnfClassName <- function(nfClassName, nimbleProject){
+#	compInfoNames <- names(nimbleProject$nfCompInfos)
+#	i = 0
+#	foundClass = FALSE
+#	while(i < length(compInfoNames) & !foundClass){
+#		i = i+1
+#		foundClass <- grepl(pattern = compInfoNames[i], x = nfClassName)
+#	}
+#	if(!foundClass){
+#		errorMessage <-paste0("class not found in available names. nfClassName = ", nfClassName, " available names = ", compInfoNames)
+#		stop(errorMessage)
+#	}
+#	nfProc <- nimbleProject$nfCompInfos[[compInfoNames[i] ]]$nfProc
+#	return(nfProc)
+#}
