@@ -409,7 +409,7 @@ Details: See the initialize() function
                     },
 
         show = function() {
-            cat('MCMC specification object')
+            cat('MCMC specification object\n')
         }
 
         
