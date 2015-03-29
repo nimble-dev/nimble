@@ -506,8 +506,8 @@ matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 
-# Missing distributions: cat, dirch, logis, multi, mnorm, negbin, wish, gamma
-matchDistList <- list('beta', 'binom', 'chisq', 'lnorm', 'norm', 'pois', 't', 'unif', 'weibull')
+# Missing distributions: cat, dirch, logis, multi, mnorm, negbin, wish, gamma, beta
+matchDistList <- list('binom', 'chisq', 'lnorm', 'norm', 'pois', 't', 'unif', 'weibull')
 
 
 addDistList2matchFunctions <- function(distList, matchFunEnv){
