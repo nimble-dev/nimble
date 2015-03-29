@@ -1657,12 +1657,16 @@ void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int 
 		(*otherArgs)[i] = va_arg(vl, void*);
 	va_end(vl);
 	
+    void* vp_otherArgs = static_cast<void*>(otherArgs);
+    
 	nimble_optim(nfPtr, static_cast<OptimControl*>(nmControl), optAns,
-					 initPar, static_cast<void*>(otherArgs), objFxn);
+					 initPar, vp_otherArgs, objFxn);
 	
 	Rprintf("Called bareBonesOptim, final value = %f\n", optAns->Fmin);
 	
-	delete nmControl, optAns, otherArgs;
+    delete nmControl;
+    delete optAns;
+    delete otherArgs;
 	
 }	
 	
