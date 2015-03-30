@@ -83,6 +83,7 @@ Collate: config.R
  MCMC_samplers.R
  MCMC_conjugacy.R
  MCMC_suite.R
+ autoBlock.R
  MCEM_build.R
  optimTools.R
  NF_utils.R
