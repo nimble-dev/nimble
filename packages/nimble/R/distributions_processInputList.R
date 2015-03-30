@@ -51,6 +51,7 @@ distClass <- setRefClass(
         simulateName = 'ANY',		#'character',   ## the (R) name of the r-dist function, e.g. 'rnorm'
         altParams = 'ANY',		#'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
         discrete = 'ANY',		#'logical',   ## logical, if the distribution is discrete
+        pqAvail = 'ANY',                #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available 
         types = 'ANY'		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
         ### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
     ),
@@ -73,6 +74,7 @@ distClass <- setRefClass(
             simulateName <<- sub('^d', 'r', densityName)
             init_altParams(distInputList)
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
+            pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
             init_types(distInputList)
         },
         

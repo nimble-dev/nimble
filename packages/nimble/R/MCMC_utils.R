@@ -245,7 +245,8 @@ codeBlockClass <- setRefClass(
 
 
 mcmc_listContentsToStr <- function(ls) {
-    ls <- lapply(ls, function(el) if(is.function(el)) 'function' else el)
+    if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
+    ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)
     ls2 <- list()
     for(i in seq_along(ls)) {
         if(length(ls[[i]]) > 0) {

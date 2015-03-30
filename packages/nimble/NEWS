@@ -1,20 +1,43 @@
-                        CHANGES IN VERSION 0.3-1 (Feb. 4, 2015)
+                        CHANGES IN VERSION 0.4 (TBD)
 
 USER LEVEL CHANGES
 
--- added Dirichelt-multinomial conjugacy handling
+-- added support for truncation (T(,) and I(,) syntax in BUGS) plus dinterval distributino for censoring, both following the JAGS functionality
 
--- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMCs without the need to recompile code
-
--- Now allow for up to 4D arrays
+-- added ability to impose constraints via the dconstraint syntax; these constraints act like data and therefore only take effect a posteriori and are not imposed when simulating from the model
 
 DEVELOPER LEVEL CHANGES
 
--- fixed naming issue in checking posterior summaries against known values in test_mcmc (internal change we might remove from the published NEWS in the package...)
+-- full suite of testing for truncation/censoring/constraints added (tests/test-trunc.R)
+
+
+                        CHANGES IN VERSION 0.3-1 (Mar. 7, 2015)
+
+USER LEVEL CHANGES
+
+-- fully allow data to be provided as part of constants argument in nimbleModel for compatibility with JAGS and BUGS, which mix data and constants
+
+-- added Dirichlet-multinomial conjugacy handling
+
+-- Added 'oldSpec' argument to configureMCMC. Allows rebuilding of MCMCs without the need to recompile code if there are no new types of samplers.
+
+-- Now allow for up to 4D arrays
+
+-- Added handling of raising a vector of values to a scalar power in nimble functions (i.e., the NIMBLE DSL)
+
+DEVELOPER LEVEL CHANGES
+
+-- fixed naming issue in checking posterior summaries against known values in test_mcmc 
 
 BUG FIXES 
 
--- fixed bug regarding logProbs with gaps (i.e. if logProb_x[1] and logProb_x[3] are defined but not logProb_x[2])
+-- fixed bug that allowed inits to overwrite data values in variables that are mixtures of data and parameters. Also now detect elements of initial values that are not variables in the model.
+
+-- fixed bug in naming of nodes in as.matrix() when there is a variable with a single indexed node (e.g. x[1], but no other nodes in the variable 'x')
+
+-- fixed bug regarding logProbs with gaps (e.g., if logProb_x[1] and logProb_x[3] are defined but not logProb_x[2])
+
+-- fixed bug in handling of unary minus for non-scalars
 
 		  	CHANGES IN VERSION 0.3 (Dec. 31, 2014)
 

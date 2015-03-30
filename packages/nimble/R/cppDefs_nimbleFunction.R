@@ -66,7 +66,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       if(inherits(neededType, 'nfMethodRC')) {
                                                           thisCppDef <- nimbleProject$getRCfunCppDef(neededType, NULLok = TRUE)
                                                           if(is.null(thisCppDef)) {
-                                                              thisCppDef <- nimbleProject$needRCfunCppClass(neededType, genNeededTypes = TRUE, fromModel = fromMoel)
+                                                              thisCppDef <- nimbleProject$needRCfunCppClass(neededType, genNeededTypes = TRUE, fromModel = fromModel)
                                                               neededTypeDefs[[neededType$uniqueName]] <<- thisCppDef
                                                           } else {
                                                               Hincludes <<- c(Hincludes, thisCppDef)
@@ -115,6 +115,20 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       ##     }
                                                           next
                                                       }
+                                                      
+                                                      if(inherits(neededType, 'symbolOptimReadyFunction')){
+                                                      	 typeName <- neededType$genName
+                                                         thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = typeName)                                                     	 
+                                                     	 if(is.null(thisCppDef)){
+                                                     	 	thisCppDef <- cppOptimObject(name = typeName, nfSym = neededType)
+                                                			neededTypeDefs[[ typeName ]] <<- thisCppDef
+                                                			} else {
+                                                				Hincludes <<- c(Hincludes, thisCppDef)
+                                                				CPPincludes <<- c(CPPincludes, thisCppDef)
+                                                			}
+                                                			
+                                                      }
+                                                      
                                                       if(inherits(neededType, 'symbolNimbleFunctionList')) {
                                                
                                                           baseClassName <- environment(neededType$baseClass)$name

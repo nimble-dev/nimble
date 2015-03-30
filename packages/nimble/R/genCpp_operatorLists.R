@@ -36,8 +36,7 @@ midOperators <- c(midOperators, list('$' = '$', '%*%' = ' %*% ', ':' = ':', '%o%
 
 brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
 
-
-callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rdirch', 'calculate', 'simulate', 'getLogProb', 'nimbleEquals')
+callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'simulate', 'getLogProb', 'nimbleEquals')
 
 ## This takes a character vector as the first argument and length-1 character vector as the second argument.
 ## It returns a list with the first vector as names and the second argument as the value of each element.
@@ -60,6 +59,7 @@ eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigAcos = 'acos',
                        eigAsin = 'asin',
                        eigExp = 'exp',
+                       eigPow = 'pow',
                        eigLog = 'log',
                        eigCube = 'cube',
                        eiginprod = 'eigenInprod', ## need lowercase i for nonNativeEigCalls files
@@ -142,5 +142,13 @@ operatorRank <- c(
                   )
 
 distribution_dFuns <- as.character(unlist(lapply(distributions$translations, `[[`, 1)))
-distribution_rFuns <- as.character(unlist(lapply(distributions$translations, `[[`, 2))) 
-distributionFuns <- c(distribution_dFuns, distribution_rFuns)
+distribution_rFuns <- as.character(unlist(lapply(distributions$translations, `[[`, 2)))
+
+pqAvail <- sapply(nimble:::distributions$distObjects, '[[', 'pqAvail')
+pqDists <- names(pqAvail)[pqAvail]
+
+distribution_pFuns <- gsub("^d", "p", pqDists)
+distribution_qFuns <- gsub("^d", "q", pqDists)
+
+distributionFuns <- c(distribution_dFuns, distribution_rFuns, distribution_pFuns, distribution_qFuns)
+
