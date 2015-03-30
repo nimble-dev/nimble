@@ -1597,6 +1597,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     if(debug) browser()
     edgesFrom <- numeric(0)
     edgesTo <- numeric(0)
+    edgesParentExprID <- numeric(0)
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
         rhsVars <- BUGSdecl$rhsVars
@@ -1610,6 +1611,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             
             edgesFrom <- c(edgesFrom, newEdges[[1]])
             edgesTo <- c(edgesTo, newEdges[[2]])
+            edgesParentExprID <- c(edgesParentExprID, rep(iV, length(newEdges[[1]])))
         }
     }
 
@@ -1620,6 +1622,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         newEdges <- collectInferredVertexEdges(vars_2_nodeOrigID[[varName]], vars_2_vertexOrigID[[varName]])
         edgesFrom <- c(edgesFrom, newEdges[[1]])
         edgesTo <- c(edgesTo, newEdges[[2]])
+        edgesParentExprID <- c(edgesParentExprID, rep(NA, length(newEdges[[1]])))
         vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
     }
     
@@ -1672,7 +1675,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$types <<- types[newGraphID_2_oldGraphID]
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- nodeNamesRHSonly
-    maps$nodeNames <<- allVertexNames
+    maps$nodeNames <<- maps$graphID_2_nodeName
     if(debug) browser()
     newVertexID_2_nodeID <- vertexID_2_nodeID [ newGraphID_2_oldGraphID ]
     bool <- newVertexID_2_nodeID != 0
@@ -1682,7 +1685,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphID_2_nodeFunctionName <<- maps$graphID_2_nodeName
     maps$graphID_2_nodeFunctionName[bool] <<- maps$graphID_2_nodeName[ newVertexID_2_nodeID ]
 
-     if(debug) browser()
+    if(debug) browser()
     maps$vars2GraphID_values <<- vars_2_vertexID
     maps$vars2GraphID_functions <<- vars_2_nodeID
 
@@ -1694,6 +1697,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
     maps$edgesFrom <<- oldGraphID_2_newGraphID[edgesFrom]
     maps$edgesTo <<- oldGraphID_2_newGraphID[edgesTo]
+    maps$edgesParentExprID <<- edgesParentExprID
+    fedgesFrom <- factor(maps$edgesFrom)
+    maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
+    maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
     NULL
 })

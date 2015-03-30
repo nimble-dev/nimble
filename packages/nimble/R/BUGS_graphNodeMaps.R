@@ -39,7 +39,10 @@ mapsClass <- setRefClass(
         end_IDs = 'ANY',
 
         edgesFrom = 'ANY',
-        edgesTo = 'ANY'
+        edgesTo = 'ANY',
+        edgesParentExprID = 'ANY',
+        edgesFrom2To = 'ANY',
+        edgesFrom2ParentExprID = 'ANY'
         
         
     ),
