@@ -8,7 +8,8 @@ nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%'
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
                             'ceiling', 'floor', 'round', 'trunc',
                             'mean','sum','max','min','prod',
-                            'asRow', 'asCol')
+                            'asRow', 'asCol',
+                            '>', '<', '>=', '<=', '==', '!=', '&', '|')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass('BUGSdeclClass',
@@ -27,6 +28,9 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  targetNodeExpr = 'ANY',
                                  targetVarName = 'ANY',
                                  targetNodeName = 'ANY',
+                                 
+                                 ## truncation information
+                                 truncation = 'ANY',
                                  
                                  ## set in setIndexVariableExprs(), and never changes.
                                  indexVariableExprs = 'ANY',
@@ -108,7 +112,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
 )
 
 
-BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum) {
+BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncation = NULL) {
     ## master entry function.
     ## uses 'contextID' to set the field: contextID.
     ## uses 'code' argument, to set the fields:
@@ -120,10 +124,11 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum) {
     contextID <<- contextID
     sourceLineNumber <<- sourceLineNum
     code <<- code
+    truncation <<- truncation
     
     if(code[[1]] == '~') {
         type <<- 'stoch'
-        if(!is.call(code[[3]]) || !any(code[[3]][[1]] == distributions$namesVector))
+        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == distributions$namesVector) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
             stop(paste0('Improper syntax for stochastic declaration: ', deparse(code, width.cutoff=500L)))
     } else if(code[[1]] == '<-') {
         type <<- 'determ'

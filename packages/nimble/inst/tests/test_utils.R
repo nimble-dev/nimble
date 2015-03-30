@@ -63,6 +63,7 @@ test_math <- function(input, verbose = TRUE, size = 3) {
   invisible(NULL)
 }
 
+
 ### Function for testing MCMC called from test_mcmc.R
 
 
@@ -80,12 +81,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
   if(!missing(example)) {
     # classic-bugs example specified by name
-    dir <- system.file("classic-bugs", package = "nimble")
-    vol <- NULL
-    if(file.exists(file.path(dir, "vol1", example))) vol <- "vol1"
-    if(file.exists(file.path(dir, "vol2", example))) vol <- "vol2"
-    if(is.null(vol)) stop("Can't find path to ", example, ".\n")
-    dir <- file.path(dir, vol, example)
+  	dir = getBUGSexampleDir(example)
     if(missing(model)) model <- example
     Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE)
   } else {

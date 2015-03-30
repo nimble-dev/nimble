@@ -2,7 +2,7 @@ Package: nimble
 Title: Flexible BUGS-compatible system for hierarchical statistical modeling
     and algorithm development
 Description: A package for flexibly applying algorithms to models specified in the BUGS language. Algorithms can be written in the NIMBLE language and made available to any model.
-Version: 0.3-1
+Version: 0.4
 Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
 Depends:  R (>= 3.0.1)
@@ -84,6 +84,7 @@ Collate: config.R
  MCMC_conjugacy.R
  MCMC_suite.R
  MCEM_build.R
+ optimTools.R
  NF_utils.R
  makevars.R
  registration.R
