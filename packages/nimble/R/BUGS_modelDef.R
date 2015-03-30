@@ -78,11 +78,14 @@ modelDefClass <- setRefClass('modelDefClass',
                                  assignDimensions               = function() {},
                                  initializeContexts             = function() {},
                                  processBUGScode                = function() {},
+                                 splitConstantsAndData          = function() {},
                                  addMissingIndexing             = function() {},
+                                 removeTruncationWrapping       = function() {},
                                  expandDistributions            = function() {},
                                  processLinks                   = function() {},
                                  reparameterizeDists            = function() {},
                                  addRemainingDotParams          = function() {},
+                                 insertDistributionBounds       = function() {},
                                  replaceAllConstants            = function() {},
                                  liftExpressionArgs             = function() {},
                                  addIndexVarsToDeclInfo         = function() {},
@@ -134,14 +137,21 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
     assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode()                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
+    ##<<<<<<< HEAD
 
     ## We will try to infer sizes later
-    addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
+    ##addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
 
+##=======
+    splitConstantsAndData()           ## deals with case when data is passed in as constants
+    addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
+    removeTruncationWrapping()        ## transforms T(ddist(),lower,upper) to put bounds into declInfo
+    ##>>>>>>> origin/devel
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName
     addRemainingDotParams()           ## overwrites declInfo, adds any additional .paramNames which aren't there  (uses distributions)
+    insertDistributionBounds()        # put lower and upper into code expression
     replaceAllConstants()             ## overwrites declInfo with constants replaced; only replaces scalar constants
     liftExpressionArgs()              ## overwrites declInfo (*and adds*), lifts expressions in distribution arguments to new nodes.  does NOT lift '.param' names
     addIndexVarsToDeclInfo()          ## sets field declInfo[[i]]$indexVariableExprs from contexts.  must be after overwrites of declInfo
@@ -284,6 +294,26 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+modelDefClass$methods(splitConstantsAndData = function() {
+    # removes items from constantsNamesList that appear as variables in declInfo
+    # also, move detected data to 'data'
+    # this deals with case when 'data' are passed in as 'constants'
+    if(length(constantsNamesList)) {
+        vars <- sapply(declInfo, function(x) x$targetVarName)
+        constantsNames <- as.character(constantsNamesList)
+        newDataVars <- constantsNames[constantsNames %in% vars]
+        if(length(newDataVars)) {
+            cat("Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.\n")
+            constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
+            constantsList[newDataVars] <<- NULL
+            for(varName in newDataVars) eval(substitute(rm(varName, envir = constantsEnv), list(varName = varName)))
+        }
+    }
+})
+ 
+
+
 modelDefClass$methods(addMissingIndexing = function() {
     ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     for(i in seq_along(declInfo)) {
@@ -346,6 +376,37 @@ example_getMissingDimensions <- function(code) {
     }
     return(cCall)
 }
+
+modelDefClass$methods(removeTruncationWrapping = function() {
+    ## pulls bounds out of T() syntax and puts in lower and upper fields
+    for(i in seq_along(declInfo)) {
+        
+        BUGSdecl <- declInfo[[i]]
+        if(BUGSdecl$type != 'stoch' || !(BUGSdecl$valueExpr[[1]] == "T" || BUGSdecl$valueExpr[[1]] == "I")) next
+
+        BUGSdecl$truncation <- list(
+            lower = if(BUGSdecl$valueExpr[[3]] == "") -Inf else BUGSdecl$valueExpr[[3]],
+            upper = if(BUGSdecl$valueExpr[[4]] == "") Inf else BUGSdecl$valueExpr[[4]]
+            # type = as.character(BUGSdecl$valueExpr[[1]]) # T or I? could be used later to check that I() only used for top-level nodes
+            )
+        if(BUGSdecl$valueExpr[[1]] == "I")
+            warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
+                
+        newCode <- BUGSdecl$code
+        if(BUGSdecl$truncation$lower == -Inf && BUGSdecl$truncation$upper == Inf) {  # user specified no bounds so not really truncated
+            BUGSdecl$truncation <- NULL
+        }
+        newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
+
+        BUGSdeclClassObject <- BUGSdeclClass$new()
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)          
+        declInfo[[i]] <<- BUGSdeclClassObject
+    }
+})
+
+
+
+
 modelDefClass$methods(expandDistributions = function() {
     ## overwrites declInfo for stochastic nodes: calls match.call() on RHS (uses distributions$matchCallEnv)
     for(i in seq_along(declInfo)) {
@@ -357,7 +418,7 @@ modelDefClass$methods(expandDistributions = function() {
         newCode[[3]] <- eval(BUGSdecl$valueExpr, distributions$matchCallEnv)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -380,11 +441,11 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = BUGSdecl$targetNodeExpr, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
             newDeclInfo[[nextNewDeclInfoIndex]]     <- BUGSdeclClassObject
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
             newDeclInfo[[nextNewDeclInfoIndex + 1]] <- BUGSdeclClassObject
             
         } else {    # deterministic node
@@ -439,7 +500,7 @@ modelDefClass$methods(reparameterizeDists = function() {
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
                 stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
-            for(nm in nonReqdArgs)
+            for(nm in c(nonReqdArgs, distRule$reqdArgs))
                 # loop thru possible non-canonical parameters in the expression for the canonical parameter
                 transformedParameterPT <- parseTreeSubstitute(pt = transformedParameterPT, pattern = as.name(nm), replacement = params[[nm]])
             newValueExpr[[iArg + 1]] <- transformedParameterPT
@@ -454,7 +515,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
         declInfo[[i]] <<- BUGSdeclClassObject
     }  # close loop over declInfo
 })
@@ -480,10 +541,38 @@ modelDefClass$methods(addRemainingDotParams = function() {
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
         declInfo[[iDecl]] <<- BUGSdeclClassObject
     }
 })
+
+modelDefClass$methods(insertDistributionBounds = function() {
+    ## pulls bounds out of T() syntax and puts in lower and upper fields
+    for(i in seq_along(declInfo)) {
+        
+        BUGSdecl <- declInfo[[i]]
+        if(BUGSdecl$type != 'stoch' || is.null(BUGSdecl$truncation)) next
+
+        newValueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
+
+        nParams <- length(newValueExpr) 
+        newValueExpr[[nParams + 1]] <- BUGSdecl$truncation$lower
+        newValueExpr[[nParams + 2]] <- BUGSdecl$truncation$upper
+        names(newValueExpr)[(nParams + 1):(nParams + 2)] <- c('lower', 'upper')
+
+        newCode <- BUGSdecl$code
+        newCode[[3]] <- newValueExpr
+
+        BUGSdeclClassObject <- BUGSdeclClass$new()
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+
+        declInfo[[i]] <<- BUGSdeclClassObject
+    }
+})
+
+
+
+
 modelDefClass$methods(replaceAllConstants = function() {
     ## overwrites declInfo with constants replaced; only replaces scalar constants
     ## does both LHS and RHS of each BUGSdecl code
@@ -1508,6 +1597,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     if(debug) browser()
     edgesFrom <- numeric(0)
     edgesTo <- numeric(0)
+    edgesParentExprID <- numeric(0)
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
         rhsVars <- BUGSdecl$rhsVars
@@ -1521,6 +1611,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             
             edgesFrom <- c(edgesFrom, newEdges[[1]])
             edgesTo <- c(edgesTo, newEdges[[2]])
+            edgesParentExprID <- c(edgesParentExprID, rep(iV, length(newEdges[[1]])))
         }
     }
 
@@ -1531,6 +1622,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         newEdges <- collectInferredVertexEdges(vars_2_nodeOrigID[[varName]], vars_2_vertexOrigID[[varName]])
         edgesFrom <- c(edgesFrom, newEdges[[1]])
         edgesTo <- c(edgesTo, newEdges[[2]])
+        edgesParentExprID <- c(edgesParentExprID, rep(NA, length(newEdges[[1]])))
         vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
     }
     
@@ -1583,7 +1675,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$types <<- types[newGraphID_2_oldGraphID]
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- nodeNamesRHSonly
-    maps$nodeNames <<- allVertexNames
+    maps$nodeNames <<- maps$graphID_2_nodeName
     if(debug) browser()
     newVertexID_2_nodeID <- vertexID_2_nodeID [ newGraphID_2_oldGraphID ]
     bool <- newVertexID_2_nodeID != 0
@@ -1593,7 +1685,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphID_2_nodeFunctionName <<- maps$graphID_2_nodeName
     maps$graphID_2_nodeFunctionName[bool] <<- maps$graphID_2_nodeName[ newVertexID_2_nodeID ]
 
-     if(debug) browser()
+    if(debug) browser()
     maps$vars2GraphID_values <<- vars_2_vertexID
     maps$vars2GraphID_functions <<- vars_2_nodeID
 
@@ -1605,6 +1697,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
     maps$edgesFrom <<- oldGraphID_2_newGraphID[edgesFrom]
     maps$edgesTo <<- oldGraphID_2_newGraphID[edgesTo]
+    maps$edgesParentExprID <<- edgesParentExprID
+    fedgesFrom <- factor(maps$edgesFrom)
+    maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
+    maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
     NULL
 })
@@ -1927,7 +2023,24 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$buildNodeFunctions(where = where)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     model$setData(data)
-    model$setInits(inits)
+    # prevent overwriting of data values by inits
+    for(varName in intersect(names(inits), model$getVarNames())) {
+        dataVars <- model$isData(varName)
+        if(sum(dataVars) && !identical(data[[varName]][dataVars],
+                                      inits[[varName]][dataVars])) {
+            inits[[varName]][dataVars] <- data[[varName]][dataVars]
+            nonNAinits <- !is.na(inits[[varName]][dataVars])
+            # only warn if user passed conflicting actual values
+            if(!identical(data[[varName]][dataVars][nonNAinits],
+                                      inits[[varName]][dataVars][nonNAinits]))
+                warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+        }
+    }
+    nonVarIndices <- !names(inits) %in% model$getVarNames()
+    if(sum(nonVarIndices))
+        warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
+                " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
+    model$setInits(inits[!nonVarIndices])
 
 	# Below is the code that checks if an index is missing    
 #    allVarNames <- model$getVarNames()

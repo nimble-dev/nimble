@@ -282,12 +282,12 @@ Details: Returns a logical vector with the same length as the input vector.  Thi
                                   },
 
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
-                                                             determOnly = FALSE, stochOnly = FALSE,
-                                                             includeData = TRUE, dataOnly = FALSE,
-                                                             includeRHSonly = FALSE, downstream = FALSE,
-                                                             returnType = 'names', returnScalarComponents = FALSE) {
+                                      determOnly = FALSE, stochOnly = FALSE,
+                                      includeData = TRUE, dataOnly = FALSE,
+                                      includeRHSonly = FALSE, downstream = FALSE,
+                                      returnType = 'names', returnScalarComponents = FALSE) {
 '
-Returns a character vector of the nodes dependent upon the input argument nodes, sorted topoloigically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
+Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
 
 Arguments:
 
@@ -315,54 +315,54 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-                        			  if(inherits(nodes, 'character'))
-                        			  	nodeIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
-                        			  else if(inherits(nodes, 'numeric'))
-                        				  nodeIDs <- nodes
-                        			  else if(inherits(nodes, 'nodeVector')){ 
-                        			  	if(!returnScalarComponenets)
-                        			  		nodeIDs <- nodes$getOrigIDs_functions()
-                        			  	else
-                        				  	nodeIDs <- nodes$getOrigIDs_values()
-                        			  }
-                        			
-                        			  if(inherits(omit, 'character'))
-                        				  omitIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
-									              else if(inherits(omit, 'numeric'))
-										              omitIDs <- omit
-                        			  else if(inherits(omit, 'nodeVector')){ 
-                        				  if(!returnScalarComponenets)
-                        				  	omitIDs <- omit$getOrigIDs_functions()
-                        				  else
-                        					  omitIDs <- omit$getOrigIDs_values()
-                        			  }
-                        
-                                depIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
-                      				  if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
-                       				  if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
-                       			  	if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
-                                if(!self)	depIDs <- setdiff(depIDs, nodeIDs)
-                     				    if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
-                       				  if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
-
-									              if(returnType == 'nodeVector'){
-	                       				  if(!returnScalarComponents)
-		                       				  depNodes <- nodeVector(origGraphIDs_functions = depIDs, model = .self)
-		                       			  else
-		                       			 	  depNodes <- nodeVector(origGraphIDs_values = depIDs, model = .self)
-                                  return(depNodes)
-									              }
-									              depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
-									              if(returnScalarComponents)
-										              depIDs = unique(depIDs)
-									              if(returnType == 'ids'){
-										              return(depIDs)
-									              }		                       			 
-	                       			  if(returnType == 'names')
-	                       			 	  return(modelDef$maps$nodeNames[depIDs])
-	                       			                                        
-	                       			  if(!(returnType %in% c('ids', 'nodeVector', 'names')))
-                                      	stop('instead getDependencies, imporper returnType chosen')
+                                      if(inherits(nodes, 'character'))
+                                          nodeIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
+                                      else if(inherits(nodes, 'numeric'))
+                                          nodeIDs <- nodes
+                                      else if(inherits(nodes, 'nodeVector')){ 
+                                          if(!returnScalarComponenets)
+                                              nodeIDs <- nodes$getOrigIDs_functions()
+                                          else
+                                              nodeIDs <- nodes$getOrigIDs_values()
+                                      }
+                                      
+                                      if(inherits(omit, 'character'))
+                                          omitIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
+                                      else if(inherits(omit, 'numeric'))
+                                          omitIDs <- omit
+                                      else if(inherits(omit, 'nodeVector')){ 
+                                          if(!returnScalarComponenets)
+                                              omitIDs <- omit$getOrigIDs_functions()
+                                          else
+                                              omitIDs <- omit$getOrigIDs_values()
+                                      }
+                                      
+                                      depIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+                                      if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
+                                      if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
+                                      if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
+                                      if(!self)	depIDs <- setdiff(depIDs, nodeIDs)
+                                      if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
+                                      if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
+                                      
+                                      if(returnType == 'nodeVector'){
+                                          if(!returnScalarComponents)
+                                              depNodes <- nodeVector(origGraphIDs_functions = depIDs, model = .self)
+                                          else
+                                              depNodes <- nodeVector(origGraphIDs_values = depIDs, model = .self)
+                                          return(depNodes)
+                                      }
+                                      depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
+                                      if(returnScalarComponents)
+                                          depIDs = unique(depIDs)
+                                      if(returnType == 'ids'){
+                                          return(depIDs)
+                                      }		                       			 
+                                      if(returnType == 'names')
+                                          return(modelDef$maps$nodeNames[depIDs])
+                                      
+                                      if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+                                          stop('instead getDependencies, imporper returnType chosen')
                                   },
                                   
                                   getDownstream = function(...) {
@@ -551,7 +551,8 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 callSuper(modelDef = inputList$modelDef, ...)
                 setupDefaultMV()
                 init_isDataEnv()
-                setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
+                # setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
+                # removed given new handling of lumped data and constants
             }
         ), where = where),
                     list(FIELDS = makeBUGSclassFields(varnames)

@@ -39,13 +39,14 @@ specificCallHandlers = c(
          max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(distribution_rFuns, 'rFunHandler'),
-    makeCallList(c('dmnorm_chol', 'dwish_chol', 'dmulti', 'dcat', 'ddirch'), 'dmFunHandler')
+    makeCallList(c('dmnorm_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rwish_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rmulti']] <- 'rmFunHandler'
 specificCallHandlers[['rcat']] <- 'rmFunHandler' ## not really multivar, but same processing
 specificCallHandlers[['rdirch']] <- 'rmFunHandler'
+specificCallHandlers[['rinterval']] <- 'rmFunHandler' ## not really multivar, but same processing
 
 exprClasses_processSpecificCalls <- function(code, symTab) {
     if(code$isName) return(invisible())

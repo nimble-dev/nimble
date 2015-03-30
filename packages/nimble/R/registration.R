@@ -22,6 +22,8 @@ if(!exists('.NimbleUseRegistration') || !.NimbleUseRegistration) {
    C_rmulti = 'C_rmulti'
    C_dcat = 'C_dcat'
    C_rcat = 'C_rcat'
+   C_dinterval = 'C_dinterval'
+   C_rinterval = 'C_rinterval'
    C_dt_nonstandard = 'C_dt_nonstandard'
    C_rt_nonstandard = 'C_rt_nonstandard'
    C_dmnorm_chol = 'C_dmnorm_chol'

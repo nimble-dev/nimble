@@ -48,7 +48,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          numListAccess = 'cppOutputNumList',
                          blank = 'cppOutputBlank',
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
-                         eigBlank = 'cppOutputEigBlank'
+                         eigBlank = 'cppOutputEigBlank',
+                         voidPtr = 'cppOutputVoidPtr'
                          )
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
@@ -109,6 +110,10 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
     } else {
         return(code$name)
     }
+}
+
+cppOutputVoidPtr <- function(code, symTab) {
+    paste('static_cast<void *>(&',code$args[[1]]$name,')')
 }
 
 cppOutputBlank <- function(code, symTab) NULL
@@ -303,7 +308,11 @@ cppOutputCall <- function(code, symTab) {
 }
 
 cppOutputPow <- function(code, symTab) {
-    paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+    useStaticCase <- if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
+    if(useStaticCase)
+        paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
+    else
+        paste0(exprName2Cpp(code, symTab), '(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
 }
 
 cppOutputCallAsIs <- function(code, symTab) {
