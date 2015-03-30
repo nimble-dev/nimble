@@ -102,8 +102,11 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                                                                   nl_expandNodeIndexExpr(x$targetNodeExpr), 
                                                                                   sep = '&', collapse = '&'), '&') else NULL))
                                      return(c(edgesIn, edgesOut))
+                                 },
+                                 getDistribution = function() {
+                                     if(type != 'stoch')  stop('getting distribution of non-stochastic node')
+                                     return(as.character(valueExprReplaced[[1]]))
                                  }
-                                 
                              )
 )
 
