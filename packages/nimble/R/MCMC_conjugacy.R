@@ -106,12 +106,7 @@ conjugacyRelationshipsClass <- setRefClass(
         checkConjugacy = function(model, targetNode) {
             ##if(model$getNodeInfo()[[targetNode]]$type != 'stoch')  stop('checking conjugacy of non-stochastic node')
             ## new for newNimbleModel(v3):
-            gIDs_4_checking <- numeric(0)
-            try(gIDs_4_checking <- model$modelDef$nodeName2GraphIDs(targetNode), silent = TRUE)
-            if(length(gIDs_4_checking) == 0)       stop('checking conjugacy of a node not in model')
-            if(length(gIDs_4_checking) >  1)       stop('checking conjugacy of more than one node at once')
-            if(model$getMaps('types')[gIDs_4_checking] != 'stoch')  stop('checking conjugacy of non-stochastic node')
-            ## end new (v3)
+            if(cc_getNodeType(model, targetNode) != 'stoch')  stop('checking conjugacy of non-stochastic node')
             depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
             if(length(depNodes) == 0)  return(NULL)   # no dependent stochastic nodes: not conjugate, return NULL
             
@@ -180,7 +175,7 @@ conjugacyClass <- setRefClass(
                 if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
                 dependentObj <- dependents[[depNodeDist]]
                 linearityCheckExpr <- cc_getNodeParamExpr(model, depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
-                linearityCheckExpr <- cc_expandDetermNodesInExpr(linearityCheckExpr, model)
+                linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
                 ## next line is a NEW ADDITION, prevents a minor bug in conjugacy checking:
                 ## when targetNode doesn't appear in 'param' expr (hence passes the linearlity check),
                 ## and targetNode appears in *exactly one* other parameter expr (hence passing cc_otherParamsCheck()),
@@ -610,10 +605,19 @@ cc_makeSamplerTypeName       <- function(distName)     return(paste0('conjugate_
 cc_makeConjugateSamplerName  <- function(samplerType)  return(paste0('sampler_', samplerType))       ## 'conjugate_dnorm' --> 'sampler_conjugate_dnorm'
 cc_makeRDistributionName     <- function(distName)     return(paste0('r', substring(distName, 2)))   ## 'dnorm' --> 'rnorm'
 
+
+## returns the type of node, e.g., 'stoch' or 'determ'
+cc_getNodeType <- function(model, node) {
+    graphID <- model$modelDef$nodeName2GraphIDs(node)
+    if(length(graphID) == 0)   stop('getting type of node not in model')
+    type <- model$getMaps('types')[graphID]
+    return(type)
+}
+
 ## returns the declInfo object corresponding to 'node'
 cc_getDeclInfo <- function(model, node) {
-    gID <- model$modelDef$nodeName2GraphIDs(node)
-    declID <- model$getMaps('graphID_2_declID')[gID]
+    graphID <- model$modelDef$nodeName2GraphIDs(node)
+    declID <- model$getMaps('graphID_2_declID')[graphID]
     declInfo <- model$modelDef$declInfo[[declID]]
     return(declInfo)
 }
@@ -622,7 +626,12 @@ cc_getUnrolledIndicesList <- function(declInfo, node) {
     if(length(which(declInfo$nodeFunctionNames == node)) != 1)
         stop('something went wrong with Daniel\'s understanding of newNimbleModel')
     unrolledRowNumber <- which(declInfo$nodeFunctionNames == node)
-    unrolledIndices <- as.list(declInfo$unrolledIndicesMatrix[unrolledRowNumber, ])
+    indicesMatrix <- declInfo$unrolledIndicesMatrix
+    if(nrow(indicesMatrix) == 0) {
+        if(unrolledRowNumber > 1) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+        return(list())
+    }
+    unrolledIndices <- as.list(indicesMatrix[unrolledRowNumber, ])
     return(unrolledIndices)
 }
 
@@ -667,7 +676,7 @@ cc_getNodeParamExpr <- function(model, node, param) {
 #         distParam <- names(reparamInfo)[i]
 #         if(!(distParam %in% names(paramsList)))  next   ## our distribution for node doesn't have the right parameter
 #         depNodeParamExpr <- paramsList[[distParam]]
-#         depNodeParamExpr <- cc_expandDetermNodesInExpr(depNodeParamExpr, model)
+#         depNodeParamExpr <- cc_expandDetermNodesInExpr(model, depNodeParamExpr)
 #         parseTreeResult <- cc_comparePTexpressions(reparamExpr, depNodeParamExpr, param)
 #         if(is.logical(parseTreeResult) && parseTreeResult == TRUE)   stop('this case should never occur....')
 #         if(is.logical(parseTreeResult) && parseTreeResult == FALSE)   next
@@ -713,49 +722,66 @@ cc_getNodeValueExpr <- function(model, node) {
 }
 
 ## expands all deterministic nodes in expr, to create a single expression with only stochastic nodes
-cc_expandDetermNodesInExpr <- function(expr, model) {
+cc_expandDetermNodesInExpr <- function(model, expr) {
     if(is.numeric(expr)) return(expr)     # return numeric
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) {
-        browser()
-        ## expr is a name, or an indexed name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
+        ## exprText <- deparse(expr)
+        ## try(graphID <- model$modelDef$nodeName2GraphIDs(exprText), silent = TRUE)
+        ## if(!is.numeric(graphID)) return(expr)   # rather than throw an error, return expr; for the case where expr is the name of an array memberData object
+        ## thisType <- model$getMaps('types')[graphID]
+        ## if(any(thisType == 'stoch') || any(thisType == 'LHSinferred'))
+        ##     return(expr)
+        ## if(any(thisType == 'determ')) {
+        ##     if(length(model$expandNodeNames(exprText)) != 1) {
+        ##         newExpr <- cc_createStructureExpr(model, exprText)
+        ##         for(i in seq_along(newExpr)[-1])
+        ##             newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]])
+        ##         return(newExpr)
+        ##     }
+        ##     expr <- cc_getNodeValueExpr(model, node = exprText)
+        ##     return(cc_expandDetermNodesInExpr(model, expr))
+        ## }
+        ## else stop(paste0('something went wrong processing: ', deparse(expr)))
+        ## new for newNimbleModel(v3):
+        ##browser()
         exprText <- deparse(expr)
-        try(graphID <- model$modelDef$nodeName2GraphIDs(exprText), silent = TRUE)
-        if(is.numeric(graphID)) {
-            thisType <- model$getMaps('types')[graphID]
-            if(any(thisType == 'stoch') || any(thisType == 'LHSinferred'))
-                return(expr)
-            if(any(thisType == 'determ')) {
-                if(length(model$expandNodeNames(exprText)) != 1) {
-                    newExpr <- cc_createStructureExpr(expr, model)
-                    for(i in seq_along(newExpr)[-1])
-                        newExpr[[i]] <- cc_expandDetermNodesInExpr(newExpr[[i]], model)
-                    return(newExpr)
-                }
-                return(cc_expandDetermNodesInExpr(expr=cc_getNodeValueExpr(model,node=exprText), model))
+        expandedNodeNames <- model$expandNodeNames(exprText)
+        if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
+            ## expr is a single node in the model
+            type <- cc_getNodeType(model, exprText)
+            if(length(type) > 1) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+            if(type == 'stoch') return(expr)
+            if(type == 'determ') {
+                newExpr <- cc_getNodeValueExpr(model, node = exprText)
+                return(cc_expandDetermNodesInExpr(model, newExpr))
             }
-            else stop(paste0('something went wrong processing: ', deparse(expr)))
+            stop('error in conjugacy process: more types of nodes?')
         }
-        return(expr)   # rather than throw an error, return expr; for the case where expr is the name of an array memberData object
+        newExpr <- cc_createStructureExpr(model, exprText)
+        for(i in seq_along(newExpr)[-1])
+            newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]])
+        return(newExpr)
     }
     if(is.call(expr)) {
         for(i in seq_along(expr)[-1])
-            expr[[i]] <- cc_expandDetermNodesInExpr(expr[[i]], model)
+            expr[[i]] <- cc_expandDetermNodesInExpr(model, expr[[i]])
         return(expr)
     }
     stop(paste0('something went wrong processing: ', deparse(expr)))
 }
 
 ## special name used to represent vectors / arrays defined in terms of other stoch/determ nodes
-cc_structureExprName <- quote(`_structureExpr`)
+cc_structureExprName <- quote(structureExpr)
 
 ## creates an expression of the form [cc_structureExprName](element11, element12, etc...) to represent vectors / arrays defined in terms of other stoch/determ nodes,
-cc_createStructureExpr <- function(expr, model) {
-  expandedNodeNamesVector <- model$expandNodeNames(deparse(expr))
+cc_createStructureExpr <- function(model, exprText) {
+  expandedNodeNamesVector <- model$expandNodeNames(exprText)
   expandedNodeExprList <- lapply(expandedNodeNamesVector, function(x) parse(text=x)[[1]])
   structureExpr <- c(cc_structureExprName, expandedNodeExprList)
   structureExprCall <- as.call(structureExpr)
   return(structureExprCall)
 }
+
 
 ###############################
 ###############################
@@ -784,7 +810,7 @@ cc_otherParamsCheck <- function(model, depNode, targetNode) {
     paramsList <- as.list(cc_getNodeValueExpr(model, depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
-        expr <- cc_expandDetermNodesInExpr(paramsList[[i]], model)
+        expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]])
         if(cc_vectorizedComponentCheck(targetNode, expr))   return(FALSE)
         if(cc_nodeInExpr(targetNode, expr))     { timesFound <- timesFound + 1 }    ## we found 'targetNode'
     }

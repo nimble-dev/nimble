@@ -144,15 +144,19 @@ print: Boolean argument, specifying whether to print the ordered list of default
         
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             isNodeEnd <- model$isNodeEnd(nodes)
-            #   nodes %in% model$getMaps('nodeNamesEnd')
-browser()
-            if(useConjugacy) {
-                conjugacyInfo <- model$checkConjugacyAll(nodes)
-            }
-browser()
+
+            ## browser()
+            ## if(useConjugacy) {
+            ##     conjugacyInfo <- model$checkConjugacyAll(nodes)
+            ## }
+            ## browser()
+
             for(i in seq_along(nodes) ) {
             	node <- nodes[i]
-                discrete <- model$getNodeInfo()[[node]]$isDiscrete()
+                ##discrete <- model$getNodeInfo()[[node]]$isDiscrete()
+                ## new for newNimbleModel (v3):
+                dist <- cc_getNodeDistributionText(model, node)
+                discrete <- distributions[[dist]]$discrete
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 
