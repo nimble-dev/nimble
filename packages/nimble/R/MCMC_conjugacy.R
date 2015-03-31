@@ -250,10 +250,10 @@ conjugacyClass <- setRefClass(
             }
             
             ## if this conjugate sampler is for a multivariate node (i.e., nDim > 0), then we need to determine the size (d)
-            ## changing the determination of 'd' to: max(targetNodeIndexSizes)
-            ## originally was: targetNodeIndexSizes[1], which broke for MV declarations of the form: node[i, 1:d] ~ multivariateDistribution(...)
             if(distributions[[prior]]$types$value$nDim > 0) {
-                functionBody$addCode(d <- max(model$getNodeInfo()[[targetNode]]$targetNodeIndexSizes))
+                ##functionBody$addCode(d <- max(model$getNodeInfo()[[targetNode]]$targetNodeIndexSizes))
+                ## new for newNimbleModel (v3):
+                functionBody$addCode(d <- max(determineNodeIndexSizes(targetNode)))
             }
             
             functionDef <- quote(function(model, mvSaved, control) {})
@@ -267,9 +267,9 @@ conjugacyClass <- setRefClass(
             
             ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- getLogProb(model, calcNodes)
             if(nimbleOptions$verifyConjugatePosteriors) {
-                functionBody$addCode({ 
-                					   modelLogProb0 <- getLogProb(model, calcNodes)
-                                       origValue <- model[[targetNode]] })
+                functionBody$addCode({
+                    modelLogProb0 <- getLogProb(model, calcNodes)
+                    origValue <- model[[targetNode]] })
             }
             
             addPosteriorQuantitiesGenerationCode(functionBody)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
