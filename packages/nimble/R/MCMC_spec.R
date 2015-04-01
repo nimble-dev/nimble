@@ -12,7 +12,6 @@ controlDefaultList <- list(
 )
 
 
-
 samplerSpec <- setRefClass(
     Class = 'samplerSpec',
     fields = list(
@@ -84,7 +83,7 @@ MCMCspec <- setRefClass(
             monitors2 = character(), thin2 = 1,
             useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
             print = FALSE) {	
-'	
+            '
 Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC().
 
 Arguments:
@@ -145,13 +144,9 @@ print: Boolean argument, specifying whether to print the ordered list of default
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             isNodeEnd <- model$isNodeEnd(nodes)
 
-            ## browser()
-            ## if(useConjugacy) {
-            ##     conjugacyInfo <- model$checkConjugacyAll(nodes)
-            ## }
-            ## browser()
+            if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
 
-            for(i in seq_along(nodes) ) {
+            for(i in seq_along(nodes)) {
             	node <- nodes[i]
                 ##discrete <- model$getNodeInfo()[[node]]$isDiscrete()
                 ## new for newNimbleModel (v3):
@@ -166,7 +161,7 @@ print: Boolean argument, specifying whether to print the ordered list of default
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
                     if(useConjugacy) {
-                        conjugacyResult <- model$checkConjugacy(node)
+                        conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
                             addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
                     }
@@ -181,7 +176,7 @@ print: Boolean argument, specifying whether to print the ordered list of default
                 
                 ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                 if(useConjugacy) {
-                    conjugacyResult <- model$checkConjugacy(node)
+                    conjugacyResult <- conjugacyResultsAll[[node]]
                     if(!is.null(conjugacyResult)) {
                         addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
                 }
@@ -195,7 +190,7 @@ print: Boolean argument, specifying whether to print the ordered list of default
 },
         
         addSampler = function(type, control = list(), print = TRUE) {
-'
+            '
 Adds a sampler to the list of samplers contained in the MCMCspec object.
 
 Arguments:
@@ -217,7 +212,9 @@ Details: A single instance of the newly specified sampler is added to the end of
             controlListNames <- controlNamesLibrary[[type]]
             thisControlList <- controlDefaults           ## start with all the defaults
             thisControlList[names(control)] <- control   ## add in any controls provided as an argument
-            if(!all(controlListNames %in% names(thisControlList)))  stop(paste0('Required control names are missing for ', samplerFunctionName, ': ', paste0(setdiff(controlListNames, names(thisControlList)), collapse=', ')))
+            missingControlNames <- setdiff(controlListNames, names(thisControlList))
+            missingControlNames <- missingControlNames[!grepl('^dependents_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
+            if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for ', samplerFunctionName, ': ', paste0(missingControlNames, collapse=', ')))
             if(!all(names(control) %in% controlListNames))   warning(paste0('Superfluous control names were provided for ', samplerFunctionName, ': ', paste0(setdiff(names(control), controlListNames), collapse=', ')))
             thisControlList <- thisControlList[controlListNames]
             newSamplerInd <- length(samplerSpecs) + 1

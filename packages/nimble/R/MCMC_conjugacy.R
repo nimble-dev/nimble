@@ -97,25 +97,52 @@ conjugacyRelationshipsClass <- setRefClass(
     ),
     methods = list(
         initialize = function(crl) {
-        	conjugacys <<- list()
+            conjugacys <<- list()
             for(i in seq_along(crl)) {
                 conjugacys[[i]] <<- conjugacyClass(crl[[i]])
             }
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
-        checkConjugacy = function(model, targetNode) {
-            ##if(model$getNodeInfo()[[targetNode]]$type != 'stoch')  stop('checking conjugacy of non-stochastic node')
-            ## new for newNimbleModel(v3):
-            if(cc_getNodeType(model, targetNode) != 'stoch')  stop('checking conjugacy of non-stochastic node')
-            depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
-            if(length(depNodes) == 0)  return(NULL)   # no dependent stochastic nodes: not conjugate, return NULL
-            
-            for(conjugacyObj in conjugacys) {  # conjugacyObj is a conjugacyClass object
-                conjugacyResult <- conjugacyObj$checkConjugacy(model, targetNode, depNodes)    ## workhorse for checking conjugacy
-                if(is.null(conjugacyResult))     next
-                return(conjugacyResult)
+        ## original version: one node at a time
+        ## checkConjugacy = function(model, targetNode) {
+        ##     if(length(targetNode) > 1) stop('use checkConjugacyAll() for checking multiple nodes at once')
+        ##     ##if(model$getNodeInfo()[[targetNode]]$type != 'stoch')  stop('checking conjugacy of non-stochastic node')
+        ##     ## new for newNimbleModel(v3):
+        ##     if(cc_getNodeType(model, targetNode) != 'stoch')  stop('checking conjugacy of non-stochastic node')
+        ##     depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
+        ##     if(length(depNodes) == 0)  return(NULL)   # no dependent stochastic nodes: not conjugate, return NULL
+        ##     for(conjugacyObj in conjugacys) {  # conjugacyObj is a conjugacyClass object
+        ##         conjugacyResult <- conjugacyObj$checkConjugacy(model, targetNode, depNodes)    ## workhorse for checking conjugacy
+        ##         if(is.null(conjugacyResult))     next
+        ##         return(conjugacyResult)
+        ##     }
+        ##     return(NULL)  # didn't find a matching conjugacy class: not conjugate, return NULL
+        ## },
+       checkConjugacy = function(model, nodes) {
+            ## checks conjugacy of multiple nodes at once.
+            ## the return object is a named list, containing the conjugacyResult lists
+            ## *only* for nodes which are conjugate
+            conjugacyResultsAll <- list()
+            declarationIDs <- cc_getDeclID(model, nodes)
+            nodesSplitByDeclaration <- split(nodes, declarationIDs)
+            for(theseNodes in nodesSplitByDeclaration)
+                conjugacyResultsAll <- c(conjugacyResultsAll, checkConjugacy_singleDeclaration(model, theseNodes))
+            return(conjugacyResultsAll)
+        },
+        checkConjugacy_singleDeclaration = function(model, nodes) {
+            dist <- cc_getNodeDistributionText(model, nodes[1])
+            if(!dist %in% names(conjugacys)) return(list())
+            conjugacyObj <- conjugacys[[dist]]
+            ## temporary -- but works fine!
+            retList <- list()
+            for(node in nodes) {
+                result <- conjugacyObj$checkConjugacy(model, node)
+                if(!is.null(result))   retList[[node]] <- result
             }
-            return(NULL)  # didn't find a matching conjugacy class: not conjugate, return NULL
+            return(retList)
+            ## END temporary -- but works fine!
+            ## next line: this would be the new, more efficient approach -- not yet implemented
+            ##conjugacyObj$checkConjugacyAll(model, nodes) -- not yet implemented
         },
         generateConjugateSamplerDefinitions = function() {
             conjugateSamplerDefinitions <- list()
@@ -128,10 +155,10 @@ conjugacyRelationshipsClass <- setRefClass(
     )
 )
 
-setMethod('[[',   'conjugacyRelationshipsClass',
-          function(x, i) {
-              return(x$conjugacys[[i]])
-          }
+setMethod(
+    '[[',
+    'conjugacyRelationshipsClass',
+    function(x, i)   return(x$conjugacys[[i]])
 )
 
 conjugacyClass <- setRefClass(
@@ -156,7 +183,8 @@ conjugacyClass <- setRefClass(
             needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
             posteriorObject <<- posteriorClass(cr$posterior)
             model <<- NA
-        },
+            },
+        
         initialize_addDependents = function(depList) {
             for(i in seq_along(depList)) {
                 dependents[[i]] <<- dependentClass(depList[[i]], names(depList)[i])
@@ -164,11 +192,21 @@ conjugacyClass <- setRefClass(
             names(dependents) <<- names(depList)
             dependentDistNames <<- names(dependents)
         },
+
+        ## this would be the new, more efficient approach -- not yet implemented
+        ## checkConjugacyAll = function(model, nodes) {
+        ##     depNodesAll <- lapply(nodes, function(n) model$getDependencies(n, stochOnly=TRUE, self=FALSE))
+        ##     ## unfinished
+        ##     stop('work in progress')
+        ## },
         
         ## workhorse for checking conjugacy
-        checkConjugacy = function(model, targetNode, depNodes) {
+        checkConjugacy = function(model, targetNode) {
             if(cc_getNodeDistributionText(model, targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             control <- initControl(model, targetNode)
+
+            depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
+            if(length(depNodes) == 0)  return(NULL)   # no dependent stochastic nodes: not conjugate, return NULL
             
             for(depNode in depNodes) {
                 depNodeDist <- cc_getNodeDistributionText(model, depNode)
@@ -187,16 +225,21 @@ conjugacyClass <- setRefClass(
                 linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
                 if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
                 if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
-                control[[paste0('dependents_', depNodeDist)]] <- c(control[[paste0('dependents_', depNodeDist)]], depNode)
+                control <- addDependentNodeToControl(control, depNodeDist, depNode)
             }
             return(list(samplerType=samplerType, control=control))   # all dependent nodes passed the conjugacy check
         },
-        
+
         initControl = function(model, targetNode) {
             control <- list()
             control$targetNode <- targetNode
-            for(depDist in dependentDistNames)     control[[paste0('dependents_', depDist)]] <- character()
             return(control)
+        },
+
+        addDependentNodeToControl = function(control, depNodeDist, depNode) {
+            listName <- paste0('dependents_', depNodeDist)
+            control[[listName]] <- c(control[[listName]], depNode)
+            control
         },
         
         ## workhorse for creating conjugate sampler nimble functions
@@ -614,6 +657,13 @@ cc_getNodeType <- function(model, node) {
     return(type)
 }
 
+## returns the declaration ID corresponding to 'node'
+cc_getDeclID <- function(model, node) {
+    graphID <- model$modelDef$nodeName2GraphIDs(node)
+    declID <- model$getMaps('graphID_2_declID')[graphID]
+    return(declID)
+}
+
 ## returns the declInfo object corresponding to 'node'
 cc_getDeclInfo <- function(model, node) {
     graphID <- model$modelDef$nodeName2GraphIDs(node)
@@ -743,7 +793,6 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
         ## }
         ## else stop(paste0('something went wrong processing: ', deparse(expr)))
         ## new for newNimbleModel(v3):
-        ##browser()
         exprText <- deparse(expr)
         expandedNodeNames <- model$expandNodeNames(exprText)
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
@@ -757,6 +806,7 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
             }
             stop('error in conjugacy process: more types of nodes?')
         }
+        if(is.name(expr)) return(expr) # rather than throw an error, return expr; for the case where expr is the name of an array memberData object
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
             newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]])
@@ -782,15 +832,6 @@ cc_createStructureExpr <- function(model, exprText) {
   return(structureExprCall)
 }
 
-
-###############################
-###############################
-###############################
-## DELETE THIS.  ONLY KEEPING SO NAMESPACE EXPORTS ARE HAPPY
-###############################
-###############################
-###############################
-cc_createStructureExpr_fromModel <- function(expr, model) { }
 
 ## verifies that 'link' is satisfied by the results of linearityCheck
 cc_linkCheck <- function(linearityCheck, link) {

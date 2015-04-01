@@ -386,13 +386,13 @@ inits: A named list.  The names of list elements must correspond to model variab
                                       for(i in seq_along(inits))     { .self[[names(inits)[i]]] <- inits[[i]] }
                                   },
 
-                                  checkConjugacyAll = function(nodes) {
-                                      ## new version to handle a batch of nodes together
-                                      
-                                  },
+                                  ## checkConjugacyAll = function(nodes) {
+                                  ##     ## new version to handle a batch of nodes together
+                                  ##     conjugacyRelationshipsObject$checkConjugacyAll(.self, nodes)
+                                  ## },
                                   
-                                  checkConjugacy = function(node) {
-'
+                                  checkConjugacy = function(nodeVector) {
+                                      '
 Determines whether or not the input node appears in a conjugate relationship, in conjunction with its stochastic dependents
 
 Arguments:
@@ -401,7 +401,10 @@ node: A single character string representing a model node name
 
 Details: The return value will be NULL when the input node does not appear in a conjugate relationship, or a named list when the node appears in a conjugate relationship.  In this case, the list returned is identically the control list argument required by the corresponding MCMC conjugate sampler function.
 '
-                                      conjugacyRelationshipsObject$checkConjugacy(.self, node)
+                                      if(missing(nodeVector))
+                                          nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
+                                      nodeVector <- expandNodeNames(nodeVector)
+                                      conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
                                   },
 
                                   newModel = function(data = NULL, inits = NULL, modelName = character()) {
