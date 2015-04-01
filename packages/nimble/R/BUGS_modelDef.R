@@ -1673,6 +1673,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$graphID_2_declID <<- graphID_2_declID
     maps$graphID_2_nodeName <<- allVertexNames[newGraphID_2_oldGraphID]
     maps$types <<- types[newGraphID_2_oldGraphID]
+    maps$notStoch <<- maps$types != 'stoch'
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
@@ -1698,7 +1699,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$edgesFrom <<- oldGraphID_2_newGraphID[edgesFrom]
     maps$edgesTo <<- oldGraphID_2_newGraphID[edgesTo]
     maps$edgesParentExprID <<- edgesParentExprID
-    fedgesFrom <- factor(maps$edgesFrom)
+    fedgesFrom <- factor(maps$edgesFrom, levels = min(maps$edgesFrom):max(maps$edgesFrom)) ## setting levels ensures blanks inserted into the splits correctly
     maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
     maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
