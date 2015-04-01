@@ -6,6 +6,7 @@ mapsClass <- setRefClass(
         nodeNames = 'ANY',
         graphIDs = 'ANY',
         types = 'ANY',
+        notStoch = 'ANY',
         
         ## vectors of nodeNames, representing different subsets of 'types'
 
