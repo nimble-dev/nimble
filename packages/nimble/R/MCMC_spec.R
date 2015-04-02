@@ -469,34 +469,34 @@ Details: See the initialize() function
 #'@param onlyRW A boolean argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (sampler_RW) will be assigned for all non-terminal continuous-valued nodes nodes.
 #'Discrete-valued nodes are assigned a slice sampler (sampler_slice), and terminal (predictive) nodes are assigned an end sampler (sampler_end).
 #'@param onlySlice A boolean argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
-#'Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
+#'Terminal (predIctive) nodes are still assigned an end sampler (sampler_end).
 #'@param multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 #'@param print Boolean argument, specifying whether to print the ordered list of default samplers.
 #'@author Daniel Turek
 #'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
-configureMCMC <- function(model, oldSpec, nodes, control = list(), 
-						  monitors, thin = 1, monitors2 = character(), thin2=1,
-						  useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
-						  print = FALSE){
-						  	if(!missing(oldSpec)){
-						  		if(!is(oldSpec, 'MCMCspec'))
-						  			stop('oldSpec must be an MCMCspec object, as built by the configureMCMC function')
-						  		return(makeNewSpecFromOldSpec(oldSpec))	
-						  	}
-						  	
-						  if(missing(model))
-						  	stop('Either oldSpec or model must be supplied')
-						  if(missing(nodes))
-						  	nodes <- character()
-						  if(missing(monitors))
-						  	monitors <- NULL
-						  
-						  thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
-						  					monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
-						  					useConjugacy = useConjugacy, onlyRW = onlyRW, onlySlice = onlySlice,
-						  					multivariateNodesAsScalars = multivariateNodesAsScalars, print = print)
-						  return(thisSpec)	
-						  }
+configureMCMC <- function(model, nodes, control = list(), 
+                          monitors, thin = 1, monitors2 = character(), thin2=1,
+                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+                          print = FALSE, oldSpec, autoBlock = FALSE, ...) {
+    
+    if(!missing(oldSpec)){
+        if(!is(oldSpec, 'MCMCspec'))
+            stop('oldSpec must be an MCMCspec object, as built by the configureMCMC function')
+        return(makeNewSpecFromOldSpec(oldSpec))	
+    }
+    
+    if(missing(model))        stop('Either oldSpec or model must be supplied')
+    if(missing(nodes))        nodes <- character()
+    if(missing(monitors))     monitors <- NULL
+
+    if(autoBlock) return(autoBlock(model, ...)$spec)
+    
+    thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
+                         monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
+                         useConjugacy = useConjugacy, onlyRW = onlyRW, onlySlice = onlySlice,
+                         multivariateNodesAsScalars = multivariateNodesAsScalars, print = print)
+    return(thisSpec)	
+}
 
 
 
@@ -517,18 +517,6 @@ makeNewSpecFromOldSpec <- function(oldMCMCspec){
 }
 
 
-
-
-##### things (from v0.1) for dealing with samplerOrder:
-#
-# getSamplers <- function(mcmcspec, print.all = FALSE) {
-#     if(print.all) return(mcmcspec$samplerSpecs)
-#     return(mcmcspec$samplerSpecs[mcmcspec$samplerOrder])
-# }
-# 
-# setSamplerOrder <- function(mcmcspec, samplerOrder) {
-#     mcmcspec$samplerOrder <- mcmcspec$samplerOrder[samplerOrder]
-# }
 
 
 

@@ -65,10 +65,10 @@ buildMCMC <- nimbleFunction(
         initFunctionList <- nimbleFunctionList(mcmcNodeInit_virtual)
         tot_length = hasRHSonlyNodes + length(stochNonDataNodes)
 
-        iter = 1
+        iter <- 1
         if(hasRHSonlyNodes){
             initFunctionList[[iter]] <- mcmcCheckRHS_Init(model = model, node = RHSonlyNodes)
-            iter = iter + 1
+            iter <- iter + 1
         }
         
         for(i in seq_along(stochNonDataNodes)){
