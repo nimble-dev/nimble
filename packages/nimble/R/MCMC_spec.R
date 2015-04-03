@@ -20,8 +20,6 @@ samplerSpec <- setRefClass(
         control         = 'ANY'),
     methods = list(
         buildSampler = function(model, mvSaved) {
-            ## samplerNfName <- paste0('sampler_', type)
-            ## eval(call(samplerNfName, model=model, mvSaved=mvSaved, control=control))
             samplerFunction(model=model, mvSaved=mvSaved, control=control)
         },
         toStr = function() {
@@ -204,26 +202,26 @@ print: Boolean argument, specifying whether to print the details of the newly ad
 
 Details: A single instance of the newly specified sampler is added to the end of the list of samplers for this MCMCspec object.
 '
+
             if(is.character(type)) {
+                if(type == 'end') type <- 'sampler_end'  ## because 'end' is an R function
                 thisSamplerName <- gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(exists(type)) {   ## try to find sampler function 'type'
-                    samplerFunction <- eval(type)
+                    samplerFunction <- eval(as.name(type))
                 } else {
                     sampler_type <- paste0('sampler_', type)   ## next, try to find sampler function 'sampler_type'
                     if(exists(sampler_type)) {
-                        samplerFunction <- eval(sampler_type)
+                        samplerFunction <- eval(as.name(sampler_type))
                     } else stop(paste0('cannot find sampler type \'', type, '\''))
                 }
             } else if(is.function(type)) {
-                thisSamplerName <- if(!missing(name)) name else deparse(substitute(type))
+                thisSamplerName <- if(!missing(name)) name else gsub('^sampler_', '', deparse(substitute(type)))
                 samplerFunction <- type
             } else stop('sampler type must be character name or function')
-            if(!is.character(thisSamplerName)) stop('something went wrong')
-            if(!is.function(samplerFunction)) stop('sampler type does not specify a function')
+            if(!is.character(thisSamplerName)) stop('Sampler name should be a character string')
+            if(!is.function(samplerFunction)) stop('Sampler type does not specify a function')
 
-            ##samplerFunctionName <- as.name(paste0('sampler_', type))
-            ##if(inherits(try(eval(samplerFunctionName), silent=TRUE), 'try-error'))     stop(paste0('No function definition found for sampler type: ', samplerFunctionName))  ## sampler function doesn't exist
-            if(is.null(controlNamesLibrary[[thisSamplerName]]))   controlNamesLibrary[[thisSamplerName]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate the library of names for the control list
+            if(is.null(controlNamesLibrary[[thisSamplerName]]))   controlNamesLibrary[[thisSamplerName]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
             controlListNames <- controlNamesLibrary[[thisSamplerName]]
             thisControlList <- controlDefaults           ## start with all the defaults
             thisControlList[names(control)] <- control   ## add in any controls provided as an argument
@@ -232,8 +230,10 @@ Details: A single instance of the newly specified sampler is added to the end of
             if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for ', thisSamplerName, ' sampler: ', paste0(missingControlNames, collapse=', ')))
             if(!all(names(control) %in% controlListNames))   warning(paste0('Superfluous control names were provided for ', thisSamplerName, ' sampler: ', paste0(setdiff(names(control), controlListNames), collapse=', ')))
             thisControlList <- thisControlList[controlListNames]
+            
             newSamplerInd <- length(samplerSpecs) + 1
-            samplerSpecs[[newSamplerInd]] <<- samplerSpec(name=thisSamplerName, samplerFunction=samplerFunction, control=control)
+            samplerSpecs[[newSamplerInd]] <<- samplerSpec(name=thisSamplerName, samplerFunction=samplerFunction, control=thisControlList)
+            
             if(print) getSamplers(newSamplerInd)
         },
         
