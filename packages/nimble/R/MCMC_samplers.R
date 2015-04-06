@@ -406,7 +406,7 @@ sampler_crossLevel <- nimbleFunction(
             if(is.null(conjugacyResult))     stop('non-conjugate lowNode \'', lowNode, '\' in crossLevel updater')
             samplerType <- conjugacyResult$type
             samplerFunction <- eval(as.name(paste0('sampler_',samplerType)))
-            conjugateSamplerSpec <- samplerSpec(name = samplerType, samplerFunction = samplerFunction, target = lowNode, control = conjugacyResult$control)
+            conjugateSamplerSpec <- samplerSpec(name = samplerType, samplerFunction = samplerFunction, target = lowNode, control = conjugacyResult$control, model = model)
             lowConjugateSamplerFunctions[[iLN]] <- conjugateSamplerSpec$buildSampler(model, mvInternal)
             lowConjugateGetLogDensityFunctions[[iLN]] <- getPosteriorDensityFromConjSampler(lowConjugateSamplerFunctions[[iLN]])
         }

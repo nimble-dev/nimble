@@ -134,7 +134,6 @@ multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If sp
 
 print: Boolean argument, specifying whether to print the ordered list of default samplers.
 '
-            
             samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
             model <<- model
             addMonitors( monitors,  print = FALSE)
@@ -299,6 +298,7 @@ This is generally the intended usage, to see all current samplers in the MCMCspe
 '
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            if(length(ind) == 0) return()
             log10ind <- floor(log10(ind))
             numSpaces <- max(log10ind) - log10ind
             spaces <- unlist(lapply(numSpaces, function(n) paste0(rep(' ', n), collapse='')))

@@ -146,9 +146,8 @@ returnType: return type. Options are \'names\' (character vector) or \'ids\' (gr
 
 sort: should names be topologically sorted before being returned?
 '
-														
-                                      if(length(nodeNames) == 0)	return(NULL)
                                       if(returnType == 'names'){
+                                          if(length(nodeNames) == 0) return(character())
                                           graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
                                           if(sort)
                                               graphID <- sort(graphID)
@@ -156,6 +155,7 @@ sort: should names be topologically sorted before being returned?
                                           return(nodeNames)
                                       }
                                       if(returnType == 'ids'){
+                                          if(length(nodeNames) == 0) return(numeric())
                                           if(sort)
                                               return(sort(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)))
                                           return(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents))
@@ -168,7 +168,7 @@ sort: should names be topologically sorted before being returned?
                                   },
                                   
                                   topologicallySortNodes = function(nodeNames, returnType = 'names') {
-'
+                                      '
 Sorts the input list of node names according to the topological dependence ordering of the model structure. 
 
 Arguments:
@@ -179,10 +179,10 @@ returnType: character vector indicating return type. Choices are "names" or "ids
 
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
 '
-                              		  nodeIDs <- expandNodeNames(nodeNames, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodeNames]
+                                      nodeIDs <- expandNodeNames(nodeNames, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodeNames]
                                       nodeIDs <- sort(nodeIDs)
-                               		  nodeNames <-expandNodeNames(nodeIDs, returnType = returnType)
-                                    return(nodeNames)
+                                      nodeNames <- expandNodeNames(nodeIDs, returnType = returnType)
+                                      return(nodeNames)
                                   },
                                   
                                   getVarInfo = function(name, includeLogProb = TRUE) {
