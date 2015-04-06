@@ -1699,7 +1699,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$edgesFrom <<- oldGraphID_2_newGraphID[edgesFrom]
     maps$edgesTo <<- oldGraphID_2_newGraphID[edgesTo]
     maps$edgesParentExprID <<- edgesParentExprID
-    fedgesFrom <- factor(maps$edgesFrom, levels = min(maps$edgesFrom):max(maps$edgesFrom)) ## setting levels ensures blanks inserted into the splits correctly
+    fedgesFrom <- factor(maps$edgesFrom, levels = if(length(maps$edgesFrom) > 0) 1:max(maps$edgesFrom) else numeric(0)) ## setting levels ensures blanks inserted into the splits correctly
     maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
     maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
