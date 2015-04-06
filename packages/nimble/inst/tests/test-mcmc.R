@@ -415,7 +415,7 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
 if(FALSE) {
     Rmodel <- nimbleModel(code, constants = list(Q=Q))
     mcmcspec <- MCMCspec(Rmodel, nodes = NULL)
-    mcmcspec$addSampler(type = 'RW_block', control = list(targetNodes = 'x', adaptInterval=500))
+    mcmcspec$addSampler(type = 'RW_block', target = 'x', control = list(adaptInterval=500))
     mcmcspec$getMonitors()
     Rmcmc <- buildMCMC(mcmcspec)
     Cmodel <- compileNimble(Rmodel)

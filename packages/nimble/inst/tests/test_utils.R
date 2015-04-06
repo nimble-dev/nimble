@@ -100,6 +100,12 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                          gsub("\\[[0-9]+\\]", "", x$control$targetNode))
                          %in% var[[2]][["targetNodes"]])
     spec$removeSamplers(inds, print = FALSE)
+######## Chris: next line will need to include the mandatory (second) 'target' argument.
+######## The prototype for addSampler() is now:
+######## spec$addSampler(type, target, control = list(), print = TRUE, name)
+######## There's a chance you could also  make use of the 'name' argument, which is intended
+######## for this sort of application: the programmatic assignment of samplers.
+######## -DT 6 April 2015
     tmp <- spec$addSampler(var[[1]], control = var[[2]], print = FALSE)
   }
 

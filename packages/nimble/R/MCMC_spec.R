@@ -17,13 +17,27 @@ samplerSpec <- setRefClass(
     fields = list(
         name            = 'ANY',
         samplerFunction = 'ANY',
-        control         = 'ANY'),
+        target          = 'ANY',
+        control         = 'ANY',
+        targetAsScalar  = 'ANY',
+        printStr        = 'ANY'
+    ),
     methods = list(
+        initialize = function(name, samplerFunction, target, control, model) {
+            name <<- name
+            samplerFunction <<- samplerFunction
+            target <<- target
+            control <<- control
+            targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE)
+            tempList <- list()
+            tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
+            printStr <<- mcmc_listContentsToStr(c(tempList, control))
+        },
         buildSampler = function(model, mvSaved) {
-            samplerFunction(model=model, mvSaved=mvSaved, control=control)
+            samplerFunction(model=model, mvSaved=mvSaved, target=target, control=control)
         },
         toStr = function() {
-            return(paste0(name, ' sampler;   ', mcmc_listContentsToStr(control)))
+            printStr
         }
     )
 )
@@ -49,7 +63,7 @@ samplerSpec <- setRefClass(
 #' Rmodel <- nimbleModel(code)
 #' spec <- configureMCMC(Rmodel)
 #' spec$setSamplers(1)
-#' spec$addSampler(type = 'slice', control = list(targetNode = 'x'))
+#' spec$addSampler(type = 'slice', target = 'x', control = list(adaptInterval = 100))
 #' spec$addMonitors('mu', thin = 1)
 #' spec$addMonitors2('x', thin2 = 10)
 #' spec$getMonitors()
@@ -152,40 +166,40 @@ print: Boolean argument, specifying whether to print the ordered list of default
                 nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
-             	if(isNodeEnd[i]) { addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
+             	if(isNodeEnd[i]) { addSampler(type = 'end', target = node, print = print);     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
-                            addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                            addSampler(type = conjugacyResult$type, target = conjugacyResult$target, control = conjugacyResult$control, print = print);     next }
                     }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
-                            addSampler(type = 'RW', control = list(targetNode=scalarNode), print = print) };     next }
-                    addSampler(type = 'RW_block', control = list(targetNodes=node), print = print);     next }
+                            addSampler(type = 'RW', target = scalarNode, print = print) };     next }
+                    addSampler(type = 'RW_block', target = node, print = print);     next }
 
                 ## node is scalar, non-end node
-                if(onlyRW && !discrete)   { addSampler(type = 'RW',    control = list(targetNode=node), print = print);     next }
-                if(onlySlice)             { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                if(onlyRW && !discrete)   { addSampler(type = 'RW',    target = node, print = print);     next }
+                if(onlySlice)             { addSampler(type = 'slice', target = node, print = print);     next }
                 
                 ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                 if(useConjugacy) {
                     conjugacyResult <- conjugacyResultsAll[[node]]
                     if(!is.null(conjugacyResult)) {
-                        addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                        addSampler(type = conjugacyResult$type, target = conjugacyResult$target, control = conjugacyResult$control, print = print);     next }
                 }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                if(discrete) { addSampler(type = 'slice', target = node, print = print);     next }
                 
                 ## default: 'RW' sampler
-                addSampler(type = 'RW', control = list(targetNode=node), print = print);     next
+                addSampler(type = 'RW', target = node, print = print);     next
             }
         },
         
-        addSampler = function(type, control = list(), print = TRUE, name) {
+        addSampler = function(type, target, control = list(), print = TRUE, name) {
             '
 Adds a sampler to the list of samplers contained in the MCMCspec object.
 
@@ -232,7 +246,7 @@ Details: A single instance of the newly specified sampler is added to the end of
             thisControlList <- thisControlList[controlListNames]
             
             newSamplerInd <- length(samplerSpecs) + 1
-            samplerSpecs[[newSamplerInd]] <<- samplerSpec(name=thisSamplerName, samplerFunction=samplerFunction, control=thisControlList)
+            samplerSpecs[[newSamplerInd]] <<- samplerSpec(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
             
             if(print) getSamplers(newSamplerInd)
         },
@@ -247,7 +261,8 @@ ind: A numeric vector, giving the indices of the samplers to be removed.  If omi
 
 print: Boolean argument, default value TRUE, specifying whether to print the current list of samplers once the removal has been done.
 '      
-            if(missing(ind))   ind <- seq_along(samplerSpecs)
+            if(missing(ind))        ind <- seq_along(samplerSpecs)
+            if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             samplerSpecs[ind] <<- NULL
             if(print) getSamplers()
             return(invisible(NULL))
@@ -266,7 +281,8 @@ or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).
 
 print: Boolean argument, default value TRUE, specifying whether to print the new list of samplers.
 '   
-            if(missing(ind))   ind <- numeric(0)
+            if(missing(ind))        ind <- numeric(0)
+            if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             samplerSpecs <<- samplerSpecs[ind]
             if(print) getSamplers()
             return(invisible(NULL))
@@ -280,11 +296,19 @@ Arguments:
 
 ind: A numeric vector, specifying the indices of the samplers to print.  If omitted, then all samplers are printed.
 This is generally the intended usage, to see all current samplers in the MCMCspec object.
-'  
-            if(missing(ind))     ind <- seq_along(samplerSpecs)
-            for(i in ind) {
-                cat(paste0('[', i, '] ', samplerSpecs[[i]]$toStr(), '\n'))
-            }
+'
+            if(missing(ind))        ind <- seq_along(samplerSpecs)
+            if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            log10ind <- floor(log10(ind))
+            numSpaces <- max(log10ind) - log10ind
+            spaces <- unlist(lapply(numSpaces, function(n) paste0(rep(' ', n), collapse='')))
+            for(i in seq_along(ind))
+                cat(paste0('[', ind[i], '] ', spaces[i], samplerSpecs[[ind[i]]]$toStr(), '\n'))
+        },
+
+        findSamplersOnNodes = function(nodes) {
+            nodes <- model$expandNodeNames(nodes, returnScalarComponents = TRUE)
+            which(unlist(lapply(samplerSpecs, function(ss) any(nodes %in% ss$targetAsScalar))))
         },
         
         addMonitors = function(vars, ind = 1, print = TRUE) {
