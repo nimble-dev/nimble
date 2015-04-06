@@ -74,9 +74,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        for(i in names(Rmodel$nodeFunctions)) {
                                            nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll)
                                        }
-										nodes <<- nodesEnv	
-
-
+                                       nodes <<- nodesEnv
+                                       
                                        .nodeFxnPointers_byGID <<- new('numberedObjects') 
                                        maxID = max(modelDef$maps$graphIDs)
                                        .nodeFxnPointers_byGID$resize(maxID)
@@ -184,9 +183,9 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                             contains = 'CmodelBaseClass',
                                             methods = list(initialize = function(model, defaults, ..., dll = NULL) { ## model is an optional R model
                                                 nodes <<- list()
-                                          		isDataEnv <<- new.env()
-                                          		classEnvironment <<- new.env()
-                                          		
+                                                isDataEnv <<- new.env()
+                                                classEnvironment <<- new.env()
+                                                
                                                 callSuper()
                                                 .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- getMVptr(.basePtr)

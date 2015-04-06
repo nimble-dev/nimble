@@ -529,7 +529,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                      if(reset) {
                                                          nimbleFunctions[[thisName]] <<- NULL
                                                      } else {
-                                                         if(!identical(funList[[i]], tmp)) stop('Trying to compile simething with same name as previously added nimbleFunction that is not the same thing')
+                                                         if(!identical(funList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleFunction that is not the same thing')
                                                          addNF <- FALSE
                                                      }
                                                  }

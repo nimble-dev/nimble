@@ -31,6 +31,18 @@ removeIndexing <- function(nodes) {
     return(gsub('\\[.*', '', nodes))
 }
 
+## this utility function is used in the setup code of conjugate sampler functions.
+## the 'd' dimension variables used to come from nodeInfo object,
+## but now we calculate it (from the targetNode name) using this function.
+determineNodeIndexSizes <- function(node) {
+    if(!is.indexed(node)) return(numeric(0))
+    indString <- gsub('.*\\[', '', gsub('\\]', '', node))
+    indStringList <- as.list(strsplit(indString, ', ')[[1]])
+    indExprList <- lapply(indStringList, function(ind) parse(text=ind)[[1]])
+    sizes <- unlist(lapply(indExprList, function(ind) max(eval(ind)) - min(eval(ind)) + 1))
+    return(sizes)
+}
+
 ## This should add model$ in front of any names that are not already part of a '$' expression
 addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     if(is.numeric(expr)) return(expr)

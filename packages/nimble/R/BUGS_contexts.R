@@ -11,6 +11,7 @@ BUGSsingleContextClass <- setRefClass('BUGSsingleContextClass',
 BUGScontextClass <- setRefClass('BUGScontextClass',
                                 
                                 fields = list(
+                                    replacementsEnv = 'ANY',
                                     ##### all fields are set in setup(), and never change
                                     singleContexts = 'ANY', ## a list of BUGSsingleContextClass objects
                                     indexVarExprs = 'ANY', ## a list of index variable expressions

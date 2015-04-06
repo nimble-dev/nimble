@@ -83,7 +83,10 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          functionDefs[['pointAtAll']] <<- newFun
                                      },
                                      buildNodes = function(where = globalenv(), debugCpp = FALSE) {
-                                         for(i in names(model$nodeFunctions)) {
+                                         ## for(i in names(model$nodeFunctions)) {
+                                         ##     nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
+                                         ## }
+                                         for(i in seq_along(model$nodeFunctions)) {
                                              nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
                                          }
                                          nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE, returnCppClass = TRUE, fromModel = TRUE) ## fromModel is redundant here
