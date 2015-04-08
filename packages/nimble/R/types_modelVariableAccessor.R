@@ -17,62 +17,101 @@ modelVariableAccessor <- setRefClass(
     )
 )
 
-modelVariableAccessorVector <- setRefClass(
+modelVariableAccessorVector <- setRefClass( ## new implementation
+    Class = 'modelVariableAccessorVector',
+    fields = list(
+        model = 'ANY',
+        nodeNames = 'ANY',
+        logProb = 'ANY', 
+        length = 'ANY',
+        mapInfo = 'ANY'
+    ),
+    methods = list(
+        initialize = function(model, nodeNames, logProb = FALSE) {
+            model <<- model
+            if(!logProb)
+                nodeNames <<- nodeNames
+            else {
+                isLogProbName <- grepl('logProb_', nodeNames)
+                nodeNames <<- c(nodeNames, makeLogProbName(nodeNames[!isLogProbName]))
+            }
+            logProb <<- logProb
+            length <<- length(nodeNames)
+            mapInfo <<- NULL
+        },
+        makeMapInfo = function() {
+            mapInfo <<- lapply(nodeNames, function(x) {
+                varAndIndices <- getVarAndIndices(x)
+                varName <- as.character(varAndIndices$varName)
+                ans <- varAndIndices2mapParts(varAndIndices, model$getVarInfo(varName))
+                ans$varName <- varName
+                ans$singleton <- prod(ans$sizes == 1)
+                ans
+            }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
+            invisible(NULL)
+        },
+        getMapInfo = function() {
+            if(is.null(mapInfo)) makeMapInfo()
+            mapInfo
+        }
+)
+
+modelVariableAccessorVectorOld <- setRefClass( ## old implementation, being replaced
     Class = 'modelVariableAccessorVector',
     fields = list(model = 	'ANY',
-    			  gids = 	'ANY',
-    			  l_gids = 	'ANY',	#graph IDS for log probabilities, which is a different set of graph IDs than for nodes
-                  length = 	'ANY'
-                   ),		
+        gids = 	'ANY',
+        l_gids = 	'ANY',	#graph IDS for log probabilities, which is a different set of graph IDs than for nodes
+        length = 	'ANY'
+                  ),		
     methods = list(
         initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-        	isLogProbName <- grepl('logProb_', nodeNames)
-        	nodeOnlyNames <- nodeNames[!isLogProbName]
-        	logProbNames <- nodeNames[isLogProbName]
-        	gids <<- model$expandNodeNames(nodeOnlyNames, returnScalarComponents = TRUE, returnType = 'ids')
-        	l_gids <<- numeric(0)
-			if(length(logProbNames) > 0){
-				nodeName_fromLogProbName <- gsub('logProb_', '', logProbNames)
-				l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeName_fromLogProbName))
-			}
-        	if(logProb)
-        		l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeOnlyNames))
+            isLogProbName <- grepl('logProb_', nodeNames)
+            nodeOnlyNames <- nodeNames[!isLogProbName]
+            logProbNames <- nodeNames[isLogProbName]
+            gids <<- model$expandNodeNames(nodeOnlyNames, returnScalarComponents = TRUE, returnType = 'ids')
+            l_gids <<- numeric(0)
+            if(length(logProbNames) > 0){
+                nodeName_fromLogProbName <- gsub('logProb_', '', logProbNames)
+                l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeName_fromLogProbName))
+            }
+            if(logProb)
+                l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeOnlyNames))
             length <<- length(gids) + length(l_gids)
-   			model <<- model
-         },
+            model <<- model
+        },
         getSingleValue_fromGID = function(accessID){
-        	len_variables <- length(gids)
-        	if(accessID <= len_variables){
-	        	thisExpr <- parse(text = model$expandNodeNames(gids[accessID]))[[1]]
-	        	return( eval(thisExpr, envir = model) )
-	        	}
-	        else{
-	        	logVarID <- l_gids[accessID - len_variables]
-	        	logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
-	        	thisExpr <- parse(text = logProbName)[[1]]
-	        	return(eval(thisExpr, envir = model))
-	        	}
-	        	
+            len_variables <- length(gids)
+            if(accessID <= len_variables){
+                thisExpr <- parse(text = model$expandNodeNames(gids[accessID]))[[1]]
+                return( eval(thisExpr, envir = model) )
+            }
+            else{
+                logVarID <- l_gids[accessID - len_variables]
+                logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
+                thisExpr <- parse(text = logProbName)[[1]]
+                return(eval(thisExpr, envir = model))
+            }
+            
         },
         setSingleValue_fromGID = function(value, accessID){
-        	len_variables <- length(gids)
-        	if(accessID <= len_variables){
-	        	thisExpr <- parse(text = paste0(model$expandNodeNames(gids[accessID]), '<-', value))		
-	        	eval(thisExpr, envir = model)
-	        }
-	        else{
-	        	logVarID <- l_gids[accessID - len_variables]
-	        	logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
-	        	thisExpr <- parse(text = paste0(logProbName, '<-', value))[[1]]
-				eval(thisExpr, envir = model)
-	        }
+            len_variables <- length(gids)
+            if(accessID <= len_variables){
+                thisExpr <- parse(text = paste0(model$expandNodeNames(gids[accessID]), '<-', value))		
+                eval(thisExpr, envir = model)
+            }
+            else{
+                logVarID <- l_gids[accessID - len_variables]
+                logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
+                thisExpr <- parse(text = paste0(logProbName, '<-', value))[[1]]
+                eval(thisExpr, envir = model)
+            }
         },
         getNodeNames = function(){
-        	c(model$expandNodeNames(gids, returnScalarComponents = TRUE), 	model$modelDef$maps$logProbIDs_2_LogProbName[l_gids])
+            c(model$expandNodeNames(gids, returnScalarComponents = TRUE), 	model$modelDef$maps$logProbIDs_2_LogProbName[l_gids])
         },
         show = function(){
-	        cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))
-	        }
+            cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))
+        }
     )
 )
 

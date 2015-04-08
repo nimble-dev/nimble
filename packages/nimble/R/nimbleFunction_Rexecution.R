@@ -299,8 +299,8 @@ values <- function(model, nodes){
 #' cCopy() ## execute the copy with the compiled function
 nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
 
-	isFromModel = NA
-	isToModel = NA
+    isFromModel = NA
+    isToModel = NA
     if(missing(nodes) ) 
         nodes = allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
@@ -309,54 +309,54 @@ nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb
         isFromModel = TRUE
     }
     else if(inherits(from, "modelValuesBaseClass"))
-    {
-        accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
-        if(is.na(row))
-            stop("Error: need to supply 'row' for a modelValues copy")
-        rowFrom = row
-        isFromModel = FALSE
-    }
+        {
+            accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
+            if(is.na(row))
+                stop("Error: need to supply 'row' for a modelValues copy")
+            rowFrom = row
+            isFromModel = FALSE
+        }
     if( inherits(to, "modelBaseClass") ){
         if(is.na(nodesTo[[1]]) ) 
             accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
-		else
-			accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
-		rowTo = NA
-		isToModel = TRUE
-		}
-	else if(inherits(to, "modelValuesBaseClass"))
-		{
-		if(is.na(nodesTo[[1]]) ) 
-			accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
-		else
-			accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
-		if(is.na(rowTo))
-			rowTo = row
-		isToModel = FALSE
-		}
-		if(is.na(isFromModel))
-			stop('argument "from" in nimCopy is neither a model nor modelValues')
-		if(is.na(isToModel))
-			stop('argument "to" in nimCopy is neither a model nor modelValues')
+        else
+            accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
+        rowTo = NA
+        isToModel = TRUE
+    }
+    else if(inherits(to, "modelValuesBaseClass"))
+        {
+            if(is.na(nodesTo[[1]]) ) 
+                accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
+            else
+                accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
+            if(is.na(rowTo))
+                rowTo = row
+            isToModel = FALSE
+        }
+    if(is.na(isFromModel))
+        stop('argument "from" in nimCopy is neither a model nor modelValues')
+    if(is.na(isToModel))
+        stop('argument "to" in nimCopy is neither a model nor modelValues')
 
-		
-		lengthTo = accessTo$length
-		lengthFrom = accessFrom$length
-		if(lengthTo != lengthFrom)
-			stop('lengths not equal in nimCopy') 
-		if(lengthTo > 0){
-			for(i in 1:lengthTo){
-				if(isFromModel)
-					valueFrom = accessFrom$getSingleValue_fromGID(i)
-				else
-					valueFrom = accessFrom$getSingleValue_fromGID(i, rowFrom)
-				
-				if(isToModel)
-					accessTo$setSingleValue_fromGID(valueFrom, i)
-				else
-					accessTo$setSingleValue_fromGID(valueFrom, i, rowTo)
-			}
-		}
+    
+    lengthTo = accessTo$length
+    lengthFrom = accessFrom$length
+    if(lengthTo != lengthFrom)
+        stop('lengths not equal in nimCopy') 
+    if(lengthTo > 0){
+        for(i in 1:lengthTo){
+            if(isFromModel)
+                valueFrom = accessFrom$getSingleValue_fromGID(i)
+            else
+                valueFrom = accessFrom$getSingleValue_fromGID(i, rowFrom)
+            
+            if(isToModel)
+                accessTo$setSingleValue_fromGID(valueFrom, i)
+            else
+                accessTo$setSingleValue_fromGID(valueFrom, i, rowTo)
+        }
+    }
 }
 
 

@@ -39,6 +39,59 @@ double calculate(NodeVectorClass &nodes);
 double getLogProb(NodeVectorClass &nodes);
 void simulate(NodeVectorClass &nodes);
 
+
+/////////////////////
+// new version of variable accessors using maps
+/////////////////////
+
+class SingleVariableMapAccessBase {
+ public:
+  int offset, nDim;
+  bool singleton;
+  vector<int> sizes, strides; 
+  virtual ~singleVariableMapAccessBase() {};
+};
+
+class SingleVariableMapAccess : public SingleVariableMapAccessBase {
+  // NimArrType system TBD
+};
+
+class ManyVariablesMapAccessorBase {
+ public:
+  virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector()=0;
+  virtual void  setRow(int i) = 0;
+  virtual ~ManyVariablesMapAccessorBase() {};
+};
+
+class ManyVariablesMapAccessor : public ManyVariablesAccessorBase {
+ public:
+  vector<SingleVariableMapAccessBase *> varAccessors;
+  virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
+  ~ManyVariablesMapAccessor();
+  void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
+};
+
+class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
+ public:
+  //  NimVecType *pVVar;   
+  int currentRow;
+  //virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} 
+  ~SingleModelValuesMapAccess() {};
+  void setRow(int i) {currentRow = i;}
+  int getRow() {return(currentRow);}
+};
+
+class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
+  public:
+  int currentRow;
+  vector<SingleVariableMapAccessBase *> varAccessors;
+  virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
+  virtual void setRow(int i);// see .cpp
+  ~ManyModelValuesMapAccessor() {};
+};
+
+// STOPPED HERE
+
 ///////////////////////////////
 // 2. Variable accessors
 //

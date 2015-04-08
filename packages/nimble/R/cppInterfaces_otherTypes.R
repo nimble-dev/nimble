@@ -36,7 +36,15 @@ resizeCModelAccessors <- function(modelAccessPtr, size)
 #	Resizes a manyModelVariablesAccessor
 
 
-populateManyModelVarAccess <- function(fxnPtr, Robject, manyAccessName)
+populateManyModelVarAccess <- function(fxnPtr, Robject, manyAccessName) { ## new version
+    manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
+    cModel <- Robject[[manyAccessName]]$model$CobjectInterface
+    if(Robject[[manyAccessName]]$length > 0) {
+        .Call('populateModelVariableAccessorsMaps', manyAccessPtr, cModel)
+    }
+}
+
+populateManyModelVarAccessOld <- function(fxnPtr, Robject, manyAccessName) ## old version
 	{
 	manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
 	gids <- Robject[[manyAccessName]]$gids
