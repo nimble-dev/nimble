@@ -282,6 +282,7 @@ print: Boolean argument, default value TRUE, specifying whether to print the new
 '   
             if(missing(ind))        ind <- numeric(0)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            if(length(ind) > 0 && max(ind) > length(samplerSpecs)) stop('MCMC specification doesn\'t have that many samplers')
             samplerSpecs <<- samplerSpecs[ind]
             if(print) getSamplers()
             return(invisible(NULL))
@@ -304,6 +305,7 @@ This is generally the intended usage, to see all current samplers in the MCMCspe
         },
 
         findSamplersOnNodes = function(nodes) {
+            if(length(samplerSpecs) == 0) return(integer())
             nodes <- model$expandNodeNames(nodes, returnScalarComponents = TRUE)
             which(unlist(lapply(samplerSpecs, function(ss) any(nodes %in% ss$targetAsScalar))))
         },
