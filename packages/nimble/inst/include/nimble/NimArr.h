@@ -4,6 +4,40 @@
 #include "NimArrBase.h"
 #include "Utils.h"
 
+template<>
+template<class Tfrom>
+void NimArrBase<double>::genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+    if(isMap() || from->isMap()) std::cout<<"Error, genericMapCopy is not set up for nested maps\n";
+    int nDim = numDims();
+    switch(nDim) {
+    case 1: // explicitly downcasting because I couldn't do it with template member function of template class, or didn't figure it out.
+      static_cast< NimArr<1, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs)
+	break;
+    case 2:
+      static_cast< NimArr<2, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs)
+	break;
+    case 3:
+      static_cast< NimArr<3, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs)
+	break;
+    case 4:
+      static_cast< NimArr<4, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs)
+	break;
+    default:
+      std::cout<<"Error in copying: more than 4 dimensions not supported yet\n";
+      
+    }
+
+}
+
+template<>
+template<class Tfrom>
+void NimArrBase<int>::genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+    if(isMap() || from->isMap()) std::cout<<"Error, genericMapCopy is not set up for nested maps\n";
+    std::cout<<"int";
+}
+
+
+
 template<int ndim, class T>
   class NimArr;
 
@@ -120,6 +154,24 @@ public:
     NimArrBase<T>::vPtr = source.getVptr();
     NimArrBase<T>::NAdims[0] = NimArrBase<T>::NAlength = size1 = is1;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
+  }
+
+  void setMap(NimArrBase<T> &source, int off, vector<int> &str, vector<int> &is) {
+    NimArrBase<T>::boolMap = true;
+    NimArrBase<T>::offset = off;
+    NimArrBase<T>::vPtr = source.getVptr();
+    NimArrBase<T>::NAdims[0] = NimArrBase<T>::NAlength = size1 = is[0];
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str[0];
+  }
+
+  template<class Tfrom>
+    void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> &from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    NimArr<1, T> mapTo;
+    mapTo.setMap(&this, offset, str, is);
+    NimArr<1, Tfrom> mapFrom;
+    mapFrom.setMap(from, fromOffset, fromStr, fromIs);
+    mapTo.mapCopy(mapFrom);
   }
 
   NimArr<1, T>(vector<T> &vm, int off, int str1, int is1) : NimArrBase<T>(vm, off) {
@@ -283,6 +335,28 @@ public:
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
   }
 
+  void setMap(NimArrBase<T> &source, int off, vector<int> &str, vector<int> &is) {
+    NimArrBase<T>::boolMap = true;
+    NimArrBase<T>::offset = off;
+    NimArrBase<T>::vPtr = source.getVptr();
+    NimArrBase<T>::NAdims[0] = size1 = is[0];
+    NimArrBase<T>::NAdims[1] = size2 = is[1];
+    NimArrBase<T>::NAlength = size1*size2;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str[0];
+    NimArrBase<T>::NAstrides[1] = stride2 = str[1];
+  }
+
+  template<class Tfrom>
+    void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> &from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    NimArr<2, T> mapTo;
+    mapTo.setMap(&this, offset, str, is);
+    NimArr<2, Tfrom> mapFrom;
+    mapFrom.setMap(from, fromOffset, fromStr, fromIs);
+    mapTo.mapCopy(mapFrom);
+  }
+
+  
   NimArr<2, T>(vector<T> &vm, int off, int str1, int str2, int is1, int is2) : NimArrBase<T>(vm, off) {
     NimArrBase<T>::NAdims.resize(2);
     NimArrBase<T>::NAdims[0] = size1 = is1;
@@ -472,8 +546,30 @@ class NimArr<3, T> : public NimArrBase<T> {
     NimArrBase<T>::NAlength = size1 * size2 * size3;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
-  //  NimArrBase<T>::NAstrides[1] = stride2 = str3;   This has to be a bug -Cliff
-  	NimArrBase<T>::NAstrides[2] = stride3 = str3;
+    NimArrBase<T>::NAstrides[2] = stride3 = str3;
+  }
+
+  void setMap(NimArrBase<T> &source, int off, vector<int> &str, vector<int> &is) {
+    NimArrBase<T>::boolMap = true;
+    NimArrBase<T>::offset = off;
+    NimArrBase<T>::vPtr = source.getVptr();
+    NimArrBase<T>::NAdims[0] = size1 = is[0];
+    NimArrBase<T>::NAdims[1] = size2 = is[1];
+    NimArrBase<T>::NAdims[1] = size3 = is[2];
+    NimArrBase<T>::NAlength = size1*size2*size3;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str[0];
+    NimArrBase<T>::NAstrides[1] = stride2 = str[1];
+    NimArrBase<T>::NAstrides[2] = stride3 = str[2];
+  }
+
+  template<class Tfrom>
+    void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> &from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    NimArr<3, T> mapTo;
+    mapTo.setMap(&this, offset, str, is);
+    NimArr<3, Tfrom> mapFrom;
+    mapFrom.setMap(from, fromOffset, fromStr, fromIs);
+    mapTo.mapCopy(mapFrom);
   }
 
 
@@ -698,6 +794,32 @@ class NimArr<4, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
     NimArrBase<T>::NAstrides[2] = stride3 = str3;
     NimArrBase<T>::NAstrides[3] = stride4 = str4;
+  }
+
+  void setMap(NimArrBase<T> &source, int off, vector<int> &str, vector<int> &is) {
+    NimArrBase<T>::boolMap = true;
+    NimArrBase<T>::offset = off;
+    NimArrBase<T>::vPtr = source.getVptr();
+    NimArrBase<T>::NAdims[0] = size1 = is[0];
+    NimArrBase<T>::NAdims[1] = size2 = is[1];
+    NimArrBase<T>::NAdims[2] = size3 = is[2];
+    NimArrBase<T>::NAdims[3] = size4 = is[3];
+
+    NimArrBase<T>::NAlength = size1*size2;
+    NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str[0];
+    NimArrBase<T>::NAstrides[1] = stride2 = str[1];
+    NimArrBase<T>::NAstrides[2] = stride3 = str[2];
+    NimArrBase<T>::NAstrides[3] = stride4 = str[3];
+  }
+
+  template<class Tfrom>
+    void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> &from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    NimArr<4, T> mapTo;
+    mapTo.setMap(&this, offset, str, is);
+    NimArr<4, Tfrom> mapFrom;
+    mapFrom.setMap(from, fromOffset, fromStr, fromIs);
+    mapTo.mapCopy(mapFrom);
   }
 
 

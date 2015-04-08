@@ -506,15 +506,16 @@ map_SetupTemplate <- setupCodeTemplateClass(
 	codeTemplate = quote({
 		VARANDINDICES <- getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
-		mapParts <- varAndIndices2mapParts(VARANDINDICES, MODEL$getVarInfo(NEWVARNAME))
-		MSTRIDES <- mapParts$strides
-		MOFFSET <- mapParts$offset
-		MSIZES <- mapParts$sizes
+                map_SetupTemplate_vi <- MODEL$getVarInfo(NEWVARNAME)
+		map_SetupTemplate_mapParts <- varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
+		MSTRIDES <- map_SetupTemplate_mapParts$strides
+		MOFFSET <- map_SetupTemplate_mapParts$offset
+		MSIZES <- map_SetupTemplate_mapParts$sizes
 		VARACCESSOR <- singleVarAccess(model, NEWVARNAME)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(VARACCESSOR = as.name(resultName),
-		NODEVARNAME =	argList$nodeExpr,		# as.name(paste0(resultName, '_newVarName')),
+		NODEVARNAME =	argList$nodeExpr,
 		NEWVARNAME = as.name(paste0(resultName, '_newVarName')),
 		VARANDINDICES = as.name(paste0(resultName, '_varAndIndices')),
 		MODEL = argList$model,
@@ -680,19 +681,21 @@ determineNdimFromOneCase <- function(model, varAndIndices) {
 
 ## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
 
-varAndIndices2mapParts <- function(varAndIndices, varInfo) {
+varAndIndices2mapParts <- function(varAndIndices, sizes, nDim) {
     varName <- varAndIndices$name
     indices <- varAndIndices$indices
     ## put together offsetExpr, sizeExprs, strideExprs
     ## need sizes to get strides
-    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
-    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
-        nDim <- varInfo$nDim
+    if(length(sizes) == 0) sizes <- 1
+##    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
+##    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
+##        nDim <- varInfo$nDim
+    if(nDim > 0 & length(indices)==0) {
         blockBool <- rep(TRUE, nDim)
         firstIndexRexprs <- rep(list(1), nDim)
         targetSizes <- sizes
     } else {
-        nDim <- length(indices)
+        nDim <- length(indices) ## may be redundant/moot
         firstIndexRexprs <- vector('list', nDim)
         targetSizes <- integer(nDim)
         blockBool <- rep(FALSE, nDim)

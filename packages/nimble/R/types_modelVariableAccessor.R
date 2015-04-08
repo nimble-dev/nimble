@@ -16,45 +16,10 @@ modelVariableAccessor <- setRefClass(
                    show  = function() cat(paste0(toStr(), '\n'))
     )
 )
-
-modelVariableAccessorVector <- setRefClass( ## new implementation
+modelVariableAccessorVector<- setRefClass( ## new implementation
     Class = 'modelVariableAccessorVector',
-    fields = list(
-        model = 'ANY',
-        nodeNames = 'ANY',
-        logProb = 'ANY', 
-        length = 'ANY',
-        mapInfo = 'ANY'
-    ),
-    methods = list(
-        initialize = function(model, nodeNames, logProb = FALSE) {
-            model <<- model
-            if(!logProb)
-                nodeNames <<- nodeNames
-            else {
-                isLogProbName <- grepl('logProb_', nodeNames)
-                nodeNames <<- c(nodeNames, makeLogProbName(nodeNames[!isLogProbName]))
-            }
-            logProb <<- logProb
-            length <<- length(nodeNames)
-            mapInfo <<- NULL
-        },
-        makeMapInfo = function() {
-            mapInfo <<- lapply(nodeNames, function(x) {
-                varAndIndices <- getVarAndIndices(x)
-                varName <- as.character(varAndIndices$varName)
-                ans <- varAndIndices2mapParts(varAndIndices, model$getVarInfo(varName))
-                ans$varName <- varName
-                ans$singleton <- prod(ans$sizes == 1)
-                ans
-            }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
-            invisible(NULL)
-        },
-        getMapInfo = function() {
-            if(is.null(mapInfo)) makeMapInfo()
-            mapInfo
-        }
-)
+    contains = 'valuesAccessorVector')
+
 
 modelVariableAccessorVectorOld <- setRefClass( ## old implementation, being replaced
     Class = 'modelVariableAccessorVector',

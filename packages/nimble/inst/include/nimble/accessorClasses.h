@@ -41,20 +41,24 @@ void simulate(NodeVectorClass &nodes);
 
 
 /////////////////////
-// new version of variable accessors using maps
+// new version of variable accessors using maps (offset and strided windows into multivariate objects (NimArr<>s) )
 /////////////////////
 
+// single and many base classes
 class SingleVariableMapAccessBase {
  public:
-  int offset, nDim;
+  int offset;
   bool singleton;
   vector<int> sizes, strides; 
-  virtual ~singleVariableMapAccessBase() {};
+  virtual ~SingleVariableMapAccessBase() {};
+  virtual NimArrType *getNimArrPtr()=0;
+  int &getOffset() {return(offset);}
+  vector<int> &getSizes() {return(sizes);}
+  vector<int> &getStrides() {return(strides);}
+  bool &getSingleton() {return(singleton);}
+  virtual void setObject(void *object);
 };
 
-class SingleVariableMapAccess : public SingleVariableMapAccessBase {
-  // NimArrType system TBD
-};
 
 class ManyVariablesMapAccessorBase {
  public:
@@ -63,7 +67,16 @@ class ManyVariablesMapAccessorBase {
   virtual ~ManyVariablesMapAccessorBase() {};
 };
 
-class ManyVariablesMapAccessor : public ManyVariablesAccessorBase {
+// single and many variable classes
+
+class SingleVariableMapAccess : public SingleVariableMapAccessBase {
+  NimArrType **ppVar; // I think we have to do some casting when populating this
+  virtual NimArrType *getNimArrPtr() {return(*ppVar);}
+  ~SingleVariableMapAccess() {};
+  void setObject(void *object) {ppVar = static_cast<NimArrType**>(object);}
+};
+
+class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
  public:
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
@@ -71,14 +84,16 @@ class ManyVariablesMapAccessor : public ManyVariablesAccessorBase {
   void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
 };
 
+// single and many modelValues classes
 class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
  public:
-  //  NimVecType *pVVar;   
+  NimVecType *pVVar;   
   int currentRow;
-  //virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} 
+  virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} 
   ~SingleModelValuesMapAccess() {};
   void setRow(int i) {currentRow = i;}
   int getRow() {return(currentRow);}
+  void setObject(void *object) {pVVar = static_cast<NimVecType*>(object);}
 };
 
 class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
@@ -90,7 +105,98 @@ class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
   ~ManyModelValuesMapAccessor() {};
 };
 
-// STOPPED HERE
+void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to);
+void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to);
+
+void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to) { //map version
+
+  vector<SingleVariableMapAccessBase *> fromAccessors = from.getMapAccessVector();
+  vector<SingleVariableMapAccessBase *> toAccessors = to.getMapAccessVector();
+
+  if(fromAccessors.size() != toAccessors.size()) {
+    std::cout<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+  }
+
+  vector<SingleVariableMapAccessBase *>::iterator iFrom, iTo, iFromEnd;
+  iFrom = fromAccessors.begin();
+  iFromEnd = fromAccessors.end();
+  iTo =  toAccessors.begin();
+  for( ; iFrom != iFromEnd; ++iFrom) {
+    nimCopyOne(*iFrom, *iTo);
+    ++iTo;
+  }
+}
+
+void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to) { // map version
+  nimType fromType, toType;
+  NimArrType *fromNimArr, *toNimArr;
+  fromNimArr = from->getNimArrPtr();
+  toNimArr = to->getNimArrPtr();
+
+  fromType = fromNimArr->getNimType();
+  toType = toNimArr->getNimType();
+
+  if(to->singleton) {
+    switch(fromType) {
+    case DOUBLE:
+      switch(toType) {
+      case DOUBLE:
+	(*static_cast<NimArrBase<double> *>(toNimArr))[from->offset] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->offset];
+      break;
+    case INT:
+	(*static_cast<NimArrBase<int> *>(toNimArr))[from->offset] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->offset];
+      break;
+    default:
+      cout<<"Error in nimCopyOne: unknown type for destination\n";
+    }
+    break;
+  case INT:
+    switch(toType) {
+    case DOUBLE:
+      (*static_cast<NimArrBase<double> *>(toNimArr))[from->offset] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->offset];
+      break;
+    case INT:
+	(*static_cast<NimArrBase<int> *>(toNimArr))[from->offset] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->offset];
+      break;
+    default:
+      cout<<"Error in nimCopyOne: unknown type for destination\n";
+    }
+    break;
+  default:
+    cout<<"Error in nimCopyOne: unknown type for source\n";
+    }
+  } else {
+    
+    switch(fromType) {
+    case DOUBLE:
+      switch(toType) {
+      case DOUBLE:
+	static_cast<NimArrBase<double> *>(toNimArr)->genericMapCopy<double>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<double> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
+      break;
+      case INT:
+	static_cast<NimArrBase<int> *>(toNimArr)->genericMapCopy<double>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<double> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
+	break;
+      default:
+	cout<<"Error in nimCopyOne: unknown type for destination\n";
+      }
+      
+    case INT:
+      switch(toType) {
+      case DOUBLE:
+	static_cast<NimArrBase<double> *>(toNimArr)->genericMapCopy<int>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<int> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
+	break;
+      case INT:
+	static_cast<NimArrBase<int> *>(toNimArr)->genericMapCopy<int>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<int> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
+	break;
+      default:
+	cout<<"Error in nimCopyOne: unknown type for destination\n";
+      }
+      
+    default:
+      cout<<"Error in nimCopyOne: unknown type for destination\n";
+    }
+  }
+}
 
 ///////////////////////////////
 // 2. Variable accessors

@@ -79,6 +79,8 @@ class NimArrBase: public NimArrType {
  NimArrBase(const vector<T> &vm, int off) : vPtr(&vm), offset(off), boolMap(true) {
     setMyType();
   }
+  template<class Tfrom>
+    void genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs);
 };
 
 //template<> NimArrBase<double>::NimArrBase(){length = 0; myType = DOUBLE;};

@@ -1,4 +1,5 @@
 #include "nimble/accessorClasses.h"
+#include "nimble/RcppUtils.h"
 
 // 1. NodeVectors
 double calculate(NodeVectorClass &nodes) {
@@ -450,6 +451,8 @@ SEXP populateNumberedObject_withSingleVariableAccessors(SEXP modelPtr, SEXP varN
 }
 */
 
+
+
 SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP GIDs, SEXP curRow, SEXP SnumbObj){
 //	int cIndex = INTEGER(beginIndex)[0] - 1;
 	int len = LENGTH(GIDs);
@@ -536,6 +539,32 @@ SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_
 		}
 	return(R_NilValue);
 }
+
+///NEW
+
+SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr ) {
+  // typeCode = 1 for model, 2 for modelValues
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
+  vector<SingleVariableMapAccessBase *> *singleAccessors = &(valuesAccessor->getMapAccessVector());
+  int numAccessors = LENGTH(SsourceList);
+  singleAccessors->resize(numAccessors);
+  NamedObjects *sourceNamedObject = static_cast<NamedObjects*>(R_ExternalPtrAddr(SModelOrModelValuesPtr));
+  SEXP SoneSource;
+  string varName;
+  for(int i = 0; i < numAccessors; ++i) {
+    PROTECT(SoneSource = VECTOR_ELT(SsourceList, i));
+    (*singleAccessors)[i]->getOffset() = SEXP_2_int(VECTOR_ELT(SoneSource, 0));
+    (*singleAccessors)[i]->getSizes() = SEXP_2_vectorInt(VECTOR_ELT(SoneSource, 1));
+    (*singleAccessors)[i]->getStrides() = SEXP_2_vectorInt(VECTOR_ELT(SoneSource, 2));
+    (*singleAccessors)[i]->getSingleton() = static_cast<bool>(SEXP_2_int(VECTOR_ELT(SoneSource, 4)));
+    varName = STRSEXP_2_string(VECTOR_ELT(SoneSource, 3), 0);
+    (*singleAccessors)[i]->setObject( sourceNamedObject->getObjectPtr(varName) );
+    UNPROTECT(1);
+  }
+  return(R_NilValue);
+}
+
+///
 
 SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_LP_GIDs, SEXP S_LP_numberedObj){
 	int len = LENGTH(S_GIDs);

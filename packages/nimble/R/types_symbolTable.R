@@ -243,7 +243,7 @@ symbolModelVariableAccessorVector <-
                     },
                     show = function() writeLines(paste('symbolModelVariableAccessorVector', name)),
                     genCppVar = function(...) {
-                        return(cppModelVariableAccessorVector(name = name))
+                        return(cppModelVariableMapAccessorVector(name = name))
                     }
                     )
                 )
@@ -258,7 +258,7 @@ symbolModelValuesAccessorVector <-
                     },
                     show = function() writeLines(paste('symbolModelValuesAccessorVector', name)),
                     genCppVar = function(...) {
-                        return(cppModelValuesAccessorVector(name = name)) 
+                        return(cppModelValuesMapAccessorVector(name = name)) 
                     }
                     )
                 )

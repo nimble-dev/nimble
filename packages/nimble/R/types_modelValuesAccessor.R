@@ -19,10 +19,57 @@ modelValuesAccessor <- setRefClass(
     )
 )
 
+valuesAccessorVector <- setRefClass( ## new implementation
+    Class = 'valuesAccessorVector',
+    fields = list(
+        sourceObject = 'ANY',
+        nodeNames = 'ANY',
+        logProb = 'ANY', 
+        length = 'ANY',
+        mapInfo = 'ANY'
+    ),
+    methods = list(
+        initialize = function(modelOrModelValues, nodeNames, logProb = FALSE) {
+            sourceObject <<- modelOrModelValues
+            if(!logProb)
+                nodeNames <<- nodeNames
+            else {
+                isLogProbName <- grepl('logProb_', nodeNames)
+                nodeNames <<- c(nodeNames, makeLogProbName(nodeNames[!isLogProbName]))
+            }
+            logProb <<- logProb
+            length <<- length(nodeNames)
+            mapInfo <<- NULL
+        },
+        makeMapInfo = function() {
+            mapInfo <<- lapply(nodeNames, function(x) {
+                varAndIndices <- getVarAndIndices(x)
+                varName <- as.character(varAndIndices$varName)
+                varSym <- sourceObject$getSymbolTable()$getSymbolObject(varName) ## previously from model$getVarInfo(varName)
+                ans <- varAndIndices2mapParts(varAndIndices, varSym$size, varSym$nDim)
+                ans$varName <- varName
+                ans$singleton <- prod(ans$sizes == 1)
+                ans
+            }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
+            invisible(NULL)
+        },
+        getMapInfo = function() {
+            if(is.null(mapInfo)) makeMapInfo()
+            mapInfo
+        }
+    )
+    )
+
+
 makeSingleModelValuesAccessor <- function(ids, modelValues){
 	return(modelValuesAccessor(id = id, modelValues = modelValues))
-}
-modelValuesAccessorVector <- setRefClass(
+    }
+
+modelValuesAccessorVector <- setRefClass( ## new implementation
+   Class = 'modelValuesAccessorVector',
+   contains = 'valuesAccessorVector')
+
+modelValuesAccessorVectorOld <- setRefClass( ## old implementation
     Class = 'modelValuesAccessorVector',
     fields = list(modelValues = 'ANY',
                   gids = 'ANY', 		#'character',
