@@ -298,12 +298,9 @@ This is generally the intended usage, to see all current samplers in the MCMCspe
 '
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
-            if(length(ind) == 0) return()
-            log10ind <- floor(log10(ind))
-            numSpaces <- max(log10ind) - log10ind
-            spaces <- unlist(lapply(numSpaces, function(n) paste0(rep(' ', n), collapse='')))
-            for(i in seq_along(ind))
-                cat(paste0('[', ind[i], '] ', spaces[i], samplerSpecs[[ind[i]]]$toStr(), '\n'))
+            makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
+            for(i in ind)
+                cat(paste0('[', i, '] ', makeSpaces(i), samplerSpecs[[i]]$toStr(), '\n'))
         },
 
         findSamplersOnNodes = function(nodes) {
@@ -560,4 +557,9 @@ makeNewSpecFromOldSpec <- function(oldMCMCspec){
     return(newMCMCspec)	
 }
 
+
+newSpacesFunction <- function(m) {
+    log10max <- floor(log10(m))
+    function(i) paste0(rep(' ', log10max-floor(log10(i))), collapse = '')
+}
 
