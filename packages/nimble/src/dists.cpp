@@ -197,7 +197,7 @@ double ddirch(double* x, double* alpha, int K, int give_log)
     sumX += x[i];
   }
   if(sumX > 1.0 + 10*DBL_EPSILON || sumX < 1.0 - 10*DBL_EPSILON) {
-    return R_NegInf;
+    return give_log ? R_NegInf : 0.0;
   }
   // should return error instead?
 
@@ -274,8 +274,10 @@ double dmulti(int* x, int size, double* prob, int K, int give_log) // Calling fu
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   double dens = lgammafn(size + 1);
-  for(int i = 0; i < K; i++) 
+  for(int i = 0; i < K; i++) {
+   	if(x[i] != 0 & prob[i] != 0)
     dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
+  }
   return give_log ? dens : exp(dens);
 }
 
@@ -356,7 +358,7 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
 double dcat(int x, double* prob, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(x > K || x < 1) return((give_log)? R_NegInf : 0.0);
+  if(x > K || x < 1) return give_log ? R_NegInf : 0.0;
   return give_log ? log(prob[x-1]) : prob[x-1];
 }
 
@@ -384,7 +386,7 @@ int rcat(double* prob, int K)
 SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log) 
 {
   // this will call NIMBLE's dcat() for computation on scalars
-  // p must be a single vector of probs adding to one, but x can be a vector
+  // prob must be a single vector of probs adding to one, but x can be a vector
 
   if(!isInteger(x) || !isReal(prob) || !isLogical(return_log)) 
     RBREAK("Error (C_dcat): invalid input type for one of the arguments.\n");
@@ -717,3 +719,120 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
   
 
 
+
+double dinterval(int x, double t, double* c, int K, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  if(x < 0 || x > K) return give_log ? R_NegInf : 0.0;
+  if(x == 0 && t <= c[x]) return give_log ? 0.0 : 1.0;
+  if(x == K && t > c[x-1]) return give_log ? 0.0 : 1.0;
+  else if(t <= c[x] && t > c[x - 1]) return give_log ? 0.0 : 1.0;
+  else return give_log ? R_NegInf : 0.0;
+}
+
+
+int rinterval(double t, double* c, int K)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  for(int i = 0; i < K; i++) {
+    if(t <= c[i]) return i;
+  }
+  return K;
+}
+
+
+SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
+  // this will call NIMBLE's dinterval() for computation on scalars
+  // c must be a single vector of cutpoints; x and t can be vectors
+  if(!isInteger(x) || !isReal(t) || !isReal(c) || !isLogical(return_log)) 
+    RBREAK("Error (C_dinterval): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_t = LENGTH(t);
+  int n_c = LENGTH(c);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  int* c_x = INTEGER(x);
+  double* c_t = REAL(t);
+  double* c_c = REAL(c);
+
+  // FIXME: abstract the recycling as a function
+  if(n_t == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dinterval(c_x[i], *c_t, c_c, n_c, give_log);
+  } else {
+    int i_t = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = dinterval(c_x[i], c_t[i_t++], c_c, n_c, give_log);
+      // implement recycling:
+      if(i_t == n_t) i_t = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
+  if(!isInteger(n) || !isReal(t) || !isReal(c))
+    RBREAK("Error (C_rinterval): invalid input type for one of the arguments.");
+  int n_t = LENGTH(t);
+  int K = LENGTH(c);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = allocVector(INTSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rinterval): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  double* c_t = REAL(t);
+  double* c_c = REAL(c);
+  if(n_t == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      INTEGER(ans)[i] = rinterval(*c_t, c_c, K);
+  } else {
+    int i_t = 0;
+    for(int i = 0; i < n_values; i++) {
+      INTEGER(ans)[i] = rinterval(c_t[i_t++], c_c, K);
+      // implement recycling:
+      if(i_t == n_t) i_t = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+
+double dconstraint(int x, int cond, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  if(x == cond || x == 0) return give_log ? 0.0 : 1.0;
+  else return give_log ? R_NegInf : 0.0;
+}
+
+
+int rconstraint(int cond)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  return cond;
+}
+
+
+  
