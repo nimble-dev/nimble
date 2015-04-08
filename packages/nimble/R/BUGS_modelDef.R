@@ -102,8 +102,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  buildSymbolTable               = function() {},
                                  buildIgraph                    = function() {},
                                  genGraphNodesList              = function() {},
-                          #       buildMaps                      = function() {},
-                                 buildMaps2						= function() {},
+                                 buildMaps2                     = function() {},
                                  
                                  newModel   = function() {},
                                  printDI    = function() {},
@@ -137,16 +136,11 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
     assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
     processBUGScode()                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
-    ##<<<<<<< HEAD
-
     ## We will try to infer sizes later
     ##addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
-
-##=======
     splitConstantsAndData()           ## deals with case when data is passed in as constants
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     removeTruncationWrapping()        ## transforms T(ddist(),lower,upper) to put bounds into declInfo
-    ##>>>>>>> origin/devel
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName
@@ -2055,7 +2049,10 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
 #           	warning(warningText)
 #            }
 #         }
-
+    ## fixing the problem with RStudio hanging: over-writing the str() method for this model class
+    ## added by DT, April 2015
+    thisClassName <- as.character(class(model))
+    eval(substitute(METHOD <- function(object, ...) str(NULL), list(METHOD = as.name(paste0('str.', thisClassName)))), envir = globalenv())
     return(model)
 })
 
