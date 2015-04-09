@@ -70,7 +70,7 @@ modelValuesAccessorVector <- setRefClass( ## new implementation
    contains = 'valuesAccessorVector')
 
 modelValuesAccessorVectorOld <- setRefClass( ## old implementation
-    Class = 'modelValuesAccessorVector',
+    Class = 'modelValuesAccessorVectorOld',
     fields = list(modelValues = 'ANY',
                   gids = 'ANY', 		#'character',
                   length = 'ANY'		#'numeric'),

@@ -22,7 +22,7 @@ modelVariableAccessorVector<- setRefClass( ## new implementation
 
 
 modelVariableAccessorVectorOld <- setRefClass( ## old implementation, being replaced
-    Class = 'modelVariableAccessorVector',
+    Class = 'modelVariableAccessorVectorOld',
     fields = list(model = 	'ANY',
         gids = 	'ANY',
         l_gids = 	'ANY',	#graph IDS for log probabilities, which is a different set of graph IDs than for nodes

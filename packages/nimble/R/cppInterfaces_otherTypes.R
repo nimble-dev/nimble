@@ -37,9 +37,9 @@ resizeCModelAccessors <- function(modelAccessPtr, size)
 
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## new version
     manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-    cModel <- Robject[[manyAccessName]]$model$CobjectInterface
+    cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface
     if(Robject[[manyAccessName]]$length > 0) {
-        .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]], cModel)
+        .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModel$.basePtr)
     }
 }
 
@@ -67,10 +67,10 @@ resizeCModelValuesAccessors <- function(modelValuesAccessPtr, size)
 #	Resizes a manyModelvaluesAccessor
 
 
-populateManyModelValuesAccess <- function(fxnPtr, Robject, manyAccessName){
+populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName){ ## new version. nearly identical to populateManyModelVarMapAccess
     manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-    cModelValues <- Robject[[manyAccessName]]$modelValues$CobjectInterface
-    .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]], cModelValues)
+    cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface
+    .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModelValues$extptr)
 }
 
 

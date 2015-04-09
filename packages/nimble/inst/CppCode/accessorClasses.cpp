@@ -39,7 +39,7 @@ void simulate(NodeVectorClass &nodes) {
 
 // 2. We will only delete the singleVariableAccessors when we delete the ManyVariablesAccesor that they are contained in
 		// Cliff's note: actually, we have changed the paradigm. We now make one variable accessor per node, which can appear in many different
-		// ManyVariableAccessors. All unique singleAccessors will be held in a single SpecializedNumberedObjects, which takes care of the finalizer. 
+		// ManyVariableAccessors. All unique singleAccessors will be held in a single SpecializedNumberedObjects, which takes care of the finalizer.
 ManyVariablesAccessor::~ManyVariablesAccessor(){
 //	int k = varAccessors.size();
 //	Rprintf("skipping the deletion of singleVariableAccesses for debugging purposes\n");
@@ -47,6 +47,19 @@ ManyVariablesAccessor::~ManyVariablesAccessor(){
 //		delete static_cast<SingleVariableAccess*>(varAccessors[i]);
 }
 
+
+SingleVariableMapAccessBase::~SingleVariableMapAccessBase(){}
+
+ManyVariablesMapAccessor::~ManyVariablesMapAccessor(){
+    for(int i = 0; i < varAccessors.size(); ++i)
+      delete static_cast<SingleVariableMapAccess*>(varAccessors[i]);
+}
+
+
+ManyModelValuesMapAccessor::~ManyModelValuesMapAccessor() {
+    for(int i = 0; i < varAccessors.size(); ++i)
+      delete static_cast<SingleModelValuesMapAccess*>(varAccessors[i]);
+};
 
 // 3. 
 void ManyModelValuesAccessor::setRow(int i) {
@@ -61,6 +74,123 @@ void ManyModelValuesAccessor::setRow(int i) {
 //  return(varAccessors);
 }
 
+void ManyModelValuesMapAccessor::setRow(int i) {
+  if(i != currentRow) {
+    currentRow = i;
+    vector<SingleVariableMapAccessBase *>::iterator iVar, iEnd;
+    iEnd = varAccessors.end();
+    for(iVar = varAccessors.begin(); iVar != iEnd; ++iVar) {
+      static_cast<SingleModelValuesMapAccess*>(*iVar)->setRow(i);
+    }
+  }
+//  return(varAccessors);
+}
+
+// new copying functions and getValues and setValues
+template<class T>
+void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin){
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+  int SMA_length = (*SMVAPtr).getLength();
+  if(SMA_Type == DOUBLE){
+    NimArrBase<double>* SMA_NimArrPtr = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+    std::copy(nimArr.getPtr() + nimBegin,
+	      nimArr.getPtr() + SMA_length + nimBegin, 
+	      SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
+  }
+  else if(SMA_Type == INT){
+    NimArrBase<int>* SMA_NimArrPtr = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+    std::copy(nimArr.getPtr() + nimBegin,
+	      nimArr.getPtr() + SMA_length +nimBegin, 
+	      SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
+  }
+  else {
+    PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+  }
+}
+
+template<class T>
+void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
+  vector<SingleVariableMapAccessBase*> SMVA_Vec = MMVAPtr.getAccessVector();
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int k = SMVA_Vec.size();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++){
+    curSingleAccess = SMVA_Vec[i];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd){
+      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      break;
+    }
+    nimArr_2_SingleModelAccess<T>(curSingleAccess, nimArr, nimCurrent);
+    nimCurrent = nimCurrent + nextNumVals;
+  }
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
+
+template<int D, class T>
+void SingleModelAccess_2_nimArr(SingleVariableAccessBase* SMVAPtr, NimArr<D, T> &nimArr, int nimBegin){
+	NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+	nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+	int SMA_length = (*SMVAPtr).getLength();
+	if(SMA_Type == DOUBLE){
+		NimArrBase<double>* SMA_NimArrPtr = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+		std::copy(SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart(),
+		SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() + SMA_length ,
+		 nimArr.getPtr()  + nimBegin);
+	}
+	else if(SMA_Type == INT){
+	NimArrBase<int>* SMA_NimArrPtr = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+		std::copy(SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart(),
+		SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() + SMA_length ,
+		 nimArr.getPtr()  + nimBegin);
+		 	}
+	else {
+		PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+	}
+}
+
+
+template<int D, class T>
+void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T> &nimArr){
+	vector<SingleVariableAccessBase*> SMVA_Vec = MMVAPtr.getAccessVector();
+	int nimCurrent = 0;
+	int nimEnd = nimArr.size();
+	int k = SMVA_Vec.size();
+	int nextNumVals;
+	SingleVariableAccessBase* curSingleAccess;
+	for(int i = 0; i < k ; i++){
+		curSingleAccess = SMVA_Vec[i];
+		nextNumVals = (*curSingleAccess).getLength();
+		if(nextNumVals + nimCurrent > nimEnd){
+			PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+			break;
+			}
+		SingleModelAccess_2_nimArr<D, T>(curSingleAccess, nimArr, nimCurrent);
+		nimCurrent = nimCurrent + nextNumVals;
+				
+	}
+	if(nimCurrent != nimEnd)
+		PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
+
+
+void setValues(NimArrBase<double> &nimArr, ManyVariablesAccessor &MVA){
+	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
+}
+void setValues(NimArrBase<int> &nimArr, ManyVariablesAccessor &MVA){
+	nimArr_2_ManyModelAccess<int>(MVA, nimArr);
+}
+
+void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA){
+	ManyModelAccess_2_nimArr<1, double>(MVA, nimArr);
+}
+void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
+	ManyModelAccess_2_nimArr<1, int>(MVA, nimArr);
+}
 
 // Functions for copying
 
@@ -160,12 +290,6 @@ void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T> &nimA
 		PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
-// void setValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA){
-// 	nimArr_2_ManyModelAccess<1, double>(MVA, nimArr);
-// }
-// void setValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
-// 	nimArr_2_ManyModelAccess<1, int>(MVA, nimArr);
-// }
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesAccessor &MVA){
 	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
@@ -180,6 +304,7 @@ void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA){
 void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
 	ManyModelAccess_2_nimArr<1, int>(MVA, nimArr);
 }
+
 
 
 void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to) {
@@ -545,9 +670,10 @@ SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_
 SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr ) {
   // typeCode = 1 for model, 2 for modelValues
   ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
-  vector<SingleVariableMapAccessBase *> *singleAccessors = &(valuesAccessor->getMapAccessVector());
   int numAccessors = LENGTH(SsourceList);
-  singleAccessors->resize(numAccessors);
+  valuesAccessor->resize(numAccessors);
+  vector<SingleVariableMapAccessBase *> *singleAccessors = &(valuesAccessor->getMapAccessVector());
+  
   NamedObjects *sourceNamedObject = static_cast<NamedObjects*>(R_ExternalPtrAddr(SModelOrModelValuesPtr));
   SEXP SoneSource;
   string varName;

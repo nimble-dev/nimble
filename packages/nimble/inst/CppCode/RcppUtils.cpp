@@ -211,11 +211,9 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   vector<int> ans(nn);
   if(isInteger(Sn) || isLogical(Sn)) {
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    for(int i = 0; i < nn; ++i) {
-      ans[i] = iSn[i] + offset;
-    }
+    copy(iSn, iSn + nn, ans.begin());
   } else {
-    if(!isReal(Sn)) {
+    if(isReal(Sn)) {
       double *dSn = REAL(Sn);
       bool warning = false;
       for(int i = 0; i < nn; ++i) {

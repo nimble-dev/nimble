@@ -25,7 +25,8 @@
 
 CmodelValues <- setRefClass(
     Class = 'CmodelValues',
-    fields = list(extptr = 'ANY',
+    fields = list(
+        extptr = 'ANY',
         extptrCall = 'ANY',
         varNames = 'ANY',
         componentExtptrs = 'ANY',
@@ -46,18 +47,17 @@ CmodelValues <- setRefClass(
             writeLines(paste0("CmodelValues object with variables: ", paste(varNames, collapse = ", "), "."))
         },
         expandNodeNames = function (nodeNames, returnType = "names", flatIndices = TRUE) 
-			{
-    			return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
-        flatIndices = flatIndices))
-			},
+            {
+                return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
+                                               flatIndices = flatIndices))
+            },
         initialize = function(buildCall, existingPtr ) {
             if(missing(existingPtr) ) {
                 if(is.character(buildCall)) {
                     warning("a call to getNativeSymbolInfo with only a name and no DLL")
-                    #browser()
                 }
-                   # Are we actually calling this here
-                extptr <<- .Call(buildCall) # getNativeSymbolInfo(buildCall) )
+                                        # Are we actually calling this here
+                extptr <<- .Call(buildCall) 
             }
             else{
                 extptr <<- existingPtr

@@ -406,7 +406,7 @@ class NimArr<3, T> : public NimArrBase<T> {
 	to += (-size1 * NimArrBase<T>::stride1) + stride2;
       }
       from += (-size2 * otherStride2) + otherStride3;
-      to += (-size2 * stride2 + stride2);
+      to += (-size2 * stride2 + stride3);
     }
     // std::cout<<"Leaving NimArr<3, T> mapCopy\n";
     return(*this);
@@ -636,10 +636,10 @@ class NimArr<4, T> : public NimArrBase<T> {
 	  to += (-size1 * NimArrBase<T>::stride1) + stride2;
 	}
 	from += (-size2 * otherStride2) + otherStride3;
-	to += (-size2 * stride2 + stride2);
+	to += (-size2 * stride2 + stride3);
       }
       from += (-size3 *otherStride3) + otherStride4;
-      to += (-size3 * stride3 + stride3);
+      to += (-size3 * stride3 + stride4);
     }
     // std::cout<<"Leaving NimArr<3, T> mapCopy\n";
     return(*this);
@@ -1003,8 +1003,40 @@ void NimArrBase<int>::genericMapCopy(int offset, vector<int> &str, vector<int> &
       std::cout<<"Error in copying: more than 4 dimensions not supported yet\n";
       
     }
+}
+
+template<class Tfrom, class Tto, int mapDim>
+void dynamicMapCopyDim(NimArrType *toNimArr, int toOffset, vector<int> &toStr, vector<int> &toIs, NimArrType *fromNimArr, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+  NimArr<mapDim, Tfrom> mapFrom;
+  mapFrom.setMap(*static_cast<NimArrBase<Tfrom> *>(fromNimArr), fromOffset, fromStr, fromIs);
+  NimArr<mapDim, Tto> mapTo;
+  mapTo.setMap(*static_cast<NimArrBase<Tto> *>(toNimArr), toOffset, toStr, toIs);
+  mapTo.mapCopy(mapFrom);
 
 }
 
+template<class Tfrom, class Tto>
+  void dynamicMapCopy(NimArrType *toNimArr, int toOffset, vector<int> &toStr, vector<int> &toIs, NimArrType *fromNimArr, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
+  int mapDim = toStr.size();
+  // must be the same as fromStr.sizes();
+  if(static_cast<NimArrBase<Tfrom> *>(fromNimArr)->isMap() || static_cast<NimArrBase<Tto> *>(toNimArr)->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+  std::cout<<"Here1\n";
+  switch(mapDim) {
+  case 1:
+    dynamicMapCopyDim<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr, fromIs);
+    break;
+  case 2:
+    dynamicMapCopyDim<Tfrom, Tto, 2>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr, fromIs);
+    break;
+  case 3:
+    dynamicMapCopyDim<Tfrom, Tto, 3>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr, fromIs);
+    break;
+  case 4:
+    dynamicMapCopyDim<Tfrom, Tto, 4>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr, fromIs);
+    break;
+  default:
+    std::cout<<"Error in copying: more than 4 dimensions not supported yet\n";
+  }
+}
 
 #endif
