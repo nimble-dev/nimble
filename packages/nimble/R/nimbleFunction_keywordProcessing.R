@@ -682,7 +682,7 @@ determineNdimFromOneCase <- function(model, varAndIndices) {
 ## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
 
 varAndIndices2mapParts <- function(varAndIndices, sizes, nDim) {
-    varName <- varAndIndices$name
+    ##varName <- varAndIndices$name
     indices <- varAndIndices$indices
     ## put together offsetExpr, sizeExprs, strideExprs
     ## need sizes to get strides

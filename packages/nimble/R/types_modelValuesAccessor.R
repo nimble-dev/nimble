@@ -29,7 +29,7 @@ valuesAccessorVector <- setRefClass( ## new implementation
         mapInfo = 'ANY'
     ),
     methods = list(
-        initialize = function(modelOrModelValues, nodeNames, logProb = FALSE) {
+        initialize = function(modelOrModelValues, nodeNames, logProb = FALSE) { ## will need to work with IDs too
             sourceObject <<- modelOrModelValues
             if(!logProb)
                 nodeNames <<- nodeNames
