@@ -86,6 +86,7 @@ Collate: config.R
  MCMC_suite.R
  autoBlock.R
  MCEM_build.R
+ PF_build.R
  optimTools.R
  NF_utils.R
  makevars.R

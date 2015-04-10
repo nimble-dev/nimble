@@ -33,11 +33,11 @@ pfStep <- nimbleFunction(
         for(i in 1:m)
             copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
         return(log(mean(exp(wts))))
-    }#,  where = getLoadingNamespace()
+    },  where = getLoadingNamespace()
 )
 
 
-PF <- nimbleFunction(
+buildPF <- nimbleFunction(
     setup = function(model, nodes) {
         my_initializeModel <- initializeModel(model)
         nodes <- model$expandNodeNames(nodes, sort = TRUE)
@@ -58,7 +58,7 @@ PF <- nimbleFunction(
         for(iNode in seq_along(pfStepFunctions))
             logL <- logL + pfStepFunctions[[iNode]]$run(m)
         return(logLik)
-    }#,  where = getLoadingNamespace()
+    },  where = getLoadingNamespace()
 )
 
 
