@@ -1,8 +1,10 @@
 
+
 pfStepVirtual <- nimbleFunctionVirtual(
     run = function(m = integer())
         returnType(double())
 )
+
 
 pfStep <- nimbleFunction(
     contains = pfStepVirtual,
@@ -31,12 +33,13 @@ pfStep <- nimbleFunction(
         for(i in 1:m)
             copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
         return(log(mean(exp(wts))))
-    }
-#   ,    where = getLoadingNamespace()
+    }#,  where = getLoadingNamespace()
 )
 
-buildPF <- nimbleFunction(
+
+PF <- nimbleFunction(
     setup = function(model, nodes) {
+        my_initializeModel <- initializeModel(model)
         nodes <- model$expandNodeNames(nodes, sort = TRUE)
         dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
         if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
@@ -49,14 +52,20 @@ buildPF <- nimbleFunction(
     },
     run = function(m = integer(default = 10000)) {
         returnType(double())
+        my_initializeModel$run()
         resize(mv, m)
         logL <- 0
         for(iNode in seq_along(pfStepFunctions))
             logL <- logL + pfStepFunctions[[iNode]]$run(m)
         return(logLik)
-    }
-#   ,    where = getLoadingNamespace()
+    }#,  where = getLoadingNamespace()
 )
+
+
+
+
+
+
 
 
 ## buildPF <- nimbleFunctionSimple(
