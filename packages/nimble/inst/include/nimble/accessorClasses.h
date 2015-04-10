@@ -52,6 +52,7 @@ class SingleVariableMapAccessBase {
   vector<int> sizes, strides; 
   virtual ~SingleVariableMapAccessBase();
   virtual NimArrType *getNimArrPtr()=0;
+  int &getLength() {return(length);}
   int &getOffset() {return(offset);}
   vector<int> &getSizes() {return(sizes);}
   vector<int> &getStrides() {return(strides);}
@@ -199,11 +200,9 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
       switch(toType) {
       case DOUBLE:
 	dynamicMapCopy<double, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
-	//	static_cast<NimArrBase<double> *>(toNimArr)->genericMapCopy<double>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<double> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       case INT:
 	dynamicMapCopy<double, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
-	//	static_cast<NimArrBase<int> *>(toNimArr)->genericMapCopy<double>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<double> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
 	cout<<"Error in nimCopyOne: unknown type for destination\n";
@@ -213,11 +212,9 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
       switch(toType) {
       case DOUBLE:
 	dynamicMapCopy<int, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
-	//	static_cast<NimArrBase<double> *>(toNimArr)->genericMapCopy<int>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<int> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       case INT:
 	dynamicMapCopy<int, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
-	//	static_cast<NimArrBase<int> *>(toNimArr)->genericMapCopy<int>(to->getOffset(), to->getStrides(), to->getSizes(), static_cast<NimArrBase<int> *>(fromNimArr), from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
 	cout<<"Error in nimCopyOne: unknown type for destination\n";

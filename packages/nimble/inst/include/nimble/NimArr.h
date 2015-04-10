@@ -4,11 +4,8 @@
 #include "NimArrBase.h"
 #include "Utils.h"
 
-
-
 template<int ndim, class T>
   class NimArr;
-
 // Here is the specialization for 1 dimensions (for any type, T = double, int or bool).
 
 template<class T>
@@ -848,27 +845,84 @@ class NimArr<4, T> : public NimArrBase<T> {
 };
 
 
+/////////////////////////////
+// NimArr<> iterators
 
+template<int ndim, class T>
+  class NimArrIterator;
 
+template<class T, class Derived>
+  class NimArrIteratorBase {
+ public:
+  typedef std::forward_iterator_tag iterator_category;
+  typedef T value_type;
+  typedef unsigned int size_type;
+  typedef unsigned int difference_type;
+  typedef T* Pointer;
+  typedef const T* const_pointer;
+  typedef T& Reference;
+  typedef const T& const_reference;
+  T *p;
 
+  NumArrIteratorBase<T>() {};
+  T& operator*() {return *p;}
+  
+  Derived &operator++() { // prefix
+    static_cast<Derived *>(this)->increment();
+    return(*static_cast<Derived *>(this));
+  }
+  Derived operator++(int) { //postfix
+    Derived ans(*static_cast<Derived *>(this));
+    static_cast<Derived *>(this)->increment();
+    return(ans);
+  }
 
+  friend bool operator==(Derived &a, Derived &b) {return(a.p == b.p);};
+  friend bool operator!=(Derived &a, Derived &b) {return(a.p != b.p);};
 
+};
 
+template<class T>
+class NimArrIterator<1, T> : public NimIteratorBase<T, NumIterator<1, T> > {
+ public:
+  int stride1, size1;
+  // copy constructor and operator=
 
+  NimArrIterator<1, T>( const NimArrIterator<1, T> &source) {
+    p = source.p;
+    stride1 = source.stride1;
+    size1 = source.size1;
+  }
 
+  NimArrIterator<1, T>() {}
 
+  NimArrIterator<1, T> &operator=(const NimArrIterator<1, T> &source) {
+    p = source.p;
+    stride1 = source.stride1;
+    size1 = source.size1;
+    return(*this);
+  } 
 
+ private:
+  inline void increment() {
+    p += stride1;
+    return;
+  }
+};
 
-
-
-
-
-
-
-
-
-
-
+/* void increment2() { */
+/*   ++i1; */
+/*   ++p; */
+/*   if(i1 == size1) { */
+/*     i1 = 0; */
+/*     ++i2; */
+/*     p += -size1*stride1 + stride2; */
+/*   } */
+  
+}
+////////////////////////////////////
+// VecNimArr
+///////////////////////////////////
 
 template<int ndim, class T>
 class VecNimArr : public VecNimArrBase<T>  {
@@ -956,56 +1010,56 @@ class VecNimArr : public VecNimArrBase<T>  {
 };
 
 
-template<>
-template<class Tfrom>
-void NimArrBase<double>::genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
-    if(isMap() || from->isMap()) std::cout<<"Error, genericMapCopy is not set up for nested maps\n";
-    int nDim = numDims();
-    switch(nDim) {
-    case 1: // explicitly downcasting because I couldn't do it with template member function of template class, or didn't figure it out.
-      static_cast< NimArr<1, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    case 2:
-      static_cast< NimArr<2, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    case 3:
-      static_cast< NimArr<3, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    case 4:
-      static_cast< NimArr<4, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    default:
-      std::cout<<"Error in copying: more than 4 dimensions not supported yet\n";
+/* template<> */
+/* template<class Tfrom> */
+/* void NimArrBase<double>::genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) { */
+/*     if(isMap() || from->isMap()) std::cout<<"Error, genericMapCopy is not set up for nested maps\n"; */
+/*     int nDim = numDims(); */
+/*     switch(nDim) { */
+/*     case 1: // explicitly downcasting because I couldn't do it with template member function of template class, or didn't figure it out. */
+/*       static_cast< NimArr<1, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     case 2: */
+/*       static_cast< NimArr<2, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     case 3: */
+/*       static_cast< NimArr<3, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     case 4: */
+/*       static_cast< NimArr<4, double> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     default: */
+/*       std::cout<<"Error in copying: more than 4 dimensions not supported yet\n"; */
       
-    }
+/*     } */
 
-}
+/* } */
 
-template<>
-template<class Tfrom>
-void NimArrBase<int>::genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
-    if(isMap() || from->isMap()) std::cout<<"Error, genericMapCopy is not set up for nested maps\n";
-    int nDim = numDims();
-    switch(nDim) {
-    case 1: // explicitly downcasting because I couldn't do it with template member function of template class, or didn't figure it out.
-      static_cast< NimArr<1, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    case 2:
-      static_cast< NimArr<2, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    case 3:
-      static_cast< NimArr<3, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    case 4:
-      static_cast< NimArr<4, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs);
-	break;
-    default:
-      std::cout<<"Error in copying: more than 4 dimensions not supported yet\n";
+/* template<> */
+/* template<class Tfrom> */
+/* void NimArrBase<int>::genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) { */
+/*     if(isMap() || from->isMap()) std::cout<<"Error, genericMapCopy is not set up for nested maps\n"; */
+/*     int nDim = numDims(); */
+/*     switch(nDim) { */
+/*     case 1: // explicitly downcasting because I couldn't do it with template member function of template class, or didn't figure it out. */
+/*       static_cast< NimArr<1, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     case 2: */
+/*       static_cast< NimArr<2, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     case 3: */
+/*       static_cast< NimArr<3, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     case 4: */
+/*       static_cast< NimArr<4, int> *>(this)->dynamicMapCopy<Tfrom>(offset, str, is, from, fromOffset, fromStr, fromIs); */
+/* 	break; */
+/*     default: */
+/*       std::cout<<"Error in copying: more than 4 dimensions not supported yet\n"; */
       
-    }
-}
+/*     } */
+/* } */
 
-template<class Tfrom, class Tto, int mapDim>
+Template <class Tfrom, class Tto, int mapDim>
 void dynamicMapCopyDim(NimArrType *toNimArr, int toOffset, vector<int> &toStr, vector<int> &toIs, NimArrType *fromNimArr, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
   NimArr<mapDim, Tfrom> mapFrom;
   mapFrom.setMap(*static_cast<NimArrBase<Tfrom> *>(fromNimArr), fromOffset, fromStr, fromIs);
@@ -1020,7 +1074,6 @@ template<class Tfrom, class Tto>
   int mapDim = toStr.size();
   // must be the same as fromStr.sizes();
   if(static_cast<NimArrBase<Tfrom> *>(fromNimArr)->isMap() || static_cast<NimArrBase<Tto> *>(toNimArr)->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
-  std::cout<<"Here1\n";
   switch(mapDim) {
   case 1:
     dynamicMapCopyDim<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr, fromIs);
@@ -1038,5 +1091,44 @@ template<class Tfrom, class Tto>
     std::cout<<"Error in copying: more than 4 dimensions not supported yet\n";
   }
 }
+
+Template <class Tfrom, class Tto, int mapDim>
+void dynamicMapCopyFlatToDim(NimArrType *toNimArr, int toOffset, vector<int> &toStr, vector<int> &toIs, NimArrType *fromNimArr, int fromOffset, int fromStr) {
+  NimArr<mapDim, Tfrom> mapFrom;
+  vector<int> fromStrVec(mapDim);
+  fromStrVec[0] = fromStr;
+  for(int i = 1; i < mapDim; i++) {
+    fromStrVec[i] = toIs[i-1] * fromStrVec[i-1];
+  }
+  mapFrom.setMap(*static_cast<NimArrBase<Tfrom> *>(fromNimArr), fromOffset, fromStrVec, toIs);
+
+  NimArr<mapDim, Tto> mapTo;
+  mapTo.setMap(*static_cast<NimArrBase<Tto> *>(toNimArr), toOffset, toStr, toIs);
+  mapTo.mapCopy(mapFrom);
+}
+
+template<class Tfrom, class Tto>
+  void dynamicMapCopyFlatToDim(NimArrType *toNimArr, int toOffset, vector<int> &toStr, vector<int> &toIs, NimArrType *fromNimArr, int fromOffset, int fromStr) {
+  int mapDim = toStr.size();
+  // must be the same as fromStr.sizes();
+  if(static_cast<NimArrBase<Tto> *>(toNimArr)->isMap()) std::cout<<"Error, dynamicMapCopyFlatToDim is not set up for nested maps\n";
+  switch(mapDim) {
+  case 1:
+    dynamicMapCopyFlatToDim<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+    break;
+  case 2:
+    dynamicMapCopyFlatToDim<Tfrom, Tto, 2>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+    break;
+  case 3:
+    dynamicMapCopyFlatToDim<Tfrom, Tto, 3>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+    break;
+  case 4:
+    dynamicMapCopyFlatToDim<Tfrom, Tto, 4>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
+    break;
+  default:
+    std::cout<<"Error in copying: more than 4 dimensions not supported yet\n";
+  }
+}
+
 
 #endif

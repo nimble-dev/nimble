@@ -94,9 +94,13 @@ void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
   int SMA_length = (*SMVAPtr).getLength();
   if(SMA_Type == DOUBLE){
     NimArrBase<double>* SMA_NimArrPtr = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
-    std::copy(nimArr.getPtr() + nimBegin,
-	      nimArr.getPtr() + SMA_length + nimBegin, 
-	      SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
+    //NimArrIterator
+    // STOPPED HERE
+    dynamicMapCopyFlatToDim<T, double>(SMA_NimTypePtr, toOffset, toStr, toIs, nimArr, nimBegin, nimArrStride);
+    // std::copy(nimArr.getPtr() + nimBegin,
+    // 	      nimArr.getPtr() + SMA_length + nimBegin, 
+    // 	      SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
+
   }
   else if(SMA_Type == INT){
     NimArrBase<int>* SMA_NimArrPtr = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
