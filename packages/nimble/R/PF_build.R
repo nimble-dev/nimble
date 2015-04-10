@@ -17,7 +17,6 @@ pfStep <- nimbleFunction(
         thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
     },
     run = function(m = integer()) {
-        browser()
         returnType(double())
         declare(wts, double(1, m))
         declare(ids, integer(1, m))
@@ -27,12 +26,12 @@ pfStep <- nimbleFunction(
             simulate(model, thisNode)
             copy(model, mv, nodes = thisNode, nodesTo = 'x', row = i)
             calculate(model, thisDeterm)
-            wts[i] <- calculate(model, thisData)
+            wts[i] <- exp(calculate(model, thisData))
         }
         rankSample(wts, m, ids)
         for(i in 1:m)
             copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
-        return(log(mean(exp(wts))))
+        return(log(mean(wts)))
     },  where = getLoadingNamespace()
 )
 
@@ -57,7 +56,7 @@ buildPF <- nimbleFunction(
         logL <- 0
         for(iNode in seq_along(pfStepFunctions))
             logL <- logL + pfStepFunctions[[iNode]]$run(m)
-        return(logLik)
+        return(logL)
     },  where = getLoadingNamespace()
 )
 
