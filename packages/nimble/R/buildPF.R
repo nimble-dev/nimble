@@ -1,5 +1,70 @@
 
+pfStepVirtual <- nimbleFunctionVirtual(
+    run = function(m = integer())
+        returnType(double())
+)
 
+pfStep <- nimbleFunction(
+    contains = pfStepVirtual
+    setup = function(model, mv, nodes, iNode) {
+        notFirst <- iNode != 1
+        prevNode <- nodes[if(notFirst) iNode-1 else iNode]
+        thisNode <- nodes[iNode]
+        prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
+        thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
+        thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+    },
+    run = function(m = integer()) {
+        returnType(double())
+        declare(wts, double(1, m))
+        for(i in 1:m) {
+            if(notFirst) { copy(mv, model, nodes = prevNode, row = i)
+                           calculate(model, prevDeterm) }
+            simulate(model, thisNode)
+            copy(model, mv, nodes = thisNode, row = i)
+            calculate(model, thisDeterm)
+            wts[m] <- calculate(model, thisData)
+        }
+        return(log(mean(exp(wts))))
+    },
+    where = getLoadingNamespace()
+)
+
+buildPF <- nimbleFunction(
+    setup = function(model, nodes) {
+        nodes <- model$expandNodeNames(nodes, sort = TRUE)
+        s <- nimbleDim(model[[nodes[1]]])
+        mv <- modelValues(modelValuesSpec(vars = c('orig', 'samp'),
+                                          type = c('double', 'double'),
+                                          size = list(orig = s, samp = s)))
+        pfStepFunctions <- nimbleFunctionList(pfStepVirtual)
+        for(iNode in seq_along(nodes))
+            pfStepFunctions[[iNode]] <- pfStep(model, mv, nodes, iNode)
+    },
+    run = function(m = integer(default = 10000)) {
+        returnType(double())
+        resize(mv, m)
+        logL <- 0
+        for(iNode in seq_along(pfStepFunctions))
+            logL <- logL + pfStepFunctions[[iNode]]$run(m)
+        return(logLik)
+    },
+    where = getLoadingNamespace()
+)
+
+
+nf <- nimbleFunction(
+    setup = function() {},
+    run = function(m = integer()) {
+        declare(wts, double(1, m))
+        wts[1] <- 3
+        print(wts)
+    }
+)
+a <- nf()
+a$run(4)
+CA <- compileNimble(a)
+CA$run(4)
 
 
 resample <- nimbleFunctionSimple(
@@ -14,14 +79,14 @@ resample <- nimbleFunctionSimple(
         m <- getsize(mv)
         resize(wtSumMV, m)
         
-                                        # calculate cumulative sums of resampling weights
+        ## calculate cumulative sums of resampling weights
         wtSumMV[[1]]$ws <- mv[[1]][[weight]]
         for(i in runtime(2:m))     { wtSumMV[[i]]$ws <- wtSumMV[[i-1]]$ws + mv[[i]][[weight]] }
         
-                                        # normalize resampling weights
+        ## normalize resampling weights
         for(i in runtime(1:m))     { wtSumMV[[i]]$ws <- wtSumMV[[i]]$ws / wtSumMV[[m]]$ws }
         
-                                        # resample from mv[[]][[original]] 'm' times, with replacement
+        ## resample from mv[[]][[original]] 'm' times, with replacement
         u <- double()
         k <- int()
         for(i in runtime(1:m)) {
@@ -75,8 +140,8 @@ buildPF <- nimbleFunctionSimple(
             if(k < numNodes)     {  samplerFunction()  }
         }
         
-                                        # calculate logs, add them together, to estimate total marginal log-likelihood
-                                        #     for(k in runtime(1:numNodes))     {  meanLik[k] <- log(meanLik[k])  }
+        ## calculate logs, add them together, to estimate total marginal log-likelihood
+        ##     for(k in runtime(1:numNodes))     {  meanLik[k] <- log(meanLik[k])  }
         meanLik <- log(meanLik)
         lik <- sum(meanLik)
         return(lik)
