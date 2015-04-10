@@ -190,10 +190,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
                                        
                                        if(debug) {
-                                           print('compileInfo$nimExpr$show(showType = TRUE)')
-                                           print(compileInfo$nimExpr$show(showType = TRUE))
-                                           print('compileInfo$nimExpr$show(showAssertions = TRUE)')
-                                           print(compileInfo$nimExpr$show(showAssertions = TRUE))
+                                           print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
+                                          ## print(compileInfo$nimExpr$show(showType = TRUE))
+                                           print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')
+                                           ## print(compileInfo$nimExpr$show(showAssertions = TRUE))
                                            writeLines('***** READY FOR insertAssertions *****')
                                            browser()
                                        }
