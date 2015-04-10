@@ -77,6 +77,7 @@ Collate: config.R
  cppInterfaces_nimbleFunctions.R
  cppInterfaces_otherTypes.R
  nimbleProject.R
+ initializeModel.R
  MCMC_utils.R
  MCMC_spec.R
  MCMC_build.R
