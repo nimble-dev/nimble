@@ -61,6 +61,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   CPPuse
                                               },
                                               genNeededTypes = function(debugCpp = FALSE, fromModel = FALSE) {
+                                                  print(nfProc$neededTypes)
                                                   for(i in seq_along(nfProc$neededTypes)) {
                                                       neededType<- nfProc$neededTypes[[i]]
                                                       if(inherits(neededType, 'nfMethodRC')) {

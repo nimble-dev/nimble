@@ -6,7 +6,7 @@ binaryMidOperators <- c('/','*','%%','^')
 binaryLeftOperators <- c('pow','pmin','pmax', 'nimMod', 'nimbleEquals','pairmin','pairmax')
 binaryOperators <- c(binaryMidOperators, binaryLeftOperators)
 binaryOrUnaryOperators <- c('+','-')
-unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt',  ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
+unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
                     'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
                     'lgamma1p', 'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
                     'abs','nimbleRound','ftrunc','ceil','floor','nimbleStep', 
