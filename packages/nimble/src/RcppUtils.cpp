@@ -1445,7 +1445,6 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 	sampP[0] = sampP[0] * sum;
 	sampP[c_samps] = sum + 1;
 	
-	GetRNGstate();
 
 	
 	for(int i = 1; i < c_samps ; i++)
@@ -1458,7 +1457,6 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 				curP++;
 			}
 		}
-	PutRNGstate();
 	return;	
 	}
 // unsort must be true to get here
@@ -1479,7 +1477,6 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 		ans[i] = sortAns[newOrder[drawIndex]];
 		newOrder[drawIndex] = newOrder[i];
 	}
-	PutRNGstate();
 
 }
 
@@ -1500,9 +1497,9 @@ SEXP rankSample(SEXP p, SEXP n){
 void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output){
 	output.setSize(n);
 	int N = weights.size();
-	GetRNGstate();
+//	GetRNGstate();
 	rawSample(weights.getPtr(), n, N, output.getPtr(), false );	
-	PutRNGstate();
+//	PutRNGstate();
 	}
 
 
