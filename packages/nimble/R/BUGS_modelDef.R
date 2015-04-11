@@ -263,7 +263,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == 'for') {        ## e.g. (for i in 1:N).  New context (for-loop info) needed
             indexVarExpr <- code[[i]][[2]]   ## This is the `i`
             indexRangeExpr <- code[[i]][[3]] ## This is the `1:N`
-            if(nimbleOptions$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
+            if(nimbleOptions()$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
             forCode[[3]] <- indexRangeExpr

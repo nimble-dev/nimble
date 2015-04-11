@@ -767,7 +767,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         if(is.numeric(code$args[[i+1]])) dropThisDim <- TRUE
         else if((code$args[[i+1]]$name != "") & (length(dropSingleSizes(code$args[[i+1]]$sizeExprs)$sizeExprs) == 0)) dropThisDim <- TRUE
         if(dropThisDim) {
-            if(nimbleOptions$indexDrop) {
+            if(nimbleOptions()$indexDrop) {
                 code$sizeExprs[[iSizes]] <- NULL
                 code$nDim <- code$nDim - 1
             } else { 

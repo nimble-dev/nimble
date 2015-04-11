@@ -20,7 +20,7 @@ nodeFunction <- function(LHS, RHS, name = NA, altParams, logProbNodeExpr, type, 
 
 ## creates the name of the node class inheritance (nimbleFunction(contains = ....)
 ndf_createContains <- function(RHS, type) {
-    if(nimbleOptions$compileAltParamFunctions) {
+    if(nimbleOptions()$compileAltParamFunctions) {
         if(type == 'determ')   tag <- 'determ'
         if(type == 'stoch')    tag <- paste0('stoch_', RHS[[1]])
         containsText <- paste0('node_', tag)
@@ -61,7 +61,7 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
                  LOGPROB   = logProbNodeExpr,
                  STOCHSIM  = ndf_createStochSimulate(RHS),
                  STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS))))
-        if(nimbleOptions$compileAltParamFunctions) {
+        if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
             ## add accessor function for node value; used in multivariate conjugate sampler functions
             typeList <- distributions[[distName]]$types[['value']]

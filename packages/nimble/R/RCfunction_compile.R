@@ -116,10 +116,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                methods = list(
                                    process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character()) {
                                        
-                                       if(!is.null(nimbleOptions$debugRCfunProcessing)) {
-                                           if(nimbleOptions$debugRCfunProcessing) {
+                                       if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
+                                           if(nimbleOptions()$debugRCfunProcessing) {
                                                debug <- TRUE
-                                               writeLines('Debugging RCfunProcessing (nimbleOptions$debugRCfunProcessing is set to TRUE)') 
+                                               writeLines('Debugging RCfunProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
                                            }
                                        }
 

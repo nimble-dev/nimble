@@ -44,7 +44,7 @@ nimbleDim <- function(obj) {
 }
 
 getLoadingNamespace <- function() {
-    if(!is.null(nimbleOptions[['notUsingPackage']])) if(nimbleOptions[['notUsingPackage']]) return(globalenv())
+    if(!is.null(nimbleOptions()$notUsingPackage)) if(nimbleOptions()$notUsingPackage) return(globalenv())
     if(system.file(package = "nimble") == "")
          return(globalenv())
     
