@@ -339,7 +339,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             }
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             isRonly <- isRfunction &
-                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+                !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+#                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
             if(isRonly & !allContentsReplaceable) stop(paste('Error, R function', deparse(code[[1]]),' has non-replaceable node values as arguments.  Must be a nimble function.'))
             
             return(list(code = contentsCode,
@@ -348,6 +349,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
         }
     }
     stop(paste('Something went wrong in getSymbolicVariablesRecurse with', deparse(code)))
+}
+
+checkNimbleOrRfunctionNames <- function(functionName) {
+    if(any(functionName == nimbleOrRfunctionNames)) return(TRUE)
+    if(is.rcf(get(functionName))) return(TRUE)  # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
+    return(FALSE)
 }
 
 
@@ -396,7 +403,8 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2, replaceable=allContentsReplaceable))
         if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
-        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+#        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+        isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
         if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))
         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
