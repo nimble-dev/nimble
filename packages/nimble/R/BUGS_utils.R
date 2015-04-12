@@ -207,11 +207,11 @@ Rname2CppName <- function (rName, isAFunctionCall = FALSE) { ## Imp note, this f
 
 ## creates objects in the parent.frame(), named by names(lst), values are eval(lst[[i]])
 ## this is used for creating the conjugate sampler nimble function generators, among other things
-createNamedObjectsFromList <- function(lst, writeToFile = NULL) {
+createNamedObjectsFromList <- function(lst, writeToFile = NULL, envir = parent.frame()) {
     for(i in seq_along(lst)) {
         objName <- names(lst)[i]
         obj <- eval(lst[[i]])
-        assign(objName, obj, envir = parent.frame())
+        assign(objName, obj, envir = envir)
     }
     if(!is.null(writeToFile)) {
         write('', file = writeToFile)

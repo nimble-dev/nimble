@@ -256,7 +256,6 @@ conjugacyClass <- setRefClass(
         
         genSetupFunction = function() {
             functionBody <- codeBlockClass()
-            
             ## preliminaries
             functionBody$addCode({
                 calcNodes       <- model$getDependencies(target)

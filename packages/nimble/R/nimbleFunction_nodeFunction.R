@@ -259,11 +259,19 @@ ndf_createVirtualNodeFunctionDefinition <- function(types = list()) {
     return(virtualFuncionDef)
 }
 
-ndf_createVirtualNodeFunctionDefinitionsList <- function() {
+ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
     defsList <- list()
-    defsList$node_determ <- ndf_createVirtualNodeFunctionDefinition()
-    for(distName in getDistributionsInfo('namesVector')) {
-        defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistribution(distName)$types)
+    if(!userAdded) {
+        defsList$node_determ <- ndf_createVirtualNodeFunctionDefinition()
+        for(distName in getDistributionsInfo('namesVector', nimbleOnly = TRUE)) {
+            defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistribution(distName)$types)
+        }
+    } else {
+        # this deals with user-provided distributions
+        if(exists('distributions', nimbleUserObjects)) {
+            for(distName in getDistributionsInfo('namesVector', userOnly = TRUE))
+                defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistribution(distName)$types)
+        } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserObjects.")
     }
     return(defsList)
 }

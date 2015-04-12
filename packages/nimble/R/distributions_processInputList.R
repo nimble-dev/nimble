@@ -23,23 +23,19 @@ distributionsClass <- setRefClass(
             matchCallEnv <<- new.env()
             for(distName in namesVector)     assign(distName, distObjects[[distName]]$makeMatchCallFunction(), matchCallEnv)
             translations <<- lapply(distObjects, function(d) c(d$densityName, d$simulateName))
-        }
-    )
-)
-
-setMethod('add', 'distributionsClass',
-          function(dil) {
+        },
+        add = function(dil) {
               distObjectsNew <- list()
-              for(i in seq_along(dil))     distObjectsNew[[i]] <<- distClass(dil[[i]], names(dil)[i])
-              names(distObjectsNew) <<- names(dil)
+              for(i in seq_along(dil))     distObjectsNew[[i]] <- distClass(dil[[i]], names(dil)[i])
+              names(distObjectsNew) <- names(dil)
               translations <<- c(translations, lapply(distObjectsNew, function(d) c(d$densityName, d$simulateName)))
               distObjects <<- c(distObjects, distObjectsNew)
               namesVector <<- c(namesVector, names(dil))
               namesExprList <<- c(namesExprList, lapply(namesVector, as.name))
               matchCallEnv <<- new.env()
               for(distName in names(dil)) assign(distName, distObjects[[distName]]$makeMatchCallFunction(), matchCallEnv)
-          }
-          )
+          })
+    )
               
 
 setMethod('[[',   'distributionsClass',
@@ -182,13 +178,13 @@ checkDistributionsInput <- function(distributionsInput) {
     allowedFields <- unique(unlist(sapply(nimble:::distributionsInputList, names)))
     if(sum(!names(distributionsInput) %in% allowedFields)) 
         stop(paste0(names(distributionsInput), " has unknown field."))
-    if(!sum(is.character(distributionsInput$BUGSdist))) stop(paste0(names(distributionsInput), " field 'BUGSdist' is not of type character."))
-    if(!sum(is.character(distributionsInput$Rdist))) stop(paste0(names(distributionsInput), " field 'Rdist' is not type of character."))
-    if(!sum(is.logical(distributionsInput$discrete))) stop(paste0(names(distributionsInput), " field 'discrete' is not type logical."))
-    if(!sum(is.logical(distributionsInput$pqAvail))) stop(paste0(names(distributionsInput), " field 'pqAvail' is not of type logical."))
-    if(!sum(is.character(distributionsInput$types))) stop(paste0(names(distributionsInput), " field 'types' is not of type character."))
-    if(!sum(is.character(distributionsInput$altParams))) stop(paste0(names(distributionsInput), " field 'altParams' is not of type character."))
-    if(length(distributionsInput$BUGSdist) > 1 || length(distributionsInputList$discrete) > 1 || length(distributionsInputList$pqAvail) > 1)
+    if(!sum(is.character(distributionsInput$BUGSdist))) stop(paste0(distributionsInput$BUGSdist, ": field 'BUGSdist' is not of type character."))
+    if(exists("Rdist", distributionsInput) && !sum(is.character(distributionsInput$Rdist))) stop(paste0(distributionsInput$BUGSdist, ": field 'Rdist' is not type of character."))
+    if(exists("discrete", distributionsInput) && !sum(is.logical(distributionsInput$discrete))) stop(paste0(distributionsInput$BUGSdist, ": field 'discrete' is not type logical."))
+    if(exists("pqAvail", distributionsInput) && !sum(is.logical(distributionsInput$pqAvail))) stop(paste0(distributionsInput$BUGSdist, ": field 'pqAvail' is not of type logical."))
+    if(exists("types", distributionsInput) && !sum(is.character(distributionsInput$types))) stop(paste0(distributionsInput$BUGSdist, ": field 'types' is not of type character."))
+    if(exists("altParams", distributionsInput) && !sum(is.character(distributionsInput$altParams))) stop(paste0(distributionsInput$BUGSdist, ": field 'altParams' is not of type character."))
+    if(length(distributionsInput$BUGSdist) > 1 || (exists('discrete', distributionsInputList) && length(distributionsInputList$discrete) > 1) || (exists('pqAvail', distributionsInputList) && length(distributionsInputList$pqAvail) > 1))
         stop(paste0(names(distributionsInput), " field 'BUGSdist', 'discrete', 'altParams', or 'pqAvail' is not of length one."))
     invisible(NULL)
 }
@@ -202,7 +198,7 @@ checkDistributionsFunctions <- function(distributionsInput) {
         stop(paste0("Either density or random generation functions for ", densityName,
                     " are not available as nimbleFunctions without setup code."))
     # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
-    if(!is.null(distributionsInput) && distributionsInput$pqAvail) {
+    if(!is.null(distributionsInput) && exists("pqAvail", distributionsInput) && distributionsInput$pqAvail) {
         cdfName <- sub('^d', 'p', densityName)
         quantileName <- sub('^d', 'q', densityName)
         if(!is.rcf(get(cdfName)) || !is.rcf(get(quantileName)))
@@ -218,7 +214,7 @@ checkDistributionsFunctions <- function(distributionsInput) {
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInputList a list with one or more elements in the form of that shown in \code{nimble:::distributionsInputList} with required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. See Details for more information.
+#' @param distributionsInputList a list in the form of that shown in \code{nimble:::distributionsInputList} with required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. See Details for more information. If only one distribution is supplied it may be a list rather than a list containing a list.
 #' @author Christopher Paciorek
 #' @export
 #' @details
@@ -239,12 +235,13 @@ checkDistributionsFunctions <- function(distributionsInput) {
 #' a character vector of comma-separated name = value pairs that provide the mathematical expressions relating non-default parameters to default parameters. These inverse functions are used for MCMC conjugacy calculations when a conjugate relationship is expressed in terms of non-default parameters (such as the precision for normal-normal conjugacy). If not supplied, the system will still functional but at a possible loss of efficiency in certain algorithms.
 #' }
 #' \item{\code{types}} {
-#' a character vector of comma-separated name = value pairs indicating the type ('integer' or 'double') and dimension of the random variable and parameters (including default and alternative parameters). In the name = value pairs, one should use 'value' to indicate the random variable itself and the parameter name to indicate a given parameter. Scalars are dimension 0, vectors dimension 1, matrices dimension 2, so in the case of real values, one would provide double(0), double(1), double(2), respectively. Required for multivariate distributions or when parameters are not scalars. By default all parameters are assumed double(0) and values (the random variable) are assumed either double(0) or integer(0) depending on whether the distribution is for a discrete random variable.
+#' a character vector of comma-separated 'name = input' pairs indicating the type and dimension of the random variable and parameters (including default and alternative parameters). 'input' should take the form 'integer(d)' or 'double(d)', where 'd' is 0 for scalars, 1 for vectors, 2 for matrices. 'name' should be either 'value' to indicate the random variable itself or the parameter name to indicate a given parameter.  Required for multivariate distributions or when parameters are not scalars. By default all parameters are assumed double(0) and values (the random variable) are assumed either double(0) or integer(0) depending on whether the distribution is for a discrete random variable.
 #' }
 registerDistributions <- function(distributionsInputList) {
     if(missing(distributionsInputList)) {
         cat("No distribution information supplied.\n")
     } else {
+        if(!is.list(distributionsInputList[[1]])) stop("'distributionsInputList' should be a named list of lists")
         sapply(distributionsInputList, checkDistributionsInput)
         sapply(distributionsInputList, checkDistributionsFunctions)
         if(exists('distributions', nimbleUserObjects)) {
@@ -252,6 +249,15 @@ registerDistributions <- function(distributionsInputList) {
         } else 
             nimbleUserObjects$distributions <- distributionsClass(distributionsInputList)
     }
+    virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
+    createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
+
+    distribution_rFuns <- as.character(unlist(lapply(getDistributionsInfo('translations', userOnly = TRUE), `[[`, 2)))
+    if(!exists('specificCallHandlers', nimbleUserObjects))
+        nimbleUserObjects$specificCallHandlers <- list()
+    nimbleUserObjects$specificCallHandlers <- c(nimbleUserObjects$specificCallHandlers,
+                                    makeCallList(distribution_rFuns, 'rFunHandler'))           
+
     invisible(NULL)
 }
 
@@ -276,16 +282,16 @@ getDistribution <- function(distName) {
     stop(paste0("getDistribution: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
-getDistributionsInfo <- function(kind) {
+getDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
     if(kind %in% c('namesVector', 'namesExprList', 'translations')) {
-        out <- get(kind, distributions)
-        if(exists('distributions', nimbleUserObjects))
+        if(userOnly) out <- NULL else out <- get(kind, distributions)
+        if(!nimbleOnly && exists('distributions', nimbleUserObjects))
             out <- c(out, get(kind, nimbleUserObjects$distributions))
         return(out)
     }
     if(kind == 'pqAvail') {
-        out <- sapply(distributions$distObjects, '[[', 'pqAvail')
-        if(exists('distributions', nimbleUserObjects))
+        if(userOnly) out <- NULL else out <- sapply(distributions$distObjects, '[[', 'pqAvail')
+        if(!nimbleOnly && exists('distributions', nimbleUserObjects))
             out <- c(out, sapply(nimbleUserObjects$distributions$distObjects, '[[', 'pqAvail'))
         return(out)
     }

@@ -337,3 +337,7 @@ exportClass(nimbleFunctionBase)
 exportClass(RModelBaseClass)
 exportClass(singleModelValuesAccessClass)
 exportClass(singleVarAccessClass) 
+
+export(registerDistributions)
+export(getNimbleOption)
+export(nimbleOptions)

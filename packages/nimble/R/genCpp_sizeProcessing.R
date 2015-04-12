@@ -1,5 +1,6 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
 
+
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                 makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
                 makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),

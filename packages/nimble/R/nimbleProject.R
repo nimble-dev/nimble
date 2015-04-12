@@ -501,7 +501,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
                                      reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE) {
                                      ## fundamental difference: fun should be a specialized nf: nfGenerator will not longer track instances
-                                     
                                      if(is.character(fun)) {
                                          tmp <- nimbleFunctions[[fun]]
                                          if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)

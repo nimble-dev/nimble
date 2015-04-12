@@ -48,6 +48,13 @@ specificCallHandlers[['rcat']] <- 'rmFunHandler' ## not really multivar, but sam
 specificCallHandlers[['rdirch']] <- 'rmFunHandler'
 specificCallHandlers[['rinterval']] <- 'rmFunHandler' ## not really multivar, but same processing
 
+getSpecificCallHandlers <- function(codeName) {
+    result <- specificCallHandlers[[codeName]]
+    if(is.null(result) && exists('specificCallHandlers', nimbleUserObjects))
+        result <- nimbleUserObjects$specificCallHandlers[[codeName]]
+    return(result)
+}
+    
 exprClasses_processSpecificCalls <- function(code, symTab) {
     if(code$isName) return(invisible())
     if(code$isCall) {
@@ -56,7 +63,8 @@ exprClasses_processSpecificCalls <- function(code, symTab) {
                 exprClasses_processSpecificCalls(code$args[[i]], symTab)
             }
         }
-        handler <- specificCallHandlers[[code$name]]
+        # handler <- specificCallHandlers[[code$name]]
+        handler <- getSpecificCallHandlers(code$name)
         if(!is.null(handler)) eval(call(handler, code, symTab))
     }
 }
