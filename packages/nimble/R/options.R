@@ -1,4 +1,6 @@
+# environment that holds user-provided information
 
+nimbleUserObjects <- new.env()
 
 #' options used for NIMBLE package
 #'

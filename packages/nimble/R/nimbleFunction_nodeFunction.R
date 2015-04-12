@@ -64,18 +64,18 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
             ## add accessor function for node value; used in multivariate conjugate sampler functions
-            typeList <- distributions[[distName]]$types[['value']]
+            typeList <- getDistribution(distName)$types[['value']]
             methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, typeList$type, typeList$nDim)
             ## add accessor functions for stochastic node distribution parameters
             for(param in names(RHS[-1])) {
                 if(!param %in% c("lower", "upper")) {
-                    typeList <- distributions[[distName]]$types[[param]]
+                    typeList <- getDistribution(distName)$types[[param]]
                     methodList[[paste0('get_',param)]] <- ndf_generateGetParamFunction(RHS[[param]], typeList$type, typeList$nDim)
                 }
             }
             for(i in seq_along(altParams)) {
                 altParamName <- names(altParams)[i]
-                typeList <- distributions[[distName]]$types[[altParamName]]
+                typeList <- getDistribution(distName)$types[[altParamName]]
                 methodList[[paste0('get_',altParamName)]] <- ndf_generateGetParamFunction(altParams[[altParamName]], typeList$type, typeList$nDim)
             }
         }
@@ -100,7 +100,7 @@ addArg <- function(code, value, name) {
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
 ndf_createStochSimulate <- function(RHS) {
-    RHS[[1]] <- as.name(distributions[[as.character(RHS[[1]])]]$simulateName)   # does the appropriate substituion of the distribution name
+    RHS[[1]] <- as.name(getDistribution(as.character(RHS[[1]]))$simulateName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'
     if("lower" %in% names(RHS) || "upper" %in% names(RHS))
@@ -154,7 +154,7 @@ ndf_createStochSimulateTrunc <- function(RHS) {
 
 ## changes 'dnorm(mean=1, sd=2)' into 'dnorm(LHS, mean=1, sd=2, log=TRUE)'
 ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS) {
-    RHS[[1]] <- as.name(distributions[[as.character(RHS[[1]])]]$densityName)   # does the appropriate substituion of the distribution name
+    RHS[[1]] <- as.name(getDistribution(as.character(RHS[[1]]))$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
 
@@ -262,8 +262,8 @@ ndf_createVirtualNodeFunctionDefinition <- function(types = list()) {
 ndf_createVirtualNodeFunctionDefinitionsList <- function() {
     defsList <- list()
     defsList$node_determ <- ndf_createVirtualNodeFunctionDefinition()
-    for(distName in distributions$namesVector) {
-        defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(distributions[[distName]]$types)
+    for(distName in getDistributionsInfo('namesVector')) {
+        defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistribution(distName)$types)
     }
     return(defsList)
 }

@@ -41,6 +41,6 @@ nodeInfoClass <- setRefClass('nodeInfoClass',
                                  isDiscrete = function() {
                                      if(type != 'stoch')  stop('querying whether a non-stochastic node is \'discrete\'')
                                      dist <- getDistribution()
-                                     return(distributions[[dist]]$discrete)
+                                     return(getDistribution(dist)$discrete)
                                  }
                              ))

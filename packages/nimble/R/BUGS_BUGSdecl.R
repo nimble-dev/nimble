@@ -131,11 +131,11 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
     
     if(code[[1]] == '~') {
         type <<- 'stoch'
-        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == distributions$namesVector) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
+        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == getDistributionsInfo('namesVector')) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
             stop(paste0('Improper syntax for stochastic declaration: ', deparse(code, width.cutoff=500L)))
     } else if(code[[1]] == '<-') {
         type <<- 'determ'
-        if( is.call(code[[3]]) &&  any(code[[3]][[1]] == distributions$namesVector))
+        if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getDistributionsInfo('namesVector')))
             stop(paste0('Improper syntax for determistic declaration: ', deparse(code, width.cutoff=500L)))
     } else {
         stop(paste0('Improper syntax for declaration: ', deparse(code, width.cutoff=500L)))
@@ -240,7 +240,7 @@ BUGSdeclClass$methods(genReplacementsAndCodeReplaced = function(constantsNamesLi
 ## only affects stochastic nodes
 ## removes any params in codeReplaced which begin with '.'
 ## generates the altParamExprs list, which contains the expression for each alternate parameter,
-## which is taken from the .param expression (no longer taken from distributions[[distName]]$altParams, ever)
+## which is taken from the .param expression (no longer taken from getDistribution(distName)$altParams, ever)
 BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
     
     altParamExprs <<- list()
@@ -255,12 +255,12 @@ BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
         altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
         names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
 #         dotParamNames <- names(dotParamExprs)
-#         distRuleAltParamExprs <- distributions[[as.character(RHSreplaced[[1]])]]$altParams
+#         distRuleAltParamExprs <- getDistribution(as.character(RHSreplaced[[1]]))$altParams
 #         for(altParam in names(distRuleAltParamExprs)) {
 #             if(altParam %in% dotParamNames) {
 #                 altParamExprs[[altParam]] <<- dotParamExprs[[altParam]]
 #             } else {
-#                 defaultParamExpr <- distributions[[as.character(RHSreplaced[[1]])]]$altParams[[altParam]]
+#                 defaultParamExpr <- getDistributions(as.character(RHSreplaced[[1]]))$altParams[[altParam]]
 #                 subParamExpr <- eval(substitute(substitute(EXPR, as.list(RHSreplaced)[-1]), list(EXPR=defaultParamExpr)))
 #                 altParamExprs[[altParam]] <<- subParamExpr
 #             }
@@ -272,7 +272,7 @@ getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(
     ## replaceConstants looks to see if name of a function exists in R
     ## getSymbolicVariables requires a list of nimbleFunctionNames.
     ## The latter could take the former approach
-    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, distributions$namesExprList)
+    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, getDistributionsInfo('namesExprList'))
     ans <- getSymbolicParentNodesRecurse(code, constNames, indexNames, nimbleFunctionNames)
     return(ans$code)
 }

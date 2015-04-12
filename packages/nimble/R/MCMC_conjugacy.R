@@ -286,6 +286,7 @@ conjugacyClass <- setRefClass(
             }
             
             ## if this conjugate sampler is for a multivariate node (i.e., nDim > 0), then we need to determine the size (d)
+
             if(distributions[[prior]]$types$value$nDim > 0) {
                 functionBody$addCode(d <- max(determineNodeIndexSizes(target)))
             }
@@ -366,7 +367,7 @@ conjugacyClass <- setRefClass(
             for(distName in dependentDistNames) {
                 forLoopBody <- codeBlockClass()
                 
-                depNodeValueNdim <- distributions[[distName]]$types$value$nDim
+                depNodeValueNdim <- getDistribution(distName)$types$value$nDim
                 functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                              ## DECLARE() statement
                                      list(DEP_VALUES_VAR         = as.name(paste0('dependents_', distName, '_values')),               ## DECLARE() statement
                                           DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                              ## DECLARE() statement
@@ -377,7 +378,7 @@ conjugacyClass <- setRefClass(
                 
                 neededParams <- dependents[[distName]]$neededParamsForPosterior
                 for(param in neededParams) {
-                    depNodeParamNdim <- distributions[[distName]]$types[[param]]$nDim
+                    depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
                     functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                            ## DECLARE() statement
                                          list(DEP_PARAM_VAR      = as.name(paste0('dependents_', distName, '_', param)),              ## DECLARE() statement
                                               DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                              ## DECLARE() statement
@@ -395,7 +396,7 @@ conjugacyClass <- setRefClass(
             
             ## if we need to determine 'coeff' and/or 'offset'
             if(needsLinearityCheck) {
-                targetNdim <- distributions[[prior]]$types$value$nDim
+                targetNdim <- getDistribution(prior)$types$value$nDim
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
                 
                 ## all the declare statements
@@ -515,7 +516,7 @@ conjugacyClass <- setRefClass(
                 
             } # end if(needsLinearityCheck)
             
-            targetNdim <- distributions[[prior]]$types$value$nDim
+            targetNdim <- getDistribution(prior)$types$value$nDim
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
             
             functionBody$addCode(firstTime <- 1)
@@ -523,10 +524,12 @@ conjugacyClass <- setRefClass(
             for(distName in dependentDistNames) {
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                 depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
-                subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), distributions[[distName]]$types[[param]]$nDim))
+                subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim))
                 names(subList) <- depParamsAvailable
-                subList$value  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), distributions[[distName]]$types$value$nDim)
+
+                subList$value  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), getDistribution(distName)$types$value$nDim)
                 subList$offset <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_offset')), targetNdim)
+
                 subList$coeff  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_coeff')),  targetCoeffNdim)
                 forLoopBodyFirst <- codeBlockClass()
                 forLoopBody      <- codeBlockClass()
