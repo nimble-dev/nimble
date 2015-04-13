@@ -53,9 +53,9 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
     if(type == 'stoch') {
         methodList <- eval(substitute(
             list(
-                simulate   = function() { LHS     <<- STOCHSIM                                                        },
-                calculate  = function() { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },  ## used to be LOGPROB <<- STOCHCALC, but with truncation not always a simple assignment
-                getLogProb = function() {                          returnType(double());   return(LOGPROB)            }
+                simulate   = function() { LHS <<- STOCHSIM                                                         },
+                calculate  = function() { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
+                getLogProb = function() {                       returnType(double());   return(LOGPROB)            }
             ),
             list(LHS       = LHS,
                  LOGPROB   = logProbNodeExpr,

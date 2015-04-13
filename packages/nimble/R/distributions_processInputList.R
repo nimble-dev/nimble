@@ -168,7 +168,9 @@ distClass <- setRefClass(
 
 distributions <- distributionsClass(distributionsInputList)
 
-
+getDistributionsObject <- function() {
+    distributions
+}
 
 
 

@@ -393,7 +393,7 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
 
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)          
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -449,7 +449,7 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = newLHS, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
             newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
         }
     }  # close loop over declInfo
@@ -574,7 +574,7 @@ modelDefClass$methods(replaceAllConstants = function() {
         newCode <- replaceConstantsRecurse(declInfo[[i]]$code, constantsEnv, constantsNamesList)$code
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber)
+        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, declInfo[[i]]$truncation)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -686,7 +686,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 if(!checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)) {
                     
                     BUGSdeclClassObject <- BUGSdeclClass$new()
-                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)   ## keep new declaration in the same context, regardless of presence/absence of indexing
+                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)   ## keep new declaration in the same context, regardless of presence/absence of indexing
                     newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
                     
                     nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
@@ -698,7 +698,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
         newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject    ## regardless of anything, add BUGSdecl itself in
     }    # closes loop over declInfo
     declInfo <<- newDeclInfo

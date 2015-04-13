@@ -157,10 +157,7 @@ print: Boolean argument, specifying whether to print the ordered list of default
 
             for(i in seq_along(nodes)) {
             	node <- nodes[i]
-                ##discrete <- model$getNodeInfo()[[node]]$isDiscrete()
-                ## new for newNimbleModel (v3):
-                dist <- cc_getNodeDistributionText(model, node)
-                discrete <- distributions[[dist]]$discrete
+                discrete <- model$isDiscrete(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 

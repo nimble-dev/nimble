@@ -289,8 +289,7 @@ sampler_slice <- nimbleFunction(
         timesRan      <- 0
         timesAdapted  <- 0
         sumJumps      <- 0
-        dist          <- cc_getNodeDistributionText(model, targetAsScalar)
-        discrete      <- distributions[[dist]]$discrete
+        discrete      <- model$isDiscrete(targetAsScalar)
     },
     
     run = function() {

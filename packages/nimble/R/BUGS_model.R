@@ -49,10 +49,86 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                    		nodeNames = expandNodeNames(nodeNames, returnType = 'ids')
                                    	return(modelDef$maps$isEndNode_byGID[nodeNames])
                                    },
-                                  getNodeInfo = function() modelDef$nodeInfo,
+
+                                  ## returns the type of one or more node names, e.g., 'stoch' or 'determ'
+                                  getNodeType = function(nodes) {
+                                      graphIDs <- modelDef$nodeName2GraphIDs(nodes)
+                                      types <- getMaps('types')[graphIDs]
+                                      return(types)
+                                  },
+
+                                  ## returns the declaration ID corresponding to nodes
+                                  getDeclID = function(nodes) {
+                                      graphIDs <- modelDef$nodeName2GraphIDs(nodes)
+                                      declIDs <- getMaps('graphID_2_declID')[graphIDs]
+                                      return(declIDs)
+                                  },
+
+                                  ## returns a list of the declInfo objects corresponding to nodes
+                                  getDeclInfo = function(nodes) {
+                                      declIDs <- getDeclID(nodes)
+                                      declInfos <- modelDef$declInfo[declIDs]
+                                      return(declInfos)
+                                  },
                                   
-                                  
-                                  
+                                  getUnrolledIndicesList = function(node) {
+                                      di <- getDeclInfo(node)[[1]]
+                                      if(length(which(di$nodeFunctionNames == node)) != 1)
+                                          stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+                                      unrolledRowNumber <- which(di$nodeFunctionNames == node)
+                                      indicesMatrix <- di$unrolledIndicesMatrix
+                                      if(nrow(indicesMatrix) == 0) {
+                                          if(unrolledRowNumber > 1) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+                                          return(list())
+                                      }
+                                      unrolledIndices <- as.list(indicesMatrix[unrolledRowNumber, ])
+                                      return(unrolledIndices)
+                                  },
+
+                                  ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
+                                  getNodeDistribution = function(node) {
+                                      getDeclInfo(node)[[1]]$getDistribution()
+                                  },
+
+                                  ## returns the expr corresponding to 'param' in the distribution of 'node'
+                                  getNodeParamExpr = function(node, param) {
+                                      di <- getDeclInfo(node)[[1]]
+                                      if(di$type != 'stoch')  stop('getting parameter expression for a non-stochastic node')
+                                      if(param %in% names(di$valueExprReplaced)) {
+                                          expr <- di$valueExprReplaced[[param]]
+                                      } else if(param %in% names(di$altParamExprs)) {
+                                          expr <- di$altParamExprs[[param]]
+                                      } else stop('getting a parameter not present in stochastic node')
+                                      unrolledIndices <- getUnrolledIndicesList(node)
+                                      subExpr <- eval(substitute(substitute(EXPR, unrolledIndices), list(EXPR = expr)))
+                                      return(subExpr)
+                                  },
+
+                                  ##  returns the entire RHS valueExpr for 'node'
+                                  getNodeValueExpr = function(node) {
+                                      expr <- getDeclInfo(node)[[1]]$valueExprReplaced
+                                      unrolledIndices <- getUnrolledIndicesList(node)
+                                      subExpr <- eval(substitute(substitute(EXPR, unrolledIndices), list(EXPR = expr)))
+                                      return(subExpr)
+                                  },
+
+                                  isDiscrete = function(node) {
+                                      dist <- getNodeDistribution(node)
+                                      distributions <- getDistributionsObject()
+                                      discrete <- distributions[[dist]]$discrete
+                                      return(discrete)
+                                  },
+
+                                  isTruncated = function(node) {
+                                      di <- getDeclInfo(node)[[1]]
+                                      if(is.null(di$truncation)) return(FALSE) else return(TRUE)
+                                  },
+
+                                  getBounds = function(node) {
+                                      if(!isTruncated(node)) return(list(lower=-Inf, upper=Inf))
+                                      return(getDeclInfo(node)[[1]]$truncation)
+                                  },
+
                                   getVarNames = function(logProb = FALSE, nodes) {                                  
                                       '
 Returns the names of all variables in a model, optionally including the logProb variables

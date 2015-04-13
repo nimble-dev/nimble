@@ -407,8 +407,7 @@ addSamplerToSpec <- function(Rmodel, spec, nodeGroup) {
     ## if((!is.null(conjugacyResult)) && conjOveride) {
     ##     spec$addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
     ## }
-    dist <- cc_getNodeDistributionText(Rmodel, nodeGroup)
-    discrete <- distributions[[dist]]$discrete
+    discrete <- Rmodel$isDiscrete(nodeGroup)
     if(discrete) {
         spec$addSampler(type = 'slice', target = nodeGroup, print = FALSE); return()
     }
