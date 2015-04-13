@@ -47,11 +47,15 @@ void simulate(NodeVectorClass &nodes);
 // single and many base classes
 class SingleVariableMapAccessBase {
  public:
-  int offset;
+  int offset, length;
   bool singleton;
   vector<int> sizes, strides; 
   virtual ~SingleVariableMapAccessBase();
   virtual NimArrType *getNimArrPtr()=0;
+  void calculateLength() {
+    length = 1;
+    for(int i = 0 ; i < sizes.size(); ++i) {length *= sizes[i];}
+  }
   int &getLength() {return(length);}
   int &getOffset() {return(offset);}
   vector<int> &getSizes() {return(sizes);}
@@ -85,7 +89,7 @@ class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
   ~ManyVariablesMapAccessor();
   void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
-  void resize(int n){PRINTF("Resizing to %i\n", n); varAccessors.resize(n); for(int i = 0; i < n; ++i) varAccessors[i] = new SingleVariableMapAccess;}
+  void resize(int n){varAccessors.resize(n); for(int i = 0; i < n; ++i) varAccessors[i] = new SingleVariableMapAccess;}
 };
 
 // single and many modelValues classes
@@ -118,8 +122,6 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
   vector<SingleVariableMapAccessBase *> fromAccessors = from.getMapAccessVector();
   vector<SingleVariableMapAccessBase *> toAccessors = to.getMapAccessVector();
 
-  cout<<"sizes "<<fromAccessors.size()<<" "<<toAccessors.size()<<"\n";
-  
   if(fromAccessors.size() != toAccessors.size()) {
     std::cout<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
   }
@@ -159,12 +161,9 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
   toNimArr = to->getNimArrPtr();
 
   fromType = fromNimArr->getNimType();
-  toType = toNimArr->getNimType();
-  std::cout<<"types "<<fromType<<" "<<toType<<"\n";
-  std::cout<<"singletons "<<from->singleton<<" "<<to->singleton<<"\n";
+  toType = toNimArr->getNimType();  
   
-  
-  if(to->singleton) {
+  if(to->getSingleton()) {
     switch(fromType) {
     case DOUBLE:
       switch(toType) {
@@ -225,6 +224,14 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     }
   }
 }
+
+
+void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA);
+void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA);
+void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA);
+void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA);
+
+
 
 ///////////////////////////////
 // 2. Variable accessors

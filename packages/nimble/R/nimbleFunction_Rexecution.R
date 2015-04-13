@@ -147,15 +147,29 @@ simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)
 # @return NULL, but this function works by the side-effect of modifying P in the calling environment.
 
 
-getValues <- function(vals, model, nodes)
-	{
-	valsExp = substitute(vals)
-	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
-	output = getValuesAccess(vals, access)
-	assign(as.character(valsExp), output, envir = parent.frame(n = 1) )
-	}
+getValues <- function(vals, model, nodes, envir = parent.frame()) {
+    browser()
+    valsExp = substitute(vals)
+    access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
+    output = getValuesAccess(access)
+    if(is.name(valsExp))
+        assign(as.character(valsExp), output, envir = parent.frame(n = 1) ) ## again this assumes valsExp has no indexing -- need to fix
+    else {
+        varName <- valsExp[[2]]
+        orig <- get(varName, envir = envir)
+        assignTarget <- valsExp
+        assignTarget[[2]] <- quote(orig)
+        eval(substitute(AT <- output, list(AT = assignTarget)))
+        assign(varName, orig, envir = envir)
+    }
+}
 
-getValuesAccess <- function(vals, access){
+getValuesAccess <- function(access) {
+    if(length(access$code)==0) return(numeric())
+    unlist(lapply(1:length(access$code), function(i) access$getValues(i)))
+}
+
+getValuesAccessOld <- function(vals, access){
 #	if(length(vals)!= length(access) ) {
 #		writeLines('Length of object to copy into does not match')
 #	}
@@ -170,8 +184,11 @@ getValuesAccess <- function(vals, access){
 }
 
 
+setValuesAccess <- function(input, access) {
+    ## STOPPED HERE 
+}
 
-setValuesAccess <- function(input, access){
+setValuesAccessOld <- function(input, access){
 	tot_length = length(access$gids) + length(access$l_gids)
 	if(length(input)!= tot_length ) 
 		writeLines('Length of input does not match accessor')
@@ -183,6 +200,7 @@ setValuesAccess <- function(input, access){
 			access$setSingleValue_fromGID(input[i+gid_len], i + gid_len)
 	}
 }	
+
 
 # Fill a set of nodes in a model from a vector of values
 #
@@ -207,7 +225,7 @@ setValuesAccess <- function(input, access){
 # @return NULL, but this function works by the side-effect of modifying the model.
 
 
-setValues <- function(input, model, nodes){
+setValues <- function(input, model, nodes, envir = parent.frame()){
 	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
 	setValuesAccess(input, access)
 	
@@ -241,12 +259,12 @@ setValues <- function(input, model, nodes){
 #' @return A vector of values concatenated from the provided nodes in the model
 values <- function(model, nodes){
 	ans <- NA
-	getValues(ans, model, nodes)
+	getValues(ans, model, nodes, parent.frame())
 	ans
 }
 
 `values<-` <- function(model, nodes, value){
-	setValues(value, model, nodes)
+	setValues(value, model, nodes, parent.frame())
 	return(model)
 }
 
@@ -298,6 +316,52 @@ values <- function(model, nodes){
 #' 
 #' cCopy() ## execute the copy with the compiled function
 nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
+    isFromModel = NA
+    isToModel = NA
+    if(missing(nodes) ) 
+        nodes = allNodeNames(from)
+    if( inherits(from, "modelBaseClass") ){
+        accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
+    }
+    else
+        if(inherits(from, "modelValuesBaseClass")) {
+            accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
+            if(is.na(row))
+                stop("Error: need to supply 'row' for a modelValues copy")
+            accessFrom$setrow(row)
+        }
+    if( inherits(to, "modelBaseClass") ){
+        if(is.na(nodesTo[[1]]) ) 
+            accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
+        else
+            accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
+    }
+    else
+        if(inherits(to, "modelValuesBaseClass")) {
+            if(is.na(nodesTo[[1]]) ) 
+                accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
+            else
+                accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
+            if(is.na(rowTo))
+                rowTo = row
+            accessTo$setRow(rowTo)
+        }
+    if(is.na(isFromModel))
+        stop('argument "from" in nimCopy is neither a model nor modelValues')
+    if(is.na(isToModel))
+        stop('argument "to" in nimCopy is neither a model nor modelValues')
+ 
+    lengthTo <- length(accessTo$code)
+    if(length(accessFrom$code) != lengthTo)
+        stop('unequal number of entries in nimCopy') 
+    if(lengthTo > 0){
+        for(i in 1:lengthTo){
+            accessTo$setValues( i, accessFrom$getValues(i) )
+        }
+    }    
+}
+
+nimCopyOld <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
 
     isFromModel = NA
     isToModel = NA

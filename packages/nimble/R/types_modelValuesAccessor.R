@@ -26,29 +26,37 @@ valuesAccessorVector <- setRefClass( ## new implementation
         nodeNames = 'ANY',
         logProb = 'ANY', 
         length = 'ANY',
+        code = 'ANY',
+        accessCode = 'ANY',
+        setCode = 'ANY',
         mapInfo = 'ANY'
     ),
     methods = list(
         initialize = function(modelOrModelValues, nodeNames, logProb = FALSE) { ## will need to work with IDs too
             sourceObject <<- modelOrModelValues
-            if(!logProb)
-                nodeNames <<- nodeNames
+            inputNodeNames <- nodeNames
+             if(!logProb)
+                nodeNames <<- inputNodeNames
             else {
-                isLogProbName <- grepl('logProb_', nodeNames)
-                nodeNames <<- c(nodeNames, makeLogProbName(nodeNames[!isLogProbName]))
+                isLogProbName <- grepl('logProb_', inputNodeNames)
+                nodeNames <<- c(inputNodeNames, makeLogProbName(inputNodeNames[!isLogProbName]))
             }
             logProb <<- logProb
-            length <<- length(nodeNames)
+            code <<- lapply(.self$nodeNames, function(x) parse(text = x, keep.source = FALSE)[[1]])
+            length <<- NA
             mapInfo <<- NULL
         },
         makeMapInfo = function() {
-            mapInfo <<- lapply(nodeNames, function(x) {
+            length <<- 0
+            mapInfo <<- lapply(code, function(x) {
                 varAndIndices <- getVarAndIndices(x)
                 varName <- as.character(varAndIndices$varName)
                 varSym <- sourceObject$getSymbolTable()$getSymbolObject(varName) ## previously from model$getVarInfo(varName)
                 ans <- varAndIndices2mapParts(varAndIndices, varSym$size, varSym$nDim)
                 ans$varName <- varName
-                ans$singleton <- prod(ans$sizes == 1)
+                anslength <- prod(ans$sizes)
+                length <<- length + anslength
+                ans$singleton <- anslength == 1
                 ans
             }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
             invisible(NULL)
@@ -56,6 +64,11 @@ valuesAccessorVector <- setRefClass( ## new implementation
         getMapInfo = function() {
             if(is.null(mapInfo)) makeMapInfo()
             mapInfo
+        },
+        getLength = function() {
+            if(is.null(mapInfo)) makeMapInfo()
+            writeLines(paste('length = ', length))
+            length
         }
     )
     )
@@ -67,7 +80,36 @@ makeSingleModelValuesAccessor <- function(ids, modelValues){
 
 modelValuesAccessorVector <- setRefClass( ## new implementation
    Class = 'modelValuesAccessorVector',
-   contains = 'valuesAccessorVector')
+    contains = 'valuesAccessorVector',
+    fields = list(row = 'ANY'),
+    methods = list(
+        initialize = function(...) {
+            callSuper(...)
+            row <<- as.integer(NA)
+            makeAccessAndSetCode()
+        },
+        makeAccessAndSetCode = function() {
+            accessCode <<- lapply(code, function(temp) {
+                if(is.name(temp)) return(substitute(sourceObject$B[[localrow]], list(B = temp)))
+                temp[[2]] <- substitute(sourceObject$B[[localrow]], list(B = temp[[2]]))
+                temp
+            })
+            setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
+        },
+        setRow = function(row) {
+            row <<- row
+        },
+        getValues = function(i, row = NA) {
+            ## model version
+            localrow <- if(is.na(row)) .self$row else row
+            eval(accessCode[[i]])
+        },
+        setValues = function(i, vals, row = NA) {
+            ## model version
+            localrow <- if(is.na(row)) .self$row else row
+            eval(setCode[[i]])
+        }
+    ))
 
 modelValuesAccessorVectorOld <- setRefClass( ## old implementation
     Class = 'modelValuesAccessorVectorOld',

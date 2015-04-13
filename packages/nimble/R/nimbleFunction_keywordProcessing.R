@@ -401,7 +401,7 @@ accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass(
   #Note to programmer: required fields of argList are accessName
  
   makeName = function(argList){ Rname2CppName(paste(argList$accessName, 'length', sep = '_')) },
-  codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$length),
+  codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
   makeCodeSubList = function(resultName, argList){
   	list(ACCESSNAME = as.name(argList$accessName),
   		ACCESSLENGTH = as.name(resultName) )
