@@ -27,26 +27,23 @@ distributionsInputList <- list(
                    pqAvail = TRUE),
     
     dcat    = list(BUGSdist = 'dcat(prob)',
-                   ##Rdist    = 'dcat(prob, K = length(prob))',
                    Rdist    = 'dcat(prob)',
                    types    = c('value = integer()', 'prob = double(1)'), 
                    discrete = TRUE),
     
-    dconstraint   = list(BUGSdist = 'dconstraint(cond)',
-                         discrete = TRUE),
-    # construct used to enforce constraints - 0/1 random variable depending on if cond is TRUE
+    ## construct used to enforce constraints - 0/1 random variable depending on if cond is TRUE
+    dconstraint = list(BUGSdist = 'dconstraint(cond)',
+                       discrete = TRUE),
 
-    dinterval     = list(BUGSdist = 'dinterval(t, c)',
-                         types    = c('value = integer()', 't = double()',
-                             'c = double(1)'),
-                         discrete = TRUE),
-    # construct used to enforce censoring - takes values 0,1,...,len(c)
-    # depending on which interval t falls into
+    ## construct used to enforce censoring.
+    ## takes values 0,1,...,len(c), depending on which interval t falls into
+    dinterval = list(BUGSdist = 'dinterval(t, c)',
+                     types    = c('value = integer()', 't = double()', 'c = double(1)'),
+                     discrete = TRUE),
 
     dmulti  = list(BUGSdist = 'dmulti(prob, size)',
-   ##                Rdist    = 'dmulti(size, prob, K = length(prob))',
                    Rdist    = 'dmulti(size, prob)',
-                   types    = c('value = double(1)', 'prob = double(1)', 'size = integer(0)'),
+                   types    = c('value = double(1)', 'prob = double(1)', 'size = integer()'),
                    discrete = TRUE),
     
     dnegbin = list(BUGSdist = 'dnegbin(prob, size)',
@@ -104,10 +101,10 @@ distributionsInputList <- list(
     
     ## dpar    = list(BUGSdist = 'dpar(alpha, c)'),   ## not sure the state of this?  -DT
     
+    ## because we wrote nonstandard dt, we don't at the moment have access to pt, qt
     dt      = list(BUGSdist = 'dt(mu, tau, df)',
                    Rdist    = 'dt_nonstandard(df, mu, sigma = 1/sqrt(tau))',
-                   altParams = c('tau = sd^-2')),
-    # note because we wrote nonstandard dt, we don't at the moment have access to pt, qt
+                   altParams = c('tau = sigma^-2')),
     
     dunif   = list(BUGSdist = 'dunif(min, max)',
                    pqAvail = TRUE),
@@ -124,7 +121,6 @@ distributionsInputList <- list(
     
     
     ddirch  = list(BUGSdist = 'ddirch(alpha)',
-##                   Rdist    = 'ddirch(alpha, K = length(alpha))',
                    Rdist    = 'ddirch(alpha)',
                    types    = c('value = double(1)', 'alpha = double(1)')),
     

@@ -40,18 +40,18 @@ distClass <- setRefClass(
     Class = 'distClass',
     
     fields = list(
-        BUGSdistName = 'ANY',		#'character',   ## the (BUGS) name of the distribution
-        BUGSdistExpr = 'ANY',     ## the BUGS distribution expression, as provided in the original inputs list, with all possible parameter names
-        RdistExprList = 'ANY',		#'list',  ## a list of the R distribution expressions, along with their parameters and re-parametrizations
-        numAlts = 'ANY',		#'numeric',   ## the number of alternate reparametrizations provided
+        BUGSdistName = 'ANY',	#'character',   ## the (BUGS) name of the distribution
+        BUGSdistExpr = 'ANY',   # the BUGS distribution expression, as provided in the original inputs list, with all possible parameter names
+        RdistExprList = 'ANY',	#'list',  ## a list of the R distribution expressions, along with their parameters and re-parametrizations
+        numAlts = 'ANY',	#'numeric',   ## the number of alternate reparametrizations provided
         alts = 'ANY',		#'list',
         exprs = 'ANY',		#'list',
-        reqdArgs = 'ANY',		#'character',   ## chracter vector of the required arguments in our R implementation of each distribution; we always reparametrize to this
-        densityName = 'ANY',		#'character',   ## the (R) name of the d-dist function, e.g. 'dnorm'
-        simulateName = 'ANY',		#'character',   ## the (R) name of the r-dist function, e.g. 'rnorm'
-        altParams = 'ANY',		#'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
-        discrete = 'ANY',		#'logical',   ## logical, if the distribution is discrete
-        pqAvail = 'ANY',                #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available 
+        reqdArgs = 'ANY',	#'character',   ## chracter vector of the required arguments in our R implementation of each distribution; we always reparametrize to this
+        densityName = 'ANY',	#'character',   ## the (R) name of the d-dist function, e.g. 'dnorm'
+        simulateName = 'ANY',	#'character',   ## the (R) name of the r-dist function, e.g. 'rnorm'
+        altParams = 'ANY',	#'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
+        discrete = 'ANY',	#'logical',   ## logical, if the distribution is discrete
+        pqAvail = 'ANY',        #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available 
         types = 'ANY'		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
         ### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
     ),
@@ -63,7 +63,6 @@ distClass <- setRefClass(
         	exprs <<- list()
         	altParams <<- list()
         	types <<- list()
-        	### typesForVirtualNodeFunction <<- list() 
             BUGSdistName <<- BUGSdistName
             BUGSdistExpr <<- parse(text=distInputList$BUGSdist)[[1]]
             if(BUGSdistExpr[[1]] != BUGSdistName)   stop(paste0('inconsistent BUGS distribution names for distribution: ', BUGSdistName))
@@ -135,7 +134,6 @@ distClass <- setRefClass(
                 if(!(typeList$nDim %in% 0:1000))     stop(paste0('unknown nDim specified in distribution: ', typeList$nDim))  ## yes, specificying maximum dimension of 1000
                 types[[typeName]] <<- typeList
             }
-            ### typesForVirtualNodeFunction <<- types[names(types) != 'value']
         },
         
         init_types_makeArgList = function(typeArgCharVector) {

@@ -21,19 +21,14 @@ pfStep <- nimbleFunction(
         declare(wts, double(1, m))
         declare(ids, integer(1, m))
         for(i in 1:m) {
-            print('m = ', m)
             if(notFirst) { copy(mv, model, nodes = 'xs', nodesTo = prevNode, row = i)
                            calculate(model, prevDeterm) }
-            print('thisNode before simulate = ', model[[thisNode]])
             simulate(model, thisNode)
-            print('thisNode after simulate = ', model[[thisNode]])
             copy(model, mv, nodes = thisNode, nodesTo = 'x', row = i)
             calculate(model, thisDeterm)
             wts[i] <- exp(calculate(model, thisData))
         }
-        print('wts = ', wts)
         rankSample(wts, m, ids)
-        print('ids = ', ids)
         for(i in 1:m)
             copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
         return(log(mean(wts)))
