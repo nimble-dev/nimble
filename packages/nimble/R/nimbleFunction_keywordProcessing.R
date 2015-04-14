@@ -147,7 +147,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(from_ArgList$class == 'symbolModelValues'){
-			accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
+			accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, row = from_ArgList$row)
 			accessFrom_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
@@ -160,9 +160,9 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class == 'symbolModelValues'){
-			accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
+			accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, row = to_ArgList$row)
 			accessTo_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
-			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
+                        addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class %in% accessTypes)
 			accessTo_name <- as.character(code$to)
@@ -386,7 +386,7 @@ modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
 
-    makeName = function(argList) {Rname2CppName(paste(argList$model, argList$nodes, 'access_logProb', argList$logProb, sep = '_'))},
+    makeName = function(argList) {Rname2CppName(paste(argList$model, argList$nodes, 'access_logProb', argList$logProb, argList$row, sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
@@ -438,7 +438,7 @@ allModelNodes_SetupTemplate <- setupCodeTemplateClass(
 	makeName = function(argList){
 		Rname2CppName(paste('allModelNodes', argList$model, sep = '_'))
 	},
-	codeTemplate = quote(NODENAMES <- MODEL$getNodeNames()),
+	codeTemplate = quote(NODENAMES <- MODEL$getVarNames()),
 	makeCodeSubList = function(resultName, argList){
 		list(NODENAMES = as.name(resultName),
 			MODEL = argList$model)

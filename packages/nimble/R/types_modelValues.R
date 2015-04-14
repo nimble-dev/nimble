@@ -98,9 +98,9 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         GID_map = 'ANY'),
                                     methods = list(
                                         initialize = function(nrow = 1L,...) {
-                                        	callSuper(...)
+                                            callSuper(...)
                                             nrow <<- nrow
-   #                                         types <<- list()
+                                    
                                             for(vN in varNames) {
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
@@ -110,15 +110,15 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                             return(symTab)
                                         },
                                         getVarNames = function(includeLogProb = FALSE){
-                                        	if(!includeLogProb)
-                                        		return(varNames)
-                                        	return(varNames[!grepl('logProb_', varNames)])
+                                            if(includeLogProb)
+                                                return(varNames)
+                                            return(varNames[!grepl('logProb_', varNames)])
                                         },
                                         expandNodeNames = function(nodeNames, returnType = "names", flatIndices = TRUE) 
-										{
-	    									return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
-	    								}                          
-                                      )
+                                            {
+                                                return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
+                                            }                          
+                                    )
                                     )
 
 
