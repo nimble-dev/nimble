@@ -300,7 +300,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             return(list(code = list(code), replaceable = FALSE, hasIndex = FALSE))
         }
     }
-    
+
     if(is.call(code)) {
         if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))

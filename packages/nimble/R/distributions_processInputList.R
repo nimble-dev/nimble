@@ -26,14 +26,23 @@ distributionsClass <- setRefClass(
         },
         add = function(dil) {
               distObjectsNew <- list()
-              for(i in seq_along(dil))     distObjectsNew[[i]] <- distClass(dil[[i]], names(dil)[i])
-              names(distObjectsNew) <- names(dil)
+              nms <- names(dil)
+              dupl <- which(nms %in% getDistributionsInfo('namesVector', userOnly = TRUE))
+              if(length(dupl)) {
+                  distObjects[dupl] <<- NULL
+                  namesVector <<- namesVector[-dupl]
+                  namesExprList[dupl] <<- NULL
+                  translations[dupl] <<- NULL
+                  cat("Overwriting the following user-supplied distributions:", nms, ".\n", sep = " ")
+              }
+              for(i in seq_along(dil))     distObjectsNew[[i]] <- distClass(dil[[i]], nms[i])
+              names(distObjectsNew) <- nms
               translations <<- c(translations, lapply(distObjectsNew, function(d) c(d$densityName, d$simulateName)))
+
               distObjects <<- c(distObjects, distObjectsNew)
-              namesVector <<- c(namesVector, names(dil))
+              namesVector <<- c(namesVector, nms)
               namesExprList <<- c(namesExprList, lapply(namesVector, as.name))
-              matchCallEnv <<- new.env()
-              for(distName in names(dil)) assign(distName, distObjects[[distName]]$makeMatchCallFunction(), matchCallEnv)
+              for(distName in nms) assign(distName, distObjects[[distName]]$makeMatchCallFunction(), matchCallEnv)
           })
     )
               
@@ -207,8 +216,7 @@ checkDistributionsFunctions <- function(distributionsInput) {
     }
     invisible(NULL)
 }
-    
-    
+
 #' Add user-supplied distribution for use in NIMBLE BUGS models
 #'
 #' Register distributional information so that NIMBLE can process
@@ -242,8 +250,16 @@ registerDistributions <- function(distributionsInputList) {
         cat("No distribution information supplied.\n")
     } else {
         if(!is.list(distributionsInputList[[1]])) stop("'distributionsInputList' should be a named list of lists")
+
+        nms <- names(distributionsInputList)
+        dupl <- nms[nms %in% getDistributionsInfo('namesVector', nimbleOnly = TRUE)]
+        if(length(dupl)) {
+            distributionsInputList[nms] <- NULL
+            cat("Omitting registration of the following distributions:", nms, "as they conflict with default NIMBLE distribution names.\n", sep = "")
+        }
         sapply(distributionsInputList, checkDistributionsInput)
         sapply(distributionsInputList, checkDistributionsFunctions)
+
         if(exists('distributions', nimbleUserObjects)) {
             nimbleUserObjects$distributions$add(distributionsInputList)
         } else 
@@ -252,15 +268,57 @@ registerDistributions <- function(distributionsInputList) {
     virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
     createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
 
+    # deal with specificCallHandlers, including detection of multivariate dists or dists with multivariate parameters
+    dnames <- getDistributionsInfo('namesVector', userOnly = TRUE)
+    distribution_dFuns <- as.character(unlist(lapply(getDistributionsInfo('translations', userOnly = TRUE), `[[`, 1)))
     distribution_rFuns <- as.character(unlist(lapply(getDistributionsInfo('translations', userOnly = TRUE), `[[`, 2)))
     if(!exists('specificCallHandlers', nimbleUserObjects))
         nimbleUserObjects$specificCallHandlers <- list()
-    nimbleUserObjects$specificCallHandlers <- c(nimbleUserObjects$specificCallHandlers,
-                                    makeCallList(distribution_rFuns, 'rFunHandler'))           
+    dims <- sapply(lapply(lapply(dnames, getDistribution), '[[', 'types'), getMaxDim)
+    multiDistOrParam <- dims > 0
+    if(length(dnames[multiDistOrParam])) {            
+        nimbleUserObjects$specificCallHandlers[distribution_dFuns[multiDistOrParam]] <- makeCallList(distribution_dFuns[multiDistOrParam], 'dmFunHandler')           
+        nimbleUserObjects$specificCallHandlers[distribution_rFuns[multiDistOrParam]] <- makeCallList(distribution_rFuns[multiDistOrParam], 'rmFunHandler')           
+    }
+    if(length(dnames[!multiDistOrParam]))                
+        nimbleUserObjects$specificCallHandlers[distribution_rFuns[!multiDistOrParam]] <- makeCallList(distribution_rFuns[!multiDistOrParam], 'rFunHandler')
 
+    browser()
+    # deal with skipping wrappers to multivariate node funs in eigenization
+    if(length(dnames[multiDistOrParam])) {
+        if(!exists('callToSkipInEigenization', nimbleUserObjects))
+            nimbleUserObjects$callToSkipInEigenization <- vector(mode = 'character')
+        nimbleUserObjects$callToSkipInEigenization <- unique(c(nimbleUserObjects$callToSkipInEigenization, paste0("nimArr_", c(distribution_dFuns[multiDistOrParam], distribution_rFuns[multiDistOrParam]))))
+    }
+
+    # add to nimArr_r function to assignmentAsFirstArgFuns for multivar distributions
+    dims <- sapply(lapply(dnames, getDistribution), getValueDim)
+    multiDist<- dims > 0
+    if(length(dnames[multiDist])) {
+        if(!exists('assignmentAsFirstArgFuns', nimbleUserObjects))
+            nimbleUserObjects$assignmentAsFirstArgFuns <- vector(mode = 'character')
+        nimbleUserObjects$assignmentAsFirstArgFuns <- unique(c(nimbleUserObjects$assignmentAsFirstArgFuns, paste0("nimArr_", c(distribution_rFuns[multiDist]))))
+    }
+
+    # add nimArr_{d,r} to sizeCalls, with sizeScalarRecurse except for 'r' function for multivariate distributions
+    if(!exists('sizeCalls', nimbleUserObjects))
+        nimbleUserObjects$sizeCalls <- list()
+
+    sizeScalarRecurseCalls <- c(distribution_dFuns, distribution_rFuns)
+    sizeScalarRecurseCalls <- c(sizeScalarRecurseCalls, paste0("nimArr_", distribution_dFuns[multiDistOrParam]))
+    sizeScalarRecurseCalls <- c(sizeScalarRecurseCalls, paste0("nimArr_", distribution_rFuns[multiDistOrParam & !multiDist]))
+    sizeRmultivarFirstArgCalls <- paste0("nimArr_", distribution_rFuns[multiDist]))
+    nimbleUserObjects$sizeCalls[sizeScalarRecurseCalls] <- 'sizeScalarRecurseCalls'
+    nimbleUserObjects$sizeCalls[sizeRmultivarFirstArgCalls] <- 'sizeRmultivarFirstArgCalls'
+    
     invisible(NULL)
 }
 
+getMaxDim <- function(typeList) 
+    max(sapply(typeList, '[[', 'nDim'))
+
+getValueDim <- function(distObject) 
+    distObject$types$values$nDim
 
 #####################################################################################################
 #####################################################################################################

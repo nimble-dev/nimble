@@ -270,3 +270,8 @@ character2index <- function(thisChar){
 	else
 		stop("Error: too many :'s in index")
 }
+
+# extracts dimension from character vec of form such as c("double(0)", "integer(1)")
+getDimFromType <- function(text) {
+    sapply(parse(text = text), '[[', 2)
+}
