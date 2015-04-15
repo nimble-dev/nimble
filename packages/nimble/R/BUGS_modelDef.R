@@ -707,15 +707,19 @@ modelDefClass$methods(genAltParamsModifyCodeReplaced = function() {
     }
 })
 
+## genNodeInfo3
+## There are no longer nodeInfo objects as we used to have.  This does the related processing in the new system.
 modelDefClass$methods(genNodeInfo3 = function(debug = FALSE) {
     if(debug) browser()
+    ## Iterate by context (for loops), where 1st context will always be no-for-loop
     for(i in seq_along(contexts)) {
-        boolContext <- unlist(lapply(declInfo, function(x) x$contextID == i))
-        allReplacements <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacements'))
+        boolContext <- unlist(lapply(declInfo, function(x) x$contextID == i))                    ## TRUE for BUGS lines (declInfo elements) that use this context
+        allReplacements <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacements'))     ## Get a list of replacement expressions
         if(length(allReplacements) > 0) {
-            allReplacementNameExprs <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacementNameExprs'))
+            allReplacementNameExprs <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacementNameExprs')) ## names of allReplacements as expressions
             boolNotDup <- !duplicated(allReplacements)
-            
+
+            ## This makes an environment with a vector of each replacement and for-loop index from executing the for-loops
             unrolledContextAndReplacementsEnv <- expandContextAndReplacements(allReplacements[boolNotDup], allReplacementNameExprs[boolNotDup], contexts[[i]], constantsEnv)
             contexts[[i]]$replacementsEnv <<- unrolledContextAndReplacementsEnv
         } else {
@@ -1367,7 +1371,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 if(is.list(indexNamePieces)) { 
                     pieces[[i]] <- if(is.character(indexNamePieces[[1]]))
                                        BUGSdecl$replacementsEnv[[ indexNamePieces[[1]] ]]
-                                   else indexNamePieces[[1]]
+                                   else indexNamePieces[[1]] ## for anything with a colon, this takes only the start value (cf step 2. above)
                 } else {
                     pieces[[i]] <- if(is.character(indexNamePieces)) BUGSdecl$replacementsEnv[[ indexNamePieces ]] else indexNamePieces
                 }
@@ -1379,7 +1383,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             logProbIDs <- c(logProbIDs, newLogProbIDs)
             nextLogProbID <- nextLogProbID + length(newLogProbNames)
 
-            targetExprWithMins <- removeColonOperator(BUGSdecl$targetExprReplaced)
+            targetExprWithMins <- removeColonOperator(BUGSdecl$targetExprReplaced) ## this strips colons, leaving only start value
             if(is.environment(BUGSdecl$replacementsEnv)) {
                 IDassignCode <- insertSubIndexExpr(targetExprWithMins, quote(iAns))
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbIDs
@@ -1964,14 +1968,15 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
 	return(output[!is.na(output)])
 })
 
-modelDefClass$methods(nodeName2LogProbName = function(nodeName){
+## next two functions work for properly formed nodeNames.
+modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 2 places: MCMC_build and cppInterfaces_models
 	if(length(nodeName) == 0)
 		return(NULL)
 	output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
 	return(output[!is.na(output)])
 })
 
-modelDefClass$methods(nodeName2LogProbID = function(nodeName){
+modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
 	if(length(nodeName) == 0)
 		return(NULL)
 	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 
