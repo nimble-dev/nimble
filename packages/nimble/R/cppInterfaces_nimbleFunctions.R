@@ -26,6 +26,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
         ptrName = paste0(".", vn, "_Ptr")
         fieldList[[ptrName]] <- "ANY" ## "ANY" 
         ## Model variables:
+        if(inherits(thisSymbol, 'symbolOptimReadyFunction'))	next
         if(inherits(thisSymbol,'symbolNimArrDoublePtr')) {
             fieldList[[vn]] <- eval(substitute(
                 function(x) {
@@ -261,14 +262,14 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                    .self[[v]] <- Cmv
                                                }
                                                else if(cppCopyTypes[[v]] == 'modelValues') { ## somewhat similar to modelVar
-                                                   modelVar <- Robj[[v]]
-                                                   Cmv <- modelVar$CobjectInterface
-                                                   k = getsize(Robj[[v]])
+                                                   rModelValues <- Robj[[v]]
+                                                   Cmv <- rModelValues$CobjectInterface
+                                                   k = getsize(rModelValues)
                                                    resize(Cmv, k)
-                                                 	vNames = Robj[[v]][['varNames']]
+                                                 	vNames = rModelValues[['varNames']]
                                                  	for(vN in vNames)
-                                                 		Cmv[vN,] <- Robj[[v]][vN,]
-                                                 		
+                                                 		Cmv[vN,] <- rModelValues[vN,]
+                                                 	Cmv$symTab <- rModelValues$symTab	
                                                    .self[[v]] <- Cmv
                                                    next
                                                }

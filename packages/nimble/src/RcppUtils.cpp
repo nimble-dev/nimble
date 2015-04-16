@@ -1445,7 +1445,6 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 	sampP[0] = sampP[0] * sum;
 	sampP[c_samps] = sum + 1;
 	
-	GetRNGstate();
 
 	
 	for(int i = 1; i < c_samps ; i++)
@@ -1458,7 +1457,6 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 				curP++;
 			}
 		}
-	PutRNGstate();
 	return;	
 	}
 // unsort must be true to get here
@@ -1479,7 +1477,6 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 		ans[i] = sortAns[newOrder[drawIndex]];
 		newOrder[drawIndex] = newOrder[i];
 	}
-	PutRNGstate();
 
 }
 
@@ -1500,9 +1497,9 @@ SEXP rankSample(SEXP p, SEXP n){
 void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output){
 	output.setSize(n);
 	int N = weights.size();
-	GetRNGstate();
+//	GetRNGstate();
 	rawSample(weights.getPtr(), n, N, output.getPtr(), false );	
-	PutRNGstate();
+//	PutRNGstate();
 	}
 
 
@@ -1604,3 +1601,163 @@ SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd){
 	}
 	return(R_NilValue);
 }
+
+
+SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex){
+	SEXP ans;
+	int cIndex = INTEGER(sIndex)[0] - 1;
+	ans = findVar(install(CHAR(STRING_ELT(sString, cIndex ))), sEnv);
+	PROTECT(ans);
+	UNPROTECT(1);
+	return(ans);
+	}
+
+SEXP getEnvVar(SEXP sString, SEXP sEnv){
+  	return(getEnvVar_Sindex(sString, sEnv, ScalarInteger(1)));
+}
+
+SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
+	int cIndex = INTEGER(sIndex)[0] - 1;
+	setVar(install(CHAR(STRING_ELT(sString, cIndex ))), sVal, sEnv);
+	return(R_NilValue);
+}
+
+ SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal){						
+  	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+/* tools for R's optim	*/
+
+
+//   FRAMEWORK FOR USING R'S OPTIM FUNCTIONS IN NIMBLE
+
+
+
+
+void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int nargs,  ...){
+	int n1 = initPar.size();
+	NM_OptimControl* nmControl = new NM_OptimControl(1.0, 0.5, 2.0,0.0001, 0.0001, 500, 0);
+	OptimAns* optAns = new OptimAns(n1);
+	optAns->Fmin = 100;
+	vector<void*>* otherArgs = new vector<void*>(nargs);
+	va_list vl;
+	va_start(vl, nargs);
+	for(int i = 0; i < nargs; i++)
+		(*otherArgs)[i] = va_arg(vl, void*);
+	va_end(vl);
+	
+    void* vp_otherArgs = static_cast<void*>(otherArgs);
+    
+	nimble_optim(nfPtr, static_cast<OptimControl*>(nmControl), optAns,
+					 initPar, vp_otherArgs, objFxn);
+	
+	Rprintf("Called bareBonesOptim, final value = %f\n", optAns->Fmin);
+	
+    delete nmControl;
+    delete optAns;
+    delete otherArgs;
+	
+}	
+	
+// NEW CORE GENERIC FUNCTIONS
+
+//We hope this function will be generic (i.e. not requiring generated function)
+//objFxn is the double (int, double*, void*) that we want to optimize
+//objFxn has to be built dynamically 
+//Also, not 100% sure what to do about the nimbleFunction it self. Right now I'm 
+//assuming it will be passed as a void pointer
+void nimble_optim(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, void* otherArgs,
+				 	optimfn objFxn){
+
+	//Steps required:	
+	//Unpack parts of control (things that are required for all optimizers)
+	//Decide optimizer {
+	//Based on optimizer, unpack specialized part of optimControl and call appropriate optimizer	
+	//  unpack results of optimizer into ans
+	//	}
+	// ?return ans (depends if we want to allow return of nimble functions)
+
+	// Generic Unpacking	
+	int n = par.size();
+	double* xin = &(par[0]);	//IF we want to leave par untouched by optim, we could copy these values instead of pointing at them
+	double* x = &(ans->par[0]);
+	double* Fmin = &(ans->Fmin);
+	int* fail = &(ans->fail);
+	int* fncount = &(ans->fncount);
+	
+	vector<void*>* ex = new vector<void*> (2);
+	(*ex)[0] = nimFun;
+	(*ex)[1] = otherArgs;
+
+	
+	//Choosing and applying optimizer
+	//Just using Nelder Mead as example here
+	if( control->optimType == 1 ){
+		NM_OptimControl* nmControl = static_cast<NM_OptimControl*>(control);	
+			nmmin(n, xin, x, Fmin, objFxn, fail, nmControl->abstol, nmControl->intol,
+			static_cast<void*> (ex), nmControl->alpha, nmControl->beta, nmControl->gamma, nmControl->trace,
+			fncount, nmControl->maxit);
+	
+	}		
+	
+	
+		delete ex;
+		
+	//actually, nothing else to do at this point! 
+	//Could return ans if we decided to build it on the fly here instead of providing it as argument
+}	
+
+
+
+void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, optimfn objFxn,
+				 	int numOtherArgs, ...){
+
+	//Steps required:	
+	//Unpack parts of control (things that are required for all optimizers)
+	//Decide optimizer {
+	//Based on optimizer, unpack specialized part of optimControl and call appropriate optimizer	
+	//  unpack results of optimizer into ans
+	//	}
+	// ?return ans (depends if we want to allow return of nimble functions)
+
+	// Generic Unpacking	
+	int n = par.size();
+	double* xin = &(par[0]);	//IF we want to leave par untouched by optim, we could copy these values instead of pointing at them
+	double* x = &(ans->par[0]);
+	double* Fmin = &(ans->Fmin);
+	int* fail = &(ans->fail);
+	int* fncount = &(ans->fncount);
+	vector<void*>* otherArgs = new vector<void*>(numOtherArgs);
+	va_list vl;
+	va_start(vl, numOtherArgs);
+	for(int i = 0; i < numOtherArgs; i++)
+		(*otherArgs)[i] = va_arg(vl, void*);
+	va_end(vl);
+	vector<void*>* ex = new vector<void*> (2);
+	(*ex)[0] = nimFun;
+	(*ex)[1] = otherArgs;
+	//Choosing and applying optimizer
+	//Just using Nelder Mead as example here
+	if( control->optimType == 1 ){
+		NM_OptimControl* nmControl = static_cast<NM_OptimControl*>(control);	
+			nmmin(n, xin, x, Fmin, objFxn, fail, nmControl->abstol, nmControl->intol,
+			static_cast<void*> (ex), nmControl->alpha, nmControl->beta, nmControl->gamma, nmControl->trace,
+			fncount, nmControl->maxit);
+	
+	}		
+		delete ex;
+		delete otherArgs;
+	//actually, nothing else to do at this point! 
+	//Could return ans if we decided to build it on the fly here instead of providing it as argument
+}	
+

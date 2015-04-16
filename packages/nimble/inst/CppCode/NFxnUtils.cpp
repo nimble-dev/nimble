@@ -9,3 +9,8 @@ SEXP setNFPointer (SEXP RnfPtr, SEXP RmodelElementPtr){
 	nfPointer = &modelElementPtr;
         return(R_NilValue);
 }
+
+
+
+
+

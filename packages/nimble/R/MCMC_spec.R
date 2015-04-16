@@ -12,31 +12,40 @@ controlDefaultList <- list(
 )
 
 
-
 samplerSpec <- setRefClass(
     Class = 'samplerSpec',
     fields = list(
-        type    = 'ANY',
-        control = 'ANY'),
+        name            = 'ANY',
+        samplerFunction = 'ANY',
+        target          = 'ANY',
+        control         = 'ANY',
+        targetAsScalar  = 'ANY',
+        printStr        = 'ANY'
+    ),
     methods = list(
-    	initialize =function(...) {
-            control <<- list()
-            callSuper(...)
+        initialize = function(name, samplerFunction, target, control, model) {
+            name <<- name
+            samplerFunction <<- samplerFunction
+            target <<- target
+            control <<- control
+            targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE)
+            tempList <- list()
+            tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
+            printStr <<- mcmc_listContentsToStr(c(tempList, control))
         },
         buildSampler = function(model, mvSaved) {
-            samplerNfName <- paste0('sampler_', type)
-            eval(call(samplerNfName, model=model, mvSaved=mvSaved, control=control))
+            samplerFunction(model=model, mvSaved=mvSaved, target=target, control=control)
         },
         toStr = function() {
-            return(paste0(type, ' sampler;   ', mcmc_listContentsToStr(control)))
+            printStr
         }
     )
 )
 
 
-# NOTE: methods are documented as a "docstring" with each method - see 'removeSamplers' below. roxygen will automatically grab info from these docstrings and inject into the Rd in the Methods Section
-# NOTE: including the name of the class in @aliases is important because by default we only get help("MCMCspec-class") and not help(MCMCspec)
-# NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
+## NOTE: methods are documented as a "docstring" with each method - see 'removeSamplers' below. roxygen will automatically grab info from these docstrings and inject into the Rd in the Methods Section
+## NOTE: including the name of the class in @aliases is important because by default we only get help("MCMCspec-class") and not help(MCMCspec)
+## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
 
 #' Class \code{MCMCspec}
 #' @aliases MCMCspec configureMCMC addSampler removeSamplers setSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors setThin setThin2
@@ -54,7 +63,7 @@ samplerSpec <- setRefClass(
 #' Rmodel <- nimbleModel(code)
 #' spec <- configureMCMC(Rmodel)
 #' spec$setSamplers(1)
-#' spec$addSampler(type = 'slice', control = list(targetNode = 'x'))
+#' spec$addSampler(type = 'slice', target = 'x', control = list(adaptInterval = 100))
 #' spec$addMonitors('mu', thin = 1)
 #' spec$addMonitors2('x', thin2 = 10)
 #' spec$getMonitors()
@@ -66,25 +75,25 @@ MCMCspec <- setRefClass(
     
     fields = list(
         model               = 'ANY',
-        monitors            = 'ANY', 		#'character',
-        monitors2           = 'ANY', 		#'character',
-        thin                = 'ANY', 		#'numeric',
-        thin2               = 'ANY', 		#'numeric',
-        samplerSpecs        = 'ANY', 		#'list',
-        controlDefaults     = 'ANY', 		#'list',
-        controlNamesLibrary = 'ANY', 		#'list'
-        mvSamples1Spec 		= 'ANY',
-        mvSamples2Spec		= 'ANY'
+        monitors            = 'ANY',
+        monitors2           = 'ANY',
+        thin                = 'ANY',
+        thin2               = 'ANY',
+        samplerSpecs        = 'ANY',
+        controlDefaults     = 'ANY',
+        controlNamesLibrary = 'ANY',
+        mvSamples1Spec      = 'ANY',
+        mvSamples2Spec      = 'ANY'
     ),
     
     methods = list(
         
         initialize = function(model, nodes, control = list(),
-                              monitors,                thin  = 1,
-                              monitors2 = character(), thin2 = 1,
-                              useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
-                              print = FALSE) {	
-'	
+            monitors,                thin  = 1,
+            monitors2 = character(), thin2 = 1,
+            useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+            print = FALSE) {	
+            '
 Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC().
 
 Arguments:
@@ -125,7 +134,6 @@ multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If sp
 
 print: Boolean argument, specifying whether to print the ordered list of default samplers.
 '
-            
             samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
             model <<- model
             addMonitors( monitors,  print = FALSE)
@@ -138,52 +146,57 @@ print: Boolean argument, specifying whether to print the ordered list of default
             controlNamesLibrary <<- list()
             
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-            } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
-                                 nl_checkVarNamesInModel(model, removeIndexing(nodes))
-                                 nodes <- model$expandNodeNames(nodes)            }
-        
+                                            } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
+                                                                 nl_checkVarNamesInModel(model, removeIndexing(nodes))
+                                                                 nodes <- model$expandNodeNames(nodes)            }
+            
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             isNodeEnd <- model$isNodeEnd(nodes)
-            #   nodes %in% model$getMaps('nodeNamesEnd')
-        
-            for(i in seq_along(nodes) ) {
+
+            if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
+
+            for(i in seq_along(nodes)) {
             	node <- nodes[i]
-                discrete <- model$getNodeInfo()[[node]]$isDiscrete()
+                discrete <- model$isDiscrete(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
-             	if(isNodeEnd[i]) { addSampler(type = 'end', control = list(targetNode=node), print = print);     next }
+             	if(isNodeEnd[i]) { addSampler(type = 'end', target = node, print = print);     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
-                    conjugacyResult <- model$checkConjugacy(node)
-                    if(!is.null(conjugacyResult) && useConjugacy) {
-                        addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                    if(useConjugacy) {
+                        conjugacyResult <- conjugacyResultsAll[[node]]
+                        if(!is.null(conjugacyResult)) {
+                            addSampler(type = conjugacyResult$type, target = conjugacyResult$target, control = conjugacyResult$control, print = print);     next }
+                    }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
-                            addSampler(type = 'RW', control = list(targetNode=scalarNode), print = print) };     next }
-                    addSampler(type = 'RW_block', control = list(targetNodes=node), print = print);     next }
+                            addSampler(type = 'RW', target = scalarNode, print = print) };     next }
+                    addSampler(type = 'RW_block', target = node, print = print);     next }
 
                 ## node is scalar, non-end node
-                if(onlyRW && !discrete)   { addSampler(type = 'RW',    control = list(targetNode=node), print = print);     next }
-                if(onlySlice)             { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                if(onlyRW && !discrete)   { addSampler(type = 'RW',    target = node, print = print);     next }
+                if(onlySlice)             { addSampler(type = 'slice', target = node, print = print);     next }
                 
                 ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
-                conjugacyResult <- model$checkConjugacy(node)
-                if(!is.null(conjugacyResult) && useConjugacy) {
-                    addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = print);     next }
+                if(useConjugacy) {
+                    conjugacyResult <- conjugacyResultsAll[[node]]
+                    if(!is.null(conjugacyResult)) {
+                        addSampler(type = conjugacyResult$type, target = conjugacyResult$target, control = conjugacyResult$control, print = print);     next }
+                }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) { addSampler(type = 'slice', control = list(targetNode=node), print = print);     next }
+                if(discrete) { addSampler(type = 'slice', target = node, print = print);     next }
                 
                 ## default: 'RW' sampler
-                addSampler(type = 'RW', control = list(targetNode=node), print = print);     next
+                addSampler(type = 'RW', target = node, print = print);     next
             }
-},
+        },
         
-        addSampler = function(type, control = list(), print = TRUE) {
-'
+        addSampler = function(type, target, control = list(), print = TRUE, name) {
+            '
 Adds a sampler to the list of samplers contained in the MCMCspec object.
 
 Arguments:
@@ -199,22 +212,43 @@ print: Boolean argument, specifying whether to print the details of the newly ad
 
 Details: A single instance of the newly specified sampler is added to the end of the list of samplers for this MCMCspec object.
 '
-            samplerFunctionName <- as.name(paste0('sampler_', type))
-            if(inherits(try(eval(samplerFunctionName), silent=TRUE), 'try-error'))     stop(paste0('No function definition found for sampler type: ', samplerFunctionName))  ## sampler function doesn't exist
-            if(is.null(controlNamesLibrary[[type]]))     controlNamesLibrary[[type]] <<- mcmc_findControlListNamesInCode(eval(samplerFunctionName))   ## populate the library of names for the control list
-            controlListNames <- controlNamesLibrary[[type]]
+
+            if(is.character(type)) {
+                if(type == 'end') type <- 'sampler_end'  ## because 'end' is an R function
+                thisSamplerName <- gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
+                if(exists(type)) {   ## try to find sampler function 'type'
+                    samplerFunction <- eval(as.name(type))
+                } else {
+                    sampler_type <- paste0('sampler_', type)   ## next, try to find sampler function 'sampler_type'
+                    if(exists(sampler_type)) {
+                        samplerFunction <- eval(as.name(sampler_type))
+                    } else stop(paste0('cannot find sampler type \'', type, '\''))
+                }
+            } else if(is.function(type)) {
+                thisSamplerName <- if(!missing(name)) name else gsub('^sampler_', '', deparse(substitute(type)))
+                samplerFunction <- type
+            } else stop('sampler type must be character name or function')
+            if(!is.character(thisSamplerName)) stop('Sampler name should be a character string')
+            if(!is.function(samplerFunction)) stop('Sampler type does not specify a function')
+
+            if(is.null(controlNamesLibrary[[thisSamplerName]]))   controlNamesLibrary[[thisSamplerName]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
+            controlListNames <- controlNamesLibrary[[thisSamplerName]]
             thisControlList <- controlDefaults           ## start with all the defaults
             thisControlList[names(control)] <- control   ## add in any controls provided as an argument
-            if(!all(controlListNames %in% names(thisControlList)))  stop(paste0('Required control names are missing for ', samplerFunctionName, ': ', paste0(setdiff(controlListNames, names(thisControlList)), collapse=', ')))
-            if(!all(names(control) %in% controlListNames))   warning(paste0('Superfluous control names were provided for ', samplerFunctionName, ': ', paste0(setdiff(names(control), controlListNames), collapse=', ')))
+            missingControlNames <- setdiff(controlListNames, names(thisControlList))
+            missingControlNames <- missingControlNames[!grepl('^dependents_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
+            if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for ', thisSamplerName, ' sampler: ', paste0(missingControlNames, collapse=', ')))
+            if(!all(names(control) %in% controlListNames))   warning(paste0('Superfluous control names were provided for ', thisSamplerName, ' sampler: ', paste0(setdiff(names(control), controlListNames), collapse=', ')))
             thisControlList <- thisControlList[controlListNames]
+            
             newSamplerInd <- length(samplerSpecs) + 1
-            samplerSpecs[[newSamplerInd]] <<- samplerSpec(type=type, control=thisControlList)
+            samplerSpecs[[newSamplerInd]] <<- samplerSpec(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)
+            
             if(print) getSamplers(newSamplerInd)
         },
         
         removeSamplers = function(ind, print = TRUE) {
-'
+            '
 Removes one or more samplers from an MCMCspec object.
 
 Arguments:
@@ -223,7 +257,8 @@ ind: A numeric vector, giving the indices of the samplers to be removed.  If omi
 
 print: Boolean argument, default value TRUE, specifying whether to print the current list of samplers once the removal has been done.
 '      
-            if(missing(ind))   ind <- seq_along(samplerSpecs)
+            if(missing(ind))        ind <- seq_along(samplerSpecs)
+            if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             samplerSpecs[ind] <<- NULL
             if(print) getSamplers()
             return(invisible(NULL))
@@ -242,25 +277,34 @@ or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).
 
 print: Boolean argument, default value TRUE, specifying whether to print the new list of samplers.
 '   
-            if(missing(ind))   ind <- numeric(0)
+            if(missing(ind))        ind <- numeric(0)
+            if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            if(length(ind) > 0 && max(ind) > length(samplerSpecs)) stop('MCMC specification doesn\'t have that many samplers')
             samplerSpecs <<- samplerSpecs[ind]
             if(print) getSamplers()
             return(invisible(NULL))
         },
         
         getSamplers = function(ind) {
-'
+            '
 Prints details of the MCMC samplers.
 
 Arguments:
 
 ind: A numeric vector, specifying the indices of the samplers to print.  If omitted, then all samplers are printed.
 This is generally the intended usage, to see all current samplers in the MCMCspec object.
-'  
-            if(missing(ind))     ind <- seq_along(samplerSpecs)
-            for(i in ind) {
-                cat(paste0('[', i, '] ', samplerSpecs[[i]]$toStr(), '\n'))
-            }
+'
+            if(missing(ind))        ind <- seq_along(samplerSpecs)
+            if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
+            for(i in ind)
+                cat(paste0('[', i, '] ', makeSpaces(i), samplerSpecs[[i]]$toStr(), '\n'))
+        },
+
+        findSamplersOnNodes = function(nodes) {
+            if(length(samplerSpecs) == 0) return(integer())
+            nodes <- model$expandNodeNames(nodes, returnScalarComponents = TRUE)
+            which(unlist(lapply(samplerSpecs, function(ss) any(nodes %in% ss$targetAsScalar))))
         },
         
         addMonitors = function(vars, ind = 1, print = TRUE) {
@@ -279,9 +323,9 @@ Details: See the initialize() function
             if(isMvSamplesReady(ind)){
             	cat('Changing monitors, even though an MCMC has been built already. When compiling the MCMC, use resetFunctions = TRUE option\n')
             	if(ind == 1)
-            		mvSamples1Spec <<- NULL
+                    mvSamples1Spec <<- NULL
             	if(ind == 2)
-            		mvSamples2Spec <<- NULL
+                    mvSamples2Spec <<- NULL
             }
             
             
@@ -296,7 +340,7 @@ Details: See the initialize() function
         },
 
         addMonitors2 = function(vars, print = TRUE) {
-    '
+            '
 Adds variables to the list of monitors2.
 
 Arguments:
@@ -307,8 +351,8 @@ print: A boolean variable, specifying whether to print all current monitors.
 
 Details: See the initialize() function
             '
-    addMonitors(vars, ind = 2, print = print)
-},
+            addMonitors(vars, ind = 2, print = print)
+        },
         
         resetMonitors = function() {
             '
@@ -373,45 +417,51 @@ Details: See the initialize() function
         },
         
         getMvSamplesSpec  = function(ind = 1){
-        	
-             if(isMvSamplesReady(ind) == TRUE) {
-             		if(ind == 1) return(mvSamples1Spec)
-             		return(mvSamples2Spec)
-             	}
-             	else{
-             		makeMvSamplesSpec(ind)
-             		if(ind == 1)
-             			output <- mvSamples1Spec
-             		if(ind == 2)
-             			output <- mvSamples2Spec
-             		return(output)
-             		}
+            
+            if(isMvSamplesReady(ind) == TRUE) {
+                if(ind == 1) return(mvSamples1Spec)
+                return(mvSamples2Spec)
+            }
+            else{
+                makeMvSamplesSpec(ind)
+                if(ind == 1)
+                    output <- mvSamples1Spec
+                if(ind == 2)
+                    output <- mvSamples2Spec
+                return(output)
+            }
         },
         
         isMvSamplesReady = function(ind){
-        	if(ind == 1) return(is(mvSamples1Spec, 'function'))		#Probably really want to give mvSpecs there own class...
-        	if(ind == 2) return(is(mvSamples2Spec, 'function'))
-        	stop('invalid indicator for isMvSsamplesReady')
+            if(ind == 1) return(is(mvSamples1Spec, 'function'))		#Probably really want to give mvSpecs there own class...
+            if(ind == 2) return(is(mvSamples2Spec, 'function'))
+            stop('invalid indicator for isMvSsamplesReady')
         },
         
         makeMvSamplesSpec = function(ind){
-			modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()
-			if(ind == 1) monitorNames = monitors
-			if(ind == 2) monitorNames = monitors2
-			if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
-			thisModelValuesSpec = modelValuesSpec(symbolTable(symbols = modelSymbolObjects[monitorNames]))
-			if(ind == 1) mvSamples1Spec <<- thisModelValuesSpec
-			if(ind == 2) mvSamples2Spec <<- thisModelValuesSpec     	
+            modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()
+            if(ind == 1) monitorNames = monitors
+            if(ind == 2) monitorNames = monitors2
+            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
+            thisModelValuesSpec = modelValuesSpec(symbolTable(symbols = modelSymbolObjects[monitorNames]))
+            if(ind == 1) mvSamples1Spec <<- thisModelValuesSpec
+            if(ind == 2) mvSamples2Spec <<- thisModelValuesSpec     	
+        },
+
+        show = function() {
+            cat('MCMC specification object\n')
         }
+
         
-#        internal_newMv = function(ind) {
-#            modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
-#            if(ind == 1)   monitorNames <- monitors
-#            if(ind == 2)   monitorNames <- monitors2
-#            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
-#            mv <- modelValues(symbolTable(symbols = modelSymbolObjects[monitorNames]))
-#            return(mv)
-#        }
+        
+                                        #        internal_newMv = function(ind) {
+                                        #            modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()
+                                        #            if(ind == 1)   monitorNames <- monitors
+                                        #            if(ind == 2)   monitorNames <- monitors2
+                                        #            if(!all(monitorNames %in% names(modelSymbolObjects))) stop('some monitor names are not in the model symbol table; this should never occur')
+                                        #            mv <- modelValues(symbolTable(symbols = modelSymbolObjects[monitorNames]))
+                                        #            return(mv)
+                                        #        }
     )
 )
 
@@ -459,66 +509,56 @@ Details: See the initialize() function
 #'@param onlyRW A boolean argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (sampler_RW) will be assigned for all non-terminal continuous-valued nodes nodes.
 #'Discrete-valued nodes are assigned a slice sampler (sampler_slice), and terminal (predictive) nodes are assigned an end sampler (sampler_end).
 #'@param onlySlice A boolean argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
-#'Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
+#'Terminal (predIctive) nodes are still assigned an end sampler (sampler_end).
 #'@param multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 #'@param print Boolean argument, specifying whether to print the ordered list of default samplers.
 #'@author Daniel Turek
 #'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
-configureMCMC <- function(model, oldSpec, nodes, control = list(), 
-						  monitors, thin = 1, monitors2 = character(), thin2=1,
-						  useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
-						  print = FALSE){
-						  	if(!missing(oldSpec)){
-						  		if(!is(oldSpec, 'MCMCspec'))
-						  			stop('oldSpec must be an MCMCspec object, as built by the configureMCMC function')
-						  		return(makeNewSpecFromOldSpec(oldSpec))	
-						  	}
-						  	
-						  if(missing(model))
-						  	stop('Either oldSpec or model must be supplied')
-						  if(missing(nodes))
-						  	nodes <- character()
-						  if(missing(monitors))
-						  	monitors <- NULL
-						  
-						  thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
-						  					monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
-						  					useConjugacy = useConjugacy, onlyRW = onlyRW, onlySlice = onlySlice,
-						  					multivariateNodesAsScalars = multivariateNodesAsScalars, print = print)
-						  return(thisSpec)	
-						  }
+configureMCMC <- function(model, nodes, control = list(), 
+                          monitors, thin = 1, monitors2 = character(), thin2 = 1,
+                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+                          print = FALSE, oldSpec, autoBlock = FALSE, ...) {
+    
+    if(!missing(oldSpec)){
+        if(!is(oldSpec, 'MCMCspec'))
+            stop('oldSpec must be an MCMCspec object, as built by the configureMCMC function')
+        return(makeNewSpecFromOldSpec(oldSpec))	
+    }
+    
+    if(missing(model))        stop('Either oldSpec or model must be supplied')
+    if(missing(nodes))        nodes <- character()
+    if(missing(monitors))     monitors <- NULL
+
+    if(autoBlock) return(autoBlock(model, ...)$spec)
+    
+    thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
+                         monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
+                         useConjugacy = useConjugacy, onlyRW = onlyRW, onlySlice = onlySlice,
+                         multivariateNodesAsScalars = multivariateNodesAsScalars, print = print)
+    return(thisSpec)	
+}
 
 
 
 # This is function which builds a new MCMCspec from an old MCMCspec
 # This is required to be able to a new C-based MCMC without recompiling
 makeNewSpecFromOldSpec <- function(oldMCMCspec){
-	newMCMCspec <- configureMCMC(oldMCMCspec$model, nodes = NULL)
-	newMCMCspec$monitors <- oldMCMCspec$monitors
-	newMCMCspec$monitors2 <- oldMCMCspec$monitors2
-	newMCMCspec$thin <- oldMCMCspec$thin
-	newMCMCspec$thin2 <- oldMCMCspec$thin2
-	newMCMCspec$samplerSpecs <- oldMCMCspec$samplerSpecs
-	newMCMCspec$controlDefaults <- oldMCMCspec$controlDefaults
-	newMCMCspec$controlNamesLibrary <- oldMCMCspec$controlNamesLibrary
-	newMCMCspec$mvSamples1Spec <- oldMCMCspec$mvSamples1Spec
-	newMCMCspec$mvSamples2Spec <- oldMCMCspec$mvSamples2Spec
-	return(newMCMCspec)	
+    newMCMCspec <- configureMCMC(oldMCMCspec$model, nodes = NULL)
+    newMCMCspec$monitors <- oldMCMCspec$monitors
+    newMCMCspec$monitors2 <- oldMCMCspec$monitors2
+    newMCMCspec$thin <- oldMCMCspec$thin
+    newMCMCspec$thin2 <- oldMCMCspec$thin2
+    newMCMCspec$samplerSpecs <- oldMCMCspec$samplerSpecs
+    newMCMCspec$controlDefaults <- oldMCMCspec$controlDefaults
+    newMCMCspec$controlNamesLibrary <- oldMCMCspec$controlNamesLibrary
+    newMCMCspec$mvSamples1Spec <- oldMCMCspec$mvSamples1Spec
+    newMCMCspec$mvSamples2Spec <- oldMCMCspec$mvSamples2Spec
+    return(newMCMCspec)	
 }
 
 
-
-
-##### things (from v0.1) for dealing with samplerOrder:
-#
-# getSamplers <- function(mcmcspec, print.all = FALSE) {
-#     if(print.all) return(mcmcspec$samplerSpecs)
-#     return(mcmcspec$samplerSpecs[mcmcspec$samplerOrder])
-# }
-# 
-# setSamplerOrder <- function(mcmcspec, samplerOrder) {
-#     mcmcspec$samplerOrder <- mcmcspec$samplerOrder[samplerOrder]
-# }
-
-
+newSpacesFunction <- function(m) {
+    log10max <- floor(log10(m))
+    function(i) paste0(rep(' ', log10max-floor(log10(i))), collapse = '')
+}
 

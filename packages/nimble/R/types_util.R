@@ -170,8 +170,8 @@ expandMVNames <- function(mv, varNames){
 	nodeIndex = 0 
 	for(i in seq_along(varNames) ){
 		baseName = varNames[i]
-		dims = sizeList[[baseName]]
-		if(length(dims) == 1 & dims[1] == 1){
+		dims = mv$symTab$getSymbolObject(baseName)$size
+		if(length(dims) == 0){
 			nodeNames[nodeIndex+1] = baseName
 			nodeIndex <- nodeIndex + 1
 			}
