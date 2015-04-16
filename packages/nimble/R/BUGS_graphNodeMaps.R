@@ -6,6 +6,7 @@ mapsClass <- setRefClass(
         nodeNames = 'ANY',  ## like vertexID_2_nodeNames
         graphIDs = 'ANY',
         types = 'ANY',
+        notStoch = 'ANY',
         
         ## vectors of nodeNames, representing different subsets of 'types'
 
@@ -21,7 +22,8 @@ mapsClass <- setRefClass(
         ## graphID_2_xxxx maps
         graphID_2_nodeName = 		'ANY',              ## vector of character nodeNames
         graphID_2_nodeFunctionName ='ANY',      ## vector of character nodeFunctionNames
-
+        graphID_2_declID   =  'ANY',
+        
         ## varName2GraphID maps
         vars2GraphID_values = 		'ANY',
         vars2GraphID_functions =	'ANY',
@@ -38,7 +40,10 @@ mapsClass <- setRefClass(
         end_IDs = 'ANY',
 
         edgesFrom = 'ANY',
-        edgesTo = 'ANY'
+        edgesTo = 'ANY',
+        edgesParentExprID = 'ANY',
+        edgesFrom2To = 'ANY',
+        edgesFrom2ParentExprID = 'ANY'
         
         
     ),

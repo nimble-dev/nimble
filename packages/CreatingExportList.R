@@ -40,6 +40,7 @@ individualExportNames = c(
  'nimCopy',
   'nimPrint',
  '`nfVar<-`',
+ 'OptimReadyFunction',
  'getValues', 
  'setValues',
  'values',
@@ -49,6 +50,7 @@ individualExportNames = c(
     'nfMethod',
     'declare',
     'asRow',
+    'getBUGSexampleDir',
     'asCol'
 )
 

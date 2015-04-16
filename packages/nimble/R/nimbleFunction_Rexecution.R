@@ -313,6 +313,7 @@ nimCopy <- function(from, to, nodes = NA, nodesTo = NA, row = NA, rowTo = NA, lo
             accessFrom$setRow(row)
         }
         else stop('argument "from" in nimCopy is neither a model nor modelValues')
+
     if( inherits(to, "modelBaseClass") ){
         if(is.na(nodesTo[[1]]) ) 
             accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)

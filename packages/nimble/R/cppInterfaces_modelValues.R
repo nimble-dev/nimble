@@ -33,6 +33,7 @@ CmodelValues <- setRefClass(
         blankAns = 'ANY',
         .nodePtrs_byGID = 'ANY',
         GID_map = 'ANY',
+        symTab = 'ANY',
     	sizes = function(){
     		if(length(varNames) == 0)
     			return(NULL)

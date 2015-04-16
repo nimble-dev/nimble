@@ -202,7 +202,7 @@ cppEigenMap <- function(name = character(0), type = 'double', eigMatrix = TRUE, 
 
 emptyTypeInfo <- function() cppVar(baseType = character()) ## for return type of constructors and destructors
 
-cppDouble <- function(name = characer(0), ...) cppVar(name = name, baseType = 'double', ...)
+cppDouble <- function(name = character(0), ...) cppVar(name = name, baseType = 'double', ...)
 cppInt <-  function(name = character(0), ...) cppVar(name = name, baseType = 'int', ...)
 cppVoid <- function(name = character(0), ...) cppVar(name = name, baseType = 'void', ...)
 cppNimArr <- function(name = character(0), nDim = 1, type = 'double', ptr = 0, ...) cppVarFull(name = name,
@@ -244,3 +244,4 @@ cppModelVariableMapAccessorVector <- function(name = character(0), ...) cppVar(n
 
 cppModelValuesMapAccessorVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'ManyModelValuesMapAccessor', ptr = 0, ...) 
 
+cppVecVoidPtr <- function(name = character(0), ...) cppVar(name = name, baseType = 'vector<void*>', ...)

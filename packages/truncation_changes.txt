@@ -1,0 +1,82 @@
+last merge before added trunc/cens/constraint (trunc+) functionality was tagged as:
+"fixed bug in dgamma altParams formatting", Sat Mar 07, ~3:50 pm
+
+distributions_inputList.R:
+this file now has element 'pqAvail' added to the (univariate) distributions that have p and q distribution functions available for computation
+unrelated to trunc+:
+chol changed to cholesky as name of parameter in dmnorm, dwishart 
+
+
+distributions_processInputList.R:
+added 'pqAvail' as field of distClass, plus initialize it with a line of code in distClass$initialize (line 77 of file)
+
+distributions_implementations.R:
+added {d,r}{interval,constraint}
+unrelated to trunc+:
+chol changed to cholesky as name of parameter in dmnorm, dwishart 
+
+dists.h
+added C_{d,r}interval
+added {d,r}interval
+
+dists.cpp:
+add {d,r}{interval,constraint} functions
+other non-trunc+ changes:
+line 361: remove () from return
+line 389: changed 'p' to 'prob' in comment
+in ddirch, added give_log check in return when sumX > 1.0 + 10*DBL_EPSILON || sumX < 1.0 - 10*DBL_EPSILON
+
+nimDists.{cpp,h}:
+added overloaded nimArr_{d,r}interval
+
+BUGS_modelDef.R:
+add removeTruncationWrapping() and insertDistributionBounds() to modelDefClass$setupModel()
+also, BUGSdecl$truncation added as argument to BUGSdeclClassObject$setup at lines 396, 419, 423, 493, 519
+other non-trunc+ changes:
+also note change to reparameterizeDists: "for(nm in c(nonReqdArgs, distRule$reqdArgs))" 
+and block of code beginning line 1153 that prevents overwriting of data values by inits
+
+nimbleFunction_nodeFunction.R:
+addition of ndf_createStochSimulateTrunc() and ndf_createStochCalculateTrunc()
+major changes to ndf_createStochCalculate() and ndf_createStochSimulate(), as well as ndf_createMethodList()
+addition of addArg helper function
+
+genCpp_operatorLists.R:
+added nimArr_{r,d}interval to  callToSkipInEigenization
+added distribution_{p,q}Funs objects, as well as pqAvail,pqDists
+modified distributionFuns to include p and q funs
+
+genCpp_sizeProcessing.R:
+added nimArr_dinterval, nimArr_rinterval to sizeCalls and nimArr_rinterval to scalarOutputTypes
+
+genCPP_processSpecificCalls.R:
+added {d,r}interval to specificCallHandlers
+
+BUGS_BUGSdecl.R:
+added logical/comparison operators to nimbleOrRfunctionNames for use with dconstraint
+added 'truncation' as field of BUGSdeclClass and as arg of setup method and processing of truncation in setup method
+
+BUGS_readBUGS.R
+changes specific for trunc+ are:
+addition of processNonParseableCode to deal with T() and I()
+block of code under the comment 'process model information' (line 226) has a bunch of changes to deal with processing of T() and I()
+change mergeMultiLineStatements to mergeMultiLineStatementAndParse
+but Cliff and I made other changes for Ryan's work and because data/constants issue now dealt with in BUGSmodel()
+
+registration.R: 
+added C_dinterval and C_rinterval
+
+MCMC_conjugacy.R:
+changed chol to cholesky as argument in dmnorm,dwish (this is to fix a bug that should have been changed before trunc+ merging)
+
+NAMESPACE: added dinterval,dconstraint,node_stoch_dinterval,rinterval,rconstraint,node_stoch_dconstraint
+(won't be necessary when rebuild NAMESPACE programmatically using prep_pkg.R but needed for now)
+
+
+=== not done as part of trunc merging, but since Perry branched off ===
+
+distributions_inputList.R, distributions_implementations.R
+chol changed to cholesky as name of parameter in dmnorm, dwishart 
+
+various changes in BUGSmodel, readBUGSmodel, modelDefClass$new, to deal with data/constants/inits
+removed setData from RMakeCustomModelClass in BUGS_model.R
