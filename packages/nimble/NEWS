@@ -6,9 +6,25 @@ USER LEVEL CHANGES
 
 -- added ability to impose constraints via the dconstraint syntax; these constraints act like data and therefore only take effect a posteriori and are not imposed when simulating from the model
 
+-- model$checkConjugacy(nodes) now accepts a character vector argument of node/variable names, and returns a named list identifying conjugate relationships
+
+-- added support for truncated distributions in MCMC conjugacy checking
+
+-- incorporated automated blocking into MCMC engine: configureMCMC(model, autoBLock=TRUE) returns an MCMCspec defined by automated blocking procedure, and buildMCMC(model, autoBlock=TRUE) returns the corresponding MCMC algorithm
+
+-- new syntax for MCMCspec$addSampler(type, target, control).  mandatory 'type' argument specifies sampler type, which may be a character string or nimbleFunction object.  mandatory 'target' argument specifices a character vector of target model nodes.  optional 'control' list argument overrides default sampler control parameters
+
+-- MCMCspec$getSamplers(ind), MCMCspec$setSamplers(ind), and MCMCspec$removeSamplers(ind) can optionally also accept a character vector argument, and will act on all samplers which sample the nodes specified
+
+-- NIMBLE will no longer "hang" when used in RStudio
+
 DEVELOPER LEVEL CHANGES
 
 -- full suite of testing for truncation/censoring/constraints added (tests/test-trunc.R)
+
+-- names of custom MCMC sampler nimbleFunctions need not begin with "sampler_"
+
+-- nimbleFunction provided for use in algorithms: initializeModel(model), to perform sensible model initialization at the onset of an algorithm
 
 
                         CHANGES IN VERSION 0.3-1 (Mar. 7, 2015)
