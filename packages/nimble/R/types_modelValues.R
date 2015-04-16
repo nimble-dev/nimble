@@ -306,10 +306,10 @@ makeModelValuesClassFields <- function(vars) {
 
 pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb = FALSE) {
     if(is.null(vars)) {
-        vars <- model$getVarNames(logProb = TRUE)
+        vars <- model$getVarNames(includeLogProb = TRUE)
     } else {
-        if(!all(vars %in% model$getVarNames(logProb = TRUE)))
-            stop(paste('Error, trying to do pointAt incorrectly for variable(s):', paste(vars[ which(!(vars %in% model$getVarNames(logProb = TRUE)))], collapse = ', ')))
+        if(!all(vars %in% model$getVarNames(includeLogProb = TRUE)))
+            stop(paste('Error, trying to do pointAt incorrectly for variable(s):', paste(vars[ which(!(vars %in% model$getVarNames(includeLogProb = TRUE)))], collapse = ', ')))
     }
     
     ## This won't work generally because it needs to determine which vars actually have logProbs

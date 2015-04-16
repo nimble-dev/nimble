@@ -299,9 +299,9 @@ values <- function(model, nodes){
 #' cModel[['x']] <- rnorm(100)
 #' 
 #' cCopy() ## execute the copy with the compiled function
-nimCopy <- function(from, to, nodes = NA, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
-    if(is.na(nodes) ) 
-        nodes = allNodeNames(from)
+nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
+    if(is.null(nodes) )
+        nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
         accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
     }
@@ -315,14 +315,14 @@ nimCopy <- function(from, to, nodes = NA, nodesTo = NA, row = NA, rowTo = NA, lo
         else stop('argument "from" in nimCopy is neither a model nor modelValues')
 
     if( inherits(to, "modelBaseClass") ){
-        if(is.na(nodesTo[[1]]) ) 
+        if(is.null(nodesTo) ) 
             accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
         else
             accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
     }
     else
         if(inherits(to, "modelValuesBaseClass")) {
-            if(is.na(nodesTo[[1]]) ) 
+            if(is.null(nodesTo) ) 
                 accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
             else
                 accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
@@ -342,33 +342,33 @@ nimCopy <- function(from, to, nodes = NA, nodesTo = NA, row = NA, rowTo = NA, lo
     }
 }
 
-allNodeNames <- function(object, logProb = FALSE){
-	if(inherits(object, 'modelValuesBaseClass') ) {	
-		if(!is.null(object$modelDef))
-			all.Names <- ls(object$modelDef$nodeInfo)
-		else
-			all.Names = object$varNames
-		if(logProb == TRUE)
-				return(all.Names)
-		for(i in 1:length(all.Names) ) {
-			if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-				all.Names[i] = NA		
-		}
-		all.Names = all.Names[!is.na(all.Names)]
-		return(all.Names)	
-		}
-	if(inherits(object, 'modelBaseClass') ) {
-		all.Names <- object$getNodeNames()	
-		if(logProb == TRUE)
-				return(all.Names)
-		for(i in 1:length(all.Names) ) {
-			if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-				all.Names[i] = NA		
-		}
-		all.Names = all.Names[!is.na(all.Names)]
-		return(all.Names)	
-	}
-}
+## allNodeNames <- function(object, logProb = FALSE){
+##     if(inherits(object, 'modelValuesBaseClass') ) {	
+##         if(!is.null(object$modelDef))
+##             all.Names <- ls(object$modelDef$nodeInfo)
+##         else
+##             all.Names = object$varNames
+##         if(logProb == TRUE)
+##             return(all.Names)
+##         for(i in 1:length(all.Names) ) {
+##             if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
+##                 all.Names[i] = NA		
+##         }
+##         all.Names = all.Names[!is.na(all.Names)]
+##         return(all.Names)	
+##     }
+##     if(inherits(object, 'modelBaseClass') ) {
+##         all.Names <- object$getNodeNames()	
+##         if(logProb == TRUE)
+##             return(all.Names)
+##         for(i in 1:length(all.Names) ) {
+##             if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
+##                 all.Names[i] = NA		
+##         }
+##         all.Names = all.Names[!is.na(all.Names)]
+##         return(all.Names)	
+##     }
+## }
 
 #' Access or set a member variable of a nimbleFunction created during \code{setup}
 #'

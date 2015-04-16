@@ -2089,14 +2089,27 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
 })
 
 ## next two functions work for properly formed nodeNames.
-modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 2 places: MCMC_build and cppInterfaces_models
-	if(length(nodeName) == 0)
-		return(NULL)
-	output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
-	return(output[!is.na(output)])
+modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 places: MCMC_build, valuesAccessorVector, and cppInterfaces_models
+    ## This function needs better processing.
+    if(length(nodeName) == 0)
+        return(NULL)
+##    output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+##    return(output[!is.na(output)])
+
+    ## 1. so this needs to first get to a nodeFunctionID
+    graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+##    eval(parse(text="w1[3:4, 1:2]", keep.source = FALSE)[[1]], envir= maps$vars2GraphID_functions)
+
+    
+    ## 2. get node function names
+    fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
+    ## 3 get corresponding logProbNames
+    output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+    return(output[!is.na(output)])
 })
 
 modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
+    ## I think this will only work if nodeName is already ensured to be a node function name
 	if(length(nodeName) == 0)
 		return(NULL)
 	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 

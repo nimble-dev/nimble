@@ -129,7 +129,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       return(getDeclInfo(node)[[1]]$truncation)
                                   },
 
-                                  getVarNames = function(logProb = FALSE, nodes) {                                  
+                                  getVarNames = function(includeLogProb = FALSE, nodes, includeData = TRUE) {                                  
                                       '
 Returns the names of all variables in a model, optionally including the logProb variables
 
@@ -139,14 +139,19 @@ logProb: Logical argument specifying whether or not to include the logProb varia
 
 nodes: An optional character vector supplying a subset of nodes for which to extract the variable names and return the unique set of variable names
 '
-                                    if(missing(nodes)){
-	                                     if(logProb)     return(modelDef$varNames)
-    	                                 return(names(modelDef$varInfo))
-    	                              }
-    	                              varNames <- unique(removeIndexing(nodes))
-    	                              if(!all(varNames %in% modelDef$varNames))
-    	                             	  stop(c('invalid node names provided to model$getVarNames') )
-    	                              return(varNames)
+                                      if(missing(nodes)){
+                                          if(includeLogProb) ans <- modelDef$varNames
+                                          else ans <- names(modelDef$varInfo)
+    	                              } else {
+                                          ans <- unique(removeIndexing(nodes))
+                                          if(!all(ans %in% modelDef$varNames))
+                                              stop(c('invalid node names provided to model$getVarNames') )
+                                      }
+                                      if(!includeData) {
+                                          allData <- unlist(lapply(mget(ans, envir = tm$isDataEnv, inherits = FALSE, ifnotfound = TRUE), all))
+                                          ans <- ans[!allData]
+                                      }
+    	                              return(ans)
                                     },
                                   
                                   getNodeNames = function(determOnly = FALSE, stochOnly = FALSE,

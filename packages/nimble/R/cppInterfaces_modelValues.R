@@ -47,11 +47,15 @@ CmodelValues <- setRefClass(
         show = function() {
             writeLines(paste0("CmodelValues object with variables: ", paste(varNames, collapse = ", "), "."))
         },
-        expandNodeNames = function (nodeNames, returnType = "names", flatIndices = TRUE) 
-            {
-                return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
-                                               flatIndices = flatIndices))
-            },
+        getVarNames = function(includeLogProb = FALSE){
+            if(includeLogProb)
+                return(varNames)
+            return(varNames[!grepl('logProb_', varNames)])
+        },
+        expandNodeNames = function (nodeNames, returnType = "names", flatIndices = TRUE)  {
+            return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
+                                           flatIndices = flatIndices))
+        },
         initialize = function(buildCall, existingPtr ) {
             if(missing(existingPtr) ) {
                 if(is.character(buildCall)) {

@@ -19,6 +19,7 @@
 ##                    show  = function() cat(paste0(toStr(), '\n'))
 ##     )
 ## )
+ 
 
 valuesAccessorVector <- setRefClass( ## new implementation
     Class = 'valuesAccessorVector',
@@ -39,9 +40,11 @@ valuesAccessorVector <- setRefClass( ## new implementation
             inputNodeNames <- nodeNames
              if(!logProb)
                 nodeNames <<- inputNodeNames
-            else {
-                isLogProbName <- grepl('logProb_', inputNodeNames)
-                nodeNames <<- c(inputNodeNames, makeLogProbName(inputNodeNames[!isLogProbName]))
+             else {
+                 if(!inherits(modelOrModelValues$modelDef,'modelDefClass'))
+                     stop('creating valuesAccessorVector with logProb = TRUE for an object that was not built from a model')
+                 isLogProbName <- grepl('logProb_', inputNodeNames)
+                 nodeNames <<- c(inputNodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(inputNodeNames[!isLogProbName]))
             }
             logProb <<- logProb
             code <<- lapply(.self$nodeNames, function(x) parse(text = x, keep.source = FALSE)[[1]])
