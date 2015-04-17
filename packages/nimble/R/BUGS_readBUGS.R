@@ -60,7 +60,6 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, name)
     BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug)
 
-
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
 #' Simply keeps model code as an R call object, the form needed by \code{nimbleModel} and optionally usable by \code{readBUGSmodel}
