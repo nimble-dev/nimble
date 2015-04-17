@@ -47,7 +47,7 @@ distributionsInputList <- list(
 
     dmulti  = list(BUGSdist = 'dmulti(prob, size)',
                    Rdist    = 'dmulti(size, prob)',
-                   types    = c('value = double(1)', 'prob = double(1)', 'size = integer()'),
+                   types    = c('value = double(1)', 'prob = double(1)', 'size = integer(0)'),
                    discrete = TRUE),
     
     dnegbin = list(BUGSdist = 'dnegbin(prob, size)',

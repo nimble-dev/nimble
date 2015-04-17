@@ -38,7 +38,7 @@ exprClasses_labelForEigenization <- function(code) {
             return(invisible(NULL))
         }
                 
-        if(code$name %in% getCallToSkipInEigenization()) return(invisible(NULL))
+        if(code$name %in% callToSkipInEigenization) return(invisible(NULL))
 
         if(length(code$toEigenize) > 0) {
             if(code$toEigenize == 'yes') {

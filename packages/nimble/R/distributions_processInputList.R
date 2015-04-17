@@ -268,49 +268,8 @@ registerDistributions <- function(distributionsInputList) {
     virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
     createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
 
-    # deal with specificCallHandlers, including detection of multivariate dists or dists with multivariate parameters
-    dnames <- getDistributionsInfo('namesVector', userOnly = TRUE)
-    distribution_dFuns <- as.character(unlist(lapply(getDistributionsInfo('translations', userOnly = TRUE), `[[`, 1)))
-    distribution_rFuns <- as.character(unlist(lapply(getDistributionsInfo('translations', userOnly = TRUE), `[[`, 2)))
-    if(!exists('specificCallHandlers', nimbleUserObjects))
-        nimbleUserObjects$specificCallHandlers <- list()
-    dims <- sapply(lapply(lapply(dnames, getDistribution), '[[', 'types'), getMaxDim)
-    multiDistOrParam <- dims > 0
-    if(length(dnames[multiDistOrParam])) {            
-        nimbleUserObjects$specificCallHandlers[distribution_dFuns[multiDistOrParam]] <- makeCallList(distribution_dFuns[multiDistOrParam], 'dmFunHandler')           
-        nimbleUserObjects$specificCallHandlers[distribution_rFuns[multiDistOrParam]] <- makeCallList(distribution_rFuns[multiDistOrParam], 'rmFunHandler')           
-    }
-    if(length(dnames[!multiDistOrParam]))                
-        nimbleUserObjects$specificCallHandlers[distribution_rFuns[!multiDistOrParam]] <- makeCallList(distribution_rFuns[!multiDistOrParam], 'rFunHandler')
+    # note don't use rFunHandler as rUserDist nimbleFunction needs n as first arg so it works on R side, therefore we have n in the C version of the nimbleFunction and don't want to strip it out in Cpp generation
 
-    browser()
-    # deal with skipping wrappers to multivariate node funs in eigenization
-    if(length(dnames[multiDistOrParam])) {
-        if(!exists('callToSkipInEigenization', nimbleUserObjects))
-            nimbleUserObjects$callToSkipInEigenization <- vector(mode = 'character')
-        nimbleUserObjects$callToSkipInEigenization <- unique(c(nimbleUserObjects$callToSkipInEigenization, paste0("nimArr_", c(distribution_dFuns[multiDistOrParam], distribution_rFuns[multiDistOrParam]))))
-    }
-
-    # add to nimArr_r function to assignmentAsFirstArgFuns for multivar distributions
-    dims <- sapply(lapply(dnames, getDistribution), getValueDim)
-    multiDist<- dims > 0
-    if(length(dnames[multiDist])) {
-        if(!exists('assignmentAsFirstArgFuns', nimbleUserObjects))
-            nimbleUserObjects$assignmentAsFirstArgFuns <- vector(mode = 'character')
-        nimbleUserObjects$assignmentAsFirstArgFuns <- unique(c(nimbleUserObjects$assignmentAsFirstArgFuns, paste0("nimArr_", c(distribution_rFuns[multiDist]))))
-    }
-
-    # add nimArr_{d,r} to sizeCalls, with sizeScalarRecurse except for 'r' function for multivariate distributions
-    if(!exists('sizeCalls', nimbleUserObjects))
-        nimbleUserObjects$sizeCalls <- list()
-
-    sizeScalarRecurseCalls <- c(distribution_dFuns, distribution_rFuns)
-    sizeScalarRecurseCalls <- c(sizeScalarRecurseCalls, paste0("nimArr_", distribution_dFuns[multiDistOrParam]))
-    sizeScalarRecurseCalls <- c(sizeScalarRecurseCalls, paste0("nimArr_", distribution_rFuns[multiDistOrParam & !multiDist]))
-    sizeRmultivarFirstArgCalls <- paste0("nimArr_", distribution_rFuns[multiDist]))
-    nimbleUserObjects$sizeCalls[sizeScalarRecurseCalls] <- 'sizeScalarRecurseCalls'
-    nimbleUserObjects$sizeCalls[sizeRmultivarFirstArgCalls] <- 'sizeRmultivarFirstArgCalls'
-    
     invisible(NULL)
 }
 
@@ -318,7 +277,7 @@ getMaxDim <- function(typeList)
     max(sapply(typeList, '[[', 'nDim'))
 
 getValueDim <- function(distObject) 
-    distObject$types$values$nDim
+    distObject$types$value$nDim
 
 #####################################################################################################
 #####################################################################################################
