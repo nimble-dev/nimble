@@ -18,6 +18,8 @@ USER LEVEL CHANGES
 
 -- NIMBLE will no longer "hang" when used in RStudio
 
+-- reordered argument names to nimbleModel to put in more logical order of importance
+
 DEVELOPER LEVEL CHANGES
 
 -- full suite of testing for truncation/censoring/constraints added (tests/test-trunc.R)
