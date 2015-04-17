@@ -1,5 +1,7 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+context("Testing of truncation, censoring, and constraints")
+
 # should build testing of kidney,litters,mice,lsat into test-mcmc and test-models
 
 models <- c('kidney', 'litters', 'mice')
