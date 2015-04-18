@@ -218,6 +218,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS) {
 
 ## creates the accessor method to return value 'expr'
 ndf_generateGetParamFunction <- function(expr, type, nDim) {
+    type <- 'double'  ## (NOTE) node values and paramters are always implemented as doubles
     ans <- try(eval(substitute(
         function() {
             returnType(TYPE(NDIM))
@@ -239,6 +240,7 @@ ndf_addModelDollarSignsToMethods <- function(methodList, setupOutputExprs) {
 
 
 ndf_createSingleMethod <- function(type, nDim) {
+    type <- 'double'  ## (NOTE) node values and paramters are always implemented as doubles
     methodDef <- substitute(function() { returnType(TYPE(NDIM)) }, list(TYPE=as.name(type), NDIM=nDim))
     methodDef[[4]] <- NULL
     eval(methodDef)
