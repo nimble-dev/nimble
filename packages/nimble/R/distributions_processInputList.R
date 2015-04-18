@@ -34,7 +34,7 @@ distributionsClass <- setRefClass(
                   namesVector <<- namesVector[-dupl]
                   namesExprList[dupl] <<- NULL
                   translations[dupl] <<- NULL
-                  cat("Overwriting the following user-supplied distributions:", nms, ".\n", sep = " ")
+                  cat("Overwriting the following user-supplied distributions:", nms[dupl], ".\n", sep = " ")
               }
               for(i in seq_along(dil))     distObjectsNew[[i]] <- distClass(dil[[i]], nms[i])
               names(distObjectsNew) <- nms
@@ -273,7 +273,8 @@ registerDistributions <- function(distributionsInputList) {
         nms <- names(distributionsInputList)
         dupl <- nms[nms %in% getDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
-            cat("Registering the following distributions:", nms, "to take precedence over the default NIMBLE-provided distributions.\n", sep = "")
+            distributionsInputList[dupl] <- NULL
+            cat("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions:", nms, ". Please rename to avoid the conflict.\n", sep = "")
         }
         sapply(distributionsInputList, checkDistributionsInput)
         sapply(distributionsInputList, checkDistributionsFunctions)
@@ -332,6 +333,11 @@ deregisterDistributions <- function(distributionsNames) {
 # - getDistributionNames()
 # at the moment it is still somewhat tied to the internal structure of our distributionsClass
 # - Chris
+
+# this is a hack because having trouble calling getDistribution() from within nodeInfoClass$isDiscrete
+getDistribution2 <- function(distName) {
+    getDistribution(distName)
+}
 
 getDistribution <- function(distName) {
     if(distName %in% distributions$namesVector) return(distributions[[distName]])

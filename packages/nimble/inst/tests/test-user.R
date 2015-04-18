@@ -80,9 +80,10 @@ try(test_that("Test that values based on user-supplied functions are correct: ",
 
 ## User-supplied distributions
 
-dmyexp <- nimbleFunction(
+dexp <- nimbleFunction(
     run = function(x = double(0), rate = double(0), log_value = integer(0)) {
         returnType(double(0))
+        nimPrint('hi')
         logProb <- log(rate) - x*rate
         if(log_value) {
             return(logProb)
@@ -91,7 +92,7 @@ dmyexp <- nimbleFunction(
         }
     })
 
-rmyexp <- nimbleFunction(
+rexp <- nimbleFunction(
     run = function(n = integer(0), rate = double(0)) {
         returnType(double(0))
         if(n != 1) nimPrint("rmyexp only allows n = 1; using n = 1.")
@@ -100,7 +101,7 @@ rmyexp <- nimbleFunction(
     }
     )
 
-pmyexp <- nimbleFunction(
+pexp <- nimbleFunction(
     run = function(q = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
         returnType(double(0))
         if(!lower_tail) {
@@ -121,7 +122,7 @@ pmyexp <- nimbleFunction(
     }
     )
 
-qmyexp <- nimbleFunction(
+qexp <- nimbleFunction(
     run = function(p = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
         returnType(double(0))
         if(log_p) {
@@ -157,8 +158,8 @@ rdirchmulti <- nimbleFunction(
 
 registerDistributions(list(
     dmyexp = list(
-        BUGSdist = "dmyexp(rate, scale)",
-        Rdist = "dmyexp(rate = 1/scale)",
+        BUGSdist = "dexp(rate, scale)",
+        Rdist = "dexp(rate = 1/scale)",
         altParams = "scale = 1/rate",
         pqAvail = TRUE),
     ddirchmulti = list(
@@ -190,13 +191,14 @@ code3 <- BUGScode({
         y[i, 1:P] ~ ddirchmulti(alpha[1:P], sz)
     }
     for(i in 1:P) {
-        alpha[i] ~ dgamma(.001, .001);
+        alpha[i] ~ dunif(0, 1000) # dgamma(.001, .001);
     }
 })
 
+
 set.seed(0)
 mn = 3
-n1 <- 100
+n1 <- 1000
 y1 <- rexp(n1, rate = 1/mn)
 y2 <- rexp(n1, rate = 1/mn)
 
@@ -206,9 +208,9 @@ y3 <- rpois(n2, lambda)
 
 upper <-  3
 
-sz <- 50
-alpha <- 100*c(1,2,3)
-m <- 4
+sz <- 100
+alpha <- 10*c(1,2,3)
+m <- 40
 P <- length(alpha)
 y <- p <- matrix(0, nrow = m, ncol = P)
 for( i in 1:m ) {
@@ -218,7 +220,7 @@ for( i in 1:m ) {
 
 data1 <- list(y1 = y1, y2 = y2, n1 = n1)
 data2 <- list(y3 = y3, n2 = n2, upper = upper)
-data3 <- list(y = y, m = m, P = P)
+data3 <- list(y = y, m = m, P = P, sz = sz)
   
 inits1 <- list(s1 = 1, s2 = 1)
 inits2 <- list(lambda = 1)
@@ -230,14 +232,15 @@ testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, 
 testBUGSmodel(code3, example = 'user3', dir = "", data = data3, inits = inits3, useInits = TRUE)
 
 
-debug(test_mcmc)
 test_mcmc(model = code1, data = data1, inits = inits1,
           results = list(mean = list(s1 = mn, s2 = mn)),
           resultsTolerance = list(mean = list(s1 = .2, s2 = .2)))
 
 test_mcmc(model = code3, data = data3, inits = inits3,
           results = list(mean = list(alpha = alpha)),
-          resultsTolerance = list(mean = list(alpha = rep(5, P))))
+          resultsTolerance = list(mean = list(alpha = c(4, 6, 8))))
+          numItsC_results = 50000)
+
 
 if(F) {
 m <- nimbleModel(code2, constants = data2, inits = inits2)
@@ -255,7 +258,7 @@ try(test_that("Test that truncation works with user-supplied distribution: ",
                           info = paste0("parameter exceeds upper bound"))))
 }
 
-debug(deregisterDistributions)
+
 deregisterDistributions('ddirchmulti')
 try(test_that("Test that deregistration of user-supplied distributions works: ",
               expect_that(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), equals(TRUE),
