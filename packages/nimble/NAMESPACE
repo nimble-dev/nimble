@@ -339,5 +339,6 @@ exportClass(singleModelValuesAccessClass)
 exportClass(singleVarAccessClass) 
 
 export(registerDistributions)
+export(deregisterDistributions)
 export(getNimbleOption)
 export(nimbleOptions)

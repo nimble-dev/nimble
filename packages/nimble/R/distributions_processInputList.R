@@ -24,6 +24,7 @@ distributionsClass <- setRefClass(
             for(distName in namesVector)     assign(distName, distObjects[[distName]]$makeMatchCallFunction(), matchCallEnv)
             translations <<- lapply(distObjects, function(d) c(d$densityName, d$simulateName))
         },
+
         add = function(dil) {
               distObjectsNew <- list()
               nms <- names(dil)
@@ -43,7 +44,16 @@ distributionsClass <- setRefClass(
               namesVector <<- c(namesVector, nms)
               namesExprList <<- c(namesExprList, lapply(namesVector, as.name))
               for(distName in nms) assign(distName, distObjects[[distName]]$makeMatchCallFunction(), matchCallEnv)
-          })
+          },
+
+        remove = function(dn) {
+            namesVector <<- namesVector[!namesVector %in% dn]
+            namesExprList[namesExprList == as.name(dn)] <<- NULL
+            eval(substitute(rm(x, envir = matchCallEnv), list(x = dn)))
+            translations[dn] <<- NULL
+            distObjects[dn] <<- NULL
+        }
+        )
     )
               
 
@@ -217,7 +227,16 @@ checkDistributionsFunctions <- function(distributionsInput) {
     invisible(NULL)
 }
 
-#' Add user-supplied distribution for use in NIMBLE BUGS models
+
+getMaxDim <- function(typeList) 
+    max(sapply(typeList, '[[', 'nDim'))
+
+getValueDim <- function(distObject) 
+    distObject$types$value$nDim
+
+
+
+#' Add user-supplied distributions for use in NIMBLE BUGS models
 #'
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
@@ -254,16 +273,15 @@ registerDistributions <- function(distributionsInputList) {
         nms <- names(distributionsInputList)
         dupl <- nms[nms %in% getDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
-            distributionsInputList[nms] <- NULL
-            cat("Omitting registration of the following distributions:", nms, "as they conflict with default NIMBLE distribution names.\n", sep = "")
+            cat("Registering the following distributions:", nms, "to take precedence over the default NIMBLE-provided distributions.\n", sep = "")
         }
         sapply(distributionsInputList, checkDistributionsInput)
         sapply(distributionsInputList, checkDistributionsFunctions)
 
-        if(exists('distributions', nimbleUserObjects)) {
-            nimbleUserObjects$distributions$add(distributionsInputList)
+        if(exists('distributions', nimbleUserNamespace)) {
+            nimbleUserNamespace$distributions$add(distributionsInputList)
         } else 
-            nimbleUserObjects$distributions <- distributionsClass(distributionsInputList)
+            nimbleUserNamespace$distributions <- distributionsClass(distributionsInputList)
     }
     virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
     createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
@@ -273,12 +291,35 @@ registerDistributions <- function(distributionsInputList) {
     invisible(NULL)
 }
 
-getMaxDim <- function(typeList) 
-    max(sapply(typeList, '[[', 'nDim'))
 
-getValueDim <- function(distObject) 
-    distObject$types$value$nDim
-
+#' Remove user-supplied distributions from use in NIMBLE BUGS models
+#'
+#' Deregister distributional information originally supplied by the user
+#' for use in BUGS model code
+#'
+#' @param distributionsNames a character vector giving the names of the distributions to be dergistered
+#' @author Christopher Paciorek
+#' @export
+deregisterDistributions <- function(distributionsNames) {
+    if(!exists('distributions', nimbleUserNamespace)) 
+        cat("No user-supplied distributions are registered.\n")
+    matched <- distributionsNames %in% getDistributionsInfo('namesVector', userOnly = TRUE)
+    if(sum(matched)) 
+        cat(paste("Deregistering ", distributionsNames[matched], " from user-registered distributions.\n"))
+    if(sum(!matched))
+        cat(paste(distributionsNames[!matched], " are not user-registered distributions; ignoring.\n"))
+    
+    distributionsNames <- distributionsNames[matched]
+    if(length(distributionsNames)) {
+        if(sum(!nimbleUserNamespace$distributions$namesVector %in% distributionsNames)) {
+            sapply(distributionsNames, function(x) nimbleUserNamespace$distributions$remove(x))
+        } else {  # all distributions to be removed
+              nimbleUserNamespace$distributions <- NULL
+          }
+    }
+    return(NULL)
+}
+    
 #####################################################################################################
 #####################################################################################################
 #####  API for accessing info about distributions ###################################################
@@ -294,22 +335,22 @@ getValueDim <- function(distObject)
 
 getDistribution <- function(distName) {
     if(distName %in% distributions$namesVector) return(distributions[[distName]])
-    if(exists('distributions', nimbleUserObjects) && distName %in% nimbleUserObjects$distributions$namesVector)
-        return(nimbleUserObjects$distributions[[distName]])
+    if(exists('distributions', nimbleUserNamespace) && distName %in% nimbleUserNamespace$distributions$namesVector)
+        return(nimbleUserNamespace$distributions[[distName]])
     stop(paste0("getDistribution: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
 getDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
     if(kind %in% c('namesVector', 'namesExprList', 'translations')) {
         if(userOnly) out <- NULL else out <- get(kind, distributions)
-        if(!nimbleOnly && exists('distributions', nimbleUserObjects))
-            out <- c(out, get(kind, nimbleUserObjects$distributions))
+        if(!nimbleOnly && exists('distributions', nimbleUserNamespace))
+            out <- c(out, get(kind, nimbleUserNamespace$distributions))
         return(out)
     }
     if(kind == 'pqAvail') {
         if(userOnly) out <- NULL else out <- sapply(distributions$distObjects, '[[', 'pqAvail')
-        if(!nimbleOnly && exists('distributions', nimbleUserObjects))
-            out <- c(out, sapply(nimbleUserObjects$distributions$distObjects, '[[', 'pqAvail'))
+        if(!nimbleOnly && exists('distributions', nimbleUserNamespace))
+            out <- c(out, sapply(nimbleUserNamespace$distributions$distObjects, '[[', 'pqAvail'))
         return(out)
     }
     stop(paste0("getDistributionInfo: ", kind, " is not available from the distributions information."))
@@ -319,9 +360,9 @@ evalInDistsMatchCallEnv <- function(expr) {
     distName <- as.character(expr[[1]])
     if(distName %in% distributions$namesVector)
         return(eval(expr, distributions$matchCallEnv))
-    if(exists('distributions', nimbleUserObjects) &&
-       distName %in% nimbleUserObjects$distributions$namesVector)
-        return(eval(expr, nimbleUserObjects$distributions$matchCallEnv))
+    if(exists('distributions', nimbleUserNamespace) &&
+       distName %in% nimbleUserNamespace$distributions$namesVector)
+        return(eval(expr, nimbleUserNamespace$distributions$matchCallEnv))
     stop(paste0("evalInDistsMatchCallEnv: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 

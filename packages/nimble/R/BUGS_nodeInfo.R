@@ -25,7 +25,7 @@ nodeInfoClass <- setRefClass('nodeInfoClass',
                                  altParamExprsWithValues = 'ANY'
                              ),
                              methods = list(
-                                 getDistribution = function() {
+                                 getDistributionName = function() {
                                      if(type != 'stoch')  stop('getting distribution of non-stochastic node')
                                      return(as.character(codeReplacedWithValues[[3]][[1]]))
                                  },
@@ -40,7 +40,7 @@ nodeInfoClass <- setRefClass('nodeInfoClass',
                                  },
                                  isDiscrete = function() {
                                      if(type != 'stoch')  stop('querying whether a non-stochastic node is \'discrete\'')
-                                     dist <- getDistribution()
+                                     dist <- getDistributionName()
                                      return(getDistribution(dist)$discrete)
                                  }
                              ))

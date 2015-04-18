@@ -120,7 +120,7 @@ ndf_createStochSimulateTrunc <- function(RHS) {
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
 
     # setup for runif(1, pdist(lower,...), pdist(upper,...))
-
+    browser()
     # pdist() expression template for inputs to runif()
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- as.name(paste0("p", dist))
@@ -268,10 +268,10 @@ ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
         }
     } else {
         # this deals with user-provided distributions
-        if(exists('distributions', nimbleUserObjects)) {
+        if(exists('distributions', nimbleUserNamespace)) {
             for(distName in getDistributionsInfo('namesVector', userOnly = TRUE))
                 defsList[[paste0('node_stoch_', distName)]] <- ndf_createVirtualNodeFunctionDefinition(getDistribution(distName)$types)
-        } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserObjects.")
+        } else stop("ndf_createVirtualNodeFunctionDefinitionsList: no 'distributions' list in nimbleUserNamespace.")
     }
     return(defsList)
 }

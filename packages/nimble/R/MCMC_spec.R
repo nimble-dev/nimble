@@ -143,7 +143,6 @@ print: Boolean argument, specifying whether to print the ordered list of default
             controlDefaults <<- controlDefaultList
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             controlNamesLibrary <<- list()
-            
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
                                             } else             { if(is.null(nodes) || length(nodes)==0)     nodes <- character(0)
                                                                  nl_checkVarNamesInModel(model, removeIndexing(nodes))

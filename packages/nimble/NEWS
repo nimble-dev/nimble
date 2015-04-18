@@ -22,6 +22,8 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
+-- modified API for nimble options to mimic's R options(), including nimbleOptions() and getOptions() and renaming of the underlying nimble options object to be .nimbleOptions.
+
 -- full suite of testing for truncation/censoring/constraints added (tests/test-trunc.R)
 
 -- names of custom MCMC sampler nimbleFunctions need not begin with "sampler_"
