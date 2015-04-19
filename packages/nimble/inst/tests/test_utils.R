@@ -77,7 +77,31 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
   # 2) if you pass 'results', it will compare MCMC output to known posterior summaries within tolerance specified in resultsTolerance
-  # 3) resampleData = TRUE: runs initial MCMC to get top level nodes then simulates from the rest of the model, including data, to get known parameter values, and fits to the new data, comparing parameter estimates from MCMC with the known parameter values 
+  # 3) resampleData = TRUE: runs initial MCMC to get top level nodes then simulates from the rest of the model, including data, to get known parameter values, and fits to the new data, comparing parameter estimates from MCMC with the known parameter values
+
+    # samplers can be given individually for each node of interest or as a vector of nodes for univariate samplers or list of vectors of nodes for multivariate samplers
+    # e.g.,
+    # multiple univar samplers: samplers(type = 'RW', target = c('mu', 'x'))
+    # single multivar sampler: samplers(type = "RW_block", target = c('x[1]', 'x[2]'))
+    # single multivar sampler: samplers(type = "RW_block", target = 'x')
+    # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
+
+  setSampler <- function(var, spec) {
+      currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
+    # remove already defined scalar samplers
+      inds <- which(unlist(var$target) %in% currentTargets)
+      spec$removeSamplers(inds, print = FALSE)
+    # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
+      inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
+#      inds <- which(sapply(spec$samplerSpecs, function(x)
+#          gsub("\\[[0-9]+\\]", "", x$target))
+#                         %in% var$target)
+      spec$removeSamplers(inds, print = FALSE)
+
+      if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
+      if(length(var$target) == 1 || (var$type == "RW_block" && !is.list(var$target))) 
+          tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) spec$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
+  }
 
   if(!missing(example)) {
     # classic-bugs example specified by name
@@ -91,19 +115,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE)
   }
 
-  setSampler <- function(var, spec) {
-    # remove already defined scalar samplers
-      if(var$target %in% sapply(spec$samplerSpecs, function(x) x$target))
-          spec$removeSamplers(var$target, print = FALSE)
-
-    # look for cases where one is adding a blocked sampler and should remove scalar samplers
-    inds <- which(sapply(spec$samplerSpecs, function(x)
-                         gsub("\\[[0-9]+\\]", "", x$control$targetNode))
-                         %in% var[[2]][["targetNodes"]])
-    spec$removeSamplers(inds, print = FALSE)
-
-    tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE)
-  }
 
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)

@@ -258,7 +258,7 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = rep(.05,3))),
           samplers = list(
-            list(type = 'RW_block', target = c('x[1]', 'x[2]', 'x[3]'), control = list(adaptInterval = 500))
+            list(type = 'RW_block', target = 'x', control = list(adaptInterval = 500))
             ), numItsC = 10000)
 
 
