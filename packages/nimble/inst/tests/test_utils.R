@@ -93,20 +93,16 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
   setSampler <- function(var, spec) {
     # remove already defined scalar samplers
-    inds <- which(sapply(spec$samplerSpecs, function(x) x$control$targetNode) %in% var[[2]][["targetNode"]])
-    spec$removeSamplers(inds, print = FALSE)
+      if(var$target %in% sapply(spec$samplerSpecs, function(x) x$target))
+          spec$removeSamplers(var$target, print = FALSE)
+
     # look for cases where one is adding a blocked sampler and should remove scalar samplers
     inds <- which(sapply(spec$samplerSpecs, function(x)
                          gsub("\\[[0-9]+\\]", "", x$control$targetNode))
                          %in% var[[2]][["targetNodes"]])
     spec$removeSamplers(inds, print = FALSE)
-######## Chris: next line will need to include the mandatory (second) 'target' argument.
-######## The prototype for addSampler() is now:
-######## spec$addSampler(type, target, control = list(), print = TRUE, name)
-######## There's a chance you could also  make use of the 'name' argument, which is intended
-######## for this sort of application: the programmatic assignment of samplers.
-######## -DT 6 April 2015
-    tmp <- spec$addSampler(var[[1]], control = var[[2]], print = FALSE)
+
+    tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE)
   }
 
   if(doCpp) {
