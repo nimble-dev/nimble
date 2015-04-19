@@ -118,14 +118,15 @@ ndf_createStochSimulateTrunc <- function(RHS) {
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
-
+    userDist <- sum(paste0("d", dist) %in% getDistributionsInfo('namesVector', userOnly = TRUE))
+    lowerTailName <- ifelse(userDist, 'lower_tail', 'lower.tail')
+    logpName <- ifelse(userDist, 'log_p', 'log.p')
     # setup for runif(1, pdist(lower,...), pdist(upper,...))
-    browser()
     # pdist() expression template for inputs to runif()
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- as.name(paste0("p", dist))
-    pdistTemplate <- addArg(pdistTemplate, 1, 'lower.tail')
-    pdistTemplate <- addArg(pdistTemplate, 0, 'log.p')
+    pdistTemplate <- addArg(pdistTemplate, 1, lowerTailName)
+    pdistTemplate <- addArg(pdistTemplate, 0, logpName)
     # create bounds for runif() using pdist expressions
     MIN_EXPR <- 0
     MAX_EXPR <- 1
@@ -146,8 +147,8 @@ ndf_createStochSimulateTrunc <- function(RHS) {
     # create full qdist(runif(...),...) expression
     RHS[[1]] <- as.name(paste0("q", dist))
     RHS[[2]] <- RUNIF_EXPR
-    RHS <- addArg(RHS, 1, 'lower.tail')
-    RHS <- addArg(RHS, 0, 'log.p')
+    RHS <- addArg(RHS, 1, lowerTailName)
+    RHS <- addArg(RHS, 0, logpName)
 
     return(RHS)
 }
@@ -177,11 +178,14 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS) {
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
+    userDist <- sum(as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE))
+    lowerTailName <- ifelse(userDist, 'lower_tail', 'lower.tail')
+    logpName <- ifelse(userDist, 'log_p', 'log.p')
 
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- as.name(paste0("p", dist))
-    pdistTemplate <- addArg(pdistTemplate, 1, 'lower.tail')
-    pdistTemplate <- addArg(pdistTemplate, 0, 'log.p')
+    pdistTemplate <- addArg(pdistTemplate, 1, lowerTailName)
+    pdistTemplate <- addArg(pdistTemplate, 0, logpName)
 
     PDIST_LOWER <- 0
     PDIST_UPPER <- 1

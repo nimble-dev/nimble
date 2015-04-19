@@ -80,10 +80,9 @@ try(test_that("Test that values based on user-supplied functions are correct: ",
 
 ## User-supplied distributions
 
-dexp <- nimbleFunction(
+dmyexp <- nimbleFunction(
     run = function(x = double(0), rate = double(0), log_value = integer(0)) {
         returnType(double(0))
-        nimPrint('hi')
         logProb <- log(rate) - x*rate
         if(log_value) {
             return(logProb)
@@ -92,7 +91,7 @@ dexp <- nimbleFunction(
         }
     })
 
-rexp <- nimbleFunction(
+rmyexp <- nimbleFunction(
     run = function(n = integer(0), rate = double(0)) {
         returnType(double(0))
         if(n != 1) nimPrint("rmyexp only allows n = 1; using n = 1.")
@@ -101,7 +100,7 @@ rexp <- nimbleFunction(
     }
     )
 
-pexp <- nimbleFunction(
+pmyexp <- nimbleFunction(
     run = function(q = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
         returnType(double(0))
         if(!lower_tail) {
@@ -122,7 +121,7 @@ pexp <- nimbleFunction(
     }
     )
 
-qexp <- nimbleFunction(
+qmyexp <- nimbleFunction(
     run = function(p = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
         returnType(double(0))
         if(log_p) {
@@ -158,8 +157,8 @@ rdirchmulti <- nimbleFunction(
 
 registerDistributions(list(
     dmyexp = list(
-        BUGSdist = "dexp(rate, scale)",
-        Rdist = "dexp(rate = 1/scale)",
+        BUGSdist = "dmyexp(rate, scale)",
+        Rdist = "dmyexp(rate = 1/scale)",
         altParams = "scale = 1/rate",
         pqAvail = TRUE),
     ddirchmulti = list(
@@ -228,7 +227,7 @@ inits3 <- list(alpha = rep(30, P))
 
 
 testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
-#testBUGSmodel(code2, example = 'user2', dir = "", data = data2, inits = inits2, useInits = TRUE)
+testBUGSmodel(code2, example = 'user2', dir = "", data = data2, inits = inits2, useInits = TRUE)
 testBUGSmodel(code3, example = 'user3', dir = "", data = data3, inits = inits3, useInits = TRUE)
 
 
@@ -238,11 +237,10 @@ test_mcmc(model = code1, data = data1, inits = inits1,
 
 test_mcmc(model = code3, data = data3, inits = inits3,
           results = list(mean = list(alpha = alpha)),
-          resultsTolerance = list(mean = list(alpha = c(4, 6, 8))))
+          resultsTolerance = list(mean = list(alpha = c(4, 6, 8))),
           numItsC_results = 50000)
 
 
-if(F) {
 m <- nimbleModel(code2, constants = data2, inits = inits2)
 cm <- compileNimble(m)
 
@@ -256,7 +254,6 @@ smp <- as.matrix(Cmcmc$mvSamples)
 try(test_that("Test that truncation works with user-supplied distribution: ",
               expect_that(max(smp[ , 'lambda']), is_less_than(upper),
                           info = paste0("parameter exceeds upper bound"))))
-}
 
 
 deregisterDistributions('ddirchmulti')
@@ -264,6 +261,3 @@ try(test_that("Test that deregistration of user-supplied distributions works: ",
               expect_that(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), equals(TRUE),
                           info = paste0("ddirchmulti has not been deregistered"))))
 
-
-# add test to remove dist
-# add test for user-supled to override default
