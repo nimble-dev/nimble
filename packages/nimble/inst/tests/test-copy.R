@@ -4,7 +4,7 @@
 ## They include copying to and from models and/or modelValues, using default arguments, using logProb = [TRUE|FALSE], and using the same or different blocks of variables.
 ## Checks are made internally for uncompiled and compiled cases.  Then uncompiled and compiled outcomes are compared to check that they behaved identically.
 
-context('nimCopy and valuse() tests')
+context('nimCopy and values() tests')
 
 #############
 ## Here is a model with deterministic and stochastic variables of dimensions 0-4, including a multivariate node
@@ -451,7 +451,7 @@ runOneCopyTest <- function(copyTestCase, testModelCode, testNFcodeList, dirName 
 ###############
 ## Master call:
 runCopyTests(copyTestCaseList, dirName = getwd(), trace = TRUE)
-
+runCopyTests(copyTestCaseListMVtoModel, dirName = getwd(), trace = TRUE)
 
 ###################
 ### Testing for values() and values()<-
@@ -550,4 +550,4 @@ runOneValuesTest <- function(copyTestCase, testModelCode, testNFcodeList, dirNam
 }
 
 ## Master call for value() and value()<- tests
-runValuesTests(copyTestCaseListValues[2])
+runValuesTests(copyTestCaseListValues)

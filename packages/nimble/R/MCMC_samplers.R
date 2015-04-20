@@ -62,6 +62,7 @@ sampler_RW <- nimbleFunction(
     },
     
     run = function() {
+        print("sampling targetID ", targetID, "\n")
         modelLP0 <- getLogProb(model, calcNodes)
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
      	model[[target]] <<- propValue
