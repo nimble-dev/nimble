@@ -1,6 +1,3 @@
-# tmp
-library(nimble, lib.loc = '/tmp/nim41')
-
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 context("Testing of user-supplied distributions and functions in BUGS code")

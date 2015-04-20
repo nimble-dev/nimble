@@ -264,6 +264,44 @@ getValueDim <- function(distObject)
 #' \item{\code{types}} {
 #' a character vector of comma-separated 'name = input' pairs indicating the type and dimension of the random variable and parameters (including default and alternative parameters). 'input' should take the form 'integer(d)' or 'double(d)', where 'd' is 0 for scalars, 1 for vectors, 2 for matrices. 'name' should be either 'value' to indicate the random variable itself or the parameter name to indicate a given parameter.  Required for multivariate distributions or when parameters are not scalars. By default all parameters are assumed double(0) and values (the random variable) are assumed either double(0) or integer(0) depending on whether the distribution is for a discrete random variable.
 #' }
+#' @examples
+#' dmyexp <- nimbleFunction(
+#'    run = function(x = double(0), rate = double(0), log_value = integer(0)) {
+#'        returnType(double(0))
+#'        logProb <- log(rate) - x*rate
+#'        if(log_value) {
+#'            return(logProb)
+#'        } else {
+#'            return(exp(logProb))
+#'        }
+#'    })
+
+#' rmyexp <- nimbleFunction(
+#'    run = function(n = integer(0), rate = double(0)) {
+#'        returnType(double(0))
+#'        if(n != 1) nimPrint("rmyexp only allows n = 1; using n = 1.")
+#'        dev <- runif(1, 0, 1)
+#'        return(-log(1-dev) / rate)
+#'    }
+#'    )
+#' registerDistributions(list(
+#'     dmyexp = list(
+#'               BUGSdist = "dmyexp(rate, scale)",
+#'               Rdist = "dmyexp(rate = 1/scale)",
+#'               altParams = "scale = 1/rate",
+#'               pqAvail = FALSE),
+#' code <- BUGScode({
+#'     y ~ dmyexp(rate = r)
+#'     r ~ dunif(0, 100)
+#' })
+#' m <- nimbleModel(code, inits = list(r = 1), data = list(y = 2))
+#' calculate(m, 'y')
+#' m$r <- 2
+#' calculate(m, 'y')
+#' m$resetData()
+#' simulate(m, 'y')
+#' m$y
+
 registerDistributions <- function(distributionsInputList) {
     if(missing(distributionsInputList)) {
         cat("No distribution information supplied.\n")
