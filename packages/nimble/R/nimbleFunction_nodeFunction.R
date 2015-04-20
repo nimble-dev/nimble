@@ -158,11 +158,11 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS) {
     RHS[[1]] <- as.name(getDistribution(as.character(RHS[[1]]))$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
-
     if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
         return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS))
     } else {
-        RHS <- addArg(RHS, 1, 'log')   # adds the last argument log=TRUE # This was changed to 1 from TRUE for easier C++ generation
+          userDist <- as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE)
+        RHS <- addArg(RHS, 1, ifelse(userDist, 'log_value', 'log'))   # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
         code <- substitute( LOGPROB <<- STOCHCALC,
                            list(LOGPROB = logProbNodeExpr,
                                 STOCHCALC = RHS))
@@ -181,6 +181,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS) {
     userDist <- sum(as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE))
     lowerTailName <- ifelse(userDist, 'lower_tail', 'lower.tail')
     logpName <- ifelse(userDist, 'log_p', 'log.p')
+    logName <- ifelse(userDist, 'log_value', 'log')
 
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- as.name(paste0("p", dist))
@@ -198,7 +199,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS) {
         PDIST_UPPER <- pdistTemplate
     }
 
-    RHS <- addArg(RHS, 1, 'log')  # add log=1 now that pdist() created without 'log'
+    RHS <- addArg(RHS, 1, logName)  # add log=1 now that pdist() created without 'log'
 
     # unlike JAGS we have (L < X <= U), i.e., (L,U], as otherwise we would need
     # machinations to deal with the X=L case (pdist functions provide only P(X<=L),P(X>L))
