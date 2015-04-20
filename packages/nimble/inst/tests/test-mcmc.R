@@ -205,7 +205,7 @@ gapCode <- nimbleCode({
 test_mcmc(model = gapCode, seed = 0, numItsC = 100000,
 				results = list(mean = list(`a[2]` = 0) ),
 				resultsTolerance = list(mean = list(`a[2]` = 0.1)),
-				samplers = list(list(type = 'RW', control = list(targetNode = 'a[2]')))
+				samplers = list(list(type = 'RW', target = 'a[2]'))
 				)
 
 
@@ -247,9 +247,9 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = rep(.05,3))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x[1]')),
-            list(type = 'RW_block', control = list(targetNodes = 'x[2]')),
-            list(type = 'RW_block', control = list(targetNodes = 'x[3]'))
+            list(type = 'RW_block', target = 'x[1]'),
+            list(type = 'RW_block', target = 'x[2]'),
+            list(type = 'RW_block', target = 'x[3]')
             ), removeAllDefaultSamplers = TRUE, numItsC = 10000)
 
 test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
@@ -258,7 +258,7 @@ test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = rep(.05,3))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x', adaptInterval = 500))
+            list(type = 'RW_block', target = 'x', control = list(adaptInterval = 500))
             ), numItsC = 10000)
 
 
@@ -286,12 +286,12 @@ test_mcmc(model = code, resampleData = FALSE, results = list(
                                          "binom10_p5" = .25, "binom20_p3" = .25),
                                          sd = list(z = .1, "beta1_1" = .05, "beta3_5" = .03,
                                           "binom10_p5" = .2, "binom20_p3" = .25)),
-          samplers = list(list(type = 'slice', control = list(targetNode = 'z', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'normal5_10', adaptInterval = 10)),
-           list(type = 'slice', control = list(targetNode = 'beta1_1', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'beta3_5', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'binom10_p5', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'binom20_p3', adaptInterval = 10))))
+          samplers = list(list(type = 'slice', target = 'z', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'normal5_10', control = list(adaptInterval = 10)),
+           list(type = 'slice', target = 'beta1_1', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'beta3_5', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'binom10_p5', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'binom20_p3', control = list(adaptInterval = 10))))
 
 
 
@@ -410,7 +410,7 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
           resultsTolerance = list(mean = list(x = rep(1,3)),
             var = list(x = c(.1, .03, .01))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
+            list(type = 'RW_block', target = 'x[1:3]')))
 # caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
 if(FALSE) {
     Rmodel <- nimbleModel(code, constants = list(Q=Q))
@@ -459,7 +459,7 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = c(.1,.1,.1))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
+            list(type = 'RW_block', target = 'x[1:3]')))
 
 
 
@@ -516,9 +516,9 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
                            cov = list(mu = solve(muQtrue))),
           resultsTolerance = list(mean = list(mu = rep(.03,3)),
             cov = list(mu = matrix(.03, 3, 3))),
-          samplers = list(list(type = 'RW', control = list(targetNode = 'mu[1]')),
-            list(type = 'RW', control = list(targetNode = 'mu[2]')),
-            list(type = 'RW', control = list(targetNode = 'mu[3]'))),
+          samplers = list(list(type = 'RW', target = 'mu[1]'),
+            list(type = 'RW', target = 'mu[2]'),
+            list(type = 'RW', target = 'mu[3]')),
           removeAllDefaultSamplers = TRUE)
 
 ### test of conjugate Wishart

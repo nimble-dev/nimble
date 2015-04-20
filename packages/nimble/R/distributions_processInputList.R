@@ -13,9 +13,9 @@ distributionsClass <- setRefClass(
     
     methods = list(
         initialize = function(dil) {
-        	distObjects <<- list()
-        	namesExprList <<- list()
-        	translations <<- list()
+            distObjects <<- list()
+            namesExprList <<- list()
+            translations <<- list()
             for(i in seq_along(dil))     distObjects[[i]] <<- distClass(dil[[i]], names(dil)[i])
             names(distObjects) <<- names(dil)
             namesVector <<- names(dil)
@@ -58,11 +58,11 @@ distClass <- setRefClass(
     
     methods = list(
         initialize = function(distInputList, BUGSdistName) {
-        	RdistExprList <<- list()
-        	alts <<- list()
-        	exprs <<- list()
-        	altParams <<- list()
-        	types <<- list()
+            RdistExprList <<- list()
+            alts <<- list()
+            exprs <<- list()
+            altParams <<- list()
+            types <<- list()
             BUGSdistName <<- BUGSdistName
             BUGSdistExpr <<- parse(text=distInputList$BUGSdist)[[1]]
             if(BUGSdistExpr[[1]] != BUGSdistName)   stop(paste0('inconsistent BUGS distribution names for distribution: ', BUGSdistName))
