@@ -148,7 +148,6 @@ simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)
 
 
 getValues <- function(vals, model, nodes, envir = parent.frame()) {
-    browser()
     valsExp = substitute(vals)
     access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
     output = getValuesAccess(access)
