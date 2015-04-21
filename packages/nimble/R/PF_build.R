@@ -36,6 +36,18 @@ pfStep <- nimbleFunction(
 )
 
 
+#' Creates a particle filter (sequential monte carlo) algorithm to estimate the log-likelihood for a model sub-graph
+#'
+#' @param model A nimble model object, typically representing a state space model or a hidden Markov model
+#' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
+#' @author Daniel Turek
+#' @details The resulting specialized particle filter algorthm will accept a single integer argument (m, default 10,000), which specifies the number of random \'particles\' to use for estimating the log-likelihood.  The algorithm returns the estimated log-likelihood value.
+#' @examples
+#' model <- nimbleModel(code = ...)
+#' my_PF <- buildPF(model, 'x[1:100]')
+#' Cmodel <- compileNimble(model)
+#' Cmy_PF <- compileNimble(my_PF, project = model)
+#' logLike <- Cmy_PF(m = 100000)
 buildPF <- nimbleFunction(
     setup = function(model, nodes) {
         my_initializeModel <- initializeModel(model)

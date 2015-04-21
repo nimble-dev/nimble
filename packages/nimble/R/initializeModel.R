@@ -1,7 +1,32 @@
 
 
+#' Performs initialization nimble model node values and log probabilities
+#'
+#' @param model A setup argument, which specializes an instance of this nimble function to a particular model.
+#' @author Daniel Turek
+#' @details This nimbleFunction may be used at the beginning of nimble algorithms to perform model initialization.
+#' The intended usage is to specialize an instance of this nimbleFunction in the setup function of an algorithm,
+#' then execute that specialied function at the beginning of the algorithm run function.
+#' The specialized function takes no arguments.
+#'
+#' Executing this function ensures that all right-hand-side only nodes have been assigned real values,
+#' that all stochastic nodes have a real value, or otherwise have their simulate() method called,
+#' that all deterministic nodes have their simulate() method called,
+#' and that all log-probabilities have been calculated with the current model values.
+#' An error results if model initialization encounters a problem, for example a missing right-hand-side only
+#' node value.
+#' @examples
+#' myNewAlgorithm <- nimbleFunction(
+#'    setup = function(model, ...) {
+#'       my_initializeModel <- initializeModel(model)
+#'       ....
+#'    },
+#'    run = function(...) {
+#'       my_initializeModel()
+#'       ....
+#'    }
+#' )
 initializeModel <- nimbleFunction(
-    
     setup = function(model) {
         RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
         hasRHSonlyNodes <- length(RHSonlyNodes) > 0

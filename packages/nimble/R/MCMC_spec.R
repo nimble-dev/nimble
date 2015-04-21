@@ -68,7 +68,6 @@ samplerSpec <- setRefClass(
 #' spec$addMonitors2('x', thin2 = 10)
 #' spec$getMonitors()
 #' spec$getSamplers()
-
 MCMCspec <- setRefClass(
     
     Class = 'MCMCspec',                           
@@ -201,14 +200,18 @@ Adds a sampler to the list of samplers contained in the MCMCspec object.
 
 Arguments:
 
-type: The type of sampler to add.  If type=\'newSamplerType\', then sampler_newSamplertype must correspond to a nimbleFunction generator.  Otherwise an error results.
+type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either samplerType or sampler_newSamplertype must correspond to a nimbleFunction generator.  Alternatively, the type argument may be provided as a nimbleFunction generator object, itself.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  This argument is required.
 
-control: A list of control arguments for sampler_newSamplertype.
+target: The target node or nodes to be sampled.  This argument is required.
+
+control: A list of control arguments specific to the sampler function.
 These will override the defaults contained in the \'controlDefaultList\' object, and any specified in the control list argument to configureMCMC().
-An error results if sampler_newSamplertype requires any control elements which are 
+An error results if the sampler function requires any control elements which are 
 not present in this argument, the control list argument to configureMCMC(), or in the \'controlDefaultList\' object.
 
 print: Boolean argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
+
+name: A character string name for the sampler, which is only used when the \'type\' argument is provided as a nimbleFunction generator object.  If \'name\' is not provided, then deparse(substitute(type)) is used as the default sampler name.
 
 Details: A single instance of the newly specified sampler is added to the end of the list of samplers for this MCMCspec object.
 '
@@ -253,7 +256,7 @@ Removes one or more samplers from an MCMCspec object.
 
 Arguments:
 
-ind: A numeric vector, giving the indices of the samplers to be removed.  If omitted, then all samplers are removed.
+ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: Boolean argument, default value TRUE, specifying whether to print the current list of samplers once the removal has been done.
 '      
@@ -270,10 +273,10 @@ Sets the ordering of the list of MCMC samplers.
 
 Arguments:
 
-ind: A numeric vector, specifying the new list of MCMC samplers, in terms of the current ordered list of samplers.
+ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 For example, if the MCMCspec object currently has 3 samplers, then the ordering may be reversed by calling mcmcspec$setSamplers(3:1),
-the list may be changed to only calling the first sampler 3 times, then the remaining two samplers by calling mcmcspec$setSamplers(c(1, 1, 1, 2, 3)),
-or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).
+or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).  Alternatively, a character vector may be used to specify a set of model nodes,
+and the sampler list will modified to only those samplers acting on these target nodes.
 
 print: Boolean argument, default value TRUE, specifying whether to print the new list of samplers.
 '   
@@ -291,8 +294,11 @@ Prints details of the MCMC samplers.
 
 Arguments:
 
-ind: A numeric vector, specifying the indices of the samplers to print.  If omitted, then all samplers are printed.
-This is generally the intended usage, to see all current samplers in the MCMCspec object.
+ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print,
+or a character vector may be used to indicate a set of target nodes, for which all samplers acting on these nodes will be printed.
+For example, getSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely
+or in part) in the model variable \'x\'.
+If omitted, then all samplers are printed.
 '
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
@@ -511,6 +517,7 @@ Details: See the initialize() function
 #'@param onlySlice A boolean argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
 #'Terminal (predIctive) nodes are still assigned an end sampler (sampler_end).
 #'@param multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
+#'@param autoBlock Boolean argument specifying whether to use an automated blocking provedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC specification object will be created and returned corresponding to the results of the automated paramter blocking.  Default value is FALSE.
 #'@param print Boolean argument, specifying whether to print the ordered list of default samplers.
 #'@author Daniel Turek
 #'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object

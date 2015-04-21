@@ -469,13 +469,13 @@ inits: A named list.  The names of list elements must correspond to model variab
                                   
                                   checkConjugacy = function(nodeVector) {
                                       '
-Determines whether or not the input node appears in a conjugate relationship, in conjunction with its stochastic dependents
+Determines whether or not the input nodes appear in conjugate relationships
 
 Arguments:
 
-node: A single character string representing a model node name
+nodeVector: A character vector specifying one or more node or variable names.  If omitted, all stochastic non-data nodes are checked for conjugacy.
 
-Details: The return value will be NULL when the input node does not appear in a conjugate relationship, or a named list when the node appears in a conjugate relationship.  In this case, the list returned is identically the control list argument required by the corresponding MCMC conjugate sampler function.
+Details: The return value is a named list, with an element corresponding to each conjugate node.  The list names are the conjugate node names, and list elements are the control list arguments required by the corresponding MCMC conjugate sampler functions.  If no model nodes are conjugate, an empty list is returned.
 '
                                       if(missing(nodeVector))
                                           nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
@@ -484,7 +484,7 @@ Details: The return value will be NULL when the input node does not appear in a 
                                   },
 
                                   newModel = function(data = NULL, inits = NULL, modelName = character()) {
-'
+                                      '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
 Arguments:
