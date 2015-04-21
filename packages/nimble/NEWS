@@ -2,7 +2,11 @@
 
 USER LEVEL CHANGES
 
--- added support for truncation (T(,) and I(,) syntax in BUGS) plus dinterval distributino for censoring, both following the JAGS functionality
+-- added support for use of user-defined functions in BUGS code
+
+-- added support for use of user-defined distributions in BUGS code, with the distribution density, simulate, distribution and quantile functions coded as nimbleFunctions and registered via registerDistributions()
+
+-- added support for truncation (T(,) and I(,) syntax in BUGS) plus dinterval distribution for censoring, both following the JAGS functionality
 
 -- added ability to impose constraints via the dconstraint syntax; these constraints act like data and therefore only take effect a posteriori and are not imposed when simulating from the model
 
@@ -22,7 +26,11 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
--- modified API for nimble options to mimic's R options(), including nimbleOptions() and getOptions() and renaming of the underlying nimble options object to be .nimbleOptions.
+-- modified API for nimble options to mimic R's options(), including nimbleOptions() and getOptions() and renaming of the underlying nimble options object to be .nimbleOptions.
+
+-- added an environment, nimbleUserNamespace, in the package namespace, that allows user-supplied information to control the behavior of NIMBLE. At the moment, only used for user-supplied distributions list.
+
+-- testing of user-defined distributions and functions in BUGS code (tests/test-user.R)
 
 -- full suite of testing for truncation/censoring/constraints added (tests/test-trunc.R)
 
