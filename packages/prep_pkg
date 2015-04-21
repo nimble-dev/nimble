@@ -8,7 +8,6 @@ require(methods)
 
 ## NAMESPACE 
 
-nimble_version <- system("grep 'Version:' nimble/DESCRIPTION | cut -d' ' -f2", intern = TRUE)
 
 # do this first as it empties the global env
 source("CreatingExportList.R")
@@ -31,6 +30,8 @@ cat(paste(imports, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
     file = file.path("nimble", "NAMESPACE"))
 
 system("R CMD build nimble")
+
+nimble_version <- system("grep 'Version:' nimble/DESCRIPTION | cut -d' ' -f2", intern = TRUE)
 
 system(paste0("R CMD INSTALL nimble_", nimble_version, ".tar.gz"))
 

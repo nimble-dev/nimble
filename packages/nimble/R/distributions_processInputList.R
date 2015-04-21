@@ -259,10 +259,11 @@ getValueDim <- function(distObject)
 #' a optional logical indicating if distribution (CDF) and quantile (inverse CDF) functions are provided as nimbleFunctions. These are required for one to be able to use truncated versions of the distribution. Only applicable for univariate distributions. If not supplied, assumed to be FALSE.
 #' }
 #' \item{\code{altParams}} {
-#' a character vector of comma-separated name = value pairs that provide the mathematical expressions relating non-default parameters to default parameters. These inverse functions are used for MCMC conjugacy calculations when a conjugate relationship is expressed in terms of non-default parameters (such as the precision for normal-normal conjugacy). If not supplied, the system will still functional but at a possible loss of efficiency in certain algorithms.
+#' a character vector of comma-separated 'name = value' pairs that provide the mathematical expressions relating non-default parameters to default parameters. These inverse functions are used for MCMC conjugacy calculations when a conjugate relationship is expressed in terms of non-default parameters (such as the precision for normal-normal conjugacy). If not supplied, the system will still functional but at a possible loss of efficiency in certain algorithms.
 #' }
 #' \item{\code{types}} {
 #' a character vector of comma-separated 'name = input' pairs indicating the type and dimension of the random variable and parameters (including default and alternative parameters). 'input' should take the form 'integer(d)' or 'double(d)', where 'd' is 0 for scalars, 1 for vectors, 2 for matrices. 'name' should be either 'value' to indicate the random variable itself or the parameter name to indicate a given parameter.  Required for multivariate distributions or when parameters are not scalars. By default all parameters are assumed double(0) and values (the random variable) are assumed either double(0) or integer(0) depending on whether the distribution is for a discrete random variable.
+#' }
 #' }
 #' @examples
 #' dmyexp <- nimbleFunction(
@@ -301,7 +302,6 @@ getValueDim <- function(distObject)
 #' m$resetData()
 #' simulate(m, 'y')
 #' m$y
-
 registerDistributions <- function(distributionsInputList) {
     if(missing(distributionsInputList)) {
         cat("No distribution information supplied.\n")
