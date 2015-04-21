@@ -55,11 +55,36 @@ ManyVariablesMapAccessor::~ManyVariablesMapAccessor(){
       delete static_cast<SingleVariableMapAccess*>(varAccessors[i]);
 }
 
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+void ManyVariablesMapAccessor::check() {
+  if(varAccessors.size() == 0) PRINTF("Run-time error: using nimCopy on map accessor with length 0\n");
+}
+
+void ManyVariablesMapAccessor::check(int i) {
+  if(varAccessors.size() == 0) PRINTF("Run-time error: using nimCopy on map accessor with length 0\n");
+}
+#endif
+
+ManyModelValuesMapAccessor::ManyModelValuesMapAccessor() : currentRow(0) {
+  
+}
+
 
 ManyModelValuesMapAccessor::~ManyModelValuesMapAccessor() {
     for(int i = 0; i < varAccessors.size(); ++i)
       delete static_cast<SingleModelValuesMapAccess*>(varAccessors[i]);
 };
+
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+void ManyModelValuesMapAccessor::check() {
+  if(varAccessors.size() == 0) PRINTF("Run-time error: using nimCopy on map accessor with length 0\n");
+}
+
+void ManyModelValuesMapAccessor::check(int i) {
+  if(varAccessors.size() == 0) PRINTF("Run-time error: using nimCopy on map accessor with length 0\n");
+  if(i < 0 || i >= varAccessors.size()) PRINTF("Run-time error: using nimCopy on map accessor with an invalid row\n");
+}
+#endif
 
 // 3. 
 void ManyModelValuesAccessor::setRow(int i) {
@@ -373,6 +398,12 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
   vector<SingleVariableMapAccessBase *> fromAccessors = from.getMapAccessVector();
   vector<SingleVariableMapAccessBase *> toAccessors = to.getMapAccessVector();
 
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  PRINTF("Entering nimCopy\n");
+  from.check();
+  to.check();
+#endif
+  
   if(fromAccessors.size() != toAccessors.size()) {
     std::cout<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
   }
@@ -389,17 +420,32 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
 
 
 void nimCopy(ManyVariablesMapAccessorBase &from, int rowFrom, ManyVariablesMapAccessorBase &to) {
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  PRINTF("Entering nimCopy with rowFrom\n");
+  from.check(rowFrom-1);
+#endif
+
   from.setRow(rowFrom - 1); 
   nimCopy(from, to);
 }
 
 void nimCopy(ManyVariablesMapAccessorBase &from, int rowFrom, ManyVariablesMapAccessorBase &to, int rowTo) {
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  PRINTF("Entering nimCopy with rowFrom and rowTo\n");
+  from.check(rowFrom-1);
+  to.check(rowTo-1);
+#endif
   to.setRow(rowTo - 1);
   from.setRow(rowFrom - 1);
   nimCopy(from, to);
 }
 
 void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to, int rowTo) {
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  PRINTF("Entering nimCopy with rowTo\n");
+  to.check(rowTo-1);
+#endif
+
   to.setRow(rowTo - 1);
   nimCopy(from, to);
 };
@@ -410,19 +456,23 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
   NimArrType *fromNimArr, *toNimArr;
   fromNimArr = from->getNimArrPtr();
   toNimArr = to->getNimArrPtr();
-
   fromType = fromNimArr->getNimType();
   toType = toNimArr->getNimType();  
-  
   if(to->getSingleton()) {
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+    if(!from->getSingleton()) PRINTF("Run-time error: to is a singleton but from is not a singleton\n");
+    singletonCopyCheck(fromNimArr, from->getOffset());
+    singletonCopyCheck(toNimArr, to->getOffset());
+#endif
+
     switch(fromType) {
     case DOUBLE:
       switch(toType) {
       case DOUBLE:
-	(*static_cast<NimArrBase<double> *>(toNimArr))[to->offset] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->offset];
+	(*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
 	break;
     case INT:
-	(*static_cast<NimArrBase<int> *>(toNimArr))[to->offset] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->offset];
+	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
       break;
     default:
       cout<<"Error in nimCopyOne: unknown type for destination\n";
@@ -431,10 +481,10 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
   case INT:
     switch(toType) {
     case DOUBLE:
-      (*static_cast<NimArrBase<double> *>(toNimArr))[to->offset] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->offset];
+      (*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->getOffset()];
       break;
     case INT:
-	(*static_cast<NimArrBase<int> *>(toNimArr))[to->offset] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->offset];
+	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->getOffset()];
       break;
     default:
       cout<<"Error in nimCopyOne: unknown type for destination\n";
@@ -444,7 +494,10 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     cout<<"Error in nimCopyOne: unknown type for source\n";
     }
   } else {
-    
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+    dynamicMapCopyCheck(toNimArr, to->getOffset(), to->getStrides(), to->getSizes());
+    dynamicMapCopyCheck(fromNimArr, from->getOffset(), from->getStrides(), from->getSizes());
+#endif
     switch(fromType) {
     case DOUBLE:
       switch(toType) {
@@ -476,6 +529,44 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
   }
 }
 
+void singletonCopyCheck(NimArrType *NAT, int offset) {
+  nimType NATtype = NAT->getNimType();
+  int NATsize;
+  switch(NATtype) {
+  case INT:
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    break;
+  case DOUBLE:
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    break;
+  default:
+    PRINTF("Error with a NimArrType type\n");
+    break;
+  }
+  if(offset < 0 || offset >= NATsize) PRINTF("Run-time error: bad singleton offset\n");
+}
+
+void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vector<int> &sizes) {
+  nimType NATtype = NAT->getNimType();
+  int NATsize;
+  switch(NATtype) {
+  case INT:
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    break;
+  case DOUBLE:
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    break;
+  default:
+    PRINTF("Error with a NimArrType type\n");
+    break;
+  }
+  if(offset < 0 || offset >= NATsize) PRINTF("Run-time error: bad offset\n");
+  int lastOffset = offset;
+  for(int i = 0; i < strides.size(); ++i) {
+    lastOffset += sizes[i] * strides[i];
+  }
+  if(lastOffset < 0 || lastOffset >= NATsize) PRINTF("Run-time error: bad lastOffset\n");
+}
 
 // old versions:
 void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to) {

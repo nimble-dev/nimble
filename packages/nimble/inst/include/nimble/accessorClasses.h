@@ -21,6 +21,8 @@ using std::cout;
 
 #include "nodeFun.h" 
 
+//#define __NIMBLE_DEBUG_ACCESSORS
+
 /////////////////////////////////
 // 1. NodeVectors:
 /////////////////////////////////
@@ -71,6 +73,10 @@ class ManyVariablesMapAccessorBase {
   virtual void  setRow(int i) = 0;
   virtual ~ManyVariablesMapAccessorBase() {};
   virtual void resize(int n) = 0;
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  virtual void check(int i) = 0;
+  virtual void check() = 0;
+#endif
 };
 
 // single and many variable classes
@@ -89,7 +95,15 @@ class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
   ~ManyVariablesMapAccessor();
   void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
-  void resize(int n){varAccessors.resize(n); for(int i = 0; i < n; ++i) varAccessors[i] = new SingleVariableMapAccess;}
+  void resize(int n){
+    // this is a destructive resize only intended to be used once at setup
+    if(varAccessors.size() != 0) PRINTF("Run-time Warning: resizing a ManyVariablesMapAccessor that was not empty.\n");
+    varAccessors.resize(n); for(int i = 0; i < n; ++i) varAccessors[i] = new SingleVariableMapAccess;
+  }
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  void check();
+  void check(int i);
+#endif
 };
 
 // single and many modelValues classes
@@ -97,7 +111,8 @@ class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
  public:
   NimVecType *pVVar;   
   int currentRow;
-  virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));} 
+  virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));}
+ SingleModelValuesMapAccess() : currentRow(0) {};
   ~SingleModelValuesMapAccess() {};
   void setRow(int i) {currentRow = i;}
   int getRow() {return(currentRow);}
@@ -107,12 +122,21 @@ class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
 class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
   public:
   int currentRow;
+  ManyModelValuesMapAccessor();
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
   virtual void setRow(int i);// see .cpp
   ~ManyModelValuesMapAccessor();
-  void resize(int n){varAccessors.resize(n); for(int i = 0; i < n; ++i) varAccessors[i] = new SingleModelValuesMapAccess;}
-
+  void resize(int n){
+    // this is a destructive resize only intended to be used once at setup
+    if(varAccessors.size() != 0) PRINTF("Run-time Warning: resizing a ManyVariablesMapAccessor that was not empty.\n");
+    varAccessors.resize(n); for(int i = 0; i < n; ++i) varAccessors[i] = new SingleModelValuesMapAccess;
+    currentRow = 0; // constructor for the singles sets their currentRows to 0
+  }
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  void check();
+  void check(int i);
+#endif
 };
 
 void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to);
@@ -240,7 +264,8 @@ void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessor
 
 void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to, int rowTo);
 	
-
+void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vector<int> &sizes);
+void singletonCopyCheck(NimArrType *NAT, int offset);
 
 /* template<int D, class T> */
 /* void nimArr_2_SingleModelAccess(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin); */

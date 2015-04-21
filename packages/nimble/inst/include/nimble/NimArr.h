@@ -13,6 +13,7 @@ class NimArr<1, T> : public NimArrBase<T> {
 public:
   int size1;
   int calculateIndex(int i){return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i);}
+  int calculateIndex(vector<int> &i){return(calculateIndex(i[0]));};
   T &operator()(int i) {return((*NimArrBase<T>::vPtr)[calculateIndex(i)]);} // could add asserts here
 
   ~NimArr<1, T>() {};
@@ -179,7 +180,8 @@ class NimArr<2, T> : public NimArrBase<T> {
 public:
   int size1, size2, stride2;
   int calculateIndex(int i, int j) {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j);} // j * s1 + i);}
-  T &operator()(int i, int j) {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);} // could add asserts here
+  int calculateIndex(vector<int> &i){return(calculateIndex(i[0], i[1]));};
+    T &operator()(int i, int j) {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);} // could add asserts here
 
   ~NimArr<2, T>() {};
 
@@ -370,6 +372,7 @@ class NimArr<3, T> : public NimArrBase<T> {
  public:
   int size1, size2, size3, stride2, stride3;//s1s2;
   int calculateIndex(int i, int j, int k) {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k);} //k * s1s2 + j*s1 + i);}
+  int calculateIndex(vector<int> &i){return(calculateIndex(i[0], i[1], i[2]));};
   T &operator()(int i, int j, int k) {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)]);} // could add asserts here
 
   ~NimArr<3, T>() {};
@@ -596,6 +599,7 @@ class NimArr<4, T> : public NimArrBase<T> {
  public:
   int size1, size2, size3, size4, stride2, stride3, stride4;//s1s2;
   int calculateIndex(int i, int j, int k, int l) {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k + stride4 * l );} //k * s1s2 + j*s1 + i);}
+  int calculateIndex(vector<int> &i){return(calculateIndex(i[0], i[1], i[2], i[3]));};
   T &operator()(int i, int j, int k, int l) {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)]);} // could add asserts here
 
   ~NimArr<4, T>() {};

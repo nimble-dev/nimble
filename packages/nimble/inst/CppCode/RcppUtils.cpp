@@ -945,44 +945,44 @@ NimArrType* getNimTypePtr(SEXP &rPtr, SEXP &refNum)
 }
 
 void SEXP_2_NimArrDouble (SEXP rValues, NimArrBase<double> &NimArrDbl){
-	int rLength = LENGTH(rValues);
-	if(rLength != NimArrDbl.size() ) {
-		PRINTF("Warning: R object of different size than NimArrDouble!\n");
+  int rLength = LENGTH(rValues);
+  if(rLength != NimArrDbl.size() ) {
+    PRINTF("Warning: R object of different size than NimArrDouble. R obj has size %i but NimArrDbl has size %i.\n", rLength, NimArrDbl.size());
     return;
-	}
-    if(isReal(rValues) ) {
-	for(int i = 0; i < rLength; i++)
-		NimArrDbl[i] = REAL(rValues)[i];
-    }
-    else if(isInteger(rValues) ) {
-        for(int i = 0; i < rLength; i++)
-            NimArrDbl[i] = INTEGER(rValues)[i];
-    }
-    
-    else
-        PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");
-	return;
+  }
+  if(isReal(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrDbl[i] = REAL(rValues)[i];
+  }
+  else if(isInteger(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrDbl[i] = INTEGER(rValues)[i];
+  }
+  
+  else
+    PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");
+  return;
 }
 
 void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
-	int rLength = LENGTH(rValues);
-	if(rLength != NimArrInt.size() ) {
-		PRINTF("Warning: R object of different size than NimArrDouble!\n");
-		return;		
-	}
-	
-    if(isInteger(rValues) ) {
-	for(int i = 0; i < rLength; i++)
-		NimArrInt[i] = INTEGER(rValues)[i];
-	}
-   else if(isReal(rValues) ) {
-        for(int i = 0; i < rLength; i++)
-            NimArrInt[i] = REAL(rValues)[i];
-	}
-	
-   else
-       PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");    
-    return;
+  int rLength = LENGTH(rValues);
+  if(rLength != NimArrInt.size() ) {
+    PRINTF("Warning: R object of different size than NimArrInt!\n");
+    return;		
+  }
+  
+  if(isInteger(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrInt[i] = INTEGER(rValues)[i];
+  }
+  else if(isReal(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrInt[i] = REAL(rValues)[i];
+  }
+  
+  else
+    PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");    
+  return;
 }
 
 

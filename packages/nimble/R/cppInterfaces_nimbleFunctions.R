@@ -120,7 +120,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                     
                     if(missing(x) ) 
                         getNimValues(VPTR)
-                    else
+                    else 
                         setNimValues(VPTR, x)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
