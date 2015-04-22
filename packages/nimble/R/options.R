@@ -53,7 +53,7 @@ getNimbleOption <- function(x) {
 #' @details \code{nimbleOptions} mimics \code{options}. Invoking
 #' \code{nimbleOptions()} with no arguments returns a list with the
 #'   current values of the options.  To access the value of a single option,
-#'    one should use \code{getOption()}.
+#'    one should use \code{getNimbleOption()}.
 #' @return When invoked with no arguments, a list with the current values of all options. 
 #' @examples
 #' nimbleOptions(verifyConjugatePosteriors = FALSE)
