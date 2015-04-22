@@ -1305,7 +1305,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
                     for(iii in seq_along(indexPieceNumericInds)) varIndicesToUse[, indexPieceNumericInds[iii] ] <- parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
                 }
             } else {
-                if(length(parentIndexNamePieces)==1) varIndicesToUse <- rep(1, length(targetIDs))
+                if(length(parentIndexNamePieces)==1) varIndicesToUse <- rep(parentIndexNamePieces[[1]], length(targetIDs))
                 else {
                     varIndicesToUse <- matrix(0, nrow = 1, ncol = length(parentIndexNamePieces))
                     for(iI in 1:ncol(varIndicesToUse)) varIndicesToUse[1, iI] <- as.numeric(parentExprReplaced[[iI+2]])
