@@ -61,11 +61,11 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  replacementsEnv = 'ANY',
                                  nodeFunctionNames = 'ANY',
 
-                                 outputSize = 'ANY',
+                                 outputSize = 'ANY', ## should match nrow(unrolledIndicesMatrix)
                                  origIDs = 'ANY',
                                  graphIDs = 'ANY',
-                                 unrolledIndicesMatrix = 'ANY'
-                                                                  
+                                 unrolledIndicesMatrix = 'ANY',
+                                 numUnrolledNodes = 'ANY' ## differs from outputSize ONLY for a no-context singleton, a ~ dnorm(b, c), so numUnrolledNodes is 1 but outputSize is 0
                              ),   
                              
                              methods = list(

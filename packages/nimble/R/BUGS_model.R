@@ -558,12 +558,15 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                    },
                                    
                                    buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
+                                       ## This creates the nodeFunctions, which are basically nimbleFunctions, for the model
                                        if(debug) browser()
                                        iNextNodeFunction <- 1
-                                       nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)
-                                       nodeGenerators <<- vector('list', length = length(modelDef$declInfo))
+                                       nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
+                                       nodeGenerators <<- vector('list', length = length(modelDef$declInfo)) ## for the nimbleFunctions
                                        for(i in seq_along(modelDef$declInfo)) {
                                            BUGSdecl <- modelDef$declInfo[[i]]
+                                           if(BUGSdecl$numUnrolledNodes == 0) next
+                                           ## extract needed pieces
                                            type <- BUGSdecl$type
                                            code <- BUGSdecl$codeReplaced
                                            LHS <- code[[2]]
@@ -572,7 +575,9 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
 
+                                           ## make a unique name
                                            thisNodeGeneratorName <- paste0(Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimbleUniqueID())
+                                           ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
                                            nfGenerator <- nodeFunction(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
 
@@ -580,18 +585,40 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            ## We include "_L[source line number]" in the names for the nodeGenerators so we can trace what line of BUGS code they came from
                                            ## This propagates to the C++ class names
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
-                                           if(nrow(BUGSdecl$unrolledIndicesMatrix)==0) {
+
+                                           ## If it is a singleton with no replacements, we can build the node simply:
+                                           if(length(setupOutputExprs)==0) { ## if(nrow(BUGSdecl$unrolledIndicesMatrix)==0) {
                                                nodeFunctions[[iNextNodeFunction]] <<- nfGenerator(.self)
                                                names(nodeFunctions)[iNextNodeFunction] <<- newNodeFunctionNames
                                                iNextNodeFunction <- iNextNodeFunction + 1
                                                next
                                            }
-                                           cn <- colnames(BUGSdecl$unrolledIndicesMatrix)
-                                           nfGenCall <- as.call(c(list(quote(nfGenerator)), list(model = quote(.self)), lapply(names(setupOutputExprs), function(z) substitute(x[i], list(i = which(z == cn))))))
-                                           nfGenWrap <- function(x) x
-                                           body(nfGenWrap) <- nfGenCall
-                                           numNewFunctions <- nrow(BUGSdecl$unrolledIndicesMatrix)
-                                           nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- apply(BUGSdecl$unrolledIndicesMatrix, 1, nfGenWrap)
+
+                                           ## It is either within for loops (contexts) and/or has a replacement
+                                           ## so we construct code to call the nfGenerator with the needed arguments
+                                           
+                                           assign('MODEL_UNIQUE_NAME_', .self, envir = BUGSdecl$replacementsEnv)
+                                           BUGSdecl$replacementsEnv[['nfGenCall_UNIQUE_NAME_']] <- as.call(c(list(quote(nfGenerator_UNIQUE_NAME_)), list(model = quote(MODEL_UNIQUE_NAME_)), lapply(setupOutputExprs, function(z) substitute(x[[index_UNIQUE_NAME_]], list(x = z)))))
+                                           BUGSdecl$replacementsEnv[['nfGenerator_UNIQUE_NAME_']] <- nfGenerator
+                                           ## nfGenCall is code for a call to nfGenerator, like nfGenerator(MODEL_UNIQUE_NAME_, j = j[[index_UNIQUE_NAME_]]) 
+                                           evalq({
+                                               nfGenWrap_UNIQUE_NAME_ <- function(index_UNIQUE_NAME_) x
+                                               body(nfGenWrap_UNIQUE_NAME_) <- nfGenCall_UNIQUE_NAME_
+                                           }, envir = BUGSdecl$replacementsEnv)
+                                           
+                                           numNewFunctions <- BUGSdecl$outputSize
+                                           #nfGenWrap <- function(i) {browser(); eval(eval(substitute(substitute(nfGenCall, list(i = i)), list(nfGenCall = nfGenCall))))}
+                                           #assign('nfGenCall_UNIQUE_NAME_', nfGenCall, envir = BUGSdecl$replacementsEnv)
+                                           #assign('nfGenWrap_UNIQUE_NAME_', nfGenWrap, envir = BUGSdecl$replacementsEnv)
+                                           nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- evalq(lapply(1:outputSize, nfGenWrap_UNIQUE_NAME_), envir = BUGSdecl$replacementsEnv)
+                                           rm(list = c('MODEL_UNIQUE_NAME_', 'nfGenCall_UNIQUE_NAME_', 'nfGenerator_UNIQUE_NAME_', 'nfGenWrap_UNIQUE_NAME_'), envir = BUGSdecl$replacementsEnv)
+                                           
+                                           ## cn <- colnames(BUGSdecl$unrolledIndicesMatrix)
+                                           ## nfGenCall <- as.call(c(list(quote(nfGenerator)), list(model = quote(.self)), lapply(names(setupOutputExprs), function(z) substitute(x[i], list(i = which(z == cn))))))
+                                           ## nfGenWrap <- function(x) x
+                                           ## body(nfGenWrap) <- nfGenCall
+                                           ## numNewFunctions <- nrow(BUGSdecl$unrolledIndicesMatrix)
+                                           ## nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- apply(BUGSdecl$unrolledIndicesMatrix, 1, nfGenWrap)
                                            names(nodeFunctions)[iNextNodeFunction-1+(1:numNewFunctions)] <<- BUGSdecl$nodeFunctionNames
                                            iNextNodeFunction <- iNextNodeFunction + numNewFunctions
                                        }

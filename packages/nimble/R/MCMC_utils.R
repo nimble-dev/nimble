@@ -365,10 +365,10 @@ mcmcFillDetermTop_Init <- nimbleFunction(
 
 mcmcCheckRHS_Init <- nimbleFunction(
 	contains  = nimble:::mcmcNodeInit_virtual,	##	remove the nimble:::, dummy
-	setup = function(model, node){},			##	note: node is really a list of the RHS only nodes
+	setup = function(model, node){},
 	run = function(){
 		vals <- values(model, node)
-		if(is.na.vec(vals))
+		if(is.na.vec(vals)) 
 			print('Value of right hand side only node not initialized')
 	},
 	where = getLoadingNamespace()
