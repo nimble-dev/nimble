@@ -87,7 +87,14 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                                writeLines('Debugging RCfunProcessing (nimbleOptions$debugRCfunProcessing is set to TRUE)') 
                                            }
                                        }
-                                   	
+
+                                       if(!is.null(nimbleOptions$debugCppLineByLine)) {
+                                           if(nimbleOptions$debugCppLineByLine) {
+                                               debugCpp <- TRUE
+                                               if(length(debugCppLabel) == 0) debugCppLabel <- name
+                                           }
+                                       }
+                                       
                                        if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
                                            setupSymbolTables()
                                        }

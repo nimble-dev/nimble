@@ -3,7 +3,7 @@ mapsClass <- setRefClass(
     
     fields = list(
         ## set directly from graphNodesList:
-        nodeNames = 'ANY',
+        nodeNames = 'ANY',  ## like vertexID_2_nodeNames
         graphIDs = 'ANY',
         types = 'ANY',
         notStoch = 'ANY',

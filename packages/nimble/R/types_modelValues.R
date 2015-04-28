@@ -98,9 +98,9 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         GID_map = 'ANY'),
                                     methods = list(
                                         initialize = function(nrow = 1L,...) {
-                                        	callSuper(...)
+                                            callSuper(...)
                                             nrow <<- nrow
-   #                                         types <<- list()
+                                    
                                             for(vN in varNames) {
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
@@ -110,15 +110,15 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                             return(symTab)
                                         },
                                         getVarNames = function(includeLogProb = FALSE){
-                                        	if(!includeLogProb)
-                                        		return(varNames)
-                                        	return(varNames[!grepl('logProb_', varNames)])
+                                            if(includeLogProb)
+                                                return(varNames)
+                                            return(varNames[!grepl('logProb_', varNames)])
                                         },
                                         expandNodeNames = function(nodeNames, returnType = "names", flatIndices = TRUE) 
-										{
-	    									return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
-	    								}                          
-                                      )
+                                            {
+                                                return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
+                                            }                          
+                                    )
                                     )
 
 
@@ -306,10 +306,10 @@ makeModelValuesClassFields <- function(vars) {
 
 pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb = FALSE) {
     if(is.null(vars)) {
-        vars <- model$getVarNames(logProb = TRUE)
+        vars <- model$getVarNames(includeLogProb = TRUE)
     } else {
-        if(!all(vars %in% model$getVarNames(logProb = TRUE)))
-            stop(paste('Error, trying to do pointAt incorrectly for variable(s):', paste(vars[ which(!(vars %in% model$getVarNames(logProb = TRUE)))], collapse = ', ')))
+        if(!all(vars %in% model$getVarNames(includeLogProb = TRUE)))
+            stop(paste('Error, trying to do pointAt incorrectly for variable(s):', paste(vars[ which(!(vars %in% model$getVarNames(includeLogProb = TRUE)))], collapse = ', ')))
     }
     
     ## This won't work generally because it needs to determine which vars actually have logProbs

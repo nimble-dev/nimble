@@ -75,7 +75,7 @@ nl_checkNodeNamesInModel <- function(model, nodeNames, determOnly = FALSE, stoch
 
 ## checks that all varNames are present in model
 nl_checkVarNamesInModel <- function(model, varNames) {
-    if(!all(varNames %in% model$getVarNames(logProb = TRUE)))      stop('all variable names are not in model')
+    if(!all(varNames %in% model$getVarNames(includeLogProb = TRUE)))      stop('all variable names are not in model')
 }
 
 #nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){

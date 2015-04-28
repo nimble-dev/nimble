@@ -211,11 +211,9 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   vector<int> ans(nn);
   if(isInteger(Sn) || isLogical(Sn)) {
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    for(int i = 0; i < nn; ++i) {
-      ans[i] = iSn[i] + offset;
-    }
+    copy(iSn, iSn + nn, ans.begin());
   } else {
-    if(!isReal(Sn)) {
+    if(isReal(Sn)) {
       double *dSn = REAL(Sn);
       bool warning = false;
       for(int i = 0; i < nn; ++i) {
@@ -947,44 +945,44 @@ NimArrType* getNimTypePtr(SEXP &rPtr, SEXP &refNum)
 }
 
 void SEXP_2_NimArrDouble (SEXP rValues, NimArrBase<double> &NimArrDbl){
-	int rLength = LENGTH(rValues);
-	if(rLength != NimArrDbl.size() ) {
-		PRINTF("Warning: R object of different size than NimArrDouble!\n");
+  int rLength = LENGTH(rValues);
+  if(rLength != NimArrDbl.size() ) {
+    PRINTF("Warning: R object of different size than NimArrDouble. R obj has size %i but NimArrDbl has size %i.\n", rLength, NimArrDbl.size());
     return;
-	}
-    if(isReal(rValues) ) {
-	for(int i = 0; i < rLength; i++)
-		NimArrDbl[i] = REAL(rValues)[i];
-    }
-    else if(isInteger(rValues) ) {
-        for(int i = 0; i < rLength; i++)
-            NimArrDbl[i] = INTEGER(rValues)[i];
-    }
-    
-    else
-        PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");
-	return;
+  }
+  if(isReal(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrDbl[i] = REAL(rValues)[i];
+  }
+  else if(isInteger(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrDbl[i] = INTEGER(rValues)[i];
+  }
+  
+  else
+    PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");
+  return;
 }
 
 void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
-	int rLength = LENGTH(rValues);
-	if(rLength != NimArrInt.size() ) {
-		PRINTF("Warning: R object of different size than NimArrDouble!\n");
-		return;		
-	}
-	
-    if(isInteger(rValues) ) {
-	for(int i = 0; i < rLength; i++)
-		NimArrInt[i] = INTEGER(rValues)[i];
-	}
-   else if(isReal(rValues) ) {
-        for(int i = 0; i < rLength; i++)
-            NimArrInt[i] = REAL(rValues)[i];
-	}
-	
-   else
-       PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");    
-    return;
+  int rLength = LENGTH(rValues);
+  if(rLength != NimArrInt.size() ) {
+    PRINTF("Warning: R object of different size than NimArrInt!\n");
+    return;		
+  }
+  
+  if(isInteger(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrInt[i] = INTEGER(rValues)[i];
+  }
+  else if(isReal(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrInt[i] = REAL(rValues)[i];
+  }
+  
+  else
+    PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");    
+  return;
 }
 
 
@@ -1625,13 +1623,6 @@ SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
  SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal){						
   	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
   }
-  
-  
-  
-  
-  
-  
-  
   
   
 /* tools for R's optim	*/

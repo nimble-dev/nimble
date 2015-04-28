@@ -291,7 +291,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(from_ArgList$class == 'symbolModelValues'){
-			accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
+			accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, row = from_ArgList$row)
 			accessFrom_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
@@ -304,9 +304,9 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class == 'symbolModelValues'){
-			accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
+			accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, row = to_ArgList$row)
 			accessTo_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
-			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
+                        addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class %in% accessTypes)
 			accessTo_name <- as.character(code$to)
@@ -583,7 +583,7 @@ processKeyword <- function(code, nfProc){
                                          
 
 optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
-	makeName = function(argList){Rname2CppName(argList$name)},
+	makeName = function(argList){Rname2CppName(deparse(argList$name))},
 	codeTemplate = quote(OPTIM_FUN <- OptimReadyFunction(name = OPTIM_FUN_INQUOTES, nimbleFunction = NFNAME, localNimbleFunctionName = LOCALORGNAME)),
 	makeCodeSubList = function(resultName, argList){
 		list(OPTIM_FUN = as.name(argList$name),
@@ -596,7 +596,7 @@ optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
 
-    makeName = function(argList) {Rname2CppName(paste(argList$model, argList$nodes, 'access_logProb', argList$logProb, sep = '_'))},
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
@@ -608,7 +608,7 @@ modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
 
-    makeName = function(argList) {Rname2CppName(paste(argList$model, argList$nodes, 'access_logProb', argList$logProb, sep = '_'))},
+    makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), deparse(argList$row), sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
@@ -622,8 +622,8 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass(
   #Note to programmer: required fields of argList are accessName
  
-  makeName = function(argList){ Rname2CppName(paste(argList$accessName, 'length', sep = '_')) },
-  codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$length),
+  makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
+  codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
   makeCodeSubList = function(resultName, argList){
   	list(ACCESSNAME = as.name(argList$accessName),
   		ACCESSLENGTH = as.name(resultName) )
@@ -633,7 +633,7 @@ accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass(
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and includeData
 	
-	makeName = function(argList){Rname2CppName(paste(argList$model, argList$nodes, 'nodeFxnVector_includeData', argList$includeData, sep = '_'))},
+	makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), sep = '_'))},
 	codeTemplate = quote(NODEFXNVECNAME <- nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA)), 
 	makeCodeSubList = function(resultName, argList){
 		list(NODEFXNVECNAME = as.name(resultName),
@@ -646,7 +646,7 @@ allLHSNodes_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model
 
 	makeName = function(argList){
-		Rname2CppName(paste('allLHSnodes', argList$model, sep = '_'))
+		Rname2CppName(paste('allLHSnodes', deparse(argList$model), sep = '_'))
 	},
 	codeTemplate = quote(NODENAMES <- MODEL$getMaps('nodeNamesLHSall')),
 	makeCodeSubList = function(resultName, argList){
@@ -658,9 +658,9 @@ allModelNodes_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model
 
 	makeName = function(argList){
-		Rname2CppName(paste('allModelNodes', argList$model, sep = '_'))
+		Rname2CppName(paste('allModelNodes', deparse(argList$model), sep = '_'))
 	},
-	codeTemplate = quote(NODENAMES <- MODEL$getNodeNames()),
+	codeTemplate = quote(NODENAMES <- MODEL$getVarNames()),
 	makeCodeSubList = function(resultName, argList){
 		list(NODENAMES = as.name(resultName),
 			MODEL = argList$model)
@@ -670,7 +670,7 @@ allModelValuesVars_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are modelValues
 
 	makeName = function(argList){
-		Rname2CppName(paste('allMVVars', argList$modelValues, sep = '_'))
+		Rname2CppName(paste('allMVVars', deparse(argList$modelValues), sep = '_'))
 	},
 	codeTemplate = quote(NODENAMES <- MODELVALUES$getVarNames(includeLogProb = FALSE)),	
 		
@@ -728,15 +728,16 @@ map_SetupTemplate <- setupCodeTemplateClass(
 	codeTemplate = quote({
 		VARANDINDICES <- getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
-		mapParts <- varAndIndices2mapParts(VARANDINDICES, MODEL$getVarInfo(NEWVARNAME))
-		MSTRIDES <- mapParts$strides
-		MOFFSET <- mapParts$offset
-		MSIZES <- mapParts$sizes
+                map_SetupTemplate_vi <- MODEL$getVarInfo(NEWVARNAME)
+		map_SetupTemplate_mapParts <- varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
+		MSTRIDES <- map_SetupTemplate_mapParts$strides
+		MOFFSET <- map_SetupTemplate_mapParts$offset
+		MSIZES <- map_SetupTemplate_mapParts$sizes
 		VARACCESSOR <- singleVarAccess(model, NEWVARNAME)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(VARACCESSOR = as.name(resultName),
-		NODEVARNAME =	argList$nodeExpr,		# as.name(paste0(resultName, '_newVarName')),
+		NODEVARNAME =	argList$nodeExpr,
 		NEWVARNAME = as.name(paste0(resultName, '_newVarName')),
 		VARANDINDICES = as.name(paste0(resultName, '_varAndIndices')),
 		MODEL = argList$model,
@@ -779,12 +780,13 @@ addNewCode <- function(name, subList, template, nfProc)
 	nfProc$newSetupCode[[name]] <- eval(substitute(substitute(TEMPLATE, subList), list(TEMPLATE = template$codeTemplate) ) )
 
 addNecessarySetupCode <- function(name, argList, template, nfProc){
-#	name <- template$makeName(argList)
-	if(!isSetupCodeGenerated(name, nfProc)){
-		addSetupCodeNames(name, template$makeOtherNames(name, argList), nfProc)
-		subList <- template$makeCodeSubList(name, argList)
-		addNewCode(name, subList, template, nfProc)
-	}
+                                        #	name <- template$makeName(argList)
+    test <- try(length(isSetupCodeGenerated(name, nfProc)))
+    if(!isSetupCodeGenerated(name, nfProc)){
+        addSetupCodeNames(name, template$makeOtherNames(name, argList), nfProc)
+        subList <- template$makeCodeSubList(name, argList)
+        addNewCode(name, subList, template, nfProc)
+    }
 }
 
 symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
@@ -917,19 +919,21 @@ determineNdimFromOneCase <- function(model, varAndIndices) {
 
 ## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
 
-varAndIndices2mapParts <- function(varAndIndices, varInfo) {
-    varName <- varAndIndices$name
+varAndIndices2mapParts <- function(varAndIndices, sizes, nDim) {
+    ##varName <- varAndIndices$name
     indices <- varAndIndices$indices
     ## put together offsetExpr, sizeExprs, strideExprs
     ## need sizes to get strides
-    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
-    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
-        nDim <- varInfo$nDim
+    if(length(sizes) == 0) sizes <- 1
+##    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
+##    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
+##        nDim <- varInfo$nDim
+    if(nDim > 0 & length(indices)==0) {
         blockBool <- rep(TRUE, nDim)
         firstIndexRexprs <- rep(list(1), nDim)
         targetSizes <- sizes
     } else {
-        nDim <- length(indices)
+        nDim <- length(indices) ## may be redundant/moot
         firstIndexRexprs <- vector('list', nDim)
         targetSizes <- integer(nDim)
         blockBool <- rep(FALSE, nDim)

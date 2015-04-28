@@ -120,7 +120,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                     
                     if(missing(x) ) 
                         getNimValues(VPTR)
-                    else
+                    else 
                         setNimValues(VPTR, x)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
@@ -278,11 +278,11 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                    next
                                                }
                                                else if(cppCopyTypes[[v]] == 'modelVarAccess'){
-                                                   populateManyModelVarAccess(fxnPtr = .basePtr, Robject = Robject, manyAccessName = v)
+                                                   populateManyModelVarMapAccess(fxnPtr = .basePtr, Robject = Robject, manyAccessName = v)
                                                    next
                                                }
                                                else if(cppCopyTypes[[v]] == 'modelValuesAccess'){
-                                                   populateManyModelValuesAccess(fxnPtr = .basePtr, Robject = Robject, manyAccessName = v)
+                                                   populateManyModelValuesMapAccess(fxnPtr = .basePtr, Robject = Robject, manyAccessName = v)
                                                    next
                                                }
                                                else if(cppCopyTypes[[v]] == "modelValuesPtr"){

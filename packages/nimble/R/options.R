@@ -9,6 +9,7 @@ nimbleOptions <- list(
     indexDrop = TRUE,
     debugRCfunProcessing = FALSE,
     debugNFProcessing = FALSE,
+    debugCppLineByLine = FALSE,
     compileAltParamFunctions = TRUE,
     verifyConjugatePosteriors = TRUE,        ## verifies the correct posterior is created for any conjugate samplers, at run-time
     includeCPPdists = TRUE,    ## includes dists.cpp and nimDists.cpp in the compilation.  Momentarily we have a problem on Windows.

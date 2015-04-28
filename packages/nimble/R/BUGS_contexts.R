@@ -20,7 +20,8 @@ BUGScontextClass <- setRefClass('BUGScontextClass',
                                 
                                 methods = list(
                                     setup             = function() {},
-                                    genIndexVarValues = function() {}
+                                    genIndexVarValues = function() {},
+                                    embedCodeInForLoop = function() {}
                                 )
 )
 
@@ -34,6 +35,35 @@ BUGScontextClass$methods(setup = function(singleContexts) {
 
 BUGScontextClass$methods(genIndexVarValues = function(constantsEnvCopy) {
     genIndexVarValues_recurse(singleContexts, constantsEnvCopy)
+})
+
+BUGScontextClass$methods(embedCodeInForLoop = function(innerLoopCode, useContext = NULL, allowNegativeIndexSequences = NULL) {
+    ## innerLoopCode is code to be embedded in (possibly nested) for-loops from this context
+    ## useContext is an optional logical vector of which contexts to include
+    ## allowNegativeIndexSequences: if TRUE, for(i in 2:1) results in iterating over c(2,1), as R would.  If FALSE (Default),
+    ##      behavior is like BUGS: for(i in 2:1) results in no iteration.
+    if(is.null(allowNegativeIndexSequences))
+        allowNegativeIndexSequences <- if(is.null(nimbleOptions[['processBackwardsModelIndexRanges']])) TRUE
+                                       else nimbleOptions$processBackwardsModelIndexRanges
+ 
+    if(is.null(useContext)) {
+        useContext <- rep(TRUE, length(singleContexts))
+    }
+    iContext <- length(singleContexts)
+    while(iContext >= 1) {
+        if(useContext[iContext]) {
+            newCode <- singleContexts[[iContext]]$forCode
+            if(!allowNegativeIndexSequences) {
+                indexRangeCode <- newCode[[3]]
+                isColonExpr <- if(is.name(indexRangeCode[[1]])) if(as.character(indexRangeCode[[1]])==':') TRUE else FALSE else FALSE
+                if(isColonExpr) newCode[[3]] <- as.call(list(as.name('nm_seq_noDecrease'), indexRangeCode[[2]], indexRangeCode[[3]]))
+            }
+            newCode[[4]] <- innerLoopCode
+            innerLoopCode <- newCode
+        }
+        iContext <- iContext - 1
+    }
+    innerLoopCode
 })
 
 genIndexVarValues_recurse <- function(singleContexts, constantsEnvCopy) {

@@ -790,51 +790,99 @@ modelDefClass$methods(genAltParamsModifyCodeReplaced = function() {
     }
 })
 
+## genNodeInfo3
+## There are no longer nodeInfo objects as we used to have.  This does the related processing in the new system.
 modelDefClass$methods(genNodeInfo3 = function(debug = FALSE) {
+    ## This uses the contexts (for loops) to create an environment called replacementsEnv that has unrolled indices and replacements
+    ## First it iterates through contexts, working with all lines of BUGS code in the same context.
+    ## Then it iterates through each line of BUGS code, refining the results needed by it.
     if(debug) browser()
+
+    ## 1. Iterate over context (for loops), where 1st context will always be no-for-loop
     for(i in seq_along(contexts)) {
-        boolContext <- unlist(lapply(declInfo, function(x) x$contextID == i))
-        allReplacements <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacements'))
+        boolContext <- unlist(lapply(declInfo, function(x) x$contextID == i))                    ## TRUE for BUGS lines (declInfo elements) that use this context
+        allReplacements <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacements'))     ## Collect replacement expressions from all lines
         if(length(allReplacements) > 0) {
-            allReplacementNameExprs <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacementNameExprs'))
-            boolNotDup <- !duplicated(allReplacements)
-            
+            allReplacementNameExprs <- do.call('c', lapply(declInfo[boolContext], `[[`, 'replacementNameExprs')) ## names of allReplacements as expressions
+            boolNotDup <- !duplicated(allReplacements) ## remove duplicates, e.g. if i+1 appears in two lines in the same expression, we only it once as a replacement
+
+            ## This makes an environment with a vector of each replacement and for-loop index from executing the for-loops
             unrolledContextAndReplacementsEnv <- expandContextAndReplacements(allReplacements[boolNotDup], allReplacementNameExprs[boolNotDup], contexts[[i]], constantsEnv)
+            ## record the environment in the context
             contexts[[i]]$replacementsEnv <<- unrolledContextAndReplacementsEnv
         } else {
+            ## if there were no replacements:
             contexts[[i]]$replacementsEnv <<- NULL
         }
     }
 
+    ## There is a tricky disinction of cases that come out of previous step, from expandContextAndReplacements
+    ## If there is a context with NO replacements (must mean that all non-for-loop lines have no replacements)
+    ##      then expandContextAndReplacements returns NULL
+    ## If there is a context with NO indices but >0 replacements, then a valid result comes back from expandContextAndReplacements
+    ##      with outputSize = 1
+    ## If there is a context with >0 indices but none of them yield nodes (e.g. they descend, for(i in 2:1), which by default option results in no iteration)
+    ##      then there WILL be an environment from expandContextAndReplacements but it will have outputSize == 0
+    ## In later processing we need to know when such declarations (they are in BUGS code, but due to indices they do nothing) occur
+    ##      so we record numUnrolledNodes.
+    
+    ## 2. iterate over declInfo (one entry for each BUGS declaration)
     for(i in seq_along(declInfo)) {
         ## extract information needed for each declInfo and each parentExpr
         ## note that sometimes lifted nodes don't need some or any of the indices from the context
         ## e.g. there might be a lifted node involving no indices, but it is still embedded in the same context
         BUGSdecl <- declInfo[[i]]
         context <- contexts[[BUGSdecl$contextID]]
-        BUGSdecl$replacementsEnv <- context$replacementsEnv
-        if(is.null(BUGSdecl$replacementsEnv)) {
-            BUGSdecl$unrolledIndicesMatrix <- matrix(nrow = 0, ncol = 0)
-            next
-        }
-        BUGSdecl$outputSize <- BUGSdecl$replacementsEnv$outputSize
 
+        ## set up the BUGSdecl$replacementsEnv and related bits.
+        ## These may get changed again below
+        if(is.null(context$replacementsEnv)) { ## This would occur if there were no for loops and no replacements
+            BUGSdecl$replacementsEnv <- NULL
+            BUGSdecl$unrolledIndicesMatrix <- matrix(nrow = 0, ncol = 0)
+            BUGSdecl$outputSize <- 0
+            BUGSdecl$numUnrolledNodes <- 1
+            next
+        } else { ## there was at least for loop and/or at least one replacement
+            ## copy (by reference) the replacementsEnv to this BUGSdecl
+            BUGSdecl$replacementsEnv <- context$replacementsEnv
+            BUGSdecl$outputSize <- BUGSdecl$replacementsEnv$outputSize
+            BUGSdecl$numUnrolledNodes <- BUGSdecl$outputSize ## will only be 0 if the for loops all had numeric(0) index ranges, like for(i in 2:1)
+        }
+
+        ## Pick out which parts of the context (which for loop indices) are used in this BUGSdecl
         useContext <- unlist(lapply(context$singleContexts, function(x) isNameInExprList(x$indexVarExpr, BUGSdecl$indexExpr)))
-        BUGSdecl$replacementsEnv$cbindArgExprs <- unique(c(context$indexVarExprs[useContext], BUGSdecl$replacementNameExprs))
+        ## We want to do something like cbind(i, i_plus_1, j) to make a matrix of unrolled indices
+        ## To do that we need to construct the cbind expression with the name expressions needed and then eval it in replacementsEnv
+
+        ## We will include anything that is not a list
+        rNEtoInclude <- unlist(lapply(names(BUGSdecl$replacementNameExprs), function(x) !is.list( BUGSdecl$replacementsEnv[[x]])))
         
+        BUGSdecl$replacementsEnv$cbindArgExprs <- unique(c(context$indexVarExprs[useContext], BUGSdecl$replacementNameExprs[rNEtoInclude]))
         BUGSdecl$unrolledIndicesMatrix <- with(BUGSdecl$replacementsEnv, do.call('cbind', cbindArgExprs))
         rm(list = 'cbindArgExprs', envir = BUGSdecl$replacementsEnv)
+
+        ## 
         if(!all(useContext)) {
             if(!any(useContext)) {
-                BUGSdecl$replacementsEnv <- NULL
-                BUGSdecl$unrolledIndicesMatrix <- matrix(nrow = 0, ncol = 0)
-                next
+                ##    BUGSdecl$replacementsEnv <- NULL
+                ##   BUGSdecl$unrolledIndicesMatrix <- matrix(nrow = 0, ncol = 0)
+                ##   next
+                ## A line that is in contexts but doesn't use any of them can arise from lifting.  In such a case, keep only the first row.
+                boolUse <- c(TRUE, rep(FALSE, BUGSdecl$outputSize-1))
+            } else {
+                ## if not every context was used, some cleanup is needed: the unrolledIndicesMatrix may have duplicates to remove
+                boolUse <- !duplicated(BUGSdecl$unrolledIndicesMatrix[, context$indexVarNames[useContext] ] )
             }
-            boolUse <- !duplicated(BUGSdecl$unrolledIndicesMatrix[, context$indexVarNames[useContext] ] )
-            BUGSdecl$unrolledIndicesMatrix <- BUGSdecl$unrolledIndicesMatrix[boolUse, , drop = FALSE]
+            if(!is.null(BUGSdecl$unrolledIndicesMatrix)) BUGSdecl$unrolledIndicesMatrix <- BUGSdecl$unrolledIndicesMatrix[boolUse, , drop = FALSE]
 
-            BUGSdecl$replacementsEnv <- list2env(as.data.frame(BUGSdecl$unrolledIndicesMatrix))
-            BUGSdecl$replacementsEnv$outputSize <- nrow(BUGSdecl$unrolledIndicesMatrix)
+            ## And then give a new replacementsEnv to the BUGSdecl from the no-duplicates matrix
+            ## BUGSdecl$replacementsEnv <- list2env(as.data.frame(BUGSdecl$unrolledIndicesMatrix)) ## used to work until there were lists involved
+            BUGSdecl$replacementsEnv <- new.env()
+            for(repName in names(BUGSdecl$replacementNameExprs)) BUGSdecl$replacementsEnv[[repName]] <- context$replacementsEnv[[repName]][boolUse]
+            
+            BUGSdecl$replacementsEnv$outputSize <- sum(boolUse)
+            BUGSdecl$outputSize <- BUGSdecl$replacementsEnv$outputSize
+            BUGSdecl$numUnrolledNodes <- BUGSdecl$outputSize
         }
         if(is.null(BUGSdecl$unrolledIndicesMatrix)) BUGSdecl$unrolledIndicesMatrix <- matrix(nrow = 0, ncol = 0)
     }
@@ -855,15 +903,30 @@ isNameInExpr <- function(target, code) {
     FALSE
 }
 
+nm_seq_noDecrease <- function(a, b) {
+    if(a > b) {
+        numeric(0)
+    } else {
+        a:b
+    }
+}
 
 expandContextAndReplacements <- function(allReplacements, allReplacementNameExprs, context, constantsEnv) {
- ##   browser()
+##    browser()
+    ## allReplacements is a list like
+    ## list(i = i, i_plus_1 = i+1, mean_x_1to5 = mean(x[1:5]))
+    ## context is a BUGScontextClass object
+    ## constantsEnv is an environment with constants that can be used to permanently replace values in the allReplacements code
+
     numContexts <- length(context$singleContexts)
     if(numContexts == 0) { ## it has no indices or known indices
-        replacementsEnv <<- NULL
-        return(NULL)
+        if(length(allReplacements)==0) {
+            replacementsEnv <<- NULL
+            return(NULL)
+        }
     }
-
+    
+    ## when done, we will have created a new environment and want to remove the constants from it
     namesToRemoveAtEnd <- ls(constantsEnv)
     constantsEnvCopy <- list2env(as.list(constantsEnv))
     ## some replacements like min(j:100) should no longer be needed but are still there
@@ -871,10 +934,10 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
     ## If this all works, useContext can be removed
     useContext <- rep(TRUE, numContexts)
     
-    valueVarNames <- paste0("INDEXVALUE_", 1:numContexts, "_")
+    valueVarNames <- if(numContexts > 0) paste0("INDEXVALUE_", 1:numContexts, "_") else character(0)
 ## indexRecordingCode gives lines of code like "INDEXVALUE_1_[iAns] <- i". This will later have its name changed to "i"
     indexRecordingCode <- vector('list', length = numContexts)
-    for(i in 1:numContexts) {
+    for(i in seq_along(context$singleContexts)) {
         if(useContext[i])
             indexRecordingCode[[i]] <- substitute(V[iAns] <- index, list(V = as.name(valueVarNames[i]), index = context$singleContexts[[i]]$indexVarExpr))
     }
@@ -887,42 +950,46 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
         }
         return(TRUE)
     }))
-    ## replacementRecordingCode gives lines of code like "i_plus_1[iAns] <- i+1"                         
+    ## replacementRecordingCode gives lines of code like "i_plus_1[iAns] <- i+1"
     replacementRecordingCode <- vector('list', length = numReplacements)
     for(i in seq_along(replacementRecordingCode)) {
         if(useReplacement[i])
-            replacementRecordingCode[[i]] <- substitute(A[iAns] <- B, list(A = allReplacementNameExprs[[i]], B = allReplacements[[i]])) 
+            replacementRecordingCode[[i]] <- substitute(A[[iAns]] <- B, list(A = allReplacementNameExprs[[i]], B = allReplacements[[i]])) 
     }
+
     ## From here through the while loop combines the for loops from the contexts, with the replacementRecordingCode and indexRecordingCode in the innermost
     innerLoopCode <- as.call(c(list(quote(`{`)), replacementRecordingCode, indexRecordingCode, quote(iAns <- iAns + 1)))
 
-    iContext <- numContexts
-    while(iContext >= 1) {
-        if(useContext[iContext]) {
-            newCode <- context$singleContexts[[iContext]]$forCode
-            newCode[[4]] <- innerLoopCode
-            innerLoopCode <- newCode
-        }
-        iContext <- iContext - 1
-    }
+    innerLoopCode <- context$embedCodeInForLoop(innerLoopCode, useContext)
     ## at this point "innerLoopCode" has the full loop  ## determineContextSize does something similar -- creates and executes nested for loops -- only for the purpose of counting how big the result will be
     outputSize <- determineContextSize(context, useContext, constantsEnvCopy)
-    for(i in 1:numContexts) {
+    for(i in seq_along(context$singleContexts)) {
         if(useContext[i])
             assign(valueVarNames[i], numeric(outputSize), constantsEnvCopy)
     }
     for(i in seq_along(replacementRecordingCode)) {
         if(useReplacement[i])
-            assign(names(allReplacements)[i], numeric(outputSize), constantsEnvCopy)
+            assign(names(allReplacements)[i], vector('list', length = outputSize), constantsEnvCopy)
     }
     assign("iAns", 1, constantsEnvCopy)
     eval(innerLoopCode, constantsEnvCopy)
-    for(i in 1:numContexts){
+    for(i in seq_along(context$singleContexts)){
         if(useContext[i]) {
             constantsEnvCopy[[ as.character(context$singleContexts[[i]]$indexVarExpr) ]] <- constantsEnvCopy[[ valueVarNames[i] ]]
             rm(list = valueVarNames[i], envir = constantsEnvCopy)
         }
     }
+    for(i in seq_along(allReplacementNameExprs)) {
+        if(useReplacement[i]) {
+            unlistScalarCode <- substitute( {
+                FOO_allScalar <- all(unlist(lapply(VARNAME, function(x) length(x) == 1)))
+                if(FOO_allScalar) VARNAME <- unlist(VARNAME)
+            }, list(VARNAME = allReplacementNameExprs[[i]]))
+            eval(unlistScalarCode, envir = constantsEnvCopy)
+            rm(list = 'FOO_allScalar', envir = constantsEnvCopy)
+        }
+    }
+
     rm(list = c(namesToRemoveAtEnd, 'iAns'), envir = constantsEnvCopy)
     assign("outputSize", outputSize, constantsEnvCopy)
     return(constantsEnvCopy) ## becomes replacementsEnv
@@ -931,15 +998,8 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
 determineContextSize <- function(context, useContext = rep(TRUE, length(context$singleContexts)), evalEnv = new.env()) {
     ## could improve this by checking for nested loops that don't use indices from outer loops
     innerLoopCode <- quote(iAns <- iAns + 1)
-    iContext <- length(context$singleContexts)
-    while(iContext >= 1) {
-        if(useContext[iContext]) {
-            newCode <- context$singleContexts[[iContext]]$forCode
-            newCode[[4]] <- innerLoopCode
-            innerLoopCode <- newCode
-        }
-        iContext <- iContext - 1
-    }
+    innerLoopCode <- context$embedCodeInForLoop(innerLoopCode, useContext)
+
     assign("iAns", 0L, evalEnv)
     eval(innerLoopCode, evalEnv)
     ans <- evalEnv$iAns
@@ -1142,7 +1202,7 @@ splitCompletionForOrigNodes <- function(var2nodeOrigID, var2vertexID, maxOrigNod
     if(any(!ok)) {
         IDsToFix <- which(boolInOrig)[!ok]
         for(ID in IDsToFix) {
-            var2vertexID[ var2vertexID == ID ] <- nextVertexID
+            var2vertexID[var2vertexID == ID] <- nextVertexID
             nextVertexID <- nextVertexID + 1
         }
     }
@@ -1190,11 +1250,11 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
                 for(iI in 1:ncol(varIndicesToUse)) varIndicesToUse[1, iI] <- as.numeric(parentExprReplaced[[iI+2]])
             }
         }
-        currentVertexIDs <- var2vertexID[ varIndicesToUse ]
+        currentVertexIDs <- var2vertexID[varIndicesToUse]
         needsVertexID <- is.na(currentVertexIDs)
         numNewVertexIDs <- sum(needsVertexID)
         if(numNewVertexIDs > 0) {
-            var2vertexID[ varIndicesToUse ][needsVertexID] <- nextVertexID - 1 + 1:numNewVertexIDs
+            var2vertexID[varIndicesToUse][needsVertexID] <- nextVertexID - 1 + 1:numNewVertexIDs
             nextVertexID <- nextVertexID + numNewVertexIDs
         }
         ## Still need to look for splits on other existing vertexIDs
@@ -1206,7 +1266,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
 
         numNeedSplit <- sum(needsSplit)
         if(numNeedSplit > 0) {
-            var2vertexID[ varIndicesToUse][ oldIndices][needsSplit] <- nextVertexID - 1 + 1:numNeedSplit
+            var2vertexID[varIndicesToUse][ oldIndices][needsSplit] <- nextVertexID - 1 + 1:numNeedSplit
             nextVertexID <- nextVertexID + numNeedSplit
         }
         ## This can result in skips, e.g. if a previous BUGSdecl labeled a vector with a new vectorID, and that now gets split in scalar vectorID labels
@@ -1302,6 +1362,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
                 }
             } else {
                 if(length(parentIndexNamePieces)==1) varIndicesToUse <- rep(as.numeric(parentExprReplaced[[3]]), length(targetIDs))
+##              if(length(parentIndexNamePieces)==1) varIndicesToUse <- rep(parentIndexNamePieces[[1]], length(targetIDs))
                 else {
                     varIndicesToUse <- matrix(0, nrow = 1, ncol = length(parentIndexNamePieces))
                     for(iI in 1:ncol(varIndicesToUse)) varIndicesToUse[1, iI] <- as.numeric(parentExprReplaced[[iI+2]])
@@ -1309,7 +1370,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             }
         }
 
-        edgesFrom <- var2vertexID[ varIndicesToUse ]
+        edgesFrom <- var2vertexID[varIndicesToUse]
         edgesTo <- targetIDs
         
     } else {
@@ -1380,6 +1441,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     for(iDI in seq_along(declInfo)) {
 
         BUGSdecl <- declInfo[[iDI]]
+        if(BUGSdecl$numUnrolledNodes == 0) next
         lhsVar <- BUGSdecl$targetVarName
         nDim <- varInfo[[lhsVar]]$nDim
         if(nDim > 0) {
@@ -1440,6 +1502,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
         if(BUGSdecl$type == 'determ') next
+        if(BUGSdecl$numUnrolledNodes == 0) next
         lhsVar <- BUGSdecl$targetVarName
         logProbVarName <- makeLogProbName(lhsVar)
         nDim <- logProbVarInfo[[logProbVarName]]$nDim
@@ -1450,7 +1513,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 if(is.list(indexNamePieces)) { 
                     pieces[[i]] <- if(is.character(indexNamePieces[[1]]))
                                        BUGSdecl$replacementsEnv[[ indexNamePieces[[1]] ]]
-                                   else indexNamePieces[[1]]
+                                   else indexNamePieces[[1]] ## for anything with a colon, this takes only the start value (cf step 2. above)
                 } else {
                     pieces[[i]] <- if(is.character(indexNamePieces)) BUGSdecl$replacementsEnv[[ indexNamePieces ]] else indexNamePieces
                 }
@@ -1462,7 +1525,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             logProbIDs <- c(logProbIDs, newLogProbIDs)
             nextLogProbID <- nextLogProbID + length(newLogProbNames)
 
-            targetExprWithMins <- removeColonOperator(BUGSdecl$targetExprReplaced)
+            targetExprWithMins <- removeColonOperator(BUGSdecl$targetExprReplaced) ## this strips colons, leaving only start value
             if(is.environment(BUGSdecl$replacementsEnv)) {
                 IDassignCode <- insertSubIndexExpr(targetExprWithMins, quote(iAns))
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbIDs
@@ -1504,6 +1567,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     nextVertexID <- maxOrigNodeID+1
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
+        if(BUGSdecl$numUnrolledNodes == 0) next
         rhsVars <- BUGSdecl$rhsVars
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
@@ -1594,6 +1658,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     edgesParentExprID <- numeric(0)
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
+        if(BUGSdecl$numUnrolledNodes == 0) next
         rhsVars <- BUGSdecl$rhsVars
         for(iV in seq_along(rhsVars)) {
             
@@ -1658,6 +1723,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     graphID_2_declID <- numeric(numVertices)
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
+        if(BUGSdecl$numUnrolledNodes == 0) next
         BUGSdecl$graphIDs <- oldGraphID_2_newGraphID[ BUGSdecl$origIDs ]
         graphID_2_declID[ BUGSdecl$graphIDs ] <- iDI
     }
@@ -1705,6 +1771,7 @@ modelDefClass$methods(genVarInfo3 = function() {
     ## That allows determination of when logProb information needs to be collected
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
+        if(BUGSdecl$numUnrolledNodes == 0) next
         ## LHS:
         lhsVar <- BUGSdecl$targetVarName
         if(!(lhsVar %in% names(varInfo))) {
@@ -1729,6 +1796,7 @@ modelDefClass$methods(genVarInfo3 = function() {
     
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
+        if(BUGSdecl$numUnrolledNodes == 0) next
         ## LHS:
         lhsVar <- BUGSdecl$targetVarName
         anyStoch <- varInfo[[lhsVar]]$anyStoch
@@ -2084,14 +2152,28 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
 	return(output[!is.na(output)])
 })
 
-modelDefClass$methods(nodeName2LogProbName = function(nodeName){
-	if(length(nodeName) == 0)
-		return(NULL)
-	output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
-	return(output[!is.na(output)])
+## next two functions work for properly formed nodeNames.
+modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 places: MCMC_build, valuesAccessorVector, and cppInterfaces_models
+    ## This function needs better processing.
+    if(length(nodeName) == 0)
+        return(NULL)
+##    output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+##    return(output[!is.na(output)])
+
+    ## 1. so this needs to first get to a nodeFunctionID
+    graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+##    eval(parse(text="w1[3:4, 1:2]", keep.source = FALSE)[[1]], envir= maps$vars2GraphID_functions)
+
+    
+    ## 2. get node function names
+    fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
+    ## 3 get corresponding logProbNames
+    output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+    return(output[!is.na(output)])
 })
 
-modelDefClass$methods(nodeName2LogProbID = function(nodeName){
+modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
+    ## I think this will only work if nodeName is already ensured to be a node function name
 	if(length(nodeName) == 0)
 		return(NULL)
 	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 

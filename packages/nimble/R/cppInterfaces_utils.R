@@ -30,8 +30,6 @@ cCopyVariableRows <- function(cMVFrom, cMVTo, varIndex, rowsFrom = 1:cGetNRow(cM
     stop("Did not correctly copy from one ModelValues to another")
 }
 
-
-
 newObjElementPtr = function(rPtr, name){
   .Call("getModelObjectPtr", rPtr, name)
 } 

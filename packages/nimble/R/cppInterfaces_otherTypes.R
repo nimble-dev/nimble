@@ -31,55 +31,22 @@ makeCSingleVariableAccessor <- function(rModelPtr, elementName, beginIndex, endI
 #  like to access. beginIndex and endIndex are R indices (i.e. first element is 1, not 0)
 #  for the begining and ending sequence of flat indices this accessor uses
 
-resizeCModelAccessors <- function(modelAccessPtr, size)
-	.Call('resizeManyModelVarAccessor', modelAccessPtr, as.integer(size) ) 
-#	Resizes a manyModelVariablesAccessor
-
-
-populateManyModelVarAccess <- function(fxnPtr, Robject, manyAccessName)
-	{
-	manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-	gids <- Robject[[manyAccessName]]$gids
-	l_gids <- Robject[[manyAccessName]]$l_gids
-	cModel <- Robject[[manyAccessName]]$model$CobjectInterface
-	if(length(gids) + length(l_gids) > 0)	
-		.Call('populateModelVariablesAccessors_byGID', manyAccessPtr, as.integer(gids), cModel$.nodeValPointers_byGID$.ptr, as.integer(l_gids), cModel$.nodeLogProbPointers_byGID$.ptr)
-#	resizeCModelAccessors(manyAccessPtr, length(Robject[[manyAccessName]]$modelVariableAccessors) )
-#	rModelPtr <- Robject[[manyAccessName]]$model$CobjectInterface$.basePtr
-#	for(i in seq_along(Robject[[manyAccessName]]$modelVariableAccessors) ){
-#		acc = Robject[[manyAccessName]]$modelVariableAccessors[[i]]
-#		singleAccPtr = makeCSingleVariableAccessor(rModelPtr = rModelPtr, elementName = acc$var, beginIndex = acc$first, endIndex = acc$last)
-#		addSingleVarAccess(manyAccessPtr, singleAccPtr, addAtEnd = FALSE, index = i)
-#	}
-}
-# Populates a manyModelVariablesAccessor, as called from copyFromRobject() in the CnimbleFunctionBase
-
-resizeCModelValuesAccessors <- function(modelValuesAccessPtr, size)
-	.Call('resizeManyModelValuesAccessor', modelValuesAccessPtr, as.integer(size) ) 
-#	Resizes a manyModelvaluesAccessor
-
-populateManyModelValuesAccess <- function(fxnPtr, Robject, manyAccessName){
-	manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-#	resizeCModelValuesAccessors(manyAccessPtr, length(Robject[[manyAccessName]]$modelValuesAccessors) )
-	cModelValues <- Robject[[manyAccessName]]$modelValues$CobjectInterface
-	gids <- Robject[[manyAccessName]]$gids
-	.Call('populateModelValuesAccessors_byGID',  manyAccessPtr, as.integer(gids), cModelValues$.nodePtrs_byGID$.ptr)
-#	for(i in seq_along(Robject[[manyAccessName]]$modelValuesAccessors) ){
-#		acc = Robject[[manyAccessName]]$modelValuesAccessors[[i]]
-#		singleAccPtr = makeCSingleModelValuesAccessor(rModelValuesPtr = rModelValuesPtr, elementName = acc$var, beginIndex = acc$first, endIndex = acc$last)
-#		addSingleModelValuesAccess(manyAccessPtr, singleAccPtr, addAtEnd = FALSE, index = i)
-#	}
+populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## new version
+    manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
+    cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface
+    if(Robject[[manyAccessName]]$getLength() > 0) {
+        .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModel$.basePtr)
+    }
 }
 
-#populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
-#	fxnVecPtr = .Call("getModelObjectPtr", fxnPtr, fxnVecName)
-#	resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes) )
-#	cNodes <- Robject[[fxnVecName]]$model$CobjectInterface$nodes
-#	countInf <- new.env()
-#	countInf$count <- 0
-#	nodeNames <- Robject[[fxnVecName]]$nodes
-#	nil <- lapply(nodeNames, addNodeFxn_LOOP, nodes = cNodes, fxnVecPtr = fxnVecPtr, countInf = countInf)
-#}
+
+
+populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName){ ## new version. nearly identical to populateManyModelVarMapAccess
+    manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
+    cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface
+    .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModelValues$extptr)
+}
+
 
 
 

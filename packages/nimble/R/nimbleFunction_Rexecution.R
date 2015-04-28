@@ -62,25 +62,25 @@ rCalcNodes <- function(model, nodes){
 #' 
 calculate <- function(model, nodes, nodeFxnVector)		
 {
-	if(!missing(nodeFxnVector)){
-			model <- nodeFxnVector$model
-			nodes <- nodeFxnVector$getNodeNames()
-		return(rCalcNodes(model, nodes))
-		}
-	if(inherits(model, 'modelBaseClass') ){
-		if(missing(nodes) ) 
-			nodes <- model$getMaps('nodeNamesLHSall')
-		nfv <- nodeFunctionVector(model, nodes)
-		nodeNames <- nfv$getNodeNames()
-		return(rCalcNodes(model, nodeNames))
-	}	
+    if(!missing(nodeFxnVector)){
+        model <- nodeFxnVector$model
+        nodes <- nodeFxnVector$getNodeNames()
+        return(rCalcNodes(model, nodes))
+    }
+    if(inherits(model, 'modelBaseClass') ){
+        if(missing(nodes) ) 
+            nodes <- model$getMaps('nodeNamesLHSall')
+        nfv <- nodeFunctionVector(model, nodes)
+        nodeNames <- nfv$getNodeNames()
+        return(rCalcNodes(model, nodeNames))
+    }	
 }
 
 rGetLogProbsNodes <- function(model, nodes){
-	l_Prob = 0
-	for(nName in nodes)
-		l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
-	return(l_Prob)
+    l_Prob = 0
+    for(nName in nodes)
+        l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
+    return(l_Prob)
 }
 
 getLogProb <- function(model, nodes, nodeFxnVector)		
@@ -147,42 +147,44 @@ simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)
 # @return NULL, but this function works by the side-effect of modifying P in the calling environment.
 
 
-getValues <- function(vals, model, nodes)
-	{
-	valsExp = substitute(vals)
-	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
-	output = getValuesAccess(vals, access)
-	assign(as.character(valsExp), output, envir = parent.frame(n = 1) )
-	}
+getValues <- function(vals, model, nodes, envir = parent.frame()) {
+    valsExp = substitute(vals)
+    access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
+    output = getValuesAccess(access)
+    if(is.name(valsExp))
+        assign(as.character(valsExp), output, envir = parent.frame(n = 1) ) ## again this assumes valsExp has no indexing -- need to fix
+    else {
+        varName <- valsExp[[2]]
+        orig <- get(varName, envir = envir)
+        assignTarget <- valsExp
+        assignTarget[[2]] <- quote(orig)
+        eval(substitute(AT <- output, list(AT = assignTarget)))
+        assign(varName, orig, envir = envir)
+    }
+}
 
-getValuesAccess <- function(vals, access){
-#	if(length(vals)!= length(access) ) {
-#		writeLines('Length of object to copy into does not match')
-#	}
-	output = as.numeric(NA)
-	totValues <- length(access$gids) + length(access$l_gids)
-	for(i in seq_along(access$gids) )
-		output[i] <- access$getSingleValue_fromGID(i)
-	gid_len = length(access$gids)
-	for(i in seq_along(access$l_gids))
-		output[i + gid_len] = access$getSingleValue_fromGID(i + gid_len)
-	return(output)
+getValuesAccess <- function(access) {
+    if(access$numAccessors==0) return(numeric())
+    unlist(lapply(1:access$numAccessors, function(i) access$getValues(i)))
 }
 
 
+setValuesAccess <- function(input, access) {
+    if(access$numAccessors==0) return(NULL)
+    nextIndex <- 0
+    if(access$getLength() != length(input)) {
+        writeLines('Length of input does not match accessor')
+        if(access$getLength() > length(input)) stop('Bailing out because not enough values were provided for accessor')
+        writeLines('Too many input values provided.  Continuing anyway')
+    }
+    for(i in 1:length(access$code)) {
+        nextLength <- access$getLength(i)
+        access$setValues(i, input[nextIndex + (1:nextLength)])
+        nextIndex <- nextIndex + nextLength
+    }
+    invisible(NULL)
+}
 
-setValuesAccess <- function(input, access){
-	tot_length = length(access$gids) + length(access$l_gids)
-	if(length(input)!= tot_length ) 
-		writeLines('Length of input does not match accessor')
-	else{
-		for(i in seq_along(access$gids) )
-			access$setSingleValue_fromGID(input[i], i)
-		gid_len = length(access$gids)
-		for(i in seq_along(access$l_gids) )
-			access$setSingleValue_fromGID(input[i+gid_len], i + gid_len)
-	}
-}	
 
 # Fill a set of nodes in a model from a vector of values
 #
@@ -210,7 +212,6 @@ setValuesAccess <- function(input, access){
 setValues <- function(input, model, nodes){
 	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
 	setValuesAccess(input, access)
-	
 }
 
 #' Access values for a set of nodes in a model
@@ -241,7 +242,7 @@ setValues <- function(input, model, nodes){
 #' @return A vector of values concatenated from the provided nodes in the model
 values <- function(model, nodes){
 	ans <- NA
-	getValues(ans, model, nodes)
+	getValues(ans, model, nodes, parent.frame())
 	ans
 }
 
@@ -297,96 +298,76 @@ values <- function(model, nodes){
 #' cModel[['x']] <- rnorm(100)
 #' 
 #' cCopy() ## execute the copy with the compiled function
-nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
-
-    isFromModel = NA
-    isToModel = NA
-    if(missing(nodes) ) 
-        nodes = allNodeNames(from)
+nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
+    if(is.null(nodes) )
+        nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
         accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
-        rowFrom = NA
-        isFromModel = TRUE
     }
-    else if(inherits(from, "modelValuesBaseClass"))
-        {
+    else
+        if(inherits(from, "modelValuesBaseClass")) {
             accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
             if(is.na(row))
                 stop("Error: need to supply 'row' for a modelValues copy")
-            rowFrom = row
-            isFromModel = FALSE
+            accessFrom$setRow(row)
         }
+        else stop('argument "from" in nimCopy is neither a model nor modelValues')
+
     if( inherits(to, "modelBaseClass") ){
-        if(is.na(nodesTo[[1]]) ) 
+        if(is.null(nodesTo) ) 
             accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
         else
             accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
-        rowTo = NA
-        isToModel = TRUE
     }
-    else if(inherits(to, "modelValuesBaseClass"))
-        {
-            if(is.na(nodesTo[[1]]) ) 
+    else
+        if(inherits(to, "modelValuesBaseClass")) {
+            if(is.null(nodesTo) ) 
                 accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
             else
                 accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
             if(is.na(rowTo))
                 rowTo = row
-            isToModel = FALSE
+            accessTo$setRow(rowTo)
         }
-    if(is.na(isFromModel))
-        stop('argument "from" in nimCopy is neither a model nor modelValues')
-    if(is.na(isToModel))
-        stop('argument "to" in nimCopy is neither a model nor modelValues')
-
-    
-    lengthTo = accessTo$length
-    lengthFrom = accessFrom$length
-    if(lengthTo != lengthFrom)
-        stop('lengths not equal in nimCopy') 
+        else stop('argument "to" in nimCopy is neither a model nor modelValues')
+ 
+    lengthTo <- length(accessTo$code)
+    if(length(accessFrom$code) != lengthTo)
+        stop('unequal number of entries in nimCopy') 
     if(lengthTo > 0){
         for(i in 1:lengthTo){
-            if(isFromModel)
-                valueFrom = accessFrom$getSingleValue_fromGID(i)
-            else
-                valueFrom = accessFrom$getSingleValue_fromGID(i, rowFrom)
-            
-            if(isToModel)
-                accessTo$setSingleValue_fromGID(valueFrom, i)
-            else
-                accessTo$setSingleValue_fromGID(valueFrom, i, rowTo)
+            accessTo$setValues( i, accessFrom$getValues(i) )
         }
     }
 }
 
-
-allNodeNames <- function(object, logProb = FALSE){
-	if(inherits(object, 'modelValuesBaseClass') ) {	
-		if(!is.null(object$modelDef))
-			all.Names <- ls(object$modelDef$nodeInfo)
-		else
-			all.Names = object$varNames
-		if(logProb == TRUE)
-				return(all.Names)
-		for(i in 1:length(all.Names) ) {
-			if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-				all.Names[i] = NA		
-		}
-		all.Names = all.Names[!is.na(all.Names)]
-		return(all.Names)	
-		}
-	if(inherits(object, 'modelBaseClass') ) {
-		all.Names <- object$getNodeNames()	
-		if(logProb == TRUE)
-				return(all.Names)
-		for(i in 1:length(all.Names) ) {
-			if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-				all.Names[i] = NA		
-		}
-		all.Names = all.Names[!is.na(all.Names)]
-		return(all.Names)	
-	}
-}
+## allNodeNames <- function(object, logProb = FALSE){
+##     if(inherits(object, 'modelValuesBaseClass') ) {	
+##         if(!is.null(object$modelDef))
+##             all.Names <- ls(object$modelDef$nodeInfo)
+##         else
+##             all.Names = object$varNames
+##         if(logProb == TRUE)
+##             return(all.Names)
+##         for(i in 1:length(all.Names) ) {
+##             if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
+##                 all.Names[i] = NA		
+##         }
+##         all.Names = all.Names[!is.na(all.Names)]
+##         return(all.Names)	
+##     }
+##     if(inherits(object, 'modelBaseClass') ) {
+##         all.Names <- object$getNodeNames()	
+##         if(logProb == TRUE)
+##             return(all.Names)
+##         for(i in 1:length(all.Names) ) {
+##             if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
+##                 all.Names[i] = NA		
+##         }
+##         all.Names = all.Names[!is.na(all.Names)]
+##         return(all.Names)	
+##     }
+## }
 
 #' Access or set a member variable of a nimbleFunction created during \code{setup}
 #'
