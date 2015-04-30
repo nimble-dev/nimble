@@ -979,14 +979,20 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
             rm(list = valueVarNames[i], envir = constantsEnvCopy)
         }
     }
+    ## Turn lists into vectors when all elements are scalars.  When not, ensure all list elements are numeric, not integer, to avoid compiler mix-ups.
     for(i in seq_along(allReplacementNameExprs)) {
         if(useReplacement[i]) {
             unlistScalarCode <- substitute( {
                 FOO_allScalar <- all(unlist(lapply(VARNAME, function(x) length(x) == 1)))
-                if(FOO_allScalar) VARNAME <- unlist(VARNAME)
-            }, list(VARNAME = allReplacementNameExprs[[i]]))
+                if(FOO_allScalar) VARNAME <- unlist(VARNAME) ## Ok to have integers here
+                else {
+                    for(FOO_i in seq_along(VARNAME)) storage.mode(VARNAME[[FOO_i]]) <- 'double' ## but not here
+                    rm(FOO_i)
+                }
+                rm(FOO_allScalar)
+            }, list(VARNAME = allReplacementNameExprs[[i]]) )
             eval(unlistScalarCode, envir = constantsEnvCopy)
-            rm(list = 'FOO_allScalar', envir = constantsEnvCopy)
+            ##rm(list = 'FOO_allScalar', envir = constantsEnvCopy)
         }
     }
 
@@ -1192,6 +1198,21 @@ makeVertexNamesFromIndexArray <- function(indArr, minInd = 1, varName) {
     list(indices = uniqueInds, names = newNames)
 }
 
+splitVertexIDsToElementIDs <- function(var2vertexID, nextVertexID) {
+    vertexIDtable <- tabulate(var2vertexID) ## this fills in 0s for all elements
+    boolMultiple <- vertexIDtable > 1
+    newElementID_2_vertexID <- numeric()
+    if(any(boolMultiple)) {
+        IDsToFix <- which(boolMultiple)
+        for(ID in IDsToFix) {
+            newElementIDs <- nextVertexID-1 + 1:vertexIDtable[ID]
+            var2vertexID[var2vertexID == ID] <- newElementIDs
+            newElementID_2_vertexID <- c(newElementID_2_vertexID, rep(ID, vertexIDtable[ID]))
+            nextVertexID <- nextVertexID + vertexIDtable[ID]
+        }
+    }
+    list(var2vertexID = var2vertexID, nextVertexID = nextVertexID, newElementID_2_vertexID = newElementID_2_vertexID)
+}
 
 splitCompletionForOrigNodes <- function(var2nodeOrigID, var2vertexID, maxOrigNodeID, nextVertexID) {
     ## could potentially be combined with collecting edges from inferred vertices, but let's wait
@@ -1339,6 +1360,14 @@ collectInferredVertexEdges <- function(var2nodeID, var2vertexID) {
 }
 
 collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExprs = NULL, parentExprReplaced = NULL, parentIndexNamePieces, replacementNameExprs, debug = FALSE) {
+    ## This collects edges from extracted information of BUGS declarations
+    ## var2vertexID is the shape of a rhsVar (right hand side variable, e.g. "mu") giving vertexIDs
+    ## targetIDs are the IDs of all LHS nodes (i.e. from unrolling any for loops)
+    ## unrolledBUGSindices is the unrolled index matrix
+    ## indexExprs gives the expressions of the for-loop indices, e.g. i and j for a pair of nested loops using those
+    ## parentExprReplaced gives the list of parent node expressions after replacements, e.g. "mu[i_plus_1, 2]" if the original code had "mu[i+1,2]" on the RHS
+    ## parentIndexNamePieces gives a corresponding list of the index expressions of each parentExprReplaced, e.g. i_plus_i, 2.
+    ## replacementNameExpressions has the names of things that are replacements, e.g. i_plus_1
     if(debug) browser()
     anyContext <- ncol(unrolledBUGSindices) > 0 
     if(length(anyContext)==0) browser()
@@ -1395,7 +1424,7 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
        
         for(iRow in iRowRange) {
             currentVertexIDblock <- eval(accessExpr)
-            uniqueCurrentVertexIDs <- unique(currentVertexIDblock)
+            uniqueCurrentVertexIDs <- unique(as.numeric(currentVertexIDblock))
             numNewEdges <- length(uniqueCurrentVertexIDs)
             edgesFrom[iNextNewEdge - 1 + 1:numNewEdges] <- uniqueCurrentVertexIDs
             edgesTo[iNextNewEdge - 1 + 1:numNewEdges] <- targetIDs[iRow]
@@ -1410,16 +1439,19 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
 
 
 modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
+## This is a (ridiculously long) function that works through the BUGS lines (declInfo elements) and varInfo to set up the graph and maps
     if(debug) browser()
     ## 1. initialize origMaps:
-    vars_2_nodeOrigID <- new.env()     ## IDs for node function labels, e.g. for x[1:3], x[4]: NA, NA, NA, 2
-    vars_2_vertexOrigID <- new.env()  ## IDs for node labels, e.g. x[1:3]: 1, 1, 1, 2
-    vars2LogProbName <- new.env()
-    vars2LogProbID <- new.env()
-    
+    ##     "orig" in the label refers to these being the IDs that will be initially assigned.
+    ##            Later the IDs will be changed when the graph is topologically sorted
+    vars_2_nodeOrigID <- new.env()     ## IDs for node function labels, e.g. for x[1:4] might be (NA, NA, NA, 2) if x[1:3] is RHS-only and x[4] is LHS
+    vars_2_vertexOrigID <- new.env()   ## IDs for node labels, e.g. x[1:4] might be: 1, 1, 1, 2
+    vars2LogProbName <- new.env()      ## e.g. "x" might be "logProb_x" if it has any LHS
+    vars2LogProbID <- new.env()        ## yiels LogProbIDs, which are not sorted in any way and we might move away from.
+
+    ## 1b. set up variables in all the environments
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
-##        logProbVarName <- makeLogProbName(varName)
         
         if(varInfo[[iV]]$nDim > 0) {
             vars_2_nodeOrigID[[varName]] <- array(as.numeric(NA), dim = varInfo[[iV]]$maxs)
@@ -1434,17 +1466,17 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
 
     ## 2. collect names and do eval to create variables in vars_2_nodeOrigID
-    next_origID <- 1
-    allNodeNames <- character()
-    types <- character()
-    ## LHS declarations create nodes:
+    next_origID <- 1              ## this is a counter for the next origID to be assigned
+    allNodeNames <- character()   ## vector of all node names
+    types <- character()          ## parallel vector of types such as "stoch", "determ", "RHSonly", and "LHSinferred"
+    ## 2b. Use LHS declarations create nodes:
     for(iDI in seq_along(declInfo)) {
 
         BUGSdecl <- declInfo[[iDI]]
         if(BUGSdecl$numUnrolledNodes == 0) next
         lhsVar <- BUGSdecl$targetVarName
         nDim <- varInfo[[lhsVar]]$nDim
-        if(nDim > 0) {
+        if(nDim > 0) {  ## pieces is a list of index text to construct node names, e.g. list("1", c("1:2", "1:3", "1:4"), c("3", "4", "5"))
             pieces <- vector('list', nDim)
             for(i in 1:nDim) {
                 indexNamePieces <- BUGSdecl$targetIndexNamePieces[[i]]
@@ -1461,15 +1493,17 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 }
             }
             pieces[['sep']] <- ', '
-            BUGSdecl$nodeFunctionNames <- paste0(lhsVar, '[', do.call('paste', pieces), ']') 
+            BUGSdecl$nodeFunctionNames <- paste0(lhsVar, '[', do.call('paste', pieces), ']')  ## create the names.  These are LHS so the are nodeFunctions
             allNodeNames <- c(allNodeNames, BUGSdecl$nodeFunctionNames)
-            types <- c(types, rep(BUGSdecl$type, length(BUGSdecl$nodeFunctionNames) ) )
-            BUGSdecl$origIDs <- next_origID -1 + (1:length(BUGSdecl$nodeFunctionNames))
+            types <- c(types, rep(BUGSdecl$type, length(BUGSdecl$nodeFunctionNames) ) )       ## append vector of "stoch" or "determ" to types vector
+            BUGSdecl$origIDs <- next_origID -1 + (1:length(BUGSdecl$nodeFunctionNames))       ## record the original IDs used here
             next_origID <- next_origID + length(BUGSdecl$nodeFunctionNames)
-            
-            if(is.environment(BUGSdecl$replacementsEnv)) {
+
+            ## Fill in the vars_2_nodeOrigID elements
+            if(is.environment(BUGSdecl$replacementsEnv)) { ## this means there was some replacement involved in this BUGS line
                 BUGSdecl$replacementsEnv[['origIDs']] <- BUGSdecl$origIDs
                 IDassignCode <- insertSubIndexExpr(BUGSdecl$targetExprReplaced, quote(iAns))
+                ## make a line of code to evaluate in the replacementsEnv
                 forCode <- substitute( for(iAns in 1:OUTPUTSIZE) ASSIGNCODE <- origIDs[iAns], list(OUTPUTSIZE = BUGSdecl$outputSize, ASSIGNCODE = IDassignCode) )
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars_2_nodeOrigID[[lhsVar]]
                 eval(forCode, envir = BUGSdecl$replacementsEnv)
@@ -1480,7 +1514,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 eval(substitute(A <- B, list(A = BUGSdecl$targetExprReplaced, B = BUGSdecl$origIDs)), envir = vars_2_nodeOrigID)
             }
         } else { ## nDim == 0
-            BUGSdecl$nodeFunctionNames <- lhsVar
+            BUGSdecl$nodeFunctionNames <- lhsVar ## name simply for the variable
             allNodeNames <- c(allNodeNames, BUGSdecl$nodeFunctionNames)
             types <- c(types, BUGSdecl$type)
             BUGSdecl$origIDs <- next_origID
@@ -1495,6 +1529,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     allNewVertexIDs <- integer(0)
 
     ## 2b. Collect logProbNames and do eval to create variables in vars2LogProbName and vars2LogProbID
+    ## This section is very similar to above, except that index ranges are collapsed to their beginning.
+    ## E.g. a LHS "x[1:5]" must be a multivariate node, but it only needs "logProb[1]", not "logProb[1:5]"
     if(debug) browser()
     nextLogProbID <- 1
     logProbNames <- character()
@@ -1555,7 +1591,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
     
     ## 3. determine total model size from all objects
-    ##    copy vars_2_nodeOrigID into vars_2_vertexOrigID
+    ##    and initialize vars_2_vertexOrigID from vars_2_nodeOrigID
+    ## A "vertex" is any vertex that will go in the graph.  This can include nodeFunctions, fractured nodeFunctions (e.g. if x[1:2] is declared but also used as x[1] and x[2], and RHSonly parts
     totModelSize <- 0
     for(iV in seq_along(varInfo)) {
         totModelSize <- totModelSize + if(varInfo[[iV]]$nDim == 0) 1 else prod(varInfo[[iV]]$maxs)
@@ -1564,15 +1601,20 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
 
     ## 4. Use RHS pieces to split vertices in vars_2_vertexOrigID
-    nextVertexID <- maxOrigNodeID+1
-    for(iDI in seq_along(declInfo)) {
+    ##    E.g. say x[1:2] ~ dmnorm(...)
+    ##             for(i in 1:2) z[i] <- x[i]
+    ##    From above, there is a nodeOrigID for "x[1:2]"
+    ##    But now, based on the RHS usage of x[1] and x[2], there needs to be a separate vertexID for each of them
+    ##    
+    nextVertexID <- maxOrigNodeID+1 ## origVertexIDs start after origNodeIDs.  These will be sorted later.
+    for(iDI in seq_along(declInfo)) {  ## Iterate over BUGS declarations (lines)
         BUGSdecl <- declInfo[[iDI]]
         if(BUGSdecl$numUnrolledNodes == 0) next
         rhsVars <- BUGSdecl$rhsVars
-        for(iV in seq_along(rhsVars)) {
+        for(iV in seq_along(rhsVars)) {  ## Iterate over the RHS variables in a BUGS line
             rhsVar <- rhsVars[iV]
             nDim <- varInfo[[rhsVar]]$nDim
-            if(nDim > 0) {
+            if(nDim > 0) { ## Make the split.  This function is complicated.
                 splitAns <- splitVertices(vars_2_vertexOrigID[[rhsVar]], BUGSdecl$unrolledIndicesMatrix,
                                           contexts[[BUGSdecl$contextID]]$indexVarExprs, contexts[[BUGSdecl$contextID]]$indexVarNames,
                                           BUGSdecl$symbolicParentNodes[[iV]], BUGSdecl$symbolicParentNodesReplaced[[iV]],
@@ -1580,9 +1622,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 
                 vars_2_vertexOrigID[[rhsVar]] <- splitAns[[1]]
                 nextVertexID <- splitAns[[2]]
-            } else {
-                if(is.na(vars_2_vertexOrigID[[rhsVar]])) {
-                    vars_2_vertexOrigID[[rhsVar]] <- nextVertexID
+            } else { ## The RHS var is scalar
+                if(is.na(vars_2_vertexOrigID[[rhsVar]])) { ## And it wasn't on the LHS, so it still has NA
+                    vars_2_vertexOrigID[[rhsVar]] <- nextVertexID  ## so assign a vertexOrigID
                     nextVertexID <- nextVertexID + 1
                 }
             }
@@ -1590,6 +1632,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
 
     ## 5. In cases where a vertex was split leaving an incomplete part of an original node, complete the split by creating an inferred vertex for the remaining part
+    ##    E.g. consider x[1:4] ~ dmnorm(...)
+    ##                  for(i in 1:2) z[i] ~ x[i]
+    ##    So x[1] and x[2] were split by the above section, but x[3:4] still has the same origID as x[1:4].
+    ##    In this step a piece like x[3:4] is identified and gets a new unique vertexID
     if(debug) browser()
     for(iV in seq_along(varInfo)) {
         if(varInfo[[iV]]$nDim > 0) {
@@ -1604,18 +1650,15 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     if(debug) browser()
 
     ## 6. Make vertex names
-## Need to handle split original nodes before names
-##    numVertices <- vars_2_vertexOrigID[['nextVertexID']]-1
+    ##    E.g. from the results of the previous step, we may now need vertex names "x[1]", "x[2]" and "x[3:4]"
+    ##    Those are constructed here from the vars_2_vertexOrigID elements
     numVertices <- nextVertexID - 1
-  ##  vars_2_vertexOrigID[['vertexID_2_nodeID']] <- vars_2_vertexOrigID[['vertexID_2_nodeID']][ 1:numVertices]
     vertexID_2_nodeID <- c(1:maxOrigNodeID, integer(numVertices - maxOrigNodeID) )
-    ## for nodeNamesRHSonly and types, we will collect all RHS nodes now as "RHSonly" and later we'll use the vectorID_2_nodeID to relabel LHSinferred
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
         
         if(varInfo[[iV]]$nDim > 0) {
             newVertexNames <- makeVertexNamesFromIndexArray2(vars_2_vertexOrigID[[varName]], maxOrigNodeID + 1, varName = varName)
-            ##   test <- makeVertexNamesFromIndexArray2(vars_2_vertexOrigID[[varName]], maxOrigNodeID + 1, varName = varName)
             allNewVertexNames <- c(allNewVertexNames, newVertexNames$names)
             allNewVertexIDs <- c(allNewVertexIDs, newVertexNames$indices)
         } else {
@@ -1627,43 +1670,53 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
     allVertexNames <- c(allNodeNames, character(length(allNewVertexNames)))
     allVertexNames[allNewVertexIDs] <- allNewVertexNames ## indexed by vertexID
-    ## ## there can be skips, so we need a map from origGraphIDs to origVertexIDs
-    if(debug) browser()
 
     ## 7. Re-order vertexIDs to make them contiguous
+    ##    The above steps can result in gaps in the ID sequences, so here we re-order to plug those gaps
+    ##    Sorting comes later
+    ##
+    ## Make a vector to map contiguous IDs to the original vertex IDs
+    ##   The originalNodeIDs, which are at the beginning of the vertexIDs, are already guaranteed to be continuous
+    if(debug) browser()
     contigID_2_origVertexID <- c(1:maxOrigNodeID, sort(allNewVertexIDs))
     numContigVertices <- length(contigID_2_origVertexID)
+    ## Now make a vector to map the other way
     origVertexID_2_contigID <- numeric(nextVertexID-1)
     origVertexID_2_contigID[contigID_2_origVertexID] <- 1:length(contigID_2_origVertexID)
-
-     if(debug) browser()
+    ## Re-order the vertexNames accordingly (gaps would have "" entries, I think)
     allVertexNames <- allVertexNames[contigID_2_origVertexID]
 
+
+    ## 7b. check for existence of non-orig nodes and add them to types vector
+    ## for now these are all labeled as "RHSonly" and later we'll use the vectorID_2_nodeID to relabel some as "LHSinferred"
+    if(debug) browser()
     if(length(allVertexNames) > maxOrigNodeID) {
         nodeNamesRHSonly <- allVertexNames[ (maxOrigNodeID + 1) : length(allVertexNames) ]
         types <- c(types, rep('RHSonly', length(allVertexNames) - maxOrigNodeID))
     } else
         nodeNamesRHSonly <- character()
 
+    ## 7c. Re-label the IDs in the vars_2_vertexOrigID with the contiguous version
     for(iV in seq_along(varInfo)) {
         temp <- vars_2_vertexOrigID[[varInfo[[iV]]$varName]]
         if(!all(is.na(temp))) vars_2_vertexOrigID[[varInfo[[iV]]$varName]][] <- origVertexID_2_contigID[temp] 
     }
 
-
     ## 8. Collect edges from RHS vars to LHS nodes
     if(debug) browser()
-    edgesFrom <- numeric(0)
+    edgesFrom <- numeric(0)          ## Set up aligned vectors of edgeFrom, edgesTo, and the parentExprID of an edge, i.e. which part of a pulled apart expression is an edge from.  E.g x ~ dnorm(a, b) would make an edgeFrom entry with the ID of a, edgeTo with ID of x, and parentExprID would be 1 since the a would be the first piece of the RHS as it is pulled apart.  The next edge would from from b, to x, with parentExprID of 2.
     edgesTo <- numeric(0)
     edgesParentExprID <- numeric(0)
-    for(iDI in seq_along(declInfo)) {
+    for(iDI in seq_along(declInfo)) {    ## Iterate over BUGS lines
         BUGSdecl <- declInfo[[iDI]]
         if(BUGSdecl$numUnrolledNodes == 0) next
         rhsVars <- BUGSdecl$rhsVars
-        for(iV in seq_along(rhsVars)) {
+        for(iV in seq_along(rhsVars)) {  ## Iterate over RHS vars
             
             rhsVar <- rhsVars[iV]
-            nDim <- varInfo[[rhsVar]]$nDim
+            nDim <- varInfo[[rhsVar]]$nDim  ## Collect edges (noting in a case like x ~ dnorm(a, a) there could be 2 edges from a to x)
+            ## Note also that all edges from unrolling any for loops are collected at once
+            ## e.g. for(i in 1:10) x[i] ~ dnorm(mu, sigma) will collect all 10 edges from mu to x[1]...x[10] at once
             newEdges <- collectEdges(vars_2_vertexOrigID[[rhsVar]], BUGSdecl$unrolledIndicesMatrix, BUGSdecl$origIDs, contexts[[BUGSdecl$contextID]]$indexVarExprs,
                                       BUGSdecl$symbolicParentNodesReplaced[[iV]],
                                       BUGSdecl$parentIndexNamePieces[[iV]], BUGSdecl$replacementNameExprs)
@@ -1675,6 +1728,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     }
 
     ## 9. Collect edges from original nodes to inferred vertices
+    ##    e.g. When x[1:2] has been fractured into x[1] and x[2], there are edges from x[1:2] to x[1] and x[2]
+    ##         Note that in getDependencies("x[1]"), the result will include "x[1:2]" as the nodeFunction of "x[1]"
     if(debug) browser()
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
@@ -1684,31 +1739,31 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         edgesParentExprID <- c(edgesParentExprID, rep(NA, length(newEdges[[1]])))
         vertexID_2_nodeID[newEdges[[2]]] <- newEdges[[1]]
     }
-    
+
+    ## 9b. truncate vertexID_2_nodeID and relabel some vertices as LHSinferred
    if(debug) browser()
-    
     vertexID_2_nodeID <- vertexID_2_nodeID[1:numContigVertices]
-    types[ types == 'RHSonly' & vertexID_2_nodeID != 0] <- 'LHSinferred' ## The types == 'RHSonly' could be obtained more easily, since it will be a single set of FALSES followed by a single set of TRUES
+    types[ types == 'RHSonly' & vertexID_2_nodeID != 0] <- 'LHSinferred' ## The types == 'RHSonly' could be obtained more easily, since it will be a single set of FALSES followed by a single set of TRUES, but anyway, this works
     
-    ## 10. Build the graph
+    ## 10. Build the graph for topological sorting
     if(debug) browser()
     require(igraph)
     graph <<- graph.empty()
-    graph <<- add.vertices(graph, length(allVertexNames), name = allVertexNames)
-    allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
-    graph <<- add.edges(graph, allEdges)
-    if(debug) browser()
-
+    graph <<- add.vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
+    allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo))) 
+    graph <<- add.edges(graph, allEdges)                                         ## add all edges at once
 
     ## 11. Topologically sort and re-index all objects with vertex IDs
+    if(debug) browser()
     newGraphID_2_oldGraphID <- topological.sort(graph, mode = 'out')
     oldGraphID_2_newGraphID <- sort(newGraphID_2_oldGraphID, index = TRUE)$ix
-    graph <<- permute.vertices(graph, oldGraphID_2_newGraphID)  #* ## topological sort
+    graph <<- permute.vertices(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
+
+    ## 11b. make new maps that use the sorted IDS
     if(debug) browser()
-    ## permute all the maps
-    vars_2_nodeID <- new.env()
-    vars_2_vertexID <- new.env()
-    for(iV in seq_along(varInfo)) {
+    vars_2_nodeID <- new.env()       ## this will become maps$vars2graphID_functions
+    vars_2_vertexID <- new.env()     ## this will become maps$vars2graphID_values
+    for(iV in seq_along(varInfo)) {  ## for each variable, populate vars_2_nodeID and vars_2_vettexID
         temp <- vars_2_nodeOrigID[[varInfo[[iV]]$varName]]
         if(!all(is.na(temp))) vars_2_nodeID[[varInfo[[iV]]$varName]] <- oldGraphID_2_newGraphID[temp] else vars_2_nodeID[[varInfo[[iV]]$varName]] <- temp
         temp <- vars_2_vertexOrigID[[varInfo[[iV]]$varName]]
@@ -1719,7 +1774,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(varInfo[[iV]]$nDim > 0) dim(vars_2_nodeID[[varInfo[[iV]]$varName]]) <- dim(vars_2_vertexID[[varInfo[[iV]]$varName]]) <- dim(vars_2_vertexOrigID[[varInfo[[iV]]$varName]])        
     }
 
-    ## 11b. re-index the graphIDs in the BUGSdecl objects and record graphID_2_declID
+    ## 11c. re-index the graphIDs in the BUGSdecl objects and record graphID_2_declID (mapping from a graphID to its BUGS declaration ID, corresponding to declInfo order)
     graphID_2_declID <- numeric(numVertices)
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
@@ -1728,8 +1783,81 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         graphID_2_declID[ BUGSdecl$graphIDs ] <- iDI
     }
 
+    ## 11d. set up the elementIDs
+    ## These provide an ID for each scalar, but any new IDs created here are not in the graph
+    if(debug) browser()
+    vars_2_elementID <- new.env()
+    maxVertexID <- numContigVertices
+    nextElementID <- numContigVertices+1
+    origElementID_2_vertexID <- 1:maxVertexID
+    elementNames <- character(totModelSize)
+    checkingTotModelSize <- 0
+    for(iV in seq_along(varInfo)) {
+        vN <- varInfo[[iV]]$varName
+        newSplit <- splitVertexIDsToElementIDs(vars_2_vertexID[[vN]], nextElementID)
+        vars_2_elementID[[vN]] <- newSplit[[1]]
+        nextElementID <- newSplit[[2]]
+        origElementID_2_vertexID <-  c(origElementID_2_vertexID, newSplit[[3]])
+        origElementID_2_vertexID[unique(newSplit[[3]])] <- 0 ## remove IDs that were replaced
+    }
+    ##  make the element IDs contiguous and match the sorting
+    boolStillInUse <- origElementID_2_vertexID != 0
+    sortOrder <- order(origElementID_2_vertexID[boolStillInUse])
+    sortOrder2 <- order(sortOrder)
+    origElemID_2_contigSortedElementID <- numeric(length(origElementID_2_vertexID))
+    origElemID_2_contigSortedElementID[boolStillInUse] <- sortOrder2
+
+    for(iV in seq_along(varInfo)) {
+        vN <- varInfo[[iV]]$varName
+        vars_2_elementID[[vN]] <- origElemID_2_contigSortedElementID[ vars_2_elementID[[vN]] ]
+        if(varInfo[[iV]]$nDim > 0)  dim(vars_2_elementID[[vN]]) <- dim(vars_2_vertexID[[vN]]) 
+    }
+    elementID_2_vertexID <- 1:length(sortOrder2)
+    elementID_2_vertexID[sortOrder2] <- origElementID_2_vertexID[boolStillInUse]   
+    
+    for(iV in seq_along(varInfo)) {
+        ## construct element names
+        vN <- varInfo[[iV]]$varName
+        dims <- dim(vars_2_elementID[[vN]])
+        if(is.null(dims)) dims <- length(vars_2_elementID[[vN]])
+        if(length(dims)==1 & dims[1] == 1) {
+            newElementNames <- vN
+            checkingTotModelSize <- checkingTotModelSize + 1
+            if(!is.na(vars_2_elementID[[vN]]))
+            elementNames[ vars_2_elementID[[vN]] ] <- newElementNames
+        } else {
+            fullyIndexedText <- paste0(vN, '[', paste0(1, ':', dims, collapse = ',') , ']')
+            newElementNames <- nl_expandNodeIndex(fullyIndexedText)
+            checkingTotModelSize <- checkingTotModelSize + length(newElementNames)
+            boolNotNA <- as.logical(!is.na(vars_2_elementID[[vN]]))
+            elementNames[ as.numeric(vars_2_elementID[[vN]])[boolNotNA] ] <- newElementNames[boolNotNA]
+        }
+
+        
+    }
+    if(checkingTotModelSize != totModelSize) {
+        cat("Warning on totModelSize\n")
+        browser()
+    }
+
+    ## set up the vars2graphID_functions_and_RHSonly 
+    ## This will be the same as vars_2_nodeID but with NAs filled in from vars_2_vertexID
+    if(debug) browser()
+    vars_2_nodeID_noNAs <- new.env()
+    for(iV in seq_along(varInfo)) {
+        vN <- varInfo[[iV]]$varName
+        vars_2_nodeID_noNAs[[vN]] <- vars_2_nodeID[[vN]]
+        boolNA <- is.na(vars_2_nodeID_noNAs[[vN]])
+        if(any(boolNA))
+            vars_2_nodeID_noNAs[[vN]][boolNA] <-  vars_2_vertexID[[vN]][boolNA] 
+    }
+    
     ## 12. Set up things needed for maps.
     maps <<- mapsClass$new()
+    maps$elementID_2_vertexID <<- elementID_2_vertexID
+    maps$vars2ID_elements <<- vars_2_elementID
+    maps$elementNames <<- elementNames
+    maps$vars2GraphID_functions_and_RHSonly <<- vars_2_nodeID_noNAs
     maps$graphID_2_declID <<- graphID_2_declID
     maps$graphID_2_nodeName <<- allVertexNames[newGraphID_2_oldGraphID]
     maps$types <<- types[newGraphID_2_oldGraphID]
@@ -2146,10 +2274,14 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
 	if(length(nodeName) == 0)
 		return(NULL)	
 	if(nodeFunctionID)
-		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+            ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+            ## old system had IDs for RHSonly things here.  This puts that back in for now.
+            output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
 	else
-		output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
-	return(output[!is.na(output)])
+            ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
+            ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
+            output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
+            return(output[!is.na(output)])
 })
 
 ## next two functions work for properly formed nodeNames.
@@ -2192,107 +2324,107 @@ parseEvalCharacter <- function(x, env){
 
 
 #The class we use keep track of graphIDs
-nodeVector <- setRefClass(Class = "nodeVector",
-						fields = 
-							list(origNodeNames 				=	'ANY',
-								expandedNodeFunctionNames 	=	'ANY',
-								expandedNodeValuesNames 	=	'ANY',
-								origGraphIDs_values 		=	'ANY',
-								origGraphIDs_functions		=	'ANY',
-								sortedGraphIDs_values 		=	'ANY',
-								sortedGraphIDs_functions	=	'ANY',
-								sortOrder_values 			= 	'ANY',
-								sortOrder_functions 		= 	'ANY',
-								model 						=	'ANY'),
-						methods = 	#These methods need to check if objects are initiated. If not, it needs
-									#to initiate. If so, it just returns object
-							list(getOrigNames = function(){ 
-									if(!inherits(origNodeNames, 'uninitializedField') ) 
-										origNodeNames 
-									else stop('origNodeNames never initialized!')
-									},
-								getExpandedFunctionNames = function(){ 
-									if(!inherits(expandedNodeFunctionNames, 'uninitializedField') ) 
-										expandedNodeFunctionNames 
-									else {
-										expandedNodeFunctionNames <<- unique(model$modelDef$maps$graphID_2_nodeFunctionName[origGraphIDs_functions])
-										expandedNodeFunctionNames <<- expandedNodeFunctionNames[expandedNodeFunctionNames != 'DOES_NOT_EXIST']
-										expandedNodeFunctionNames
-										}
-									},
-								getExpandedValuesNames = function(){ 
-									if(!inherits(expandedNodeValuesNames, 'uninitializedField') ) 
-										expandedNodeValuesNames 
-									else {
-										expandedNodeValuesNames <<- unique(model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values])
-										expandedNodeFunctionNames <<- expandedNodeFunctionNames[expandedNodeFunctionNames != 'DOES_NOT_EXIST']
-										expandedNodeValuesNames
-										}
-									},
-								getOrigIDs_values = function() { 
-									if(!inherits(origGraphIDs_values, 'uninitializedField') ) 
-										origGraphIDs_values 
-									else stop('origGraphIDs_values never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
-									},
-								getOrigIDs_functions = function() { 
-									if(!inherits(origGraphIDs_functions, 'uninitializedField') ) 
-										origGraphIDs_functions 
-									else stop('origGraphIDs_functions never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
-									},
-								getSortedIDs_values = function() { 
-									if(!inherits(sortedGraphIDs_values, 'uninitializedField') ) 
-										sortedGraphIDs_values 
-									else{ 
-										if(inherits(sortOrder_values, 'uninitializedField') ) 
-											sortOrder_values <<- order(origGraphIDs_values)
- 										sortedGraphIDs_values <<- origGraphIDs_values[sortOrder_values]
-										sortedGraphIDs_values
-									}
-								},
-								getSortedIDs_functions = function() { 
-									if(!inherits(sortedGraphIDs_functions, 'uninitializedField') ) 
-										sortedGraphIDs_functions 
-									else{
-										if(inherits(sortOrder_functions, 'uninitializedField') ) 
-											sortOrder_functions <<- order(origGraphIDs_functions)
-										sortedGraphIDs_functions <<- origGraphIDs_functions[sortOrder_functions]
-										sortedGraphIDs_functions
-									}
-								},
-								getSortOrder_values = function() { 
-									if(!inherits(sortOrder_values, 'uninitializedField') ) 
-										sortOrder_values 
-									else{
-										sortOrder_values <<- order(origGraphIDs_values)
-										sortOrder_values	
-									}
-								},	
-								getSortOrder_functions = function() { 
-									if(!inherits(sortOrder_functions, 'uninitializedField') ) 
-										sortOrder_functions 
-									else {
-										sortOrder_functions <<- order(origGraphIDs_functions)
-										sortOrder_functions
-									}
-								},	
-								initialize = function(...){
-									callSuper(...)
-									if(inherits(model, 'uninitializedField'))	
-										stop('model missing when creating nodeVector')
-									if(inherits(origGraphIDs_values, 'uninitializedField') )	{
-										if(!inherits(origNodeNames, 'uninitializedField') ){
-											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
-											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
-										}
-										else{
-											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_functions]
-											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
-										}
-									}										
-									else if(inherits(origGraphIDs_functions, 'uninitializedField')	){
-											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values]
-											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
-										}
+## nodeVector <- setRefClass(Class = "nodeVector",
+## 						fields = 
+## 							list(origNodeNames 				=	'ANY',
+## 								expandedNodeFunctionNames 	=	'ANY',
+## 								expandedNodeValuesNames 	=	'ANY',
+## 								origGraphIDs_values 		=	'ANY',
+## 								origGraphIDs_functions		=	'ANY',
+## 								sortedGraphIDs_values 		=	'ANY',
+## 								sortedGraphIDs_functions	=	'ANY',
+## 								sortOrder_values 			= 	'ANY',
+## 								sortOrder_functions 		= 	'ANY',
+## 								model 						=	'ANY'),
+## 						methods = 	#These methods need to check if objects are initiated. If not, it needs
+## 									#to initiate. If so, it just returns object
+## 							list(getOrigNames = function(){ 
+## 									if(!inherits(origNodeNames, 'uninitializedField') ) 
+## 										origNodeNames 
+## 									else stop('origNodeNames never initialized!')
+## 									},
+## 								getExpandedFunctionNames = function(){ 
+## 									if(!inherits(expandedNodeFunctionNames, 'uninitializedField') ) 
+## 										expandedNodeFunctionNames 
+## 									else {
+## 										expandedNodeFunctionNames <<- unique(model$modelDef$maps$graphID_2_nodeFunctionName[origGraphIDs_functions])
+## 										expandedNodeFunctionNames <<- expandedNodeFunctionNames[expandedNodeFunctionNames != 'DOES_NOT_EXIST']
+## 										expandedNodeFunctionNames
+## 										}
+## 									},
+## 								getExpandedValuesNames = function(){ 
+## 									if(!inherits(expandedNodeValuesNames, 'uninitializedField') ) 
+## 										expandedNodeValuesNames 
+## 									else {
+## 										expandedNodeValuesNames <<- unique(model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values])
+## 										expandedNodeFunctionNames <<- expandedNodeFunctionNames[expandedNodeFunctionNames != 'DOES_NOT_EXIST']
+## 										expandedNodeValuesNames
+## 										}
+## 									},
+## 								getOrigIDs_values = function() { 
+## 									if(!inherits(origGraphIDs_values, 'uninitializedField') ) 
+## 										origGraphIDs_values 
+## 									else stop('origGraphIDs_values never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
+## 									},
+## 								getOrigIDs_functions = function() { 
+## 									if(!inherits(origGraphIDs_functions, 'uninitializedField') ) 
+## 										origGraphIDs_functions 
+## 									else stop('origGraphIDs_functions never initialized! (this indicates a bug in the nimble source code: should not be able to build a nodeVector without initializing OrigGraphIDs_values)')
+## 									},
+## 								getSortedIDs_values = function() { 
+## 									if(!inherits(sortedGraphIDs_values, 'uninitializedField') ) 
+## 										sortedGraphIDs_values 
+## 									else{ 
+## 										if(inherits(sortOrder_values, 'uninitializedField') ) 
+## 											sortOrder_values <<- order(origGraphIDs_values)
+##  										sortedGraphIDs_values <<- origGraphIDs_values[sortOrder_values]
+## 										sortedGraphIDs_values
+## 									}
+## 								},
+## 								getSortedIDs_functions = function() { 
+## 									if(!inherits(sortedGraphIDs_functions, 'uninitializedField') ) 
+## 										sortedGraphIDs_functions 
+## 									else{
+## 										if(inherits(sortOrder_functions, 'uninitializedField') ) 
+## 											sortOrder_functions <<- order(origGraphIDs_functions)
+## 										sortedGraphIDs_functions <<- origGraphIDs_functions[sortOrder_functions]
+## 										sortedGraphIDs_functions
+## 									}
+## 								},
+## 								getSortOrder_values = function() { 
+## 									if(!inherits(sortOrder_values, 'uninitializedField') ) 
+## 										sortOrder_values 
+## 									else{
+## 										sortOrder_values <<- order(origGraphIDs_values)
+## 										sortOrder_values	
+## 									}
+## 								},	
+## 								getSortOrder_functions = function() { 
+## 									if(!inherits(sortOrder_functions, 'uninitializedField') ) 
+## 										sortOrder_functions 
+## 									else {
+## 										sortOrder_functions <<- order(origGraphIDs_functions)
+## 										sortOrder_functions
+## 									}
+## 								},	
+## 								initialize = function(...){
+## 									callSuper(...)
+## 									if(inherits(model, 'uninitializedField'))	
+## 										stop('model missing when creating nodeVector')
+## 									if(inherits(origGraphIDs_values, 'uninitializedField') )	{
+## 										if(!inherits(origNodeNames, 'uninitializedField') ){
+## 											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
+## 											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
+## 										}
+## 										else{
+## 											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_functions]
+## 											origGraphIDs_values <<- model$modelDef$nodeName2GraphIDs(origNodeNames, FALSE)
+## 										}
+## 									}										
+## 									else if(inherits(origGraphIDs_functions, 'uninitializedField')	){
+## 											origNodeNames <<- model$modelDef$maps$graphID_2_nodeName[origGraphIDs_values]
+## 											origGraphIDs_functions <<- model$modelDef$nodeName2GraphIDs(origNodeNames, TRUE)
+## 										}
 
-								}))
+## 								}))
 
