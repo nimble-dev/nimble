@@ -979,14 +979,20 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
             rm(list = valueVarNames[i], envir = constantsEnvCopy)
         }
     }
+    ## Turn lists into vectors when all elements are scalars.  When not, ensure all list elements are numeric, not integer, to avoid compiler mix-ups.
     for(i in seq_along(allReplacementNameExprs)) {
         if(useReplacement[i]) {
             unlistScalarCode <- substitute( {
                 FOO_allScalar <- all(unlist(lapply(VARNAME, function(x) length(x) == 1)))
-                if(FOO_allScalar) VARNAME <- unlist(VARNAME)
-            }, list(VARNAME = allReplacementNameExprs[[i]]))
+                if(FOO_allScalar) VARNAME <- unlist(VARNAME) ## Ok to have integers here
+                else {
+                    for(FOO_i in seq_along(VARNAME)) storage.mode(VARNAME[[FOO_i]]) <- 'double' ## but not here
+                    rm(FOO_i)
+                }
+                rm(FOO_allScalar)
+            }, list(VARNAME = allReplacementNameExprs[[i]]) )
             eval(unlistScalarCode, envir = constantsEnvCopy)
-            rm(list = 'FOO_allScalar', envir = constantsEnvCopy)
+            ##rm(list = 'FOO_allScalar', envir = constantsEnvCopy)
         }
     }
 
