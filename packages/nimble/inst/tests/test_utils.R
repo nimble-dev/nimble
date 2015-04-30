@@ -86,8 +86,9 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # single multivar sampler: samplers(type = "RW_block", target = 'x')
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
-    if(is.character(example)) writeLines(paste0("Starting mcmc testing for ", example,":"))
-    
+    if(!missing(example)) {if(is.character(example)) writeLines(paste0("Starting mcmc testing for example ", example,":"))}
+    else if(!missing(model)) {if(is.character(model)) writeLines(paste0("Starting  mcmc testing for model ", model,":"))} else writeLines("Starting mcmc testing on unnamed case\n")
+        
   setSampler <- function(var, spec) {
       currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
     # remove already defined scalar samplers

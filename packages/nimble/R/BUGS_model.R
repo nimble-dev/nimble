@@ -368,7 +368,7 @@ Details: Returns a logical vector with the same length as the input vector.  Thi
                                       includeData = TRUE, dataOnly = FALSE,
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
-'
+                                      '
 Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
 
 Arguments:
@@ -397,8 +397,14 @@ returnScalar Componenets: Logical argument specifying whether multivariate nodes
 
 Details: The downward search for dependent nodes propagates through deterministic nodes, but by default will halt at the first level of stochastic nodes encountered.
 '
-                                      if(inherits(nodes, 'character'))
-                                          nodeIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
+
+                                      if(inherits(nodes, 'character')) {
+                                          elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
+                                          if(returnScalarComponents)
+                                              nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs])     ## turn into IDs in the graph
+                                          else
+                                              nodeIDs <- elementIDs
+                                      }
                                       else if(inherits(nodes, 'numeric'))
                                           nodeIDs <- nodes
                                       else if(inherits(nodes, 'nodeVector')){ 
@@ -408,8 +414,13 @@ Details: The downward search for dependent nodes propagates through deterministi
                                               nodeIDs <- nodes$getOrigIDs_values()
                                       }
                                       
-                                      if(inherits(omit, 'character'))
-                                          omitIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
+                                      if(inherits(omit, 'character')) {
+                                          elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
+                                          if(returnScalarComponents)
+                                              omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs])
+                                          else
+                                              omitIDs <- elementIDs
+                                      }
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
                                       else if(inherits(omit, 'nodeVector')){ 
@@ -428,6 +439,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
                                       
                                       if(returnType == 'nodeVector'){
+                                          print("nimble development message: somewhere is calling getDependencies with returnType = nodeVector")
                                           if(!returnScalarComponents)
                                               depNodes <- nodeVector(origGraphIDs_functions = depIDs, model = .self)
                                           else
@@ -438,11 +450,14 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(returnScalarComponents)
                                           depIDs = unique(depIDs)
                                       if(returnType == 'ids'){
+                                          if(returnScalarComponents) print("nimble development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
                                           return(depIDs)
                                       }		                       			 
-                                      if(returnType == 'names')
+                                      if(returnType == 'names') {
+                                          if(returnScalarComponents)
+                                              return(modelDef$maps$elementNames[depIDs])
                                           return(modelDef$maps$nodeNames[depIDs])
-                                      
+                                      }
                                       if(!(returnType %in% c('ids', 'nodeVector', 'names')))
                                           stop('instead getDependencies, imporper returnType chosen')
                                   },
