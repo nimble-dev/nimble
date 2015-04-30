@@ -33,9 +33,10 @@ distributionsInputList <- list(
                    types    = c('value = integer(0)', 'prob = double(1)'), 
                    discrete = TRUE),
     
-    ## construct used to enforce constraints - 0/1 random variable depending on if cond is TRUE
-    dconstraint = list(BUGSdist = 'dconstraint(cond)',
-                       discrete = TRUE),
+    dconstraint   = list(BUGSdist = 'dconstraint(cond)',
+                         discrete = TRUE,
+                         types = c('value = integer(0)', 'cond = integer(0)')),
+    # construct used to enforce constraints - 0/1 random variable depending on if cond is TRUE
 
     ## construct used to enforce censoring.
     ## takes values 0,1,...,len(c), depending on which interval t falls into

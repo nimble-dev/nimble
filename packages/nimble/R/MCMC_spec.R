@@ -133,6 +133,7 @@ multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If sp
 
 print: Boolean argument, specifying whether to print the ordered list of default samplers.
 '
+            
             samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
             model <<- model
             addMonitors( monitors,  print = FALSE)
