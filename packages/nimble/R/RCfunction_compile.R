@@ -24,7 +24,7 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               if(!is.null(f)) {
                                                   if(missing(funName)) {
                                                       sf <- substitute(f)
-                                                      name <<- Rname2CppName(nimDeparse(sf))
+                                                      name <<- Rname2CppName(deparse(sf))
                                                   } else {
                                                       name <<- funName
                                                   }

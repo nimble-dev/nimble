@@ -34,7 +34,7 @@ exprClass <- setRefClass('exprClass',
                              show = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
                                  ## optionally include size information
                                  sizeDisp <- if(showType) { 
-                                     paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else nimDeparse(x))), collapse = ', '), '))')
+                                     paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
                                  } else
                                      character()
 

@@ -132,13 +132,13 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
     if(code[[1]] == '~') {
         type <<- 'stoch'
         if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == getDistributionsInfo('namesVector')) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
-            stop(paste0('Improper syntax for stochastic declaration: ', nimDeparse(code)))
+            stop(paste0('Improper syntax for stochastic declaration: ', deparse(code, width.cutoff=500L)))
     } else if(code[[1]] == '<-') {
         type <<- 'determ'
         if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getDistributionsInfo('namesVector')))
-            stop(paste0('Improper syntax for determistic declaration: ', nimDeparse(code)))
+            stop(paste0('Improper syntax for determistic declaration: ', deparse(code, width.cutoff=500L)))
     } else {
-        stop(paste0('Improper syntax for declaration: ', nimDeparse(code)))
+        stop(paste0('Improper syntax for declaration: ', deparse(code, width.cutoff=500L)))
     }
     
     targetExpr <<- code[[2]]
@@ -161,7 +161,7 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
             if(length(targetNodeExpr)>1) {
                 ## There are subscripts inside the transformation
                 if(targetNodeExpr[[1]] != '[') {
-                    print(paste("Invalid subscripting for", nimDeparse(targetExpr)))
+                    print(paste("Invalid subscripting for", deparse(targetExpr)))
                 }
                 indexExpr <<- as.list(targetNodeExpr[-c(1,2)])
                 targetVarExpr <<- targetNodeExpr[[2]]
@@ -175,8 +175,8 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
         targetNodeExpr <<- targetVarExpr
     }
     
-    targetVarName <<- nimDeparse(targetVarExpr)
-    targetNodeName <<- nimDeparse(targetNodeExpr)
+    targetVarName <<- deparse(targetVarExpr)
+    targetNodeName <<- deparse(targetNodeExpr)
 })
 
 
@@ -309,7 +309,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             contentsReplaceable <- unlist(lapply(contents, function(x) x$replaceable))
             variable <- getSymbolicParentNodesRecurse(code[[2]], constNames, indexNames, nimbleFunctionNames)
             
-            if(variable$hasIndex) stop('Error: Variable', nimDeparse(code[[2]]), 'on outside of [ contains a BUGS code index.')
+            if(variable$hasIndex) stop('Error: Variable', deparse(code[[2]]), 'on outside of [ contains a BUGS code index.')
             if(variable$replaceable) {
                 return(list(code = contentsCode,
                             replaceable = all(contentsReplaceable),
@@ -339,16 +339,16 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             }
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             isRonly <- isRfunction &
-                !checkNimbleOrRfunctionNames(nimDeparse(code[[1]]))
-#                !any(nimDeparse(code[[1]]) == nimbleOrRfunctionNames)
-            if(isRonly & !allContentsReplaceable) stop(paste('Error, R function', nimDeparse(code[[1]]),' has non-replaceable node values as arguments.  Must be a nimble function.'))
+                !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+#                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+            if(isRonly & !allContentsReplaceable) stop(paste('Error, R function', deparse(code[[1]]),' has non-replaceable node values as arguments.  Must be a nimble function.'))
             
             return(list(code = contentsCode,
                         replaceable = allContentsReplaceable & isRfunction,
                         hasIndex = any(contentsHasIndex)))
         }
     }
-    stop(paste('Something went wrong in getSymbolicVariablesRecurse with', nimDeparse(code)))
+    stop(paste('Something went wrong in getSymbolicVariablesRecurse with', deparse(code)))
 }
 
 checkNimbleOrRfunctionNames <- function(functionName) {
@@ -403,13 +403,13 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2, replaceable=allContentsReplaceable))
         if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
-#        isRonly <- isRfunction & !any(nimDeparse(code[[1]]) == nimbleOrRfunctionNames)
-        isRonly <- isRfunction & !checkNimbleOrRfunctionNames(nimDeparse(code[[1]]))
-        if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', nimDeparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
+#        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+        isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+        if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))
         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
     }
-    stop(paste('Something went wrong in genReplacementsAndCodeRecurse with', nimDeparse(code)))
+    stop(paste('Something went wrong in genReplacementsAndCodeRecurse with', deparse(code)))
 }
 replaceAllCodeSuccessfully <- function(code) {
     deparsedCode <- nameMashupFromExpr(code, colonsOK = TRUE)

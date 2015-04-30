@@ -31,7 +31,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                }
                                                if(missing(className)) {
                                                    sf <- environment(nfGenerator)$name
-                                                   ##setClassName(Rname2CppName(nimDeparse(sf)))
+                                                   ##setClassName(Rname2CppName(deparse(sf)))
                                                    name <<- Rname2CppName(sf)
                                                } else {
                                                    ##setClassName(className)

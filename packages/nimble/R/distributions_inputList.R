@@ -39,16 +39,10 @@ distributionsInputList <- list(
 
     ## construct used to enforce censoring.
     ## takes values 0,1,...,len(c), depending on which interval t falls into
-<<<<<<< HEAD
     dinterval     = list(BUGSdist = 'dinterval(t, c)',
                          types    = c('value = integer(0)', 't = double(0)',
                              'c = double(1)'),
                          discrete = TRUE),
-=======
-    dinterval = list(BUGSdist = 'dinterval(t, c)',
-                     types    = c('value = integer()', 't = double()', 'c = double(1)'),
-                     discrete = TRUE),
->>>>>>> overwriting mistaken revert of
 
     dmulti  = list(BUGSdist = 'dmulti(prob, size)',
                    Rdist    = 'dmulti(size, prob)',

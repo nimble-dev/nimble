@@ -730,9 +730,9 @@ cc_nodeInExpr <- function(node, expr) { return(node %in% cc_getNodesInExpr(expr)
 cc_getNodesInExpr <- function(expr) {
     if(is.numeric(expr)) return(character(0))   ## expr is numeric
     if(is.logical(expr)) return(character(0))   ## expr is logical
-    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) return(nimDeparse(expr))   ## expr is a node name
+    if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) return(deparse(expr))   ## expr is a node name
     if(is.call(expr)) return(unlist(lapply(expr[-1], cc_getNodesInExpr)))   ## expr is some general call
-    stop(paste0('something went wrong processing: ', nimDeparse(expr)))
+    stop(paste0('something went wrong processing: ', deparse(expr)))
 }
 
 ## if targetNode is vectorized: determines if any components of targetNode appear in expr
@@ -760,7 +760,7 @@ cc_checkLinearity <- function(expr, targetNode) {
     }
     
     ## expr is exactly the targetNode
-    if(identical(targetNode, nimDeparse(expr)))
+    if(identical(targetNode, deparse(expr)))
         return(list(offset = 0, scale = 1))
     
     if(!is.call(expr))   stop('expression is not a call object')

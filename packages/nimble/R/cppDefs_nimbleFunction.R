@@ -237,7 +237,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           ),
                                       )
 
-compileNimbleFunction <- function(fun, dirName, all.instances = TRUE, individual.instances = NA, name = nimDeparse(substitute(fun) ),  fileName = Rname2CppName(name), writeFiles = !(environment(fun)$Cwritten), compileCpp = !(environment(fun)$compiled), loadSO = !(environment(fun)$loadedSO), debug = FALSE, debugCpp = FALSE, returnInternals = FALSE ) {
+compileNimbleFunction <- function(fun, dirName, all.instances = TRUE, individual.instances = NA, name = deparse(substitute(fun) ),  fileName = Rname2CppName(name), writeFiles = !(environment(fun)$Cwritten), compileCpp = !(environment(fun)$compiled), loadSO = !(environment(fun)$loadedSO), debug = FALSE, debugCpp = FALSE, returnInternals = FALSE ) {
     
     if(missing(dirName))    dirName <- makeDefaultDirName()
     
@@ -288,7 +288,7 @@ makeCppNIMBLEfunction <- function(nf, name, debug = FALSE, debugCpp = FALSE, isN
         name <- nf$name
         nfp <- nf
     } else {
-        if(missing(name)) name <- nimDeparse(substitute(nf))
+        if(missing(name)) name <- deparse(substitute(nf))
     }
     Cname <- Rname2CppName(name)
     if(is.nf(nf) | is.nfGenerator(nf)) {
@@ -324,7 +324,7 @@ makeCppNIMBLEfunction <- function(nf, name, debug = FALSE, debugCpp = FALSE, isN
     ans
 }
 
-nfWriteCompileAndLoadSO <- function(RFun, dirName, name = nimDeparse(substitute(RFun)), fileName = Rname2CppName(name),
+nfWriteCompileAndLoadSO <- function(RFun, dirName, name = deparse(substitute(RFun)), fileName = Rname2CppName(name),
                                     writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE, debug = FALSE, debugCpp = FALSE){
     Cname = Rname2CppName(name)
     NFC <- makeCppNIMBLEfunction(RFun, Cname, debug = debug, debugCpp = debugCpp)
@@ -346,6 +346,6 @@ nfWriteCompileAndLoadSO <- function(RFun, dirName, name = nimDeparse(substitute(
     return(cppProj)
 }
 
-nfBuildCInterface <- function(cppProj, instance, name = nimDeparse(subsitute(RFun) ))
+nfBuildCInterface <- function(cppProj, instance, name = deparse(subsitute(RFun) ))
 	return( cppProj$cppDefs[[name]]$buildCallable(instance, cppProj$dll ) )
 

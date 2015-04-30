@@ -56,7 +56,7 @@ nfMethodRC <-
                         functionAsList[2] <- list(NULL)
                         if(!is.null(args)) functionAsList[[2]] <- arguments
                         functionAsList[[3]] <- code
-                        ans <- eval(parse(text=nimDeparse(as.call(functionAsList)), keep.source = FALSE)[[1]])
+                        ans <- eval(parse(text=deparse(as.call(functionAsList)), keep.source = FALSE)[[1]])
                         environment(ans) <- new.env()
                         if(keep.nfMethodRC) {environment(ans)$nfMethodRCobject <- .self}
                         ans

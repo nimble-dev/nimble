@@ -119,7 +119,7 @@ makeMapExprFromBrackets <- function(code) {
     }
     targetSizeExprs <- code$sizeExprs
     targetStrideRexprs <- sourceStrideRexprs[blockBool]
-##    targetVarName <- Rname2CppName(nimDeparse(targetVarExpr))
+##    targetVarName <- Rname2CppName(deparse(targetVarExpr))
     targetNdim <- length(targetSizeExprs)
 
     ## this is an unusual exprClass object because args is just a regular list.  Its elements are not exprClass objects

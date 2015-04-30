@@ -165,8 +165,8 @@ nf_assignmentLHSvars <- function(code) {
 
 ## determines the name of the target variable, from the LHS code of an `<-` assignment statement
 nf_getVarFromAssignmentLHScode <- function(code) {
-    if(is.name(code)) return(nimDeparse(code))
-    ##if(!any(code[[1]] == c('[', '[[', '$')))  stop(paste0('invalid assignment target expression in setup: ', nimDeparse(code)))
+    if(is.name(code)) return(deparse(code))
+    ##if(!any(code[[1]] == c('[', '[[', '$')))  stop(paste0('invalid assignment target expression in setup: ', deparse(code)))
     return(nf_getVarFromAssignmentLHScode(code[[2]]))
 }
 
@@ -178,7 +178,7 @@ nf_createAllNamesFromMethodList <- function(methodList) {
 
 nf_getNamesFromSetupOutputDeclaration <- function(setupOutputsDeclaration) {
     if(setupOutputsDeclaration[[1]] != 'setupOutputs') stop('something went wrong')
-    return(unlist(lapply(setupOutputsDeclaration[-1], function(so) { if(is.call(so)) stop('cannot have a call inside setupOuts() declaration') else nimDeparse(so) } )))
+    return(unlist(lapply(setupOutputsDeclaration[-1], function(so) { if(is.call(so)) stop('cannot have a call inside setupOuts() declaration') else deparse(so) } )))
 }
 
 ## definition for the nimble function generator (specializer)

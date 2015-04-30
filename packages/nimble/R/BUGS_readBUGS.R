@@ -2,7 +2,7 @@
 # pieces written by Daniel Turek and Christopher Paciorek
 
 BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE) {
-    if(missing(name)) name <- nimDeparse(substitute(code))
+    if(missing(name)) name <- deparse(substitute(code))
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
     if(length(dimensions) && sum(names(dimensions) == ""))
@@ -226,7 +226,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   modelFileOutput <- modelName <- NULL
   if(is.function(model) || is.character(model)) {
-      if(is.function(model)) modelText <- mergeMultiLineStatements(nimDeparse(body(model)))
+      if(is.function(model)) modelText <- mergeMultiLineStatements(deparse(body(model)))
       if(is.character(model)) {
           if(!is.null(dir) && dir == "") modelFile <- model else modelFile <- file.path(dir, model)  # check for "" avoids having "/model.bug" when user provides ""
           modelName <- gsub("\\..*", "", basename(model))
