@@ -2267,7 +2267,7 @@ modelDefClass$methods(printDI = function() {
         BUGSdecl <- declInfo[[i]]
         cat(paste0('[[', i, ']]  '))
         lapply(contexts[[BUGSdecl$contextID]]$singleContexts, function(x) cat(paste0('for(', x$indexVarExpr, ' in ', deparse(x$indexRangeExpr), ') {{{   ')))
-        cat(paste0(deparse(BUGSdecl$code, width.cutoff=500L)))
+        cat(paste0(deparse(BUGSdecl$code)))
         cat(paste0(rep('   }}}', length(contexts[[BUGSdecl$contextID]]$singleContexts)), collapse=''))
         cat('\n')
     }
