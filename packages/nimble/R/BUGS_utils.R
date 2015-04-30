@@ -133,7 +133,7 @@ parseTreeSubstitute <- function(pt, pattern, replacement) {
 
 nameMashupFromExpr <- function(expr, colonsOK = FALSE) {
 
-    exprText <- deparse(expr, width.cutoff = 500L)
+    exprText <- nimDeparse(expr)
     
     if( colonsOK) { exprText <- gsub(':', 'to', exprText) } # replace colons with 'to'
     if(!colonsOK) { if(grepl(':', exprText))    stop(paste0('trying to do name mashup on expression with vectorization (\':\'), ', exprText)) }
@@ -217,7 +217,7 @@ createNamedObjectsFromList <- function(lst, writeToFile = NULL, envir = parent.f
         write('', file = writeToFile)
         for(i in seq_along(lst)) {
             expr <- substitute(VAR <- VALUE, list(VAR = as.name(names(lst)[i]), VALUE = lst[[i]]))
-            deparseExpr <- deparse(expr, width.cutoff = 500L, control=c())
+            deparseExpr <- nimDeparse(expr, control=c())
             deparseExpr <- gsub('\"', '\'', deparseExpr)
             write(deparseExpr, file = writeToFile, append = TRUE)
             write('\n\n\n', file = writeToFile, append = TRUE)

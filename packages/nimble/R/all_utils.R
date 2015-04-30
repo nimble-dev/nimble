@@ -90,7 +90,10 @@ resize <- function(container, k)
 getsize <- function(container)
 	container$getSize()
 
-
-
+# simply adds width.cutoff = 500 as the default to deal with creation of long variable names from expressions
+nimDeparse <- function(...) {
+    if("width.cutoff" %in% names(list(...)))
+        deparse(...) else deparse(..., width.cutoff = 500L)
+}
 
 

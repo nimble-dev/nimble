@@ -208,7 +208,7 @@ mcmc_listContentsToStr <- function(ls) {
     ls2 <- list()
     for(i in seq_along(ls)) {
         if(length(ls[[i]]) > 0) {
-            deparsedItem <- deparse(ls[[i]])
+            deparsedItem <- nimDeparse(ls[[i]])
             if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
             ls2[[i]] <- paste0(names(ls)[i], ': ', deparsedItem)
         }
@@ -228,12 +228,12 @@ mcmc_findControlListNamesInCode <- function(code) {
     if(is.call(code)) {
         if(code[[1]] == '$' && code[[2]] == 'control') {
             if(is.name(code[[3]])) { return(as.character(code[[3]]))
-            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
+            } else                 { warning(paste0('having trouble processing control list elements: ', nimDeparse(code)))
                                      return(character()) }
         }
         if(code[[1]] == '[[' && code[[2]] == 'control') {
             if(is.character(code[[3]])) { return(as.character(code[[3]]))
-            } else                 { warning(paste0('having trouble processing control list elements: ', deparse(code)))
+            } else                 { warning(paste0('having trouble processing control list elements: ', nimDeparse(code)))
                                      return(character()) }
         }
         ## code is some call, other than $ or [[

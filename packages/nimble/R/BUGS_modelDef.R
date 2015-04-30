@@ -237,9 +237,9 @@ modelDefClass$methods(initializeContexts = function() {
 })
 
 reprioritizeColonOperator <- function(code) {
-    split.code <- strsplit(deparse(code), ":")
+    split.code <- strsplit(nimDeparse(code), ":")
     if(length(split.code[[1]]) == 2) return(parse(text = paste0("(", split.code[[1]][1], "):(", split.code[[1]][2], ")"), keep.source = FALSE)[[1]])
-    if(length(split.code[[1]]) > 2) stop(paste0('Error with this code: ', deparse(code)))
+    if(length(split.code[[1]]) > 2) stop(paste0('Error with this code: ', nimDeparse(code)))
     return(code)
 }
 
@@ -275,7 +275,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             BUGScontextClassObject$setup(singleContexts = sinlgeContexts)
             contexts[[nextContextID]] <<- BUGScontextClassObject
             if(length(code[[i]][[4]])==1) {
-                stop(paste0('Error, not sure what to do with ', deparse(code[[i]])))
+                stop(paste0('Error, not sure what to do with ', nimDeparse(code[[i]])))
             }
             recurseCode <- if(code[[i]][[4]][[1]] == '{') {
                 code[[i]][[4]]
@@ -334,11 +334,11 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
         ## let's check to make sure all indexes are present
         if(any(unlist(lapply(as.list(code), is.blank)))) {
             stop(paste0('Opps! This part of NIMBLE is still under development.', '\n',
-                        'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
+                        'The model definition included the expression \'', nimDeparse(code), '\', which contains missing indices.', '\n',
                         'There are two options to resolve this:', '\n',
-                        '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
+                        '(1) Explicitly provide the missing indices in the model definition (e.g., \'', nimDeparse(example_fillInMissingIndices(code)), '\'), or', '\n',
                         '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
-                        '    nimbleModel(code, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
+                        '    nimbleModel(code, dimensions = list(', code[[2]], ' = ', nimDeparse(example_getMissingDimensions(code)), '))', '\n',
                         'Thanks for bearing with us.'), call. = FALSE)
         }
         ## and to recurse on all elements
@@ -386,7 +386,7 @@ modelDefClass$methods(removeTruncationWrapping = function() {
             # type = as.character(BUGSdecl$valueExpr[[1]]) # T or I? could be used later to check that I() only used for top-level nodes
             )
         if(BUGSdecl$valueExpr[[1]] == "I")
-            warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
+            warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", nimDeparse(BUGSdecl$code), "; this is only valid when ", nimDeparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
                 
         newCode <- BUGSdecl$code
         if(BUGSdecl$truncation$lower == -Inf && BUGSdecl$truncation$upper == Inf) {  # user specified no bounds so not really truncated
@@ -426,7 +426,7 @@ modelDefClass$methods(processLinks = function() {
         BUGSdecl <- declInfo[[i]]
         nextNewDeclInfoIndex <- length(newDeclInfo) + 1
         if(is.null(BUGSdecl$transExpr))     { newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdecl; next }
-        linkText <- deparse(BUGSdecl$transExpr)
+        linkText <- nimDeparse(BUGSdecl$transExpr)
         if(!(linkText %in% names(linkInverses)))    stop(paste('Error, unknown link function:',linkText))
         
         if(BUGSdecl$type == 'stoch') {   # stochastic node
@@ -483,7 +483,7 @@ modelDefClass$methods(reparameterizeDists = function() {
                 if(identical(sort(unique(distRule$alts[[count]])), sort(unique(names(params)))))
                     matchedAlt <- count
             }
-            if(is.null(matchedAlt)) stop('Error: no available re-parameterization found for: ', deparse(valueExpr), '.')
+            if(is.null(matchedAlt)) stop('Error: no available re-parameterization found for: ', nimDeparse(valueExpr), '.')
         }
         nonReqdArgs <- names(params)[!(names(params) %in% distRule$reqdArgs)]
         for(iArg in 1:numArgs) {   ## loop over the required arguments
@@ -493,9 +493,9 @@ modelDefClass$methods(reparameterizeDists = function() {
                 newValueExpr[[iArg + 1]] <- params[[reqdArgName]];
                 next
             }
-            if(!matchedAlt) error("Something wrong - looking for alternative parameterization but supplied args are same as required args: ", deparse(valueExpr))
+            if(!matchedAlt) error("Something wrong - looking for alternative parameterization but supplied args are same as required args: ", nimDeparse(valueExpr))
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
-                stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
+                stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', nimDeparse(valueExpr), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
             for(nm in c(nonReqdArgs, distRule$reqdArgs))
                 # loop thru possible non-canonical parameters in the expression for the canonical parameter
@@ -596,7 +596,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
                 if(do.eval) {
                     origCode <- code
                     code <- as.numeric(eval(code, constEnv))
-                    if(length(code) != 1) warning(paste('Code', deparse(origCode),'was given as known but evaluates to a non-scalar.  This is probably not what you want.'))
+                    if(length(code) != 1) warning(paste('Code', nimDeparse(origCode),'was given as known but evaluates to a non-scalar.  This is probably not what you want.'))
                 }
                 return(list(code = code,
                             replaceable = TRUE))
@@ -722,7 +722,7 @@ isExprLiftable <- function(paramExpr) {
         if(is.vectorized(paramExpr))        return(FALSE)   ## don't lift any expression with vectorized indexing,  funName(x[1:10])
         return(TRUE)
     }
-    stop(paste0('error, I need to figure out how to process this parameter expression: ', deparse(paramExpr)))
+    stop(paste0('error, I need to figure out how to process this parameter expression: ', nimDeparse(paramExpr)))
 }
 addNecessaryIndexingToNewNode <- function(newNodeNameExpr, paramExpr, indexVarExprs) {
     usedIndexVarsList <- indexVarExprs[indexVarExprs %in% all.vars(paramExpr)]    # this extracts any index variables which appear in 'paramExpr'
@@ -1067,7 +1067,7 @@ genNodeInfo_singleDeclaration <- function(BUGSdecl, context, constantsEnv) {
             logProbNodeReplacedWithValues <- eval(logProbSubstituteCodeReadyForValues)
             logProbIndexValues <- if(length(logProbNodeReplacedWithValues)==0)   numeric(0)   else   unlist(as.list(logProbNodeReplacedWithValues)[-c(1,2)])
         }
-        targetNodeName <- if(targetNodeExprHasBracket) deparse(evaledTargetNodeExpr) else BUGSdecl$targetNodeName
+        targetNodeName <- if(targetNodeExprHasBracket) nimDeparse(evaledTargetNodeExpr) else BUGSdecl$targetNodeName
         
         BUGSdecl$indexedNodeInfo[[i]] <- nodeInfoClass$new(code = BUGSdecl$code,
                                                            type = BUGSdecl$type,
@@ -2266,8 +2266,8 @@ modelDefClass$methods(printDI = function() {
     for(i in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[i]]
         cat(paste0('[[', i, ']]  '))
-        lapply(contexts[[BUGSdecl$contextID]]$singleContexts, function(x) cat(paste0('for(', x$indexVarExpr, ' in ', deparse(x$indexRangeExpr), ') {{{   ')))
-        cat(paste0(deparse(BUGSdecl$code, width.cutoff=500L)))
+        lapply(contexts[[BUGSdecl$contextID]]$singleContexts, function(x) cat(paste0('for(', x$indexVarExpr, ' in ', nimDeparse(x$indexRangeExpr), ') {{{   ')))
+        cat(paste0(nimDeparse(BUGSdecl$code)))
         cat(paste0(rep('   }}}', length(contexts[[BUGSdecl$contextID]]$singleContexts)), collapse=''))
         cat('\n')
     }

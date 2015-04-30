@@ -38,6 +38,8 @@ DEVELOPER LEVEL CHANGES
 
 -- nimbleFunction provided for use in algorithms: initializeModel(model), to perform sensible model initialization at the onset of an algorithm
 
+-- set default for deparse to width.cutoff=500L to avoid splitting of lines when going from expressions to string names
+
 
                         CHANGES IN VERSION 0.3-1 (Mar. 7, 2015)
 

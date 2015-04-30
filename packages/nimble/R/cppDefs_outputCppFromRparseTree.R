@@ -86,7 +86,7 @@ outputTypeCast2 <- function(ModifiedRmmCode, Indentation = '\t') {
 # @export
 outputEigenOperation2 <- function(ModifiedRmmCode, Indentation = '\t') {
   ## to avoid extra brackets like (A.matrix()).transpose() we just want A.matrix().transpose()
-  if(is.call(ModifiedRmmCode[[3]]) && !(deparse(ModifiedRmmCode[[3]][[1]]) %in% c('(', 'EigenOperation', 'TypeCast'))) 
+  if(is.call(ModifiedRmmCode[[3]]) && !(nimDeparse(ModifiedRmmCode[[3]][[1]]) %in% c('(', 'EigenOperation', 'TypeCast'))) 
     withinBrackets <- TRUE
    else withinBrackets <- FALSE
   paste0(if(withinBrackets) '(',  outputCppParseTree2(ModifiedRmmCode[[3]], Indentation), if(withinBrackets) ')',
@@ -153,7 +153,7 @@ outputCppCout2 <- function(ModifiedRmmCode, Indentation = '') {
 # @seealso \code{\link{outputCppParseTree}}
 # @export
 outputCppCommentBlock2 <- function(ModifiedRmmCode, Indentation = '') {
-  paste0('/*\n', Indentation, if(is.character(ModifiedRmmCode[[2]])) ModifiedRmmCode[[2]] else deparse(ModifiedRmmCode[[2]]),'\n', '*/')
+  paste0('/*\n', Indentation, if(is.character(ModifiedRmmCode[[2]])) ModifiedRmmCode[[2]] else nimDeparse(ModifiedRmmCode[[2]]),'\n', '*/')
 }
 
 # e.g. outputCppArrayIndex(quote(mv[i - 1]))
@@ -287,7 +287,7 @@ outputGeneralCppFunction2 <- function(ModifiedRmmCode, indent = '') {
     for(i in 2:BlockLength)
       outputCppCode[i-1] <- outputCppParseTree2(ModifiedRmmCode[[i]], '')
 
-  functionName <- if(is.name(ModifiedRmmCode[[1]])) genName2(deparse(ModifiedRmmCode[[1]]))
+  functionName <- if(is.name(ModifiedRmmCode[[1]])) genName2(nimDeparse(ModifiedRmmCode[[1]]))
   else outputCppParseTree2(ModifiedRmmCode[[1]], '')
   
   return(paste0(paste0(indent, functionName, '('),
@@ -356,8 +356,8 @@ outputCppOpenBracket2  <- function(ModifiedRmmCode, Indentation = '') {
 # @seealso \code{\link{outputCppParseTree}}
 # @export
 outputCppBinaryOperation2 <- function(ModifiedRmmCode, Indentation = '') {
-    if(length(ModifiedRmmCode) != 3) stop(paste0('Error generating C++ output for expression \"', deparse(ModifiedRmmCode), '\" which was expected to have length 3.'))
-    return(paste0(Indentation, outputCppParseTree2(ModifiedRmmCode[[2]], ''), CppBinaryOperators2[[ deparse(ModifiedRmmCode[[1]]) ]],
+    if(length(ModifiedRmmCode) != 3) stop(paste0('Error generating C++ output for expression \"', nimDeparse(ModifiedRmmCode), '\" which was expected to have length 3.'))
+    return(paste0(Indentation, outputCppParseTree2(ModifiedRmmCode[[2]], ''), CppBinaryOperators2[[ nimDeparse(ModifiedRmmCode[[1]]) ]],
         outputCppParseTree2(ModifiedRmmCode[[3]], '')))
 }
 
@@ -447,7 +447,7 @@ outputCppWhile2 <- function(ModifiedRmmCode, Indentation = '\t') {
 # @export
 outputCppIfElse2  <- function(ModifiedRmmCode, Indentation = '') {
     codeLength <- length(ModifiedRmmCode)
-    if(!(codeLength == 3 | codeLength == 4)) stop(paste0('Error outputting \"', deparse(ModifiedRmmCode), '\". Length of if-then-else code must be 3 or 4'))
+    if(!(codeLength == 3 | codeLength == 4)) stop(paste0('Error outputting \"', nimDeparse(ModifiedRmmCode), '\". Length of if-then-else code must be 3 or 4'))
     outputCppBlock <- vector('list', if(codeLength == 3) 3 else 5)
     outputCppBlock[[1]] <- paste0(Indentation, 'if(', outputCppParseTree2(ModifiedRmmCode[[2]]), ') {')
     outputCppBlock[[2]] <- outputCppParseTree2(ModifiedRmmCode[[3]], paste0(' ', Indentation))
@@ -465,13 +465,13 @@ outputCppIfElse2  <- function(ModifiedRmmCode, Indentation = '') {
 ## new version of outputCppParseTree
 outputCppParseTree2 <- function(code, indent = '') {
     if(is.call(code)) {
-        if(deparse(code[[1]]) %in% names(ModifiedRmmParseKeywords2))
-            return(eval(call(ModifiedRmmParseKeywords2[[ deparse(code[[1]]) ]], quote(code), quote(indent))))
+        if(nimDeparse(code[[1]]) %in% names(ModifiedRmmParseKeywords2))
+            return(eval(call(ModifiedRmmParseKeywords2[[ nimDeparse(code[[1]]) ]], quote(code), quote(indent))))
         else
             return(outputGeneralCppFunction2(code, indent))
     }
     
-    dpc <- deparse(code)
+    dpc <- nimDeparse(code)
     if(is.name(code)) { ## && !(dpc %in% names(ModifiedRmmParseKeywords2))) { ## I'm not seeing when this last condition would matter
         return(dpc)
     }
