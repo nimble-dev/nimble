@@ -69,9 +69,10 @@ getLoadingNamespace <- function() {
 #' as.matrix(mv)
 #' resize(mv, 3)
 #' as.matrix(mv)
-resize <- function(container, k)
-	container$resize( as.integer(k) ) 
-	
+resize <- function(container, k) {
+    container$resize( as.integer(k) ) 
+}
+
 #' Returns number of rows of modelValues
 #' 
 #' Returns the number of rows of NIMBLE modelValues object. Works in R and NIMBLE. 
@@ -87,13 +88,17 @@ resize <- function(container, k)
 #'	mv <- modelValues(mvSpec)
 #'  resize(mv, 10)
 #'	getsize(mv)
-getsize <- function(container)
-	container$getSize()
+getsize <- function(container) {
+    container$getSize()
+}
 
 # simply adds width.cutoff = 500 as the default to deal with creation of long variable names from expressions
-nimDeparse <- function(...) {
-    if("width.cutoff" %in% names(list(...)))
-        deparse(...) else deparse(..., width.cutoff = 500L)
+deparse <- function(...) {
+    if("width.cutoff" %in% names(list(...))) {
+        base:::deparse(...)
+    } else {
+          base:::deparse(..., width.cutoff = 500L)
+      }
 }
 
 
