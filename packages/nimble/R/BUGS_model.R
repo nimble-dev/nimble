@@ -227,23 +227,24 @@ returnType: return type. Options are \'names\' (character vector) or \'ids\' (gr
 
 sort: should names be topologically sorted before being returned?
 '
+
+                                      if(length(nodeNames) == 0) return(if(returnType=='names') character() else numeric())
+                                      graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
+                                      if(sort) 
+                                          graphID <- sort(graphID)
                                       if(returnType == 'names'){
-                                          if(length(nodeNames) == 0) return(character())
-                                          graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
-                                          if(sort)
-                                              graphID <- sort(graphID)
-                                          nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+                                          if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
+                                          else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
                                           return(nodeNames)
                                       }
                                       if(returnType == 'ids'){
-                                          if(length(nodeNames) == 0) return(numeric())
-                                          if(sort)
-                                              return(sort(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)))
-                                          return(modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents))
-									    }                  
-                                      if(returnType == 'nodeVector')
+                                          if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
+                                          return(graphID)
+                                      }                  
+                                      if(returnType == 'nodeVector') {
+                                          print("NIMBLE development message: expandNodeNames called with returnType = nodeVector.  Checking to see if this ever is used.")
                                           return(nodeVector(origNodeNames = nodeNames))	
-                                      
+                                      }
                                       if(!(returnType %in% c('ids', 'nodeVector', 'names')))
                                       	stop('instead expandNodeNames, imporper returnType chosen')
                                   },

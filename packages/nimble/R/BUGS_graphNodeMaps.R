@@ -12,8 +12,10 @@ mapsClass <- setRefClass(
 
         nodeNamesLHSall = 'ANY',                 ## names of all nodes with node functions, i.e. all node names *except* RHSonly nodes
         nodeNamesRHSonly = 'ANY',                ## names of all nodes appearing on RHS only
-
+        elementNames = 'ANY',
+        
         vertexID_2_nodeID = 'ANY',  ## new
+        elementID_2_vertexID = 'ANY',
         
         ## nodeName_2_xxxx maps
         nodeName_2_graphID = 'ANY',                ## named vector of numeric graphIDs
@@ -27,6 +29,8 @@ mapsClass <- setRefClass(
         ## varName2GraphID maps
         vars2GraphID_values = 		'ANY',
         vars2GraphID_functions =	'ANY',
+        vars2GraphID_functions_and_RHSonly = 'ANY',
+        vars2ID_elements = 'ANY',
         vars2LogProbName =			'ANY',
         vars2LogProbID = 			'ANY',
         
