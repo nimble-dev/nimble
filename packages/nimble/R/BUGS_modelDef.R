@@ -1865,7 +1865,9 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nodeNamesLHSall <<- nodeNamesLHSall
     maps$nodeNamesRHSonly <<- nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
+    if(any(duplicated(maps$nodeNames))) stop(paste0("Error building model, there are multiple definitions for nodes:", paste(maps$nodeNames[duplicated(maps$nodeNames)], collapse = ',')))
     if(debug) browser()
+    
     newVertexID_2_nodeID <- vertexID_2_nodeID [ newGraphID_2_oldGraphID ]
     bool <- newVertexID_2_nodeID != 0
     newVertexID_2_nodeID[bool] <- oldGraphID_2_newGraphID[newVertexID_2_nodeID]
