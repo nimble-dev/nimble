@@ -73,7 +73,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                       numItsC_results = numItsC,
                       resampleData = FALSE,
                       topLevelValues = NULL, seed = 0, mcmcControl = NULL, samplers = NULL, removeAllDefaultSamplers = FALSE, 
-                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE) {
+                      doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
   # There are three modes of testing:
   # 1) basic = TRUE: compares R and C MCMC values and, if requested by passing values in 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
   # 2) if you pass 'results', it will compare MCMC output to known posterior summaries within tolerance specified in resultsTolerance
@@ -103,6 +103,20 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) spec$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
   }
 
+  if(is.null(name)) {
+      if(!missing(example)) {
+          name <- example
+      } else {
+            if(is.character(model)) {
+                name <- model
+            } else {
+                  name <- paste0(as.character(substitute(model)), collapse = '')
+              }
+        }
+  }
+
+  cat("Starting MCMC test for ", name, ".\n")
+  
   if(!missing(example)) {
     # classic-bugs example specified by name
   	dir = getBUGSexampleDir(example)
@@ -308,6 +322,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     }
   }
 
+  cat("Finishing MCMC test for ", name, ".\n")
 
   if(doCpp) {
     # DTL is looking at issue with segFault when close R
