@@ -63,9 +63,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  buildFunction = function(RCfun, parentST = NULL) {
                                      RCfunProc <<- RCfun
                                      name <<- RCfunProc$name
-                                     argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
+                                     argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames() ## this has only the original arguments
                                      args <<- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = argNames, parentST = parentST)
-                                     allNames <- RCfunProc$compileInfo$newLocalSymTab$getSymbolNames()
+                                     allNames <- RCfunProc$compileInfo$newLocalSymTab$getSymbolNames() ## this has had local variables added
                                      localArgs <- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = allNames[!(allNames %in% argNames)], parentST = args)
                                      code <<- cppCodeBlock(code = RCfunProc$compileInfo$nimExpr,
                                                            objectDefs = localArgs)
@@ -75,12 +75,14 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL) {
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
-                                     argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
+                                     ##argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
+                                     argsCode = RCfunProc$RCfun$arguments
+                                     argNames <- names(argsCode)
                                      
-if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
-   warning("creating a .Call() expression with no DLL information")
-   browser()                                     
-}
+                                     if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
+                                         warning("creating a .Call() expression with no DLL information")
+                                         browser()                                     
+                                     }
                                      dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
                                      for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                      if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
@@ -97,9 +99,7 @@ if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
                                          else
                                              namesAssign <- quote(ans <- invisible(NULL))
                                      }
-
-
-                                     argsCode = RCfunProc$RCfun$arguments
+                                     
                                      argNamesCall = argNames
                                      for(i in seq_along(argNamesCall) ){
                                      	if(argsCode[i] != '')

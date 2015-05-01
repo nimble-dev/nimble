@@ -16,6 +16,7 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                       fields = list(
                                           name = 'ANY',		#character
                                           RCfun = 'ANY', ##nfMethodRC
+                                          nameSubList = 'ANY',
                                           compileInfo = 'ANY' ## RCfunctionCompileClass``
                                           ),
                                       methods = list(
@@ -42,8 +43,15 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
                                           setupSymbolTables = function(parentST = NULL) {
-                                              compileInfo$origLocalSymTab <<- argTypeList2symbolTable(RCfun$argInfo) ## will be used for function args.  must be a better way.
-                                              compileInfo$newLocalSymTab <<- argTypeList2symbolTable(RCfun$argInfo)
+                                              ##  compileInfo$origLocalSymTab <<- argTypeList2symbolTable(RCfun$argInfo) ## will be used for function args.  must be a better way.
+                                              ##compileInfo$newLocalSymTab <<-  argTypeList2symbolTable(RCfun$argInfo)
+                                              argInfoWithMangledNames <- RCfun$argInfo
+                                              numArgs <- length(argInfoWithMangledNames)
+                                              if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", names(argInfoWithMangledNames),"_")
+                                              nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
+                                              names(nameSubList) <<- names(RCfun$argInfo)
+                                              compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames) ## will be used for function args.  must be a better way.
+                                              compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames)
                                               if(!is.null(parentST)) {
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
@@ -72,6 +80,27 @@ is.rcf <- function(x) {
 }
 
 rcFunLabelMaker <- labelFunctionCreator('rcFun')
+
+nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
+    ## this is almost like doing substitute with code and subList, but it doesn't traverse the RHS of a '$' operator
+    ## and it doesn't replace and function names
+    if(is.character(code)) return(code)
+    if(is.numeric(code)) return(code)
+    if(is.name(code)) {
+        maybeAns <- subList[[as.character(code)]]
+        return( if(is.null(maybeAns)) code else maybeAns )
+    }
+    if(is.call(code)) {
+        if(length(code) == 1) return(code)
+        else 
+            if(as.character(code[[1]])=='$') indexRange <- 2
+            else 
+                indexRange <- 2:length(code)
+        for(i in indexRange) code[[i]] <- nf_substituteExceptFunctionsAndDollarSigns(code[[i]], subList)
+        return(code)
+    }
+    stop(paste("Error doing replacement for code ", deparse(code)))
+}
 
 RCfunProcessing <- setRefClass('RCfunProcessing',
                                contains = 'RCvirtualFunProcessing',
@@ -103,7 +132,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            writeLines('**** READY FOR makeExprClassObjects *****')
                                            browser()
                                        }
-                                                                              
+                                       compileInfo$newRcode <<- nf_substituteExceptFunctionsAndDollarSigns(compileInfo$newRcode, nameSubList)
                                        ## set up exprClass object
                                        compileInfo$nimExpr <<- RparseTree2ExprClasses(compileInfo$newRcode)
                                        
