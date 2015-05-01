@@ -344,10 +344,9 @@ Returns a vector of logical TRUE / FALSE values, corresponding to the \'data\' f
 
 Arguments:
 
-nodeNames: A character vector of node names.  This must be entirely node names, not model variables.
+nodeNames: A character vector containing model variable or node names.
 
-Details: Returns a logical vector with the same length as the input vector.  This function may be used for testing \'data\' flags, or for partitioning a list of nodes into data and non-data.
-'                                      ## nodeNames must be a vector of character node names in the model, e.g. 'x', 'x[4]', or 'x[1:10]'
+Details: The variable or node names specified is expanded into a vector of model node names.  A logical vector is returned, indicating whether each model node has been flagged as containing \'data\'.
                                   		g_id = modelDef$nodeName2GraphIDs(nodeNames)
                                   		return(isDataFromGraphID(g_id))                                  
                                   },
