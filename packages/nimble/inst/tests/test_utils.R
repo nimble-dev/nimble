@@ -115,7 +115,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
         }
   }
 
-  cat("Starting MCMC test for ", name, ".\n")
+  cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
   
   if(!missing(example)) {
     # classic-bugs example specified by name
@@ -322,7 +322,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     }
   }
 
-  cat("Finishing MCMC test for ", name, ".\n")
+  cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
 
   if(doCpp) {
     # DTL is looking at issue with segFault when close R
