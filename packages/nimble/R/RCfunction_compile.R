@@ -47,7 +47,7 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               ##compileInfo$newLocalSymTab <<-  argTypeList2symbolTable(RCfun$argInfo)
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
-                                              if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", names(argInfoWithMangledNames),"_")
+                                              if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
                                               compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames) ## will be used for function args.  must be a better way.

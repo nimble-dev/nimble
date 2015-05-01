@@ -348,7 +348,8 @@ Arguments:
 nodeNames: A character vector containing model variable or node names.
 
 Details: The variable or node names specified is expanded into a vector of model node names.  A logical vector is returned, indicating whether each model node has been flagged as containing \'data\'.
-                                  		g_id = modelDef$nodeName2GraphIDs(nodeNames)
+'
+                                  g_id = modelDef$nodeName2GraphIDs(nodeNames)
                                   		return(isDataFromGraphID(g_id))                                  
                                   },
 
@@ -367,7 +368,7 @@ Details: The variable or node names specified is expanded into a vector of model
                                       includeData = TRUE, dataOnly = FALSE,
                                       includeRHSonly = FALSE, downstream = FALSE,
                                       returnType = 'names', returnScalarComponents = FALSE) {
-                                      '
+'
 Returns a character vector of the nodes dependent upon the input argument nodes, sorted topologically according to the model graph.  Aditional input arguments provide flexibility in the values returned.
 
 Arguments:
