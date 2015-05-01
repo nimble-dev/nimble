@@ -41,7 +41,7 @@ dt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, log = FALSE) {
 }
 
 rt_nonstandard <- function(n, df = 1, mu = 0, sigma = 1) {
-  .Call('C_rt_nonstandard', as.integer(n), as.double(mu), as.double(sigma), as.double(df))
+  .Call('C_rt_nonstandard', as.integer(n), as.double(df), as.double(mu), as.double(sigma))
 }
 
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
