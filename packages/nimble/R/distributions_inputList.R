@@ -102,7 +102,7 @@ distributionsInputList <- list(
     ## dpar    = list(BUGSdist = 'dpar(alpha, c)'),   ## not sure the state of this?  -DT
     
     ## because we wrote nonstandard dt, we don't at the moment have access to pt, qt
-    dt      = list(BUGSdist = 'dt(mu, tau, df)',
+    dt      = list(BUGSdist = 'dt(mu, tau, df, sigma)',
                    Rdist    = 'dt_nonstandard(df, mu, sigma = 1/sqrt(tau))',
                    altParams = c('tau = sigma^-2')),
     
