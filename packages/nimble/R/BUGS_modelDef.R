@@ -285,6 +285,8 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             lineNumber <- processBUGScode(recurseCode, nextContextID, lineNumber = lineNumber)  ## Recursive call to process the contents of the for loop
         }
         ## could consider definition-time if-then
+        if(!deparse(code[[i]][[1]]) %in% c('~', '<-', 'for')) 
+            stop("Error: ", deparse(code[[i]][[1]]), " not allowed in BUGS code in ", deparse(code[[i]]))
     }
     lineNumber
 })
