@@ -99,6 +99,9 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
         for(i in indexRange) code[[i]] <- nf_substituteExceptFunctionsAndDollarSigns(code[[i]], subList)
         return(code)
     }
+    if(is.list(code)) { ## Keyword processing stage of compilation may have stuck lists into the argument list of a call (for maps)
+        code <- lapply(code, nf_substituteExceptFunctionsAndDollarSigns, subList)
+    }
     stop(paste("Error doing replacement for code ", deparse(code)))
 }
 
@@ -132,7 +135,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            writeLines('**** READY FOR makeExprClassObjects *****')
                                            browser()
                                        }
-                                       compileInfo$newRcode <<- nf_substituteExceptFunctionsAndDollarSigns(compileInfo$newRcode, nameSubList)
+                                       if(length(nameSubList) > 0)
+                                           compileInfo$newRcode <<- nf_substituteExceptFunctionsAndDollarSigns(compileInfo$newRcode, nameSubList)
                                        ## set up exprClass object
                                        compileInfo$nimExpr <<- RparseTree2ExprClasses(compileInfo$newRcode)
                                        
