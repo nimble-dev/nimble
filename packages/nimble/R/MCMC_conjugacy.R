@@ -646,7 +646,13 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
         exprText <- deparse(expr)
-        expandedNodeNames <- model$expandNodeNames(exprText)
+        expandedNodeNames <- try(model$expandNodeNames(exprText), silent=TRUE)  # causes error when expr is the name of an array memberData object, which isn't a node name
+        if(inherits(expandedNodeNames, 'try-error')) {
+            ## at this point, should only be a 'name', representing an array memberData object
+            ## if it's an indexed name, we'll throw an error.
+            if(is.call(expr)) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+            return(expr) # expr is the name of an array memberData object; rather than throw an error, return expr
+        }
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
@@ -656,9 +662,11 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
                 newExpr <- model$getNodeValueExpr(exprText)
                 return(cc_expandDetermNodesInExpr(model, newExpr))
             }
-            stop('error in conjugacy process: more types of nodes?')
+            if(type == 'RHSonly') return(expr)
+            stop('something went wrong with Daniel\'s understanding of newNimbleModel')
         }
-        if(is.name(expr)) return(expr) # rather than throw an error, return expr; for the case where expr is the name of an array memberData object
+        ## next line no longer necessary? (DT, May 2015)
+        ## if(is.name(expr)) return(expr) # rather than throw an error, return expr; for the case where expr is the name of an array memberData object
         newExpr <- cc_createStructureExpr(model, exprText)
         for(i in seq_along(newExpr)[-1])
             newExpr[[i]] <- cc_expandDetermNodesInExpr(model, newExpr[[i]])
