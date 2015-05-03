@@ -556,7 +556,7 @@ for(i in 1:10000) {
 }
 OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
 
-test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numItsC = 1000,
+test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean),
           results = list(mean = list(Omega = OmegaTrueMean ),
             sd = list(Omega = OmegaSimTrueSDs)),
           resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
