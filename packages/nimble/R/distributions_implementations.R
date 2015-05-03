@@ -66,11 +66,16 @@ rinterval <- function(n = 1, t, c) {
 }
 
 dconstraint <- function(x, cond, log = FALSE) {
+    if(is.na(x) || is.na(cond)) return(x + cond) # mimic how R's C functions handle NA and NaN inputs
     if(x == cond || x == 0) result <- 1 else result <- 0
     if(log) return(log(result)) else return(result)
 }
 
 rconstraint <- function(n = 1, cond) {
     if(n != 1) stop('rconstraint only handles n = 1 at the moment')
+    if(is.na(cond)) {
+        warning("NAs produced")
+        return(NaN)
+    }
     return(cond)
 }

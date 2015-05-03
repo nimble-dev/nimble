@@ -820,17 +820,21 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
 }
 
 
-double dconstraint(int x, int cond, int give_log)
+double dconstraint(double x, double cond, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+  if(ISNAN(cond) || ISNAN(x)) {
+    return(x + cond);  // mimic how R C functions handle NA, NaN
+  }
   if(x == cond || x == 0) return give_log ? 0.0 : 1.0;
   else return give_log ? R_NegInf : 0.0;
 }
 
 
-int rconstraint(int cond)
+double rconstraint(double cond)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+  if(ISNAN(cond))   return(R_NaN);
   return cond;
 }
 

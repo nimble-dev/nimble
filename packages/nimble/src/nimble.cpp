@@ -36,6 +36,8 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rt_nonstandard, 4),
  FUN(C_dmnorm_chol, 5),
  FUN(C_rmnorm_chol, 3),
+ FUN(C_dinterval, 4),
+ FUN(C_rinterval, 3),
  FUN(makeNumericList, 3),
 //   The following 4 conflict with names of R functions. So we prefix them with a R_
  CFUN(setPtrVectorOfPtrs, 3),
