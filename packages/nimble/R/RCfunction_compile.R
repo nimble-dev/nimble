@@ -92,10 +92,12 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
     }
     if(is.call(code)) {
         if(length(code) == 1) return(code)
-        else 
-            if(as.character(code[[1]])=='$') indexRange <- 2
-            else 
-                indexRange <- 2:length(code)
+        else
+            if(is.call(code[[1]])) indexRange <- 1:length(code)
+            else
+                if(as.character(code[[1]])=='$') indexRange <- 2
+                else 
+                    indexRange <- 2:length(code)
         for(i in indexRange) code[[i]] <- nf_substituteExceptFunctionsAndDollarSigns(code[[i]], subList)
         return(code)
     }
