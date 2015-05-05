@@ -172,48 +172,6 @@ calcAdaptationFactor <- nimbleFunction(
 
 
 
-RHSonlyInit_virtual <- nimbleFunctionVirtual()
-RHSonlyInit <- nimbleFunction(
-    contains = RHSonlyInit_virtual,
-    setup = function(model, node) {},
-    run = function() {
-        nv <- values(model, node)
-        if(is.na.vec(nv) | is.nan.vec(nv))     print('missing value in right-hand-side only node; cannot initialize model')
-    }, where = getLoadingNamespace()
-)
-
-
-mcmcNodeInit_virtual <- nimbleFunctionVirtual()
-mcmcNodeInit <- nimbleFunction(
-    contains = mcmcNodeInit_virtual,
-    setup = function(model, node) {
-		gID <- model$modelDef$nodeName2GraphIDs(node)
-		type <- model$modelDef$maps$types[gID]
-		isDeterm = FALSE
-		isStoch = FALSE
-		if(type == 'stoch')
-			isStoch = TRUE
-		else if(type == 'determ')
-			isDeterm = TRUE
-    },
-    run = function() {
-        if(isDeterm) {
-            calculate(model, node)
-            nv <- values(model, node)
-            if(is.na.vec(nv) | is.nan.vec(nv))     print('deterministic model node is NA or NaN in model initialization')
-        }
-        if(isStoch) {
-            nv <- values(model, node)
-            if(is.na.vec(nv)) {
-                simulate(model, node)
-                nv <- values(model, node)
-            }
-            if(is.na.vec(nv) | is.nan.vec(nv))     print('stochastic model node is NA or NaN in model initialization')
-            lp <- calculate(model, node)
-            if(is.na(lp) | is.nan(lp) | lp < -1e12)              print('stochastic model value is NA, NaN or too small in model initialization')
-        }
-    }, where = getLoadingNamespace()
-)
 
 
 
@@ -336,40 +294,3 @@ mcmc_findControlListNamesInCode <- function(code) {
 ##     }, where = getLoadingNamespace()
 ## )
 
-
-
-
-
-mcmcStochNode_Init <- nimbleFunction(
-	contains = nimble:::mcmcNodeInit_virtual,	## remove the nimble:::, dummy
-
-	setup = function(model, node){},
-	run = function(){
-		theseVals <- values(model, node)
-		if(is.na.vec(theseVals))
-			simulate(model, node)
-		lp <- calculate(model, node)
-		if(is.na(lp) | lp < -1e12)
-			print('Problem when attempting to initialize stochastic node')
-	},
-	where = getLoadingNamespace()
-)
-
-mcmcFillDetermTop_Init <- nimbleFunction(
-	contains  = nimble:::mcmcNodeInit_virtual,	##remove the nimble:::, dummy
-	setup = function(model, node){},
-	run = function(){
-		nil <- calculate(model, node)
-	}, where = getLoadingNamespace()
-)
-
-mcmcCheckRHS_Init <- nimbleFunction(
-	contains  = nimble:::mcmcNodeInit_virtual,	##	remove the nimble:::, dummy
-	setup = function(model, node){},
-	run = function(){
-		vals <- values(model, node)
-		if(is.na.vec(vals)) 
-			print('Value of right hand side only node not initialized')
-	},
-	where = getLoadingNamespace()
-)
