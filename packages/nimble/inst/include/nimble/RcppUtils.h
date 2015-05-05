@@ -116,7 +116,7 @@ extern "C" {
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
   SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
   
-  SEXP rankSample(SEXP p, SEXP n);
+  SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s);
   
   
   SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);// This is a utility for looking up a field of an environment
@@ -328,10 +328,12 @@ class orderedPair	//simple class which is used to be sorted by value, but rememb
 	int rank;
 	};
 
-bool compareOrderedPair(orderedPair a, orderedPair b);			//function called for sort 
+bool compareOrderedPair(orderedPair a, orderedPair b);	 //function called for sort 
 
-void rawSample(double* p, int c_samps, int N, int* ans, bool unsort);
-void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);		
+void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent);
+
+void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);
+void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output, bool& silent);
 
 
 /*	optim tools	*/
