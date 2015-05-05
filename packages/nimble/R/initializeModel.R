@@ -76,7 +76,7 @@ stochNodeInit <- nimbleFunction(
         ##if(is.na(lp) | lp < -1e50)
         ##print('Problem when attempting to initialize stochastic node')
         if(is.na(lp)) print('Problem initializing stochastic node, logProb is NA')
-        if(lp < -1e50) print('Problem initializing stochastic node, logProb less than -1E-50')
+        if(lp < -1e50) print('Problem initializing stochastic node, logProb less than -1E50')
     },    where = getLoadingNamespace()
 )
 
