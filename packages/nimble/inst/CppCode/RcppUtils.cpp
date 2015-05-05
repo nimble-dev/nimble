@@ -1379,128 +1379,99 @@ double nimMod(double a, double b) {
   return(fmod(a, b));
 }
 
-bool compareOrderedPair(orderedPair a, orderedPair b){			//function called for sort 
-	return( a.value < b.value );
+bool compareOrderedPair(orderedPair a, orderedPair b) {  //function called for sort 
+  return(a.value < b.value);
 }
 
-/*
-void rawSample(double* p, int c_samps, int N, int* ans){
-	vector<double> cdf(N+1);
-	cdf[0] = 0;
-	for(int i = 1; i < N+1; i++ )
-		cdf[i] = cdf[i-1] + p[i-1];
-	double sum = cdf[N];
-	if(sum != 1){
-		for(int i = 1; i < N+1; i++)
-			cdf[i] = cdf[i]/sum;
-	}
-	vector<orderedPair> sampP(c_samps + 1);
-	for(int i = 0; i < c_samps ; i++){
-		(sampP[i]).value = unif_rand();
-		(sampP[i]).rank = i;
-		}
-	sampP[c_samps].value = 2;
-	sort(sampP.begin(), sampP.end(),compareOrderedPair);
-	int curP = 0;
-	for(int i = 1; i < N + 1; i++){
-		while(cdf[i] >= (sampP[curP]).value ){
-			ans[ (sampP[curP]).rank] = i;
-			curP++;
-//			if(curP == c_samps){
-//				return;
-//			}
-		}
-	}	
-}
-*/
-void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
-	vector<double> cdf(N+1);
-	cdf[0] = 0;
-	bool badVals = false;
-	for(int i = 1; i < N+1; i++ ){
-		cdf[i] = cdf[i-1] + p[i-1];
-		if(!(p[i-1] >= 0)){
-			badVals = true;
-			//PRINTF("Warning: negative probability given to rankSample. Returning rep(1, size)\n");
-			PRINTF("Warning: negative probability given to rankSample. Returning (1:size)\n");
-			cdf[N] = 1;
-			break;
-			}
-	}
-	double sum = cdf[N];
-	if(sum == 0){
-		badVals = true;
-		//PRINTF("Warning: sum of weights = 0 in rankSample. Returning rep(1, size)\n");
-		PRINTF("Warning: sum of weights = 0 in rankSample. Returning (1:size)\n");
-	}
-	if(badVals){
-		for(int i = 1; i <= c_samps; i++)
-			ans[i-1] = i;
-			return;
-	}
-	cdf[N] = sum + 1;
-	vector<double> sampP(c_samps + 1);
-	sampP[0] = 1 - exp( log( unif_rand() ) / c_samps );
+void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent) {
+  vector<double> cdf(N+1);
+  cdf[0] = 0;
+  bool badVals = false;
+  for(int i = 1; i < N+1; i++ ){
+    cdf[i] = cdf[i-1] + p[i-1];
+    if(!(p[i-1] >= 0)){
+      badVals = true;
+      if(!silent) PRINTF("Warning: negative probability given to rankSample. Returning (1:size)\n");
+      cdf[N] = 1;
+      break;
+    }
+  }
+  double sum = cdf[N];
+  if(sum == 0){
+    badVals = true;
+    if(!silent) PRINTF("Warning: sum of weights = 0 in rankSample. Returning (1:size)\n");
+  }
+  if(badVals){
+    for(int i = 1; i <= c_samps; i++)
+      ans[i-1] = i;
+    return;
+  }
+  cdf[N] = sum + 1;
+  vector<double> sampP(c_samps + 1);
+  sampP[0] = 1 - exp( log( unif_rand() ) / c_samps );
 	
-	sampP[0] = sampP[0] * sum;
-	sampP[c_samps] = sum + 1;
+  sampP[0] = sampP[0] * sum;
+  sampP[c_samps] = sum + 1;
 	
-
+  for(int i = 1; i < c_samps ; i++)
+    sampP[i] = (1 - exp(  log(unif_rand()) / (c_samps - i)   ) )* (sum - sampP[i-1]) + sampP[i-1];
+  int curP = 0;
+  if(unsort == false){
+    for(int i = 1; i <= N; i++){
+      while(cdf[i] > (sampP[curP])){
+	ans[curP] = i;
+	curP++;
+      }
+    }
+    return;	
+  }
+  // unsort must be true to get here
+  vector<double> sortAns(c_samps);	
+  for(int i = 1; i <= N; i++){
+    while(cdf[i] > (sampP[curP])){
+      sortAns[curP] = i;
+      curP++;
+    }
+  }
 	
-	for(int i = 1; i < c_samps ; i++)
-		sampP[i] = (1 - exp(  log(unif_rand()) / (c_samps - i)   ) )* (sum - sampP[i-1]) + sampP[i-1];
-	int curP = 0;
-	if(unsort == false){
-		for(int i = 1; i <= N; i++){
-			while(cdf[i] > (sampP[curP])){
-				ans[curP] = i;
-				curP++;
-			}
-		}
-	return;	
-	}
-// unsort must be true to get here
-		vector<double> sortAns(c_samps);	
-		for(int i = 1; i <= N; i++){
-			while(cdf[i] > (sampP[curP])){
-				sortAns[curP] = i;
-				curP++;
-			}
-		}
-	
-	vector<int> newOrder(c_samps);
-	for(int i = 0; i < c_samps;i++)
-		newOrder[i] = i;
-	int drawIndex;
-	for(int i = c_samps-1; i >= 0; i--){
-		drawIndex = unif_rand() * i;
-		ans[i] = sortAns[newOrder[drawIndex]];
-		newOrder[drawIndex] = newOrder[i];
-	}
-
+  vector<int> newOrder(c_samps);
+  for(int i = 0; i < c_samps;i++)
+    newOrder[i] = i;
+  int drawIndex;
+  for(int i = c_samps-1; i >= 0; i--){
+    drawIndex = unif_rand() * i;
+    ans[i] = sortAns[newOrder[drawIndex]];
+    newOrder[drawIndex] = newOrder[i];
+  }
 }
 
-
-
-SEXP rankSample(SEXP p, SEXP n){
-	int N = LENGTH(p);
-	int c_samps = INTEGER(n)[0];
-	SEXP output;
-	PROTECT(output = allocVector(INTSXP, c_samps ) );
-	GetRNGstate();
-	rawSample(REAL(p), c_samps, N, INTEGER(output), false);
-	PutRNGstate();
-	UNPROTECT(1);
-	return(output);
+SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
+  //PRINTF("in SEXP rankSample\n");
+  int N = LENGTH(p);
+  int c_samps = INTEGER(n)[0];
+  bool silent = LOGICAL(s)[0];
+  SEXP output;
+  PROTECT(output = allocVector(INTSXP, c_samps ));
+  GetRNGstate();
+  rawSample(REAL(p), c_samps, N, INTEGER(output), false, silent);
+  PutRNGstate();
+  UNPROTECT(1);
+  return(output);
 }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output){
-	output.setSize(n);
-	int N = weights.size();
-//	GetRNGstate();
-	rawSample(weights.getPtr(), n, N, output.getPtr(), false );	
-//	PutRNGstate();
-	}
+void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output) {
+  bool silent = false;
+  rankSample(weights, n, output, silent);
+}
+
+void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output, bool& silent) {
+  //PRINTF("in VOID rankSample\n");
+  output.setSize(n);
+  int N = weights.size();
+  //GetRNGstate();
+  rawSample(weights.getPtr(), n, N, output.getPtr(), false, silent);
+  //PutRNGstate();
+}
 
 
 

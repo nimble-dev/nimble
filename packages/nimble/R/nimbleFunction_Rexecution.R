@@ -493,10 +493,11 @@ nfMethod <- function(nf, methodName) {
 #' cSamp <- compileNimble(rSamp)
 #' cSamp(1:4, 5)
 #' #[1] 1 1 4 4 4
-rankSample <- function(weights, size, output){
-	if(!is.loaded('rankSample') )
-		stop('rankSample does not work because we have not loaded any nimble code yet')
-	assign(as.character(substitute(output) ), value = .Call('rankSample', as.numeric(weights), as.integer(size), as.integer(output)), envir = parent.frame(n = 1) ) 
+rankSample <- function(weights, size, output, silent = FALSE) {
+    ##cat('in R version rankSample\n')
+    if(!is.loaded('rankSample'))
+        stop('rankSample does not work because we have not loaded any nimble code yet')
+    assign(as.character(substitute(output)), .Call('rankSample', as.numeric(weights), as.integer(size), as.integer(output), as.logical(silent)), envir = parent.frame())
 }
 
 #' print function for use in nimbleFunctions, where it is identical to \code{print}, but not R's \code{print}.
