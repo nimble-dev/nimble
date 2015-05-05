@@ -31,13 +31,14 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition
 #' 
 #' @param code code for the model in the form returned by \code{nimbleCode} or (equivalently) \code{quote}
-#' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
 #' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
+#' @param data named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
+#' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE). 
-#' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
 #' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user. 
-#' @param data named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure.
+#' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
+#' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
 #' @author NIMBLE development team
 #' @export
 #' @details
@@ -186,7 +187,7 @@ processNonParseableCode <- function(text) {
 #' 
 #' @param model one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
 #' @param data (optional) (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named \{modelName\}-data including extensions .R, .r, or .txt.
-#' @param inits (optional) (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the input constants and data
+#' @param inits (optional) (1) character string giving the file name for an R file providing starting values as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the starting values. Unlike JAGS, this should provide a single set of starting values, and therefore if provided as a list should be a simple list and not a list of lists.
 #' @param dir (optional) character string giving the directory where the (optional) files are located
 #' @param useInits boolean indicating whether to set the initial values, either based on \code{inits} or by finding the '-inits' file corresponding to the input model file
 #' @return return returns a NIMBLE BUGS R model
