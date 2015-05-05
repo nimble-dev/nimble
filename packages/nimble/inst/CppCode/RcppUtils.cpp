@@ -1421,7 +1421,8 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 		cdf[i] = cdf[i-1] + p[i-1];
 		if(!(p[i-1] >= 0)){
 			badVals = true;
-			PRINTF("Warning: negative probability given to rankSample. Returning rep(1, size)\n");
+			//PRINTF("Warning: negative probability given to rankSample. Returning rep(1, size)\n");
+			PRINTF("Warning: negative probability given to rankSample. Returning (1:size)\n");
 			cdf[N] = 1;
 			break;
 			}
@@ -1429,11 +1430,12 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
 	double sum = cdf[N];
 	if(sum == 0){
 		badVals = true;
-		PRINTF("Warning: sum of weights = 0 in rankSample. Returning rep(1, size)\n");
+		//PRINTF("Warning: sum of weights = 0 in rankSample. Returning rep(1, size)\n");
+		PRINTF("Warning: sum of weights = 0 in rankSample. Returning (1:size)\n");
 	}
 	if(badVals){
 		for(int i = 1; i <= c_samps; i++)
-			ans[i-1] = 1;
+			ans[i-1] = i;
 			return;
 	}
 	cdf[N] = sum + 1;
