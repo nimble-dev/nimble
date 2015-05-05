@@ -1391,7 +1391,8 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent
     cdf[i] = cdf[i-1] + p[i-1];
     if(!(p[i-1] >= 0)){
       badVals = true;
-      if(!silent) PRINTF("Warning: negative probability given to rankSample. Returning (1:size)\n");
+      if(!silent)
+	PRINTF("Warning: negative probability given to rankSample. Returning a uniform sample.\n");
       cdf[N] = 1;
       break;
     }
@@ -1399,11 +1400,12 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent
   double sum = cdf[N];
   if(sum == 0){
     badVals = true;
-    if(!silent) PRINTF("Warning: sum of weights = 0 in rankSample. Returning (1:size)\n");
+    if(!silent)
+      PRINTF("Warning: sum of weights = 0 in rankSample. Returning a uniform sample.\n");
   }
   if(badVals){
     for(int i = 1; i <= c_samps; i++)
-      ans[i-1] = i;
+      ans[i-1] = ((i-1) % N) + 1;  // generates a cyclic uniform sample (DT, May 2015)
     return;
   }
   cdf[N] = sum + 1;
