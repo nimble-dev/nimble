@@ -8,7 +8,7 @@ pfStepVirtual <- nimbleFunctionVirtual(
 
 pfStep <- nimbleFunction(
     contains = pfStepVirtual,
-    setup = function(model, mv, nodes, iNode) {
+    setup = function(model, mv, nodes, iNode, silent = FALSE) {
         notFirst <- iNode != 1
         prevNode <- nodes[if(notFirst) iNode-1 else iNode]
         thisNode <- nodes[iNode]
@@ -28,7 +28,7 @@ pfStep <- nimbleFunction(
             calculate(model, thisDeterm)
             wts[i] <- exp(calculate(model, thisData))
         }
-        rankSample(wts, m, ids)
+        rankSample(wts, m, ids, silent)
         for(i in 1:m)
             copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
         return(log(mean(wts)))
@@ -49,7 +49,7 @@ pfStep <- nimbleFunction(
 #' Cmy_PF <- compileNimble(my_PF, project = model)
 #' logLike <- Cmy_PF(m = 100000)
 buildPF <- nimbleFunction(
-    setup = function(model, nodes) {
+    setup = function(model, nodes, silent = FALSE) {
         my_initializeModel <- initializeModel(model)
         nodes <- model$expandNodeNames(nodes, sort = TRUE)
         dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
@@ -59,15 +59,17 @@ buildPF <- nimbleFunction(
                                           size = list(x = dims[[1]], xs = dims[[1]])))
         pfStepFunctions <- nimbleFunctionList(pfStepVirtual)
         for(iNode in seq_along(nodes))
-            pfStepFunctions[[iNode]] <- pfStep(model, mv, nodes, iNode)
+            pfStepFunctions[[iNode]] <- pfStep(model, mv, nodes, iNode, silent)
     },
     run = function(m = integer(default = 10000)) {
         returnType(double())
         my_initializeModel$run()
         resize(mv, m)
         logL <- 0
-        for(iNode in seq_along(pfStepFunctions))
+        for(iNode in seq_along(pfStepFunctions)) {
             logL <- logL + pfStepFunctions[[iNode]]$run(m)
+            if(logL == -Inf) return(logL)
+        }
         return(logL)
     },  where = getLoadingNamespace()
 )
