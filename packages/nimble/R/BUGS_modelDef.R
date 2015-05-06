@@ -266,7 +266,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             if(nimbleOptions$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
-            
+            forCode[[3]] <- indexRangeExpr
             sinlgeContexts <- c(if(contextID == 1) NULL else contexts[[contextID]]$singleContexts, ## concatenate any current contexts
                                 list(BUGSsingleContextClass$new(indexVarExpr = indexVarExpr,       ## Add the new context
                                                                 indexRangeExpr = indexRangeExpr,

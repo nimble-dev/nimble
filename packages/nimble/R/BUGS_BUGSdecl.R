@@ -193,6 +193,8 @@ BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, cont
 ## move this to a util file when everything is working.  It is convenient here for now
 makeIndexNamePieces <- function(indexCode) {
     if(length(indexCode) == 1) return(if(is.numeric(indexCode)) indexCode else as.character(indexCode))
+    ## Diagnostic for messed up indexing here
+    if(as.character(indexCode[[1]] != ':')) stop(paste0("Error processing model: something is wrong with the index ", deparse(indexCode),". Note that any variables in index expressions must be provided as constants.  NIMBLE does not yet allow indices that are model nodes."), call. = FALSE)
     p1 <- indexCode[[2]]
     p2 <- indexCode[[3]]
     list( if(is.numeric(p1)) p1 else as.character(p1),
@@ -209,8 +211,12 @@ BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNa
 
     symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
     rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) if(length(x) == 1) as.character(x) else as.character(x[[2]])))
-    
-    targetIndexNamePieces <<- if(length(targetExprReplaced) > 1) lapply(targetExprReplaced[-c(1,2)], makeIndexNamePieces) else NULL
+
+    ## note that makeIndexNamePieces is designed only for indices that are a single name or number or a `:` operator with single name or number for each argument
+    ## This relies on the fact that any expression will have been lifted by this point and what it has been replaced with is simply a name
+    ## This means makeIndexNamePieces can include a diagnostic
+    targetIndexNamePieces <<- try(if(length(targetExprReplaced) > 1) lapply(targetExprReplaced[-c(1,2)], makeIndexNamePieces) else NULL)
+    if(inherits(targetIndexNamePieces, 'try-error')) stop(paste('Error occurred defining ', deparse(targetExprReplaced)), call. = FALSE)
     parentIndexNamePieces <<- lapply(symbolicParentNodesReplaced, function(x) if(length(x) > 1) lapply(x[-c(1,2)], makeIndexNamePieces) else NULL)
     NULL
 })
