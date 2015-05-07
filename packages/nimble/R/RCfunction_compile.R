@@ -86,6 +86,7 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
     ## and it doesn't replace and function names
     if(is.character(code)) return(code)
     if(is.numeric(code)) return(code)
+    if(is.logical(code)) return(code)
     if(is.name(code)) {
         maybeAns <- subList[[as.character(code)]]
         return( if(is.null(maybeAns)) code else maybeAns )
