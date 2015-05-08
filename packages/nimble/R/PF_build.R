@@ -50,7 +50,7 @@ pfStep <- nimbleFunction(
 #' logLike <- Cmy_PF(m = 100000)
 buildPF <- nimbleFunction(
     setup = function(model, nodes, silent = FALSE) {
-        my_initializeModel <- initializeModel(model)
+        my_initializeModel <- initializeModel(model, silent = silent)
         nodes <- model$expandNodeNames(nodes, sort = TRUE)
         dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
         if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')

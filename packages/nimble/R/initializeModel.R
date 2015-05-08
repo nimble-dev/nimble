@@ -27,7 +27,7 @@
 #'    }
 #' )
 initializeModel <- nimbleFunction(
-    setup = function(model) {
+    setup = function(model, silent = FALSE) {
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
         iter <- 1
 
@@ -39,7 +39,7 @@ initializeModel <- nimbleFunction(
         
         stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         for(i in seq_along(stochNonDataNodes))
-            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i])
+            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent)
 
         allDetermNodes <- model$getNodeNames(determOnly = TRUE)
         determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
@@ -68,13 +68,15 @@ checkRSHonlyInit <- nimbleFunction(
 
 stochNodeInit <- nimbleFunction(
     contains = nodeInit_virtual,
-    setup = function(model, node) {},
+    setup = function(model, node, silent) {},
     run = function() {
         theseVals <- values(model, node)
         if(is.na.vec(theseVals)) simulate(model, node)
         lp <- calculate(model, node)
         if(is.na(lp)) print('Problem initializing stochastic node, logProb is NA')
-        if(lp < -1e12) print('Problem initializing stochastic node, logProb less than -1e12')
+        if(lp < -1e12) {
+            if(!silent) print('Problem initializing stochastic node, logProb less than -1e12')
+        }
     },    where = getLoadingNamespace()
 )
 
