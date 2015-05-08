@@ -1999,7 +1999,7 @@ modelDefClass$methods(genVarInfo3 = function() {
     for(i in seq_along(dimensionsList)) {
         dimVarName <- names(dimensionsList)[i]
         if(!(dimVarName %in% names(varInfo))) next
-        if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions')
+        if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions for variable ', dimVarName)
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }

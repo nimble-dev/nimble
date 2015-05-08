@@ -324,7 +324,8 @@ conjugacyClass <- setRefClass(
                                       posteriorLogDensity1 <- DPOSTERIORCALL_NEW
                                       posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
                                       if(abs(posteriorVerification) > 1e-8)     {
-                                      nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification) }
+                                      nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
+                                            }
                 }, list(DPOSTERIORCALL_ORIG = eval(substitute(substitute(expr, list(VALUE=quote(origValue))), list(expr=posteriorObject$dCallExpr))),
                         DPOSTERIORCALL_NEW  = eval(substitute(substitute(expr, list(VALUE=quote(newValue))),  list(expr=posteriorObject$dCallExpr)))))
             }
