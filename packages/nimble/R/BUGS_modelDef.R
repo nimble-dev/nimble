@@ -1268,7 +1268,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
             }
         }        
         else {
-            if(length(parentIndexNamePieces)==1) varIndicesToUse <- 1
+            if(length(parentIndexNamePieces)==1) varIndicesToUse <- as.numeric(parentExprReplaced[[3]])
             else {
                 varIndicesToUse <- matrix(0, nrow = 1, ncol = length(parentIndexNamePieces))
                 for(iI in 1:ncol(varIndicesToUse)) varIndicesToUse[1, iI] <- as.numeric(parentExprReplaced[[iI+2]])
