@@ -372,7 +372,7 @@ deregisterDistributions <- function(distributionsNames) {
 # at the moment it is still somewhat tied to the internal structure of our distributionsClass
 # - Chris
 
-# this is a hack because having trouble calling getDistribution() from within nodeInfoClass$isDiscrete
+# this is a hack because having trouble calling getDistribution() from within nodeInfoClass$isDiscrete; (as of 5/8/15 doesn't seem to be needed)
 getDistribution2 <- function(distName) {
     getDistribution(distName)
 }

@@ -1753,7 +1753,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     require(igraph)
     graph <<- graph.empty()
     graph <<- add.vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
-    allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo))) 
+    allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
+    browser()
     graph <<- add.edges(graph, allEdges)                                         ## add all edges at once
 
     ## 11. Topologically sort and re-index all objects with vertex IDs

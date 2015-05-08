@@ -201,7 +201,7 @@ testBUGSmodel(example = 'test', dir = "",
 # test handling of lumped data and constants, and overwriting of
 # data by inits
 
-test_that("test of the distinguishing lumped data and constants:", {
+test_that("test of distinguishing lumped data and constants:", {
 
 code <- nimbleCode({
     x ~ dnorm(mu,sig)
