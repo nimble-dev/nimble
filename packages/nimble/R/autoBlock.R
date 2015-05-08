@@ -339,7 +339,7 @@ autoBlockClass <- setRefClass(
                 ##     msg <- 'using \'end\' sampler may lead to results we don\'t want'
                 ##     cat(paste0('\nWARNING: ', msg, '\n\n')); warning(msg)
                 ## }
-                if(grepl('^conjugate_', ss$name) && nimble:::nimbleOptions$verifyConjugatePosterior) {
+                if(grepl('^conjugate_', ss$name) && getNimbleOption('verifyConjugatePosterior')) {
                     ##msg <- 'conjugate sampler running slow due to checking the posterior'
                     ##cat(paste0('\nWARNING: ', msg, '\n\n')); warning(msg)
                     warn <- TRUE

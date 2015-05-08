@@ -301,7 +301,7 @@ conjugacyClass <- setRefClass(
             
             ## only if we're verifying conjugate posterior distributions: get initial targetValue, and modelLogProb -- getLogProb(model, calcNodes)
 
-            if(nimbleOptions$verifyConjugatePosteriors) {
+            if(getNimbleOption('verifyConjugatePosteriors')) {
                 functionBody$addCode({
                     modelLogProb0 <- getLogProb(model, calcNodes)
                     origValue <- model[[target]] })
