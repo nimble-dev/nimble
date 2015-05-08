@@ -90,7 +90,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          for(i in seq_along(model$nodeFunctions)) {
                                              nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
                                          }
-                                         nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE, returnCppClass = TRUE, fromModel = TRUE, ...) ## fromModel is redundant here
+                                         nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE, returnCppClass = TRUE, fromModel = TRUE) ## fromModel is redundant here
                                          ##for(i in names(model$nodeGenerators)) {
                                              ##nfName <- paste0('nf',i)
                                           
