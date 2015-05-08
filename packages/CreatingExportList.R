@@ -55,7 +55,8 @@ individualExportNames = c(
     'getNimbleOption',
     'nimbleOptions',
     'registerDistributions',
-    'deregisterDistributions'
+    'deregisterDistributions',
+    'getDistribution'
 )
 
 individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',

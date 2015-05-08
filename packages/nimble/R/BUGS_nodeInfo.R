@@ -25,7 +25,7 @@ nodeInfoClass <- setRefClass('nodeInfoClass',
                                  altParamExprsWithValues = 'ANY'
                              ),
                              methods = list(
-                                 getDistribution = function() {
+                                 getDistributionName = function() {
                                      if(type != 'stoch')  stop('getting distribution of non-stochastic node')
                                      return(as.character(codeReplacedWithValues[[3]][[1]]))
                                  },
@@ -40,12 +40,12 @@ nodeInfoClass <- setRefClass('nodeInfoClass',
                                  },
                                  isDiscrete = function() {
                                      if(type != 'stoch')  stop('querying whether a non-stochastic node is \'discrete\'')
-                                     distName <- getDistribution()
-                                     # getting errors if try to use non-method getDistribution and (surprisingly) if change getDistribution method to getDistributionName
+                                     distName <- getDistributionName()
+                                     # getting errors if try to use non-method getDistribution and (surprisingly) if change getDistribution method to getDistributionName -- CJP
                                      #Error in envRefInferField(x, what, getClass(class(x)), selfEnv) : 
  # ‘getDistribution’ is not a valid field or method name for reference class “nodeInfoClass”
 
                                      # so this is a hack to provide another function name...:
-                                     return(getDistribution2(distName)$discrete)
+                                     return(getDistribution(distName)$discrete)
                                  }
                              ))
