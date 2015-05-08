@@ -418,9 +418,10 @@ evalInDistsMatchCallEnv <- function(expr) {
 
 distributions <- distributionsClass(distributionsInputList)
 
-getDistributionsObject <- function() {
-    distributions
-}
+# removed by CJP as getDistribution() and getDistributionsInfo() make it unneeded
+# getDistributionsObject <- function() {
+#   distributions
+# }
 
 
 

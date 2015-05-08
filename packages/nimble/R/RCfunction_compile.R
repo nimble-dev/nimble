@@ -123,8 +123,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            }
                                        }
 
-                                       if(!is.null(nimbleOptions$debugCppLineByLine)) {
-                                           if(nimbleOptions$debugCppLineByLine) {
+                                       if(!is.null(nimbleOptions()$debugCppLineByLine)) {
+                                           if(nimbleOptions()$debugCppLineByLine) {
                                                debugCpp <- TRUE
                                                if(length(debugCppLabel) == 0) debugCppLabel <- name
                                            }

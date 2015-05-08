@@ -43,8 +43,8 @@ BUGScontextClass$methods(embedCodeInForLoop = function(innerLoopCode, useContext
     ## allowNegativeIndexSequences: if TRUE, for(i in 2:1) results in iterating over c(2,1), as R would.  If FALSE (Default),
     ##      behavior is like BUGS: for(i in 2:1) results in no iteration.
     if(is.null(allowNegativeIndexSequences))
-        allowNegativeIndexSequences <- if(is.null(nimbleOptions[['processBackwardsModelIndexRanges']])) TRUE
-                                       else nimbleOptions$processBackwardsModelIndexRanges
+        allowNegativeIndexSequences <- if(is.null(getNimbleOptions('processBackwardsModelIndexRanges'))) TRUE
+                                       else getNimbleOption('processBackwardsModelIndexRanges')
  
     if(is.null(useContext)) {
         useContext <- rep(TRUE, length(singleContexts))

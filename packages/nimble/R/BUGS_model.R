@@ -114,8 +114,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
 
                                   isDiscrete = function(node) {
                                       dist <- getNodeDistribution(node)
-                                      distributions <- getDistributionsObject()
-                                      discrete <- distributions[[dist]]$discrete
+                                      discrete <- getDistribution(dist)$discrete
                                       return(discrete)
                                   },
 
