@@ -105,7 +105,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          buildSEXPgenerator()
                                          buildSEXPfinalizer()
                                          buildPointAtAll()
-                                         if(buildNodeDefs) buildNodes(where = where, ...)
+                                         if(buildNodeDefs) buildNodes(where = where, debugCpp = debugCpp)
                                      }
                                      )
                                  )
