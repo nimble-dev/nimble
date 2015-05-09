@@ -4,7 +4,6 @@ context("Testing of user-supplied distributions and functions in BUGS code")
 
 ## User-supplied functions
 
-
 dbl <- nimbleFunction(
     run = function(x = double(0)) {
         returnType(double(0))
@@ -14,17 +13,8 @@ dbl <- nimbleFunction(
 # if not in Global, nimble's scoping can't find it in the
 # environment created by testthat
 assign('dbl', dbl, envir = .GlobalEnv)
-
 # not working at moment as enclosing env of fun is getting messed up
 
-## vector input and output
-vecdbl <- nimbleFunction(
-    run = function(x = double(1)) {
-        returnType(double(1))
-        return(2*x)
-    }
-    )
-assign('vecdbl', vecdbl, envir = .GlobalEnv)
 
 ## two arguments to the nimbleFunction
 dblSum <- nimbleFunction(
@@ -34,6 +24,15 @@ dblSum <- nimbleFunction(
     }
     )
 assign('dblSum', dblSum, envir = .GlobalEnv)
+
+## vector input and output
+vecdbl <- nimbleFunction(
+    run = function(x = double(1)) {
+        returnType(double(1))
+        return(2*x)
+    }
+    )
+assign('vecdbl', vecdbl, envir = .GlobalEnv)
 
 
 code <- nimbleCode({
