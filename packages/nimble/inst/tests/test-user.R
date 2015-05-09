@@ -11,6 +11,11 @@ dbl <- nimbleFunction(
         return(2*x)
     }
     )
+# if not in Global, nimble's scoping can't find it in the
+# environment created by testthat
+assign('dbl', dbl, envir = .GlobalEnv)
+
+# not working at moment as enclosing env of fun is getting messed up
 
 ## vector input and output
 vecdbl <- nimbleFunction(
@@ -19,6 +24,7 @@ vecdbl <- nimbleFunction(
         return(2*x)
     }
     )
+assign('vecdbl', vecdbl, envir = .GlobalEnv)
 
 ## two arguments to the nimbleFunction
 dblSum <- nimbleFunction(
@@ -27,6 +33,7 @@ dblSum <- nimbleFunction(
         return(2*(x+y))
     }
     )
+assign('dblSum', dblSum, envir = .GlobalEnv)
 
 
 code <- nimbleCode({
@@ -57,7 +64,7 @@ set.seed(0)
 simulate(cm)
 
 for(var in c('dx', 'y', 'dz', 'w')) {
-    try(test_that("Test that R and C models agree with user-suppled functions: ",
+    try(test_that("Test that R and C models agree with user-supplied functions: ",
                   expect_that(get(var, m), equals(get(var, cm),
                                              info = paste0(var, " values differ")))))
 }
@@ -87,6 +94,8 @@ dmyexp <- nimbleFunction(
             return(exp(logProb))
         }
     })
+assign('dmyexp', dmyexp, envir = .GlobalEnv)
+
 
 rmyexp <- nimbleFunction(
     run = function(n = integer(0), rate = double(0)) {
@@ -96,6 +105,7 @@ rmyexp <- nimbleFunction(
         return(-log(1-dev) / rate)
     }
     )
+assign('rmyexp', rmyexp, envir = .GlobalEnv)
 
 pmyexp <- nimbleFunction(
     run = function(q = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
@@ -117,6 +127,7 @@ pmyexp <- nimbleFunction(
         }
     }
     )
+assign('pmyexp', pmyexp, envir = .GlobalEnv)
 
 qmyexp <- nimbleFunction(
     run = function(p = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
@@ -130,7 +141,7 @@ qmyexp <- nimbleFunction(
         return(-log(1 - p) / rate)
     }
     )
-
+assign('qmyexp', qmyexp, envir = .GlobalEnv)
 
 
 ddirchmulti <- nimbleFunction(
@@ -143,6 +154,7 @@ ddirchmulti <- nimbleFunction(
             return(exp(logProb))
         }
     })
+assign('ddirchmulti', ddirchmulti, envir = .GlobalEnv)
 
 rdirchmulti <- nimbleFunction(
     run = function(n = integer(0), alpha = double(1), size = double(0)) {
@@ -151,6 +163,7 @@ rdirchmulti <- nimbleFunction(
         p <- rdirch(1, alpha)
         return(rmulti(1, size = size, prob = p))
     })
+assign('rdirchmulti', rdirchmulti, envir = .GlobalEnv)
 
 registerDistributions(list(
     dmyexp = list(
