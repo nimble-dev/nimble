@@ -182,8 +182,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
 
-                                       passedArgNames <- as.list(names(RCfun$argInfo))
-                                       names(passedArgNames) <- names(RCfun$argInfo)
+                                       passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) ## as.list(names(RCfun$argInfo))
+                                       names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() ## names(RCfun$argInfo)
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  
   
                                        exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
