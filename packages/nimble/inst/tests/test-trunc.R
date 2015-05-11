@@ -380,3 +380,25 @@ test_mcmc(model = code, inits = as.list(inits), data = c(data, as.list(constants
               sd = list(a0 = c(.02, .1, .1), beta = .03, pi = .02)),
           name = 'test of ordering contraint')
 # no basic assessment because R MCMC takes forever, even for 5 iterations
+
+
+# test that conjugate samplers not assigned when have dependent truncated node
+# also that not assigned when target node is truncated (though we could code this
+# so that we have the corrected truncated density as the conjugate sampler)
+
+code <- nimbleCode({
+   y ~ T(dnorm(mu1, 1), 0, 3)
+   mu1 ~ dnorm(0, 1)
+   y2 ~ dnorm(mu2, 1)
+   mu2 ~ T(dnorm(theta, 1), 0, 3)
+   y3 ~ dnorm(mu3, 1)
+   mu3 ~ dnorm(theta, 1)
+})
+
+m <- nimbleModel(code)
+spec <- configureMCMC(m)
+
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[1]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu1")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[3]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu2")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[4]]$name, is_identical_to('conjugate_dnorm'), info = "incorrectly not assigning conjugate sampler for mu3")))
+   
