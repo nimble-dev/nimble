@@ -84,10 +84,10 @@ try(test_that("Test that values based on user-supplied functions are correct: ",
 ## User-supplied distributions
 
 dmyexp <- nimbleFunction(
-    run = function(x = double(0), rate = double(0), log_value = integer(0)) {
+    run = function(x = double(0), rate = double(0), log = integer(0)) {
         returnType(double(0))
         logProb <- log(rate) - x*rate
-        if(log_value) {
+        if(log) {
             return(logProb)
         } else {
             return(exp(logProb))
@@ -107,18 +107,18 @@ rmyexp <- nimbleFunction(
 assign('rmyexp', rmyexp, envir = .GlobalEnv)
 
 pmyexp <- nimbleFunction(
-    run = function(q = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
+    run = function(q = double(0), rate = double(0), lower.tail = integer(0), log.p = integer(0)) {
         returnType(double(0))
-        if(!lower_tail) {
+        if(!lower.tail) {
             logp = -rate * q
-            if(log_p) {
+            if(log.p) {
                 return(logp)
             } else {
                 return(exp(logp))
             }
         } else {
             p = 1 - exp(-rate * q)
-            if(!log_p) {
+            if(!log.p) {
                 return(p)
             } else {
                return(log(p))
@@ -129,12 +129,12 @@ pmyexp <- nimbleFunction(
 assign('pmyexp', pmyexp, envir = .GlobalEnv)
 
 qmyexp <- nimbleFunction(
-    run = function(p = double(0), rate = double(0), lower_tail = integer(0), log_p = integer(0)) {
+    run = function(p = double(0), rate = double(0), lower.tail = integer(0), log.p = integer(0)) {
         returnType(double(0))
-        if(log_p) {
+        if(log.p) {
             p = exp(p)
         }
-        if(!lower_tail) {
+        if(!lower.tail) {
             p = 1 - p
         }
         return(-log(1 - p) / rate)
@@ -144,10 +144,10 @@ assign('qmyexp', qmyexp, envir = .GlobalEnv)
 
 
 ddirchmulti <- nimbleFunction(
-    run = function(x = double(1), alpha = double(1), size = double(0), log_value = integer(0)) {
+    run = function(x = double(1), alpha = double(1), size = double(0), log = integer(0)) {
         returnType(double(0))
         logProb <- lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
-        if(log_value) {
+        if(log) {
             return(logProb)
         } else {
             return(exp(logProb))

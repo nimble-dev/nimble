@@ -119,8 +119,9 @@ ndf_createStochSimulateTrunc <- function(RHS) {
     RHS <- RHS[-c(lowerPosn, upperPosn)]
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
     userDist <- sum(paste0("d", dist) %in% getDistributionsInfo('namesVector', userOnly = TRUE))
-    lowerTailName <- ifelse(userDist, 'lower_tail', 'lower.tail')
-    logpName <- ifelse(userDist, 'log_p', 'log.p')
+    # back to using periods in name because we now mangle the nf arg names
+    lowerTailName <- 'lower.tail' # ifelse(userDist, 'lower_tail', 'lower.tail')
+    logpName <- 'log.p'  # ifelse(userDist, 'log_p', 'log.p')
     # setup for runif(1, pdist(lower,...), pdist(upper,...))
     # pdist() expression template for inputs to runif()
     pdistTemplate <- RHS
@@ -162,7 +163,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS) {
         return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS))
     } else {
           userDist <- as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE)
-        RHS <- addArg(RHS, 1, ifelse(userDist, 'log_value', 'log'))   # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
+        RHS <- addArg(RHS, 1, 'log')  # ifelse(userDist, 'log_value', 'log'))   # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
         code <- substitute( LOGPROB <<- STOCHCALC,
                            list(LOGPROB = logProbNodeExpr,
                                 STOCHCALC = RHS))
@@ -179,9 +180,10 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS) {
     RHS <- RHS[-c(lowerPosn, upperPosn)]
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
     userDist <- sum(as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE))
-    lowerTailName <- ifelse(userDist, 'lower_tail', 'lower.tail')
-    logpName <- ifelse(userDist, 'log_p', 'log.p')
-    logName <- ifelse(userDist, 'log_value', 'log')
+    # back to using periods in name because we now mangle the nf arg names
+    lowerTailName <- 'lower.tail' # ifelse(userDist, 'lower_tail', 'lower.tail')
+    logpName <- 'log.p' # ifelse(userDist, 'log_p', 'log.p')
+    logName <- 'log' # ifelse(userDist, 'log_value', 'log')
 
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- as.name(paste0("p", dist))
