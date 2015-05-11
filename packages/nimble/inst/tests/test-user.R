@@ -234,6 +234,19 @@ inits1 <- list(s1 = 1, s2 = 1)
 inits2 <- list(lambda = 1)
 inits3 <- list(alpha = rep(30, P))
 
+m2 <- nimbleModel(code2, data = data2['y3'], constants = data2[c('upper', 'n2')],
+                  inits = inits 2)
+cm2 <- compileNimble(m2)
+simulate(m2, 'lambda')
+simulate(cm2, 'lambda')
+try(test_that("Test that truncation works with simulate nodeFunction for user-supplied distribution: ",
+              expect_that(max(c(m2$lambda, cm2$lambda)), is_less_than(upper),
+                          info = paste0("parameter exceeds upper bound"))))
+m2$lambda <- cm2$lambda <- upper + 1
+try(test_that("Test that truncation works with calculate nodeFunction for user-supplied distribution: ",
+              expect_that(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), is_identical_to(-Inf),
+                          info = paste0("calculate on out-of-bounds value does not return -Inf"))))
+
 
 testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
 testBUGSmodel(code2, example = 'user2', dir = "", data = data2, inits = inits2, useInits = TRUE)
@@ -260,7 +273,7 @@ Cmcmc <- compileNimble(Rmcmc, project = m)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
 
-try(test_that("Test that truncation works with user-supplied distribution: ",
+try(test_that("Test that truncation works with MCMC for user-supplied distribution: ",
               expect_that(max(smp[ , 'lambda']), is_less_than(upper),
                           info = paste0("parameter exceeds upper bound"))))
 
