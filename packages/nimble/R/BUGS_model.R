@@ -114,8 +114,8 @@ modelBaseClass <- setRefClass('modelBaseClass',
 
                                   isDiscrete = function(node) {
                                       dist <- getNodeDistribution(node)
-                                      distributions <- getDistributionsObject()
-                                      discrete <- distributions[[dist]]$discrete
+                                      # explicit reference to namespace needed as class definition objects inheriting from modelBaseClass not in namespace
+                                      discrete <- getDistribution(dist)$discrete
                                       return(discrete)
                                   },
 

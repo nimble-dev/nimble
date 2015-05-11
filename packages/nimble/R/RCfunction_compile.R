@@ -116,15 +116,15 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                methods = list(
                                    process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character()) {
                                        
-                                       if(!is.null(nimbleOptions$debugRCfunProcessing)) {
-                                           if(nimbleOptions$debugRCfunProcessing) {
+                                       if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
+                                           if(nimbleOptions()$debugRCfunProcessing) {
                                                debug <- TRUE
-                                               writeLines('Debugging RCfunProcessing (nimbleOptions$debugRCfunProcessing is set to TRUE)') 
+                                               writeLines('Debugging RCfunProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
                                            }
                                        }
 
-                                       if(!is.null(nimbleOptions$debugCppLineByLine)) {
-                                           if(nimbleOptions$debugCppLineByLine) {
+                                       if(!is.null(nimbleOptions()$debugCppLineByLine)) {
+                                           if(nimbleOptions()$debugCppLineByLine) {
                                                debugCpp <- TRUE
                                                if(length(debugCppLabel) == 0) debugCppLabel <- name
                                            }
@@ -182,18 +182,18 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
 
-                                       passedArgNames <- as.list(names(RCfun$argInfo))
-                                       names(passedArgNames) <- names(RCfun$argInfo)
+                                       passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) ## as.list(names(RCfun$argInfo))
+                                       names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() ## names(RCfun$argInfo)
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  
-
+  
                                        exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
                                        neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
                                        
                                        if(debug) {
-                                           print('compileInfo$nimExpr$show(showType = TRUE)')
-                                           print(compileInfo$nimExpr$show(showType = TRUE))
-                                           print('compileInfo$nimExpr$show(showAssertions = TRUE)')
-                                           print(compileInfo$nimExpr$show(showAssertions = TRUE))
+                                           print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
+                                          ## print(compileInfo$nimExpr$show(showType = TRUE))
+                                           print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')
+                                           ## print(compileInfo$nimExpr$show(showAssertions = TRUE))
                                            writeLines('***** READY FOR insertAssertions *****')
                                            browser()
                                        }

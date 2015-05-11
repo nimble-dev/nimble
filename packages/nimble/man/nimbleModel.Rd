@@ -3,9 +3,9 @@
 \alias{nimbleModel}
 \title{Create a NIMBLE BUGS model}
 \usage{
-nimbleModel(code, name, constants = list(), dimensions = list(),
-  data = list(), inits = list(), returnDef = FALSE, where = globalenv(),
-  debug = FALSE)
+nimbleModel(code, constants = list(), data = list(), inits = list(),
+  dimensions = list(), returnDef = FALSE, where = globalenv(),
+  debug = FALSE, name)
 }
 \arguments{
   \item{code}{code for the model in the form returned by

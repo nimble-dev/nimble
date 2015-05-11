@@ -263,7 +263,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == 'for') {        ## e.g. (for i in 1:N).  New context (for-loop info) needed
             indexVarExpr <- code[[i]][[2]]   ## This is the `i`
             indexRangeExpr <- code[[i]][[3]] ## This is the `1:N`
-            if(nimbleOptions$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
+            if(nimbleOptions()$prioritizeColonLikeBUGS) indexRangeExpr <- reprioritizeColonOperator(indexRangeExpr)
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
             forCode[[3]] <- indexRangeExpr
@@ -411,7 +411,8 @@ modelDefClass$methods(expandDistributions = function() {
         if(BUGSdecl$type != 'stoch') next
         
         newCode <- BUGSdecl$code
-        newCode[[3]] <- eval(BUGSdecl$valueExpr, distributions$matchCallEnv)
+        # newCode[[3]] <- eval(BUGSdecl$valueExpr, distributions$matchCallEnv)
+        newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$valueExpr)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
         BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
@@ -464,8 +465,8 @@ modelDefClass$methods(reparameterizeDists = function() {
         code <- BUGSdecl$code   ## grab the original code
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         distName <- as.character(valueExpr[[1]])
-        if(!(distName %in% distributions$namesVector))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
-        distRule <- distributions[[distName]]
+        if(!(distName %in% getDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
+        distRule <- getDistribution(distName)
         numArgs <- length(distRule$reqdArgs)
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
         newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
@@ -521,7 +522,7 @@ modelDefClass$methods(addRemainingDotParams = function() {
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         newValueExpr <- valueExpr
-        defaultParamExprs <- distributions[[as.character(newValueExpr[[1]])]]$altParams
+        defaultParamExprs <- getDistribution(as.character(newValueExpr[[1]]))$altParams
         if(length(defaultParamExprs) == 0)   next   ## skip if there are no altParams defined in distributions
         
         defaultParamNames <- names(defaultParamExprs)
@@ -643,7 +644,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             allReplaceable <- TRUE
         }
         if(allReplaceable) {
-            if(!any(code[[1]] == distributions$namesVector)) {
+            if(!any(code[[1]] == getDistributionsInfo('namesVector'))) {
                 callChar <- as.character(code[[1]])
                 if(exists(callChar, constEnv)) {
                     # if(callChar != ':') {
@@ -759,7 +760,7 @@ modelDefClass$methods(addIndexVarsToDeclInfo = function() {
 modelDefClass$methods(genSymbolicParentNodes = function() {
     ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
     
-    nimFunNames <- distributions$namesExprList
+    nimFunNames <- getDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)){
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
@@ -768,7 +769,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
     
-    nimFunNames <- distributions$namesExprList
+    nimFunNames <- getDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)) {
         declInfo[[i]]$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
@@ -1267,7 +1268,7 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
             }
         }        
         else {
-            if(length(parentIndexNamePieces)==1) varIndicesToUse <- 1
+            if(length(parentIndexNamePieces)==1) varIndicesToUse <- as.numeric(parentExprReplaced[[3]])
             else {
                 varIndicesToUse <- matrix(0, nrow = 1, ncol = length(parentIndexNamePieces))
                 for(iI in 1:ncol(varIndicesToUse)) varIndicesToUse[1, iI] <- as.numeric(parentExprReplaced[[iI+2]])
@@ -1752,7 +1753,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     require(igraph)
     graph <<- graph.empty()
     graph <<- add.vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
-    allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo))) 
+    allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
     graph <<- add.edges(graph, allEdges)                                         ## add all edges at once
 
     ## 11. Topologically sort and re-index all objects with vertex IDs
@@ -1998,7 +1999,7 @@ modelDefClass$methods(genVarInfo3 = function() {
     for(i in seq_along(dimensionsList)) {
         dimVarName <- names(dimensionsList)[i]
         if(!(dimVarName %in% names(varInfo))) next
-        if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions')
+        if(length(dimensionsList[[dimVarName]]) != varInfo[[dimVarName]]$nDim)   stop('inconsistent dimensions for variable ', dimVarName)
         if(any(dimensionsList[[dimVarName]] < varInfo[[dimVarName]]$maxs))  stop(paste0('dimensions specified are smaller than model specification for variable \'', dimVarName, '\''))
         varInfo[[dimVarName]]$maxs <<- dimensionsList[[dimVarName]]
     }
@@ -2266,7 +2267,7 @@ modelDefClass$methods(printDI = function() {
         BUGSdecl <- declInfo[[i]]
         cat(paste0('[[', i, ']]  '))
         lapply(contexts[[BUGSdecl$contextID]]$singleContexts, function(x) cat(paste0('for(', x$indexVarExpr, ' in ', deparse(x$indexRangeExpr), ') {{{   ')))
-        cat(paste0(deparse(BUGSdecl$code, width.cutoff=500L)))
+        cat(paste0(deparse(BUGSdecl$code)))
         cat(paste0(rep('   }}}', length(contexts[[BUGSdecl$contextID]]$singleContexts)), collapse=''))
         cat('\n')
     }

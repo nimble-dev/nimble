@@ -51,7 +51,12 @@ individualExportNames = c(
     'declare',
     'asRow',
     'getBUGSexampleDir',
-    'asCol'
+    'asCol',
+    'getNimbleOption',
+    'nimbleOptions',
+    'registerDistributions',
+    'deregisterDistributions',
+    'getDistribution'
 )
 
 individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',

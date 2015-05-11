@@ -2,6 +2,7 @@
 \title{Functions and Classes Internal to NIMBLE}
 \alias{accessorVectorLength_setupCodeTemplate}
 \alias{activeBindingTemplate}
+\alias{addArg}
 \alias{addBlankModelValueRows}
 \alias{addIndentToList}
 \alias{addMissingIndexingRecurse}
@@ -85,8 +86,11 @@
 \alias{C_dwish_chol}
 \alias{cGetNRow}
 \alias{character2index}
+\alias{checkDistributionsFunctions}
+\alias{checkDistributionsInput}
 \alias{checkForDuplicateNodeDeclaration}
 \alias{checkNimbleFunctionListCpp}
+\alias{checkNimbleOrRfunctionNames}
 \alias{cleanWhite}
 \alias{cloglog}
 \alias{Cmatrix2mvOneVar}
@@ -187,15 +191,19 @@
 \alias{C_rwish_chol}
 \alias{cube}
 \alias{dcat}
+\alias{dconstraint}
 \alias{ddirch}
 \alias{declareHandler}
 \alias{dependentClass}
 \alias{determineNdimFromOneCase}
 \alias{determineNdimsFromNfproc}
 \alias{dimOrLength}
+\alias{dinterval}
 \alias{distClass}
 \alias{distribution_dFuns}
 \alias{distributionFuns}
+\alias{distribution_pFuns}
+\alias{distribution_qFuns}
 \alias{distribution_rFuns}
 \alias{distributions}
 \alias{distributionsClass}
@@ -246,6 +254,7 @@
 \alias{ETentriesFromExternalUnaries}
 \alias{evalBracketArgs}
 \alias{evalBracketArgsKnownBracket}
+\alias{evalInDistsMatchCallEnv}
 \alias{example_fillInMissingIndices}
 \alias{example_getMissingDimensions}
 \alias{existsFunctionEnvVar}
@@ -285,12 +294,17 @@
 \alias{getCallText}
 \alias{getCNumericListValue}
 \alias{getCRows}
+\alias{getDimFromType}
+\alias{getDistribution}
+\alias{getDistribution2}
+\alias{getDistributionsInfo}
 \alias{getDoubleValue}
 \alias{getFunctionEnvVar}
 \alias{getFxnVectorPtr}
 \alias{getIntValue}
 \alias{getLoadingNamespace}
 \alias{getLogProb_keywordInfo}
+\alias{getMaxDim}
 \alias{getModelAccessorValues}
 \alias{getModelObjectPtr}
 \alias{getModelValuesAccessorValues}
@@ -310,6 +324,7 @@
 \alias{getSize_NumberedObjects}
 \alias{getSymbolicParentNodes}
 \alias{getSymbolicParentNodesRecurse}
+\alias{getValueDim}
 \alias{getValues}
 \alias{getValuesAccess}
 \alias{getVarAndIndices}
@@ -411,7 +426,7 @@
 \alias{mcmcNodeInit}
 \alias{mcmcNodeInit_virtual}
 \alias{mcmcStochNode_Init}
-\alias{mergeMultiLineStatementsAndParse}
+\alias{mergeMultiLineStatements}
 \alias{midOperators}
 \alias{minMaxHandler}
 \alias{modelDefInfoClass}
@@ -433,7 +448,9 @@
 \alias{ndf_createSetupFunction}
 \alias{ndf_createSingleMethod}
 \alias{ndf_createStochCalculate}
+\alias{ndf_createStochCalculateTrunc}
 \alias{ndf_createStochSimulate}
+\alias{ndf_createStochSimulateTrunc}
 \alias{ndf_createVirtualNodeFunctionDefinition}
 \alias{ndf_createVirtualNodeFunctionDefinitionsList}
 \alias{ndf_generateGetParamFunction}
@@ -486,6 +503,7 @@
 \alias{nimbleProjectClass}
 \alias{nimbleStep}
 \alias{nimbleUniqueID}
+\alias{nimbleUserNamespace}
 \alias{nimCopy_keywordInfo}
 \alias{nimCppKeywordsThatFillSemicolon}
 \alias{nimDeparse}
@@ -515,9 +533,11 @@
 \alias{node_stoch_dbin}
 \alias{node_stoch_dcat}
 \alias{node_stoch_dchisq}
+\alias{node_stoch_dconstraint}
 \alias{node_stoch_ddirch}
 \alias{node_stoch_dexp}
 \alias{node_stoch_dgamma}
+\alias{node_stoch_dinterval}
 \alias{node_stoch_dlnorm}
 \alias{node_stoch_dlogis}
 \alias{node_stoch_dmnorm}
@@ -572,10 +592,13 @@
 \alias{populateNodeFxnVec_OLD}
 \alias{posteriorClass}
 \alias{pow}
+\alias{pqAvail}
+\alias{pqDists}
 \alias{probit}
 \alias{processKeyword}
 \alias{processModelFile}
 \alias{processMonitorNames}
+\alias{processNonParseableCode}
 \alias{processVarBlock}
 \alias{projectNameCreator}
 \alias{putCodeLinesInBrackets}
@@ -587,6 +610,7 @@
 \alias{RCfunInfoClass}
 \alias{rcFunLabelMaker}
 \alias{RCfunProcessing}
+\alias{rconstraint}
 \alias{RCvirtualFunProcessing}
 \alias{rdirch}
 \alias{recurseSetSizes}
@@ -619,6 +643,7 @@
 \alias{rGetLogProbsNodes}
 \alias{RHSonlyInit}
 \alias{RHSonlyInit_virtual}
+\alias{rinterval}
 \alias{RMakeCustomModelClass}
 \alias{Rmatrix2mvOneVar}
 \alias{rmFunHandler}
@@ -660,6 +685,7 @@
 \alias{setDoubleValue}
 \alias{setIntValue}
 \alias{setMVElement}
+\alias{setNimbleOption}
 \alias{setNimValues}
 \alias{setOnePtrVectorOfPtrs}
 \alias{setPtrVectorOfPtrs}

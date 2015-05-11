@@ -166,11 +166,11 @@ nfProcessing <- setRefClass('nfProcessing',
                                   ## Modifications to R code
                                   debug <- control$debug
                                   debugCpp <- control$debugCpp
-                                  if(!is.null(nimbleOptions$debugNFProcessing)) {
-                                      if(nimbleOptions$debugNFProcessing) {
+                                  if(!is.null(nimbleOptions()$debugNFProcessing)) {
+                                      if(nimbleOptions()$debugNFProcessing) {
                                           debug <- TRUE
                                           control$debug <- TRUE
-                                          writeLines('Debugging nfProcessing (nimbleOptions$debugRCfunProcessing is set to TRUE)') 
+                                          writeLines('Debugging nfProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
                                       }
                                   }
                                   
@@ -493,7 +493,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
                 nDim <- 1
                 lengths <- unlist(lapply(instanceObjs, length))
                 size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
-                if(nimbleOptions$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
                     if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
                 }
             } else {

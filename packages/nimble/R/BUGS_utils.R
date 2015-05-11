@@ -133,7 +133,7 @@ parseTreeSubstitute <- function(pt, pattern, replacement) {
 
 nameMashupFromExpr <- function(expr, colonsOK = FALSE) {
 
-    exprText <- deparse(expr, width.cutoff = 500L)
+    exprText <- deparse(expr)
     
     if( colonsOK) { exprText <- gsub(':', 'to', exprText) } # replace colons with 'to'
     if(!colonsOK) { if(grepl(':', exprText))    stop(paste0('trying to do name mashup on expression with vectorization (\':\'), ', exprText)) }
@@ -207,17 +207,17 @@ Rname2CppName <- function (rName, isAFunctionCall = FALSE) { ## Imp note, this f
 
 ## creates objects in the parent.frame(), named by names(lst), values are eval(lst[[i]])
 ## this is used for creating the conjugate sampler nimble function generators, among other things
-createNamedObjectsFromList <- function(lst, writeToFile = NULL) {
+createNamedObjectsFromList <- function(lst, writeToFile = NULL, envir = parent.frame()) {
     for(i in seq_along(lst)) {
         objName <- names(lst)[i]
         obj <- eval(lst[[i]])
-        assign(objName, obj, envir = parent.frame())
+        assign(objName, obj, envir = envir)
     }
     if(!is.null(writeToFile)) {
         write('', file = writeToFile)
         for(i in seq_along(lst)) {
             expr <- substitute(VAR <- VALUE, list(VAR = as.name(names(lst)[i]), VALUE = lst[[i]]))
-            deparseExpr <- deparse(expr, width.cutoff = 500L, control=c())
+            deparseExpr <- deparse(expr, control=c())
             deparseExpr <- gsub('\"', '\'', deparseExpr)
             write(deparseExpr, file = writeToFile, append = TRUE)
             write('\n\n\n', file = writeToFile, append = TRUE)
@@ -269,4 +269,9 @@ character2index <- function(thisChar){
 	}
 	else
 		stop("Error: too many :'s in index")
+}
+
+# extracts dimension from character vec of form such as c("double(0)", "integer(1)")
+getDimFromType <- function(text) {
+    sapply(parse(text = text), '[[', 2)
 }

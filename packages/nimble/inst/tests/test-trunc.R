@@ -1,5 +1,7 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+context("Testing of truncation, censoring, and constraints")
+
 # should build testing of kidney,litters,mice,lsat into test-mcmc and test-models
 
 models <- c('kidney', 'litters', 'mice')
@@ -111,7 +113,7 @@ try(test_that("Test that MCMC respects truncation bounds: ", expect_that(min(smp
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
           results = list(mean = list(mu = 1.5), sd = list(mu = .27 )),
-          resultsTolerance = list(mean = list(mu = 0.025), sd = list(mu = .025)))
+          resultsTolerance = list(mean = list(mu = 0.025), sd = list(mu = .025)), name = 'test of MCMC with truncation')
 
 ### censoring (dinterval)
 set.seed(0)
@@ -155,7 +157,7 @@ try(test_that("Test that MCMC respects censoring bounds: ",
 
 test_mcmc(model = code, data = c(data, constants), inits = inits, numItsC = 10000,
           results = list(mean = list(mu = 44.5, 'y[1]' = 56.6), sd = list(mu = 2.3, 'y[1]' = 4.95)),
-          resultsTolerance = list(mean = list(mu = 0.1, 'y[1]' = 1.5), sd = list(mu = .3, 'y[1]' = .7)))
+          resultsTolerance = list(mean = list(mu = 0.1, 'y[1]' = 1.5), sd = list(mu = .3, 'y[1]' = .7)), name = 'test of right censoring')
 
 # left censored
 set.seed(0)
@@ -197,7 +199,7 @@ try(test_that("Test that MCMC respects censoring bounds: ",
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
           results = list(mean = list(mu = 43.4, 'y[1]' = 33), sd = list(mu = 2.4, 'y[1]' = 5.3)),
-          resultsTolerance = list(mean = list(mu = .2, 'y[1]' = .4), sd = list(mu = .2, 'y[1]' = .1)))
+          resultsTolerance = list(mean = list(mu = .2, 'y[1]' = .4), sd = list(mu = .2, 'y[1]' = .1)), name = 'test of left censoring')
 
 
 # interval censored
@@ -238,7 +240,7 @@ try(test_that("Test that MCMC respects third interval: ", expect_that(min(smp[ ,
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
           results = list(mean = list(mu = 44.77, 'y[12]' = 44.85), sd = list(mu = 2.8, 'y[12]' = 2.9)),
-          resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = .15), sd = list(mu = .05, 'y[12]' = .1)))
+          resultsTolerance = list(mean = list(mu = 0.5, 'y[12]' = .15), sd = list(mu = .05, 'y[12]' = .1)), name = 'test of interval censoring')
 
 
 # test of dconstraint
@@ -273,7 +275,7 @@ try(test_that("Test that MCMC respects constraints: ", expect_that(min(smp[ , 'm
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
           results = list(mean = list(mu1 = 1.45, mu2 = -.82), sd = list(mu1 = .26, mu2 = .30)),
-          resultsTolerance = list(mean = list(mu1 = 0.05, mu2 = .02), sd = list(mu1 = .03, mu2 = .03)))
+          resultsTolerance = list(mean = list(mu1 = 0.05, mu2 = .02), sd = list(mu1 = .03, mu2 = .03)), name = 'test of dconstraint')
 
 
 # test dconstraint for ordering using rewrite of inhaler in our syntax
@@ -375,5 +377,28 @@ test_mcmc(model = code, inits = as.list(inits), data = c(data, as.list(constants
         results = list(mean = list(a0 = c(.72, 3.93, 5.31), beta = 1.05, pi = -0.24),
             sd = list(a0 = c(.14, .36, .51), beta = .32, pi = .20)),
           resultsTolerance = list(mean = list(a0 = c(.05, .15, .15), beta = .1, pi = .04),
-              sd = list(a0 = c(.02, .1, .1), beta = .03, pi = .02)))
+              sd = list(a0 = c(.02, .1, .1), beta = .03, pi = .02)),
+          name = 'test of ordering contraint')
 # no basic assessment because R MCMC takes forever, even for 5 iterations
+
+
+# test that conjugate samplers not assigned when have dependent truncated node
+# also that not assigned when target node is truncated (though we could code this
+# so that we have the corrected truncated density as the conjugate sampler)
+
+code <- nimbleCode({
+   y ~ T(dnorm(mu1, 1), 0, 3)
+   mu1 ~ dnorm(0, 1)
+   y2 ~ dnorm(mu2, 1)
+   mu2 ~ T(dnorm(theta, 1), 0, 3)
+   y3 ~ dnorm(mu3, 1)
+   mu3 ~ dnorm(theta, 1)
+})
+
+m <- nimbleModel(code)
+spec <- configureMCMC(m)
+
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[1]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu1")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[3]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu2")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[4]]$name, is_identical_to('conjugate_dnorm'), info = "incorrectly not assigning conjugate sampler for mu3")))
+   

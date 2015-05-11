@@ -147,7 +147,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                    CBobjectDefs <- list(cppVar(name = 'newObj', baseType = name, ptr = 1),
                                                       Sans = cppSEXP(name = 'Sans'));
                                    newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'), 'PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))
-                                   notificationLine <- if(nimbleOptions$messagesWhenBuildingOrFinalizingCppObjects)
+                                   notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
                                        paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << R_ExternalPtrAddr(Sans) << \"\\n\";')
                                    else character(0)
                                    codeLines <- substitute({
@@ -165,7 +165,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                buildSEXPfinalizer = function() {
                                    CBobjectDefs <- list(cppVar(name = 'oldObj', baseType = name, ptr = 1))
                                    inputArgs <- list(cppSEXP(name = 'Sv'))
-                                   notificationLine <- if(nimbleOptions$messagesWhenBuildingOrFinalizingCppObjects)
+                                   notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
                                        paste0('std::cout<< \"In finalizer for ', name, ' with pointer \" << R_ExternalPtrAddr(Sv) << \"\\n\";')
                                    else character(0)
                                    castLine <- paste0('oldObj = static_cast<',name,' *>(R_ExternalPtrAddr(Sv));')

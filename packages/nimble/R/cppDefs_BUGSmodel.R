@@ -82,6 +82,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                   code = cppCodeBlock( code = putCodeLinesInBrackets(codeLines)))
                                          functionDefs[['pointAtAll']] <<- newFun
                                      },
+
                                      buildNodes = function(where = globalenv(), debugCpp = FALSE) {
                                          ## for(i in names(model$nodeFunctions)) {
                                          ##     nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
@@ -97,7 +98,7 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          ##   nimbleProject$buildNimbleFunctionCompilationInfo(generatorName = generatorName)
                                          ##}
                                      },
-                                     buildAll = function(buildNodeDefs = TRUE, where = globalenv(), debugCpp = FALSE) {
+                                     buildAll = function(buildNodeDefs = TRUE, where = globalenv(), ...) {
                                          makeCppNames() 
                                          buildVars()
                                          buildConstructorFunctionDef()

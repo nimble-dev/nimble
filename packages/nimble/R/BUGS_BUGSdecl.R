@@ -131,14 +131,14 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
     
     if(code[[1]] == '~') {
         type <<- 'stoch'
-        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == distributions$namesVector) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
-            stop(paste0('Improper syntax for stochastic declaration: ', deparse(code, width.cutoff=500L)))
+        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == getDistributionsInfo('namesVector')) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
+            stop(paste0('Improper syntax for stochastic declaration: ', deparse(code)))
     } else if(code[[1]] == '<-') {
         type <<- 'determ'
-        if( is.call(code[[3]]) &&  any(code[[3]][[1]] == distributions$namesVector))
-            stop(paste0('Improper syntax for determistic declaration: ', deparse(code, width.cutoff=500L)))
+        if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getDistributionsInfo('namesVector')))
+            stop(paste0('Improper syntax for determistic declaration: ', deparse(code)))
     } else {
-        stop(paste0('Improper syntax for declaration: ', deparse(code, width.cutoff=500L)))
+        stop(paste0('Improper syntax for declaration: ', deparse(code)))
     }
     
     targetExpr <<- code[[2]]
@@ -240,7 +240,7 @@ BUGSdeclClass$methods(genReplacementsAndCodeReplaced = function(constantsNamesLi
 ## only affects stochastic nodes
 ## removes any params in codeReplaced which begin with '.'
 ## generates the altParamExprs list, which contains the expression for each alternate parameter,
-## which is taken from the .param expression (no longer taken from distributions[[distName]]$altParams, ever)
+## which is taken from the .param expression (no longer taken from getDistribution(distName)$altParams, ever)
 BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
     
     altParamExprs <<- list()
@@ -255,12 +255,12 @@ BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
         altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
         names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
 #         dotParamNames <- names(dotParamExprs)
-#         distRuleAltParamExprs <- distributions[[as.character(RHSreplaced[[1]])]]$altParams
+#         distRuleAltParamExprs <- getDistribution(as.character(RHSreplaced[[1]]))$altParams
 #         for(altParam in names(distRuleAltParamExprs)) {
 #             if(altParam %in% dotParamNames) {
 #                 altParamExprs[[altParam]] <<- dotParamExprs[[altParam]]
 #             } else {
-#                 defaultParamExpr <- distributions[[as.character(RHSreplaced[[1]])]]$altParams[[altParam]]
+#                 defaultParamExpr <- getDistributions(as.character(RHSreplaced[[1]]))$altParams[[altParam]]
 #                 subParamExpr <- eval(substitute(substitute(EXPR, as.list(RHSreplaced)[-1]), list(EXPR=defaultParamExpr)))
 #                 altParamExprs[[altParam]] <<- subParamExpr
 #             }
@@ -272,7 +272,7 @@ getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(
     ## replaceConstants looks to see if name of a function exists in R
     ## getSymbolicVariables requires a list of nimbleFunctionNames.
     ## The latter could take the former approach
-    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, distributions$namesExprList)
+    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, getDistributionsInfo('namesExprList'))
     ans <- getSymbolicParentNodesRecurse(code, constNames, indexNames, nimbleFunctionNames)
     return(ans$code)
 }
@@ -300,7 +300,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             return(list(code = list(code), replaceable = FALSE, hasIndex = FALSE))
         }
     }
-    
+
     if(is.call(code)) {
         if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
@@ -339,7 +339,8 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             }
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             isRonly <- isRfunction &
-                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+                !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+#                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
             if(isRonly & !allContentsReplaceable) stop(paste('Error, R function', deparse(code[[1]]),' has non-replaceable node values as arguments.  Must be a nimble function.'))
             
             return(list(code = contentsCode,
@@ -348,6 +349,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
         }
     }
     stop(paste('Something went wrong in getSymbolicVariablesRecurse with', deparse(code)))
+}
+
+checkNimbleOrRfunctionNames <- function(functionName) {
+    if(any(functionName == nimbleOrRfunctionNames)) return(TRUE)
+    if(exists(functionName) && is.rcf(get(functionName))) return(TRUE)  # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
+    return(FALSE)
 }
 
 
@@ -396,7 +403,8 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2, replaceable=allContentsReplaceable))
         if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
-        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+#        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+        isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
         if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))
         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))

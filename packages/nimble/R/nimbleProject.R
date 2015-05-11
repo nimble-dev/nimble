@@ -218,7 +218,10 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ans <- RCfunInfos[[className]]
                                      if(is.null(ans)) {
                                          if(!NULLok) stop("Requested to get an RCfunCppDef but it is not in the project and NULLok = FALSE", call. = FALSE)
+                                         return(NULL)
                                      }
+                                     ans <- ans$cppClass
+                                     if(inherits(ans, 'uninitializedField') )  return(NULL)                                     	 
                                      ans
                                  },
                                  needRCfunCppClass = function(nfmObj, genNeededTypes = TRUE, control = list(debug = FALSE, debugCpp = FALSE), fromModel = FALSE) {
@@ -296,7 +299,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      mv$CobjectInterface <- ans
                                      ans
                                  },
-                                 compileModel = function(model, filename = NULL, control = list(debug = FALSE, debugCpp = FALSE), where = globalenv()) {
+                                 compileModel = function(model, filename = NULL,
+                                     control = list(debug = FALSE, debugCpp = FALSE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE), where = globalenv()) {
                                      if(is.character(model)) {
                                          tmp <- models[[model]]
                                          if(is.null(tmp)) stop(paste0("Model provided as name: ", model, " but it is not in this project."), call. = FALSE)
@@ -311,7 +315,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      modelCpp <- cppBUGSmodelClass(modelDef = modelDef, model = model,
                                                                    name = Cname, project = .self)
                                      ## buildAll will call back to the project to add its nimbleFunctions 
-                                     modelCpp$buildAll(buildNodeDefs = TRUE, where = where, debugCpp = control$debugCpp)
+                                     modelCpp$buildAll(buildNodeDefs = TRUE, where = where, control = control)
                                      
                                      cppProj <- cppProjectClass(dirName = dirName)
                                      cppProjects[[ modelDefName ]] <<- cppProj
@@ -325,15 +329,19 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      for(i in names(modelCpp$nodeFuns)) {
                                          cppProj$addClass(modelCpp$nodeFuns[[i]], filename = nfFileName)
                                      }
-                                     ##if writeFiles
-                                     cppProj$writeFiles(filename)
-                                     cppProj$writeFiles(nfFileName) ## if compileNodes
-                                     ##if compileCpp
-                                     compileList <- filename
-                                     compileList <- c(compileList, nfFileName) ## if compileNodes
-                                     cppProj$compileFile(compileList)
-                                     ## if loadSO
-                                     cppProj$loadSO(filename)
+                                     if(control$writeFiles) {
+                                         cppProj$writeFiles(filename)
+                                         cppProj$writeFiles(nfFileName) ## if compileNodes
+                                     } else return(cppProj)
+                                     if(control$compileCpp) {
+                                         compileList <- filename
+                                         compileList <- c(compileList, nfFileName) ## if compileNodes
+                                         cppProj$compileFile(compileList)
+                                     } else return(cppProj)
+                                     if(control$loadSO) {
+                                         ## if loadSO
+                                         cppProj$loadSO(filename)
+                                     } else return(cppProj)
                                      ## if buildInterface
                                      interfaceName <- paste0('C', modelDefName)
                                      
@@ -493,7 +501,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
                                      reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE) {
                                      ## fundamental difference: fun should be a specialized nf: nfGenerator will not longer track instances
-                                     
                                      if(is.character(fun)) {
                                          tmp <- nimbleFunctions[[fun]]
                                          if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)
@@ -545,16 +552,17 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(!exists('name', envir = nf_getRefClassObject(funList[[1]]), inherits = FALSE)) stop('Something is wrong if by this point in compileNimbleFunction there is no name.', call. = FALSE)
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
-                                     
+
+                                     cppProj <- cppProjectClass(dirName = dirName)
+                                     cppProjects[[ generatorName ]] <<- cppProj
+                                     if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(generatorName))
+                                     cppProj$addClass(cppClass, generatorName, filename)
+
                                      if(!nfCompInfos[[generatorName]]$written && control$writeFiles) {
-                                         cppProj <- cppProjectClass(dirName = dirName)
-                                         cppProjects[[ generatorName ]] <<- cppProj
-                                         if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(generatorName))
-                                         cppProj$addClass(cppClass, generatorName, filename)
-                                     ## need cppProj
                                          cppProj$writeFiles(filename)
                                          nfCompInfos[[generatorName]]$written <<- TRUE
                                      } else {
+                                         if(!control$writeFiles) return(cppProj)
                                          cppProj <- cppProjects[[ generatorName ]]
                                    #      writeLines('Using previously generated C++ code.  This will not work if the current nimbleFunction specializations use types of modelValues or other nimbleFunctions that have not already been compiled in this project.  If that is the case, you should include these specializiations in the first compilation of the nimbleFunction.  You can compile all the specializations of this nimbleFunction together with reset = TRUE.')
                                      }
@@ -563,11 +571,11 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                              cppProj$compileFile(filename)
                                              nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
                                          } else writeLines('Skipping compilation because control$compileCpp is FALSE')
-                                     } else {}#writeLines('Using previously compiled C++ code.')
+                                     } else {if(!control$compileCpp) return(cppProj)}#writeLines('Using previously compiled C++ code.')
                                      if(!nfCompInfos[[generatorName]]$loaded && control$loadSO) {
                                          cppProj$loadSO(filename)
                                          nfCompInfos[[generatorName]]$loaded <<- TRUE
-                                     } else{}# writeLines('Using previously loaded compilation unit.')
+                                     } else{if(!control$loadSO) return(cppProj)}# writeLines('Using previously loaded compilation unit.')
                                      
                                      ans <- vector('list', length(funList))
 
