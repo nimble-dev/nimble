@@ -1,11 +1,9 @@
 
 
 pfStepVirtual <- nimbleFunctionVirtual(
-    run = function(m = integer())
-        returnType(double()),
+    run = function(m = integer()) returnType(double()),
     methods = list(
-        getVarLL = function()
-            returnType(double())
+        getVarLL = function() returnType(double())
     )
 )
 
@@ -38,6 +36,8 @@ pfStep <- nimbleFunction(
             copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
         L <- mean(wts)
         varLL <<- var(wts) / m / L^2
+        if(is.nan(varLL)) { varLL <<- Inf
+                            return(-Inf)  }
         return(log(L))
     },
     methods = list(
@@ -80,7 +80,8 @@ buildPF <- nimbleFunction(
         varLL <<- 0
         for(iNode in seq_along(pfStepFunctions)) {
             logL <- logL + pfStepFunctions[[iNode]]$run(m)
-            if(logL == -Inf) return(logL)
+            if(logL == -Inf) { varLL <<- Inf
+                               return(logL)  }
             varLL <<- varLL + pfStepFunctions[[iNode]]$getVarLL()
         }
         return(logL)
