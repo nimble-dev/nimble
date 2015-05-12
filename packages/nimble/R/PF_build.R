@@ -2,7 +2,11 @@
 
 pfStepVirtual <- nimbleFunctionVirtual(
     run = function(m = integer())
-        returnType(double())
+        returnType(double()),
+    methods = list(
+        getVarLL = function()
+            returnType(double())
+    )
 )
 
 
@@ -15,6 +19,7 @@ pfStep <- nimbleFunction(
         prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
         thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
         thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
+        varLL <- 0
     },
     run = function(m = integer()) {
         returnType(double())
@@ -31,8 +36,13 @@ pfStep <- nimbleFunction(
         rankSample(wts, m, ids, silent)
         for(i in 1:m)
             copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
-        return(log(mean(wts)))
-    },  where = getLoadingNamespace()
+        L <- mean(wts)
+        varLL <<- var(wts) / m / L^2
+        return(log(L))
+    },
+    methods = list(
+        getVarLL = function() { returnType(double()); return(varLL) }
+    ),    where = getLoadingNamespace()
 )
 
 
@@ -60,18 +70,24 @@ buildPF <- nimbleFunction(
         pfStepFunctions <- nimbleFunctionList(pfStepVirtual)
         for(iNode in seq_along(nodes))
             pfStepFunctions[[iNode]] <- pfStep(model, mv, nodes, iNode, silent)
+        varLL <- 0
     },
     run = function(m = integer(default = 10000)) {
         returnType(double())
         my_initializeModel$run()
         resize(mv, m)
         logL <- 0
+        varLL <<- 0
         for(iNode in seq_along(pfStepFunctions)) {
             logL <- logL + pfStepFunctions[[iNode]]$run(m)
             if(logL == -Inf) return(logL)
+            varLL <<- varLL + pfStepFunctions[[iNode]]$getVarLL()
         }
         return(logL)
-    },  where = getLoadingNamespace()
+    },
+    methods = list(
+        getVarLL = function() { returnType(double()); return(varLL) }
+    ),    where = getLoadingNamespace()
 )
 
 
