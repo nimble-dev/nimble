@@ -3,16 +3,16 @@
 
 dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
-  .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.logical(scale_param), as.logical(log))
+  .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.integer(log))
 }
 
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
-    matrix(.Call('C_rwish_chol', as.double(cholesky), as.double(df), as.logical(scale_param)), nrow = sqrt(length(cholesky)))
+    matrix(.Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param)), nrow = sqrt(length(cholesky)))
 }
 
 ddirch <- function(x, alpha, log = FALSE) {
-    .Call('C_ddirch', as.double(x), as.double(alpha), as.logical(log))
+    .Call('C_ddirch', as.double(x), as.double(alpha), as.integer(log))
 }
 
 rdirch <- function(n = 1, alpha) {
@@ -21,7 +21,7 @@ rdirch <- function(n = 1, alpha) {
 }
 
 dmulti <- function(x, size = sum(x), prob, log = FALSE) {
-  .Call('C_dmulti', as.integer(x), as.integer(size), as.double(prob), as.logical(log))
+  .Call('C_dmulti', as.double(x), as.double(size), as.double(prob), as.integer(log))
 }
 
 rmulti <- function(n = 1, size, prob) {

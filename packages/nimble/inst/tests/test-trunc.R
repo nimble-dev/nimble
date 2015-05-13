@@ -253,6 +253,7 @@ code <- nimbleCode ({
     mu1 ~ dunif(-10, 10)
     mu2 ~ dunif(-10, 10)
     ind <- mu1 + mu2 > 0 & mu1 > 1
+#    mu.c ~ dconstraint(mu1 + mu2 > 0 & mu1 > 1) # ind)
     mu.c ~ dconstraint(ind)
 })
 mu1 <- 1; mu2 <- -0.5
