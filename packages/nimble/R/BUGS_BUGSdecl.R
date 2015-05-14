@@ -412,7 +412,7 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
     stop(paste('Something went wrong in genReplacementsAndCodeRecurse with', deparse(code)))
 }
 replaceAllCodeSuccessfully <- function(code) {
-    deparsedCode <- nameMashupFromExpr(code, colonsOK = TRUE)
+    deparsedCode <- Rname2CppName(code, colonsOK = TRUE) ## nameMashup
     replacements <- list()
     replacements[[deparsedCode]] <- code
     return(list(codeReplaced = as.name(deparsedCode), replacements = replacements, replaceable = TRUE))
@@ -447,7 +447,7 @@ genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs)
                 if(any(indexVarExprs %in% all.vars(origIndex))) {
                     ## the vectorized index includes a loop-indexing variable; we will create a replacement, for a memberData, for each nodeFunction
                     replacementExpr <- substitute(min(EXPR), list(EXPR=origIndex))
-                    replacementName <- nameMashupFromExpr(replacementExpr, colonsOK = TRUE)
+                    replacementName <- Rname2CppName(replacementExpr, colonsOK = TRUE)##nameMashup
                     logProbNodeExpr[[i]] <- as.name(replacementName)
                     replacements[[replacementName]] <- replacementExpr
                 } else {

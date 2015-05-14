@@ -131,34 +131,35 @@ parseTreeSubstitute <- function(pt, pattern, replacement) {
 }
 
 
-nameMashupFromExpr <- function(expr, colonsOK = FALSE) {
+## old version
+## nameMashupFromExpr <- function(expr, colonsOK = FALSE) {
 
-    exprText <- deparse(expr)
+##     exprText <- deparse(expr)
     
-    if( colonsOK) { exprText <- gsub(':', 'to', exprText) } # replace colons with 'to'
-    if(!colonsOK) { if(grepl(':', exprText))    stop(paste0('trying to do name mashup on expression with vectorization (\':\'), ', exprText)) }
+##     if( colonsOK) { exprText <- gsub(':', 'to', exprText) } # replace colons with 'to'
+##     if(!colonsOK) { if(grepl(':', exprText))    stop(paste0('trying to do name mashup on expression with vectorization (\':\'), ', exprText)) }
     
-    exprText <- gsub(' ', '', exprText)    # remove spaces
-    exprText <- gsub('\\.', 'p', exprText) # replace periods with 'p'
-    exprText <- gsub(',', '_', exprText)   # replace commas with '_'
+##     exprText <- gsub(' ', '', exprText)    # remove spaces
+##     exprText <- gsub('\\.', 'p', exprText) # replace periods with 'p'
+##     exprText <- gsub(',', '_', exprText)   # replace commas with '_'
     
-    exprText <- gsub('\\[', '_', exprText)
-    exprText <- gsub('\\]', '', exprText)
-    exprText <- gsub('\\(', '_', exprText)
-    exprText <- gsub('\\)', '', exprText)
+##     exprText <- gsub('\\[', '_', exprText)
+##     exprText <- gsub('\\]', '', exprText)
+##     exprText <- gsub('\\(', '_', exprText)
+##     exprText <- gsub('\\)', '', exprText)
     
-    exprText <- gsub('\\+', '_plus_', exprText)
-    exprText <- gsub('\\-', '_minus_', exprText)
-##    exprText <- gsub('%\\*%', '_matmult_', exprText) ## For when we lift matrix multiplication in future
-    exprText <- gsub('\\*', '_times_', exprText)
-    exprText <- gsub('\\/', '_over_', exprText)
+##     exprText <- gsub('\\+', '_plus_', exprText)
+##     exprText <- gsub('\\-', '_minus_', exprText)
+## ##    exprText <- gsub('%\\*%', '_matmult_', exprText) ## For when we lift matrix multiplication in future
+##     exprText <- gsub('\\*', '_times_', exprText)
+##     exprText <- gsub('\\/', '_over_', exprText)
     
-    exprText <- gsub('\\^', '_tothe_', exprText)
+##     exprText <- gsub('\\^', '_tothe_', exprText)
     
-    exprText <- gsub('^_+', '', exprText)                   # remove leading underscores.  can arise from (a+b), for example
-    exprText <- gsub('^([[:digit:]])', 'd\\1', exprText)    # if begins with a digit, add 'd' in front
-    exprText
-}
+##     exprText <- gsub('^_+', '', exprText)                   # remove leading underscores.  can arise from (a+b), for example
+##     exprText <- gsub('^([[:digit:]])', 'd\\1', exprText)    # if begins with a digit, add 'd' in front
+##     exprText
+## }
 
 # no longer documented in Rd
 # Generates a valid C++ name from an R Name
@@ -173,35 +174,81 @@ nameMashupFromExpr <- function(expr, colonsOK = FALSE) {
 # @export
 # @examples
 #  genName('theta[1]')
-Rname2CppName <- function (rName, isAFunctionCall = FALSE) { ## Imp note, this function is vectorized, so should make changes appropiately
-  if (!is.character(rName))
-    rName <- as.character(rName)
-  rName <- gsub("\"", "", rName) ## added by Perry for cases with A["B"]
-  rName <- gsub(":", "t" , rName)
-  rName <- gsub("`", "" , rName)
-  rName <- gsub(",", "_" , rName)
-  rName <- gsub("\\.", "__" , rName)
-  rName <- gsub("\\[", "_" , rName)
-  rName <- gsub("\\]", "" , rName)
-  rName <- gsub("\\)", "" , rName)
-  rName <- gsub("\\$", "_" , rName)
-  rName <- gsub("=", "_" , rName)
-  rName <- gsub(" ", "" , rName)
-  if(!isAFunctionCall) {
+Rname2CppName <- function(rName, colonsOK = TRUE) {
+    ## This will serve to replace and combine our former Rname2CppName and nameMashupFromExpr
+    ## which were largely redundant
+    if (!is.character(rName))
+        rName <- deparse(rName)
+    if( colonsOK)
+        rName <- gsub(':', 'to', rName)  # replace colons with 'to'
+    else
+        if(grepl(':', rName))
+            stop(paste0('trying to do name mashup on expression with colon (\':\') from ', rName))
+    rName <- gsub(' ', '', rName)
+    rName <- gsub('\\.', 'p', rName) 
+    rName <- gsub("\"", "", rName)
+    rName <- gsub(',', '_', rName)   
+    rName <- gsub("`", "" , rName)
+    rName <- gsub('\\[', '_oB', rName)
+    rName <- gsub('\\]', '_cB', rName)
+    rName <- gsub('\\(', '_oP', rName)
+    rName <- gsub('\\)', '_cP', rName)
+    rName <- gsub("\\$", "_" , rName)
+    rName <- gsub(">=", "_gte_", rName)
+    rName <- gsub("<=", "_lte_", rName)
+    rName <- gsub("<=", "_eq_", rName)
+    rName <- gsub("!=", "_neq_", rName)
+    rName <- gsub(">", "_gt_", rName)
+    rName <- gsub("<", "_lt_", rName)
+    rName <- gsub("!", "_not_", rName)
+    rName <- gsub("\\|\\|", "_or2_", rName)
+    rName <- gsub("&&", "_and2_", rName)
+    rName <- gsub("\\|", "_or_", rName)
+    rName <- gsub("&", "_and_", rName)
+    rName <- gsub("%%", "_mod_", rName)
+    rName <- gsub("=", "_" , rName)
     rName <- gsub("\\(", "_" , rName)
     rName <- gsub("\\+", "_plus_" , rName)
     rName <- gsub("-", "_minus_" , rName)
-    rName <- gsub("\\*", "_mul_" , rName)
+    rName <- gsub("\\*", "_times_" , rName)
     rName <- gsub("/", "_over_" , rName)
-  }
-  NumbersInWords <- c("zero_", "one_", "two_", "three_", "four_", "five_", "six_", "seven_", "eight_", "nine_")
-  FirstCharacter <- substring(rName, 1, 1)
-  rName <- ifelse(FirstCharacter %in% as.character(0:9), ## the ifelse below is to remove NA warnings
-                  paste0(NumbersInWords[as.integer(ifelse(FirstCharacter %in% as.character(0:9), FirstCharacter, 0)) + 1], substring(rName, 2)),
-                  rName
-           )
-  return(rName)
+    rName <- gsub('\\^', '_tothe_', rName)
+    rName <- gsub('^_+', '', rName) # remove leading underscores.  can arise from (a+b), for example
+    rName <- gsub('^([[:digit:]])', 'd\\1', rName)    # if begins with a digit, add 'd' in front
+    rName
+    
 }
+
+## old version
+## Rname2CppName <- function (rName, isAFunctionCall = FALSE) { ## Imp note, this function is vectorized, so should make changes appropiately
+##   if (!is.character(rName))
+##     rName <- as.character(rName)
+##   rName <- gsub("\"", "", rName) ## added by Perry for cases with A["B"]
+##   rName <- gsub(":", "t" , rName)
+##   rName <- gsub("`", "" , rName)
+##   rName <- gsub(",", "_" , rName)
+##   rName <- gsub("\\.", "__" , rName)
+##   rName <- gsub("\\[", "_" , rName)
+##   rName <- gsub("\\]", "" , rName)
+##   rName <- gsub("\\)", "" , rName)
+##   rName <- gsub("\\$", "_" , rName)
+##   rName <- gsub("=", "_" , rName)
+##   rName <- gsub(" ", "" , rName)
+##   if(!isAFunctionCall) {
+##     rName <- gsub("\\(", "_" , rName)
+##     rName <- gsub("\\+", "_plus_" , rName)
+##     rName <- gsub("-", "_minus_" , rName)
+##     rName <- gsub("\\*", "_mul_" , rName)
+##     rName <- gsub("/", "_over_" , rName)
+##   }
+##   NumbersInWords <- c("zero_", "one_", "two_", "three_", "four_", "five_", "six_", "seven_", "eight_", "nine_")
+##   FirstCharacter <- substring(rName, 1, 1)
+##   rName <- ifelse(FirstCharacter %in% as.character(0:9), ## the ifelse below is to remove NA warnings
+##                   paste0(NumbersInWords[as.integer(ifelse(FirstCharacter %in% as.character(0:9), FirstCharacter, 0)) + 1], substring(rName, 2)),
+##                   rName
+##            )
+##   return(rName)
+## }
 
 
 
