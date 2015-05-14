@@ -55,7 +55,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        },
                                        doRCfunProcess = function(control = list(debug = FALSE, debugCpp = FALSE)) {
                                            for(i in seq_along(RCfunProcs)) {
-                                               RCfunProcs[[i]]$process(debug = control$debug, debugCpp = control$debugCpp, debugCppLabel = name)
+                                               RCfunProcs[[i]]$process(debug = control$debug, debugCpp = control$debugCpp, debugCppLabel = name, doKeywords = FALSE)
                                            }
                                        },
                                        process = function(control = list(debug = FALSE, debugCpp = FALSE)) {
@@ -105,15 +105,12 @@ nfProcessing <- setRefClass('nfProcessing',
                                   }
                               },
 
-
-								##NEW PROCESSING TOOLS.   
-								processKeywords_all = function(){},
-								processKeywords_one = function(){},
-								matchKeywords_all = function(){},
-								matchKeywords_one = function(){},
-
-  
-  
+                              ##NEW PROCESSING TOOLS.   
+                              processKeywords_all = function(){},
+##                              processKeywords_one = function(){}, ## pushing to RCfunProcessing
+                              matchKeywords_all = function(){},
+##                              matchKeywords_one = function(){},   ## ditto
+                              
                               doSetupTypeInference_processNF = function() {},
                               makeTypeObject = function() {},
                               replaceCall = function() {},
@@ -190,12 +187,10 @@ nfProcessing <- setRefClass('nfProcessing',
                                   if(debug) browser()
                                   addBaseClassTypes()
 								
-									##NEW PROCESSING TOOLS.   
-									matchKeywords_all()
-									processKeywords_all()
-
-
-
+                                  ##NEW PROCESSING TOOLS.   
+                                  matchKeywords_all()
+                                  processKeywords_all()
+                                  
                                   if(debug) browser()
 
                                   makeNewSetupLinesOneExpr()
@@ -553,63 +548,65 @@ nfProcessing$methods(determineNdimsFromInstances = function(modelExpr, varOrNode
 
 
 nfProcessing$methods(processKeywords_all = function(){	
-	for(i in seq_along(compileInfos)){
-		compileInfos[[i]]$newRcode <<- processKeywords_one(compileInfos[[i]]$origRcode)
-		}
-	})
-
-nfProcessing$methods(processKeywords_one = function(code){
-	cl = length(code)
-	if(cl == 1){
-		if(is.call(code)){
-			if(length(code[[1]]) > 1)	code[[1]] <- processKeywords_one(code[[1]])
-		}
-		return(code)
-	}
-
-	if(length(code[[1]]) == 1)
-		{
-		code <- processKeyword(code, .self)
-		}
-
-	cl = length(code)
-
-  if(is.call(code)) {
-        if(length(code[[1]]) > 1) code[[1]] <- processKeywords_one(code[[1]])
-        if(cl >= 2) {
-            for(i in 2:cl) {
-                code[[i]] <- processKeywords_one(code[[i]])
-            }
-        }
+    for(i in seq_along(compileInfos)){
+        RCfunProcs[[i]]$processKeywords(.self)
+        ##        compileInfos[[i]]$newRcode <<- processKeywords_one(compileInfos[[i]]$origRcode)
     }
-	return(code)
 })
+
+## nfProcessing$methods(processKeywords_one = function(code){
+##     cl = length(code)
+##     if(cl == 1){
+##         if(is.call(code)){
+##             if(length(code[[1]]) > 1)	code[[1]] <- processKeywords_one(code[[1]])
+##         }
+##         return(code)
+##     }
+    
+##     if(length(code[[1]]) == 1)
+##         {
+##             code <- processKeyword(code, .self)
+##         }
+    
+##     cl = length(code)
+    
+##     if(is.call(code)) {
+##         if(length(code[[1]]) > 1) code[[1]] <- processKeywords_one(code[[1]])
+##         if(cl >= 2) {
+##             for(i in 2:cl) {
+##                 code[[i]] <- processKeywords_one(code[[i]])
+##             }
+##         }
+##     }
+##     return(code)
+## })
 
 nfProcessing$methods(matchKeywords_all = function(){
 	for(i in seq_along(compileInfos))
-	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
+            RCfunProcs[[i]]$matchKeywords()
+            ##	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
 })
 
-nfProcessing$methods(matchKeywords_one = function(code){
-	cl = length(code)
-	if(cl == 1){
-		if(is.call(code)){
-			if(length(code[[1]]) > 1)	code[[1]] <- matchKeywords_one(code[[1]])
-		}
-		return(code)
-	}
-	if(length(code[[1]]) == 1)
-		code <- matchKeywordCode(code) 
-	if(is.call(code)) {
-        if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_one(code[[1]])
-        if(cl >= 2) {
-            for(i in 2:cl) {
-                code[[i]] <- matchKeywords_one(code[[i]])
-            }
-        }
-    }
-    return(code)
-})
+## nfProcessing$methods(matchKeywords_one = function(code){
+## 	cl = length(code)
+## 	if(cl == 1){
+## 		if(is.call(code)){
+## 			if(length(code[[1]]) > 1)	code[[1]] <- matchKeywords_one(code[[1]])
+## 		}
+## 		return(code)
+## 	}
+## 	if(length(code[[1]]) == 1)
+## 		code <- matchKeywordCode(code) 
+## 	if(is.call(code)) {
+##         if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_one(code[[1]])
+##         if(cl >= 2) {
+##             for(i in 2:cl) {
+##                 code[[i]] <- matchKeywords_one(code[[i]])
+##             }
+##         }
+##     }
+##     return(code)
+## })
 
 
 

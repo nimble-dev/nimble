@@ -249,7 +249,8 @@ getLogProb_keywordInfo <- keywordInfoClass(
 
 nimCopy_keywordInfo <- keywordInfoClass(
 	keyword = 'nimCopy',
-	processor = function(code, nfProc){
+    processor = function(code, nfProc){
+        if(is.null(nfProc)) stop("Can\'t call copy (nimCopy) from a nimbleFunction without setup code")
 		possibleObjects <- c('symbolModel', 'symbolModelValues', 'symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
 		modelValuesTypes <- c('symbolModelValues', 'symbolModelValuesAccessorVector')
 		accessTypes <- c('symbolModelVariableAccessorVector', 'symbolModelValuesAccessorVector')
@@ -326,45 +327,46 @@ nimCopy_keywordInfo <- keywordInfoClass(
 #	Need to get setupCodeTemplates working first...
 doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
-	processor = function(code, nfProc){
-		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList')
-		class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
-		if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
-			return(code)
-		if(class == 'symbolModel'){
-			singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
-			nodeArg <- code[[3]]
-			if(is.character(nodeArg)){
-				varAndIndices <- getVarAndIndices(nodeArg)
-				nDim <- sum(1 - unlist(lapply(varAndIndices$indices, is.numeric) ) )
-				useMap <- nDim > 0
-			}
-			else{
-				allNDims <- determineNdimsFromNfproc(singleAccess_ArgList$model, nodeArg, nfProc)
-				if(length(unique(allNDims)) > 1) stop(paste0('Error for ', deparse(code), '. Inconsistent numbers of dimensions for different instances.'))
-				nDim <- allNDims[[1]]
-				useMap <- nDim > 0
-			}
-			if(useMap){
-				accessName <- map_SetupTemplate$makeName(singleAccess_ArgList)
-				addNecessarySetupCode(accessName, singleAccess_ArgList, map_SetupTemplate, nfProc)	
-				ans <- makeMapAccessExpr(accessName, as.name(accessName), nDim)
-			}
-			else{
-				accessName <- singleModelIndexAccess_SetupTemplate$makeName(singleAccess_ArgList)
-				addNecessarySetupCode(accessName, singleAccess_ArgList, singleModelIndexAccess_SetupTemplate, nfProc)
-				#ans <- substitute(ACCESSNAME[MFLATINDEX], list(ACCESSNAME = as.name(accessName), MFLATINDEX = as.name(paste0(accessName, '_flatIndex'))))
-				ans <- makeSingleIndexAccessExpr(accessName, as.name(accessName))
-			}
-			return(ans)			
-		}
-		stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
-	})
+    processor = function(code, nfProc){
+        if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
+        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList')
+        class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
+        if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
+            return(code)
+        if(class == 'symbolModel'){
+            singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
+            nodeArg <- code[[3]]
+            if(is.character(nodeArg)){
+                varAndIndices <- getVarAndIndices(nodeArg)
+                nDim <- sum(1 - unlist(lapply(varAndIndices$indices, is.numeric) ) )
+                useMap <- nDim > 0
+            }
+            else{
+                allNDims <- determineNdimsFromNfproc(singleAccess_ArgList$model, nodeArg, nfProc)
+                if(length(unique(allNDims)) > 1) stop(paste0('Error for ', deparse(code), '. Inconsistent numbers of dimensions for different instances.'))
+                nDim <- allNDims[[1]]
+                useMap <- nDim > 0
+            }
+            if(useMap){
+                accessName <- map_SetupTemplate$makeName(singleAccess_ArgList)
+                addNecessarySetupCode(accessName, singleAccess_ArgList, map_SetupTemplate, nfProc)	
+                ans <- makeMapAccessExpr(accessName, as.name(accessName), nDim)
+            }
+            else{
+                accessName <- singleModelIndexAccess_SetupTemplate$makeName(singleAccess_ArgList)
+                addNecessarySetupCode(accessName, singleAccess_ArgList, singleModelIndexAccess_SetupTemplate, nfProc)
+                                        #ans <- substitute(ACCESSNAME[MFLATINDEX], list(ACCESSNAME = as.name(accessName), MFLATINDEX = as.name(paste0(accessName, '_flatIndex'))))
+                ans <- makeSingleIndexAccessExpr(accessName, as.name(accessName))
+            }
+            return(ans)			
+        }
+        stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
+    })
 
 dollarSign_keywordInfo <- keywordInfoClass(
 	keyword = '$',
 	processor = function(code, nfProc){
-
+            if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
 			#	First thing we need to do is remove 'run', for backward compatibility, i.e.
 			#   replace myNimbleFunction$run() -> myNimbleFunction() or
 			#	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
@@ -440,21 +442,22 @@ dollarSign_keywordInfo <- keywordInfoClass(
     
 singleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[',
-	processor = function(code, nfProc){		
-		class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
-		if(class == 'symbolModelValues'){
-			singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
-			accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
-			addNecessarySetupCode(accessName, singleMVAccess_ArgList, singleModelValuesAccessor_SetupTemplate, nfProc)
-			if(length(code) == 4)
-				indexExpr = code[[4]]
-			else
-				indexExpr = substitute(1)
-	
-			return(substitute(ACCESS[INDEX], list(ACCESS = as.name(accessName), INDEX = indexExpr) ) )
-		}
-	return(code)
-	}
+    processor = function(code, nfProc){
+        if(is.null(nfProc)) return (code)
+        class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
+        if(class == 'symbolModelValues'){
+            singleMVAccess_ArgList <- list(code = code, modelValues = code[[2]], var = code[[3]], row = code[[4]])
+            accessName <- singleModelValuesAccessor_SetupTemplate$makeName(singleMVAccess_ArgList)
+            addNecessarySetupCode(accessName, singleMVAccess_ArgList, singleModelValuesAccessor_SetupTemplate, nfProc)
+            if(length(code) == 4)
+                indexExpr = code[[4]]
+            else
+                indexExpr = substitute(1)
+            
+            return(substitute(ACCESS[INDEX], list(ACCESS = as.name(accessName), INDEX = indexExpr) ) )
+        }
+        return(code)
+    }
 )    
 
 
@@ -780,6 +783,7 @@ addNewCode <- function(name, subList, template, nfProc)
 	nfProc$newSetupCode[[name]] <- eval(substitute(substitute(TEMPLATE, subList), list(TEMPLATE = template$codeTemplate) ) )
 
 addNecessarySetupCode <- function(name, argList, template, nfProc){
+    if(is.null(nfProc)) stop("Trying to add setup code for a nimbleFunction with no setup code.")
                                         #	name <- template$makeName(argList)
     test <- try(length(isSetupCodeGenerated(name, nfProc)))
     if(!isSetupCodeGenerated(name, nfProc)){

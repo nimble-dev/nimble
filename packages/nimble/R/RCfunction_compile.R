@@ -114,7 +114,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                    neededRCfuns = 'list' ## nfMethodRC objects
                                    ),
                                methods = list(
-                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character()) {
+                                   process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE) {
                                        
                                        if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
                                            if(nimbleOptions()$debugRCfunProcessing) {
@@ -129,11 +129,17 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                                if(length(debugCppLabel) == 0) debugCppLabel <- name
                                            }
                                        }
-                                       
+
+                                       if(doKeywords) {
+                                           matchKeywords()
+                                           processKeywords()
+                                       }
+                                                                              
                                        if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
                                            setupSymbolTables()
                                        }
-                                       
+
+                                      
                                        if(debug) {
                                            writeLines('**** READY FOR makeExprClassObjects *****')
                                            browser()
@@ -254,6 +260,58 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            print('writeCode(nimGenerateCpp(compileInfo$nimExpr, newMethods$run$newLocalSymTab))')
                                            writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                        }
+                                   },
+                                   processKeywords = function(nfProc = NULL) {
+                                       compileInfo$newRcode <<- processKeywords_recurse(compileInfo$origRcode, nfProc)
+                                   },
+                                   processKeywords_recurse = function(code, nfProc = NULL){
+                                       cl = length(code)
+                                       if(cl == 1) {
+                                           if(is.call(code)) {
+                                               if(length(code[[1]]) > 1) code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+                                           }
+                                           return(code)
+                                       }
+                                       
+                                       if(length(code[[1]]) == 1) {
+                                           code <- processKeyword(code, nfProc)
+                                       }
+    
+                                       cl = length(code)
+    
+                                       if(is.call(code)) {
+                                           if(length(code[[1]]) > 1) code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+                                           if(cl >= 2) {
+                                               for(i in 2:cl) {
+                                                   code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+                                               }
+                                           }
+                                       }
+                                       return(code)
+                                   },
+                                   matchKeywords = function() {
+                                       compileInfo$origRcode <<- matchKeywords_recurse(compileInfo$origRcode)
+                                   },
+                                   matchKeywords_recurse = function(code) {
+                                       cl = length(code)
+                                       if(cl == 1){
+                                           if(is.call(code)){
+                                               if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]])
+                                           }
+                                           return(code)
+                                       }
+                                       if(length(code[[1]]) == 1)
+                                           code <- matchKeywordCode(code)
+                                       if(is.call(code)) {
+                                           if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]])
+                                           if(cl >= 2) {
+                                               for(i in 2:cl) {
+                                                   code[[i]] <- matchKeywords_recurse(code[[i]])
+                                               }
+                                           }
+                                       }
+                                       return(code)
                                    }
+
                                    )
                                )
