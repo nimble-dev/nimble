@@ -680,7 +680,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 if(grepl('^\\.', names(params)[iParam]))   next        ## skips '.param' names; we do NOT lift these
                 paramExpr <- params[[iParam]]
                 if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
-                newNodeNameExpr <- as.name(paste0('lifted_', nameMashupFromExpr(paramExpr, colonsOK = TRUE)))   ## create the name of the new node
+                newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE)))   ## create the name of the new node ##nameMashup
                 newNodeNameExprIndexed <- addNecessaryIndexingToNewNode(newNodeNameExpr, paramExpr, contexts[[BUGSdecl$contextID]]$indexVarExprs)  ## add indexing if necessary
                 
                 newValueExpr[[iParam + 1]] <- newNodeNameExprIndexed  ## update the newValueExpr
