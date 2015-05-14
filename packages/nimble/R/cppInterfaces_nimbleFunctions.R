@@ -301,7 +301,7 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                        d1 = copyDims[1]
                                                        d2 = copyDims[2]
                                                        d3 = copyDims[3]
-                                                       setSize(.self[[v]], i, d1, d2, d3)
+                                                       setSize(.self[[v]], row = i, d1, d2, d3)
                                                        .self[[v]][[i]] <<- Robj[[v]][[i]]
                                                    }
                                                    next
