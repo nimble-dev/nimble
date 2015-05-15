@@ -34,6 +34,14 @@ vecdbl <- nimbleFunction(
     )
 assign('vecdbl', vecdbl, envir = .GlobalEnv)
 
+# function that will allow testing of arg matching by name
+mypow <- nimbleFunction(
+    run = function(x = double(0), y = double(0)) {
+        returnType(double(0))
+        return(pow(x, y))
+    }
+    )
+assign('mypow', mypow, envir = .GlobalEnv)
 
 code <- nimbleCode({
     x ~ dnorm(0, 1)
@@ -42,8 +50,11 @@ code <- nimbleCode({
     mu[1:K] ~ dmnorm(zeros[1:K], cov = I[1:K, 1:K])
     z ~ dnorm(0, 1)
     dz ~ dnorm(dblSum(x, z), sd = .01)
-    # vectorized fun applied to scalar nodes-based variable
 
+    # use of args out of order
+    out <- mypow(y = 3, x = 2)
+    
+    # vectorized fun applied to scalar nodes-based variable
     for(i in 1:K) {
         theta[i] ~ dnorm(0, 1)
     }
@@ -80,6 +91,12 @@ try(test_that("Test that values based on user-supplied functions are correct: ",
               expect_that(max(abs(2*cm$theta - cm$w)), is_less_than(.03),
                           info = paste0("theta and w are not consistent"))))
 
+try(test_that("Test that arg matching by name is correct: ",
+              expect_that(m$out, is_identical_to(8),
+                          info = paste0("incorrect arg matching by name in R model"))))
+try(test_that("Test that arg matching by name is correct: ",
+              expect_that(cm$out, is_identical_to(8),
+                          info = paste0("incorrect arg matching by name in C model"))))
 
 ## User-supplied distributions
 
