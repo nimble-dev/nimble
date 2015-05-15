@@ -11,7 +11,7 @@
 #include <R_ext/Lapack.h>
 
 
-double dwish_chol(double* x, double* chol, double df, int p, int scale_param, int give_log) {
+double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log) {
   char uplo('U');
   char side('L');
   char diag('N');
@@ -79,11 +79,11 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isLogical(scale_param) || !isLogical(return_log))
+  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
     RBREAK("Error (C_dwish_chol): invalid input type for one of the arguments.\n");
   int p = pow(LENGTH(chol), 0.5);
   int give_log = (int) LOGICAL(return_log)[0];
-  int scale = (int) LOGICAL(scale_param)[0];
+  double scale = REAL(scale_param)[0];
 
   double* c_x = REAL(x);
   double* c_chol = REAL(chol);
@@ -100,7 +100,7 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
 }
 
 
-void rwish_chol(double *Z, double* chol, double df, int p, int scale_param) {
+void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
   // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
   char uplo('U');
   char sideL('L');
@@ -160,11 +160,11 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(chol) || !isReal(df) || !isLogical(scale_param))
+  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
   int n_chol = LENGTH(chol);
   int p = pow(n_chol, 0.5);
-  int scale = (int) LOGICAL(scale_param)[0];
+  double scale = REAL(scale_param)[0];
 
   double* c_chol = REAL(chol);
   double c_df = REAL(df)[0];
@@ -270,7 +270,7 @@ SEXP C_rdirch(SEXP alpha) {
 
 
 
-double dmulti(int* x, int size, double* prob, int K, int give_log) // Calling functions need to copy first arg to int if needed
+double dmulti(double* x, double size, double* prob, int K, int give_log) // Calling functions need to copy first arg to int if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   double dens = lgammafn(size + 1);
@@ -281,16 +281,18 @@ double dmulti(int* x, int size, double* prob, int K, int give_log) // Calling fu
   return give_log ? dens : exp(dens);
 }
 
-void rmulti(int *ans, int size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
+void rmulti(int *ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 // just call Rmath's rmultinom, which passes result by pointer
+// IMPORTANT: have ans and size as int when sent to rmultinom as Rmath rmultinom has these types
+// Nimble does a copy in nimArr_rmulti
 {
-  rmultinom(size, prob, K, ans);
+  rmultinom((int) size, prob, K, ans);
 }
 
 SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log) 
 {
-  if(!isInteger(x) || !isInteger(size) || !isReal(prob) || !isLogical(return_log)) 
+  if(!isReal(x) || !isReal(size) || !isReal(prob) || !isLogical(return_log)) 
     RBREAK("Error (C_dmulti): invalid input type for one of the arguments.\n");
   int K = LENGTH(prob);
   if(LENGTH(x) != K)
@@ -304,9 +306,9 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
     return prob;
   }
 
-  int* c_x = INTEGER(x);
+  double* c_x = REAL(x);
   double* c_prob = REAL(prob);
-  int c_size = INTEGER(size)[0];
+  double c_size = REAL(size)[0];
 
   double sum = 0.0;
   for(i = 0; i < K; i++) 
@@ -323,7 +325,7 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
  
 
 SEXP C_rmulti(SEXP size, SEXP prob) {
-  if(!isInteger(size) || !isReal(prob))
+  if(!isReal(size) || !isReal(prob))
     RBREAK("Error (C_rmulti): invalid input type for one of the arguments.\n");
   int K = LENGTH(prob);
 
@@ -337,7 +339,7 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
   }
 
   double* c_prob = REAL(prob);
-  int c_size = INTEGER(size)[0];
+  double c_size = REAL(size)[0];
 
   double sum = 0.0;
   for(i = 0; i < K; i++) 
@@ -355,14 +357,14 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
 }
 
 
-double dcat(int x, double* prob, int K, int give_log)
+double dcat(double x, double* prob, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   if(x > K || x < 1) return give_log ? R_NegInf : 0.0;
   return give_log ? log(prob[x-1]) : prob[x-1];
 }
 
-int rcat(double* prob, int K)
+double rcat(double* prob, int K)
 // scalar function that can be called directly by NIMBLE with same name as in R
 // problem is no apparent way to call this w/o also passing the number of categories
 // relying on sum to 1 risks accessing beyond storage
@@ -370,7 +372,7 @@ int rcat(double* prob, int K)
 {
   double u = unif_rand();
   double prob_cum = prob[0];
-  int value = 1;
+  double value = 1.0;
   while(u > prob_cum && value < K) {
     prob_cum += prob[value];
     value++;
@@ -388,7 +390,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
   // this will call NIMBLE's dcat() for computation on scalars
   // prob must be a single vector of probs adding to one, but x can be a vector
 
-  if(!isInteger(x) || !isReal(prob) || !isLogical(return_log)) 
+  if(!isReal(x) || !isReal(prob) || !isLogical(return_log)) 
     RBREAK("Error (C_dcat): invalid input type for one of the arguments.\n");
   int n_x = LENGTH(x);
   int K = LENGTH(prob);
@@ -401,7 +403,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
     return x;
   }
 
-  int* c_x = INTEGER(x);
+  double* c_x = REAL(x);
   double* c_prob = REAL(prob);
 
   double sum = 0.0;
@@ -448,7 +450,7 @@ SEXP C_rcat(SEXP n, SEXP prob) {
   PROTECT(ans = allocVector(INTSXP, n_values));  
 
   for(i = 0; i < n_values; i++) 
-    INTEGER(ans)[i] = rcat(c_prob, K);
+    INTEGER(ans)[i] = (int) rcat(c_prob, K);
 
   PutRNGstate();
   UNPROTECT(1);
