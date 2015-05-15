@@ -252,9 +252,7 @@ code <- nimbleCode ({
     }
     mu1 ~ dunif(-10, 10)
     mu2 ~ dunif(-10, 10)
-    ind <- mu1 + mu2 > 0 & mu1 > 1
-#    mu.c ~ dconstraint(mu1 + mu2 > 0 & mu1 > 1) # ind)
-    mu.c ~ dconstraint(ind)
+    mu.c ~ dconstraint(mu1 + mu2 > 0 & mu1 > 1) 
 })
 mu1 <- 1; mu2 <- -0.5
 n <- 10
@@ -323,8 +321,7 @@ code <- nimbleCode({
     kappa ~ dnorm(0, 1.0E-06);
     
 # ordered cut points for underlying continuous latent variable  
-    ind <- a0[1] < a0[2] & a0[2] < a0[3];
-    ordered ~ dconstraint(ind);
+    ordered ~ dconstraint(a0[1] < a0[2] & a0[2] < a0[3]);
     for(i in 1:3) {
         a0[i] ~ dnorm(0, 1.0E-6);
     }
