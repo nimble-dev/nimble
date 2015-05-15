@@ -289,24 +289,28 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        }
                                        return(code)
                                    },
-                                   matchKeywords = function() {
-                                       compileInfo$origRcode <<- matchKeywords_recurse(compileInfo$origRcode)
+                                   matchKeywords = function(nfProc = NULL) {
+                                       compileInfo$origRcode <<- matchKeywords_recurse(compileInfo$origRcode, nfProc) ## nfProc needed for member functions of nf objects
                                    },
-                                   matchKeywords_recurse = function(code) {
+                                   matchKeywords_recurse = function(code, nfProc = NULL) {
                                        cl = length(code)
-                                       if(cl == 1){
-                                           if(is.call(code)){
-                                               if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]])
+                                       if(cl == 1){ ## There are no arguments
+                                           if(is.call(code)){  
+                                               if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
                                            }
                                            return(code)
                                        }
-                                       if(length(code[[1]]) == 1)
-                                           code <- matchKeywordCode(code)
+                                       if(length(code[[1]]) == 1) ## a simple call like a(b,c), not a$b(c)
+                                           code <- matchKeywordCode(code, nfProc)
+                                       
                                        if(is.call(code)) {
-                                           if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]])
-                                           if(cl >= 2) {
+                                           if(length(code[[1]]) > 1) {
+                                               if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc) ## handle a$b(c) as one unit
+                                               else code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## handle "a(b)" part of a(b)(c), which is probably *never* triggered
+                                           }
+                                           if(cl >= 2) { ## recurse through arguments
                                                for(i in 2:cl) {
-                                                   code[[i]] <- matchKeywords_recurse(code[[i]])
+                                                   code[[i]] <- matchKeywords_recurse(code[[i]], nfProc)
                                                }
                                            }
                                        }

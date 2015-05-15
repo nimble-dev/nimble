@@ -746,7 +746,8 @@ map_SetupTemplate <- setupCodeTemplateClass(
 		MODEL = argList$model,
 		MSTRIDES = as.name(paste0(resultName, '_strides')),
 		MOFFSET = as.name(paste0(resultName, '_offset')),
-		MSIZES = as.name(paste0(resultName, '_sizes')))
+
+                     MSIZES = as.name(paste0(resultName, '_sizes')))
 	})
 	
 singleModelValuesAccessor_SetupTemplate <- setupCodeTemplateClass(
@@ -857,24 +858,76 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     return(allNDims)
 }
 
-
-
-
-matchKeywordCode <- function(code){
-	thisFunctionMatch <- matchFunctions[[ as.character( code[[1]] ) ]]
-	if(!is.null(thisFunctionMatch))
-		return(matchAndFill.call(thisFunctionMatch, code ) )
-	return(code)
+matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b(c) as one unit so the member function template for b can be looked up
+    dollarSignPart <- code[[1]] ## we already checked that code[[1]][[1]] is '$' before calling this function
+    nfPart <- dollarSignPart[[2]]
+    if(length(nfPart) != 1) { ## It could be a nimbleFunctionList with nfl[[i]]$member(a)
+        nfNestedPart <- nfPart[[1]]
+        if(length(nfNestedPart) != 1) stop(paste0("Cannot handle this expression: ", deparse(code)))
+        if(deparse(nfNestedPart) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code)))
+        nfListName <- deparse(nfPart[[2]])
+        memFunName <- deparse(dollarSignPart[[3]])
+        if(is.null(nfProc)) stop(paste0("Cannot handle what looks like a nimbleFunctionList usage unless it was created in setup code: ", deparse(code)), call. = FALSE)
+        
+        if(nfProc$setupSymTab$symbolExists(nfListName)) { ## look in symbol table
+            symObj <- nfProc$setupSymTab$getSymbolObject(nfListName)
+            if(symObj$type == 'nimbleFunctionList') {
+                thisBaseClass <- symObj$baseClass
+                thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
+                return(matchAndFill.call(thisFunctionMatch, code ) )
+            } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but the object isn\'t the right type: ", deparse(code)), call. = FALSE)
+        } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but we can\'t find it in setup: ", deparse(code)), call. = FALSE)
+    }
+    ## must be nfObj$member(args)
+    nfName <- as.character(nfPart) ## nfObj
+    memFunName <- deparse(dollarSignPart[[3]])
+    if(nfProc$setupSymTab$symbolExists(nfName)) { ## first look in symbolTable
+        symObj <- nfProc$setupSymTab$getSymbolObject(nfName)
+        if(symObj$type == 'nimbleFunction') {
+            thisRCfunProc <- if(memFunName == 'run') symObj$nfProc$RCfunProcs[["operator()"]] else symObj$nfProc$RCfunProcs[[memFunName]] 
+            if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
+            thisFunctionMatch <- thisRCfunProc$RCfun$template
+            return(matchAndFill.call(thisFunctionMatch, code ) )
+        } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
+    }
+    ## then look in R
+    if(exists(nfName)) {
+       stop(paste0("Cannot use a specialized nimbleFunction that is not in setup code (it can be an argument to setup or created in setup): ", deparse(code)), call. = FALSE)
+    }
 }
 
+matchKeywordCode <- function(code, nfProc){
+    callName <- as.character(code[[1]])
+    thisFunctionMatch <- matchFunctions[[ callName ]]
 
-
-
-
-
-
-
-
+    ## see if this is a member function of an nf object
+    if(!is.null(nfProc)) {
+        modCallName <- if(callName == "run") "operator()" else callName
+        if(nfProc$setupSymTab$symbolExists(modCallName)) {
+            symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
+            if(class(symObj) == "symbolMemberFunction") {
+                thisRCfunProc <- nfProc$RCfunProcs[[modCallName]]
+                if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (looks like a member function but something is wrong): ", deparse(code)), call. = FALSE)
+                thisFunctionMatch <- thisRCfunProc$RCfun$template
+                return(matchAndFill.call(thisFunctionMatch, code ) )
+            }
+        }
+    }
+    
+    ## see if this is a call to an RCfunction
+    if(is.null(thisFunctionMatch)) {
+        if(exists(callName)) {
+            callObj <- get(callName)
+            if(is.rcf(callObj)) {
+                thisFunctionMatch <- callObj
+            }
+        }
+    }
+    
+    if(!is.null(thisFunctionMatch))
+        return(matchAndFill.call(thisFunctionMatch, code ) )
+    return(code)
+}
 
 makeSingleIndexAccessExpr <- function(newName, newNameExpr) {
     codeNames <- makeSingleIndexAccessCodeNames(newName)
