@@ -243,7 +243,11 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have on
     if(a1$name == '[[') {
         ## nimFunList[[i]](a)
         recurseSetSizes(a1, symTab, typeEnv, c(FALSE, rep(TRUE, length(a1$args)-1))) ## recursion on this is not done in generalFunSizeHandler because it skips arg1 for chainedCall = TRUE
-        if(a1$args[[2]]$nDim != 0) stop(paste0('Error in sizeChainedCall for ', nimDeparse(code), '. Index for nimbleFunction list is not scalar.'), call. = FALSE)
+        if(is.numeric(a1$args[[2]])) {
+            if(length(a1$args[[2]]) != 1) stop(paste0("Index in sizeChainedCall for ', nimDeparse(code), ' is not a scalar"), call. = FALSE)
+        } else {
+            if(a1$args[[2]]$nDim != 0) stop(paste0('Error in sizeChainedCall for ', nimDeparse(code), '. Index for nimbleFunction list is not scalar.'), call. = FALSE)
+        }
         
         sym <- symTab$getSymbolObject(a1$args[[1]]$name, TRUE)
         if(!inherits(sym, 'symbolNimbleFunctionList')) {

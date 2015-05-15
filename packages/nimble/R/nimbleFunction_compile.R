@@ -583,7 +583,7 @@ nfProcessing$methods(processKeywords_all = function(){
 
 nfProcessing$methods(matchKeywords_all = function(){
 	for(i in seq_along(compileInfos))
-            RCfunProcs[[i]]$matchKeywords()
+            RCfunProcs[[i]]$matchKeywords(.self)
             ##	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
 })
 
