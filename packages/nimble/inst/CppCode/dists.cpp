@@ -840,5 +840,221 @@ double rconstraint(double cond)
   return cond;
 }
 
-
+// we need our own exp implementation because R dexp uses rate and C exp uses scale
   
+double rexp_nimble(double rate)
+{
+  return rexp( 1/rate );
+} 
+
+/* 
+    if (rate <= 0.0) {
+        ML_ERR_return_NAN;
+    }
+    if (!R_FINITE(rate)) {
+      return 0.;
+    }
+    return exp_rand() / rate; // --> in ./sexp.c
+*/
+
+double dexp_nimble(double x, double rate, int give_log)
+{
+  return dexp(x, 1/rate, give_log); 
+} 
+/*
+#ifdef IEEE_754
+    // NaNs propagated correctly 
+    if (ISNAN(x) || ISNAN(rate)) return x + rate;
+#endif
+    if (!R_FINITE(rate) || rate < 0.0) ML_ERR_return_NAN;
+
+    if (x < 0.)
+        return R_D__0;
+    return (give_log ?
+            (-x * rate) + log(rate) :
+            exp(-x * rate) * rate);
+*/
+
+double pexp_nimble(double x, double rate, int lower_tail, int log_p)
+{
+  return pexp(x, 1/rate, lower_tail, log_p);
+} 
+/* 
+#ifdef IEEE_754
+    if (ISNAN(x) || ISNAN(rate))
+        return x + rate;
+    if (rate < 0) ML_ERR_return_NAN;
+#else
+    if (!R_FINITE(rate) || rate < 0) ML_ERR_return_NAN;
+#endif
+
+    if (x <= 0.)
+        return R_DT_0;
+    // same as weibull( shape = 1): 
+    x = -(x * rate);
+    if (lower_tail)
+        return (log_p
+                // log(1 - exp(x))  for x < 0 : 
+                ? (x > -M_LN2 ? log(-expm1(x)) : log1p(-exp(x)))
+                : -expm1(x));
+    // else:  !lower_tail 
+    return R_D_exp(x);
+*/
+
+double qexp_nimble(double p, double rate, int lower_tail, int log_p)
+{
+  return qexp(p, 1 / rate, lower_tail, log_p)
+  /*
+#ifdef IEEE_754
+    if (ISNAN(p) || ISNAN(rate))
+        return p + rate;
+#endif
+    if (rate < 0) ML_ERR_return_NAN;
+
+    R_Q_P01_check(p);
+    if (p == R_DT_0)
+        return 0;
+
+    return - R_DT_Clog(p) / rate;
+  */
+
+SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
+  if(!isReal(x) || !isReal(rate) || !isLogical(return_log)) 
+    RBREAK("Error (C_dexp_nimble): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_rate = LENGTH(rate);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  double* c_x = REAL(x);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dexp_nimble(c_x[i], *c_rate, give_log);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = dexp_nimble(c_x[i], c_rate[i_df++], give_log);
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+
+SEXP C_rexp_nimble(SEXP n, SEXP rate) {
+  // this will call rexp_nimble for computation on scalars
+  if(!isInteger(n) || !isReal(rate) )
+    RBREAK("Error (C_rexp_nimble): invalid input type for one of the arguments.");
+  int n_rate = LENGTH(rate);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rexp_nimble): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  double* c_rate = REAL(rate);
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rexp_nimble(*c_rate);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rexp_nimble(c_rate[i_rate++]);
+      // implement recycling:
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_pexp_nimble(SEXP x, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(x) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+    RBREAK("Error (C_pexp_nimble): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_rate = LENGTH(rate);
+  int lower_tail = (int) LOGICAL(lower_tail)[0];
+  int log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  double* c_x = REAL(x);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = pexp_nimble(c_x[i], *c_rate, lower_tail, log_p);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = pexp_nimble(c_x[i], c_rate[i_df++], lower_tail, log_p);
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_pexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(p) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+    RBREAK("Error (C_pexp_nimble): invalid input type for one of the arguments.");
+  int n_p = LENGTH(p);
+  int n_rate = LENGTH(rate);
+  int lower_tail = (int) LOGICAL(lower_tail)[0];
+  int log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_p == 0) {
+    return p;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_p));  
+  double* c_p = REAL(p);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_p; i++) 
+      REAL(ans)[i] = pexp_nimble(c_p[i], *c_rate, lower_tail, log_p);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_p; i++) {
+      REAL(ans)[i] = pexp_nimble(c_p[i], c_rate[i_df++], lower_tail, log_p);
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
