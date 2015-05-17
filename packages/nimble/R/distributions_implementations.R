@@ -80,3 +80,54 @@ rconstraint <- function(n = 1, cond) {
     }
     return(cond)
 }
+
+# exp_nimble extends R to allow rate or scale and provide common interface via 'rate' to C functions
+
+#' The Exponential Distribution
+#'
+#'   Density, distribution function, quantile function and random
+#'   generation for the exponential distribution with rate 'rate'
+#'     (i.e., mean ‘1/rate’) or 'scale' parameterizations.
+#' 
+#' @aliases rexp_nimble, qexp_nimble, pexp_nimble
+#' @author Christopher Paciorek
+#' @details NIMBLE's exponential distribution functions use Rmath's functions
+#' under the hood, but are parameterized to take both rate and scale and to
+#' use 'rate' as the core parameterization in C.
+
+dexp_nimble <- function(x, rate = 1/scale, scale = 1, log = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_dexp_nimble', as.double(x), as.double(rate), as.logical(log))
+}
+
+rexp_nimble <- function(n = 1, rate = 1/scale, scale = 1) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_rexp_nimble', as.integer(n), as.double(rate), as.logical(log))
+}
+
+pexp_nimble <- function(x, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+  .Call('C_pexp_nimble', as.double(x), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+}
+
+qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+  .Call('C_qexp_nimble', as.double(p), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+}
+

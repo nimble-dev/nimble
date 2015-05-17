@@ -28,6 +28,10 @@ extern "C" {
   SEXP C_rdirch(SEXP);
   SEXP C_dinterval(SEXP, SEXP, SEXP, SEXP);
   SEXP C_rinterval(SEXP, SEXP, SEXP);
+  SEXP C_dexp_nimble(SEXP, SEXP, SEXP);
+  SEXP C_rexp_nimble(SEXP, SEXP);
+  SEXP C_pexp_nimble(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_qexp_nimble(SEXP, SEXP, SEXP, SEXP);
 
 }
 
@@ -63,5 +67,9 @@ double rt_nonstandard(double, double, double);
 double dconstraint(double, double, int);
 double rconstraint(double);
 
+double rexp_nimble(double);
+double dexp_nimble(double, double, int);
+double pexp_nimble(double, double, int, int);
+double qexp_nimble(double, double, int, int);
 
 #endif
