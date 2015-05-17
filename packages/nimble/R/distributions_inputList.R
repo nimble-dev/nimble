@@ -72,7 +72,7 @@ distributionsInputList <- list(
     ## ddexp   = list('ddexp(location, scale, rate)'),   ## 'ddexp' function not implemented yet?  -DT
     
     dexp    = list(BUGSdist = 'dexp(rate, scale)',
-                   Rdist    = 'dexp(rate = 1/scale)',
+                   Rdist    = 'dexp_nimble(rate = 1/scale)',
                    altParams= 'scale = 1/rate',
                    pqAvail = TRUE),
     
