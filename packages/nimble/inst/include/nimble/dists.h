@@ -45,12 +45,12 @@ void rmulti(int*, double, double*, int);
 double ddirch(double*, double*, int, int);
 void rdirch(double*, double*, int);
 
-double dmnorm_chol(double*, double*, double*, int, int, int);
-void rmnorm_chol(double *, double*, double*, int, int);
+double dmnorm_chol(double*, double*, double*, int, double, int);
+void rmnorm_chol(double *, double*, double*, int, double);
 double dwish_chol(double*, double*, double, int, double, int);
 void rwish_chol(double*, double*, double, int, double);
 
-double dinterval(int, double, double*, int, int);
+double dinterval(double, double, double*, int, int);
 int rinterval(double, double*, int);
 
 // SHOULD BE IN nimDists.h 
@@ -59,10 +59,14 @@ int rinterval(double, double*, int);
 extern "C" {
   SEXP C_rt_nonstandard(SEXP, SEXP, SEXP, SEXP);
   SEXP C_dt_nonstandard(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_pt_nonstandard(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_qt_nonstandard(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 }
 
 double dt_nonstandard(double, double, double, double, int);
 double rt_nonstandard(double, double, double);
+double pt_nonstandard(double, double, double, double, int, int);
+double qt_nonstandard(double, double, double, double, int, int);
 
 double dconstraint(double, double, int);
 double rconstraint(double);
