@@ -19,8 +19,8 @@ void nimArr_rmulti(NimArr<1, double> &ans, double size, NimArr<1, double> &prob)
 double nimArr_dcat(double x, NimArr<1, double> &prob, int give_log);
 double nimArr_rcat(NimArr<1, double> &prob);
 
-double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, int prec_param, int give_log );
-void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, int prec_param);
+double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log );
+void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param);
 
 double nimArr_dinterval(int x, double t, NimArr<1, double> &c, int give_log);
 int nimArr_rinterval(double t, NimArr<1, double> &c);

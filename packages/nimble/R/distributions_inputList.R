@@ -19,12 +19,12 @@ distributionsInputList <- list(
     dbern   = list(BUGSdist = 'dbern(prob)',
                    Rdist    = 'dbinom(size = 1, prob)',
                    discrete = TRUE,
-                   pqAvail = TRUE)
+                   pqAvail = TRUE),
     
     dbin    = list(BUGSdist = 'dbin(prob, size)',
                    Rdist    = 'dbinom(size, prob)',
                    discrete = TRUE,
-                   pqAvail = TRUE)
+                   pqAvail = TRUE),
     
     dcat    = list(BUGSdist = 'dcat(prob)',
                    Rdist    = 'dcat(prob)',
@@ -49,11 +49,11 @@ distributionsInputList <- list(
     dnegbin = list(BUGSdist = 'dnegbin(prob, size)',
                    Rdist    = 'dnbinom(size, prob)',
                    discrete = TRUE,
-                   pqAvail = TRUE)
+                   pqAvail = TRUE),
     
     dpois   = list(BUGSdist = 'dpois(lambda)',
                    discrete = TRUE,
-                   pqAvail = TRUE)
+                   pqAvail = TRUE),
     
     
     ##############################################
@@ -101,10 +101,10 @@ distributionsInputList <- list(
     
     ## dpar    = list(BUGSdist = 'dpar(alpha, c)'),   ## not sure the state of this?  -DT
     
-    ## because we wrote nonstandard dt, we don't at the moment have access to pt, qt
     dt      = list(BUGSdist = 'dt(mu, tau, df, sigma)',
                    Rdist    = 'dt_nonstandard(df, mu, sigma = 1/sqrt(tau))',
-                   altParams = c('tau = sigma^-2')),
+                   altParams = c('tau = sigma^-2'),
+                   pqAvail = TRUE),
     
     dunif   = list(BUGSdist = 'dunif(min, max)',
                    pqAvail = TRUE),

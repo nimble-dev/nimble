@@ -410,6 +410,17 @@ evalInDistsMatchCallEnv <- function(expr) {
     stop(paste0("evalInDistsMatchCallEnv: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
+BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
+    Rdists <- lapply(getDistributionsInfo('translations'), `[[`, 1)
+    if(!dIncluded) names(Rdists) <- stripPrefix(names(Rdists))
+    results <- unlist(Rdists[BUGSdists])
+    names(results) <- NULL
+    if(!dIncluded) return(stripPrefix(results)) else return(results)
+}
+                   
+stripPrefix <- function(vec, prefix = "d")
+    return(gsub(paste0("^", prefix), "", vec))
+    
 #####################################################################################################
 #####################################################################################################
 #####  executable code, creates global system variable 'distributions' ##############################

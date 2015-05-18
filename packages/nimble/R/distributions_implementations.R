@@ -45,21 +45,29 @@ rt_nonstandard <- function(n, df = 1, mu = 0, sigma = 1) {
   .Call('C_rt_nonstandard', as.integer(n), as.double(df), as.double(mu), as.double(sigma))
 }
 
+pt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
+  .Call('C_pt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log.p))
+}
+
+qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
+  .Call('C_qt_nonstandard', as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(log.p))
+}
+
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-  .Call('C_dmnorm_chol', as.double(x), as.double(mean), as.double(cholesky), as.logical(prec_param), as.logical(log))
+  .Call('C_dmnorm_chol', as.double(x), as.double(mean), as.double(cholesky), as.double(prec_param), as.logical(log))
 }
 
 rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
  ## cholesky should be upper triangular
  ## FIXME: allow cholesky to be lower tri
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-    .Call('C_rmnorm_chol', as.double(mean), as.double(cholesky), as.logical(prec_param))
+    .Call('C_rmnorm_chol', as.double(mean), as.double(cholesky), as.double(prec_param))
 }
 
 dinterval <- function(x, t, c, log = FALSE) {
-    .Call('C_dinterval', as.integer(x), as.double(t), as.double(c), as.logical(log))
+    .Call('C_dinterval', as.double(x), as.double(t), as.double(c), as.logical(log))
 }
 
 rinterval <- function(n = 1, t, c) {
@@ -110,7 +118,7 @@ rexp_nimble <- function(n = 1, rate = 1/scale, scale = 1) {
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-    .Call('C_rexp_nimble', as.integer(n), as.double(rate), as.logical(log))
+    .Call('C_rexp_nimble', as.integer(n), as.double(rate))
 }
 
 pexp_nimble <- function(x, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
