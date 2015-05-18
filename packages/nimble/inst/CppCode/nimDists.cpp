@@ -28,9 +28,9 @@ double nimArr_dmulti(NimArr<1, double> &x, double size, NimArr<1, double> &prob,
   int K = prob.size();
   if(K == 0) return(0.);
   if(x.size() != K) std::cout<<"Error in nimArr_dmulti: incompatible sizes for x ("<<x.size()<<") and prob("<<K<<").\n";
-  int *xptr; 
+  double *xptr; 
   double *probptr;
-  NimArr<1, int> xCopy;
+  NimArr<1, double> xCopy;
   NimArr<1, double> probCopy;
   xCopy = x; // copy from double to int
   xptr = xCopy.getPtr();
@@ -156,7 +156,7 @@ void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double d
 
 
 
-double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, int prec_param, int give_log ) { 
+double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log ) { 
 
   double *xptr, *meanptr, *cholptr;
   NimArr<1, double> xCopy, meanCopy;
@@ -175,7 +175,7 @@ double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<
 }
 
 
-void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, int prec_param) {
+void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param) {
 
   NimArr<1, double> ansCopy, meanCopy;
   NimArr<2, double> cholCopy;
