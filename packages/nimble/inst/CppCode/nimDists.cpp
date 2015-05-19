@@ -202,7 +202,7 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
 
 // the next two handle when 'c' is a vector (e.g., interval censoring)
 //  and the following two when 'c' is a scalar (e.g., left- and right-censoring)
-double nimArr_dinterval(int x, double t, NimArr<1, double> &c, int give_log) {
+double nimArr_dinterval(double x, double t, NimArr<1, double> &c, int give_log) {
   int K = c.size();
   double *cptr;
   NimArr<1, double> cCopy;
@@ -221,7 +221,7 @@ int nimArr_rinterval(double t, NimArr<1, double> &c) {
 }
 
 
-double nimArr_dinterval(int x, double t, double c, int give_log) {
+double nimArr_dinterval(double x, double t, double c, int give_log) {
   double ans = dinterval(x, t, &c, 1, give_log);
   return(ans);
 }

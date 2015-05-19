@@ -22,10 +22,10 @@ double nimArr_rcat(NimArr<1, double> &prob);
 double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log );
 void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param);
 
-double nimArr_dinterval(int x, double t, NimArr<1, double> &c, int give_log);
+double nimArr_dinterval(double x, double t, NimArr<1, double> &c, int give_log);
 int nimArr_rinterval(double t, NimArr<1, double> &c);
 
-double nimArr_dinterval(int x, double t, double c, int give_log);
+double nimArr_dinterval(double x, double t, double c, int give_log);
 int nimArr_rinterval(double t, double c);
 
 

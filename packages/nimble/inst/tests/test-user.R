@@ -101,7 +101,7 @@ try(test_that("Test that arg matching by name is correct: ",
 ## User-supplied distributions
 
 dmyexp <- nimbleFunction(
-    run = function(x = double(0), rate = double(0), log = integer(0)) {
+    run = function(x = double(0), rate = double(0, default = 1), log = integer(0, default = 0)) {
         returnType(double(0))
         logProb <- log(rate) - x*rate
         if(log) {
@@ -114,7 +114,7 @@ assign('dmyexp', dmyexp, envir = .GlobalEnv)
 
 
 rmyexp <- nimbleFunction(
-    run = function(n = integer(0), rate = double(0)) {
+    run = function(n = integer(0), rate = double(0, default = 1)) {
         returnType(double(0))
         if(n != 1) nimPrint("rmyexp only allows n = 1; using n = 1.")
         dev <- runif(1, 0, 1)
@@ -124,7 +124,7 @@ rmyexp <- nimbleFunction(
 assign('rmyexp', rmyexp, envir = .GlobalEnv)
 
 pmyexp <- nimbleFunction(
-    run = function(q = double(0), rate = double(0), lower.tail = integer(0), log.p = integer(0)) {
+    run = function(q = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
         returnType(double(0))
         if(!lower.tail) {
             logp = -rate * q
@@ -146,7 +146,7 @@ pmyexp <- nimbleFunction(
 assign('pmyexp', pmyexp, envir = .GlobalEnv)
 
 qmyexp <- nimbleFunction(
-    run = function(p = double(0), rate = double(0), lower.tail = integer(0), log.p = integer(0)) {
+    run = function(p = double(0), rate = double(0, default = 1), lower.tail = integer(0, default = 1), log.p = integer(0, default = 0)) {
         returnType(double(0))
         if(log.p) {
             p = exp(p)
