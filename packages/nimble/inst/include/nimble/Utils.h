@@ -11,6 +11,16 @@
 #define PRINTF Rprintf
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
+
+// code copied from dpq.h - useful utilities for return values of dist functions
+                                                        /* "DEFAULT" */
+                                                        /* --------- */
+#define R_D__0  (log_p ? ML_NEGINF : 0.)                /* 0 */
+#define R_D__1  (log_p ? 0. : 1.)                       /* 1 */
+#define R_DT_0  (lower_tail ? R_D__0 : R_D__1)          /* 0 */
+#define R_DT_1  (lower_tail ? R_D__1 : R_D__0)          /* 1 */
+
+
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
 

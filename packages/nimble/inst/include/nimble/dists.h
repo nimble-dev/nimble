@@ -51,7 +51,7 @@ double dwish_chol(double*, double*, double, int, double, int);
 void rwish_chol(double*, double*, double, int, double);
 
 double dinterval(double, double, double*, int, int);
-int rinterval(double, double*, int);
+double rinterval(double, double*, int);
 
 // SHOULD BE IN nimDists.h 
 // Chris comment on above line: I don't think this is the case...
