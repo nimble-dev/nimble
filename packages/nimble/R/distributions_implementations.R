@@ -86,7 +86,7 @@ rconstraint <- function(n = 1, cond) {
         warning("NAs produced")
         return(NaN)
     }
-    return(cond)
+    return(as.integer(cond))
 }
 
 # exp_nimble extends R to allow rate or scale and provide common interface via 'rate' to C functions
