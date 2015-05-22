@@ -34,17 +34,17 @@ extern "C" {
 // NOTE: R CMD SHLIB seems to handle C++ code without using wrapping the functions in 'extern "C"'; note that some of these functions have a bit of C++ syntax
 
 // core scalar d/r functions provided by NIMBLE to extend R
-double dcat(int, double*, int, int);
-int rcat(double*, int);
-double dmulti(int*, int, double*, int, int);
-void rmulti(int *, int, double*, int);
+double dcat(double, double*, int, int);
+double rcat(double*, int);
+double dmulti(double*, double, double*, int, int);
+void rmulti(int*, double, double*, int);
 double ddirch(double*, double*, int, int);
 void rdirch(double*, double*, int);
 
 double dmnorm_chol(double*, double*, double*, int, int, int);
 void rmnorm_chol(double *, double*, double*, int, int);
-double dwish_chol(double*, double*, double, int, int, int);
-void rwish_chol(double*, double*, double, int, int);
+double dwish_chol(double*, double*, double, int, double, int);
+void rwish_chol(double*, double*, double, int, double);
 
 double dinterval(int, double, double*, int, int);
 int rinterval(double, double*, int);
