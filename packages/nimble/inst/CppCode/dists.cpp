@@ -9,7 +9,7 @@
 //#include "Utils.h" // moved to dists.h
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
-
+#include <Rmath.h>
 
 double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log) {
   char uplo('U');
@@ -372,7 +372,7 @@ double rcat(double* prob, int K)
 {
   double u = unif_rand();
   double prob_cum = prob[0];
-  double value = 1.0;
+  int value = 1;
   while(u > prob_cum && value < K) {
     prob_cum += prob[value];
     value++;
@@ -834,10 +834,8 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
   }
     
   UNPROTECT(1);
-return ans;
+  return ans;
 }
-
-
 
 double dinterval(double x, double t, double* c, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
