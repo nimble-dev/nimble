@@ -9,7 +9,7 @@
 //#include "Utils.h" // moved to dists.h
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
-#include <Rmath.h>
+
 
 double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log) {
   char uplo('U');
@@ -834,7 +834,7 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
   }
     
   UNPROTECT(1);
-  return ans;
+return ans;
 }
 
 double dinterval(double x, double t, double* c, int K, int give_log)
