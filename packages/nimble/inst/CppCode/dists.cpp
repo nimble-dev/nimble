@@ -834,8 +834,9 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
   }
     
   UNPROTECT(1);
-return ans;
+  return ans;
 }
+
 
 double dinterval(double x, double t, double* c, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
@@ -1068,7 +1069,6 @@ SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
   return ans;
 }
   
-
 SEXP C_rexp_nimble(SEXP n, SEXP rate) {
   // this will call rexp_nimble for computation on scalars
   if(!isInteger(n) || !isReal(rate) )
