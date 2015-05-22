@@ -12,7 +12,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 }
 
 ddirch <- function(x, alpha, log = FALSE) {
-    .Call('C_ddirch', as.double(x), as.double(alpha), as.integer(log))
+    .Call('C_ddirch', as.double(x), as.double(alpha), as.logical(log))
 }
 
 rdirch <- function(n = 1, alpha) {
@@ -21,15 +21,16 @@ rdirch <- function(n = 1, alpha) {
 }
 
 dmulti <- function(x, size = sum(x), prob, log = FALSE) {
-  .Call('C_dmulti', as.double(x), as.double(size), as.double(prob), as.integer(log))
+  .Call('C_dmulti', as.double(x), as.double(size), as.double(prob), as.logical(log))
 }
 
 rmulti <- function(n = 1, size, prob) {
-  .Call('C_rmulti', as.integer(size), as.double(prob))
+  if(n != 1) warning('rmulti only handles n = 1 at the moment')
+  .Call('C_rmulti', as.double(size), as.double(prob))
 }
 
 dcat <- function(x, prob, log = FALSE) {
-  .Call('C_dcat', as.integer(x), as.double(prob), as.logical(log))
+  .Call('C_dcat', as.double(x), as.double(prob), as.logical(log))
 }
 
 rcat <- function(n = 1, prob) {
