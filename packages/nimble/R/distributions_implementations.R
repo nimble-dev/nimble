@@ -12,7 +12,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 }
 
 ddirch <- function(x, alpha, log = FALSE) {
-    .Call('C_ddirch', as.double(x), as.double(alpha), as.integer(log))
+    .Call('C_ddirch', as.double(x), as.double(alpha), as.logical(log))
 }
 
 rdirch <- function(n = 1, alpha) {

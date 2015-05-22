@@ -372,7 +372,7 @@ double rcat(double* prob, int K)
 {
   double u = unif_rand();
   double prob_cum = prob[0];
-  int value = 1;
+  double value = 1.0;
   while(u > prob_cum && value < K) {
     prob_cum += prob[value];
     value++;
