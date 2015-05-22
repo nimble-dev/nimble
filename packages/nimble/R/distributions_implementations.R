@@ -121,13 +121,13 @@ rexp_nimble <- function(n = 1, rate = 1/scale, scale = 1) {
     .Call('C_rexp_nimble', as.integer(n), as.double(rate))
 }
 
-pexp_nimble <- function(x, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
+pexp_nimble <- function(q, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
     if (!missing(rate) && !missing(scale)) {
         if (abs(rate * scale - 1) < 1e-15) 
             warning("specify 'rate' or 'scale' but not both")
         else stop("specify 'rate' or 'scale' but not both")
     }
-  .Call('C_pexp_nimble', as.double(x), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+  .Call('C_pexp_nimble', as.double(q), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
 qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
