@@ -75,8 +75,8 @@ simulate(cm)
 
 for(var in c('dx', 'y', 'dz', 'w')) {
     try(test_that("Test that R and C models agree with user-supplied functions: ",
-                  expect_that(get(var, m), equals(get(var, cm),
-                                             info = paste0(var, " values differ")))))
+                  expect_that(get(var, m), equals(get(var, cm)),
+                                             info = paste0(var, " values differ"))))
 }
 try(test_that("Test that values based on user-supplied functions are correct: ",
               expect_that(abs(2*cm$x - cm$dx), is_less_than(.03),

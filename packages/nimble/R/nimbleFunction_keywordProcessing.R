@@ -477,6 +477,7 @@ keywordList[['dgamma']] <-d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
 keywordList[['rgamma']] <- rgamma_keywordInfo
+
 # necessary keywords:
 #	calculate 	(done)
 #	simulate	(done)
@@ -509,9 +510,28 @@ matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 
-# Missing distributions: cat, dirch, logis, multi, mnorm, negbin, wish, gamma, beta
-matchDistList <- list('binom', 'chisq', 'lnorm', 'norm', 'pois', 't', 'unif', 'weibull')
+# remove ncp from signatures
+stripArgs <- function(fname, argNames) {
+    if(exists(fname)) {
+        args <- formals(eval(as.name(fname)))
+        args <- args[-which(names(args) %in% argNames)]
+        template <- function() {}
+        formals(template) <- args
+        return(template)
+    } else return(NULL)
+}
 
+for(distfun in paste0(c('d','p','q','r'), 'beta'))
+    matchFunctions[[distfun]] <- stripArgs(distfun, 'ncp')
+for(distfun in paste0(c('d','p','q','r'), 'chisq'))
+    matchFunctions[[distfun]] <- stripArgs(distfun, 'ncp')
+for(distfun in paste0(c('d','p','q','r'), 'nbinom'))
+    matchFunctions[[distfun]] <- stripArgs(distfun, 'mu')
+
+# the following are standard in terms of both matchFunctions and keywordList
+matchDistList <- list('binom', 'cat', 'dirch', 'exp', 'exp_nimble', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'norm', 'pois', 't', 't_nonstandard', 'unif', 'weibull', 'wish_chol')
+# these are standard for keywordList and handled specially above for matchFunctions
+keywordOnlyMatchDistList <- list('beta', 'chisq', 'nbinom')
 
 addDistList2matchFunctions <- function(distList, matchFunEnv){
 	for(thisDist in distList){
@@ -520,10 +540,12 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 		rFun <- paste0('r', thisDist)
 		dFun <- paste0('d', thisDist)
 		
-		eval(substitute(matchFunctions[[pFun]] <- PFUN, list(PFUN = as.name(pFun))))
-		eval(substitute(matchFunctions[[qFun]] <- QFUN, list(QFUN = as.name(qFun))))
-		eval(substitute(matchFunctions[[rFun]] <- RFUN, list(RFUN = as.name(rFun))))
-		eval(substitute(matchFunctions[[dFun]] <- DFUN, list(DFUN = as.name(dFun))))
+                eval(substitute(matchFunctions[[dFun]] <- DFUN, list(DFUN = as.name(dFun))))
+                eval(substitute(matchFunctions[[rFun]] <- RFUN, list(RFUN = as.name(rFun))))
+                if(exists(qFun))
+                    eval(substitute(matchFunctions[[qFun]] <- QFUN, list(QFUN = as.name(qFun))))
+                if(exists(pFun))
+                    eval(substitute(matchFunctions[[pFun]] <- PFUN, list(PFUN = as.name(pFun))))
 	}
 }
 
@@ -531,7 +553,6 @@ addDistKeywordProcessors <- function(distList, keywordEnv){
 		for(thisDist in distList){
 		pFun <- paste0('p', thisDist)
 		qFun <- paste0('q', thisDist)
-		rFun <- paste0('r', thisDist)
 		dFun <- paste0('d', thisDist)
 		
 		keywordEnv[[dFun]] <- d_dist_keywordInfo
@@ -543,7 +564,7 @@ addDistKeywordProcessors <- function(distList, keywordEnv){
           
 
 addDistList2matchFunctions(matchDistList, matchFunctions)
-addDistKeywordProcessors(matchDistList, keywordList)
+addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
 
 
 
