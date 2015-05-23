@@ -144,9 +144,8 @@ operatorRank <- c(
 distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector'), dIncluded = TRUE)
 distribution_rFuns <- gsub("^d", "r", distribution_dFuns)
 
-# pqAvail <- sapply(nimble:::distributions$distObjects, '[[', 'pqAvail')
-pqAvail <- getDistributionsInfo('pqAvail')
-pqDists <- BUGSdistToRdist(names(pqAvail)[pqAvail], dIncluded = TRUE)
+pqAvail <- names(which(getDistributionsInfo('pqAvail')))
+pqDists <- BUGSdistToRdist(pqAvail, dIncluded = TRUE)
 
 distribution_pFuns <- gsub("^d", "p", pqDists)
 distribution_qFuns <- gsub("^d", "q", pqDists)
