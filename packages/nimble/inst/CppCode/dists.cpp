@@ -854,7 +854,7 @@ double rinterval(double t, double* c, int K)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   for(int i = 0; i < K; i++) {
-    if(t <= c[i]) return i;
+    if(t <= c[i]) return (double) i;
   }
   return (double) K;
 }
@@ -923,11 +923,11 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
   if(n_t == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_values; i++) 
-      INTEGER(ans)[i] = rinterval(*c_t, c_c, K);
+      INTEGER(ans)[i] = (int) rinterval(*c_t, c_c, K);
   } else {
     int i_t = 0;
     for(int i = 0; i < n_values; i++) {
-      INTEGER(ans)[i] = rinterval(c_t[i_t++], c_c, K);
+      INTEGER(ans)[i] = (int) rinterval(c_t[i_t++], c_c, K);
       // implement recycling:
       if(i_t == n_t) i_t = 0;
     }
