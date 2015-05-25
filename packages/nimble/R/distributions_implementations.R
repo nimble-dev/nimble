@@ -46,11 +46,11 @@ rt_nonstandard <- function(n, df = 1, mu = 0, sigma = 1) {
 }
 
 pt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
-  .Call('C_pt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log.p))
+  .Call('C_pt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
 qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
-  .Call('C_qt_nonstandard', as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(log.p))
+  .Call('C_qt_nonstandard', as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {

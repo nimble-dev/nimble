@@ -10,6 +10,20 @@
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
 
+bool R_IsNA(double* P, int s) {
+  for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
+  return(false);
+}
+
+bool R_isnancpp(double* P, int s) {
+  for(int i = 0; i < s; ++i) if(R_isnancpp(P[i])) return(true);
+  return(false);
+}
+
+bool R_FINITE_VEC(double* P, int s) {
+  for(int i = 0; i < s; ++i) if(!R_FINITE(P[i])) return(false);
+  return(true);
+}
 
 double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log) {
   char uplo('U');
@@ -21,6 +35,18 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   double alpha(1.0);
 
   int i;
+
+  if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+    return R_NaN;
+#endif
+
+  // also covers df < 0
+  if(df < (double) p) ML_ERR_return_NAN;
+
+  if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
 
   double dens = -(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2);
   for(i = 0; i < p; i++)
@@ -88,10 +114,10 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
   double* c_x = REAL(x);
   double* c_chol = REAL(chol);
   double c_df = REAL(df)[0];
-  
+ 
   if(c_df < p)
-    RBREAK("Error (C_dwish_chol): inconsistent degrees of freedom and dimension.\n");
-
+    RBREAK("Error (C_rwish_chol): inconsistent degrees of freedom and dimension.\n");
+  
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
   REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log);
@@ -113,9 +139,22 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
   double beta(0.0);
 
   int i, j, uind, lind;
-
-  //  double* Z = new double[p*p];
-
+  
+#ifdef IEEE_754
+  if (R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+#endif
+    
+  // also covers df < 0
+  if(df < (double) p) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+  
   // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals
   for(j = 0; j < p; j++) {
     // double *Z_j = &Z[j*p];
@@ -191,15 +230,24 @@ double ddirch(double* x, double* alpha, int K, int give_log)
   double sumAlpha(0.0);
   double sumX(0.0);
   double dens(0.0);
+
+  if (R_IsNA(x, K) || R_IsNA(alpha, K))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, K) || R_isnancpp(alpha, K))
+    return R_NaN;
+#endif
+  
   for(int i = 0; i < K; i++) {
+    if(alpha[i] <= 0.0) ML_ERR_return_NAN;
+    if(x[i] < 0.0 || x[i] > 1.0) return R_D__0;
     dens += (alpha[i]-1) * log(x[i]) - lgammafn(alpha[i]) ;
     sumAlpha += alpha[i];
     sumX += x[i];
   }
   if(sumX > 1.0 + 10*DBL_EPSILON || sumX < 1.0 - 10*DBL_EPSILON) {
-    return give_log ? R_NegInf : 0.0;
+    return R_D__0;
   }
-  // should return error instead?
 
   dens += lgammafn(sumAlpha);
   return give_log ? dens : exp(dens);
@@ -208,13 +256,27 @@ double ddirch(double* x, double* alpha, int K, int give_log)
 void rdirch(double *ans, double* alpha, int K) 
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+  int i, j;
   //  double* ans = new double[K];
+#ifdef IEEE_754
+  if (R_isnancpp(alpha, K)) {
+    for(j = 0; j < K; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+#endif
+
   double sum(0.0);
-  for(int i = 0; i < K; i++) {
+  for(i = 0; i < K; i++) {
+    if(alpha[i] <= 0.0) {
+      for(j = 0; j < K; j++) 
+        ans[j] = R_NaN;
+      return;
+    }
     ans[i] = rgamma(alpha[i], 1);
     sum += ans[i];
   }
-  for(int i = 0; i < K; i++) {
+  for(i = 0; i < K; i++) {
     ans[i] /= sum;
   }
 }
@@ -273,13 +335,46 @@ SEXP C_rdirch(SEXP alpha) {
 double dmulti(double* x, double size, double* prob, int K, int give_log) // Calling functions need to copy first arg to int if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+  double sumProb(0.0);
+  double sumX(0.0);
+
+  if (R_IsNA(x, K) || R_IsNA(prob, K) || R_IsNA(size))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, K) || R_isnancpp(prob, K) || R_isnancpp(size))
+    return R_NaN;
+#endif
+
+  if(R_D_negInonint(size))
+        ML_ERR_return_NAN;
+  size = R_D_forceint(size);
+
   double dens = lgammafn(size + 1);
   for(int i = 0; i < K; i++) {
-   	if(x[i] != 0 & prob[i] != 0)
-    dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
+    if (prob[i] < 0 || prob[i] > 1) ML_ERR_return_NAN;
+    R_D_nonint_check(x[i]);
+    if (x[i] < 0 || !R_FINITE(x[i])) return R_D__0;
+
+    x[i] = R_D_forceint(x[i]);
+    sumProb += prob[i];
+    sumX += x[i];
+
+    if(!(x[i] == 0.0 && prob[i] == 0.0))
+      dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
   }
+
+  if(sumX > size + 10*DBL_EPSILON || sumX < size - 10*DBL_EPSILON) {
+    return R_D__0;
+  }
+  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
+    ML_ERR_return_NAN;
+  }
+
   return give_log ? dens : exp(dens);
 }
+
+
+
 
 void rmulti(int *ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
@@ -360,7 +455,24 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
 double dcat(double x, double* prob, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(x > K || x < 1) return give_log ? R_NegInf : 0.0;
+  if (R_IsNA(x) || R_IsNA(prob, K))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x) || R_isnancpp(prob, K))
+    return R_NaN;
+#endif
+
+  double sumProb(0.0);
+  for(int i = 0; i < K; i++) 
+    sumProb += prob[i];
+  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
+    ML_ERR_return_NAN;
+  }
+
+  R_D_nonint_check(x);
+  x = R_D_forceint(x);
+
+  if(x > K || x < 1) return R_D__0;
   return give_log ? log(prob[(int) x - 1]) : prob[(int) x - 1];
 }
 
@@ -373,15 +485,19 @@ double rcat(double* prob, int K)
   double u = unif_rand();
   double prob_cum = prob[0];
   int value = 1;
+
+  double sumProb(0.0);
+  for(int i = 0; i < K; i++) 
+    sumProb += prob[i];
+  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
+    ML_ERR_return_NAN;
+  }
+
   while(u > prob_cum && value < K) {
     prob_cum += prob[value];
     value++;
   }
 
-  if(prob_cum > 1.0 + 10*DBL_EPSILON)
-    // tolerance of ~ 1 x 10^-15; this is not based on any deep thought
-    // this will only catch the issue if u puts us in the last bin
-    error("(rcat): sum of probabilities is greater than 1.");
   return (double) value;
 }
  
@@ -470,6 +586,16 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
   int i;
   // add diagonals of Cholesky
 
+  if (R_IsNA(x, n) || R_IsNA(mean, n) || R_IsNA(chol, n*n) || R_IsNA(prec_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, n) || R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_isnancpp(prec_param))
+    return R_NaN;
+#endif
+
+  if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mean, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
+
+
   if(prec_param) {
     for(i = 0; i < n*n; i += n + 1) 
       dens += log(chol[i]);
@@ -545,7 +671,21 @@ void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_par
   int lda(n);
   int incx(1);
   
-  int i;
+  int i, j;
+
+#ifdef IEEE_754
+  if (R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_isnancpp(prec_param)) {
+    for(j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+#endif
+
+  if(!R_FINITE_VEC(chol, n*n)) { 
+    for(j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
 
   double* devs = new double[n];
   //  double* ans = new double[n];
@@ -612,10 +752,14 @@ double dt_nonstandard(double x, double df, double mu, double sigma, int give_log
 // 'n' is name of 'df' in R's C dt
 {
   // standardize and multiply by Jacobian of transformation
-  if(sigma <= 0) {
-    if(sigma < 0) return(R_NaN);
-    if( x == mu) return R_PosInf;
-    return give_log ? R_NegInf : 0.0;
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+    return x + mu + sigma + df;
+#endif
+  if(!R_FINITE(sigma)) return R_D__0;
+  if(sigma <= 0.0) {
+    if(sigma < 0.0) ML_ERR_return_NAN;
+    return (x == mu) ? ML_POSINF : R_D__0;
   }         
   if(give_log) return dt( (x - mu)/sigma, df, give_log) - log(sigma);
   else return dt( (x - mu)/sigma, df, give_log) / sigma;
@@ -624,7 +768,12 @@ double dt_nonstandard(double x, double df, double mu, double sigma, int give_log
 double rt_nonstandard(double df, double mu, double sigma)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(sigma < 0) return R_NaN;
+#ifdef IEEE_754
+  if (ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+    ML_ERR_return_NAN;
+#endif
+  if (!R_FINITE(sigma) || sigma < 0.0) ML_ERR_return_NAN;
+    
   return mu + sigma * rt(df);
 }
 
@@ -632,28 +781,32 @@ double pt_nonstandard(double q, double df, double mu, double sigma, int lower_ta
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   double result;
-  if(sigma <= 0) {
-    if(sigma < 0) return(R_NaN);
-    if(q < mu) result = 0.0; else result = 1.0;
-    if(!lower_tail) result = 1.0 - result;
-    return log_p ? log(result) : result;
-  }         
-  return( pt( (q - mu)/sigma, df, lower_tail, log_p) );
+#ifdef IEEE_754
+    if(ISNAN(q) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+        return q + mu + sigma + df;
+#endif
+
+  if(!R_FINITE(q) && mu == q) return ML_NAN;/* x-mu is NaN */
+  if(sigma <= 0.0) {
+    if(sigma < 0.0) ML_ERR_return_NAN;
+    return (q < mu) ? R_DT_0 : R_DT_1;
+  }   
+   
+  return( pt( (q - mu) / sigma, df, lower_tail, log_p) );
 }
 
 double qt_nonstandard(double p, double df, double mu, double sigma, int lower_tail, int log_p)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
   double result;
-  if(sigma <= 0) {
-    if(sigma < 0) return(R_NaN);
-    if( (!log_p && (p < 0.0 || p > 1.0)) || (log_p && !R_FINITE(p)) ) return(R_NaN);
-    if( (!log_p && p == 0.0) || (log_p && p == R_NegInf) ) 
-      return lower_tail ? R_NegInf : R_PosInf;
-    if( (!log_p && p == 1.0) || (log_p && p == 0.0) ) 
-      return lower_tail ? R_PosInf : R_NegInf;
-    return( mu );
-  }
+#ifdef IEEE_754
+  if (ISNAN(p) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+    return p + mu + sigma + df;
+#endif
+
+  if(sigma < 0.0) ML_ERR_return_NAN;
+  if(sigma == 0.0) return mu;
+
   return( mu + sigma * qt( p, df, lower_tail, log_p ) );
 }
 

@@ -3,6 +3,10 @@
 
 #include "Utils.h"
 
+bool R_IsNA(double*, int);
+bool R_isnancpp(double*, int);
+bool R_FINITE_VEC(double*, int);
+
 extern "C" {
 // BLAS/LAPACK routines
   // not needed when #include "R_ext/lapack.h"
