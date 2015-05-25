@@ -4,8 +4,6 @@
 // uses various BLAS routines and constants from R's C API
 // compile as "R CMD SHLIB dists.cpp"
 
-// FIXME: need full suite of error-checking, including types coming from R
-
 //#include "Utils.h" // moved to dists.h
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
@@ -994,18 +992,35 @@ SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEX
 double dinterval(double x, double t, double* c, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+  if (R_IsNA(c, K) || R_IsNA(x) || R_IsNA(t)) 
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(c, K) || R_isnancpp(x) || R_isnancpp(t))
+    return R_NaN;
+#endif
+
+  R_D_nonint_check(x);
+  x = R_D_forceint(x);
+
+  // we do not check that c is in increasing order, to save time
   int int_x = (int) x;
-  if(int_x < 0 || int_x > K) return give_log ? R_NegInf : 0.0;
-  if(int_x == 0 && t <= c[int_x]) return give_log ? 0.0 : 1.0;
-  if(int_x == K && t > c[int_x-1]) return give_log ? 0.0 : 1.0;
-  else if(t <= c[int_x] && t > c[int_x - 1]) return give_log ? 0.0 : 1.0;
-  else return give_log ? R_NegInf : 0.0;
+  if(int_x < 0 || int_x > K) return R_D__0; 
+  if(int_x == 0 && t <= c[int_x]) return R_D__1;
+  if(int_x == K && t > c[int_x-1]) return R_D__1;
+  if(t <= c[int_x] && t > c[int_x - 1]) return R_D__1;
+  return R_D__0;
 }
 
 
 double rinterval(double t, double* c, int K)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+#ifdef IEEE_754
+  if (R_isnancpp(c, K) || R_isnancpp(t) )
+    ML_ERR_return_NAN;
+#endif
+
+  // we do not check that c is in increasing order, to save time
   for(int i = 0; i < K; i++) {
     if(t <= c[i]) return (double) i;
   }
@@ -1095,18 +1110,24 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
 double dconstraint(double x, double cond, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(ISNAN(cond) || ISNAN(x)) {
-    return(x + cond);  // mimic how R C functions handle NA, NaN
-  }
-  if(x == cond || x == 0) return give_log ? 0.0 : 1.0;
-  else return give_log ? R_NegInf : 0.0;
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(cond))
+    return x + cond;
+#endif
+
+  if(x == cond || x == 0) return R_D__1;
+  else return R_D__0;
 }
 
 
 double rconstraint(double cond)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(ISNAN(cond))   return(R_NaN);
+#ifdef IEEE_754
+  if (ISNAN(cond) )
+    return ML_ERR_return_NAN;
+;
+#endif
   return cond;
 }
 
@@ -1117,77 +1138,20 @@ double rexp_nimble(double rate)
   return rexp( 1/rate );
 } 
 
-/* 
-    if (rate <= 0.0) {
-        ML_ERR_return_NAN;
-    }
-    if (!R_FINITE(rate)) {
-      return 0.;
-    }
-    return exp_rand() / rate; // --> in ./sexp.c
-*/
-
 double dexp_nimble(double x, double rate, int give_log)
 {
   return dexp(x, 1/rate, give_log); 
 } 
-/*
-#ifdef IEEE_754
-    // NaNs propagated correctly 
-    if (ISNAN(x) || ISNAN(rate)) return x + rate;
-#endif
-    if (!R_FINITE(rate) || rate < 0.0) ML_ERR_return_NAN;
-
-    if (x < 0.)
-        return R_D__0;
-    return (give_log ?
-            (-x * rate) + log(rate) :
-            exp(-x * rate) * rate);
-*/
 
 double pexp_nimble(double q, double rate, int lower_tail, int log_p)
 {
   return pexp(q, 1/rate, lower_tail, log_p);
 } 
-/* 
-#ifdef IEEE_754
-    if (ISNAN(x) || ISNAN(rate))
-        return x + rate;
-    if (rate < 0) ML_ERR_return_NAN;
-#else
-    if (!R_FINITE(rate) || rate < 0) ML_ERR_return_NAN;
-#endif
-
-    if (x <= 0.)
-        return R_DT_0;
-    // same as weibull( shape = 1): 
-    x = -(x * rate);
-    if (lower_tail)
-        return (log_p
-                // log(1 - exp(x))  for x < 0 : 
-                ? (x > -M_LN2 ? log(-expm1(x)) : log1p(-exp(x)))
-                : -expm1(x));
-    // else:  !lower_tail 
-    return R_D_exp(x);
-*/
 
 double qexp_nimble(double p, double rate, int lower_tail, int log_p)
 {
   return qexp(p, 1 / rate, lower_tail, log_p);
 }
-  /*
-#ifdef IEEE_754
-    if (ISNAN(p) || ISNAN(rate))
-        return p + rate;
-#endif
-    if (rate < 0) ML_ERR_return_NAN;
-
-    R_Q_P01_check(p);
-    if (p == R_DT_0)
-        return 0;
-
-    return - R_DT_Clog(p) / rate;
-  */
 
 SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
   if(!isReal(x) || !isReal(rate) || !isLogical(return_log))
