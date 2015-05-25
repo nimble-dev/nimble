@@ -13,7 +13,7 @@ unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 's
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
 unaryOrNonaryOperators <- list() 
 assignmentOperators <- c('<-','<<-','=')
-reductionUnaryOperatorsEither <- c('min','max','sum','mean','any','all','prod','norm', 'squaredNorm')
+reductionUnaryOperatorsEither <- c('min','max','sum','mean','any','all','prod','squaredNorm')
 reductionUnaryOperatorsArray <- c('sd','var')
 reductionUnaryOperators <- c(reductionUnaryOperatorsEither, reductionUnaryOperatorsArray)
 matrixSquareReductionOperators <- c('det','logdet','trace')

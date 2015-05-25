@@ -1114,8 +1114,8 @@ double dconstraint(double x, double cond, int give_log)
   if (ISNAN(x) || ISNAN(cond))
     return x + cond;
 #endif
-
-  if(x == cond || x == 0) return R_D__1;
+  // any non-zero will be treated as true
+  if(x == cond || x == 0.0) return R_D__1;
   else return R_D__0;
 }
 
@@ -1125,8 +1125,7 @@ double rconstraint(double cond)
 {
 #ifdef IEEE_754
   if (ISNAN(cond) )
-    return ML_ERR_return_NAN;
-;
+    ML_ERR_return_NAN;
 #endif
   return cond;
 }
