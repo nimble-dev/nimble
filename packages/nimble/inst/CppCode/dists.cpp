@@ -917,7 +917,7 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = allocVector(INTSXP, n_values));  
   double* c_t = REAL(t);
   double* c_c = REAL(c);
   if(n_t == 1) {
