@@ -525,9 +525,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             stop(paste("Error in sizeAssign: don't know what to do with", nimDeparse(RHS), "in", nimDeparse(code)), call. = FALSE) 
         }
     }
-
     test <- try(if(inherits(RHStype, 'uninitializedField') | length(RHStype)==0) {
-        stop('Error with assignment in ', nimDeparse(code), '. Type of RHS is unknown.', call. = FALSE)
+        stop('Error with assignment in ', nimDeparse(code), '. ', RHSname, ' is not available or its output type is unknown.', call. = FALSE)
     })
     if(inherits(test, 'try-error')) browser()
     
