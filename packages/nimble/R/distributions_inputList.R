@@ -83,11 +83,11 @@ distributionsInputList <- list(
     
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
-    dlnorm  = list(BUGSdist = 'dlnorm(meanlog, tau, sdlog)',
-                   Rdist    = 'dlnorm(meanlog, sdlog = 1/sqrt(tau))',
-                   altParams= c('tau = sdlog^-2', 'var = sdlog^2'),
+    dlnorm  = list(BUGSdist = 'dlnorm(meanlog, taulog, sdlog, varlog)',
+                   Rdist    = c('dlnorm(meanlog, sdlog = 1/sqrt(tau))',
+                       'dlnorm(meanlog, sdlog = sqrt(varlog)'),
+                   altParams= c('taulog = sdlog^-2', 'varlog = sdlog^2'),
                    pqAvail = TRUE),
-    # need to add var as alternate parameter
     
     dlogis  = list(BUGSdist = 'dlogis(location, rate, scale)',
                    Rdist    = 'dlogis(location, scale = 1/rate)',
@@ -101,9 +101,10 @@ distributionsInputList <- list(
     
     ## dpar    = list(BUGSdist = 'dpar(alpha, c)'),   ## not sure the state of this?  -DT
     
-    dt      = list(BUGSdist = 'dt(mu, tau, df, sigma)',
-                   Rdist    = 'dt_nonstandard(df, mu, sigma = 1/sqrt(tau))',
-                   altParams = c('tau = sigma^-2'),
+    dt      = list(BUGSdist = 'dt(mu, tau, df, sigma, sigma2)',
+                   Rdist    = c('dt_nonstandard(df, mu, sigma = 1/sqrt(tau))',
+                       'dt_nonstandard(df, mu, sigma = sqrt(sigma2))'),
+                   altParams = c('tau = sigma^-2', 'sigma2 = sigma^2'),
                    pqAvail = TRUE),
     
     dunif   = list(BUGSdist = 'dunif(min, max)',
