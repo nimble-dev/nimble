@@ -127,17 +127,19 @@ distributionsInputList <- list(
     
     dmnorm  = list(BUGSdist = 'dmnorm(mean, prec, cov, cholesky, prec_param)',
                    Rdist    = c('dmnorm_chol(mean, cholesky = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, cholesky = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, cholesky, prec_param)'),
-                  altParams= c('prec = if(prec_param) t(cholesky)%*%cholesky else inverse(t(cholesky)%*%cholesky)', 'cov = if(prec_param) inverse(t(cholesky)%*%cholesky) else t(cholesky)%*%cholesky'),
- #       altParams= c('prec = cholesky', 'cov = cholesky'), ## NOT CORRECT. These are placeholders to get other parts working
+                  altParams= c('prec = t(cholesky)%*%cholesky*prec_param + (1-prec_param)*inverse(t(cholesky)%*%cholesky)', 'cov = t(cholesky)%*%cholesky*(1-prec_param) + prec_param*inverse(t(cholesky)%*%cholesky)'),
+  #       altParams= c('prec = cholesky', 'cov = cholesky'), ## NOT CORRECT. These are placeholders to get other parts working
         types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
-    # would be nice to have crossprod available in DSL for the altParams
+    # altParams above is very inefficient computationally; we need if+else or ifelse functionality to do this right; also want back/forwardsolve to avoid inverse; and having crossProd would be more efficient too - CP
     
     ## dmt     = list(BUGSdist = 'dmt(mu, T, k)'),   ## not sure the state of this?  -DT
     
     dwish   = list(BUGSdist = 'dwish(R, df, S)',
                    Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)', 'dwish_chol(cholesky = chol(S), df, scale_param = 1)'),
-                   altParams = c('R = cholesky', 'S = cholesky'), ##NOT CORRECT. These are placeholders to get other parts working.
+                  # altParams = c('R = cholesky', 'S = cholesky'), ##NOT CORRECT. These are placeholders to get other parts working.
+                  altParams= c('R = inverse(t(cholesky)%*%cholesky)', 'S = inverse(t(cholesky)%*%cholesky)'),
                    types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)'))
+    # altParams ok here (but still would like back/forwardsolve), because code in altParams only used for R if S was provided by user and vice versa, so don't need 'if'
 )
 
 
