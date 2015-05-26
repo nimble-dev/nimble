@@ -1,6 +1,33 @@
 # additional distributions provided by NIMBLE
-# FIXME: these should be modified to go directly to C w/o type conversion, with error-checking in C
+# in general we use doubles on C side so convert parameters to doubles here before passing to C
 
+#' The Wishart Distribution
+#'
+#' density and random generation for the Wishart distribution, using either the Cholesky factor of the scale matrix or the rate matrix.
+#'
+#' @aliases rwish_chol
+#' 
+#' @param x vector of values.
+#' @param n number of observations (only \code{n=1} is handled currently).
+#' @param cholesky upper-triangular Cholesky factor of either the scale matrix (when \code{scale_param} is TRUE) or rate matrix (otherwise).
+#' @param df degrees of freedom.
+#' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
+#' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
+#' @author Christopher Paciorek
+#' @export
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
+#' @return \code{dwish_chol} gives the density and \code{rwish_chol} generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' df <- 40
+#' ch <- chol(matrix(c(1, .7, .7, 1), 2))
+#' x <- rwish_chol(1, ch, df = df)
+#' dwish_chol(x, ch, df = df)
+#' 
 dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
   .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))

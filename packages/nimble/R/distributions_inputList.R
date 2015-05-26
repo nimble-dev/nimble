@@ -85,7 +85,7 @@ distributionsInputList <- list(
     
     dlnorm  = list(BUGSdist = 'dlnorm(meanlog, taulog, sdlog, varlog)',
                    Rdist    = c('dlnorm(meanlog, sdlog = 1/sqrt(tau))',
-                       'dlnorm(meanlog, sdlog = sqrt(varlog)'),
+                       'dlnorm(meanlog, sdlog = sqrt(varlog))'),
                    altParams= c('taulog = sdlog^-2', 'varlog = sdlog^2'),
                    pqAvail = TRUE),
     
@@ -127,16 +127,15 @@ distributionsInputList <- list(
     
     dmnorm  = list(BUGSdist = 'dmnorm(mean, prec, cov, cholesky, prec_param)',
                    Rdist    = c('dmnorm_chol(mean, cholesky = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, cholesky = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, cholesky, prec_param)'),
-##                   altParams= c('prec = if(prec_param) crossprod(cholesky) else inverse(crossprod(cholesky))', 'cov = if(prec_param) inverse(crossprod(cholesky)) else crossprod(cholesky)'),
-        altParams= c('prec = cholesky', 'cov = cholesky'), ## NOT CORRECT. These are placeholders to get other parts working
+                  altParams= c('prec = if(prec_param) t(cholesky)%*%cholesky else inverse(t(cholesky)%*%cholesky)', 'cov = if(prec_param) inverse(t(cholesky)%*%cholesky) else t(cholesky)%*%cholesky'),
+ #       altParams= c('prec = cholesky', 'cov = cholesky'), ## NOT CORRECT. These are placeholders to get other parts working
         types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
+    # would be nice to have crossprod available in DSL for the altParams
     
     ## dmt     = list(BUGSdist = 'dmt(mu, T, k)'),   ## not sure the state of this?  -DT
     
     dwish   = list(BUGSdist = 'dwish(R, df, S)',
-                   ##Rdist    = c('dwish_chol(cholesky = chol(R), df, p = dim(R)[1], scale_param = 0)', 'dwish_chol(cholesky = chol(S), df, p = dim(S)[1], scale_param = 1)'),
                    Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)', 'dwish_chol(cholesky = chol(S), df, scale_param = 1)'),
-                   ##types    = c('value = double(2)', 'chol = double(2)', 'p = integer(0)', 'scale_param = integer(0)'))
                    altParams = c('R = cholesky', 'S = cholesky'), ##NOT CORRECT. These are placeholders to get other parts working.
                    types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)'))
 )
