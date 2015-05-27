@@ -1,4 +1,8 @@
-
+mysqu <- nimbleFunction(
+    run = function(sd = double(0)) {
+        returnType(double(0))
+        return(sd*sd)
+    })
 
 #' Makes the Metropolis-Hastings acceptance decision, based upon the input (log) Metropolis-Hastings ratio
 #' 
