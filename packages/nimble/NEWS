@@ -1,6 +1,12 @@
                         CHANGES IN VERSION 0.4 (TBD)
 
+NOTE: WE SHOULD GO BACK THROUGH GITHUB ISSUES TO MAKE NOTE HERE OF VARIOUS CHANGES
+
 USER LEVEL CHANGES
+
+-- added additional parameterizations for dlnorm and dt
+
+-- improved handling of distribution functions in nimbleFunction run code (i.e., the DSL), allowing argument matching by name and use of default values
 
 -- added support for use of user-defined functions in BUGS code
 
@@ -26,6 +32,8 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
+-- added a variety of error checking for various distribution functions and now generally use doubles in distribution functions in C++
+
 -- modified API for nimble options to mimic R's options(), including nimbleOptions() and getOptions() and renaming of the underlying nimble options object to be .nimbleOptions.
 
 -- added an environment, nimbleUserNamespace, in the package namespace, that allows user-supplied information to control the behavior of NIMBLE. At the moment, only used for user-supplied distributions list.
@@ -37,6 +45,10 @@ DEVELOPER LEVEL CHANGES
 -- names of custom MCMC sampler nimbleFunctions need not begin with "sampler_"
 
 -- nimbleFunction provided for use in algorithms: initializeModel(model), to perform sensible model initialization at the onset of an algorithm
+
+BUG FIXES
+
+-- fixed bug where dexp was passing the wrong parameter (rate instead of scale) to C++; we now use our own dexp_nimble, which calls Rmath's dexp correctly
 
 -- set default for deparse to width.cutoff=500L to avoid splitting of lines when going from expressions to string names
 
