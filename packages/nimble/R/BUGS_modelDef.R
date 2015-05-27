@@ -379,23 +379,26 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         
         BUGSdecl <- declInfo[[i]]
         if(BUGSdecl$type != 'stoch' || !(BUGSdecl$valueExpr[[1]] == "T" || BUGSdecl$valueExpr[[1]] == "I")) next
+        BUGSdecl$truncated <- TRUE
 
-        BUGSdecl$truncation <- list(
-            lower = if(BUGSdecl$valueExpr[[3]] == "") -Inf else BUGSdecl$valueExpr[[3]],
-            upper = if(BUGSdecl$valueExpr[[4]] == "") Inf else BUGSdecl$valueExpr[[4]]
-            # type = as.character(BUGSdecl$valueExpr[[1]]) # T or I? could be used later to check that I() only used for top-level nodes
-            )
+        dist <- BUGSdecl$valueExpr[[1]]
+        if(!getDistributionsInfo('pqAvail')[dist]) 
+            stop("Cannot implement truncation for ", dist, "; 'p' and 'q' functions not available.")
+           
+        if(BUGSdecl$valueExpr[[3]] != "") BUGSdecl$range[1] <- BUGSdecl$valueExpr[[3]]  
+        if(BUGSdecl$valueExpr[[4]] != "") BUGSdecl$range[1] <- BUGSdecl$valueExpr[[4]]  
+        
         if(BUGSdecl$valueExpr[[1]] == "I")
             warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
                 
         newCode <- BUGSdecl$code
-        if(BUGSdecl$truncation$lower == -Inf && BUGSdecl$truncation$upper == Inf) {  # user specified no bounds so not really truncated
-            BUGSdecl$truncation <- NULL
+        if(BUGSdecl$range[1] == declInfo[[i]]$range[1] && BUGSdecl$range[2] == declInfo[[i]]$range[2]) {  # user specified bounds that are the same as the range
+            BUGSdecl$truncated <- FALSE
         }
         newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
-
+        
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -415,7 +418,7 @@ modelDefClass$methods(expandDistributions = function() {
         newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$valueExpr)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -438,11 +441,11 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = BUGSdecl$targetNodeExpr, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
             newDeclInfo[[nextNewDeclInfoIndex]]     <- BUGSdeclClassObject
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
             newDeclInfo[[nextNewDeclInfoIndex + 1]] <- BUGSdeclClassObject
             
         } else {    # deterministic node
@@ -452,7 +455,7 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = newLHS, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
             newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
         }
     }  # close loop over declInfo
@@ -512,7 +515,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated)
         declInfo[[i]] <<- BUGSdeclClassObject
     }  # close loop over declInfo
 })
@@ -538,7 +541,7 @@ modelDefClass$methods(addRemainingDotParams = function() {
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
         declInfo[[iDecl]] <<- BUGSdeclClassObject
     }
 })
@@ -548,20 +551,20 @@ modelDefClass$methods(insertDistributionBounds = function() {
     for(i in seq_along(declInfo)) {
         
         BUGSdecl <- declInfo[[i]]
-        if(BUGSdecl$type != 'stoch' || is.null(BUGSdecl$truncation)) next
+        if(BUGSdecl$type != 'stoch' || is.null(BUGSdecl$truncated)) next
 
         newValueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
 
         nParams <- length(newValueExpr) 
-        newValueExpr[[nParams + 1]] <- BUGSdecl$truncation$lower
-        newValueExpr[[nParams + 2]] <- BUGSdecl$truncation$upper
+        newValueExpr[[nParams + 1]] <- BUGSdecl$range[1]
+        newValueExpr[[nParams + 2]] <- BUGSdecl$range[2]
         names(newValueExpr)[(nParams + 1):(nParams + 2)] <- c('lower', 'upper')
 
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
 
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
 
         declInfo[[i]] <<- BUGSdeclClassObject
     }
@@ -577,7 +580,7 @@ modelDefClass$methods(replaceAllConstants = function() {
         newCode <- replaceConstantsRecurse(declInfo[[i]]$code, constantsEnv, constantsNamesList)$code
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, declInfo[[i]]$truncation)
+        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, declInfo[[i]]$truncated)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -689,7 +692,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 if(!checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)) {
                     
                     BUGSdeclClassObject <- BUGSdeclClass$new()
-                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)   ## keep new declaration in the same context, regardless of presence/absence of indexing
+                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)   ## keep new declaration in the same context, regardless of presence/absence of indexing
                     newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
                     
                     nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
@@ -701,7 +704,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncation)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
         newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject    ## regardless of anything, add BUGSdecl itself in
     }    # closes loop over declInfo
     declInfo <<- newDeclInfo

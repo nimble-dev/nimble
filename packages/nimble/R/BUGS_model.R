@@ -121,13 +121,9 @@ modelBaseClass <- setRefClass('modelBaseClass',
 
                                   isTruncated = function(node) {
                                       di <- getDeclInfo(node)[[1]]
-                                      if(is.null(di$truncation)) return(FALSE) else return(TRUE)
+                                      if(di$truncated) return(TRUE) else return(FALSE)
                                   },
 
-                                  getBounds = function(node) {
-                                      if(!isTruncated(node)) return(list(lower=-Inf, upper=Inf))
-                                      return(getDeclInfo(node)[[1]]$truncation)
-                                  },
 
                                   getVarNames = function(includeLogProb = FALSE, nodes, includeData = TRUE) {                                  
                                       '

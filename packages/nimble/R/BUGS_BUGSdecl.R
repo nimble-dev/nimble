@@ -30,7 +30,8 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  targetNodeName = 'ANY',
                                  
                                  ## truncation information
-                                 truncation = 'ANY',
+                                 truncated = 'ANY',
+                                 range = 'ANY',
                                  
                                  ## set in setIndexVariableExprs(), and never changes.
                                  indexVariableExprs = 'ANY',
@@ -115,7 +116,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
 )
 
 
-BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncation = NULL) {
+BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated = FALSE, range = NULL) {
     ## master entry function.
     ## uses 'contextID' to set the field: contextID.
     ## uses 'code' argument, to set the fields:
@@ -127,7 +128,8 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
     contextID <<- contextID
     sourceLineNumber <<- sourceLineNum
     code <<- code
-    truncation <<- truncation
+    truncated <<- truncated
+    range <<- range
     
     if(code[[1]] == '~') {
         type <<- 'stoch'
@@ -177,6 +179,9 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
     
     targetVarName <<- deparse(targetVarExpr)
     targetNodeName <<- deparse(targetNodeExpr)
+
+    if(type == 'stoch' && is.null(range))
+        range <<- getDistribution(code[[3]][[1]])$range
 })
 
 
