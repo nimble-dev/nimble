@@ -503,7 +503,11 @@ Details: The return value is a named list, with an element corresponding to each
                                       nodeVector <- expandNodeNames(nodeVector)
                                       conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
                                   },
-
+                                  checkConjugacy2 = function(nodeVector) {
+                                      if(missing(nodeVector)) nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
+                                      nodeIDs <- expandNodeNames(nodeVector, returnType = 'ids')
+                                      conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
+                                  },
                                   newModel = function(data = NULL, inits = NULL, modelName = character()) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
@@ -613,6 +617,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            ## It is either within for loops (contexts) and/or has a replacement
                                            ## so we construct code to call the nfGenerator with the needed arguments
                                            
+
                                            assign('MODEL_UNIQUE_NAME_', .self, envir = BUGSdecl$replacementsEnv)
                                            BUGSdecl$replacementsEnv[['nfGenCall_UNIQUE_NAME_']] <- as.call(c(list(quote(nfGenerator_UNIQUE_NAME_)), list(model = quote(MODEL_UNIQUE_NAME_)), lapply(setupOutputExprs, function(z) substitute(x[[index_UNIQUE_NAME_]], list(x = z)))))
                                            BUGSdecl$replacementsEnv[['nfGenerator_UNIQUE_NAME_']] <- nfGenerator

@@ -116,6 +116,85 @@ conjugacyRelationshipsClass <- setRefClass(
         ##     }
         ##     return(NULL)  # didn't find a matching conjugacy class: not conjugate, return NULL
         ## },
+        checkConjugacy2 = function(model, nodeIDs) {
+            browser()
+            maps <- model$modelDef$maps
+            nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
+            declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
+            for(i in seq_along(declID2nodeIDs)) {         ## For each group of nodeIDs from the same declarationID
+                nodesFromOneDecl <- declID2nodeIDs[[i]]   
+                depPathsByNode <- lapply(nodesFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
+                depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
+                    unlist(lapply(z,
+                                  function(x)
+                                      paste(maps$graphID_2_declID[x[,1]], x[,2], collapse = '\r', sep='\r'))))
+
+                depPathsByNodeUnlisted <- unlist(depPathsByNode, recursive = FALSE)
+                depPathsByNodeLabelsUnlisted <- unlist(depPathsByNodeLabels)
+                uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
+                uniquePathsUnlistedIndices <- split(seq_along(depPathsByNodeLabelsUnlisted), depPathsByNodeLabelsUnlisted)
+
+                uniquePathsDepNodes <- uniquePathsDists <- conjDepTypes <- uniquePathsTargetNodes <- character(length(uniquePathsUnlistedIndices))
+                for(j in seq_along(uniquePathsUnlistedIndices)) {
+                    depPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
+                    targetNode <- uniquePathsTargetNodes[j] <-  maps$graphID_2_nodeName[depPath[1,1]]
+                    uniquePathsDepNodes[j] <- maps$graphID_2_nodeName[depPath[nrow(depPath), 1]]
+
+                    if(model$isTruncated(targetNode)) next
+                    dist <- uniquePathsDists[j] <- model$getNodeDistribution(targetNode)
+                    if(!dist %in% names(conjugacys)) next
+                    conjugacyObj <- conjugacys[[dist]]
+                    conjDepTypes[j] <- conjugacyObj$checkConjugacyOneDep(model, targetNode, uniquePathsDepNodes[j])
+                }
+
+                ## conjDepTypes <- lapply(uniquePathsUnlistedIndices, function(x) {
+                ##     depPath <- depPathsByNodeUnlisted[[ x[1] ]] ## use first to check
+                ##     targetNode <- maps$graphID_2_nodeName[depPath[1,1]]
+                ##     depNode <- maps$graphID_2_nodeName[depPath[nrow(depPath), 1]]
+                ##     oneConjResult <- checkConjugacy_singleDep(model, targetNode, depNode) ## somewhat wasteful to through out the path information instead of using it here,
+                ##     ## but that's what we happen to have written
+                ##     oneConjResult
+                ## })
+                conjBool <- conjDepTypes != ""
+                names(uniquePathsTargetNodes) <- names(conjDepTypes) <- names(uniquePathsDists) <- names(conjBool) <- names(uniquePathsUnlistedIndices)
+                ##conjDepTypes <- unlist(conjDepTypes)
+                browser()
+                if(any(conjBool)) {
+                    uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
+                    mapply(
+##                        depPathsOneNode <- depPathsByNode[[1]]
+ ##                       depPathsLabelsOneNode <-depPathsByNodeLabels[[1]]
+                       ## targetNode <- uniquePathsTargetNodes[[1]]
+                       ## dist <- uniquePathsDists[[1]]
+                        function(depPathsOneNode, depPathsLabelsOneNode) {
+                            if(all(conjBool[depPathsLabelsOneNode])) {
+                                depTypes <- conjDepTypes[depPathsLabelsOneNode]
+                                
+                                depTargets <- maps$graphID_2_nodeName[ unlist(lapply(depPathsOneNode, function(x) x[nrow(x)])) ]
+                                ## STOPPED HERE
+                                control <- lapply(uniquePaths, function(x) depTargets[names(depTypes)==x])
+                                names(control) <- conjDepTypes
+                                control[unlist(lapply(control, is.null))] <- NULL
+                              ##  targetNode <- maps$graphID_2_nodeName[depPathsOneNode[[1]][1,1] ]
+                                list(type = conjugacys[[dist]]$samplerType, target = targetNode, control = control)
+                            }
+                        },
+                        depPathsByNode, depPathsByNodeLabels) 
+                }
+                
+            }
+        },
+        checkConjugacy_singleDep = function(model, node, depNode) {
+            if(model$isTruncated(node)) return(list())   ## we say non-conjugate if the targetNode is truncated
+            dist <- model$getNodeDistribution(node)
+            if(!dist %in% names(conjugacys)) return(list())
+            conjugacyObj <- conjugacys[[dist]]
+            ## temporary -- but works fine!
+            result <- conjugacyObj$checkConjugacyOneDep(model, node, depNode)
+            result
+        },
+
+        
        checkConjugacy = function(model, nodes) {
             ## checks conjugacy of multiple nodes at once.
             ## the return object is a named list, containing the conjugacyResult lists
@@ -199,7 +278,24 @@ conjugacyClass <- setRefClass(
         ##     stop('work in progress')
         ##     warning('don\'t forget to check dependent nodes for truncation => not conjugate')
         ## },
-        
+
+        ## used by new checkConjugacy2 system
+        ## see checkConjugacy for more explanation of each step
+        checkConjugacyOneDep = function(model, targetNode, depNode) {
+            if(model$getNodeDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
+            if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
+            depNodeDist <- model$getNodeDistribution(depNode)
+            if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
+            dependentObj <- dependents[[depNodeDist]]
+            linearityCheckExpr <- model$getNodeParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+            linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
+            if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
+            if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure non of it's components appear in expr
+            linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
+            if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
+            if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
+            return(paste0('dependents_', depNodeDist))
+        },
         ## workhorse for checking conjugacy
         checkConjugacy = function(model, targetNode) {
             if(model$getNodeDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
