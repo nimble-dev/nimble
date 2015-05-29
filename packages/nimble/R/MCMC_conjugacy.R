@@ -117,13 +117,21 @@ conjugacyRelationshipsClass <- setRefClass(
         ##     return(NULL)  # didn't find a matching conjugacy class: not conjugate, return NULL
         ## },
         checkConjugacy2 = function(model, nodeIDs) {
-            browser()
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
             declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
+            ansList <- list()
             for(i in seq_along(declID2nodeIDs)) {         ## For each group of nodeIDs from the same declarationID
-                nodesFromOneDecl <- declID2nodeIDs[[i]]   
-                depPathsByNode <- lapply(nodesFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
+                nodeIDsFromOneDecl <- declID2nodeIDs[[i]]
+                firstNodeName <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[1]]
+                if(model$isTruncated(firstNodeName)) next   ## we say non-conjugate if the targetNode is truncated
+                dist <- model$getNodeDistribution(firstNodeName)
+                
+                conjugacyObj <- conjugacys[[dist]]
+                if(is.null(conjugacyObj)) next
+                
+                depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
+                depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, is.null))]
                 depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
                     unlist(lapply(z,
                                   function(x)
@@ -131,71 +139,44 @@ conjugacyRelationshipsClass <- setRefClass(
 
                 depPathsByNodeUnlisted <- unlist(depPathsByNode, recursive = FALSE)
                 depPathsByNodeLabelsUnlisted <- unlist(depPathsByNodeLabels)
-                uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
+              ##  uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
                 uniquePathsUnlistedIndices <- split(seq_along(depPathsByNodeLabelsUnlisted), depPathsByNodeLabelsUnlisted)
 
-                uniquePathsDepNodes <- uniquePathsDists <- conjDepTypes <- uniquePathsTargetNodes <- character(length(uniquePathsUnlistedIndices))
+                conjDepTypes <- character(length(uniquePathsUnlistedIndices))
                 for(j in seq_along(uniquePathsUnlistedIndices)) {
-                    depPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
-                    targetNode <- uniquePathsTargetNodes[j] <-  maps$graphID_2_nodeName[depPath[1,1]]
-                    uniquePathsDepNodes[j] <- maps$graphID_2_nodeName[depPath[nrow(depPath), 1]]
-
-                    if(model$isTruncated(targetNode)) next
-                    dist <- uniquePathsDists[j] <- model$getNodeDistribution(targetNode)
-                    if(!dist %in% names(conjugacys)) next
-                    conjugacyObj <- conjugacys[[dist]]
-                    conjDepTypes[j] <- conjugacyObj$checkConjugacyOneDep(model, targetNode, uniquePathsDepNodes[j])
+                    firstDepPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
+                    targetNode <- maps$graphID_2_nodeName[firstDepPath[1,1]]
+                    depNode <- maps$graphID_2_nodeName[firstDepPath[nrow(firstDepPath), 1]]
+                    oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
+                    conjDepTypes[j] <- if(is.null(oneDepType)) "" else oneDepType
                 }
 
-                ## conjDepTypes <- lapply(uniquePathsUnlistedIndices, function(x) {
-                ##     depPath <- depPathsByNodeUnlisted[[ x[1] ]] ## use first to check
-                ##     targetNode <- maps$graphID_2_nodeName[depPath[1,1]]
-                ##     depNode <- maps$graphID_2_nodeName[depPath[nrow(depPath), 1]]
-                ##     oneConjResult <- checkConjugacy_singleDep(model, targetNode, depNode) ## somewhat wasteful to through out the path information instead of using it here,
-                ##     ## but that's what we happen to have written
-                ##     oneConjResult
-                ## })
                 conjBool <- conjDepTypes != ""
-                names(uniquePathsTargetNodes) <- names(conjDepTypes) <- names(uniquePathsDists) <- names(conjBool) <- names(uniquePathsUnlistedIndices)
-                ##conjDepTypes <- unlist(conjDepTypes)
-                browser()
+                names(conjDepTypes) <- names(conjBool) <- names(uniquePathsUnlistedIndices)
                 if(any(conjBool)) {
-                    uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
-                    mapply(
-##                        depPathsOneNode <- depPathsByNode[[1]]
- ##                       depPathsLabelsOneNode <-depPathsByNodeLabels[[1]]
-                       ## targetNode <- uniquePathsTargetNodes[[1]]
-                       ## dist <- uniquePathsDists[[1]]
-                        function(depPathsOneNode, depPathsLabelsOneNode) {
+                    targetNodes <- unlist(lapply(depPathsByNode, function(x) if(is.null(x)) '_NO_DEPS_' else maps$graphID_2_nodeName[x[[1]][1,1]]))
+                    ansList[[length(ansList)+1]] <- mapply(
+                        function(targetNode, depPathsOneNode, depPathsLabelsOneNode) {
+                            if(targetNode == '_NO_DEPS_') return(NULL) ## these should have already been weeded out
                             if(all(conjBool[depPathsLabelsOneNode])) {
                                 depTypes <- conjDepTypes[depPathsLabelsOneNode]
-                                
-                                depTargets <- maps$graphID_2_nodeName[ unlist(lapply(depPathsOneNode, function(x) x[nrow(x)])) ]
-                                ## STOPPED HERE
-                                control <- lapply(uniquePaths, function(x) depTargets[names(depTypes)==x])
-                                names(control) <- conjDepTypes
-                                control[unlist(lapply(control, is.null))] <- NULL
-                              ##  targetNode <- maps$graphID_2_nodeName[depPathsOneNode[[1]][1,1] ]
-                                list(type = conjugacys[[dist]]$samplerType, target = targetNode, control = control)
+                                depEnds <- maps$graphID_2_nodeName[ unlist(lapply(depPathsOneNode, function(x) x[nrow(x)])) ]
+                                uniqueDepTypes <- unique(depTypes)
+                                control <- lapply(uniqueDepTypes,
+                                                  function(oneType) {
+                                                      boolMatch <- depTypes == oneType
+                                                      depEnds[boolMatch]
+                                                  })
+                                names(control) <- uniqueDepTypes
+                                list(type = conjugacyObj$samplerType, target = targetNode, control = control)
                             }
                         },
-                        depPathsByNode, depPathsByNodeLabels) 
-                }
-                
+                        targetNodes, depPathsByNode, depPathsByNodeLabels, USE.NAMES = TRUE, SIMPLIFY = FALSE)
+                }                
             }
+            if(length(ansList) > 0) do.call('c', ansList) else ansList
         },
-        checkConjugacy_singleDep = function(model, node, depNode) {
-            if(model$isTruncated(node)) return(list())   ## we say non-conjugate if the targetNode is truncated
-            dist <- model$getNodeDistribution(node)
-            if(!dist %in% names(conjugacys)) return(list())
-            conjugacyObj <- conjugacys[[dist]]
-            ## temporary -- but works fine!
-            result <- conjugacyObj$checkConjugacyOneDep(model, node, depNode)
-            result
-        },
-
-        
-       checkConjugacy = function(model, nodes) {
+        checkConjugacy = function(model, nodes) {
             ## checks conjugacy of multiple nodes at once.
             ## the return object is a named list, containing the conjugacyResult lists
             ## *only* for nodes which are conjugate
