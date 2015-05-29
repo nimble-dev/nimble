@@ -2327,7 +2327,26 @@ parseEvalCharacter <- function(x, env){
 	as.character(ans)
 }
 
-
+getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
+    newNodes <- maps$edgesFrom2To[[nodeID]]
+    newPEIDs <- maps$edgesFrom2ParentExprID[[nodeID]]
+    if(length(newNodes) > 0) {
+        if(is.null(nodeIDrow)) nodeIDrow <- c(nodeID, NA)
+        nodeAndPEID_list <- split(cbind(newNodes, newPEIDs, deparse.level = 0), seq_along(newNodes))
+        ans <- do.call('c', lapply(nodeAndPEID_list, 
+               function(x) {
+          ##         browser()
+                   if(maps$notStoch[x[1]]) ## not stochastic so recurse
+                       ans2 <- lapply(getDependencyPaths(x[1], maps = maps, nodeIDrow = x),
+                                      function(z) rbind(nodeIDrow, z, deparse.level = 0))
+                   else  ## It is stochastic to append x and terminate
+                       ans2 <- list(rbind(nodeIDrow, x, deparse.level = 0))
+                   ans2
+               }))
+        ans
+    } else
+        NULL
+}
 
 #The class we use keep track of graphIDs
 ## nodeVector <- setRefClass(Class = "nodeVector",
