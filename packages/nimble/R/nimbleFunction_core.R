@@ -102,15 +102,15 @@ nimbleFunction <- function(setup         = NULL,
 }
 
 nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase', 
-									fields = list(
-										.generatorFunction = 'ANY',
-										.CobjectInterface = 'ANY', 
-										.newSetupLinesProcessed = 'ANY'
-									),
-									methods = list(
-									initialize = function(...)
-										callSuper(...)
-									))	#	$runRelated
+                                  fields = list(
+                                      .generatorFunction = 'ANY',
+                                      .CobjectInterface = 'ANY', 
+                                      .newSetupLinesProcessed = 'ANY'
+                                  ),
+                                  methods = list(
+                                      initialize = function(...)
+                                          callSuper(...)
+                                  ))	#	$runRelated
 
 
 ## template for the reference class internal to all nimble functions

@@ -19,7 +19,8 @@ nfCompilationInfoClass <- setRefClass('nfCompilationInfoClass',
                                           ),
                                       methods = list(
                                       		initialize = function(...){Rinstances <<- list(); callSuper(...)},
-                                          addRinstance = function(nfi) {Rinstances[[ length(Rinstances)+1 ]] <<- nfi}
+                                          addRinstance = function(nfi) {Rinstances[[ length(Rinstances)+1 ]] <<- nfi},
+                                          addRinstanceList = function(nfList) {Rinstances[length(Rinstances) + seq_along(nfList)] <<- nfList}
                                           ))
 
 mvInfoClass <- setRefClass('mvInfoClass',
@@ -170,6 +171,48 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          model$nimbleProject <- .self
                                          models[[ model$name ]] <<- model
                                          modelCppInterfaces[[ model$name ]] <<- new.env()	#list(NULL)
+                                     }
+                                 },
+                                 addNimbleFunctionMulti = function(funList, fromModel = FALSE, generatorFunNames = NULL) {
+                                     if(length(funList) == 0) return(invisible(NULL))
+                                     if(!is.nf(funList[[1]])) stop('first nimbleFunction provided to project is not a nimbleFunction.', call. = FALSE)
+                                     inProjectAlready <- unlist(lapply(funList, function(x) identical(x[['nimbleProject']], .self)))
+                                     if(any(inProjectAlready)) {
+                                         stop('Trying to add list of nimbleFunctions but some are already part of another project. If you are recompiling, try redefining models and specialized nimbleFunctions. (The reset option works now for nimbleFunctions but not models.)', call. = FALSE)
+                                     }
+                                     allGeneratorNames <- if(is.null(generatorFunNames))
+                                                              unlist(lapply(funList, function(x) environment(x$.generatorFunction)$name), use.names = FALSE)
+                                                          else
+                                                              generatorFunNames
+                                     generatorName2Indices <- split(seq_along(funList), allGeneratorNames) ##uniqueGeneratorNamesIndices <- which(!duplicated(allGeneratorNames))
+                                     for(i in seq_along(generatorName2Indices)) { ##genID in uniqueGeneratorNameIndices) {
+                                         genID <- generatorName2Indices[[i]][1]
+                                         generatorName <- names(generatorName2Indices)[i] ##allGeneratorNames[genID]
+                                         if(is.null(nfCompInfos[[generatorName]])) {
+                                             ## nfProc could have been created already during makeTypeObject for another nimbleFunction so it knows the types of this one.
+                                             nfCompInfos[[generatorName]] <<- nfCompilationInfoClass(nfGenerator = nf_getGeneratorFunction(funList[[genID]]),
+                                                                                                     Rcompiled = FALSE, written = FALSE, cppCompiled = FALSE, loaded = FALSE,
+                                                                                                     RinitTypesProcessed = FALSE, virtual = FALSE,
+                                                                                                     fromModel = fromModel)
+                                             nfCompInfos[[generatorName]]$labelMaker <<- labelFunctionCreator(paste0(generatorName,'_'))
+                                         }
+                                         genIDs <- generatorName2Indices[[i]]
+                                         newLabels <- nfCompInfos[[generatorName]]$labelMaker(count = length(genIDs))
+                                         
+                                         namedFunList <- funList[genIDs]
+                                         names(namedFunList) <- newLabels
+                                         list2env(namedFunList, envir = nimbleFunctions)
+                                         nfCompInfos[[generatorName]]$addRinstanceList(namedFunList)
+                                         
+                                         newEnvs <- lapply(seq_along(newLabels), new.env)
+                                         names(newEnvs) <- newLabels
+                                         list2env(newEnvs, envir = nimbleFunctionCppInterfaces)
+                                         CppNewLabels <- Rname2CppName(newLabels)
+                                         for(j in seq_along(newLabels)) {
+                                             funList[[genIDs[j]]][['Cname']] <- CppNewLabels[j]
+                                             funList[[genIDs[j]]][['name']] <- newLabels[j] ## skip the checking done in addNimbleFunction
+                                             funList[[genIDs[j]]][['nimbleProject']] <- .self
+                                         }
                                      }
                                  },
                                  addNimbleFunction = function(fun, fromModel = FALSE) {
@@ -468,10 +511,10 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  compileNimbleFunctionMulti = function(funList, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
-                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE) {
+                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorFunNames = NULL, alreadyAdded = FALSE) {
                                      if(!is.list(funList)) stop('funList in compileNimbleFunctionMulti should be a list', call. = FALSE)
-                                     allGeneratorNames <- try(lapply(funList, nfGetDefVar, 'name'))
-                                     if(inherits(allGeneratorNames, 'try-error')) stop('Problem getting generatorNames in compileNimbleFunctionMulti.', call. = FALSE)
+                                     allGeneratorNames <- if(is.null(generatorFunNames)) lapply(funList, nfGetDefVar, 'name') else generatorFunNames
+                                     ##if(inherits(allGeneratorNames, 'try-error')) stop('Problem getting generatorNames in compileNimbleFunctionMulti.', call. = FALSE)
                                      uniqueGeneratorNames <- unique(allGeneratorNames)
                                      if(initialTypeInferenceOnly || returnCppClass) {
                                          ans <- list()
@@ -482,7 +525,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          thisAns <- compileNimbleFunction( funList[ thisBool ], isNode = isNode, filename = filename,
                                                                           initialTypeInferenceOnly = initialTypeInferenceOnly,
                                                                           control = control, reset = reset, returnCppClass = returnCppClass, where = where,
-                                                                          fromModel = fromModel)
+                                                                          fromModel = fromModel, generatorName = uGN, alreadyAdded = alreadyAdded)
                                          if(initialTypeInferenceOnly || returnCppClass) {
                                              
                                              if(initialTypeInferenceOnly) { ## return only new NFprocs in this case.
@@ -499,7 +542,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  compileNimbleFunction = function(fun, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
-                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE) {
+                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE) {
                                      ## fundamental difference: fun should be a specialized nf: nfGenerator will not longer track instances
                                      if(is.character(fun)) {
                                          tmp <- nimbleFunctions[[fun]]
@@ -516,8 +559,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      } else {
                                          if(is.list(fun)) {
                                              if(length(fun) == 0) stop('Empty list provided to compileNimbleFunction', call. = FALSE)
-                                             if(!all(unlist(lapply(fun, function(x) is.nf(x) ) ) ) ) stop('Not all elements in fun list for compileNimbleFunction are specialized nimbleFunctions', call. = FALSE)
-                                             generatorName <- unique(unlist(lapply(fun, nfGetDefVar, 'name')))
+                                             ## if(!all(unlist(lapply(fun, function(x) is.nf(x) ) ) ) ) stop('Not all elements in fun list for compileNimbleFunction are specialized nimbleFunctions', call. = FALSE) ## good check but slow, so we could wrap a try() instead 
+                                             if(is.null(generatorName)) generatorName <- unique(unlist(lapply(fun, nfGetDefVar, 'name')))
                                              if(length(generatorName) != 1) stop(paste0('Not all elements in the fun list for compileNimbleFunction are specialized from the same nimbleFunction.  The generator names include:', paste(generatorName, collapse = ' ')), call. = FALSE)
                                              if(reset) nfCompInfos[[generatorName]] <<- NULL
                                              funList <- fun
@@ -527,22 +570,24 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                              generatorName <- nfGetDefVar(fun, 'name')
                                              if(reset) nfCompInfos[[generatorName]] <<- NULL
                                          }
-                                         for(i in seq_along(funList)) {
-                                             addNF <- TRUE
-                                             thisName <- nf_getRefClassObject(funList[[i]])[['name']] 
-                                             if(!is.null(thisName)) {
-                                                 tmp <- nimbleFunctions[[thisName]]
-                                                 if(!is.null(tmp)) {
-                                                     if(reset) {
-                                                         nimbleFunctions[[thisName]] <<- NULL
-                                                     } else {
-                                                         if(!identical(funList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleFunction that is not the same thing')
-                                                         addNF <- FALSE
+                                         if(!alreadyAdded) {
+                                             for(i in seq_along(funList)) {
+                                                 addNF <- TRUE
+                                                 thisName <- nf_getRefClassObject(funList[[i]])[['name']] 
+                                                 if(!is.null(thisName)) {
+                                                     tmp <- nimbleFunctions[[thisName]]
+                                                     if(!is.null(tmp)) {
+                                                         if(reset) {
+                                                             nimbleFunctions[[thisName]] <<- NULL
+                                                         } else {
+                                                             if(!identical(funList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleFunction that is not the same thing')
+                                                             addNF <- FALSE
+                                                         }
                                                      }
                                                  }
-                                             }
-                                             if(addNF) {
-                                                 addNimbleFunction(funList[[i]], fromModel = fromModel)
+                                                 if(addNF) {
+                                                     addNimbleFunction(funList[[i]], fromModel = fromModel)
+                                                 }
                                              }
                                          }
                                      }
