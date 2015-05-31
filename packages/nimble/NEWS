@@ -32,6 +32,8 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
+-- (note addition of range as part of declInfo and of get_range if we code it now)
+
 -- added a variety of error checking for various distribution functions and now generally use doubles in distribution functions in C++
 
 -- modified API for nimble options to mimic R's options(), including nimbleOptions() and getOptions() and renaming of the underlying nimble options object to be .nimbleOptions.

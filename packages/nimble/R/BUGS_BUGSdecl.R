@@ -108,7 +108,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                                                                   sep = '&', collapse = '&'), '&') else NULL))
                                      return(c(edgesIn, edgesOut))
                                  },
-                                 getDistribution = function() {
+                                 getDistributionName = function() {
                                      if(type != 'stoch')  stop('getting distribution of non-stochastic node')
                                      return(as.character(valueExprReplaced[[1]]))
                                  }
@@ -180,8 +180,14 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated
     targetVarName <<- deparse(targetVarExpr)
     targetNodeName <<- deparse(targetNodeExpr)
 
-    if(type == 'stoch' && is.null(range))
-        range <<- getDistribution(code[[3]][[1]])$range
+    if(type == 'stoch' && is.null(range)) {
+        tmp <- as.character(valueExpr[[1]])
+        if(!(tmp %in% c("T", "I"))) {
+            # T/I not always stripped out at this stage
+            distRange <- getDistribution(tmp)$range
+            range <<- list(lower = distRange[1], upper = distRange[2])
+        }
+    }
 })
 
 
