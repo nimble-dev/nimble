@@ -480,7 +480,15 @@ Arguments:
 inits: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.
 '
                                       origInits <<- inits
-                                      for(i in seq_along(inits))     { .self[[names(inits)[i]]] <- inits[[i]] }
+                                      
+                                      for(i in seq_along(inits)) {
+                                          dataVals <- .self$isData(names(inits)[[i]])
+                                          if(any(dataVals)) {
+                                              .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
+                                              if(any(!is.na(inits[[i]][dataVals])))
+                                                  warning("Ignoring values in inits for data nodes: ", names(inits)[[i]], ".")
+                                          } else  .self[[names(inits)[i]]] <- inits[[i]]
+                                      }
                                   },
 
                                   ## checkConjugacyAll = function(nodes) {

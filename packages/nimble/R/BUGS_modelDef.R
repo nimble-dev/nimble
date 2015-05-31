@@ -2223,16 +2223,18 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     model$setData(data)
     # prevent overwriting of data values by inits
-    for(varName in intersect(names(inits), model$getVarNames())) {
-        dataVars <- model$isData(varName)
-        if(sum(dataVars) && !identical(data[[varName]][dataVars],
-                                      inits[[varName]][dataVars])) {
-            inits[[varName]][dataVars] <- data[[varName]][dataVars]
-            nonNAinits <- !is.na(inits[[varName]][dataVars])
-            # only warn if user passed conflicting actual values
-            if(!identical(data[[varName]][dataVars][nonNAinits],
-                                      inits[[varName]][dataVars][nonNAinits]))
-                warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+    if(FALSE) {  # should now be handled by checking if setInits tries to overwrite data nodes
+        for(varName in intersect(names(inits), model$getVarNames())) {
+            dataVars <- model$isData(varName)
+            if(sum(dataVars) && !identical(data[[varName]][dataVars],
+                                           inits[[varName]][dataVars])) {
+                                        # only warn if user passed conflicting actual values
+                nonNAinits <- !is.na(inits[[varName]][dataVars])
+                if(!identical(data[[varName]][dataVars][nonNAinits],
+                              inits[[varName]][dataVars][nonNAinits]))
+                    warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+                inits[[varName]][dataVars] <- data[[varName]][dataVars]
+            }
         }
     }
     nonVarIndices <- !names(inits) %in% model$getVarNames()
