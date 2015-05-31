@@ -1010,7 +1010,9 @@ determineContextSize <- function(context, useContext = rep(TRUE, length(context$
     innerLoopCode <- context$embedCodeInForLoop(innerLoopCode, useContext)
 
     assign("iAns", 0L, evalEnv)
-    eval(innerLoopCode, evalEnv)
+    test <- try(eval(innerLoopCode, evalEnv))
+    if(is(test, 'try-error'))
+        stop("Could not evaluate loop syntax: is indexing information provided via 'constants'?")
     ans <- evalEnv$iAns
     rm(list = c('iAns', context$indexVarNames[useContext]), envir = evalEnv)
     return(ans)
