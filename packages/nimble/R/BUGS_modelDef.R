@@ -1270,6 +1270,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
             }
         }        
         else {
+            if(is.null(parentIndexNamePieces))
+                stop("Error in splitVertices: you may have omitted indexing for a multivariate variable: ", as.character(parentExprReplaced), ".")
             if(length(parentIndexNamePieces)==1) varIndicesToUse <- as.numeric(parentExprReplaced[[3]])
             else {
                 varIndicesToUse <- matrix(0, nrow = 1, ncol = length(parentIndexNamePieces))
