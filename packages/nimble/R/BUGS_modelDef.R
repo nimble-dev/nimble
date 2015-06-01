@@ -1010,7 +1010,9 @@ determineContextSize <- function(context, useContext = rep(TRUE, length(context$
     innerLoopCode <- context$embedCodeInForLoop(innerLoopCode, useContext)
 
     assign("iAns", 0L, evalEnv)
-    eval(innerLoopCode, evalEnv)
+    test <- try(eval(innerLoopCode, evalEnv))
+    if(is(test, 'try-error'))
+        stop("Could not evaluate loop syntax: is indexing information provided via 'constants'?")
     ans <- evalEnv$iAns
     rm(list = c('iAns', context$indexVarNames[useContext]), envir = evalEnv)
     return(ans)
@@ -1268,6 +1270,8 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
             }
         }        
         else {
+            if(is.null(parentIndexNamePieces))
+                stop("Error in splitVertices: you may have omitted indexing for a multivariate variable: ", as.character(parentExprReplaced), ".")
             if(length(parentIndexNamePieces)==1) varIndicesToUse <- as.numeric(parentExprReplaced[[3]])
             else {
                 varIndicesToUse <- matrix(0, nrow = 1, ncol = length(parentIndexNamePieces))
@@ -1892,7 +1896,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$edgesFrom <<- oldGraphID_2_newGraphID[edgesFrom]
     maps$edgesTo <<- oldGraphID_2_newGraphID[edgesTo]
     maps$edgesParentExprID <<- edgesParentExprID
-    fedgesFrom <- factor(maps$edgesFrom, levels = if(length(maps$edgesFrom) > 0) 1:max(maps$edgesFrom) else numeric(0)) ## setting levels ensures blanks inserted into the splits correctly
+    edgesLevels <- if(length(maps$edgesFrom) > 0) 1:max(max(maps$edgesFrom), max(maps$edgesTo)) else numeric(0)
+    fedgesFrom <- factor(maps$edgesFrom, levels = edgesLevels) ## setting levels ensures blanks inserted into the splits correctly
     maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
     maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
@@ -2220,16 +2225,18 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     model$setData(data)
     # prevent overwriting of data values by inits
-    for(varName in intersect(names(inits), model$getVarNames())) {
-        dataVars <- model$isData(varName)
-        if(sum(dataVars) && !identical(data[[varName]][dataVars],
-                                      inits[[varName]][dataVars])) {
-            inits[[varName]][dataVars] <- data[[varName]][dataVars]
-            nonNAinits <- !is.na(inits[[varName]][dataVars])
-            # only warn if user passed conflicting actual values
-            if(!identical(data[[varName]][dataVars][nonNAinits],
-                                      inits[[varName]][dataVars][nonNAinits]))
-                warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+    if(FALSE) {  # should now be handled by checking if setInits tries to overwrite data nodes
+        for(varName in intersect(names(inits), model$getVarNames())) {
+            dataVars <- model$isData(varName)
+            if(sum(dataVars) && !identical(data[[varName]][dataVars],
+                                           inits[[varName]][dataVars])) {
+                                        # only warn if user passed conflicting actual values
+                nonNAinits <- !is.na(inits[[varName]][dataVars])
+                if(!identical(data[[varName]][dataVars][nonNAinits],
+                              inits[[varName]][dataVars][nonNAinits]))
+                    warning("newModel: Conflict between 'data' and 'inits' for ", varName, "; using values from 'data'.\n")
+                inits[[varName]][dataVars] <- data[[varName]][dataVars]
+            }
         }
     }
     nonVarIndices <- !names(inits) %in% model$getVarNames()
@@ -2326,7 +2333,26 @@ parseEvalCharacter <- function(x, env){
 	as.character(ans)
 }
 
-
+getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
+    newNodes <- maps$edgesFrom2To[[nodeID]]
+    newPEIDs <- maps$edgesFrom2ParentExprID[[nodeID]]
+    if(length(newNodes) > 0) {
+        if(is.null(nodeIDrow)) nodeIDrow <- c(nodeID, NA)
+        nodeAndPEID_list <- split(cbind(newNodes, newPEIDs, deparse.level = 0), seq_along(newNodes))
+        ans <- do.call('c', lapply(nodeAndPEID_list, 
+               function(x) {
+          ##         browser()
+                   if(maps$notStoch[x[1]]) ## not stochastic so recurse
+                       ans2 <- lapply(getDependencyPaths(x[1], maps = maps, nodeIDrow = x),
+                                      function(z) rbind(nodeIDrow, z, deparse.level = 0))
+                   else  ## It is stochastic to append x and terminate
+                       ans2 <- list(rbind(nodeIDrow, x, deparse.level = 0))
+                   ans2
+               }))
+        ans
+    } else
+        NULL
+}
 
 #The class we use keep track of graphIDs
 ## nodeVector <- setRefClass(Class = "nodeVector",
