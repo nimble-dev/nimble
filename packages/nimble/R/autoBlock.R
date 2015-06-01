@@ -84,8 +84,8 @@ autoBlockModel <- setRefClass(
         createInitialMCMCspec = function(runList) {
             initialMCMCspec <<- configureMCMC(Rmodel)
             nInitialSamplers <- length(initialMCMCspec$samplerSpecs)
-            initialMCMCspec$addSampler(type = 'RW',       target = scalarNodeVector[1], print=FALSE)  ## add one RW sampler
-            initialMCMCspec$addSampler(type = 'RW_block', target = scalarNodeVector[1], print=FALSE)  ## add one RW_block sampler
+            initialMCMCspec$addSampler(target = scalarNodeVector[1], type = 'RW',       print=FALSE)  ## add one RW sampler
+            initialMCMCspec$addSampler(target = scalarNodeVector[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
             addCustomizedSamplersToInitialMCMCspec(runList)
             initialMCMCspec$addMonitors(monitorsVector, print=FALSE)
             RinitialMCMC <- buildMCMC(initialMCMCspec)
@@ -394,27 +394,27 @@ autoBlockClass <- setRefClass(
 
 addSamplerToSpec <- function(Rmodel, spec, nodeGroup) {
     if(length(nodeGroup) > 1) {
-        spec$addSampler(type = 'RW_block', target = nodeGroup, print = FALSE); return()
+        spec$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
     }
     if(!(nodeGroup %in% Rmodel$getNodeNames())) {
-        spec$addSampler(type = 'RW', target = nodeGroup, print = FALSE); return()
+        spec$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
     }
     if(nodeGroup %in% Rmodel$getMaps('nodeNamesEnd')) {
         ##cat(paste0('warning: using \'end\' sampler for node ', nodeGroup, ' may lead to results we don\'t want\n\n'))
-        spec$addSampler(type = 'end', target = nodeGroup, print = FALSE); return()
+        spec$addSampler(target = nodeGroup, type = 'end', print = FALSE); return()
     }
     ## conjugacyResult <- Rmodel$checkConjugacy(nodeGroup)
     ## if((!is.null(conjugacyResult)) && conjOveride) {
-    ##     spec$addSampler(type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
+    ##     spec$addSampler(target = ??????, type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
     ## }
     discrete <- Rmodel$isDiscrete(nodeGroup)
     if(discrete) {
-        spec$addSampler(type = 'slice', target = nodeGroup, print = FALSE); return()
+        spec$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {
-        spec$addSampler(type = 'RW_block', target = nodeGroup, print = FALSE); return()
+        spec$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
     }
-    spec$addSampler(type = 'RW', target = nodeGroup, print = FALSE); return()
+    spec$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
 }
 
 createDFfromABlist <- function(lst, niter) {
