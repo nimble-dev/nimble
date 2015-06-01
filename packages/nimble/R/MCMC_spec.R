@@ -198,7 +198,7 @@ Adds a sampler to the list of samplers contained in the MCMCspec object.
 
 Arguments:
 
-target: The target node or nodes to be sampled.  This argument is required.
+target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  This argument is required.
 
 type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either samplerType or sampler_newSamplertype must correspond to a nimbleFunction generator.  Alternatively, the type argument may be provided as a nimbleFunction generator object, itself.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node.
 
@@ -257,7 +257,7 @@ Removes one or more samplers from an MCMCspec object.
 
 Arguments:
 
-ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
+ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: Boolean argument, default value TRUE, specifying whether to print the current list of samplers once the removal has been done.
 
@@ -277,9 +277,7 @@ Sets the ordering of the list of MCMC samplers.
 Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
-For example, if the MCMCspec object currently has 3 samplers, then the ordering may be reversed by calling mcmcspec$setSamplers(3:1),
-or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).  Alternatively, a character vector may be used to specify a set of model nodes,
-and the sampler list will modified to only those samplers acting on these target nodes.
+For example, if the MCMCspec object currently has 3 samplers, then the ordering may be reversed by calling mcmcspec$setSamplers(3:1), or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and the sampler list will modified to only those samplers acting on these target nodes.
 
 print: Boolean argument, default value TRUE, specifying whether to print the new list of samplers.
 
@@ -299,11 +297,7 @@ Prints details of the MCMC samplers.
 
 Arguments:
 
-ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print,
-or a character vector may be used to indicate a set of target nodes, for which all samplers acting on these nodes will be printed.
-For example, getSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely
-or in part) in the model variable \'x\'.
-If omitted, then all samplers are printed.
+ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, getSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
 
 Invisibly returns a list of the currnet sampler specifications, which are samplerSpec reference class objects.
 '
