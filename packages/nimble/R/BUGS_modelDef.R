@@ -2258,6 +2258,9 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
 #            }
 #         }
     ## fixing the problem with RStudio hanging: over-writing the str() method for this model class
+    ## model initialization / checking:
+    initModel <- initializeModel(model, silent=FALSE, stochSimulate=FALSE)
+    initModel$run()
     ## added by DT, April 2015
     thisClassName <- as.character(class(model))
     eval(substitute(METHOD <- function(object, ...) str(NULL), list(METHOD = as.name(paste0('str.', thisClassName)))), envir = globalenv())

@@ -27,7 +27,7 @@
 #'    }
 #' )
 initializeModel <- nimbleFunction(
-    setup = function(model, silent = FALSE) {
+    setup = function(model, silent = FALSE, stochSimulate = TRUE) {
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
         iter <- 1
 
@@ -39,7 +39,7 @@ initializeModel <- nimbleFunction(
         
         stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         for(i in seq_along(stochNonDataNodes))
-            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent)
+            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent, stochSimulate)
 
         allDetermNodes <- model$getNodeNames(determOnly = TRUE)
         determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
@@ -62,21 +62,21 @@ checkRSHonlyInit <- nimbleFunction(
     setup = function(model, nodes) {},
     run = function() {
         vals <- values(model, nodes)
-        if(is.na.vec(vals)) print('Value of right hand side only node not initialized')
+        if(is.na.vec(vals)) print('warning: value of right hand side only node not initialized')
     },    where = getLoadingNamespace()
 )
 
 stochNodeInit <- nimbleFunction(
     contains = nodeInit_virtual,
-    setup = function(model, node, silent) {},
+    setup = function(model, node, silent, stochSimulate) {},
     run = function() {
         theseVals <- values(model, node)
-        if(is.na.vec(theseVals)) simulate(model, node)
+        if(stochSimulate) { if(is.na.vec(theseVals)) simulate(model, node)
+                            theseVals <- values(model, node) }
+        if(is.na.vec(theseVals)) print('warning: value of stochastic node is NA')
         lp <- calculate(model, node)
-        if(is.na(lp)) print('Problem initializing stochastic node, logProb is NA')
-        if(lp < -1e12) {
-            if(!silent) print('Problem initializing stochastic node, logProb less than -1e12')
-        }
+        if(is.na(lp)) print('warning: problem initializing stochastic node, logProb is NA')
+        if(!is.na(lp) && lp < -1e12 && !silent) print('warning: problem initializing stochastic node, logProb less than -1e12')
     },    where = getLoadingNamespace()
 )
 
