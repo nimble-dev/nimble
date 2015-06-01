@@ -19,8 +19,7 @@ samplerSpec <- setRefClass(
         samplerFunction = 'ANY',
         target          = 'ANY',
         control         = 'ANY',
-        targetAsScalar  = 'ANY',
-        printStr        = 'ANY'
+        targetAsScalar  = 'ANY'
     ),
     methods = list(
         initialize = function(name, samplerFunction, target, control, model) {
@@ -29,15 +28,14 @@ samplerSpec <- setRefClass(
             target <<- target
             control <<- control
             targetAsScalar <<- model$expandNodeNames(target, returnScalarComponents = TRUE)
-            tempList <- list()
-            tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
-            printStr <<- mcmc_listContentsToStr(c(tempList, control))
         },
         buildSampler = function(model, mvSaved) {
             samplerFunction(model=model, mvSaved=mvSaved, target=target, control=control)
         },
         toStr = function() {
-            printStr
+            tempList <- list()
+            tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
+            mcmc_listContentsToStr(c(tempList, control))
         }
     )
 )
