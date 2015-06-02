@@ -517,6 +517,7 @@ Details: The return value is a named list, with an element corresponding to each
                                       conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
                                   check = function() {
+                                      badVars <- list(na=character(), nan=character(), inf=character())
                                       nns <- getNodeNames(includeRHSonly = TRUE) 
                                       nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
                                       for(nn in nns) {
@@ -524,16 +525,29 @@ Details: The return value is a named list, with an element corresponding to each
                                           type <- getNodeType(nn)
                                           if(length(type) > 1) stop('something wrong with Daniel\'s understading of nimbleModel')
                                           if(type == 'RHSonly') {
-                                              if(!isValid(val)) warning('right-hand-side-only node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                              ##if(!isValid(val)) warning('right-hand-side-only node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'determ') {
                                               calculate(.self, nn)
                                               val <- .self[[nn]]
-                                              if(!isValid(val)) warning('deterministic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                              ##if(!isValid(val)) warning('deterministic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'stoch') {
-                                              if(!isValid(val)) warning('stochastic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
-                                              lp <- calculate(.self, nn)
-                                              if(!isValid(lp)) warning('logProb of stochastic node \'', nn, '\' = ', whyInvalid(lp), call.=FALSE)
+                                              ##if(!isValid(val)) warning('stochastic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                              val <- calculate(.self, nn)
+                                              ##if(!isValid(lp)) warning('logProb of stochastic node \'', nn, '\' = ', whyInvalid(lp), call.=FALSE)
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
                                           } else stop('unknown node type: ', type)
+                                      }
+                                      badVars <- lapply(badVars, removeIndexing)
+                                      badVars <- lapply(badVars, unique)
+                                      badVars <- lapply(badVars, function(nns) if(length(nns>0)) paste0(nns, collapse=', '))
+                                      conds <- list(c('na','NAs'), c('nan','NaNs'), c('inf','Infinite values'))
+                                      for(i in seq_along(conds)) {
+                                          v <- badVars[[conds[[i]][1]]]
+                                          m <- conds[[i]][2]
+                                          if(!is.null(v)) warning(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, call.=FALSE)
                                       }
                                   },
                                   newModel = function(data = NULL, inits = NULL, modelName = character(), check = TRUE) {
@@ -775,10 +789,9 @@ isValid <- function(value) {
 
 whyInvalid <- function(value) {
     if(isValid(value)) { warning('checking why a valid value is invalid'); return(NULL) }
-    if(any(is.nan(value))) return('NaN')
-    if(any(is.na(value))) return('NA')
-    if(any(value==Inf)) return('Inf')
-    if(any(value==-Inf)) return('-Inf')
+    if(any(is.nan(value))) return('nan')
+    if(any(is.na(value))) return('na')
+    if(any(abs(value)==Inf)) return('inf')
     stop('should never happen')
 }
 
