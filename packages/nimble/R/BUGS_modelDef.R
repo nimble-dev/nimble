@@ -2201,7 +2201,7 @@ modelDefClass$methods(buildMaps2 = function() {
 
 })
 
-modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character()) {
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = TRUE) {
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')
         logProbVars <- lapply(logProbVarInfo, `[[`, 'maxs')
@@ -2244,23 +2244,10 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
         warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
                 " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
-
-	# Below is the code that checks if an index is missing    
-#    allVarNames <- model$getVarNames()
-#    for(var in allVarNames){
-#    	varExpandedNodeNameLength = length(model$expandNodeNames(var, returnScalarComponents = TRUE))
-#       	varValuesLength = length(model[[var]])
-#        if(varExpandedNodeNameLength != varValuesLength){
-#        	warningText <- paste('missing node detected, i.e. something like x[2] declared but not x[1]')
-#        	warningText <- paste(warningText, '\n variable name = ', var)
-#         	warningText <- paste(warningText, '\n Can be remedied by adding dummy nodes, i.e. x[1] <- 0')
-#           	warning(warningText)
-#            }
-#         }
+    ## model checking
+    ## added by DT, June 2015
+    if(check) model$check()
     ## fixing the problem with RStudio hanging: over-writing the str() method for this model class
-    ## model initialization / checking:
-    initModel <- initializeModel(model, silent=FALSE, stochSimulate=FALSE)
-    initModel$run()
     ## added by DT, April 2015
     thisClassName <- as.character(class(model))
     eval(substitute(METHOD <- function(object, ...) str(NULL), list(METHOD = as.name(paste0('str.', thisClassName)))), envir = globalenv())

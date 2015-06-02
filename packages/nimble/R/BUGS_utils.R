@@ -322,3 +322,4 @@ character2index <- function(thisChar){
 getDimFromType <- function(text) {
     sapply(parse(text = text), '[[', 2)
 }
+

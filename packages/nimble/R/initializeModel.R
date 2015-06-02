@@ -27,7 +27,7 @@
 #'    }
 #' )
 initializeModel <- nimbleFunction(
-    setup = function(model, silent = FALSE, stochSimulate = TRUE) {
+    setup = function(model, silent = FALSE) {
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
         iter <- 1
 
@@ -71,8 +71,8 @@ stochNodeInit <- nimbleFunction(
     setup = function(model, node, silent, stochSimulate) {},
     run = function() {
         theseVals <- values(model, node)
-        if(stochSimulate) { if(is.na.vec(theseVals)) simulate(model, node)
-                            theseVals <- values(model, node) }
+        if(is.na.vec(theseVals)) simulate(model, node)
+        theseVals <- values(model, node)
         if(is.na.vec(theseVals)) print('warning: value of stochastic node is NA')
         lp <- calculate(model, node)
         if(is.na(lp)) print('warning: problem initializing stochastic node, logProb is NA')

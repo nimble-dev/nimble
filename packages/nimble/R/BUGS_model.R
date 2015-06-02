@@ -516,7 +516,27 @@ Details: The return value is a named list, with an element corresponding to each
                                       nodeIDs <- expandNodeNames(nodeVector, returnType = 'ids')
                                       conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
-                                  newModel = function(data = NULL, inits = NULL, modelName = character()) {
+                                  check = function() {
+                                      nns <- getNodeNames(includeRHSonly = TRUE) 
+                                      nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
+                                      for(nn in nns) {
+                                          val <- .self[[nn]]
+                                          type <- getNodeType(nn)
+                                          if(length(type) > 1) stop('something wrong with Daniel\'s understading of nimbleModel')
+                                          if(type == 'RHSonly') {
+                                              if(!isValid(val)) warning('right-hand-side-only node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                          } else if(type == 'determ') {
+                                              calculate(.self, nn)
+                                              val <- .self[[nn]]
+                                              if(!isValid(val)) warning('deterministic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                          } else if(type == 'stoch') {
+                                              if(!isValid(val)) warning('stochastic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
+                                              lp <- calculate(.self, nn)
+                                              if(!isValid(lp)) warning('logProb of stochastic node \'', nn, '\' = ', whyInvalid(lp), call.=FALSE)
+                                          } else stop('unknown node type: ', type)
+                                      }
+                                  },
+                                  newModel = function(data = NULL, inits = NULL, modelName = character(), check = TRUE) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
@@ -526,13 +546,16 @@ data: A named list specifying data nodes and values, for use in the newly return
 
 inits: A named list specifying initial values, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
 
+check: A logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
 
 Details: The newly created model object will be identical to the original model in terms of structure and functionality, but entirely distinct in terms of the internal values.
 '
                                       if(is.null(data)) data <- origData
                                       if(is.null(inits)) inits <- origInits
-                                      modelDef$newModel(data = data, inits = inits, modelName = modelName)
+                                      newlyCreatedModel <- modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check)
+                                      return(newlyCreatedModel)
                                   }
                               )
 )
@@ -742,3 +765,24 @@ createDefault_isDataObj <- function(obj) {
     if(length(obj) == 0) return(FALSE)
     return(array(FALSE, dim = obj))
 }
+
+isValid <- function(value) {
+    if(any(is.nan(value))) return (FALSE)
+    if(any(is.na(value))) return(FALSE)
+    if(any(abs(value)==Inf)) return(FALSE)
+    return(TRUE)
+}
+
+whyInvalid <- function(value) {
+    if(isValid(value)) { warning('checking why a valid value is invalid'); return(NULL) }
+    if(any(is.nan(value))) return('NaN')
+    if(any(is.na(value))) return('NA')
+    if(any(value==Inf)) return('Inf')
+    if(any(value==-Inf)) return('-Inf')
+    stop('should never happen')
+}
+
+
+
+
+

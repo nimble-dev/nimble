@@ -1,7 +1,7 @@
 # code for creating BUGS model from a variety of input formats
 # pieces written by Daniel Turek and Christopher Paciorek
 
-BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE) {
+BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=TRUE) {
     if(missing(name)) name <- deparse(substitute(code))
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
@@ -22,7 +22,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
         data <- c(data, constants[dataVarIndices])
         cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
     }
-    model <- md$newModel(data=data, inits=inits, where=where)
+    model <- md$newModel(data=data, inits=inits, where=where, check=check)
 }
 
 
@@ -35,7 +35,8 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' @param data named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
 #' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
-#' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE). 
+#' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
 #' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user. 
 #' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
@@ -57,8 +58,8 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' constants = list(prior_sd = 1)
 #' data = list(x = 4)
 #' Rmodel <- nimbleModel(code, constants = constants, data = data)
-nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, name)
-    BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug)
+nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=TRUE, name)
+    BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check)
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
