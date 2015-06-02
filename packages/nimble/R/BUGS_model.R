@@ -525,18 +525,14 @@ Details: The return value is a named list, with an element corresponding to each
                                           type <- getNodeType(nn)
                                           if(length(type) > 1) stop('something wrong with Daniel\'s understading of nimbleModel')
                                           if(type == 'RHSonly') {
-                                              ##if(!isValid(val)) warning('right-hand-side-only node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'determ') {
                                               calculate(.self, nn)
                                               val <- .self[[nn]]
-                                              ##if(!isValid(val)) warning('deterministic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'stoch') {
-                                              ##if(!isValid(val)) warning('stochastic node \'', nn, '\' = ', whyInvalid(val), call.=FALSE)
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                               val <- calculate(.self, nn)
-                                              ##if(!isValid(lp)) warning('logProb of stochastic node \'', nn, '\' = ', whyInvalid(lp), call.=FALSE)
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
                                           } else stop('unknown node type: ', type)
                                       }
@@ -550,7 +546,7 @@ Details: The return value is a named list, with an element corresponding to each
                                           if(!is.null(v)) warning(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, call.=FALSE)
                                       }
                                   },
-                                  newModel = function(data = NULL, inits = NULL, modelName = character(), check = TRUE) {
+                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = TRUE) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
@@ -566,13 +562,18 @@ modelName: An optional character string, used to set the internal name of the mo
 
 Details: The newly created model object will be identical to the original model in terms of structure and functionality, but entirely distinct in terms of the internal values.
 '
+                                      if(replicate) {
+                                          newlyCreatedModel <- modelDef$newModel(check = FALSE)
+                                          nimCopy(from = .self, to = newlyCreatedModel, logProb = TRUE)
+                                          for(var in ls(isDataEnv)) newlyCreatedModel$isDataEnv[[var]] <- isDataEnv[[var]]
+                                          return(newlyCreatedModel)
+                                      }
                                       if(is.null(data)) data <- origData
                                       if(is.null(inits)) inits <- origInits
-                                      newlyCreatedModel <- modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check)
-                                      return(newlyCreatedModel)
+                                      modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check)
                                   }
                               )
-)
+                              )
 
 
 
