@@ -556,6 +556,8 @@ data: A named list specifying data nodes and values, for use in the newly return
 
 inits: A named list specifying initial values, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
 
+replicate: Logical specifying whether to repliate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
+
 check: A logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
 
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
@@ -566,6 +568,7 @@ Details: The newly created model object will be identical to the original model 
                                           newlyCreatedModel <- modelDef$newModel(check = FALSE)
                                           nimCopy(from = .self, to = newlyCreatedModel, logProb = TRUE)
                                           for(var in ls(isDataEnv)) newlyCreatedModel$isDataEnv[[var]] <- isDataEnv[[var]]
+                                          if(check) newlyCreatedModel$check()
                                           return(newlyCreatedModel)
                                       }
                                       if(is.null(data)) data <- origData
