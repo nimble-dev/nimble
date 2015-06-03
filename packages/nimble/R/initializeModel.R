@@ -76,7 +76,11 @@ stochNodeInit <- nimbleFunction(
         if(is.na.vec(theseVals)) print('warning: value of stochastic node is NA')
         lp <- calculate(model, node)
         if(is.na(lp)) print('warning: problem initializing stochastic node, logProb is NA')
-        if(!is.na(lp) && lp < -1e12 && !silent) print('warning: problem initializing stochastic node, logProb less than -1e12')
+        if(!is.na(lp)) {
+            if(lp < -1e12) {
+                if(!silent) print('warning: problem initializing stochastic node, logProb less than -1e12')
+            }
+        }
     },    where = getLoadingNamespace()
 )
 
