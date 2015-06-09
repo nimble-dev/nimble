@@ -87,6 +87,9 @@ Collate: config.R
  autoBlock.R
  MCEM_build.R
  PF_build.R
+ auxF_build.R
+ lwF_build.R
+ bootF_build.R
  optimTools.R
  NF_utils.R
  makevars.R
