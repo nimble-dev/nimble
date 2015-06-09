@@ -252,7 +252,7 @@ inits2 <- list(lambda = 1)
 inits3 <- list(alpha = rep(30, P))
 
 m2 <- nimbleModel(code2, data = data2['y3'], constants = data2[c('upper', 'n2')],
-                  inits = inits 2)
+                  inits = inits2)
 cm2 <- compileNimble(m2)
 simulate(m2, 'lambda')
 simulate(cm2, 'lambda')
