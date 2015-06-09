@@ -109,7 +109,7 @@ distributionsInputList <- list(
     
     dnorm   = list(BUGSdist = 'dnorm(mean, tau, sd, var)',
                    Rdist    = c('dnorm(mean, sd = 1/sqrt(tau))', 'dnorm(mean, sd = sqrt(var))'),
-                   altParams= c('tau = sd^-2', 'var = mysqu(sd)'),
+                   altParams= c('tau = sd^-2', 'var = sd*sd'),
 #                   altParams= c('tau = sd^-2', 'var = sd^2'),
                    pqAvail = TRUE),
     
