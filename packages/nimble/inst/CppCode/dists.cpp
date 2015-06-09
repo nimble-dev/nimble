@@ -79,7 +79,7 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isLogical(scale_param) || !isLogical(return_log))
+  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
     RBREAK("Error (C_dwish_chol): invalid input type for one of the arguments.\n");
   int p = pow(LENGTH(chol), 0.5);
   int give_log = (int) LOGICAL(return_log)[0];
@@ -160,7 +160,7 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(chol) || !isReal(df) || !isLogical(scale_param))
+  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
   int n_chol = LENGTH(chol);
   int p = pow(n_chol, 0.5);
@@ -499,7 +499,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isLogical(prec_param) || !isLogical(return_log))
+  if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isReal(prec_param) || !isLogical(return_log))
     RBREAK("Error (C_dnorm_chol): invalid input type for one of the arguments.\n");
   int n_x = LENGTH(x);
   int n_mean = LENGTH(mean);
@@ -568,7 +568,7 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(mean) || !isReal(chol) || !isLogical(prec_param))
+  if(!isReal(mean) || !isReal(chol) || !isReal(prec_param))
     RBREAK("Error (C_rmnorm_chol): invalid input type for one of the arguments.\n");
   int n_mean = LENGTH(mean);
   int n_chol = LENGTH(chol);
