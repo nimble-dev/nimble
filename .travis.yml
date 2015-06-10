@@ -1,0 +1,31 @@
+language: r
+
+sudo: required
+
+warnings_are_errors: true
+
+notifications:
+  email:
+    - dturek@berkeley.edu
+
+branches:
+  only:
+    - master
+    - devel
+    - travis
+
+install:
+  - Rscript -e "install.packages('igraph',   repos = 'http://cran.us.r-project.org')"
+  - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
+  - R CMD build packages/nimble
+  - R CMD INSTALL packages/nimble
+
+script:
+  - Rscript -e "library(nimble); library(testthat); warning('warning'); print(1)" &> out
+##  - Rscript packages/nimble/tests/test-selections.R &> out
+##  - Rscript packages/nimble/tests/test-all.R &> out
+
+after_script:
+  - sed -n -E '/[Ww]arning|[Ee]rror[^=]|[Ff]ailure/p' out > error
+  - cat out
+  - cat error
