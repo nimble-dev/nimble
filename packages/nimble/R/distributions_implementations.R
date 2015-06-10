@@ -47,14 +47,14 @@ rt_nonstandard <- function(n, df = 1, mu = 0, sigma = 1) {
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-  .Call('C_dmnorm_chol', as.double(x), as.double(mean), as.double(cholesky), as.logical(prec_param), as.logical(log))
+  .Call('C_dmnorm_chol', as.double(x), as.double(mean), as.double(cholesky), as.double(prec_param), as.logical(log))
 }
 
 rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
  ## cholesky should be upper triangular
  ## FIXME: allow cholesky to be lower tri
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-    .Call('C_rmnorm_chol', as.double(mean), as.double(cholesky), as.logical(prec_param))
+    .Call('C_rmnorm_chol', as.double(mean), as.double(cholesky), as.double(prec_param))
 }
 
 dinterval <- function(x, t, c, log = FALSE) {
