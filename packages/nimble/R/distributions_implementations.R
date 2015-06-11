@@ -25,11 +25,11 @@ dmulti <- function(x, size = sum(x), prob, log = FALSE) {
 }
 
 rmulti <- function(n = 1, size, prob) {
-  .Call('C_rmulti', as.integer(size), as.double(prob))
+  .Call('C_rmulti', as.double(size), as.double(prob))
 }
 
 dcat <- function(x, prob, log = FALSE) {
-  .Call('C_dcat', as.integer(x), as.double(prob), as.logical(log))
+  .Call('C_dcat', as.double(x), as.double(prob), as.logical(log))
 }
 
 rcat <- function(n = 1, prob) {
@@ -58,7 +58,7 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 }
 
 dinterval <- function(x, t, c, log = FALSE) {
-    .Call('C_dinterval', as.integer(x), as.double(t), as.double(c), as.logical(log))
+    .Call('C_dinterval', as.double(x), as.double(t), as.double(c), as.logical(log))
 }
 
 rinterval <- function(n = 1, t, c) {
