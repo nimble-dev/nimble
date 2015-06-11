@@ -778,7 +778,7 @@ double rt_nonstandard(double df, double mu, double sigma)
 double pt_nonstandard(double q, double df, double mu, double sigma, int lower_tail, int log_p)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  double result;
+  //double result;
 #ifdef IEEE_754
     if(ISNAN(q) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
         return q + mu + sigma + df;
@@ -796,7 +796,7 @@ double pt_nonstandard(double q, double df, double mu, double sigma, int lower_ta
 double qt_nonstandard(double p, double df, double mu, double sigma, int lower_tail, int log_p)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  double result;
+  //double result;
 #ifdef IEEE_754
   if (ISNAN(p) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
     return p + mu + sigma + df;
