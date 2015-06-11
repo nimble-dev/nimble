@@ -504,7 +504,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   int n_x = LENGTH(x);
   int n_mean = LENGTH(mean);
   int give_log = (int) LOGICAL(return_log)[0];
-  int prec = (int) LOGICAL(prec_param)[0];
+  int prec = (int) REAL(prec_param)[0];
 
   double* c_x = REAL(x);
   double* c_mean = REAL(mean);
