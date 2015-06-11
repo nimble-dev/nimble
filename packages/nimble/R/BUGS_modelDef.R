@@ -1211,7 +1211,7 @@ splitVertexIDsToElementIDs <- function(var2vertexID, nextVertexID) {
         IDsToFix <- which(boolMultiple)
         for(ID in IDsToFix) {
             newElementIDs <- nextVertexID-1 + 1:vertexIDtable[ID]
-            var2vertexID[var2vertexID == ID] <- newElementIDs
+            var2vertexID[which(var2vertexID == ID)] <- newElementIDs
             newElementID_2_vertexID <- c(newElementID_2_vertexID, rep(ID, vertexIDtable[ID]))
             nextVertexID <- nextVertexID + vertexIDtable[ID]
         }
