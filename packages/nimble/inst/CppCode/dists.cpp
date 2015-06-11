@@ -4,12 +4,24 @@
 // uses various BLAS routines and constants from R's C API
 // compile as "R CMD SHLIB dists.cpp"
 
-// FIXME: need full suite of error-checking, including types coming from R
-
 //#include "Utils.h" // moved to dists.h
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
 
+bool R_IsNA(double* P, int s) {
+  for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
+  return(false);
+}
+
+bool R_isnancpp(double* P, int s) {
+  for(int i = 0; i < s; ++i) if(R_isnancpp(P[i])) return(true);
+  return(false);
+}
+
+bool R_FINITE_VEC(double* P, int s) {
+  for(int i = 0; i < s; ++i) if(!R_FINITE(P[i])) return(false);
+  return(true);
+}
 
 double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log) {
   char uplo('U');
@@ -21,6 +33,18 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   double alpha(1.0);
 
   int i;
+
+  if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+    return R_NaN;
+#endif
+
+  // also covers df < 0
+  if(df < (double) p) ML_ERR_return_NAN;
+
+  if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
 
   double dens = -(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2);
   for(i = 0; i < p; i++)
@@ -83,15 +107,15 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
     RBREAK("Error (C_dwish_chol): invalid input type for one of the arguments.\n");
   int p = pow(LENGTH(chol), 0.5);
   int give_log = (int) LOGICAL(return_log)[0];
-  int scale = (int) REAL(scale_param)[0];
+  double scale = REAL(scale_param)[0];
 
   double* c_x = REAL(x);
   double* c_chol = REAL(chol);
   double c_df = REAL(df)[0];
-  
+ 
   if(c_df < p)
-    RBREAK("Error (C_dwish_chol): inconsistent degrees of freedom and dimension.\n");
-
+    RBREAK("Error (C_rwish_chol): inconsistent degrees of freedom and dimension.\n");
+  
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
   REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log);
@@ -113,9 +137,22 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
   double beta(0.0);
 
   int i, j, uind, lind;
-
-  //  double* Z = new double[p*p];
-
+  
+#ifdef IEEE_754
+  if (R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+#endif
+    
+  // also covers df < 0
+  if(df < (double) p) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+  
   // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals
   for(j = 0; j < p; j++) {
     // double *Z_j = &Z[j*p];
@@ -164,7 +201,7 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
   int n_chol = LENGTH(chol);
   int p = pow(n_chol, 0.5);
-  int scale = (int) REAL(scale_param)[0];
+  double scale = REAL(scale_param)[0];
 
   double* c_chol = REAL(chol);
   double c_df = REAL(df)[0];
@@ -191,15 +228,24 @@ double ddirch(double* x, double* alpha, int K, int give_log)
   double sumAlpha(0.0);
   double sumX(0.0);
   double dens(0.0);
+
+  if (R_IsNA(x, K) || R_IsNA(alpha, K))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, K) || R_isnancpp(alpha, K))
+    return R_NaN;
+#endif
+  
   for(int i = 0; i < K; i++) {
+    if(alpha[i] <= 0.0) ML_ERR_return_NAN;
+    if(x[i] < 0.0 || x[i] > 1.0) return R_D__0;
     dens += (alpha[i]-1) * log(x[i]) - lgammafn(alpha[i]) ;
     sumAlpha += alpha[i];
     sumX += x[i];
   }
   if(sumX > 1.0 + 10*DBL_EPSILON || sumX < 1.0 - 10*DBL_EPSILON) {
-    return give_log ? R_NegInf : 0.0;
+    return R_D__0;
   }
-  // should return error instead?
 
   dens += lgammafn(sumAlpha);
   return give_log ? dens : exp(dens);
@@ -208,13 +254,27 @@ double ddirch(double* x, double* alpha, int K, int give_log)
 void rdirch(double *ans, double* alpha, int K) 
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+  int i, j;
   //  double* ans = new double[K];
+#ifdef IEEE_754
+  if (R_isnancpp(alpha, K)) {
+    for(j = 0; j < K; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+#endif
+
   double sum(0.0);
-  for(int i = 0; i < K; i++) {
+  for(i = 0; i < K; i++) {
+    if(alpha[i] <= 0.0) {
+      for(j = 0; j < K; j++) 
+        ans[j] = R_NaN;
+      return;
+    }
     ans[i] = rgamma(alpha[i], 1);
     sum += ans[i];
   }
-  for(int i = 0; i < K; i++) {
+  for(i = 0; i < K; i++) {
     ans[i] /= sum;
   }
 }
@@ -270,22 +330,57 @@ SEXP C_rdirch(SEXP alpha) {
 
 
 
-double dmulti(double* x, int size, double* prob, int K, int give_log) // Calling functions need to copy first arg to int if needed
+double dmulti(double* x, double size, double* prob, int K, int give_log) // Calling functions need to copy first arg to int if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+  double sumProb(0.0);
+  double sumX(0.0);
+
+  if (R_IsNA(x, K) || R_IsNA(prob, K) || R_IsNA(size))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, K) || R_isnancpp(prob, K) || R_isnancpp(size))
+    return R_NaN;
+#endif
+
+  if(R_D_negInonint(size))
+        ML_ERR_return_NAN;
+  size = R_D_forceint(size);
+
   double dens = lgammafn(size + 1);
   for(int i = 0; i < K; i++) {
-   	if(x[i] != 0 & prob[i] != 0)
-    dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
+    if (prob[i] < 0 || prob[i] > 1) ML_ERR_return_NAN;
+    R_D_nonint_check(x[i]);
+    if (x[i] < 0 || !R_FINITE(x[i])) return R_D__0;
+
+    x[i] = R_D_forceint(x[i]);
+    sumProb += prob[i];
+    sumX += x[i];
+
+    if(!(x[i] == 0.0 && prob[i] == 0.0))
+      dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
   }
+
+  if(sumX > size + 10*DBL_EPSILON || sumX < size - 10*DBL_EPSILON) {
+    return R_D__0;
+  }
+  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
+    ML_ERR_return_NAN;
+  }
+
   return give_log ? dens : exp(dens);
 }
+
+
+
 
 void rmulti(int *ans, double size, double* prob, int K) // Calling functions need to copy first arg back and forth to double if needed
 // scalar function that can be called directly by NIMBLE with same name as in R
 // just call Rmath's rmultinom, which passes result by pointer
+// IMPORTANT: have ans and size as int when sent to rmultinom as Rmath rmultinom has these types
+// Nimble does a copy in nimArr_rmulti
 {
-  rmultinom(size, prob, K, ans);
+  rmultinom((int) size, prob, K, ans);
 }
 
 SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log) 
@@ -304,9 +399,9 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
     return prob;
   }
 
-  int* c_x = REAL(x);
+  double* c_x = REAL(x);
   double* c_prob = REAL(prob);
-  int c_size = INTEGER(size)[0];
+  double c_size = REAL(size)[0];
 
   double sum = 0.0;
   for(i = 0; i < K; i++) 
@@ -337,7 +432,7 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
   }
 
   double* c_prob = REAL(prob);
-  int c_size = REAL(size)[0];
+  double c_size = REAL(size)[0];
 
   double sum = 0.0;
   for(i = 0; i < K; i++) 
@@ -358,11 +453,28 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
 double dcat(double x, double* prob, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(x > K || x < 1) return give_log ? R_NegInf : 0.0;
-  return give_log ? log(prob[x-1]) : prob[x-1];
+  if (R_IsNA(x) || R_IsNA(prob, K))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x) || R_isnancpp(prob, K))
+    return R_NaN;
+#endif
+
+  double sumProb(0.0);
+  for(int i = 0; i < K; i++) 
+    sumProb += prob[i];
+  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
+    ML_ERR_return_NAN;
+  }
+
+  R_D_nonint_check(x);
+  x = R_D_forceint(x);
+
+  if(x > K || x < 1) return R_D__0;
+  return give_log ? log(prob[(int) x - 1]) : prob[(int) x - 1];
 }
 
-int rcat(double* prob, int K)
+double rcat(double* prob, int K)
 // scalar function that can be called directly by NIMBLE with same name as in R
 // problem is no apparent way to call this w/o also passing the number of categories
 // relying on sum to 1 risks accessing beyond storage
@@ -371,16 +483,20 @@ int rcat(double* prob, int K)
   double u = unif_rand();
   double prob_cum = prob[0];
   int value = 1;
+
+  double sumProb(0.0);
+  for(int i = 0; i < K; i++) 
+    sumProb += prob[i];
+  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
+    ML_ERR_return_NAN;
+  }
+
   while(u > prob_cum && value < K) {
     prob_cum += prob[value];
     value++;
   }
 
-  if(prob_cum > 1.0 + 10*DBL_EPSILON)
-    // tolerance of ~ 1 x 10^-15; this is not based on any deep thought
-    // this will only catch the issue if u puts us in the last bin
-    error("(rcat): sum of probabilities is greater than 1.");
-  return value;
+  return (double) value;
 }
  
 SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log) 
@@ -401,7 +517,7 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
     return x;
   }
 
-  int* c_x = REAL(x);
+  double* c_x = REAL(x);
   double* c_prob = REAL(prob);
 
   double sum = 0.0;
@@ -448,7 +564,7 @@ SEXP C_rcat(SEXP n, SEXP prob) {
   PROTECT(ans = allocVector(INTSXP, n_values));  
 
   for(i = 0; i < n_values; i++) 
-    INTEGER(ans)[i] = rcat(c_prob, K);
+    INTEGER(ans)[i] = (int) rcat(c_prob, K);
 
   PutRNGstate();
   UNPROTECT(1);
@@ -467,6 +583,16 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
   double dens = -n * M_LN_SQRT_2PI;
   int i;
   // add diagonals of Cholesky
+
+  if (R_IsNA(x, n) || R_IsNA(mean, n) || R_IsNA(chol, n*n) || R_IsNA(prec_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, n) || R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_isnancpp(prec_param))
+    return R_NaN;
+#endif
+
+  if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mean, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
+
 
   if(prec_param) {
     for(i = 0; i < n*n; i += n + 1) 
@@ -504,7 +630,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   int n_x = LENGTH(x);
   int n_mean = LENGTH(mean);
   int give_log = (int) LOGICAL(return_log)[0];
-  int prec = (int) REAL(prec_param)[0];
+  double prec = REAL(prec_param)[0];
 
   double* c_x = REAL(x);
   double* c_mean = REAL(mean);
@@ -543,7 +669,21 @@ void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_par
   int lda(n);
   int incx(1);
   
-  int i;
+  int i, j;
+
+#ifdef IEEE_754
+  if (R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_isnancpp(prec_param)) {
+    for(j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+#endif
+
+  if(!R_FINITE_VEC(chol, n*n)) { 
+    for(j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
 
   double* devs = new double[n];
   //  double* ans = new double[n];
@@ -573,7 +713,7 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
   int n_mean = LENGTH(mean);
   int n_chol = LENGTH(chol);
   int n_values = pow(n_chol, 0.5);
-  int prec = (int) REAL(prec_param)[0];
+  double prec = REAL(prec_param)[0];
 
   int i;
 
@@ -610,9 +750,14 @@ double dt_nonstandard(double x, double df, double mu, double sigma, int give_log
 // 'n' is name of 'df' in R's C dt
 {
   // standardize and multiply by Jacobian of transformation
-  if(sigma <= 0) {
-    if(sigma < 0) return(R_NaN);
-    else return give_log ? R_NegInf : 0.0;
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+    return x + mu + sigma + df;
+#endif
+  if(!R_FINITE(sigma)) return R_D__0;
+  if(sigma <= 0.0) {
+    if(sigma < 0.0) ML_ERR_return_NAN;
+    return (x == mu) ? ML_POSINF : R_D__0;
   }         
   if(give_log) return dt( (x - mu)/sigma, df, give_log) - log(sigma);
   else return dt( (x - mu)/sigma, df, give_log) / sigma;
@@ -621,8 +766,46 @@ double dt_nonstandard(double x, double df, double mu, double sigma, int give_log
 double rt_nonstandard(double df, double mu, double sigma)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(sigma < 0) return R_NaN;
+#ifdef IEEE_754
+  if (ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+    ML_ERR_return_NAN;
+#endif
+  if (!R_FINITE(sigma) || sigma < 0.0) ML_ERR_return_NAN;
+    
   return mu + sigma * rt(df);
+}
+
+double pt_nonstandard(double q, double df, double mu, double sigma, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  double result;
+#ifdef IEEE_754
+    if(ISNAN(q) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+        return q + mu + sigma + df;
+#endif
+
+  if(!R_FINITE(q) && mu == q) return ML_NAN;/* x-mu is NaN */
+  if(sigma <= 0.0) {
+    if(sigma < 0.0) ML_ERR_return_NAN;
+    return (q < mu) ? R_DT_0 : R_DT_1;
+  }   
+   
+  return( pt( (q - mu) / sigma, df, lower_tail, log_p) );
+}
+
+double qt_nonstandard(double p, double df, double mu, double sigma, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  double result;
+#ifdef IEEE_754
+  if (ISNAN(p) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
+    return p + mu + sigma + df;
+#endif
+
+  if(sigma < 0.0) ML_ERR_return_NAN;
+  if(sigma == 0.0) return mu;
+
+  return( mu + sigma * qt( p, df, lower_tail, log_p ) );
 }
 
 
@@ -717,27 +900,131 @@ SEXP C_rt_nonstandard(SEXP n, SEXP df, SEXP mu, SEXP sigma) {
   return ans;
 }
   
+SEXP C_pt_nonstandard(SEXP q, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(q) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(lower_tail) || !isLogical(log_p))
+    RBREAK("Error (C_pt_nonstandard): invalid input type for one of the arguments.");
+  int n_q = LENGTH(q);
+  int n_mu = LENGTH(mu);
+  int n_sigma = LENGTH(sigma);
+  int n_df = LENGTH(df);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_q == 0) {
+    return q;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_q));  
+  double* c_q = REAL(q);
+  double* c_mu = REAL(mu);
+  double* c_sigma = REAL(sigma);
+  double* c_df = REAL(df);
+
+  // FIXME: abstract the recycling as a function
+  if(n_mu == 1 && n_sigma == 1 && n_df == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_q; i++) 
+      REAL(ans)[i] = pt_nonstandard(c_q[i], *c_df, *c_mu, *c_sigma, c_lower_tail, c_log_p);
+  } else {
+    int i_mu = 0;
+    int i_sigma = 0;
+    int i_df = 0;
+    for(int i = 0; i < n_q; i++) {
+      REAL(ans)[i] = pt_nonstandard(c_q[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
+      //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
+      // implement recycling:
+      if(i_mu == n_mu) i_mu = 0;
+      if(i_sigma == n_sigma) i_sigma = 0;
+      if(i_df == n_df) i_df = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+ 
+SEXP C_qt_nonstandard(SEXP p, SEXP df, SEXP mu, SEXP sigma, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(p) || !isReal(df) || !isReal(mu) || !isReal(sigma) || !isLogical(lower_tail) || !isLogical(log_p))
+    RBREAK("Error (C_qt_nonstandard): invalid input type for one of the arguments.");
+  int n_p = LENGTH(p);
+  int n_mu = LENGTH(mu);
+  int n_sigma = LENGTH(sigma);
+  int n_df = LENGTH(df);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_p == 0) {
+    return p;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_p));  
+  double* c_p = REAL(p);
+  double* c_mu = REAL(mu);
+  double* c_sigma = REAL(sigma);
+  double* c_df = REAL(df);
+
+  // FIXME: abstract the recycling as a function
+  if(n_mu == 1 && n_sigma == 1 && n_df == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_p; i++) 
+      REAL(ans)[i] = qt_nonstandard(c_p[i], *c_df, *c_mu, *c_sigma, c_lower_tail, c_log_p);
+  } else {
+    int i_mu = 0;
+    int i_sigma = 0;
+    int i_df = 0;
+    for(int i = 0; i < n_p; i++) {
+      REAL(ans)[i] = qt_nonstandard(c_p[i], c_df[i_df++], c_mu[i_mu++], c_sigma[i_sigma++], c_lower_tail, c_log_p);
+      //c_mu[i_mu++] + c_sigma[i_sigma++] * rt(c_df[i_df++]);
+      // implement recycling:
+      if(i_mu == n_mu) i_mu = 0;
+      if(i_sigma == n_sigma) i_sigma = 0;
+      if(i_df == n_df) i_df = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
 
 
-
-double dinterval(int x, double t, double* c, int K, int give_log)
+double dinterval(double x, double t, double* c, int K, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(x < 0 || x > K) return give_log ? R_NegInf : 0.0;
-  if(x == 0 && t <= c[x]) return give_log ? 0.0 : 1.0;
-  if(x == K && t > c[x-1]) return give_log ? 0.0 : 1.0;
-  else if(t <= c[x] && t > c[x - 1]) return give_log ? 0.0 : 1.0;
-  else return give_log ? R_NegInf : 0.0;
+  if (R_IsNA(c, K) || R_IsNA(x) || R_IsNA(t)) 
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(c, K) || R_isnancpp(x) || R_isnancpp(t))
+    return R_NaN;
+#endif
+
+  R_D_nonint_check(x);
+  x = R_D_forceint(x);
+
+  // we do not check that c is in increasing order, to save time
+  int int_x = (int) x;
+  if(int_x < 0 || int_x > K) return R_D__0; 
+  if(int_x == 0 && t <= c[int_x]) return R_D__1;
+  if(int_x == K && t > c[int_x-1]) return R_D__1;
+  if(t <= c[int_x] && t > c[int_x - 1]) return R_D__1;
+  return R_D__0;
 }
 
 
 double rinterval(double t, double* c, int K)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
+#ifdef IEEE_754
+  if (R_isnancpp(c, K) || R_isnancpp(t) )
+    ML_ERR_return_NAN;
+#endif
+
+  // we do not check that c is in increasing order, to save time
   for(int i = 0; i < K; i++) {
-    if(t <= c[i]) return i;
+    if(t <= c[i]) return (double) i;
   }
-  return K;
+  return (double) K;
 }
 
 
@@ -757,7 +1044,7 @@ SEXP C_dinterval(SEXP x, SEXP t, SEXP c, SEXP return_log) {
   }
     
   PROTECT(ans = allocVector(REALSXP, n_x));  
-  int* c_x = INTEGER(x);
+  double* c_x = REAL(x);
   double* c_t = REAL(t);
   double* c_c = REAL(c);
 
@@ -798,17 +1085,17 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
     
   GetRNGstate(); 
     
-  PROTECT(ans = allocVector(REALSXP, n_values));  
+  PROTECT(ans = allocVector(INTSXP, n_values));  
   double* c_t = REAL(t);
   double* c_c = REAL(c);
   if(n_t == 1) {
     // if no parameter vectors, more efficient not to deal with multiple indices
     for(int i = 0; i < n_values; i++) 
-      INTEGER(ans)[i] = rinterval(*c_t, c_c, K);
+      INTEGER(ans)[i] = (int) rinterval(*c_t, c_c, K);
   } else {
     int i_t = 0;
     for(int i = 0; i < n_values; i++) {
-      INTEGER(ans)[i] = rinterval(c_t[i_t++], c_c, K);
+      INTEGER(ans)[i] = (int) rinterval(c_t[i_t++], c_c, K);
       // implement recycling:
       if(i_t == n_t) i_t = 0;
     }
@@ -823,20 +1110,184 @@ SEXP C_rinterval(SEXP n, SEXP t, SEXP c) {
 double dconstraint(double x, double cond, int give_log)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(ISNAN(cond) || ISNAN(x)) {
-    return(x + cond);  // mimic how R C functions handle NA, NaN
-  }
-  if(x == cond || x == 0) return give_log ? 0.0 : 1.0;
-  else return give_log ? R_NegInf : 0.0;
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(cond))
+    return x + cond;
+#endif
+  // any non-zero will be treated as true
+  if(x == cond || x == 0.0) return R_D__1;
+  else return R_D__0;
 }
 
 
 double rconstraint(double cond)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  if(ISNAN(cond))   return(R_NaN);
+#ifdef IEEE_754
+  if (ISNAN(cond) )
+    ML_ERR_return_NAN;
+#endif
   return cond;
 }
 
-
+// we need our own exp implementation because R dexp uses rate and C exp uses scale
   
+double rexp_nimble(double rate)
+{
+  return rexp( 1/rate );
+} 
+
+double dexp_nimble(double x, double rate, int give_log)
+{
+  return dexp(x, 1/rate, give_log); 
+} 
+
+double pexp_nimble(double q, double rate, int lower_tail, int log_p)
+{
+  return pexp(q, 1/rate, lower_tail, log_p);
+} 
+
+double qexp_nimble(double p, double rate, int lower_tail, int log_p)
+{
+  return qexp(p, 1 / rate, lower_tail, log_p);
+}
+
+SEXP C_dexp_nimble(SEXP x, SEXP rate, SEXP return_log) {
+  if(!isReal(x) || !isReal(rate) || !isLogical(return_log))
+    RBREAK("Error (C_dexp_nimble): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_rate = LENGTH(rate);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  double* c_x = REAL(x);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dexp_nimble(c_x[i], *c_rate, give_log);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = dexp_nimble(c_x[i], c_rate[i_rate++], give_log);
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rexp_nimble(SEXP n, SEXP rate) {
+  // this will call rexp_nimble for computation on scalars
+  if(!isInteger(n) || !isReal(rate) )
+    RBREAK("Error (C_rexp_nimble): invalid input type for one of the arguments.");
+  int n_rate = LENGTH(rate);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rexp_nimble): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  double* c_rate = REAL(rate);
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rexp_nimble(*c_rate);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rexp_nimble(c_rate[i_rate++]);
+      // implement recycling:
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_pexp_nimble(SEXP q, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(q) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+    RBREAK("Error (C_pexp_nimble): invalid input type for one of the arguments.");
+  int n_q = LENGTH(q);
+  int n_rate = LENGTH(rate);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_q == 0) {
+    return q;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_q));  
+  double* c_q = REAL(q);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_q; i++) 
+      REAL(ans)[i] = pexp_nimble(c_q[i], *c_rate, c_lower_tail, c_log_p);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_q; i++) {
+      REAL(ans)[i] = pexp_nimble(c_q[i], c_rate[i_rate++], c_lower_tail, c_log_p);
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(p) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p)) 
+    RBREAK("Error (C_qexp_nimble): invalid input type for one of the arguments.");
+  int n_p = LENGTH(p);
+  int n_rate = LENGTH(rate);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_p == 0) {
+    return p;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_p));  
+  double* c_p = REAL(p);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_p; i++) 
+      REAL(ans)[i] = qexp_nimble(c_p[i], *c_rate, c_lower_tail, c_log_p);
+  } else {
+    int i_rate = 0;
+    for(int i = 0; i < n_p; i++) {
+      REAL(ans)[i] = qexp_nimble(c_p[i], c_rate[i_rate++], c_lower_tail, c_log_p);
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
