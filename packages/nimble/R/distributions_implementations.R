@@ -3,7 +3,7 @@
 
 #' The Wishart Distribution
 #'
-#' density and random generation for the Wishart distribution, using either the Cholesky factor of the scale matrix or the rate matrix.
+#' Density and random generation for the Wishart distribution, using either the Cholesky factor of the scale matrix or the rate matrix.
 #'
 #' @aliases rwish_chol
 #' 
@@ -38,7 +38,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 
 #' The Dirichlet Distribution
 #'
-#' density and random generation for the Dirichlet distribution
+#' Density and random generation for the Dirichlet distribution
 #'
 #' @aliases rdirch
 #' 
@@ -69,7 +69,7 @@ rdirch <- function(n = 1, alpha) {
 
 #' The Multinomial Distribution
 #'
-#' density and random generation for the Multinomial distribution
+#' Density and random generation for the Multinomial distribution
 #'
 #' @aliases rdirch
 #' 
@@ -80,7 +80,7 @@ rdirch <- function(n = 1, alpha) {
 #' @author Christopher Paciorek
 #' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
-#' @return \code{ddirch} gives the density and \code{rdirch} generates random deviates.
+#' @return \code{dmulti} gives the density and \code{rmulti} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
@@ -99,6 +99,27 @@ rmulti <- function(n = 1, size, prob) {
   .Call('C_rmulti', as.double(size), as.double(prob))
 }
 
+#' The Categorical Distribution
+#'
+#' Density and random generation for the Categorical distribution
+#'
+#' @aliases rdirch
+#' 
+#' @param x non-negative integer-value numeric value
+#' @param n number of observations
+#' @param prob vector of probabilities, summing to one
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details See the BUGS manual for mathematical details. 
+#' @return \code{dcat} gives the density and \code{rcat} generates random deviates.
+##' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' probs <- c(1/4, 1/10, 1 - 1/4 - 1/10)
+#' x <- rcat(n = 30, probs)
+#' dcat(x, probs)
+#' 
 dcat <- function(x, prob, log = FALSE) {
   .Call('C_dcat', as.double(x), as.double(prob), as.logical(log))
 }
@@ -107,10 +128,37 @@ rcat <- function(n = 1, prob) {
   .Call('C_rcat', as.integer(n), as.double(prob))
 }
 
+
+#' The t Distribution
+#'
+#' Density, distribution function, quantile function and random generation
+#' for the t distribution with \code{df} degrees of freedom,
+#' allowing non-zero location, \code{mu},
+#' and non-unit scale, \code{sigma} 
+#'
+#' @aliases rt_nonstandard, qt_nonstandard, pt_nonstandard
+#' 
+#' @param x vector of values.
+#' @param n number of observations 
+#' @param df vector of degrees of freedom values
+#' @param mu vector of location values
+#' @param sigma vector of scale values
+#' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
-
-
+#' @author Christopher Paciorek
+#' @export
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
+#' @return \code{dt_nonstandard} gives the density, \code{pt_nonstandard} gives the distribution
+#' function, \code{qt_nonstandard} gives the quantile function, and \code{rt_nonstandard}
+#' generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' x <- rt_nonstandard(50, df = 1, mu = 5, sigma = 1)
+#' dt_nonstandard(x, 3, 5, 1)
+#' 
 dt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, log = FALSE) {
   .Call('C_dt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log))
 }
