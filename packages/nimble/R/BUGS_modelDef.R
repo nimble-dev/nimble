@@ -396,7 +396,7 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         } else   BUGSdecl$range$lower <- distRange[1]
         if(BUGSdecl$valueExpr[[4]] != "") {
             BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]
-        } else   BUGSdecl$range$lower <- distRange[2]
+        } else   BUGSdecl$range$upper <- distRange[2]
     
         if(BUGSdecl$range$lower == distRange[1] && BUGSdecl$range$upper == distRange[2])  # user specified bounds that are the same as the range
             BUGSdecl$truncated <- FALSE

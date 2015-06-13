@@ -114,7 +114,7 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
   double c_df = REAL(df)[0];
  
   if(c_df < p)
-    RBREAK("Error (C_rwish_chol): inconsistent degrees of freedom and dimension.\n");
+    RBREAK("Error (C_dwish_chol): inconsistent degrees of freedom and dimension.\n");
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
