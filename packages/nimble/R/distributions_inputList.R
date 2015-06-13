@@ -96,7 +96,7 @@ distributionsInputList <- list(
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
     dlnorm  = list(BUGSdist = 'dlnorm(meanlog, taulog, sdlog, varlog)',
-                   Rdist    = c('dlnorm(meanlog, sdlog = 1/sqrt(tau))',
+                   Rdist    = c('dlnorm(meanlog, sdlog = 1/sqrt(taulog))',
                        'dlnorm(meanlog, sdlog = sqrt(varlog))'),
                    altParams= c('taulog = sdlog^-2', 'varlog = sdlog^2'),
                    range    = c(0, Inf),
