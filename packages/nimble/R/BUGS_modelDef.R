@@ -381,10 +381,7 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         if(BUGSdecl$type != 'stoch' || !(BUGSdecl$valueExpr[[1]] == "T" || BUGSdecl$valueExpr[[1]] == "I")) next
         BUGSdecl$truncated <- TRUE
 
-        BUGSdecl$range <- list()
-        if(BUGSdecl$valueExpr[[3]] != "") BUGSdecl$range$lower <- BUGSdecl$valueExpr[[3]]  
-        if(BUGSdecl$valueExpr[[4]] != "") BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]  
-        
+
         if(BUGSdecl$valueExpr[[1]] == "I")
             warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
                 
@@ -393,6 +390,14 @@ modelDefClass$methods(removeTruncationWrapping = function() {
 
         tmp <- as.character(newCode[[3]][[1]])
         distRange <- getDistribution(tmp)$range
+
+        if(BUGSdecl$valueExpr[[3]] != "") {
+            BUGSdecl$range$lower <- BUGSdecl$valueExpr[[3]]
+        } else   BUGSdecl$range$lower <- distRange[1]
+        if(BUGSdecl$valueExpr[[4]] != "") {
+            BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]
+        } else   BUGSdecl$range$lower <- distRange[2]
+    
         if(BUGSdecl$range$lower == distRange[1] && BUGSdecl$range$upper == distRange[2])  # user specified bounds that are the same as the range
             BUGSdecl$truncated <- FALSE
         
