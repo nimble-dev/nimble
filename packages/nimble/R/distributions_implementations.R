@@ -13,8 +13,6 @@
 #' @param df degrees of freedom.
 #' @param scale_param logical; if TRUE the Cholesky factor is that of the scale matrix; otherwise, of the rate matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
-#' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
-#' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
 #' @export
 #' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
@@ -38,6 +36,28 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     matrix(.Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param)), nrow = sqrt(length(cholesky)))
 }
 
+#' The Dirichlet Distribution
+#'
+#' density and random generation for the Dirichlet distribution
+#'
+#' @aliases rdirch
+#' 
+#' @param x vector of values.
+#' @param n number of observations (only \code{n=1} is handled currently).
+#' @param alpha vector of parameters of same length as \code{x}
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
+#' @return \code{ddirch} gives the density and \code{rdirch} generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' alpha <- c(1, 10, 30)
+#' x <- rdirch(1, alpha)
+#' ddirch(x, alpha)
+#' 
 ddirch <- function(x, alpha, log = FALSE) {
     .Call('C_ddirch', as.double(x), as.double(alpha), as.logical(log))
 }
@@ -47,6 +67,29 @@ rdirch <- function(n = 1, alpha) {
   .Call('C_rdirch', as.double(alpha))
 }
 
+#' The Multinomial Distribution
+#'
+#' density and random generation for the Multinomial distribution
+#'
+#' @aliases rdirch
+#' 
+#' @param x vector of values.
+#' @param n number of observations (only \code{n=1} is handled currently).
+#' @param prob vector of probabilities, summing to one, of same length as \code{x}
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. 
+#' @return \code{ddirch} gives the density and \code{rdirch} generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' size <- 30
+#' probs <- c(1/4, 1/10, 1 - 1/4 - 1/10)
+#' x <- rmulti(1, size, probs)
+#' dmulti(x, size, probs)
+#' 
 dmulti <- function(x, size = sum(x), prob, log = FALSE) {
   .Call('C_dmulti', as.double(x), as.double(size), as.double(prob), as.logical(log))
 }
@@ -63,6 +106,10 @@ dcat <- function(x, prob, log = FALSE) {
 rcat <- function(n = 1, prob) {
   .Call('C_rcat', as.integer(n), as.double(prob))
 }
+
+#' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
+#' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
+
 
 dt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, log = FALSE) {
   .Call('C_dt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log))
