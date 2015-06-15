@@ -613,6 +613,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(
                                    nodeFunctions = 'ANY',	#list
+                                   nodeFunctionGeneratorNames = 'ANY', #character, for efficiency in nimbleProject$addNimbleFunctionMulti
                                    nodeGenerators = 'ANY',	#list
                                    Cname = 'ANY',		#character
                                    CobjectInterface = 'ANY'
@@ -631,6 +632,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                        if(debug) browser()
                                        iNextNodeFunction <- 1
                                        nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
+                                       nodeFunctionGeneratorNames <<- character(modelDef$numNodeFunctions)
                                        nodeGenerators <<- vector('list', length = length(modelDef$declInfo)) ## for the nimbleFunctions
                                        for(i in seq_along(modelDef$declInfo)) {
                                            BUGSdecl <- modelDef$declInfo[[i]]
@@ -658,6 +660,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            ## If it is a singleton with no replacements, we can build the node simply:
                                            if(length(setupOutputExprs)==0) { ## if(nrow(BUGSdecl$unrolledIndicesMatrix)==0) {
                                                nodeFunctions[[iNextNodeFunction]] <<- nfGenerator(.self)
+                                               nodeFunctionGeneratorNames[iNextNodeFunction] <<- thisNodeGeneratorName
                                                names(nodeFunctions)[iNextNodeFunction] <<- newNodeFunctionNames
                                                iNextNodeFunction <- iNextNodeFunction + 1
                                                next
@@ -681,6 +684,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            #assign('nfGenCall_UNIQUE_NAME_', nfGenCall, envir = BUGSdecl$replacementsEnv)
                                            #assign('nfGenWrap_UNIQUE_NAME_', nfGenWrap, envir = BUGSdecl$replacementsEnv)
                                            nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- evalq(lapply(1:outputSize, nfGenWrap_UNIQUE_NAME_), envir = BUGSdecl$replacementsEnv)
+                                           nodeFunctionGeneratorNames[iNextNodeFunction-1+(1:numNewFunctions)] <<- thisNodeGeneratorName
                                            rm(list = c('MODEL_UNIQUE_NAME_', 'nfGenCall_UNIQUE_NAME_', 'nfGenerator_UNIQUE_NAME_', 'nfGenWrap_UNIQUE_NAME_'), envir = BUGSdecl$replacementsEnv)
                                            
                                            ## cn <- colnames(BUGSdecl$unrolledIndicesMatrix)

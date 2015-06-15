@@ -24,13 +24,13 @@ NimArr<nDim, T> &nimArrCopyIfNeeded(NimArr<nDim, T> &orig, NimArr<nDim, T> &poss
   }
 }
 
-double nimArr_dmulti(NimArr<1, double> &x, int size, NimArr<1, double> &prob, int give_log) {
+double nimArr_dmulti(NimArr<1, double> &x, double size, NimArr<1, double> &prob, int give_log) {
   int K = prob.size();
   if(K == 0) return(0.);
   if(x.size() != K) std::cout<<"Error in nimArr_dmulti: incompatible sizes for x ("<<x.size()<<") and prob("<<K<<").\n";
-  int *xptr; 
+  double *xptr; 
   double *probptr;
-  NimArr<1, int> xCopy;
+  NimArr<1, double> xCopy;
   NimArr<1, double> probCopy;
   xCopy = x; // copy from double to int
   xptr = xCopy.getPtr();
@@ -39,7 +39,7 @@ double nimArr_dmulti(NimArr<1, double> &x, int size, NimArr<1, double> &prob, in
   return(ans);
 }
 
-void nimArr_rmulti(NimArr<1, double> &ans, int size, NimArr<1, double> &prob) {
+void nimArr_rmulti(NimArr<1, double> &ans, double size, NimArr<1, double> &prob) {
   int K = prob.size();
   if(K == 0) return;
   int *ansptr;
@@ -59,7 +59,7 @@ void nimArr_rmulti(NimArr<1, double> &ans, int size, NimArr<1, double> &prob) {
   ans = ansCopy; // copy from int to double
 }
 
-double nimArr_dcat(int x, NimArr<1, double> &prob, int give_log) {
+double nimArr_dcat(double x, NimArr<1, double> &prob, int give_log) {
   int K = prob.size();
   double *probptr;
   NimArr<1, double> probCopy;
@@ -68,12 +68,12 @@ double nimArr_dcat(int x, NimArr<1, double> &prob, int give_log) {
   return(ans);
 }
 
-int nimArr_rcat(NimArr<1, double> &prob) {
+double nimArr_rcat(NimArr<1, double> &prob) {
   int K = prob.size();
   double *probptr;
   NimArr<1, double> probCopy;
   probptr = nimArrCopyIfNeeded<1, double>(prob, probCopy).getPtr();
-  int ans = rcat(probptr, K);
+  double ans = rcat(probptr, K);
   return(ans);
 }
 
@@ -113,7 +113,7 @@ void nimArr_rdirch(NimArr<1, double> &ans, NimArr<1, double> &alpha) {
   if(ans.isMap()) {ans = ansCopy;}
 }
 
-double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, int scale_param, int give_log) {
+double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log) {
   double *xptr, *cholptr;
   NimArr<2, double> xCopy, cholCopy;
   int p = x.dim()[0];
@@ -130,7 +130,7 @@ double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double d
 }
 
 
-void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, int prec_param) {
+void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double scale_param) {
   double *ansptr, *cholptr;
   NimArr<2, double> ansCopy, cholCopy;
   int p = chol.dim()[0];
@@ -150,13 +150,13 @@ void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double d
   ansptr = nimArrCopyIfNeeded<2, double>(ans, ansCopy).getPtr();
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
 
-  rwish_chol(ansptr, cholptr, df, p, prec_param);
+  rwish_chol(ansptr, cholptr, df, p, scale_param);
   if(ans.isMap()) {ans = ansCopy;}
 }
 
 
 
-double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, int prec_param, int give_log ) { 
+double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log ) { 
 
   double *xptr, *meanptr, *cholptr;
   NimArr<1, double> xCopy, meanCopy;
@@ -175,7 +175,7 @@ double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<
 }
 
 
-void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, int prec_param) {
+void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param) {
 
   NimArr<1, double> ansCopy, meanCopy;
   NimArr<2, double> cholCopy;
@@ -202,7 +202,7 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
 
 // the next two handle when 'c' is a vector (e.g., interval censoring)
 //  and the following two when 'c' is a scalar (e.g., left- and right-censoring)
-double nimArr_dinterval(int x, double t, NimArr<1, double> &c, int give_log) {
+double nimArr_dinterval(double x, double t, NimArr<1, double> &c, int give_log) {
   int K = c.size();
   double *cptr;
   NimArr<1, double> cCopy;
@@ -221,7 +221,7 @@ int nimArr_rinterval(double t, NimArr<1, double> &c) {
 }
 
 
-double nimArr_dinterval(int x, double t, double c, int give_log) {
+double nimArr_dinterval(double x, double t, double c, int give_log) {
   double ans = dinterval(x, t, &c, 1, give_log);
   return(ans);
 }
