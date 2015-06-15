@@ -141,7 +141,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       sapply(samplers, setSampler, mcmcspec)
       if(verbose) {
           cat("Setting samplers to:\n")
-          print(mcmcspec$getSamplers())
+          mcmcspec$getSamplers()
       }
   }
   
