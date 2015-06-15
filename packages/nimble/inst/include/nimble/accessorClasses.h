@@ -42,6 +42,35 @@ double getLogProb(NodeVectorClass &nodes);
 void simulate(NodeVectorClass &nodes);
 
 
+///////
+// copierClass
+///////
+
+class copierClass { // virtual base class
+ public:
+  void copy()=0;
+};
+
+class copierVector {
+ public:
+  vector<copierClass*> copyVector;
+  copierVector(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to);// constructor that creates new entries
+  ~copierVector(); destructor that deletes them
+};
+
+copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to);
+
+template<class Tfrom, class Tto>
+  class singletonCopierClass_M2MV : public copierClass {
+ public:
+  int toOffset, fromOffset;
+  NimArrBase<Tfrom> **fromNimArr; // no for a model we'd need dim to do the pointers right
+  VecNimArrBase<Tto> **toVecNimArr;   //
+  void copy(const rowInfoClass &rowInfo) {
+    (*toVecNimArr)->getValue(rowInfo.rowTo,toOffset) = (*fromNimArr)->getVptr()[fromOffset];
+  }
+};
+
 /////////////////////
 // new version of variable accessors using maps (offset and strided windows into multivariate objects (NimArr<>s) )
 /////////////////////
