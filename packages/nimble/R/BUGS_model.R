@@ -523,12 +523,17 @@ Details: The return value is a named list, with an element corresponding to each
                                           if(type == 'RHSonly') {
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'determ') {
-                                              calculate(.self, nn)
+                                              test <- try(calculate(.self, nn))
+                                              if(class(test) == 'try-error')
+                                                  warning(paste0("Cannot calculate logProb for node ", nn))
                                               val <- .self[[nn]]
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'stoch') {
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                              val <- calculate(.self, nn)
+                                              test <- try(val <- calculate(.self, nn))
+                                              if(class(test) == 'try-error')
+                                                  warning(paste0("Cannot calculate logProb for node ", nn))
+                                              
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
                                           } else stop('unknown node type: ', type)
                                       }
