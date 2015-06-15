@@ -476,7 +476,15 @@ Arguments:
 inits: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.
 '
                                       origInits <<- inits
-                                      for(i in seq_along(inits))     { .self[[names(inits)[i]]] <- inits[[i]] }
+                                      
+                                      for(i in seq_along(inits)) {
+                                          dataVals <- .self$isData(names(inits)[[i]])
+                                          if(any(dataVals)) {
+                                              .self[[names(inits)[i]]][!dataVals] <- inits[[i]][!dataVals]
+                                              if(any(!is.na(inits[[i]][dataVals])))
+                                                  warning("Ignoring values in inits for data nodes: ", names(inits)[[i]], ".")
+                                          } else  .self[[names(inits)[i]]] <- inits[[i]]
+                                      }
                                   },
 
                                   ## checkConjugacyAll = function(nodes) {
@@ -499,8 +507,42 @@ Details: The return value is a named list, with an element corresponding to each
                                       nodeVector <- expandNodeNames(nodeVector)
                                       conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
                                   },
-
-                                  newModel = function(data = NULL, inits = NULL, modelName = character()) {
+                                  checkConjugacy2 = function(nodeVector) {
+                                      if(missing(nodeVector)) nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
+                                      nodeIDs <- expandNodeNames(nodeVector, returnType = 'ids')
+                                      conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
+                                  },
+                                  check = function() {
+                                      badVars <- list(na=character(), nan=character(), inf=character())
+                                      nns <- getNodeNames(includeRHSonly = TRUE) 
+                                      nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
+                                      for(nn in nns) {
+                                          val <- .self[[nn]]
+                                          type <- getNodeType(nn)
+                                          if(length(type) > 1) stop('something wrong with Daniel\'s understading of nimbleModel')
+                                          if(type == 'RHSonly') {
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                          } else if(type == 'determ') {
+                                              calculate(.self, nn)
+                                              val <- .self[[nn]]
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                          } else if(type == 'stoch') {
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                              val <- calculate(.self, nn)
+                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
+                                          } else stop('unknown node type: ', type)
+                                      }
+                                      badVars <- lapply(badVars, removeIndexing)
+                                      badVars <- lapply(badVars, unique)
+                                      badVars <- lapply(badVars, function(nns) if(length(nns>0)) paste0(nns, collapse=', '))
+                                      conds <- list(c('na','NAs'), c('nan','NaNs'), c('inf','Infinite values'))
+                                      for(i in seq_along(conds)) {
+                                          v <- badVars[[conds[[i]][1]]]
+                                          m <- conds[[i]][2]
+                                          if(!is.null(v)) warning(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, call.=FALSE)
+                                      }
+                                  },
+                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = TRUE) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
@@ -510,16 +552,27 @@ data: A named list specifying data nodes and values, for use in the newly return
 
 inits: A named list specifying initial values, for use in the newly returned model.  If not provided, the inits argument from the creation of the original R model object will be used.
 
+replicate: Logical specifying whether to repliate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
+
+check: A logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
 
 Details: The newly created model object will be identical to the original model in terms of structure and functionality, but entirely distinct in terms of the internal values.
 '
+                                      if(replicate) {
+                                          newlyCreatedModel <- modelDef$newModel(check = FALSE)
+                                          nimCopy(from = .self, to = newlyCreatedModel, logProb = TRUE)
+                                          for(var in ls(isDataEnv)) newlyCreatedModel$isDataEnv[[var]] <- isDataEnv[[var]]
+                                          if(check) newlyCreatedModel$check()
+                                          return(newlyCreatedModel)
+                                      }
                                       if(is.null(data)) data <- origData
                                       if(is.null(inits)) inits <- origInits
-                                      modelDef$newModel(data = data, inits = inits, modelName = modelName)
+                                      modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check)
                                   }
                               )
-)
+                              )
 
 
 
@@ -556,6 +609,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(
                                    nodeFunctions = 'ANY',	#list
+                                   nodeFunctionGeneratorNames = 'ANY', #character, for efficiency in nimbleProject$addNimbleFunctionMulti
                                    nodeGenerators = 'ANY',	#list
                                    Cname = 'ANY',		#character
                                    CobjectInterface = 'ANY'
@@ -574,6 +628,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                        if(debug) browser()
                                        iNextNodeFunction <- 1
                                        nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
+                                       nodeFunctionGeneratorNames <<- character(modelDef$numNodeFunctions)
                                        nodeGenerators <<- vector('list', length = length(modelDef$declInfo)) ## for the nimbleFunctions
                                        for(i in seq_along(modelDef$declInfo)) {
                                            BUGSdecl <- modelDef$declInfo[[i]]
@@ -601,6 +656,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            ## If it is a singleton with no replacements, we can build the node simply:
                                            if(length(setupOutputExprs)==0) { ## if(nrow(BUGSdecl$unrolledIndicesMatrix)==0) {
                                                nodeFunctions[[iNextNodeFunction]] <<- nfGenerator(.self)
+                                               nodeFunctionGeneratorNames[iNextNodeFunction] <<- thisNodeGeneratorName
                                                names(nodeFunctions)[iNextNodeFunction] <<- newNodeFunctionNames
                                                iNextNodeFunction <- iNextNodeFunction + 1
                                                next
@@ -609,6 +665,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            ## It is either within for loops (contexts) and/or has a replacement
                                            ## so we construct code to call the nfGenerator with the needed arguments
                                            
+
                                            assign('MODEL_UNIQUE_NAME_', .self, envir = BUGSdecl$replacementsEnv)
                                            BUGSdecl$replacementsEnv[['nfGenCall_UNIQUE_NAME_']] <- as.call(c(list(quote(nfGenerator_UNIQUE_NAME_)), list(model = quote(MODEL_UNIQUE_NAME_)), lapply(setupOutputExprs, function(z) substitute(x[[index_UNIQUE_NAME_]], list(x = z)))))
                                            BUGSdecl$replacementsEnv[['nfGenerator_UNIQUE_NAME_']] <- nfGenerator
@@ -623,6 +680,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            #assign('nfGenCall_UNIQUE_NAME_', nfGenCall, envir = BUGSdecl$replacementsEnv)
                                            #assign('nfGenWrap_UNIQUE_NAME_', nfGenWrap, envir = BUGSdecl$replacementsEnv)
                                            nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- evalq(lapply(1:outputSize, nfGenWrap_UNIQUE_NAME_), envir = BUGSdecl$replacementsEnv)
+                                           nodeFunctionGeneratorNames[iNextNodeFunction-1+(1:numNewFunctions)] <<- thisNodeGeneratorName
                                            rm(list = c('MODEL_UNIQUE_NAME_', 'nfGenCall_UNIQUE_NAME_', 'nfGenerator_UNIQUE_NAME_', 'nfGenWrap_UNIQUE_NAME_'), envir = BUGSdecl$replacementsEnv)
                                            
                                            ## cn <- colnames(BUGSdecl$unrolledIndicesMatrix)
@@ -725,3 +783,23 @@ createDefault_isDataObj <- function(obj) {
     if(length(obj) == 0) return(FALSE)
     return(array(FALSE, dim = obj))
 }
+
+isValid <- function(value) {
+    if(any(is.nan(value))) return (FALSE)
+    if(any(is.na(value))) return(FALSE)
+    if(any(abs(value)==Inf)) return(FALSE)
+    return(TRUE)
+}
+
+whyInvalid <- function(value) {
+    if(isValid(value)) { warning('checking why a valid value is invalid'); return(NULL) }
+    if(any(is.nan(value))) return('nan')
+    if(any(is.na(value))) return('na')
+    if(any(abs(value)==Inf)) return('inf')
+    stop('should never happen')
+}
+
+
+
+
+

@@ -349,11 +349,18 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 allContentsReplaceable <- TRUE
             }
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
+            funName <- deparse(code[[1]])
             isRonly <- isRfunction &
-                !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+                !checkNimbleOrRfunctionNames(funName)
 #                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
-            if(isRonly & !allContentsReplaceable) stop(paste('Error, R function', deparse(code[[1]]),' has non-replaceable node values as arguments.  Must be a nimble function.'))
-            
+            if(isRonly & !allContentsReplaceable) {
+                if(!exists(funName))
+                    stop("R function '", funName,"' does not exist.")
+                unreplaceable <- sapply(contents[!contentsReplaceable], function(x) as.character(x$code))
+                stop("R function '", funName,"' has arguments that cannot be evaluated; either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ", paste(unreplaceable, collapse = ","), ".")
+            }
+            # old text:  non-replaceable node values as arguments.  Must be a nimble function.
+
             return(list(code = contentsCode,
                         replaceable = allContentsReplaceable & isRfunction,
                         hasIndex = any(contentsHasIndex)))

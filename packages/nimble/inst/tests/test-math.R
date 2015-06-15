@@ -154,8 +154,8 @@ testsReduction = list(
   list(name = 'mean of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
 ##  list(name = 'sd of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
   list(name = 'var of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  list(name = 'prod of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0),
-  # list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F"))) ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ
+  list(name = 'prod of matrix', expr = quote(out <- min(arg1)), inputDim = 2, outputDim = 0)
+##  list(name = 'norm of matrix', expr = quote(out <- norm(arg1)), inputDim = 2, outputDim = 0, Rcode = quote(out <- norm(arg1, "F"))) ## NIMBLE's C norm is apparently Frobenius, so R and C nimble functions differ => FAILS
   )
 
 testsComparison = list(

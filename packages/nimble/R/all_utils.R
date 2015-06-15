@@ -3,13 +3,13 @@
 labelFunctionCreator <- function(lead, start = 1) {
   nextIndex <- start
   force(lead)
-  labelGenerator <- function(reset = FALSE) {
+  labelGenerator <- function(reset = FALSE, count = 1) {
     if(reset) {
       nextIndex <<- 1
       return(invisible(NULL))
     }
-    ans <- paste0(lead, nextIndex)
-    nextIndex <<- nextIndex + 1
+    ans <- paste0(lead, nextIndex - 1 + (1:count))
+    nextIndex <<- nextIndex + count
     ans
   }
   labelGenerator
@@ -102,6 +102,4 @@ deparse <- function(...) {
           base:::deparse(..., width.cutoff = 500L)
       }
 }
-
-
 
