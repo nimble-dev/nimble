@@ -105,9 +105,9 @@ rmulti <- function(n = 1, size, prob) {
 #'
 #' @aliases rdirch
 #' 
-#' @param x non-negative integer-value numeric value
-#' @param n number of observations
-#' @param prob vector of probabilities, summing to one
+#' @param x non-negative integer-value numeric value.
+#' @param n number of observations.
+#' @param prob vector of probabilities, summing to one.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
 #' @export
@@ -139,10 +139,10 @@ rcat <- function(n = 1, prob) {
 #' @aliases rt_nonstandard, qt_nonstandard, pt_nonstandard
 #' 
 #' @param x vector of values.
-#' @param n number of observations 
-#' @param df vector of degrees of freedom values
-#' @param mu vector of location values
-#' @param sigma vector of scale values
+#' @param n number of observations.
+#' @param df vector of degrees of freedom values.
+#' @param mu vector of location values.
+#' @param sigma vector of scale values.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
 #' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
@@ -220,18 +220,18 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #'
 #' @aliases rinterval
 #' 
-#' @param x vector of interval indices
-#' @param n number of observations
-#' @param t vector of values
-#' @param c vector of one or more values delineating the intervals
+#' @param x vector of interval indices.
+#' @param n number of observations.
+#' @param t vector of values.
+#' @param c vector of one or more values delineating the intervals.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
 #' @export
 #' @details Used for working with censoring in BUGS code.
 #' Taking \code{c} to define the endpoints of two or more intervals (with implicit endpoints of plus/minus infinity), \code{x} (or the return value of \code{rinterval}) gives the non-negative integer valued index of the interval in which \code{t} falls. See the NIMBLE manual for additional details. 
 #' @return \code{dinterval} gives the density and \code{rinterval} generates random deviates,
-#' but this is a misnomer as the density is 1 if \code{x} indicates the interval in which \code{t}
-#' falls and 0 otherise and the deviates are simply the interval(s) in which \code{t} falls.
+#' but these are unusual as the density is 1 if \code{x} indicates the interval in which \code{t}
+#' falls and 0 otherwise and the deviates are simply the interval(s) in which \code{t} falls.
 ##' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
@@ -249,43 +249,42 @@ rinterval <- function(n = 1, t, c) {
     .Call('C_rinterval', as.integer(n), as.double(t), as.double(c))
 }
 
- # HERE HERE
-
 #' Constraint calculations in NIMBLE
 #'
 #' Calculations to handle censoring
 #'
-#' @aliases rinterval
-#' 
-#' @param x vector of interval indices
-#' @param n number of observations
-#' @param t vector of values
-#' @param c vector of one or more values delineating the intervals
+#' @aliases rconstraint
+#'
+#' @param x value indicating whether \code{cond} is TRUE or FALSE
+#' @param n number of observations (only \code{n=1} is handled currently).
+#' @param cond logical value   
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
 #' @export
-#' @details Used for working with censoring in BUGS code.
-#' Taking \code{c} to define the endpoints of two or more intervals (with implicit endpoints of plus/minus infinity), \code{x} (or the return value of \code{rinterval}) gives the non-negative integer valued index of the interval in which \code{t} falls. See the NIMBLE manual for additional details. 
-#' @return \code{dinterval} gives the density and \code{rinterval} generates random deviates,
-#' but this is a misnomer as the density is 1 if \code{x} indicates the interval in which \code{t}
-#' falls and 0 otherise and the deviates are simply the interval(s) in which \code{t} falls.
+#' @details Used for working with constraints in BUGS code.
+#' See the NIMBLE manual for additional details. 
+#' @return \code{dconstraint} gives the density and \code{rconstraint} generates random deviates,
+#' but these are unusual as the density is 1 if \code{x} matches \code{cond} and
+#' 0 otherwise and the deviates are simply the value of \code{cond}
 ##' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
-#' endpoints <- c(-3, 0, 3)
-#' vals <- c(-4, -1, 1, 5)
-#' x <- rinterval(4, vals, endpoints)
-#' dinterval(x, vals, endpoints)
-#' dinterval(c(1, 5, 2, 3), vals, endpoints)
+#' constr <- 3 > 2 && 4 > 0
+#' x <- rconstraint(1, constr)
+#' dconstraint(x, constr)
+#' dconstraint(0, 3 > 4)
+#' dconstraint(1, 3 > 4)
+#' rconstraint(1, 3 > 4)
 #' 
 dconstraint <- function(x, cond, log = FALSE) {
+    if(length(x) > 1 || length(cond) > 1) stop('dconstraint is not vectorized')
     if(is.na(x) || is.na(cond)) return(x + cond) # mimic how R's C functions handle NA and NaN inputs
     if(x == cond || x == 0) result <- 1 else result <- 0
     if(log) return(log(result)) else return(result)
 }
 
 rconstraint <- function(n = 1, cond) {
-    if(n != 1) stop('rconstraint only handles n = 1 at the moment')
+    if(n != 1 || length(cond) > 1) stop('rconstraint only handles n = 1 at the moment')
     if(is.na(cond)) {
         warning("NAs produced")
         return(NaN)
@@ -298,15 +297,34 @@ rconstraint <- function(n = 1, cond) {
 #' The Exponential Distribution
 #'
 #'   Density, distribution function, quantile function and random
-#'   generation for the exponential distribution with rate 'rate'
-#'     (i.e., mean ‘1/rate’) or 'scale' parameterizations.
+#'   generation for the exponential distribution with rate
+#'     (i.e., mean of \code{1/rate}) or scale parameterizations.
 #' 
 #' @aliases rexp_nimble, qexp_nimble, pexp_nimble
+#' @param x vector of values.
+#' @param n number of observations.
+#' @param rate vector of rate values.
+#' @param scale vector of scale values.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
+#' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
 #' @author Christopher Paciorek
+#' @export
 #' @details NIMBLE's exponential distribution functions use Rmath's functions
 #' under the hood, but are parameterized to take both rate and scale and to
-#' use 'rate' as the core parameterization in C.
-
+#' use 'rate' as the core parameterization in C, unlike Rmath, which uses 'scale'.
+#' See Gelman et al., Appendix A or
+#' the BUGS manual for mathematical details. 
+#' @return \code{dexp_nimble} gives the density, \code{pexp_nimble} gives the distribution
+#' function, \code{qexp_nimble} gives the quantile function, and \code{rexp_nimble}
+#' generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' x <- rexp_nimble(50, scale = 3)
+#' dexp_nimble(x, scale = 3)
+#' 
 dexp_nimble <- function(x, rate = 1/scale, scale = 1, log = FALSE) {
     if (!missing(rate) && !missing(scale)) {
         if (abs(rate * scale - 1) < 1e-15) 
