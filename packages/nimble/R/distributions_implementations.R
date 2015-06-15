@@ -3,7 +3,7 @@
 
 #' The Wishart Distribution
 #'
-#' Density and random generation for the Wishart distribution, using either the Cholesky factor of the scale matrix or the rate matrix.
+#' Density and random generation for the Wishart distribution, using the Cholesky factor of either the scale matrix or the rate matrix.
 #'
 #' @aliases rwish_chol
 #' 
@@ -69,7 +69,7 @@ rdirch <- function(n = 1, alpha) {
 
 #' The Multinomial Distribution
 #'
-#' Density and random generation for the Multinomial distribution
+#' Density and random generation for the multinomial distribution
 #'
 #' @aliases rdirch
 #' 
@@ -101,7 +101,7 @@ rmulti <- function(n = 1, size, prob) {
 
 #' The Categorical Distribution
 #'
-#' Density and random generation for the Categorical distribution
+#' Density and random generation for the categorical distribution
 #'
 #' @aliases rdirch
 #' 
@@ -175,6 +175,32 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
   .Call('C_qt_nonstandard', as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
+#' The Multivariate Normal Distribution
+#'
+#' Density and random generation for the multivariate normal distribution, using the Cholesky factor of either the precision matrix or the covariance matrix.
+#'
+#' @aliases rmnorm_chol
+#' 
+#' @param x vector of values.
+#' @param n number of observations (only \code{n=1} is handled currently).
+#' @param mean vector of values giving the mean of the distribution.
+#' @param cholesky upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).
+#' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
+#' @return \code{dmnorm_chol} gives the density and \code{rmnorm_chol} generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' mean <- c(-10, 0, 10)
+#' covmat <- matrix(c(1, .9, .3, .9, 1, -0.1, .3, -0.1, 1), 3)
+#' ch <- chol(covmat)
+#' x <- rmnorm_chol(1, mean, ch, prec_param = FALSE)
+#' dmnorm_chol(x, mean, ch, prec_param = FALSE)
+#' 
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
@@ -188,6 +214,33 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
     .Call('C_rmnorm_chol', as.double(mean), as.double(cholesky), as.double(prec_param))
 }
 
+#' Interval calculations 
+#'
+#' Calculations to handle censoring
+#'
+#' @aliases rinterval
+#' 
+#' @param x vector of interval indices
+#' @param n number of observations
+#' @param t vector of values
+#' @param c vector of one or more values delineating the intervals
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details Used for working with censoring in BUGS code.
+#' Taking \code{c} to define the endpoints of two or more intervals (with implicit endpoints of plus/minus infinity), \code{x} (or the return value of \code{rinterval}) gives the non-negative integer valued index of the interval in which \code{t} falls. See the NIMBLE manual for additional details. 
+#' @return \code{dinterval} gives the density and \code{rinterval} generates random deviates,
+#' but this is a misnomer as the density is 1 if \code{x} indicates the interval in which \code{t}
+#' falls and 0 otherise and the deviates are simply the interval(s) in which \code{t} falls.
+##' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' endpoints <- c(-3, 0, 3)
+#' vals <- c(-4, -1, 1, 5)
+#' x <- rinterval(4, vals, endpoints)
+#' dinterval(x, vals, endpoints)
+#' dinterval(c(1, 5, 2, 3), vals, endpoints)
+#' 
 dinterval <- function(x, t, c, log = FALSE) {
     .Call('C_dinterval', as.double(x), as.double(t), as.double(c), as.logical(log))
 }
@@ -196,6 +249,35 @@ rinterval <- function(n = 1, t, c) {
     .Call('C_rinterval', as.integer(n), as.double(t), as.double(c))
 }
 
+ # HERE HERE
+
+#' Constraint calculations in NIMBLE
+#'
+#' Calculations to handle censoring
+#'
+#' @aliases rinterval
+#' 
+#' @param x vector of interval indices
+#' @param n number of observations
+#' @param t vector of values
+#' @param c vector of one or more values delineating the intervals
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @author Christopher Paciorek
+#' @export
+#' @details Used for working with censoring in BUGS code.
+#' Taking \code{c} to define the endpoints of two or more intervals (with implicit endpoints of plus/minus infinity), \code{x} (or the return value of \code{rinterval}) gives the non-negative integer valued index of the interval in which \code{t} falls. See the NIMBLE manual for additional details. 
+#' @return \code{dinterval} gives the density and \code{rinterval} generates random deviates,
+#' but this is a misnomer as the density is 1 if \code{x} indicates the interval in which \code{t}
+#' falls and 0 otherise and the deviates are simply the interval(s) in which \code{t} falls.
+##' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' endpoints <- c(-3, 0, 3)
+#' vals <- c(-4, -1, 1, 5)
+#' x <- rinterval(4, vals, endpoints)
+#' dinterval(x, vals, endpoints)
+#' dinterval(c(1, 5, 2, 3), vals, endpoints)
+#' 
 dconstraint <- function(x, cond, log = FALSE) {
     if(is.na(x) || is.na(cond)) return(x + cond) # mimic how R's C functions handle NA and NaN inputs
     if(x == cond || x == 0) result <- 1 else result <- 0

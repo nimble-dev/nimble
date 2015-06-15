@@ -96,6 +96,9 @@ test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
 test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
             data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine now that values() returns in order
+# result changes as of v0.4 because in v0.3-1 'omega.beta' was found
+# as both topNode and nontopNode and was being simulated into
+# incorrectly in resampleData - this affected values further downstream
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
@@ -329,6 +332,11 @@ sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738,
 test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
 
 ### Dirichlet-multinomial conjugacy
+
+# as of v0.4, exact numerical results here have changed because
+# ddirch now sometimes returns NaN rather than -Inf (when an
+# alpha is proposed to be negative) -- this changes the RNG
+# sequence because NaN values result in no runif() call in decide()
 
 # single multinomial
 set.seed(0)
