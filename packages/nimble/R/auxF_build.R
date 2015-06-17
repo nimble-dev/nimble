@@ -1,10 +1,6 @@
 ##  Contains code to run auxiliary particle filters.
 ##  We have a build function (buildAuxF),
-##  and step functions.  There are two step functions: 
-##  one which ends with NS (only saves latent state samples from
-##  most recent time point), one which ends with S (saves latent state 
-##  samples from all time points).  Also has a function (normMean) which returns 
-##  the mean of a normally distributed node.
+##  and step function (auxFStep.  
 
 
 
@@ -16,94 +12,9 @@ auxStepVirtual <- nimbleFunctionVirtual(
 
 
 
-auxFStepNS <- nimbleFunction(
+auxFStep <- nimbleFunction(
   contains = auxStepVirtual,
-  setup = function(model, mv, nodes, iNode, silent = FALSE) {
-    notFirst <- iNode != 1
-    prevNode <- nodes[if(notFirst) iNode-1 else iNode]
-    prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
-    thisNode <- nodes[iNode]
-    thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
-    thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
-    getmean <- normMean(model, thisNode)
-    isLast <- (iNode == length(nodes))
-  },
-  run = function(m = integer(), thresh_num=double()) {
-    returnType(double())
-    declare(auxWts, double(1,m))
-    declare(auxl, double(1,m))
-    declare(wts, double(1,m))
-    declare(l, double(1, m))
-    declare(ids, integer(1, m))
-    ess <- 0
-    if(notFirst){ #can't do auxiliary step for first time point
-      for(i in 1:m) {
-        copy(mv, model, 'x', prevNode, row=i)
-        calculate(model, prevDeterm) 
-        model[[thisNode]] <<- getmean$return_mean()  # returns E(x_t+1 | x_t)
-        calculate(model, thisDeterm)
-        auxl[i] <- exp(calculate(model, thisData))
-        auxWts[i] <- auxl[i]*mv['wts',i][1]
-      }
-      auxWts <- auxWts/sum(auxWts)
-      ess <- 1/sum(auxWts^2)
-      if(ess<thresh_num){
-        resamp <- 1
-        rankSample(auxWts, m, ids, silent)
-        for(i in 1:m){
-          copy(mv, mv, 'x', 'xs', ids[i],i)
-        }
-      }
-      else{
-        resamp <- 0
-        for(i in 1:m){
-          copy(mv, mv, 'x', 'xs', i,i)
-        }
-      }
-    }  
-    for(i in 1:m) {
-      if(notFirst) {  
-        copy(mv, model, nodes = 'xs', nodesTo = prevNode, row = i)
-        calculate(model, prevDeterm) 
-      }
-      simulate(model, thisNode)
-      copy(model, mv, nodes = thisNode, nodesTo = 'x', row = i)
-      calculate(model, thisDeterm)
-      l[i]  <- exp(calculate(model, thisData)) #likelihood
-      #rescale weights by pre-sampling weight
-      if(notFirst){
-        if(resamp == 1){
-          mv['wts',i][1] <<- l[i]/auxl[ids[i]]
-        }
-        else{
-          mv['wts',i][1] <<- l[i]/auxl[i]
-        }
-      }
-      else {
-        mv['wts',i][1] <<- l[i]
-      }
-    }   
-   
-    # Skipping second resample step as per Carpenter 1999 / Cappe 06,
-    # except for last time point.
-    if(isLast){
-      for(i in 1:m){
-        wts[i] <- mv['wts',i][1]
-      }
-      rankSample(wts, m, ids, silent)
-      for(i in 1:m){
-        copy(mv, mv, 'x', 'xs', ids[i],i)
-      }
-    }
-
-    return(log(mean(l)))
-  },  where = getLoadingNamespace()
-)
-
-
-auxFStepS <- nimbleFunction(
-  contains = auxStepVirtual,
-  setup = function(model, mv, nodes, iNode, silent = FALSE) {
+  setup = function(model, mv, nodes, iNode, saveAll, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
@@ -112,13 +23,28 @@ auxFStepS <- nimbleFunction(
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE) 
     #current time point
     t <- iNode
-    # Get names of x and xs node for current and previous time point (used in copy)
-    prevXSName <- paste("xs[,",t-1,"]",sep="")    
-    thisXSName <- paste("xs[,",t,"]",sep="")
-    prevXName <- paste("x[,",t-1,"]",sep="")
-    thisXName <- paste("x[,",t,"]",sep="")
-    getmean <- normMean(model, thisNode)
+    # Get names of x and xs node for current and previous time point,
+    # will be different depending on whether we are saving all time points
+    # or only the most recent
+    if(saveAll==1){
+      prevXSName <- paste("xs[,",t-1,"]",sep="")    
+      thisXSName <- paste("xs[,",t,"]",sep="")
+      prevXName <- paste("x[,",t-1,"]",sep="")
+      thisXName <- paste("x[,",t,"]",sep="")
+      currInd <- t
+      prevInd <- t-1
+    }
+    else{
+      prevXSName <- "xs"
+      thisXSName <- "xs"
+      prevXName <- "x"
+      thisXName <- "x"
+      currInd <- 1
+      prevInd <- 1
+    }
     isLast <- (iNode == length(nodes))
+    meanFuncList <- nimbleFunctionList(node_stoch_dnorm)
+    meanFuncList[[1]] <- model$nodeFunctions[[thisNode]]
   },
   run = function(m = integer(), thresh_num = double()) {
     returnType(double())
@@ -132,10 +58,10 @@ auxFStepS <- nimbleFunction(
       for(i in 1:m) {
         copy(mv, model, prevXName, prevNode, row=i)
         calculate(model, prevDeterm) 
-        model[[thisNode]] <<- getmean$return_mean() # returns E(x_t+1 | x_t)
+        model[[thisNode]] <<-meanFuncList[[1]]$get_mean() # returns E(x_t+1 | x_t)
         calculate(model, thisDeterm)
         auxl[i] <- exp(calculate(model, thisData))
-        auxWts[i] <- auxl[i]*mv['wts',i][1,t-1]
+        auxWts[i] <- auxl[i]*mv['wts',i][1,prevInd]
       }
       auxWts <- auxWts/sum(auxWts)
       ess <- 1/sum(auxWts^2)
@@ -164,20 +90,21 @@ auxFStepS <- nimbleFunction(
       l[i]  <- exp(calculate(model, thisData))
       if(notFirst){
         if(resamp == 1){
-          mv['wts',i][1,t] <<- l[i]/auxl[ids[i]]
+          mv['wts',i][1,currInd] <<- l[i]/auxl[ids[i]]
         }
         else{
-          mv['wts',i][1,t] <<- l[i]/auxl[i]
+          mv['wts',i][1,currInd] <<- l[i]/auxl[i]
         }
       }
+      
       else{
-        mv['wts',i][1,t] <<- l[i]
+        mv['wts',i][1,currInd] <<- l[i]
       }
     }
     
     if(isLast){
       for(i in 1:m){
-        wts[i] <-  mv['wts',i][1,t] 
+        wts[i] <-  mv['wts',i][1,currInd] 
       }
       rankSample(wts, m, ids, silent)
       for(i in 1:m){
@@ -185,7 +112,7 @@ auxFStepS <- nimbleFunction(
       }
     }
     return(log(mean(l)))
-  },  where = getLoadingNamespace()
+  }, where = getLoadingNamespace()
 )
 
 
@@ -222,18 +149,17 @@ buildAuxF <- nimbleFunction(
     if(thresh<0 || thresh>1 || !is.numeric(thresh)) 
       stop('thresh must be between 0 and 1')
     
-    #  Create mv variables for x state and sampled x states.  If saveLatent=T, the sampled x states
-    #  will be recorded at each time point. 
+    # Create mv variables for x state and sampled x states.  If saveAll=T, 
+    # the sampled x states will be recorded at each time point. 
+    # Note: the algorithm will no longer run in R, since R automatically
+    # reduces the dimension of the "wts"  variable in the mv, which
+    # breaks the step function.  C keeps 2 dimensions and works fine.
     if(!saveAll){
       mv <- modelValues(modelValuesSpec(vars = c('x', 'xs','wts'),  
                                         type = c('double', 'double','double'),
                                         size = list(x = dims[[1]],
                                                     xs = dims[[1]],
-                                                    wts = dims[[1]])))
-      auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
-      for(iNode in seq_along(nodes))
-        auxStepFunctions[[iNode]] <- auxFStepNS(model, mv, nodes,
-                                                iNode, silent) 
+                                                    wts = c(dims[[1]],1))))
     }
     else{
       mv <- modelValues(modelValuesSpec(vars = c('x', 'xs','wts'),  
@@ -242,13 +168,13 @@ buildAuxF <- nimbleFunction(
                                                           length(dims)),
                                                     xs = c(dims[[1]],
                                                            length(dims)),
-                                                    wts=c(dims[[1]],
-                                                          length(dims)))))
-      auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
-      for(iNode in seq_along(nodes))
-        auxStepFunctions[[iNode]] <- auxFStepS(model, mv, nodes,
-                                               iNode, silent) 
+                                                    wts = c(dims[[1]],
+                                                               length(dims))))) 
     }
+    auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
+    for(iNode in seq_along(nodes))
+      auxStepFunctions[[iNode]] <- auxFStep(model, mv, nodes,
+                                             iNode, saveAll, silent)
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -264,17 +190,3 @@ buildAuxF <- nimbleFunction(
   },  where = getLoadingNamespace()
 )
 
-# Has a return_mean method which returns the mean 
-# of a normally distributed nimble node.
-normMean <- nimbleFunction(
-  setup = function(model, node) {
-    nfList <- nimbleFunctionList(node_stoch_dnorm)
-    nfList[[1]] <- model$nodeFunctions[[node]]
-  }, 
-  methods = list(                        
-    return_mean = function() {         
-      returnType(double())           
-      return(nfList[[1]]$get_mean()) 
-    }                                  
-  ), where = getLoadingNamespace()                                     
-)
