@@ -80,7 +80,8 @@ distClass <- setRefClass(
         simulateName = 'ANY',	#'character',   ## the (R) name of the r-dist function, e.g. 'rnorm'
         altParams = 'ANY',	#'list',    ## the (named) list of alternate parameters we'll have available, list elements are the expressions for each parameter 
         discrete = 'ANY',	#'logical',   ## logical, if the distribution is discrete
-        pqAvail = 'ANY',        #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available 
+        pqAvail = 'ANY',        #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available
+        range = 'ANY',          #'numeric',  ## lower and upper limits of distribution domain
         types = 'ANY'		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
         ### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
     ),
@@ -103,6 +104,7 @@ distClass <- setRefClass(
             init_altParams(distInputList)
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
+            range <<- if(is.null(distInputList$range))    c(-Inf, Inf)    else    distInputList$range
             init_types(distInputList)
         },
         
@@ -201,6 +203,7 @@ checkDistributionsInput <- function(distributionsInput) {
     if(exists("Rdist", distributionsInput) && !sum(is.character(distributionsInput$Rdist))) stop(paste0(distributionsInput$BUGSdist, ": field 'Rdist' is not type of character."))
     if(exists("discrete", distributionsInput) && !sum(is.logical(distributionsInput$discrete))) stop(paste0(distributionsInput$BUGSdist, ": field 'discrete' is not type logical."))
     if(exists("pqAvail", distributionsInput) && !sum(is.logical(distributionsInput$pqAvail))) stop(paste0(distributionsInput$BUGSdist, ": field 'pqAvail' is not of type logical."))
+    if(exists("range", distributionsInput) && (!is.numeric(distributionsInput$range) || length(distributionsInput$range) != 2)) stop(paste0(distributionsInput$BUGSdist, ": field 'range' is not a vector of two numeric values."))
     if(exists("types", distributionsInput) && !sum(is.character(distributionsInput$types))) stop(paste0(distributionsInput$BUGSdist, ": field 'types' is not of type character."))
     if(exists("altParams", distributionsInput) && !sum(is.character(distributionsInput$altParams))) stop(paste0(distributionsInput$BUGSdist, ": field 'altParams' is not of type character."))
     if(length(distributionsInput$BUGSdist) > 1 || (exists('discrete', distributionsInputList) && length(distributionsInputList$discrete) > 1) || (exists('pqAvail', distributionsInputList) && length(distributionsInputList$pqAvail) > 1))
@@ -410,6 +413,18 @@ evalInDistsMatchCallEnv <- function(expr) {
     stop(paste0("evalInDistsMatchCallEnv: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
+stripPrefix <- function(vec, prefix = "d")
+    return(gsub(paste0("^", prefix), "", vec))
+
+BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
+    Rdists <- lapply(getDistributionsInfo('translations'), `[[`, 1)
+    if(!dIncluded) names(Rdists) <- stripPrefix(names(Rdists))
+    results <- unlist(Rdists[BUGSdists])
+    names(results) <- NULL
+    if(!dIncluded) return(stripPrefix(results)) else return(results)
+}
+
+     
 #####################################################################################################
 #####################################################################################################
 #####  executable code, creates global system variable 'distributions' ##############################

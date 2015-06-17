@@ -92,6 +92,7 @@ Collate: config.R
  bootF_build.R
  optimTools.R
  NF_utils.R
+ miscFunctions.R
  makevars.R
  registration.R
  nimble-package.r

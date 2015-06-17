@@ -1,7 +1,7 @@
 ## The BUGSdeclClass contains the pulled-apart content of a BUGS declaration line
 
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
-nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%',
+nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
                             'equals','inprod','nimbleEquals',
                             'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimbleStep', 'inverse',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
@@ -30,7 +30,8 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  targetNodeName = 'ANY',
                                  
                                  ## truncation information
-                                 truncation = 'ANY',
+                                 truncated = 'ANY',
+                                 range = 'ANY',
                                  
                                  ## set in setIndexVariableExprs(), and never changes.
                                  indexVariableExprs = 'ANY',
@@ -107,7 +108,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                                                                   sep = '&', collapse = '&'), '&') else NULL))
                                      return(c(edgesIn, edgesOut))
                                  },
-                                 getDistribution = function() {
+                                 getDistributionName = function() {
                                      if(type != 'stoch')  stop('getting distribution of non-stochastic node')
                                      return(as.character(valueExprReplaced[[1]]))
                                  }
@@ -115,7 +116,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
 )
 
 
-BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncation = NULL) {
+BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated = FALSE, range = NULL) {
     ## master entry function.
     ## uses 'contextID' to set the field: contextID.
     ## uses 'code' argument, to set the fields:
@@ -127,7 +128,8 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
     contextID <<- contextID
     sourceLineNumber <<- sourceLineNum
     code <<- code
-    truncation <<- truncation
+    truncated <<- truncated
+    range <<- range
     
     if(code[[1]] == '~') {
         type <<- 'stoch'
@@ -177,6 +179,15 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncatio
     
     targetVarName <<- deparse(targetVarExpr)
     targetNodeName <<- deparse(targetNodeExpr)
+
+    if(type == 'stoch' && is.null(range)) {
+        tmp <- as.character(valueExpr[[1]])
+        if(!(tmp %in% c("T", "I"))) {
+            # T/I not always stripped out at this stage
+            distRange <- getDistribution(tmp)$range
+            range <<- list(lower = distRange[1], upper = distRange[2])
+        }
+    }
 })
 
 

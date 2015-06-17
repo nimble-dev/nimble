@@ -1,5 +1,3 @@
-
-
 #' Makes the Metropolis-Hastings acceptance decision, based upon the input (log) Metropolis-Hastings ratio
 #' 
 #' This function returns a logical TRUE/FALSE value, indicating whether the proposed transition should be accepted (TRUE) or rejected (FALSE).

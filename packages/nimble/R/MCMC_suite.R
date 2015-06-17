@@ -8,7 +8,7 @@
 #' This can include BUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
-#' @details		
+#' @details
 #' Creates and runs an MCMC Suite.
 #' By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
 #' This default behavior can ben altered via a variety of arguments.
@@ -21,7 +21,6 @@
 #' @param constants A named list giving values of constants for the model.
 #' This is the same as the \'constants\' argument which would be passed to nimbleModel(...).
 #' Default value is list().
-#' 
 #' @param data A named list giving the data values for the model.
 #' This is the same as the \'data\' argument which would be passed to nimbleModel(...) or model$setData(...).
 #' Default value is list().
@@ -37,7 +36,6 @@
 #' @param niter Number of MCMC iterations to run.
 #' This applies to all MCMC algorithms in the suite.
 #' Default value is 10,000.
-#' 
 #' @param burnin Number of initial, post-thinning, MCMC iterations to discard.
 #' Default value is 2,000.
 #' 
@@ -94,7 +92,7 @@
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
 #'
-#' @return Retuns a named list containing three elements:
+#' @return Returns a named list containing three elements:
 #' samples: A 3-dimensional array containing samples from each MCMC algorithm.
 #' summary: A 3-dimensional array containing summary statistics for each variable and algorithm.
 #' timing: A numeric vector containing timing information.

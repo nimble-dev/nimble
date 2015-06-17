@@ -13,7 +13,7 @@ unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 's
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
 unaryOrNonaryOperators <- list() 
 assignmentOperators <- c('<-','<<-','=')
-reductionUnaryOperatorsEither <- c('min','max','sum','mean','any','all','prod','norm', 'squaredNorm')
+reductionUnaryOperatorsEither <- c('min','max','sum','mean','any','all','prod','squaredNorm')  # removed norm as not consistent between R and C
 reductionUnaryOperatorsArray <- c('sd','var')
 reductionUnaryOperators <- c(reductionUnaryOperatorsEither, reductionUnaryOperatorsArray)
 matrixSquareReductionOperators <- c('det','logdet','trace')
@@ -141,12 +141,11 @@ operatorRank <- c(
                        '||' = 14)                  
                   )
 
-distribution_dFuns <- as.character(unlist(lapply(getDistributionsInfo('translations'), `[[`, 1)))
-distribution_rFuns <- as.character(unlist(lapply(getDistributionsInfo('translations'), `[[`, 2)))
+distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector'), dIncluded = TRUE)
+distribution_rFuns <- gsub("^d", "r", distribution_dFuns)
 
-# pqAvail <- sapply(nimble:::distributions$distObjects, '[[', 'pqAvail')
-pqAvail <- getDistributionsInfo('pqAvail')
-pqDists <- names(pqAvail)[pqAvail]
+pqAvail <- names(which(getDistributionsInfo('pqAvail')))
+pqDists <- BUGSdistToRdist(pqAvail, dIncluded = TRUE)
 
 distribution_pFuns <- gsub("^d", "p", pqDists)
 distribution_qFuns <- gsub("^d", "q", pqDists)

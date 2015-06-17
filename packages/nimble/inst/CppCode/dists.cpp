@@ -114,7 +114,7 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
   double c_df = REAL(df)[0];
  
   if(c_df < p)
-    RBREAK("Error (C_rwish_chol): inconsistent degrees of freedom and dimension.\n");
+    RBREAK("Error (C_dwish_chol): inconsistent degrees of freedom and dimension.\n");
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
@@ -778,13 +778,12 @@ double rt_nonstandard(double df, double mu, double sigma)
 double pt_nonstandard(double q, double df, double mu, double sigma, int lower_tail, int log_p)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  //double result;
 #ifdef IEEE_754
     if(ISNAN(q) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
         return q + mu + sigma + df;
 #endif
 
-  if(!R_FINITE(q) && mu == q) return ML_NAN;/* x-mu is NaN */
+  if(!R_FINITE(q) && mu == q) return ML_NAN; /* q-mu is NaN */
   if(sigma <= 0.0) {
     if(sigma < 0.0) ML_ERR_return_NAN;
     return (q < mu) ? R_DT_0 : R_DT_1;
@@ -796,7 +795,6 @@ double pt_nonstandard(double q, double df, double mu, double sigma, int lower_ta
 double qt_nonstandard(double p, double df, double mu, double sigma, int lower_tail, int log_p)
 // scalar function that can be called directly by NIMBLE with same name as in R
 {
-  //double result;
 #ifdef IEEE_754
   if (ISNAN(p) || ISNAN(mu) || ISNAN(sigma) || ISNAN(df))
     return p + mu + sigma + df;

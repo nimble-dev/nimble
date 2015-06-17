@@ -118,9 +118,6 @@ ndf_createStochSimulateTrunc <- function(RHS) {
     upper <- RHS[[upperPosn]]
     RHS <- RHS[-c(lowerPosn, upperPosn)]
     dist <- substring(as.character(RHS[[1]]), 2, 1000)
-    BUGSdist <- names(which(sapply(getDistributionsInfo('translations'), '[[' ,1) == paste0('d', dist)))
-    if(!getDistributionsInfo('pqAvail')[BUGSdist])
-        stop("Cannot implement truncation for ", BUGSdist, "; 'p' and 'q' functions not available.")
     # userDist <- sum(BUGSdist %in% getDistributionsInfo('namesVector', userOnly = TRUE))
     # back to using periods in name because we now mangle the nf arg names
     lowerTailName <- 'lower.tail' # ifelse(userDist, 'lower_tail', 'lower.tail')

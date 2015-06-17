@@ -79,6 +79,38 @@ rgamma_keywordInfo <- keywordInfoClass(
 	}
 )
 
+d_exp_nimble_keywordInfo <- keywordInfoClass(
+	keyword = 'dexp_nimble',
+	processor = function(code, nfProc){
+		logArg <- code$log
+		if(logArg == TRUE)	code$log <- 1
+			else code$log <- 0
+		code <- handleScaleAndRateForExpNimble(code)
+	return(code)
+	}) 
+
+pq_exp_nimble_keywordInfo <- keywordInfoClass(
+	keyword = 'pq_exp_nimble',
+	processor = function(code, nfProc){
+		lower.tailArg <- code$lower.tail
+		if(lower.tailArg == TRUE) code$lower.tail <- 1
+			else code$lower.tail <- 0
+			
+		logArg <- code$log.p
+		if(logArg == TRUE)	code$log.p <- 1
+			else code$log.p <- 0
+		code <- handleScaleAndRateForExpNimble(code)
+	return(code)
+})
+
+rexp_nimble_keywordInfo <- keywordInfoClass(
+	keyword = 'rexp_nimble',
+	processor = function(code, nfProc){
+		code <- handleScaleAndRateForExpNimble(code)
+		return(code)
+	}
+)
+
 
 d_dist_keywordInfo <- keywordInfoClass(
 	keyword = 'd',
@@ -473,10 +505,21 @@ keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
-keywordList[['dgamma']] <-d_gamma_keywordInfo
+keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
 keywordList[['rgamma']] <- rgamma_keywordInfo
+# can be handled the same as gamma, so include although we have dexp_nimble too
+keywordList[['dexp']] <- d_gamma_keywordInfo
+keywordList[['pexp']] <- pq_gamma_keywordInfo
+keywordList[['qexp']] <- pq_gamma_keywordInfo
+keywordList[['rexp']] <- rgamma_keywordInfo
+
+keywordList[['dexp_nimble']] <- d_exp_nimble_keywordInfo
+keywordList[['pexp_nimble']] <- pq_exp_nimble_keywordInfo
+keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
+keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
+
 # necessary keywords:
 #	calculate 	(done)
 #	simulate	(done)
@@ -508,10 +551,40 @@ matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['dexp']] <- function(x, rate = 1, log = FALSE){}
+matchFunctions[['rexp']] <- function(n, rate = 1){}
+matchFunctions[['qexp']] <- function(p, rate = 1, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pexp']] <- function(q, rate = 1, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['dexp_nimble']] <- function(x, rate, scale = 1, log = FALSE){}
+matchFunctions[['rexp_nimble']] <- function(n, rate, scale = 1){}
+matchFunctions[['qexp_nimble']] <- function(p, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pexp_nimble']] <- function(q, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 
-# Missing distributions: cat, dirch, logis, multi, mnorm, negbin, wish, gamma, beta
-matchDistList <- list('binom', 'chisq', 'lnorm', 'norm', 'pois', 't', 'unif', 'weibull')
+# remove ncp from signatures
+stripArgs <- function(fname, argNames) {
+    if(exists(fname)) {
+        args <- formals(eval(as.name(fname)))
+        args <- args[-which(names(args) %in% argNames)]
+        template <- function() {}
+        formals(template) <- args
+        return(template)
+    } else return(NULL)
+}
 
+for(distfun in paste0(c('d','p','q','r'), 'beta'))
+    matchFunctions[[distfun]] <- stripArgs(distfun, 'ncp')
+for(distfun in paste0(c('d','p','q','r'), 'chisq'))
+    matchFunctions[[distfun]] <- stripArgs(distfun, 'ncp')
+for(distfun in paste0(c('d','p','q','r'), 't'))
+    matchFunctions[[distfun]] <- stripArgs(distfun, 'ncp')
+for(distfun in paste0(c('d','p','q','r'), 'nbinom'))
+    matchFunctions[[distfun]] <- stripArgs(distfun, 'mu')
+
+
+# the following are standard in terms of both matchFunctions and keywordList
+matchDistList <- list('binom', 'cat', 'dirch', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'norm', 'pois', 't_nonstandard', 'unif', 'weibull', 'wish_chol')
+# these are standard for keywordList and handled specially above for matchFunctions
+keywordOnlyMatchDistList <- list('t', 'beta', 'chisq', 'nbinom')
 
 addDistList2matchFunctions <- function(distList, matchFunEnv){
 	for(thisDist in distList){
@@ -520,10 +593,12 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 		rFun <- paste0('r', thisDist)
 		dFun <- paste0('d', thisDist)
 		
-		eval(substitute(matchFunctions[[pFun]] <- PFUN, list(PFUN = as.name(pFun))))
-		eval(substitute(matchFunctions[[qFun]] <- QFUN, list(QFUN = as.name(qFun))))
-		eval(substitute(matchFunctions[[rFun]] <- RFUN, list(RFUN = as.name(rFun))))
-		eval(substitute(matchFunctions[[dFun]] <- DFUN, list(DFUN = as.name(dFun))))
+                eval(substitute(matchFunctions[[dFun]] <- DFUN, list(DFUN = as.name(dFun))))
+                eval(substitute(matchFunctions[[rFun]] <- RFUN, list(RFUN = as.name(rFun))))
+                if(exists(qFun))
+                    eval(substitute(matchFunctions[[qFun]] <- QFUN, list(QFUN = as.name(qFun))))
+                if(exists(pFun))
+                    eval(substitute(matchFunctions[[pFun]] <- PFUN, list(PFUN = as.name(pFun))))
 	}
 }
 
@@ -531,7 +606,6 @@ addDistKeywordProcessors <- function(distList, keywordEnv){
 		for(thisDist in distList){
 		pFun <- paste0('p', thisDist)
 		qFun <- paste0('q', thisDist)
-		rFun <- paste0('r', thisDist)
 		dFun <- paste0('d', thisDist)
 		
 		keywordEnv[[dFun]] <- d_dist_keywordInfo
@@ -543,7 +617,7 @@ addDistKeywordProcessors <- function(distList, keywordEnv){
           
 
 addDistList2matchFunctions(matchDistList, matchFunctions)
-addDistKeywordProcessors(matchDistList, keywordList)
+addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
 
 
 
@@ -837,7 +911,6 @@ matchAndFill.call <- function(def, call){
 
   for(thisArg in informalArgNames)
   	newCall[[thisArg]] <- matchedCall[[thisArg]]
-    	
   return(newCall)
 }
 
@@ -1063,12 +1136,28 @@ makeSingleIndexAccessCodeNames <- function(baseName) {
 }
 
 handleScaleAndRateForGamma <- function(code){
+    # also handles core R dexp
 		scaleArg <- code$scale
 		rateArg <- code$rate
-		if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma')
-		if(is.null(scaleArg))
+		if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma or dexp')
+		if(is.null(scaleArg)) {
 			scaleArg <- parse(text = paste0('1/', code$rate))[[1]]
-		code$scale <- scaleArg
+                        code$rate <- scaleArg
+                        names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
+                    }
 		code$rate <- NULL
 		return(code)
+}
+
+handleScaleAndRateForExpNimble <- function(code){
+    scaleArg <- code$scale
+    rateArg <- code$rate
+    if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dexp_nimble')
+    if(is.null(rateArg)) {
+        rateArg <- parse(text = paste0('1/', code$scale))[[1]]
+        code$scale <- rateArg
+        names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
+    }
+    code$scale <- NULL
+    return(code)
 }

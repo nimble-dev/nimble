@@ -206,6 +206,7 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
     rName <- gsub("\\|", "_or_", rName)
     rName <- gsub("&", "_and_", rName)
     rName <- gsub("%%", "_mod_", rName)
+    rName <- gsub("%\\*%", "_matmult_", rName)
     rName <- gsub("=", "_" , rName)
     rName <- gsub("\\(", "_" , rName)
     rName <- gsub("\\+", "_plus_" , rName)

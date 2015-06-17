@@ -87,7 +87,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
 
                                   ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
                                   getNodeDistribution = function(node) {
-                                      getDeclInfo(node)[[1]]$getDistribution()
+                                      getDeclInfo(node)[[1]]$getDistributionName()
                                   },
 
                                   ## returns the expr corresponding to 'param' in the distribution of 'node'
@@ -121,13 +121,9 @@ modelBaseClass <- setRefClass('modelBaseClass',
 
                                   isTruncated = function(node) {
                                       di <- getDeclInfo(node)[[1]]
-                                      if(is.null(di$truncation)) return(FALSE) else return(TRUE)
+                                      if(di$truncated) return(TRUE) else return(FALSE)
                                   },
 
-                                  getBounds = function(node) {
-                                      if(!isTruncated(node)) return(list(lower=-Inf, upper=Inf))
-                                      return(getDeclInfo(node)[[1]]$truncation)
-                                  },
 
                                   getVarNames = function(includeLogProb = FALSE, nodes, includeData = TRUE) {                                  
                                       '
@@ -527,12 +523,17 @@ Details: The return value is a named list, with an element corresponding to each
                                           if(type == 'RHSonly') {
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'determ') {
-                                              calculate(.self, nn)
+                                              test <- try(calculate(.self, nn))
+                                              if(class(test) == 'try-error')
+                                                  warning(paste0("Cannot calculate logProb for node ", nn))
                                               val <- .self[[nn]]
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'stoch') {
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                              val <- calculate(.self, nn)
+                                              test <- try(val <- calculate(.self, nn))
+                                              if(class(test) == 'try-error')
+                                                  warning(paste0("Cannot calculate logProb for node ", nn))
+                                              
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
                                           } else stop('unknown node type: ', type)
                                       }

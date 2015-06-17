@@ -45,6 +45,9 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
+               # R dist functions that are not used by NIMBLE but we allow in DSL
+               makeCallList(paste0(c('d','r','q','p'), 't'), 'sizeScalarRecurse'),
+               makeCallList(paste0(c('d','r','q','p'), 'exp'), 'sizeScalarRecurse'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
@@ -52,7 +55,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(c('simulate', 'blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
                )
 
-scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical', nimArr_rcat = 'integer', nimArr_rinterval = 'integer')
+scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical') # , nimArr_rcat = 'double', nimArr_rinterval = 'double')
 
 ## exprClasses_setSizes fills in the type information of exprClass code
 ## code is an exprClas object
@@ -522,9 +525,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             stop(paste("Error in sizeAssign: don't know what to do with", nimDeparse(RHS), "in", nimDeparse(code)), call. = FALSE) 
         }
     }
-
     test <- try(if(inherits(RHStype, 'uninitializedField') | length(RHStype)==0) {
-        stop('Error with assignment in ', nimDeparse(code), '. Type of RHS is unknown.', call. = FALSE)
+        stop('Error with assignment in ', nimDeparse(code), '. ', RHSname, ' is not available or its output type is unknown.', call. = FALSE)
     })
     if(inherits(test, 'try-error')) browser()
     
