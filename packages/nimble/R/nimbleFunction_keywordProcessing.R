@@ -287,13 +287,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
 		else									to_ArgList$nodes <- code$nodesTo
 				
 		if(from_ArgList$class == 'symbolModel'){
-                    isMVfrom <- 0
+                    isMVfrom <- 0 ## for newNimCopy
                         accessFrom_ArgList <- list(model = code$from, nodes = from_ArgList$nodes, logProb = code$logProb)
 			accessFrom_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(from_ArgList$class == 'symbolModelValues'){
-                    isMVfrom <- 1
+                    isMVfrom <- 1 ## for newNimCopy
                         accessFrom_ArgList <- list(modelValues = code$from, nodes = from_ArgList$nodes, logProb = code$logProb, row = from_ArgList$row)
 			accessFrom_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessFrom_ArgList)
 			addNecessarySetupCode(accessFrom_name, accessFrom_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
@@ -304,28 +304,28 @@ nimCopy_keywordInfo <- keywordInfoClass(
                 }
         
 		if(to_ArgList$class == 'symbolModel'){
-                    isMVto <- 0
+                    isMVto <- 0 ## for newNimCopy
                         accessTo_ArgList <- list(model = code$to, nodes = to_ArgList$nodes, logProb = code$logProb)
 			accessTo_name <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
 			addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class == 'symbolModelValues'){
-                    isMVto <- 1
+                    isMVto <- 1 ## for newNimCopy
                         accessTo_ArgList <- list(modelValues = code$to, nodes = to_ArgList$nodes, logProb = code$logProb, row = to_ArgList$row)
 			accessTo_name <- modelValuesAccessorVector_setupCodeTemplate$makeName(accessTo_ArgList)
                         addNecessarySetupCode(accessTo_name, accessTo_ArgList, modelValuesAccessorVector_setupCodeTemplate, nfProc)
 		}
 		else if(to_ArgList$class %in% accessTypes) {
                     isMVto <- as.integer(to_ArgList$class == 'symbolModelValuesAccessorVector') 
-                    accessTo_name <- as.character(code$to)
+                    accessTo_name <- as.character(code$to) 
                 }
-        if(nimbleOptions$useNewNimCopy) {
+        if(nimbleOptions()$useNewNimCopy) {
             copierVector_ArgList <- list(accessFrom_name = accessFrom_name, accessTo_name = accessTo_name, isMVto = isMVto, isMVfrom = isMVfrom)
             copierVector_name <- copierVector_setupCodeTemplate$makeName(copierVector_ArgList)
-            addNecessarySetupCode(copierVector_name, copierVector_ArgList) 
+            addNecessarySetupCode(copierVector_name, copierVector_ArgList, copierVector_setupCodeTemplate, nfProc) 
         }
         
-        if(!nimbleOptions$useNewNimCopy) {
+        if(!nimbleOptions()$useNewNimCopy) {
             ##What happens below is a bit convoluted and really for backwards compatibility 	
             runCode <- substitute(nimCopy(from = FROM_ACCESS, rowFrom = NA, to = TO_ACCESS, rowTo = NA), 
                                   list(FROM_ACCESS = as.name(accessFrom_name), TO_ACCESS = as.name(accessTo_name)))
@@ -627,11 +627,13 @@ modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 copierVector_setupCodeTemplate <- setupCodeTemplateClass(
     makeName = function(argList) {Rname2CppName(paste0(argList$accessFrom_name, '_', argList$accessTo_name))},
-    codeTemplate = quote( COPIERNAME <- copierVector(ACCESS_FROM, ACCESS_TO) ),
+    codeTemplate = quote( COPIERNAME <- copierVector(ACCESS_FROM, ACCESS_TO, ISMVFROM, ISMVTO) ),
     makeCodeSubList = function(resultName, argList) {
         list(COPIERNAME = as.name(resultName),
              ACCESS_FROM = as.name(argList$accessFrom_name),
-             ACCESS_TO   = as.name(argList$accessTo_name)) ## STOPPED HERE. need copierVector().  population of copierVector() by a .Call.  C++ handling.
+             ACCESS_TO   = as.name(argList$accessTo_name),
+             ISMVFROM    = as.integer(argList$isMVfrom),
+             ISMVTO      = as.integer(argList$isMVto)) 
     })
     
 

@@ -11,6 +11,16 @@ double calculate(NodeVectorClass &nodes) {
   return(ans);
 }
 
+double calculateFaster(NodeVectorClass &nodes) {
+  double ans(0);
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
+  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
+  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
+    ans += (*iNodeFun)->calculate();
+  return(ans);
+}
+
 double getLogProb(NodeVectorClass &nodes) {
   double ans(0);
   vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
@@ -393,29 +403,29 @@ void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
 
 // new copierClass versions
 // remember to look at calculate() too to avoid copies every time.
-void nimCopy(const copierVector &copiers) {
+void nimCopy(const copierVectorClass &copiers) {
   vector<copierClass*>::const_iterator iCopy;
   for(iCopy = copiers.copyVector.begin(); iCopy != copiers.copyVector.end(); iCopy++) {
-    (*iCopy)->copy();
+    (*iCopy)->copy(copiers.rowInfo);
   }
 }
 
-void nimCopy(const copierVector &copiers, int rowTo) {
-  copiers.rowTo() = rowTo;
+void nimCopy(copierVectorClass &copiers, int rowTo) {
+  copiers.rowTo() = rowTo-1;
   nimCopy(copiers);
 }
 
-copierVector::copierVector(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to) {
+void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesMapAccessorBase *to, int isFromMV, int isToMV) {
   // Imitates old version of nimCopy but populates copyVector of correct choices of derived copierClass objects
-  vector<SingleVariableMapAccessBase *> fromAccessors = from.getMapAccessVector();
-  vector<SingleVariableMapAccessBase *> toAccessors = to.getMapAccessVector();
+  vector<SingleVariableMapAccessBase *> fromAccessors = from->getMapAccessVector();
+  vector<SingleVariableMapAccessBase *> toAccessors = to->getMapAccessVector();
 
 #ifdef __NIMBLE_DEBUG_ACCESSORS
   PRINTF("Entering nimCopy\n");
-  from.check();
-  to.check();
+  from->check();
+  to->check();
 #endif
-   
+  
   if(fromAccessors.size() != toAccessors.size()) {
     std::cout<<"Error in setting up a copierVector: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
   }
@@ -423,13 +433,17 @@ copierVector::copierVector(ManyVariablesMapAccessorBase &from, ManyVariablesMapA
   vector<SingleVariableMapAccessBase *>::iterator iFrom, iTo, iFromEnd;
   iFromEnd = fromAccessors.end();
   iTo =  toAccessors.begin();
+  int i = 0;
   for(iFrom = fromAccessors.begin(); iFrom != iFromEnd; iFrom++) {
-    copyVector[i] = makeOneCopyClass(*iFrom, *iTo);
+    copyVector[i] = makeOneCopyClass(*iFrom, *iTo, isFromMV, isToMV); // switched from isFromMV and isToMV
     iTo++;
+    i++;
   }
 }
 
-copierVector::~copierVector() {
+copierVectorClass::copierVectorClass() {}
+
+copierVectorClass::~copierVectorClass() {
   vector<copierClass*>::iterator iCopy;
   for(iCopy = copyVector.begin(); iCopy != copyVector.end(); iCopy++) {
     delete (*iCopy);
@@ -494,7 +508,7 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
   nimCopy(from, to);
 };
 
-copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to) { // like nimCopyOne but it returns an appropriate derived copierClass object
+copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV, int isToMV) { // like nimCopyOne but it returns an appropriate derived copierClass object
   nimType fromType, toType;
   NimArrType *fromNimArr, *toNimArr;
   fromNimArr = from->getNimArrPtr();
@@ -511,10 +525,12 @@ copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableM
     case DOUBLE:
       switch(toType) {
       case DOUBLE:
-	return singletonCopierClass<double, double>(to, from);//STOPPED HERE. THIS FUNCTION STILL NEEDS TO DETERMINE WHICH ARE MODELS AND WHICH ARE MODELVALUES.  I THINK THE TYPES AND OFFSETS NEED TO COME FROM R BECAUSE THEY MAY BE INSTANTIATED WHEN THIS IS CALLED. NEED TO LOOK AT HOW CURRENT COPY THINGS ARE POPULATED.  PRESUMABLY THE MODEL IS BUILT TO GET POINTERS INTO IT, AND THAT MEANS IT CAN BE USED.
+	return new singletonCopierClass_M2MV<double, double>(from, to);
 	//	(*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
 	break;
-
+      }
+    }
+  }
 }
 
 void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to) { // map version
@@ -991,6 +1007,18 @@ SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_
 		(*accessVector).varAccessors[i] = static_cast<SingleModelValuesAccess*>(numObj->getObjectPtr(index));
 		}
 	return(R_NilValue);
+}
+
+/// NEWER
+
+SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP SintIsFromMV, SEXP SintIsToMV) {
+  copierVectorClass *copierVector = static_cast<copierVectorClass*>(R_ExternalPtrAddr(ScopierVector));
+  ManyVariablesMapAccessorBase* fromValuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(SfromPtr) );
+  ManyVariablesMapAccessorBase* toValuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StoPtr) );
+  int isFromMV = INTEGER(SintIsFromMV)[0];
+  int isToMV   = INTEGER(SintIsToMV)[0];
+  copierVector->setup(fromValuesAccessor, toValuesAccessor, isFromMV, isToMV);
+  return(R_NilValue);
 }
 
 ///NEW

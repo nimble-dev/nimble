@@ -19,7 +19,12 @@
 ##                    show  = function() cat(paste0(toStr(), '\n'))
 ##     )
 ## )
- 
+
+copierVector <- function(accessFrom_name, accessTo_name, isFromMV, isToMV) {
+    ans <- list(deparse(substitute(accessFrom_name)), deparse(substitute(accessTo_name)), isFromMV, isToMV)
+    class(ans) <- 'copierVectorClass'
+    ans
+}
 
 valuesAccessorVector <- setRefClass( ## new implementation
     Class = 'valuesAccessorVector',

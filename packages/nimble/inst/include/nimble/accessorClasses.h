@@ -38,38 +38,10 @@ class NodeVectorClass {
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
 double calculate(NodeVectorClass &nodes);
+double calculateFaster(NodeVectorClass &nodes);
 double getLogProb(NodeVectorClass &nodes);
 void simulate(NodeVectorClass &nodes);
 
-
-///////
-// copierClass
-///////
-
-class copierClass { // virtual base class
- public:
-  void copy()=0;
-};
-
-class copierVector {
- public:
-  vector<copierClass*> copyVector;
-  copierVector(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to);// constructor that creates new entries
-  ~copierVector(); destructor that deletes them
-};
-
-copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to);
-
-template<class Tfrom, class Tto>
-  class singletonCopierClass_M2MV : public copierClass {
- public:
-  int toOffset, fromOffset;
-  NimArrBase<Tfrom> **fromNimArr; // no for a model we'd need dim to do the pointers right
-  VecNimArrBase<Tto> **toVecNimArr;   //
-  void copy(const rowInfoClass &rowInfo) {
-    (*toVecNimArr)->getValue(rowInfo.rowTo,toOffset) = (*fromNimArr)->getVptr()[fromOffset];
-  }
-};
 
 /////////////////////
 // new version of variable accessors using maps (offset and strided windows into multivariate objects (NimArr<>s) )
@@ -93,6 +65,7 @@ class SingleVariableMapAccessBase {
   vector<int> &getStrides() {return(strides);}
   bool &getSingleton() {return(singleton);}
   virtual void setObject(void *object)=0;
+  virtual void *getObject()=0;
 };
 
 
@@ -116,6 +89,7 @@ class SingleVariableMapAccess : public SingleVariableMapAccessBase {
   virtual NimArrType *getNimArrPtr() {return(*ppVar);}
   ~SingleVariableMapAccess() {};
   void setObject(void *object) {ppVar = static_cast<NimArrType**>(object);}
+  void *getObject() {return(ppVar);}
 };
 
 class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
@@ -138,7 +112,7 @@ class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
 // single and many modelValues classes
 class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
  public:
-  NimVecType *pVVar;   
+  NimVecType *pVVar;
   int currentRow;
   virtual NimArrType *getNimArrPtr() {return(pVVar->getRowTypePtr(currentRow));}
  SingleModelValuesMapAccess() : currentRow(0) {};
@@ -146,6 +120,7 @@ class SingleModelValuesMapAccess : public SingleVariableMapAccessBase {
   void setRow(int i) {currentRow = i;}
   int getRow() {return(currentRow);}
   void setObject(void *object) {pVVar = static_cast<NimVecType*>(object);}
+  void *getObject() {return(pVVar);}
 };
 
 class ManyModelValuesMapAccessor : public ManyVariablesMapAccessorBase {
@@ -256,13 +231,64 @@ class ManyModelValuesAccessor : public ManyVariablesAccessorBase {
   ~ManyModelValuesAccessor() {};
 };
 
+
+
+///////
+// NEW copierClass
+///////
+
+class rowInfoClass {
+ public:
+  int rowFrom, rowTo;
+};
+
+class copierClass { // virtual base class
+ public:
+  virtual void copy(const rowInfoClass &rowInfo) const=0;
+  virtual ~copierClass() {};
+};
+
+class copierVectorClass {
+ public:
+  rowInfoClass rowInfo;
+  int &rowTo() {return rowInfo.rowTo;}
+  int &rowFrom() {return rowInfo.rowFrom;}
+  vector<copierClass*> copyVector;
+  copierVectorClass(); // objects with setup content are not ready at instantiation.
+  void setup(ManyVariablesMapAccessorBase *from, ManyVariablesMapAccessorBase *to, int isFromMV, int isToMV);// constructor that creates new entries
+  ~copierVectorClass(); //destructor that deletes them
+};
+
+
+copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV, int isToMV);
+
+template<class Tfrom, class Tto>
+  class singletonCopierClass_M2MV : public copierClass {
+ public:
+  int toOffset, fromOffset;
+  singletonCopierClass_M2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to) {
+    fromNimArr =  static_cast<NimArrType**>(from->getObject());
+    toVecNimArr = static_cast<NimVecType*>(to->getObject());
+    toOffset = to->getOffset();
+    fromOffset = from->getOffset();
+  }
+  NimArrType **fromNimArr; // do we need dim to do the pointers right?
+  NimVecType *toVecNimArr;   //
+  void copy(const rowInfoClass &rowInfo) const {
+    (*static_cast<VecNimArrBase<Tto> *>(toVecNimArr)->getBasePtr(rowInfo.rowTo)->getVptr())[toOffset] = (*static_cast<NimArrBase<Tfrom> *>(*fromNimArr)->getVptr())[fromOffset];
+  }
+  ~singletonCopierClass_M2MV() {};
+};
+
+
 /////////////////////////////////
 // nimCopy function
 //
 // Now we are ready to write a fairly general copy function
 // I am calling it nimCopy to avoid name conflicts with std::copy or others.
 /////////////////////////////////
-
+void nimCopy(const copierVectorClass &copiers);
+void nimCopy(copierVectorClass &copiers, int rowTo);
 void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to);
 void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to);
 
@@ -366,7 +392,9 @@ extern "C" {
   //	SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj);
   SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP GIDs, SEXP curRow, SEXP SnumbObj);
   SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj);
-	
+
+  SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP SintIsFromMV, SEXP SintIsToMV);
+  
   SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj);
   SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_LP_GIDs, SEXP S_LP_numberedObj);
 
