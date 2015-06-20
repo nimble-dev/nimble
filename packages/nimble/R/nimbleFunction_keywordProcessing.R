@@ -329,14 +329,23 @@ nimCopy_keywordInfo <- keywordInfoClass(
             ##What happens below is a bit convoluted and really for backwards compatibility 	
             runCode <- substitute(nimCopy(from = FROM_ACCESS, rowFrom = NA, to = TO_ACCESS, rowTo = NA), 
                                   list(FROM_ACCESS = as.name(accessFrom_name), TO_ACCESS = as.name(accessTo_name)))
+            if(from_ArgList$class %in% modelValuesTypes)
+                runCode$rowFrom = from_ArgList$row
+            if(to_ArgList$class %in% modelValuesTypes)
+                runCode$rowTo = to_ArgList$row
         } else {
-            runCode <- substitute(nimCopy(copierVector = COPIER_VECTOR, rowFrom = NA, rowTo = NA), 
-                                  list(COPIER_VECTOR = as.name(copierVector_name)))
+            rowFromArg <- if(from_ArgList$class %in% modelValuesTypes) from_ArgList$row else NA
+            rowToArg <- if(to_ArgList$class %in% modelValuesTypes) {
+                if(is.na(rowFromArg)) {rowFromArg <- 0; unusedArg <- NA} else unusedArg <- 0
+                to_ArgList$row
+            } else {
+                unusedArg <- NA
+                NA
+            }
+            runCode <- substitute(nimCopy(copierVector = COPIER_VECTOR, rowFrom = ROWFROM, rowTo = ROWTO, unused = UNUSED), 
+                                  list(COPIER_VECTOR = as.name(copierVector_name),
+                                       ROWFROM = rowFromArg, ROWTO = rowToArg, UNUSED  = unusedArg))
         }
-        if(from_ArgList$class %in% modelValuesTypes)
-            runCode$rowFrom = from_ArgList$row
-        if(to_ArgList$class %in% modelValuesTypes)
-            runCode$rowTo = to_ArgList$row
         runCode <- runCode[as.character(runCode) != 'NA']
         return(runCode)
     })

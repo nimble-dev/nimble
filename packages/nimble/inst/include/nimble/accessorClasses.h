@@ -266,20 +266,171 @@ template<class Tfrom, class Tto>
   class singletonCopierClass_M2MV : public copierClass {
  public:
   int toOffset, fromOffset;
-  singletonCopierClass_M2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to) {
+  singletonCopierClass_M2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
     fromNimArr =  static_cast<NimArrType**>(from->getObject());
     toVecNimArr = static_cast<NimVecType*>(to->getObject());
     toOffset = to->getOffset();
     fromOffset = from->getOffset();
   }
-  NimArrType **fromNimArr; // do we need dim to do the pointers right?
-  NimVecType *toVecNimArr;   //
+  NimArrType **fromNimArr; 
+  NimVecType *toVecNimArr; 
   void copy(const rowInfoClass &rowInfo) const {
     (*static_cast<VecNimArrBase<Tto> *>(toVecNimArr)->getBasePtr(rowInfo.rowTo)->getVptr())[toOffset] = (*static_cast<NimArrBase<Tfrom> *>(*fromNimArr)->getVptr())[fromOffset];
   }
   ~singletonCopierClass_M2MV() {};
 };
 
+template<class Tfrom, class Tto>
+  class singletonCopierClass_M2M : public copierClass {
+ public:
+  int toOffset, fromOffset;
+  singletonCopierClass_M2M(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
+    fromNimArr =  static_cast<NimArrType**>(from->getObject());
+    toNimArr = static_cast<NimArrType**>(to->getObject());
+    toOffset = to->getOffset();
+    fromOffset = from->getOffset();
+  }
+  NimArrType **fromNimArr; 
+  NimArrType **toNimArr;
+  void copy(const rowInfoClass &rowInfo) const {
+    (*static_cast<NimArrBase<Tto> *>(*toNimArr)->getVptr())[toOffset] = (*static_cast<NimArrBase<Tfrom> *>(*fromNimArr)->getVptr())[fromOffset];
+  }
+  ~singletonCopierClass_M2M() {};
+};
+
+template<class Tfrom, class Tto>
+  class singletonCopierClass_MV2M : public copierClass {
+ public:
+  int toOffset, fromOffset;
+  singletonCopierClass_MV2M(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
+    fromVecNimArr =  static_cast<NimVecType*>(from->getObject());
+    toNimArr = static_cast<NimArrType**>(to->getObject());
+    toOffset = to->getOffset();
+    fromOffset = from->getOffset();
+  }
+  NimVecType *fromVecNimArr; 
+  NimArrType **toNimArr;
+  void copy(const rowInfoClass &rowInfo) const {
+    (*static_cast<NimArrBase<Tto> *>(*toNimArr)->getVptr())[toOffset] = (*static_cast<VecNimArrBase<Tfrom> *>(fromVecNimArr)->getBasePtr(rowInfo.rowFrom)->getVptr())[fromOffset];
+  }
+  ~singletonCopierClass_MV2M() {};
+};
+
+template<class Tfrom, class Tto>
+  class singletonCopierClass_MV2MV : public copierClass {
+ public:
+  int toOffset, fromOffset;
+  singletonCopierClass_MV2MV(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int notUsed1, int notUsed2) {
+    fromVecNimArr =  static_cast<NimVecType*>(from->getObject());
+    toVecNimArr = static_cast<NimVecType*>(to->getObject());
+    toOffset = to->getOffset();
+    fromOffset = from->getOffset();
+  }
+  NimVecType *fromVecNimArr; 
+  NimVecType *toVecNimArr;
+  void copy(const rowInfoClass &rowInfo) const {
+    (*static_cast<VecNimArrBase<Tto> *>(toVecNimArr)->getBasePtr(rowInfo.rowTo)->getVptr())[toOffset] = (*static_cast<VecNimArrBase<Tfrom> *>(fromVecNimArr)->getBasePtr(rowInfo.rowFrom)->getVptr())[fromOffset];
+  }
+  ~singletonCopierClass_MV2MV() {};
+};
+
+class blockCopierClassBase : public copierClass {
+ public:
+  int toOffset, fromOffset;
+  bool isFromMV, isToMV;
+  // put common initializations here
+  // for now leave strides and sizes dynamically accessed
+  blockCopierClassBase(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV1, int isToMV1) {
+    toOffset = to->getOffset();
+    fromOffset = from->getOffset();
+    isFromMV = isFromMV1;
+    isToMV = isToMV1;
+  }
+};
+
+template<class Tfrom, class Tto, int mapDim>
+  class blockCopierClass : public blockCopierClassBase {
+ public:
+  SingleVariableMapAccessBase *fromPtr, *toPtr;
+ blockCopierClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV1, int isToMV1)
+   : blockCopierClassBase(from, to, isFromMV1, isToMV1)
+  {
+    fromPtr = from;
+    toPtr = to;
+  }
+  void copy(const rowInfoClass &rowInfo) const {
+    // set rows if needed here.
+    if(isFromMV) {
+      static_cast<SingleModelValuesMapAccess *>(toPtr)->setRow(rowInfo.rowFrom);
+    }
+    if(isToMV) {
+      static_cast<SingleModelValuesMapAccess *>(toPtr)->setRow(rowInfo.rowTo);
+    }
+    dynamicMapCopyDim<Tfrom, Tto, mapDim>(toPtr->getNimArrPtr(), toPtr->getOffset(), toPtr->getStrides(), toPtr->getSizes(), fromPtr->getNimArrPtr(), fromPtr->getOffset(), fromPtr->getStrides(), fromPtr->getSizes() );
+  }
+};
+
+class copierClassBuilderClass {
+ public:
+  virtual copierClass *build(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV, int isToMV)=0;
+};
+
+template<class TDD, class TDI, class TID, class TII>
+class copierClassBuilderCase : public copierClassBuilderClass {
+ public:
+  copierClassBuilderCase() {}
+  copierClass *build(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV, int isToMV) { // branch on types, singletons
+      nimType fromType, toType;
+      NimArrType *fromNimArr, *toNimArr;
+      fromNimArr = from->getNimArrPtr();
+      toNimArr = to->getNimArrPtr();
+      fromType = fromNimArr->getNimType();
+      toType = toNimArr->getNimType();  
+      switch(fromType) {
+      case DOUBLE:
+	switch(toType) {
+	case DOUBLE:
+	  return new TDD(from, to, isFromMV, isToMV);
+	  break;
+	case INT:
+	  return new TDI(from, to, isFromMV, isToMV);
+	  break;
+	default:
+	  break;
+	};
+      case INT:
+	switch(toType) {
+	case DOUBLE:
+	  return new TID(from, to, isFromMV, isToMV);
+	  break;
+	case INT:
+	  return new TII(from, to, isFromMV, isToMV);
+	  break;
+	default:
+	  break;
+	};
+      default:
+	break;
+      }
+  }
+};
+
+extern copierClassBuilderCase< singletonCopierClass_M2M<double, double>, singletonCopierClass_M2M<double, int>, singletonCopierClass_M2M<int, int>, singletonCopierClass_M2M<int, double> > globalCopierBuilder_singleton_M2M;
+
+extern copierClassBuilderCase< singletonCopierClass_M2MV<double, double>, singletonCopierClass_M2MV<double, int>, singletonCopierClass_M2MV<int, int>, singletonCopierClass_M2MV<int, double> > globalCopierBuilder_singleton_M2MV;
+
+extern copierClassBuilderCase< singletonCopierClass_MV2M<double, double>, singletonCopierClass_MV2M<double, int>, singletonCopierClass_MV2M<int, int>, singletonCopierClass_MV2M<int, double> > globalCopierBuilder_singleton_MV2M;
+
+extern copierClassBuilderCase< singletonCopierClass_MV2MV<double, double>, singletonCopierClass_MV2MV<double, int>, singletonCopierClass_MV2MV<int, int>, singletonCopierClass_MV2MV<int, double> > globalCopierBuilder_singleton_MV2MV;
+
+
+extern copierClassBuilderCase< blockCopierClass<double, double, 1>, blockCopierClass<double, int, 1>, blockCopierClass<int, int, 1>, blockCopierClass<int, double, 1> > globalCopierClassBuilderBlock1;
+
+extern copierClassBuilderCase< blockCopierClass<double, double, 2>, blockCopierClass<double, int, 2>, blockCopierClass<int, int, 2>, blockCopierClass<int, double, 2> > globalCopierClassBuilderBlock2;
+
+extern copierClassBuilderCase< blockCopierClass<double, double, 3>, blockCopierClass<double, int, 3>, blockCopierClass<int, int, 3>, blockCopierClass<int, double, 3> > globalCopierClassBuilderBlock3;
+
+extern copierClassBuilderCase< blockCopierClass<double, double, 4>, blockCopierClass<double, int, 4>, blockCopierClass<int, int, 4>, blockCopierClass<int, double, 4> > globalCopierClassBuilderBlock4;
 
 /////////////////////////////////
 // nimCopy function
@@ -288,7 +439,11 @@ template<class Tfrom, class Tto>
 // I am calling it nimCopy to avoid name conflicts with std::copy or others.
 /////////////////////////////////
 void nimCopy(const copierVectorClass &copiers);
-void nimCopy(copierVectorClass &copiers, int rowTo);
+void nimCopy(copierVectorClass &copiers, int rowFrom);
+void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo);
+void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo, int unused);
+
+
 void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to);
 void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to);
 

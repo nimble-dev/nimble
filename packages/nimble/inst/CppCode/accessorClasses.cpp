@@ -2,7 +2,7 @@
 #include "nimble/RcppUtils.h"
 
 // 1. NodeVectors
-double calculate(NodeVectorClass &nodes) {
+double calculateOld(NodeVectorClass &nodes) {
   double ans(0);
   vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
   int vecSize = nodeFunPtrs.size();
@@ -11,7 +11,7 @@ double calculate(NodeVectorClass &nodes) {
   return(ans);
 }
 
-double calculateFaster(NodeVectorClass &nodes) {
+double calculate(NodeVectorClass &nodes) {
   double ans(0);
   vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
   vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
@@ -23,9 +23,9 @@ double calculateFaster(NodeVectorClass &nodes) {
 
 double getLogProb(NodeVectorClass &nodes) {
   double ans(0);
-  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
-  vector<nodeFun *>::iterator endNode(nodeFunPtrs.end());
-  for( vector<nodeFun *>::iterator iNodes = nodeFunPtrs.begin();
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
+  for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
        iNodes != endNode;
        ++iNodes) {
     ans += (*iNodes)->getLogProb();
@@ -34,9 +34,9 @@ double getLogProb(NodeVectorClass &nodes) {
 }
 
 void simulate(NodeVectorClass &nodes) {
-  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
-  vector<nodeFun *>::iterator endNode(nodeFunPtrs.end());
-  for( vector<nodeFun *>::iterator iNodes = nodeFunPtrs.begin();
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
+  for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
        iNodes != endNode;
        ++iNodes) {
      (*iNodes)->simulate();
@@ -410,10 +410,24 @@ void nimCopy(const copierVectorClass &copiers) {
   }
 }
 
-void nimCopy(copierVectorClass &copiers, int rowTo) {
+// A bit cheesy here: we add an unused argument only to trigger the right overloaded type in a simple way
+
+void nimCopy(copierVectorClass &copiers, int rowFrom) {
+  copiers.rowFrom() = rowFrom-1;
+  nimCopy(copiers);
+}
+
+void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo) { // only ever called with rowFrom = 0 for right overloading
   copiers.rowTo() = rowTo-1;
   nimCopy(copiers);
 }
+
+void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo, int unused) { // only ever called when rowFrom and rowTo both needed
+  copiers.rowFrom() = rowFrom-1;
+  copiers.rowTo() = rowTo-1;
+  nimCopy(copiers);
+}
+
 
 void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesMapAccessorBase *to, int isFromMV, int isToMV) {
   // Imitates old version of nimCopy but populates copyVector of correct choices of derived copierClass objects
@@ -508,29 +522,83 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
   nimCopy(from, to);
 };
 
+copierClassBuilderCase< singletonCopierClass_M2M<double, double>, singletonCopierClass_M2M<double, int>, singletonCopierClass_M2M<int, int>, singletonCopierClass_M2M<int, double> > globalCopierBuilder_singleton_M2M;
+
+copierClassBuilderCase< singletonCopierClass_M2MV<double, double>, singletonCopierClass_M2MV<double, int>, singletonCopierClass_M2MV<int, int>, singletonCopierClass_M2MV<int, double> > globalCopierBuilder_singleton_M2MV;
+
+copierClassBuilderCase< singletonCopierClass_MV2M<double, double>, singletonCopierClass_MV2M<double, int>, singletonCopierClass_MV2M<int, int>, singletonCopierClass_MV2M<int, double> > globalCopierBuilder_singleton_MV2M;
+
+copierClassBuilderCase< singletonCopierClass_MV2MV<double, double>, singletonCopierClass_MV2MV<double, int>, singletonCopierClass_MV2MV<int, int>, singletonCopierClass_MV2MV<int, double> > globalCopierBuilder_singleton_MV2MV;
+
+
+copierClassBuilderCase< blockCopierClass<double, double, 1>, blockCopierClass<double, int, 1>, blockCopierClass<int, int, 1>, blockCopierClass<int, double, 1> > globalCopierClassBuilderBlock1;
+
+copierClassBuilderCase< blockCopierClass<double, double, 2>, blockCopierClass<double, int, 2>, blockCopierClass<int, int, 2>, blockCopierClass<int, double, 2> > globalCopierClassBuilderBlock2;
+
+copierClassBuilderCase< blockCopierClass<double, double, 3>, blockCopierClass<double, int, 3>, blockCopierClass<int, int, 3>, blockCopierClass<int, double, 3> > globalCopierClassBuilderBlock3;
+
+copierClassBuilderCase< blockCopierClass<double, double, 4>, blockCopierClass<double, int, 4>, blockCopierClass<int, int, 4>, blockCopierClass<int, double, 4> > globalCopierClassBuilderBlock4;
+
+
 copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV, int isToMV) { // like nimCopyOne but it returns an appropriate derived copierClass object
-  nimType fromType, toType;
-  NimArrType *fromNimArr, *toNimArr;
-  fromNimArr = from->getNimArrPtr();
-  toNimArr = to->getNimArrPtr();
-  fromType = fromNimArr->getNimType();
-  toType = toNimArr->getNimType();  
+  copierClassBuilderClass *copierClassBuilder;
+
   if(to->getSingleton()) {
 #ifdef __NIMBLE_DEBUG_ACCESSORS
     if(!from->getSingleton()) PRINTF("Run-time error: to is a singleton but from is not a singleton\n");
     singletonCopyCheck(fromNimArr, from->getOffset());
     singletonCopyCheck(toNimArr, to->getOffset());
 #endif
-    switch(fromType) {
-    case DOUBLE:
-      switch(toType) {
-      case DOUBLE:
-	return new singletonCopierClass_M2MV<double, double>(from, to);
-	//	(*static_cast<NimArrBase<double> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
+
+    switch(isFromMV) {
+    case 0:
+      switch(isToMV) {
+      case 0:
+	copierClassBuilder = &globalCopierBuilder_singleton_M2M;
 	break;
-      }
+      case 1:
+	copierClassBuilder = &globalCopierBuilder_singleton_M2MV;
+	break;
+      default:
+	break;
+      };
+      break;
+    case 1:
+      switch(isToMV) {
+      case 0:
+	copierClassBuilder = &globalCopierBuilder_singleton_MV2M;
+	break;
+      case 1:
+	copierClassBuilder = &globalCopierBuilder_singleton_MV2MV;
+	break;
+      default:
+	break;
+      };
+      break;
+    default:
+      break;
     }
+      
   }
+  //  dynamicMapCopy<double, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
+  int mapDim = to->getStrides().size();
+  switch(mapDim) {
+  case 1:
+    copierClassBuilder = &globalCopierClassBuilderBlock1;
+    break;
+  case 2:
+    copierClassBuilder = &globalCopierClassBuilderBlock2;
+    break;
+  case 3:
+    copierClassBuilder = &globalCopierClassBuilderBlock3;
+    break;
+  case 4:
+    copierClassBuilder = &globalCopierClassBuilderBlock4;
+    break;
+  default:
+    break;
+  }   
+  return copierClassBuilder->build(from, to, isFromMV, isToMV);
 }
 
 void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to) { // map version
