@@ -71,13 +71,9 @@ autoBlockModel <- setRefClass(
         initialize = function(Rmodel_orig) {
             require(nimble)
             md <<- Rmodel_orig$modelDef
-
-            ## Rmodel <<- Rmodel_orig
-            
-            Rmodel <<- md$newModel()
-            nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
-            for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
-
+            Rmodel <<- Rmodel_orig$newModel(replicate = TRUE)
+            ##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
+            ##for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
             scalarNodeVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=TRUE)
             nodeGroupScalars <<- lapply(scalarNodeVector, function(x) x)
             nodeGroupAllBlocked <<- list(scalarNodeVector)
