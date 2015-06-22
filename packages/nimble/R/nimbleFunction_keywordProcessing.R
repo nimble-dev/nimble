@@ -199,7 +199,29 @@ calculate_keywordInfo <- keywordInfoClass(
 		return(newRunCode)	
 		}
 	)
-    
+
+calculateDiff_keywordInfo <- keywordInfoClass(
+	keyword = 'calculateDiff',
+	processor = function(code, nfProc){
+		if(!isCodeArgBlank(code, 'nodeFxnVector'))
+			return(code)
+		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+		if(isCodeArgBlank(code, 'model'))
+			stop('model argument missing from calculateDiff, with no accessor argument supplied')
+		if(isCodeArgBlank(code, 'nodes')){
+			LHSnodes_ArgList <- list(model = code$model)
+			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
+			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc)
+			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
+			}
+		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+		newRunCode <- substitute(calculateDiff(nodeFunctionVector = NODEFUNVEC_NAME),
+											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+		return(newRunCode)	
+		}
+	)
+
 
 simulate_keywordInfo <- keywordInfoClass(
 	keyword = 'simulate',
@@ -492,6 +514,7 @@ singleBracket_keywordInfo <- keywordInfoClass(
 keywordList <- new.env()
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo
+keywordList[['calculateDiff']] <- calculateDiff_keywordInfo
 keywordList[['simulate']] <- simulate_keywordInfo
 keywordList[['getLogProb']] <- getLogProb_keywordInfo
 keywordList[['nimCopy']] <- nimCopy_keywordInfo
@@ -524,6 +547,7 @@ keywordList[['rgamma']] <- rgamma_keywordInfo
 matchFunctions <- new.env()
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
+matchFunctions[['calculateDiff']] <- calculateDiff		#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
 matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}

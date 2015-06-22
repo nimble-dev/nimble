@@ -45,6 +45,7 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
             list(
                 simulate   = function() { LHS <<- RHS                                                 },
                 calculate  = function() { simulate();    returnType(double());   return(invisible(0)) },
+                calculateDiff = function() {simulate();  returnType(double());   return(invisible(0)) },
                 getLogProb = function() {                returnType(double());   return(0)            }
             ),
             list(LHS=LHS, 
@@ -55,12 +56,15 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
             list(
                 simulate   = function() { LHS <<- STOCHSIM                                                         },
                 calculate  = function() { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
+                calculateDiff = function() {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
+                                            returnType(double());   return(invisible(LocalAns))},
                 getLogProb = function() {                       returnType(double());   return(LOGPROB)            }
             ),
             list(LHS       = LHS,
                  LOGPROB   = logProbNodeExpr,
                  STOCHSIM  = ndf_createStochSimulate(RHS),
-                 STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS))))
+                 STOCHCALC_FULLEXPR = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS),
+                 STOCHCALC_FULLEXPR_DIFF = ndf_createStochCalculate(logProbNodeExpr, LHS, RHS, diff = TRUE))))
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
             ## add accessor function for node value; used in multivariate conjugate sampler functions
@@ -81,7 +85,7 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
         }
     }
     ## add model$ in front of all names, except the setupOutputs
-    methodList <- ndf_addModelDollarSignsToMethods(methodList, setupOutputExprs)
+    methodList <- ndf_addModelDollarSignsToMethods(methodList, setupOutputExprs, exceptionNames = c("LocalAns", "LocalNewLogProb"))
     return(methodList)
 }
 
@@ -158,7 +162,7 @@ ndf_createStochSimulateTrunc <- function(RHS) {
 }
 
 ## changes 'dnorm(mean=1, sd=2)' into 'dnorm(LHS, mean=1, sd=2, log=TRUE)'
-ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS) {
+ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
     RHS[[1]] <- as.name(getDistribution(as.character(RHS[[1]]))$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
@@ -166,11 +170,17 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS) {
         return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS))
     } else {
           userDist <- as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE)
-        RHS <- addArg(RHS, 1, 'log')  # ifelse(userDist, 'log_value', 'log'))   # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
-        code <- substitute( LOGPROB <<- STOCHCALC,
-                           list(LOGPROB = logProbNodeExpr,
-                                STOCHCALC = RHS))
-        return(code)
+          RHS <- addArg(RHS, 1, 'log')  # ifelse(userDist, 'log_value', 'log'))   # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
+          if(diff) {
+              code <- substitute(LocalNewLogProb <- STOCHCALC,
+                                 list(LOGPROB = logProbNodeExpr,
+                                      STOCHCALC = RHS))
+          } else {
+              code <- substitute(LOGPROB <<- STOCHCALC,
+                                 list(LOGPROB = logProbNodeExpr,
+                                      STOCHCALC = RHS))
+          }
+          return(code)
     }
 }
 
@@ -241,9 +251,9 @@ ndf_generateGetParamFunction <- function(expr, type, nDim) {
 }
 
 ## adds model$ on front of all node names, in the bodys of methods in methodList
-ndf_addModelDollarSignsToMethods <- function(methodList, setupOutputExprs) {
+ndf_addModelDollarSignsToMethods <- function(methodList, setupOutputExprs, exceptionNames = character()) {
     for(i in seq_along(methodList)) {
-        body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = as.character(setupOutputExprs))
+        body(methodList[[i]]) <-addModelDollarSign(body(methodList[[i]]), exceptionNames = c(exceptionNames, as.character(setupOutputExprs)))
     }
     return(methodList)
 }

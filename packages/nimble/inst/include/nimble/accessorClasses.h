@@ -38,6 +38,7 @@ class NodeVectorClass {
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
 double calculate(NodeVectorClass &nodes);
+double calculateDiff(NodeVectorClass &nodes);
 double calculateFaster(NodeVectorClass &nodes);
 double getLogProb(NodeVectorClass &nodes);
 void simulate(NodeVectorClass &nodes);
@@ -502,9 +503,9 @@ void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA);
 void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA);
 
 
-double calculate(NodeVectorClass &nodes);
-double getLogProb(NodeVectorClass &nodes);
-void simulate(NodeVectorClass &nodes);
+//double calculate(NodeVectorClass &nodes);
+//double getLogProb(NodeVectorClass &nodes);
+//void simulate(NodeVectorClass &nodes);
 
 void cAddNodeFun(NodeVectorClass nVObj, nodeFun* nFPtr);
 void cAddVariableAccessor(ManyVariablesAccessor* mVAPtr, SingleVariableAccess* sVAPtr, int index);

@@ -21,6 +21,16 @@ double calculate(NodeVectorClass &nodes) {
   return(ans);
 }
 
+double calculateDiff(NodeVectorClass &nodes) {
+  double ans(0);
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
+  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
+  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
+    ans += (*iNodeFun)->calculateDiff();
+  return(ans);
+}
+
 double getLogProb(NodeVectorClass &nodes) {
   double ans(0);
   vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
