@@ -358,7 +358,7 @@ nimCopy_keywordInfo <- keywordInfoClass(
         } else {
             rowFromArg <- if(from_ArgList$class %in% modelValuesTypes) from_ArgList$row else NA
             rowToArg <- if(to_ArgList$class %in% modelValuesTypes) {
-                if(is.na(rowFromArg)) {rowFromArg <- 0; unusedArg <- NA} else unusedArg <- 0
+                if(identical(rowFromArg, NA)) {rowFromArg <- 0; unusedArg <- NA} else unusedArg <- 0
                 to_ArgList$row
             } else {
                 unusedArg <- NA

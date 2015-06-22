@@ -559,7 +559,6 @@ copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableM
     singletonCopyCheck(fromNimArr, from->getOffset());
     singletonCopyCheck(toNimArr, to->getOffset());
 #endif
-
     switch(isFromMV) {
     case 0:
       switch(isToMV) {
@@ -588,7 +587,7 @@ copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableM
     default:
       break;
     }
-      
+    return copierClassBuilder->build(from, to, isFromMV, isToMV);   
   }
   //  dynamicMapCopy<double, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
   int mapDim = to->getStrides().size();
@@ -624,7 +623,6 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     singletonCopyCheck(fromNimArr, from->getOffset());
     singletonCopyCheck(toNimArr, to->getOffset());
 #endif
-
     switch(fromType) {
     case DOUBLE:
       switch(toType) {
