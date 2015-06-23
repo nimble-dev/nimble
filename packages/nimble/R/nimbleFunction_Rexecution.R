@@ -33,6 +33,14 @@ rCalcNodes <- function(model, nodes){
 	return(l_Prob)
 }
 
+rCalcDiffNodes <- function(model, nodes){
+	l_Prob = 0
+	for(nName in nodes)
+		l_Prob = l_Prob + model$nodes[[nName]]$calculate()
+	return(l_Prob)
+}
+
+
 #' calculate, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
 #'
 #' calculate, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
@@ -73,6 +81,22 @@ calculate <- function(model, nodes, nodeFxnVector)
         nfv <- nodeFunctionVector(model, nodes)
         nodeNames <- nfv$getNodeNames()
         return(rCalcNodes(model, nodeNames))
+    }	
+}
+
+calculateDiff <- function(model, nodes, nodeFxnVector)		
+{
+    if(!missing(nodeFxnVector)){
+        model <- nodeFxnVector$model
+        nodes <- nodeFxnVector$getNodeNames()
+        return(rCalcDiffNodes(model, nodes))
+    }
+    if(inherits(model, 'modelBaseClass') ){
+        if(missing(nodes) ) 
+            nodes <- model$getMaps('nodeNamesLHSall')
+        nfv <- nodeFunctionVector(model, nodes)
+        nodeNames <- nfv$getNodeNames()
+        return(rCalcDiffNodes(model, nodeNames))
     }	
 }
 

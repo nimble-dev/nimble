@@ -68,6 +68,7 @@ decideAndJump <- nimbleFunction(
 
 
 
+
 #' Creates a nimbleFunction for setting the value of a scalar model node,
 #' calculating the associated deterministic dependents and logProb values,
 #' and returning the total sum log-probability.
@@ -141,6 +142,18 @@ setAndCalculate <- nimbleFunction(
     }, where = getLoadingNamespace()
 )
 
+setAndCalculateDiff <- nimbleFunction(
+    setup = function(model, targetNodes) {
+        targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(targetNodes)
+    },
+    run = function(targetValues = double(1)) {
+        values(model, targetNodesAsScalar) <<- targetValues
+        lpD <- calculateDiff(model, calcNodes)
+        returnType(double())
+        return(lpD)
+    }, where = getLoadingNamespace()
+)
 
 
 calcAdaptationFactor <- nimbleFunction(

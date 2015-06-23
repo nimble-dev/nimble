@@ -102,14 +102,25 @@ nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE,
     return(cppOutputCallAsIs(code, symTab))
 }
 
+## exprName2Cpp <- function(code, symTab, asArg = FALSE) {
+##     if(!is.null(symTab)) {
+##         sym <- symTab$getSymbolObject(code$name, inherits = TRUE)
+##         if(!is.null(sym)) return(sym$generateUse(asArg = asArg))
+##         return(code$name)
+##     } else {
+##         return(code$name)
+##     }
+## }
+
 exprName2Cpp <- function(code, symTab, asArg = FALSE) {
     if(!is.null(symTab)) {
         sym <- symTab$getSymbolObject(code$name, inherits = TRUE)
         if(!is.null(sym)) return(sym$generateUse(asArg = asArg))
-        return(code$name)
+        ans <- code$name
     } else {
-        return(code$name)
+        ans <- code$name
     }
+    if(ans == 'dnorm') 'nim_dnorm' else ans
 }
 
 cppOutputVoidPtr <- function(code, symTab) {

@@ -433,6 +433,11 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         return(symbolNumericList(name = name, type = varinfo$listType, nDim = max(varinfo$nDim, 1),  className = class(instances[[1]][[name]]))) 
     }
 
+    if(inherits(instances[[1]][[name]], 'copierVectorClass')) {
+        newSym <- symbolCopierVector(name = name, type = 'symbolCopierVector')
+        return(newSym)
+    }
+    
     if(inherits(instances[[1]][[name]], 'singleVarAccessClass')) {
         ## Keeping this simple: only doing first instance for now
         varInfo <- instances[[1]][[name]]$model$getVarInfo( instances[[1]][[name]]$var )

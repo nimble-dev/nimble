@@ -1,4 +1,4 @@
-runComparison<-function(allModels,mcmcs,niter=10000,thin=1,standir,plot_on=F){
+runComparison<-function(allModels,mcmcs,niter=10000,thin=1,MCMCdefs,standir,stanNameMapsList,plot_on=FALSE){
   library(nimble)
   library(rjags)
   library(rstan)
@@ -15,15 +15,24 @@ runComparison<-function(allModels,mcmcs,niter=10000,thin=1,standir,plot_on=F){
   }
   
   mods=list()
+
+  noConjDef <- list(noConj = quote({ configureMCMC(Rmodel, useConjugacy=FALSE) }))
+  if(missing(MCMCdefs)) MCMCdefs <- noConjDef
+  else MCMCdefs <- c(MCMCdefs, noConjDef)
+
+  if(missing(stanNameMapsList)) stanNameMapsList <- NULL
   
   for (i in 1:length(allModels)){
-    print(allModels[i])
+      print(allModels[i])
+      stanNameMaps <- stanNameMapsList[[ allModels[i] ]]
+      if(is.null(stanNameMaps)) stanNameMaps <- list()
     suite_output <- MCMCsuite(x[[i]]$model, constants = x[[i]]$data, inits = x[[i]]$inits, 
                                MCMCs = mcmcs,makePlot=plot_on,savePlot=plot_on,niter=niter,thin=thin
                               ,summaryStats=c('mean','median','sd','CI95_low','CI95_upp','effectiveSize')
                               #change
-                              ,MCMCdefs = list(noConj = quote({ configureMCMC(Rmodel, useConjugacy=FALSE) }))
-                              ,stan_model=paste(standir,allModels[i],'/',allModels[i],'.stan',sep="")
+                              ,MCMCdefs = MCMCdefs ##list(noConj = quote({ configureMCMC(Rmodel, useConjugacy=FALSE) }))
+                             ,stan_model=paste(standir,allModels[i],'/',allModels[i],'.stan',sep="")
+                              , stanNameMaps = stanNameMaps
     )
     mods[allModels[i]][[1]]=list(suite_output$summary,create_time_df(suite_output$timing,length(mcmcs)))
   }

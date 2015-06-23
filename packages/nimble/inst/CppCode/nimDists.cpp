@@ -2,6 +2,27 @@
 #include "nimble/dists.h"
 #include "nimble/nimDists.h"
 
+double nim_dnorm(double x, double mu, double sigma, int give_log) {
+// #ifdef IEEE_754
+//     if (ISNAN(x) || ISNAN(mu) || ISNAN(sigma))
+//         return x + mu + sigma;
+// #endif
+//     if(!R_FINITE(sigma)) return R_D__0;
+//     if(!R_FINITE(x) && mu == x) return ML_NAN;/* x-mu is NaN */
+//     if (sigma <= 0) {
+//         if (sigma < 0) ML_ERR_return_NAN;
+//         /* sigma == 0 */
+//         return (x == mu) ? ML_POSINF : R_D__0;
+//     }
+     x = (x - mu) / sigma;
+
+//     if(!R_FINITE(x)) return R_D__0;
+    return (give_log ?
+            -(M_LN_SQRT_2PI  +  0.5 * x * x + log(sigma)) :
+            M_1_SQRT_2PI * exp(-0.5 * x * x)  /   sigma);
+    /* M_1_SQRT_2PI = 1 / sqrt(2 * pi) */
+}
+
 bool R_IsNA(NimArr<1, double> &P) {
   int s = P.size();
   for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);

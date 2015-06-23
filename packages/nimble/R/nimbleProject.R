@@ -598,12 +598,11 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
 
-                                     cppProj <- cppProjectClass(dirName = dirName)
-                                     cppProjects[[ generatorName ]] <<- cppProj
-                                     if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(generatorName))
-                                     cppProj$addClass(cppClass, generatorName, filename)
-
                                      if(!nfCompInfos[[generatorName]]$written && control$writeFiles) {
+                                         cppProj <- cppProjectClass(dirName = dirName)
+                                         cppProjects[[ generatorName ]] <<- cppProj
+                                         if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(generatorName))
+                                         cppProj$addClass(cppClass, generatorName, filename)
                                          cppProj$writeFiles(filename)
                                          nfCompInfos[[generatorName]]$written <<- TRUE
                                      } else {

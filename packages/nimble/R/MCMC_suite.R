@@ -179,6 +179,10 @@ MCMCsuiteClass <- setRefClass(
         debug = 'logical',   ## whether to enter browser() before running each algorithm    --- ORIGINAL ARGUMENT
         modelFileName = 'character',     ## name of the text file where we write the model code, set to a fixed value
 
+        ## Maps with possible transformations from Stan to BUGS
+        ## e.g. for blocker: StanNameMaps <- list(tau = list(StanSourceName = 'sigmasq_delta', transform = function(x) 1/x)) ## transform can be omitted
+        StanNameMaps = 'ANY',
+        
         ## set in run()
         Cmodel = 'ANY',   ## compiled Cmodel object
         RmcmcFunctionList = 'list',    ## list of the R (nimble) MCMC functions
@@ -203,6 +207,7 @@ MCMCsuiteClass <- setRefClass(
             bugs_directory = 'C:/WinBUGS14',
             bugs_program   = 'WinBUGS',
             stan_model     = '',
+            stanNameMaps   = list(),
             makePlot       = TRUE,
             savePlot       = TRUE,
             plotName       = 'MCMCsuite',
@@ -225,6 +230,7 @@ MCMCsuiteClass <- setRefClass(
             bugs_directory <<- bugs_directory
             bugs_program <<- bugs_program
             stan_model <<- stan_model
+            StanNameMaps <<- stanNameMaps
             makePlot <<- makePlot
             savePlot <<- savePlot
             plotName <<- plotName
@@ -334,6 +340,14 @@ MCMCsuiteClass <- setRefClass(
                 timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan))) } ## this one includes inits = ...
             
             tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
+            for(BUGSname in names(StanNameMaps)) {
+                iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
+                if(length(iCol)==1) {
+                    if(!is.null(StanNameMaps[[BUGSname]]$transform))
+                        tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
+                    colnames(tempArray)[iCol] <- BUGSname
+                }
+            }
             dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
             if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
                 missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])

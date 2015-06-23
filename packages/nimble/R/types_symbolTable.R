@@ -336,6 +336,18 @@ symbolNimPtrList <-
                     }
                     ))
 
+
+symbolCopierVector <-
+    setRefClass(Class = 'symbolCopierVector',
+                contains = 'symbolBase',
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolCopierVector', name)),
+                    genCppVar = function(...) {
+                        cppVar(name = name, baseType = 'copierVectorClass')
+                    }
+                ))
+
 symbolNimbleFunctionList <-
     setRefClass(Class = 'symbolNimbleFunctionList',
                 contains = 'symbolNimPtrList')

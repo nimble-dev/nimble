@@ -22,7 +22,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
     for(vn in vNames) {
         thisSymbol <- symTab$getSymbolObject(vn)
         if(is.null(thisSymbol)) next
-        if(thisSymbol$type == 'model' || thisSymbol$type == 'symbolNodeFunctionVector' || thisSymbol$type == 'symbolModelVariableAccessorVector' ||thisSymbol$type == 'symbolModelValuesAccessorVector') next ## skip models and NodeFunctionVectors and modelVariableAccessors      
+        if(thisSymbol$type == 'model' || thisSymbol$type == 'symbolNodeFunctionVector' || thisSymbol$type == 'symbolModelVariableAccessorVector' ||thisSymbol$type == 'symbolModelValuesAccessorVector' || thisSymbol$type == 'symbolCopierVector') next ## skip models and NodeFunctionVectors and modelVariableAccessors      
         ptrName = paste0(".", vn, "_Ptr")
         fieldList[[ptrName]] <- "ANY" ## "ANY" 
         ## Model variables:
@@ -274,15 +274,15 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                    next
                                                }
                                                else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
-                                                   populateNodeFxnVec(fxnPtr = .basePtr, Robject = Robject, fxnVecName = v) 
+                                                   populateNodeFxnVec(fxnPtr = .basePtr, Robject = Robj, fxnVecName = v) 
                                                    next
                                                }
                                                else if(cppCopyTypes[[v]] == 'modelVarAccess'){
-                                                   populateManyModelVarMapAccess(fxnPtr = .basePtr, Robject = Robject, manyAccessName = v)
+                                                   populateManyModelVarMapAccess(fxnPtr = .basePtr, Robject = Robj, manyAccessName = v)
                                                    next
                                                }
                                                else if(cppCopyTypes[[v]] == 'modelValuesAccess'){
-                                                   populateManyModelValuesMapAccess(fxnPtr = .basePtr, Robject = Robject, manyAccessName = v)
+                                                   populateManyModelValuesMapAccess(fxnPtr = .basePtr, Robject = Robj, manyAccessName = v)
                                                    next
                                                }
                                                else if(cppCopyTypes[[v]] == "modelValuesPtr"){
@@ -309,9 +309,16 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                else if(cppCopyTypes[[v]] == 'numeric') {
                                                    .self[[v]] <<- Robj[[v]]
                                                }
-                                               else
+                                               else if(!(cppCopyTypes[[v]] %in% c('copierVector'))) {
                                                    warning(paste0("Note: cppCopyTypes not recognized. Type = ", cppCopyTypes[[v]], "\n"), call. = FALSE)
-                                               
+                                               }
+                                           }
+                                           ## second pass is for initializations that require everything from first pass be done
+                                           for(v in cppNames) {
+                                               if(is.null(cppCopyTypes[[v]])) next
+                                               if(cppCopyTypes[[v]] == 'copierVector') {
+                                                   populateCopierVector(fxnPtr = .basePtr, Robject = Robj, vecName = v)
+                                               }
                                            }
                                        },
                                        lookupSymbol = function(symname) {
@@ -338,6 +345,7 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
         else if(inherits(thisSymbol, 'symbolVecNimArrPtr')) {ans[[thisSymbol$name]] <- 'modelValuesPtr'; next}
         else if(inherits(thisSymbol, 'symbolNumericList')) {ans[[thisSymbol$name]] <- 'numericList'; next}
         else if(inherits(thisSymbol, 'symbolNimPtrList')) {ans[[thisSymbol$name]] <- 'nimPtrList'; next}
+        else if(inherits(thisSymbol, 'symbolCopierVector')) {ans[[thisSymbol$name]] <- 'copierVector'; next}
         else ans[[thisSymbol$name]] <- 'numeric'
     }
     ans
