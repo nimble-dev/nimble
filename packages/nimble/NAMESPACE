@@ -46,12 +46,10 @@ export(calcNodes)
 export(calcNodesMV)
 export(calculate)
 export(calculate_keywordInfo)
-<<<<<<< HEAD
-export(callToPackVPtrs)
-=======
+
 export(calculateDiff)
 export(calculateDiff_keywordInfo)
->>>>>>> upstream/fastcopy
+
 export(cc_createStructureExpr)
 export(cCopyVariableRows)
 export(cc_structureExprName)
@@ -348,6 +346,9 @@ export(sampler_RW)
 export(sampler_RW_log)
 export(sampler_RW_block)
 export(sampler_RW_llFunction)
+export(sampler_RW_PFilter)
+export(sampler_RW_PFilterResamp)
+export(sampler_RW_llFunctionBlock)
 export(sampler_slice)
 export(samplerSpec)
 export(setAndCalculate)
