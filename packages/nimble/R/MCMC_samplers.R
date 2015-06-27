@@ -58,6 +58,7 @@ sampler_RW <- nimbleFunction(
 	# variables previously inside of nested functions:
         optimalAR <- 0.44
         gamma1    <- 0
+    ##    nodeID <- which(model$modelDef$maps$graphID_2_nodeName == target)
     },
     
     run = function() {
@@ -66,16 +67,20 @@ sampler_RW <- nimbleFunction(
      	## model[[target]] <<- propValue
         ## modelLP1 <- calculate(model, calcNodes)
         ## logMHR <- modelLP1 - modelLP0
-
+    ##    print('entering sampler for nodeID ',nodeID,'\n')
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
      	model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
 
         jump <- decide(logMHR)
-        if(jump)
+        if(jump) {
+      ##      print('accepting')
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        else
+        }
+        else {
+       ##     print('rejecting')
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        }
         if(adaptive)     adaptiveProcedure(jump)
     },
     

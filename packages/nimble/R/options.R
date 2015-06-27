@@ -11,6 +11,7 @@ nimbleUserNamespace <- as.environment(list())
         messagesWhenBuildingOrFinalizingCppObjects = FALSE,
         indexDrop = TRUE,
         debugRCfunProcessing = FALSE,
+        debugCppLineByLine = FALSE,
         debugNFProcessing = FALSE,
         compileAltParamFunctions = TRUE,
         verifyConjugatePosteriors = FALSE,        ## verifies the correct posterior is created for any conjugate samplers, at run-time

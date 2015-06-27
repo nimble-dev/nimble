@@ -1,0 +1,30 @@
+var
+   age[I],  year[I],   cases[I], pyr[I], mu[I], alpha[Nage],
+   beta[K], betamean[K],  betaprec[K], logRR[K], tau, sigma;
+model {
+   for (i in 1:I) {
+      cases[i]        ~ dpois(mu[i]);
+      log(mu[i])     <- log(pyr[i]) + alpha[age[i]] + beta[year[i]]
+   }
+
+   betamean[1]    <- 0.0; 
+   betaprec[1]    <- tau*1.0E-6; 
+   betamean[2]    <- 0.0;  
+   betaprec[2]    <- tau*1.0E-6; 
+   for (k in 3:K){
+      betamean[k]    <- 2*beta[k-1] - beta[k-2];
+      betaprec[k]    <- tau 
+   } 
+
+   for (k in 1:K){
+      beta[k]        ~ dnorm(betamean[k],betaprec[k]);
+      logRR[k]      <- beta[k] - beta[5]
+   }
+
+   alpha[1]      <- 0.0;   
+   for (j in 2:Nage){
+      alpha[j]       ~ dnorm(0,1.0E-6)
+   }
+   sigma ~ dunif(0,1);
+   tau   <- 1/(sigma*sigma);
+}
