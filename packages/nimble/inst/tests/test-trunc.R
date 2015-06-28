@@ -376,7 +376,7 @@ test_mcmc(model = code, inits = as.list(inits), data = c(data, as.list(constants
             sd = list(a0 = c(.14, .36, .51), beta = .32, pi = .20)),
           resultsTolerance = list(mean = list(a0 = c(.05, .15, .15), beta = .1, pi = .04),
               sd = list(a0 = c(.02, .1, .1), beta = .03, pi = .02)),
-          name = 'test of ordering contraint')
+          name = 'test of ordering constraint')
 # no basic assessment because R MCMC takes forever, even for 5 iterations
 
 
