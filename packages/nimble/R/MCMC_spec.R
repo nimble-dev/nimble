@@ -300,14 +300,15 @@ Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, getSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
 
-Invisibly returns a list of the currnet sampler specifications, which are samplerSpec reference class objects.
+Invisibly returns a list of the current sampler specifications for the specified samplers, which are samplerSpec reference class objects.
 '
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             for(i in ind)
                 cat(paste0('[', i, '] ', makeSpaces(i), samplerSpecs[[i]]$toStr(), '\n'))
-            return(invisible(samplerSpecs))
+            if(length(ind) == 1) return(invisible(samplerSpecs[[ind]]))
+            return(invisible(samplerSpecs[ind]))
         },
 
         findSamplersOnNodes = function(nodes) {

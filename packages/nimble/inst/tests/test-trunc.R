@@ -396,7 +396,7 @@ code <- nimbleCode({
 m <- nimbleModel(code, data = list(y = 1), inits = list(mu2 = 1))
 spec <- configureMCMC(m)
 
-try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[1]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu1")))
-try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[3]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu2")))
-try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$samplerSpecs[[4]]$name, is_identical_to('conjugate_dnorm'), info = "incorrectly not assigning conjugate sampler for mu3")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu1')$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu1")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu2')$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu2")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu3')$name, is_identical_to('conjugate_dnorm'), info = "incorrectly not assigning conjugate sampler for mu3")))
    
