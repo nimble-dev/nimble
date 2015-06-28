@@ -49,7 +49,8 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     if(is.null(model))
       stop("testBUGSmodel: one of 'example' or 'model' must be provided")
     
-    Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug)
+    Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE)
+    # setting check to FALSE because check() in some cases (e.g., kidney) causes initialization of values such that inits as passed in do not match values in R or C model and failure of test of whether initial values are maintained 
     
     if(useInits) {
                                         # kludgey as this code is in readBUGSmodel() but no nice way to get it out if I want readBUGSmodel to return the R model; one possibility is to have the inits be embedded in the R model...
