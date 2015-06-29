@@ -513,13 +513,15 @@ Details: The return value is a named list, with an element corresponding to each
                                       conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
                                   check = function() {
+                                      lp <- calculate(.self)
+                                      if(isValid(lp)) return(invisible(TRUE))
                                       badVars <- list(na=character(), nan=character(), inf=character())
                                       nns <- getNodeNames(includeRHSonly = TRUE) 
                                       nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
                                       for(nn in nns) {
                                           val <- .self[[nn]]
                                           type <- getNodeType(nn)
-                                          if(length(type) > 1) stop('something wrong with Daniel\'s understading of nimbleModel')
+                                          if(length(type) > 1) stop('something wrong with Daniel\'s understanding of nimbleModel')
                                           if(type == 'RHSonly') {
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'determ') {
