@@ -261,14 +261,12 @@ Arguments:
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
 print: Boolean argument, default value TRUE, specifying whether to print the current list of samplers once the removal has been done.
-
-Invisibly returns a list of the currnet sampler specifications, which are samplerSpec reference class objects.
 '      
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             samplerSpecs[ind] <<- NULL
             if(print) getSamplers()
-            return(invisible(samplerSpecs))
+            return(invisible(NULL))
         },
         
         setSamplers = function(ind, print = TRUE) {
@@ -281,15 +279,13 @@ ind: A numeric vector or character vector.  A numeric vector may be used to spec
 For example, if the MCMCspec object currently has 3 samplers, then the ordering may be reversed by calling mcmcspec$setSamplers(3:1), or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and the sampler list will modified to only those samplers acting on these target nodes.
 
 print: Boolean argument, default value TRUE, specifying whether to print the new list of samplers.
-
-Invisibly returns a list of the currnet sampler specifications, which are samplerSpec reference class objects.
 '   
             if(missing(ind))        ind <- numeric(0)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerSpecs)) stop('MCMC specification doesn\'t have that many samplers')
             samplerSpecs <<- samplerSpecs[ind]
             if(print) getSamplers()
-            return(invisible(samplerSpecs))
+            return(invisible(NULL))
         },
         
         getSamplers = function(ind) {
