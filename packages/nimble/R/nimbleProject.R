@@ -689,10 +689,14 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     ## 2. Get project or make new project
     if(missing(project)) {
         if(reset) warning('reset = TRUE but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item.  e.g. compileNimble(myFunction, project = myFunction, reset = TRUE)')
+        if(!sum(unitTypes == 'model'))  # CJP added 6/30/15
+            stop("Compiling units without a project specified: please make sure one of the units to be compiled is a model or specify a project.", call. = FALSE)
         project <- nimbleProjectClass(dirName, name = projectName)
     } else {
         project <- getNimbleProject(project, TRUE)
-        if(is.null(project)) stop("Invalid project argument", call. = FALSE)
+#        if(is.null(project)) stop("Invalid project argument", call. = FALSE)  # CJP altered 6/30/15
+        if(!inherits(project, 'nimbleProjectClass'))
+            stop("Invalid project argument; note that models and nimbleFunctions need to be compiled before they can be used to specify a project.", call. = FALSE)
     }
     if(resetFunctions) project$resetFunctions()
 
