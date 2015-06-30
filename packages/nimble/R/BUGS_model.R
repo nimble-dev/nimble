@@ -515,8 +515,13 @@ Details: The return value is a named list, with an element corresponding to each
                                   check = function() {
                                       lp <- calculate(.self)
                                       if(isValid(lp)) return(invisible(TRUE))
+                                      varsToCheck <- character()
+                                      for(v in .self$getVarNames())
+                                          if(!isValid(.self[[v]]) || !isValid(getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
+                                              varsToCheck <- c(varsToCheck, v)
                                       badVars <- list(na=character(), nan=character(), inf=character())
-                                      nns <- getNodeNames(includeRHSonly = TRUE) 
+                                      ##nns <- getNodeNames(includeRHSonly = TRUE)
+                                      nns <- expandNodeNames(varsToCheck)
                                       nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
                                       for(nn in nns) {
                                           val <- .self[[nn]]
