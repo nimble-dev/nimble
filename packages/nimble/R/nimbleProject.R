@@ -696,7 +696,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         project <- getNimbleProject(project, TRUE)
 #        if(is.null(project)) stop("Invalid project argument", call. = FALSE)  # CJP altered 6/30/15
         if(!inherits(project, 'nimbleProjectClass'))
-            stop("Invalid project argument; note that models and nimbleFunctions need to be compiled before they can be used to specify a project.", call. = FALSE)
+            stop("Invalid project argument; note that models and nimbleFunctions need to be compiled before they can be used to specify a project. Once compiled you can use an R model or nimbleFunction to specify the project.", call. = FALSE)
     }
     if(resetFunctions) project$resetFunctions()
 
