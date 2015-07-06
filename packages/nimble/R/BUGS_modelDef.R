@@ -1762,7 +1762,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 
     ## 11. Topologically sort and re-index all objects with vertex IDs
     if(debug) browser()
-    newGraphID_2_oldGraphID <- topological.sort(graph, mode = 'out')
+    newGraphID_2_oldGraphID <- as.numeric(topological.sort(graph, mode = 'out'))
     oldGraphID_2_newGraphID <- sort(newGraphID_2_oldGraphID, index = TRUE)$ix
     graph <<- permute.vertices(graph, oldGraphID_2_newGraphID)  # re-label vertices in the graph
 
@@ -2150,7 +2150,7 @@ modelDefClass$methods(buildIgraph = function() {
     allEdges <- unlist(lapply(declInfo, function(x) x$allEdges())) #**
     graph <<- add.edges(graph, allEdges)
     
-    graph <<- permute.vertices(graph, sort(topological.sort(graph, mode = 'out'), index = TRUE)$ix)  #* ## topological sort
+    graph <<- permute.vertices(graph, sort(as.numeric(topological.sort(graph, mode = 'out')), index = TRUE)$ix)  #* ## topological sort
 })
 
 modelDefClass$methods(buildMaps2 = function() {
