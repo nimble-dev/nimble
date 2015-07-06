@@ -32,7 +32,7 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
--- (note addition of range as part of declInfo and of get_range if we code it now)
+-- added 'range' variable to all distributions; when truncation is specified this modifies the range and also sets the 'truncated' flag to TRUE; range is not at the moment used but could be used by developers in algorithms
 
 -- added a variety of error checking for various distribution functions and now generally use doubles in distribution functions in C++
 

@@ -15,7 +15,9 @@ branches:
     - travis
 
 install:
-  - Rscript -e "install.packages('igraph',   repos = 'http://cran.us.r-project.org')"
+  - Rscript -e "install.packages('devtools',  repo = 'http://cran.us.r-project.org')"
+  - Rscript -e "devtools::install_version('igraph', '0.7.1', repo = 'http://cran.us.r-project.org')"
+##  - Rscript -e "install.packages('igraph',   repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble

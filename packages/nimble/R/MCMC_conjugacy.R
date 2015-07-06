@@ -201,6 +201,7 @@ conjugacyRelationshipsClass <- setRefClass(
             return(conjugacyResultsAll)
         },
         checkConjugacy_singleDeclaration = function(model, nodes) {
+            browser()
             if(model$isTruncated(nodes[1])) return(list())   ## we say non-conjugate if the targetNode is truncated
             dist <- model$getNodeDistribution(nodes[1])
             if(!dist %in% names(conjugacys)) return(list())

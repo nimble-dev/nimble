@@ -195,6 +195,8 @@ processNonParseableCode <- function(text) {
 #' 
 #' @param useInits boolean indicating whether to set the initial values, either based on \code{inits} or by finding the '-inits' file corresponding to the input model file  
 #'
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+#'
 #' @author Christopher Paciorek
 #'
 #' @return returns a NIMBLE BUGS R model
@@ -213,7 +215,7 @@ processNonParseableCode <- function(text) {
 #' Rmodel$setData(data['x'])
 #' Rmodel[['mu']]
 #' Rmodel$nodes[['x']]$calculate()
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, useData = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, useData = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = TRUE) {
 
   # helper function
   doEval <- function(vec, env) {
@@ -390,7 +392,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   # create R model
   # 'data' will have constants and data, but BUGSmodel is written to be ok with this
   # we can't separate them before building model as we don't know names of nodes in model
-  Rmodel <- nimbleModel(model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug)
+  Rmodel <- nimbleModel(model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug, check = check)
 
   # now provide values for data nodes from 'data' list
   if(FALSE) { # now handled within nimbleModel
