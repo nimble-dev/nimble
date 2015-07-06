@@ -97,6 +97,7 @@ ENKFStep <- nimbleFunction(
       meanVec <- c(0,0)
     }
     
+    print(yLength)
     ## indices for locations of data from different nodes within our yf vector
     ## e.g. if there were two y nodes depending on x[t], with the first being a vector of length 2, and the second being 
     ## a scalar , yInds would be (0, 2, 3)  - the first node would go in yf[1:2] and the second node in yf[3] 
@@ -150,6 +151,8 @@ ENKFStep <- nimbleFunction(
         }
       }
     }
+    
+    print(varMat)
 
     #  Analysis step
     #  first calculate approx Kalman gain matrix (pg. 350)
@@ -164,7 +167,7 @@ ENKFStep <- nimbleFunction(
     if(yLength == 1){
       for(i in 1:m){
         preturb[1,i] <-yObs[1] + rnorm(1, 0, sqrt(varMat[1,1]))
-        mv[thisXName, i][1] <<-xf[1,i] + k[1,1]*(preturb[1,i] -yf[1,i]) 
+        mv[thisXName, i] <<-xf[,i] + k%*%(preturb[,i] -yf[,i]) 
       }
     }
     else{
