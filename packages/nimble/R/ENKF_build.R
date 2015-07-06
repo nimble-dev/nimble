@@ -1,4 +1,5 @@
 ##  Contains code to run Ensemble Kalman Filter.
+##  Algorithm found in Evenson '03.
 ##  The buildENKF() funtion builds and runs the ENKF.
 ##  The ENKFStep() function gets samples from latent states
 ##  for one timepoint. The ENKFStep function uses either the 
@@ -97,7 +98,6 @@ ENKFStep <- nimbleFunction(
       meanVec <- c(0,0)
     }
     
-    print(yLength)
     ## indices for locations of data from different nodes within our yf vector
     ## e.g. if there were two y nodes depending on x[t], with the first being a vector of length 2, and the second being 
     ## a scalar , yInds would be (0, 2, 3)  - the first node would go in yf[1:2] and the second node in yf[3] 
@@ -152,14 +152,13 @@ ENKFStep <- nimbleFunction(
       }
     }
     
-    print(varMat)
 
     #  Analysis step
     #  first calculate approx Kalman gain matrix (pg. 350)
     oneVec <- nimVector(1,m)
     efx <- xf - (1/md)*(xf%*%oneVec%*%t(oneVec))
     efy <- yf -  (1/md)*(yf%*%oneVec%*%t(oneVec))
-    k <- (1/(md-1))*efx%*%t(efy)%*%inverse((1/(md-1))*(efy%*%t(efy)+varMat))
+    kMat <- (1/(md-1))*efx%*%t(efy)%*%inverse((1/(md-1))*(efy%*%t(efy)+varMat))
 
     
     #  next, cycle through particles, create preturbed observations,
@@ -167,14 +166,14 @@ ENKFStep <- nimbleFunction(
     if(yLength == 1){
       for(i in 1:m){
         preturb[1,i] <-yObs[1] + rnorm(1, 0, sqrt(varMat[1,1]))
-        mv[thisXName, i] <<-xf[,i] + k%*%(preturb[,i] -yf[,i]) 
+        mv[thisXName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
       }
     }
     else{
       cholesky <- chol(varMat)    
       for(i in 1:m){
-        preturb[,i] <- yObs + rmnorm_chol(1, meanVec, cholesky, 1) 
-        mv[thisXName, i] <<-xf[,i] + k%*%(preturb[,i] -yf[,i]) 
+        preturb[,i] <- yObs + rmnorm_chol(1, meanVec, cholesky, 0) 
+        mv[thisXName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
       }
     }
   }, where = getLoadingNamespace()
@@ -189,8 +188,8 @@ ENKFStep <- nimbleFunction(
 #' @details Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  
 #' Latent state (x[t]) and Observations (y[t]) can be scalars or vectors at each time point, 
 #' and sizes of observations can vary from time point to time point.
-#' In the BUGS model, the observations must be equal to some (possibly nonlinear) deterministic function
-#' of the latent state plus an additive error term.  Currently only normal/mvn error terms are supported.
+#' In the BUGS model, the observations (y[t]) must be equal to some (possibly nonlinear) deterministic function
+#' of the latent state (x[t]) plus an additive error term.  Currently only normal/mvn error terms are supported.
 #' The transition from x(t) to x(t+1) does not have to be normal or linear.
 #' @family filtering methods
 #' @examples
