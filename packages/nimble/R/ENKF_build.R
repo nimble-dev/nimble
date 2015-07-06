@@ -36,7 +36,7 @@ enkfMultFunc = nimbleFunction(
       returnType(double(2))
       return(dataFuncList[[1]]$get_cov())
     }
-  )
+  ), where = getLoadingNamespace()
 )
 
 #  returns mean (as vector) and var (as matrix) for normal data node  
@@ -61,7 +61,7 @@ enkfScalFunc = nimbleFunction(
       outMat[1,1] <- dataFuncList[[1]]$get_var()
       return(outMat)
     }
-  )
+  ), where = getLoadingNamespace()
 )
 
 
