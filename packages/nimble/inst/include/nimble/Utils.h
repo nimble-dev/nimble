@@ -9,6 +9,7 @@
 //using namespace std;
 
 #define PRINTF Rprintf
+#define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
 // code copied from nmath.h - useful utilities 

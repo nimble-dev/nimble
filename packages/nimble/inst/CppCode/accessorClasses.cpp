@@ -2,7 +2,7 @@
 #include "nimble/RcppUtils.h"
 
 // 1. NodeVectors
-double calculate(NodeVectorClass &nodes) {
+double calculateOld(NodeVectorClass &nodes) {
   double ans(0);
   vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
   int vecSize = nodeFunPtrs.size();
@@ -11,11 +11,31 @@ double calculate(NodeVectorClass &nodes) {
   return(ans);
 }
 
+double calculate(NodeVectorClass &nodes) {
+  double ans(0);
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
+  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
+  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
+    ans += (*iNodeFun)->calculate();
+  return(ans);
+}
+
+double calculateDiff(NodeVectorClass &nodes) {
+  double ans(0);
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
+  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
+  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
+    ans += (*iNodeFun)->calculateDiff();
+  return(ans);
+}
+
 double getLogProb(NodeVectorClass &nodes) {
   double ans(0);
-  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
-  vector<nodeFun *>::iterator endNode(nodeFunPtrs.end());
-  for( vector<nodeFun *>::iterator iNodes = nodeFunPtrs.begin();
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
+  for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
        iNodes != endNode;
        ++iNodes) {
     ans += (*iNodes)->getLogProb();
@@ -24,9 +44,9 @@ double getLogProb(NodeVectorClass &nodes) {
 }
 
 void simulate(NodeVectorClass &nodes) {
-  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
-  vector<nodeFun *>::iterator endNode(nodeFunPtrs.end());
-  for( vector<nodeFun *>::iterator iNodes = nodeFunPtrs.begin();
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
+  for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
        iNodes != endNode;
        ++iNodes) {
      (*iNodes)->simulate();
@@ -391,6 +411,75 @@ void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
 	ManyModelAccess_2_nimArr<1, int>(MVA, nimArr);
 }
 
+// new copierClass versions
+// remember to look at calculate() too to avoid copies every time.
+void nimCopy(const copierVectorClass &copiers) {
+  vector<copierClass*>::const_iterator iCopy;
+  //  PRINTF("iterating over %i\n", copiers.copyVector.size());
+  // int i = 0;
+  for(iCopy = copiers.copyVector.begin(); iCopy != copiers.copyVector.end(); iCopy++) {
+    //   PRINTF("Starting copier %i\n", i);
+    (*iCopy)->copy(copiers.rowInfo);
+    //    PRINTF("Done with copier %i\n", i);
+    //   i++;
+  }
+}
+
+// A bit cheesy here: we add an unused argument only to trigger the right overloaded type in a simple way
+
+void nimCopy(copierVectorClass &copiers, int rowFrom) {
+  copiers.rowFrom() = rowFrom-1;
+  nimCopy(copiers);
+}
+
+void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo) { // only ever called with rowFrom = 0 for right overloading
+  copiers.rowTo() = rowTo-1;
+  nimCopy(copiers);
+}
+
+void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo, int unused) { // only ever called when rowFrom and rowTo both needed
+  copiers.rowFrom() = rowFrom-1;
+  copiers.rowTo() = rowTo-1;
+  nimCopy(copiers);
+}
+
+
+void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesMapAccessorBase *to, int isFromMV, int isToMV) {
+  // Imitates old version of nimCopy but populates copyVector of correct choices of derived copierClass objects
+  vector<SingleVariableMapAccessBase *> fromAccessors = from->getMapAccessVector();
+  vector<SingleVariableMapAccessBase *> toAccessors = to->getMapAccessVector();
+
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+  PRINTF("Entering nimCopy\n");
+  from->check();
+  to->check();
+#endif
+  
+  if(fromAccessors.size() != toAccessors.size()) {
+    std::cout<<"Error in setting up a copierVector: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+  }
+  copyVector.resize( fromAccessors.size() );
+  //PRINTF("Ready to set up length %i\n", copyVector.size());
+  vector<SingleVariableMapAccessBase *>::iterator iFrom, iTo, iFromEnd;
+  iFromEnd = fromAccessors.end();
+  iTo =  toAccessors.begin();
+  int i = 0;
+  for(iFrom = fromAccessors.begin(); iFrom != iFromEnd; iFrom++) {
+    //PRINTF("setting up %i\n", i);
+    copyVector[i] = makeOneCopyClass(*iFrom, *iTo, isFromMV, isToMV); // switched from isFromMV and isToMV
+    iTo++;
+    i++;
+  }
+}
+
+copierVectorClass::copierVectorClass() {}
+
+copierVectorClass::~copierVectorClass() {
+  vector<copierClass*>::iterator iCopy;
+  for(iCopy = copyVector.begin(); iCopy != copyVector.end(); iCopy++) {
+    delete (*iCopy);
+  }
+}
 
 // new MapAccessor versions
 void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to) { //map version
@@ -450,6 +539,91 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
   nimCopy(from, to);
 };
 
+copierClassBuilderCase< singletonCopierClass_M2M<double, double>, singletonCopierClass_M2M<double, int>, singletonCopierClass_M2M<int, int>, singletonCopierClass_M2M<int, double> > globalCopierBuilder_singleton_M2M;
+
+copierClassBuilderCase< singletonCopierClass_M2MV<double, double>, singletonCopierClass_M2MV<double, int>, singletonCopierClass_M2MV<int, int>, singletonCopierClass_M2MV<int, double> > globalCopierBuilder_singleton_M2MV;
+
+copierClassBuilderCase< singletonCopierClass_MV2M<double, double>, singletonCopierClass_MV2M<double, int>, singletonCopierClass_MV2M<int, int>, singletonCopierClass_MV2M<int, double> > globalCopierBuilder_singleton_MV2M;
+
+copierClassBuilderCase< singletonCopierClass_MV2MV<double, double>, singletonCopierClass_MV2MV<double, int>, singletonCopierClass_MV2MV<int, int>, singletonCopierClass_MV2MV<int, double> > globalCopierBuilder_singleton_MV2MV;
+
+
+copierClassBuilderCase< blockCopierClass<double, double, 1>, blockCopierClass<double, int, 1>, blockCopierClass<int, int, 1>, blockCopierClass<int, double, 1> > globalCopierClassBuilderBlock1;
+
+copierClassBuilderCase< blockCopierClass<double, double, 2>, blockCopierClass<double, int, 2>, blockCopierClass<int, int, 2>, blockCopierClass<int, double, 2> > globalCopierClassBuilderBlock2;
+
+copierClassBuilderCase< blockCopierClass<double, double, 3>, blockCopierClass<double, int, 3>, blockCopierClass<int, int, 3>, blockCopierClass<int, double, 3> > globalCopierClassBuilderBlock3;
+
+copierClassBuilderCase< blockCopierClass<double, double, 4>, blockCopierClass<double, int, 4>, blockCopierClass<int, int, 4>, blockCopierClass<int, double, 4> > globalCopierClassBuilderBlock4;
+
+
+copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV, int isToMV) { // like nimCopyOne but it returns an appropriate derived copierClass object
+  copierClassBuilderClass *copierClassBuilder;
+
+  if(to->getSingleton()) {
+#ifdef __NIMBLE_DEBUG_ACCESSORS
+    if(!from->getSingleton()) PRINTF("Run-time error: to is a singleton but from is not a singleton\n");
+    singletonCopyCheck(fromNimArr, from->getOffset());
+    singletonCopyCheck(toNimArr, to->getOffset());
+#endif
+    switch(isFromMV) {
+    case 0:
+      switch(isToMV) {
+      case 0:
+	copierClassBuilder = &globalCopierBuilder_singleton_M2M;
+	break;
+      case 1:
+	copierClassBuilder = &globalCopierBuilder_singleton_M2MV;
+	break;
+      default:
+	NIMERROR("problem in makeOneCopyClass");
+	return 0;
+	break;
+      };
+      break;
+    case 1:
+      switch(isToMV) {
+      case 0:
+	copierClassBuilder = &globalCopierBuilder_singleton_MV2M;
+	break;
+      case 1:
+	copierClassBuilder = &globalCopierBuilder_singleton_MV2MV;
+	break;
+      default:
+	NIMERROR("problem in makeOneCopyClass");
+	return 0;
+	break;
+      };
+      break;
+    default:
+      NIMERROR("problem in makeOneCopyClass");
+      return 0;
+      break;
+    }
+    return copierClassBuilder->build(from, to, isFromMV, isToMV);   
+  }
+  //  dynamicMapCopy<double, double>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
+  int mapDim = to->getStrides().size();
+  switch(mapDim) {
+  case 1:
+    copierClassBuilder = &globalCopierClassBuilderBlock1;
+    break;
+  case 2:
+    copierClassBuilder = &globalCopierClassBuilderBlock2;
+    break;
+  case 3:
+    copierClassBuilder = &globalCopierClassBuilderBlock3;
+    break;
+  case 4:
+    copierClassBuilder = &globalCopierClassBuilderBlock4;
+    break;
+  default:
+    NIMERROR("problem in makeOneCopyClass");
+    return 0;
+    break;
+  }   
+  return copierClassBuilder->build(from, to, isFromMV, isToMV);
+}
 
 void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to) { // map version
   nimType fromType, toType;
@@ -464,7 +638,6 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
     singletonCopyCheck(fromNimArr, from->getOffset());
     singletonCopyCheck(toNimArr, to->getOffset());
 #endif
-
     switch(fromType) {
     case DOUBLE:
       switch(toType) {
@@ -925,6 +1098,18 @@ SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_
 		(*accessVector).varAccessors[i] = static_cast<SingleModelValuesAccess*>(numObj->getObjectPtr(index));
 		}
 	return(R_NilValue);
+}
+
+/// NEWER
+
+SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP SintIsFromMV, SEXP SintIsToMV) {
+  copierVectorClass *copierVector = static_cast<copierVectorClass*>(R_ExternalPtrAddr(ScopierVector));
+  ManyVariablesMapAccessorBase* fromValuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(SfromPtr) );
+  ManyVariablesMapAccessorBase* toValuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StoPtr) );
+  int isFromMV = INTEGER(SintIsFromMV)[0];
+  int isToMV   = INTEGER(SintIsToMV)[0];
+  copierVector->setup(fromValuesAccessor, toValuesAccessor, isFromMV, isToMV);
+  return(R_NilValue);
 }
 
 ///NEW

@@ -31,6 +31,14 @@ makeCSingleVariableAccessor <- function(rModelPtr, elementName, beginIndex, endI
 #  like to access. beginIndex and endIndex are R indices (i.e. first element is 1, not 0)
 #  for the begining and ending sequence of flat indices this accessor uses
 
+populateCopierVector <- function(fxnPtr, Robject, vecName) {
+    vecPtr <- .Call("getModelObjectPtr", fxnPtr, vecName)
+    copierVectorObject <- Robject[[vecName]]
+    fromPtr <- .Call("getModelObjectPtr", fxnPtr, copierVectorObject[[1]])
+    toPtr <- .Call("getModelObjectPtr", fxnPtr, copierVectorObject[[2]])
+    .Call('populateCopierVector', vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]]))
+}
+
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## new version
     manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
     cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface

@@ -150,7 +150,6 @@ print: Boolean argument, specifying whether to print the ordered list of default
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             isNodeEnd <- model$isNodeEnd(nodes)
 
-            # switched to checkConjugacy2 for testing 6/15/15
             if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy2(nodes)
 
             for(i in seq_along(nodes)) {

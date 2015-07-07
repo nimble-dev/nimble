@@ -11,12 +11,14 @@ public:
   virtual void simulate()=0;
   virtual double calculate()=0;
   virtual double getLogProb()=0;
+  virtual double calculateDiff()=0;
 };
 
 class DetermNode : public Node{
 public:
   virtual void simulate()=0;
   virtual double calculate() { simulate(); return(0.); } // default behavior
+  virtual double calculateDiff() { simulate(); return(0.); }
   virtual double getLogProb() { return(0.); } // default behavior
 };
 
@@ -24,6 +26,7 @@ class StochNode : public Node {
 public:
   virtual void simulate()=0;
   virtual double calculate()=0;
+  virtual double calculateDiff()=0;
   virtual double getLogProb()=0;
 };
 
@@ -39,6 +42,7 @@ virtual void simulate();		\
   public:				\
   virtual void simulate();		\
   virtual double calculate();		\
+  virtual double calculateDiff(); \
   virtual double getLogProb();      \
   };
 
@@ -48,12 +52,14 @@ virtual void simulate();		\
   public:				\
   virtual void simulate();		\
   virtual double calculate();         \
+  virtual double calculateDiff();     \
   virtual double getLogProb();        \
   };
 
 extern "C" {
   SEXP callSimulate(SEXP Sextptr);
   SEXP callCalculate(SEXP Sextptr);
+  SEXP callCalculateDiff(SEXP Sextptr);
   SEXP callGetLogProb(SEXP Sextptr);
 }
 

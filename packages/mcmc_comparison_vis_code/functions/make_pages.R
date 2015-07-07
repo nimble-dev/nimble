@@ -1,5 +1,7 @@
 make_pages<-function(mods,allModels,ncol,dir){
-  setwd(paste(dir,'/html',sep=''))
+    curDir <- getwd()
+    setwd(paste(dir,'/html',sep=''))
+    on.exit(setwd(curDir))
   make_main(allModels)
   for(i in 1:length(mods)){
     ### create timing table 
