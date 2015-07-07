@@ -2336,7 +2336,7 @@ getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {
                    if(maps$notStoch[x[1]]) ## not stochastic so recurse
                        ans2 <- lapply(getDependencyPaths(x[1], maps = maps, nodeIDrow = x),
                                       function(z) rbind(nodeIDrow, z, deparse.level = 0))
-                   else  ## It is stochastic to append x and terminate
+                   else  ## It is stochastic so append x and terminate
                        ans2 <- list(rbind(nodeIDrow, x, deparse.level = 0))
                    ans2
                }))
