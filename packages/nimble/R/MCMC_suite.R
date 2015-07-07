@@ -21,6 +21,7 @@
 #' @param constants A named list giving values of constants for the model.
 #' This is the same as the \'constants\' argument which would be passed to nimbleModel(...).
 #' Default value is list().
+#'
 #' @param data A named list giving the data values for the model.
 #' This is the same as the \'data\' argument which would be passed to nimbleModel(...) or model$setData(...).
 #' Default value is list().
@@ -36,6 +37,7 @@
 #' @param niter Number of MCMC iterations to run.
 #' This applies to all MCMC algorithms in the suite.
 #' Default value is 10,000.
+#'
 #' @param burnin Number of initial, post-thinning, MCMC iterations to discard.
 #' Default value is 2,000.
 #' 
@@ -202,7 +204,7 @@ MCMCsuiteClass <- setRefClass(
             burnin         = 2000,
             thin           = 1,
             summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
-            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice'),
+            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
             MCMCdefs       = list(),
             bugs_directory = 'C:/WinBUGS14',
             bugs_program   = 'WinBUGS',
@@ -286,7 +288,8 @@ MCMCsuiteClass <- setRefClass(
         setMCMCdefs = function(newMCMCdefs) {
             MCMCdefs <<- list(nimble       = quote(configureMCMC(Rmodel)),
                               nimble_RW    = quote(configureMCMC(Rmodel, onlyRW    = TRUE)),
-                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)))
+                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)),
+                              autoBlock    = quote(configureMCMC(Rmodel, autoBlock = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
         },
