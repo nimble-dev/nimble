@@ -337,13 +337,13 @@ template<class Tfrom, class Tto>
 
 class blockCopierClassBase : public copierClass {
  public:
-  int toOffset, fromOffset;
+  //  int toOffset, fromOffset;
   bool isFromMV, isToMV;
   // put common initializations here
   // for now leave strides and sizes dynamically accessed
   blockCopierClassBase(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *to, int isFromMV1, int isToMV1) {
-    toOffset = to->getOffset();
-    fromOffset = from->getOffset();
+    //  toOffset = to->getOffset();
+    //  fromOffset = from->getOffset();
     isFromMV = isFromMV1;
     isToMV = isToMV1;
   }
@@ -362,7 +362,7 @@ template<class Tfrom, class Tto, int mapDim>
   void copy(const rowInfoClass &rowInfo) const {
     // set rows if needed here.
     if(isFromMV) {
-      static_cast<SingleModelValuesMapAccess *>(toPtr)->setRow(rowInfo.rowFrom);
+      static_cast<SingleModelValuesMapAccess *>(fromPtr)->setRow(rowInfo.rowFrom);
     }
     if(isToMV) {
       static_cast<SingleModelValuesMapAccess *>(toPtr)->setRow(rowInfo.rowTo);

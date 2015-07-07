@@ -415,8 +415,13 @@ void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
 // remember to look at calculate() too to avoid copies every time.
 void nimCopy(const copierVectorClass &copiers) {
   vector<copierClass*>::const_iterator iCopy;
+  //  PRINTF("iterating over %i\n", copiers.copyVector.size());
+  // int i = 0;
   for(iCopy = copiers.copyVector.begin(); iCopy != copiers.copyVector.end(); iCopy++) {
+    //   PRINTF("Starting copier %i\n", i);
     (*iCopy)->copy(copiers.rowInfo);
+    //    PRINTF("Done with copier %i\n", i);
+    //   i++;
   }
 }
 
@@ -454,11 +459,13 @@ void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesM
     std::cout<<"Error in setting up a copierVector: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
   }
   copyVector.resize( fromAccessors.size() );
+  //PRINTF("Ready to set up length %i\n", copyVector.size());
   vector<SingleVariableMapAccessBase *>::iterator iFrom, iTo, iFromEnd;
   iFromEnd = fromAccessors.end();
   iTo =  toAccessors.begin();
   int i = 0;
   for(iFrom = fromAccessors.begin(); iFrom != iFromEnd; iFrom++) {
+    //PRINTF("setting up %i\n", i);
     copyVector[i] = makeOneCopyClass(*iFrom, *iTo, isFromMV, isToMV); // switched from isFromMV and isToMV
     iTo++;
     i++;
