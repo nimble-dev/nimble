@@ -21,6 +21,7 @@
 #' @param constants A named list giving values of constants for the model.
 #' This is the same as the \'constants\' argument which would be passed to nimbleModel(...).
 #' Default value is list().
+#'
 #' @param data A named list giving the data values for the model.
 #' This is the same as the \'data\' argument which would be passed to nimbleModel(...) or model$setData(...).
 #' Default value is list().
@@ -36,6 +37,7 @@
 #' @param niter Number of MCMC iterations to run.
 #' This applies to all MCMC algorithms in the suite.
 #' Default value is 10,000.
+#'
 #' @param burnin Number of initial, post-thinning, MCMC iterations to discard.
 #' Default value is 2,000.
 #' 
@@ -179,6 +181,10 @@ MCMCsuiteClass <- setRefClass(
         debug = 'logical',   ## whether to enter browser() before running each algorithm    --- ORIGINAL ARGUMENT
         modelFileName = 'character',     ## name of the text file where we write the model code, set to a fixed value
 
+        ## Maps with possible transformations from Stan to BUGS
+        ## e.g. for blocker: StanNameMaps <- list(tau = list(StanSourceName = 'sigmasq_delta', transform = function(x) 1/x)) ## transform can be omitted
+        StanNameMaps = 'ANY',
+        
         ## set in run()
         Cmodel = 'ANY',   ## compiled Cmodel object
         RmcmcFunctionList = 'list',    ## list of the R (nimble) MCMC functions
@@ -198,11 +204,12 @@ MCMCsuiteClass <- setRefClass(
             burnin         = 2000,
             thin           = 1,
             summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
-            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice'),
+            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
             MCMCdefs       = list(),
             bugs_directory = 'C:/WinBUGS14',
             bugs_program   = 'WinBUGS',
             stan_model     = '',
+            stanNameMaps   = list(),
             makePlot       = TRUE,
             savePlot       = TRUE,
             plotName       = 'MCMCsuite',
@@ -225,6 +232,7 @@ MCMCsuiteClass <- setRefClass(
             bugs_directory <<- bugs_directory
             bugs_program <<- bugs_program
             stan_model <<- stan_model
+            StanNameMaps <<- stanNameMaps
             makePlot <<- makePlot
             savePlot <<- savePlot
             plotName <<- plotName
@@ -280,7 +288,8 @@ MCMCsuiteClass <- setRefClass(
         setMCMCdefs = function(newMCMCdefs) {
             MCMCdefs <<- list(nimble       = quote(configureMCMC(Rmodel)),
                               nimble_RW    = quote(configureMCMC(Rmodel, onlyRW    = TRUE)),
-                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)))
+                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)),
+                              autoBlock    = quote(configureMCMC(Rmodel, autoBlock = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
         },
@@ -334,6 +343,14 @@ MCMCsuiteClass <- setRefClass(
                 timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan))) } ## this one includes inits = ...
             
             tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
+            for(BUGSname in names(StanNameMaps)) {
+                iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
+                if(length(iCol)==1) {
+                    if(!is.null(StanNameMaps[[BUGSname]]$transform))
+                        tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
+                    colnames(tempArray)[iCol] <- BUGSname
+                }
+            }
             dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
             if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
                 missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])

@@ -62,6 +62,8 @@ autoBlockModel <- setRefClass(
         Rmodel = 'ANY',
         md = 'ANY',
         scalarNodeVector = 'character',
+        scalarNodeVectorCont = 'character',
+        scalarNodeVectorDisc = 'character',
         nodeGroupScalars = 'list',
         nodeGroupAllBlocked = 'list',
         monitorsVector = 'character',
@@ -75,17 +77,21 @@ autoBlockModel <- setRefClass(
             ##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
             ##for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
             scalarNodeVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=TRUE)
+            discreteInd <- sapply(scalarNodeVector, function(n) Rmodel$isDiscrete(n), USE.NAMES=FALSE)
+            scalarNodeVectorCont <<- scalarNodeVector[!discreteInd]   ## making work with discrete nodes
+            scalarNodeVectorDisc <<- scalarNodeVector[ discreteInd]   ## making work with discrete nodes
+            if(length(scalarNodeVectorCont) == 0) stop('autoBlocking only works with one or more continuous-valued model nodes')   ## making work with discrete nodes
             nodeGroupScalars <<- lapply(scalarNodeVector, function(x) x)
-            nodeGroupAllBlocked <<- list(scalarNodeVector)
-            stochNodeVector <- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=FALSE)
+            ##nodeGroupAllBlocked <<- list(scalarNodeVector)   ## making work with discrete nodes
+            nodeGroupAllBlocked <<- c(lapply(scalarNodeVectorDisc, function(x) x), list(scalarNodeVectorCont))   ## making work with discrete nodes
             monitorsVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE)
         },
         ## here is where the initial MCMC spec is created, for re-use -- for new version
         createInitialMCMCspec = function(runList) {
             initialMCMCspec <<- configureMCMC(Rmodel)
             nInitialSamplers <- length(initialMCMCspec$samplerSpecs)
-            initialMCMCspec$addSampler(target = scalarNodeVector[1], type = 'RW',       print=FALSE)  ## add one RW sampler
-            initialMCMCspec$addSampler(target = scalarNodeVector[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
+            initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
+            initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
             addCustomizedSamplersToInitialMCMCspec(runList)
             initialMCMCspec$addMonitors(monitorsVector, print=FALSE)
             RinitialMCMC <- buildMCMC(initialMCMCspec)
@@ -107,6 +113,7 @@ autoBlockModel <- setRefClass(
         },
         createGroups = function(listOfBlocks = list()) {
             listOfBlocks <- lapply(listOfBlocks, function(blk) Rmodel$expandNodeNames(blk, returnScalarComponents=TRUE))
+            if(any(unlist(listOfBlocks) %in% scalarNodeVectorDisc)) stop('cannot put block sampler on discrete-valued model nodes')
             nodes <- scalarNodeVector
             nodes <- setdiff(nodes, unlist(listOfBlocks))
             nodeList <- lapply(nodes, function(x) x)
@@ -239,7 +246,9 @@ autoBlockClass <- setRefClass(
         },
         
         determineGroupsFromCutree = function(ct) {
-            return(lapply(unique(ct), function(x) names(ct)[ct==x]))
+            groupsContOnly <- lapply(unique(ct), function(x) names(ct)[ct==x])   ## making work with discrete nodes
+            groupsAllNodes <- c(lapply(abModel$scalarNodeVectorDisc, function(x) x), groupsContOnly)   ## making work with discrete nodes
+            return(groupsAllNodes)   ## making work with discrete nodes
         },
         
         runSpecListAndSaveBest = function(specList, name, auto=FALSE) {
@@ -251,11 +260,13 @@ autoBlockClass <- setRefClass(
             for(i in seq_along(CmcmcList)) {
                 timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter))[3])
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[i]])
-                essList[[i]]   <- apply(burnedSamples, 2, effectiveSize)
+                essList[[i]] <- apply(burnedSamples, 2, effectiveSize)
+                essList[[i]] <- essList[[i]][essList[[i]] > 0]  ## exclude nodes with ESS=0 -- for discrete nodes which are fixed to a certain value; making work with discrete nodes
                 essPTList[[i]] <- essList[[i]] / timingList[[i]]
                 essPTminList[[i]] <- sort(essPTList[[i]])[1]
             }
             bestInd <- as.numeric(which(unlist(essPTminList) == max(unlist(essPTminList))))
+            if(length(bestInd) > 1) stop('there should never be an exact tie for the best...')
             if(!is.null(names(specList))) name <- paste0(name, '-', names(specList)[bestInd])
             
             it <<- it + 1
@@ -271,6 +282,7 @@ autoBlockClass <- setRefClass(
             
             if(auto) {
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[bestInd]])
+                burnedSamples <- burnedSamples[, abModel$scalarNodeVectorCont]   ## making work with discrete nodes
                 empCov[[it]] <<- cov(burnedSamples)
                 empCor[[it]] <<- cov2cor(empCov[[it]])
                 distMatrix[[it]] <<- as.dist(1 - abs(empCor[[it]]))
@@ -339,7 +351,7 @@ autoBlockClass <- setRefClass(
                 ##     msg <- 'using \'end\' sampler may lead to results we don\'t want'
                 ##     cat(paste0('\nWARNING: ', msg, '\n\n')); warning(msg)
                 ## }
-                if(grepl('^conjugate_', ss$name) && getNimbleOption('verifyConjugatePosterior')) {
+                if(grepl('^conjugate_', ss$name) && getNimbleOption('verifyConjugatePosteriors')) {
                     ##msg <- 'conjugate sampler running slow due to checking the posterior'
                     ##cat(paste0('\nWARNING: ', msg, '\n\n')); warning(msg)
                     warn <- TRUE
