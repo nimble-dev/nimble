@@ -14,7 +14,7 @@ bootStepVirtual <- nimbleFunctionVirtual(
 
 bootFStep <- nimbleFunction(
   contains = bootStepVirtual,
-  setup = function(model, mv, nodes, iNode, saveAll, silent = FALSE) {
+  setup = function(model, mv, nodes, iNode, saveAll, smoothing, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
@@ -37,7 +37,7 @@ bootFStep <- nimbleFunction(
       prevXName <- "x"
       thisXName <- "x"
       currInd <- 1
-      prevInd <- 1
+      prevInd <- 1 
     }
     isLast <- (iNode == length(nodes))
   },
@@ -51,6 +51,9 @@ bootFStep <- nimbleFunction(
     
     for(i in 1:m) {
       if(notFirst) {  
+        if(smoothing == 1){
+          copy(mv, mv, nodes = 'xs', nodesTo = 'x', row = i)
+        }
         copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
       }
@@ -78,18 +81,23 @@ bootFStep <- nimbleFunction(
       # affects how ll estimate is calculated at next time point.
       out[2] <- 1
       for(i in 1:m){
-        copy(mv, mv, nodes = thisXName, nodesTo = thisXSName, row = ids[i], rowTo = i)
+        if(smoothing == 0)
+          copy(mv, mv, nodes = thisXName, nodesTo = thisXSName, row = ids[i], rowTo = i)
+        else
+          copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
         mv['wts',i][1,currInd] <<- wts[i]
       }
     }
     else{
       out[2] <- 0
       for(i in 1:m){
-        copy(mv, mv, nodes = thisXName, nodesTo = thisXSName, row = i, rowTo = i)
+        if(smoothing == 0)
+          copy(mv, mv, nodes = thisXName, nodesTo = thisXSName, row = i, rowTo = i)
+        else
+          copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = i, rowTo = i)
         mv['wts',i][1,currInd] <<- wts[i]
       }
     }
-
     return(out)
   },  where = getLoadingNamespace()
 )
@@ -100,6 +108,7 @@ bootFStep <- nimbleFunction(
 #' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
 #' @param thresh A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)
 #' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
+#' @param filtering  If saveAll = T, should we save filtered estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]), or save samples from f(x[t]|y[t]) at each time point.
 #' @author Daniel Turek
 #' @details The resulting specialized particle filter algorthm will accept a
 #'  single integer argument (m, default 10,000), which specifies the number
@@ -118,14 +127,13 @@ bootFStep <- nimbleFunction(
 #' boot_X <- Cmy_BootF$mv['xs',]
 #' @export
 buildBootF <- nimbleFunction(
-  setup = function(model, nodes, thresh = 0.5, silent = FALSE, saveAll = FALSE) {
+  setup = function(model, nodes, thresh = 0.5, silent = FALSE, saveAll = FALSE, smoothing = FALSE) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
-    
-    
+    if(!saveAll) smoothing <- FALSE
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
     # the sampled x states will be recorded at each time point. 
     # Note: the algorithm will no longer run in R, since R automatically
@@ -153,8 +161,8 @@ buildBootF <- nimbleFunction(
     
     bootStepFunctions <- nimbleFunctionList(bootStepVirtual)
     for(iNode in seq_along(nodes)){
-      bootStepFunctions[[iNode]] <- bootFStep(model, mv, nodes, 
-                                               iNode, saveAll, silent) 
+      bootStepFunctions[[iNode]] <- bootFStep(model, mv, nodes,
+                                               iNode, saveAll, smoothing, silent) 
     }
   },
   run = function(m = integer(default = 10000)) {
