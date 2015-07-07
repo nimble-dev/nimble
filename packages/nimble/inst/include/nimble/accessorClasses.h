@@ -397,6 +397,8 @@ class copierClassBuilderCase : public copierClassBuilderClass {
 	  return new TDI(from, to, isFromMV, isToMV);
 	  break;
 	default:
+	  NIMERROR("problem in copierClassBuilderCase");
+	  return 0;
 	  break;
 	};
       case INT:
@@ -408,9 +410,13 @@ class copierClassBuilderCase : public copierClassBuilderClass {
 	  return new TII(from, to, isFromMV, isToMV);
 	  break;
 	default:
+	  NIMERROR("problem in copierClassBuilderCase");
+	  return 0;
 	  break;
 	};
       default:
+	NIMERROR("problem in copierClassBuilderCase");
+	return 0;
 	break;
       }
   }

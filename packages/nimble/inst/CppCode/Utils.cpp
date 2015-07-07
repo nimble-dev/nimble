@@ -1,5 +1,6 @@
 #include "nimble/Utils.h"
 #define PRINTF Rprintf
+#define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
 bool decide(double lMHr) { // simple function accept or reject based on log Metropolis-Hastings ratio

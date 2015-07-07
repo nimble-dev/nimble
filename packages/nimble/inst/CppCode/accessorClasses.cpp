@@ -576,6 +576,8 @@ copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableM
 	copierClassBuilder = &globalCopierBuilder_singleton_M2MV;
 	break;
       default:
+	NIMERROR("problem in makeOneCopyClass");
+	return 0;
 	break;
       };
       break;
@@ -588,10 +590,14 @@ copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableM
 	copierClassBuilder = &globalCopierBuilder_singleton_MV2MV;
 	break;
       default:
+	NIMERROR("problem in makeOneCopyClass");
+	return 0;
 	break;
       };
       break;
     default:
+      NIMERROR("problem in makeOneCopyClass");
+      return 0;
       break;
     }
     return copierClassBuilder->build(from, to, isFromMV, isToMV);   
@@ -612,6 +618,8 @@ copierClass* makeOneCopyClass(SingleVariableMapAccessBase *from, SingleVariableM
     copierClassBuilder = &globalCopierClassBuilderBlock4;
     break;
   default:
+    NIMERROR("problem in makeOneCopyClass");
+    return 0;
     break;
   }   
   return copierClassBuilder->build(from, to, isFromMV, isToMV);
