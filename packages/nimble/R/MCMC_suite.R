@@ -204,7 +204,7 @@ MCMCsuiteClass <- setRefClass(
             burnin         = 2000,
             thin           = 1,
             summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
-            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice'),
+            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
             MCMCdefs       = list(),
             bugs_directory = 'C:/WinBUGS14',
             bugs_program   = 'WinBUGS',
@@ -288,7 +288,8 @@ MCMCsuiteClass <- setRefClass(
         setMCMCdefs = function(newMCMCdefs) {
             MCMCdefs <<- list(nimble       = quote(configureMCMC(Rmodel)),
                               nimble_RW    = quote(configureMCMC(Rmodel, onlyRW    = TRUE)),
-                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)))
+                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)),
+                              autoBlock    = quote(configureMCMC(Rmodel, autoBlock = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
         },
