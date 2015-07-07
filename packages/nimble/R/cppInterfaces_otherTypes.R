@@ -34,6 +34,8 @@ makeCSingleVariableAccessor <- function(rModelPtr, elementName, beginIndex, endI
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## new version
     manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
     cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface
+    if(is(cModel, 'uninitializedField'))
+        stop('Compiled C++ model not available; please include the model in your compilation call (or compile it in advance).', call. = FALSE)
     if(Robject[[manyAccessName]]$getLength() > 0) {
         .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModel$.basePtr)
     }

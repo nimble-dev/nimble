@@ -219,7 +219,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(!is.nf(fun)) stop('nimbleFunction provided to project is not a nimbleFunction.', call. = FALSE)
                                      inProjectAlready <- nf_getRefClassObject(fun)[['nimbleProject']]
                                      if(!is.null(inProjectAlready)) {
-                                         if(!identical(inProjectAlready, .self)) stop('Trying to add a specialized nimbleFunction to a project but it is already part of another project. If you are recompiling, try redefining models and specialized nimbleFunctions. (The reset option works now for nimbleFunctions but not models.)', call. = FALSE)
+                                         if(!identical(inProjectAlready, .self)) stop('Trying to add a specialized nimbleFunction to a project, but it is already part of another project. \nIf you did not specify a project, this error can occur in trying to create a new project -- you likely need to specify the relevant model as the project.\nIf you are recompiling, try redefining models and specialized nimbleFunctions. (The reset option works now for nimbleFunctions but not models.)', call. = FALSE)
                                          else warning('Adding a specialized nimbleFunction to a project to which it already belongs', call. = FALSE)
                                      }
                                      generatorName <- nfGetDefVar(fun, 'name')
@@ -687,11 +687,13 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     
     ## 2. Get project or make new project
     if(missing(project)) {
-        if(reset) warning('reset = TRUE but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item.  e.g. compileNimble(myFunction, project = myFunction, reset = TRUE)')
+        if(reset) warning("reset = TRUE but no project was provided.  If you are trying to re-compiled something into the same project, give it as the project argument as well as a compilation item. For example, 'compileNimble(myFunction, project = myFunction, reset = TRUE)'")
         project <- nimbleProjectClass(dirName, name = projectName)
     } else {
         project <- getNimbleProject(project, TRUE)
-        if(is.null(project)) stop("Invalid project argument", call. = FALSE)
+#        if(is.null(project)) stop("Invalid project argument", call. = FALSE)  # CJP altered 6/30/15
+        if(!inherits(project, 'nimbleProjectClass'))
+            stop("Invalid project argument; note that models and nimbleFunctions need to be compiled before they can be used to specify a project. Once compiled you can use an R model or nimbleFunction to specify the project.", call. = FALSE)
     }
     if(resetFunctions) project$resetFunctions()
 
