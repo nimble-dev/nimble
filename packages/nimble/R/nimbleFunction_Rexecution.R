@@ -365,33 +365,6 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
     }
 }
 
-## allNodeNames <- function(object, logProb = FALSE){
-##     if(inherits(object, 'modelValuesBaseClass') ) {	
-##         if(!is.null(object$modelDef))
-##             all.Names <- ls(object$modelDef$nodeInfo)
-##         else
-##             all.Names = object$varNames
-##         if(logProb == TRUE)
-##             return(all.Names)
-##         for(i in 1:length(all.Names) ) {
-##             if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-##                 all.Names[i] = NA		
-##         }
-##         all.Names = all.Names[!is.na(all.Names)]
-##         return(all.Names)	
-##     }
-##     if(inherits(object, 'modelBaseClass') ) {
-##         all.Names <- object$getNodeNames()	
-##         if(logProb == TRUE)
-##             return(all.Names)
-##         for(i in 1:length(all.Names) ) {
-##             if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-##                 all.Names[i] = NA		
-##         }
-##         all.Names = all.Names[!is.na(all.Names)]
-##         return(all.Names)	
-##     }
-## }
 
 #' Access or set a member variable of a nimbleFunction created during \code{setup}
 #'

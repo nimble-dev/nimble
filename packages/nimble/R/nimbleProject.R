@@ -124,9 +124,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                      }
                                                      thisRCO[['nimbleProject']] <- NULL
                                                      thisRCO$.CobjectInterface <- NULL
-##                                                     if(exists('.CobjectInterface', envir = thisEnv, inherits = FALSE)) {
-##                                                         rm('.CobjectInterface', envir = thisEnv)
-##                                                     }
                                                  }
                                                  nfCompInfos[[i]] <<- NULL
                                                  cppProjects[[i]] <<- NULL
@@ -318,11 +315,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          cppClass <- cppModelValuesClass(name = mvClassName,
                                                                             vars = environment(mvSpec)$symTab,
                                                                             project = .self)
-                                         ##vars = nimbleProject$modelValuesLibrary[[className]]$symTab                               
                                          cppClass$buildAll()
                                           mvInfos[[mvClassName]]$cppClass <<- cppClass
-                                         ##nimbleProject$modelValuesLibrary[[className]]$cppClass <<- newCppClass
-                                         ##neededTypeDefs[[className]] <<- newCppClass
                                      }
                                      cppClass
                                  },

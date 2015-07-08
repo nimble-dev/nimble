@@ -116,19 +116,6 @@ conjugacyRelationshipsClass <- setRefClass(
             }
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
-        ## original version: one node at a time
-        ## checkConjugacy = function(model, targetNode) {
-        ##     if(length(targetNode) > 1) stop('use checkConjugacyAll() for checking multiple nodes at once')
-        ##     if(model$getNodeType(targetNode) != 'stoch')  stop('checking conjugacy of non-stochastic node')
-        ##     depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
-        ##     if(length(depNodes) == 0)  return(NULL)   # no dependent stochastic nodes: not conjugate, return NULL
-        ##     for(conjugacyObj in conjugacys) {  # conjugacyObj is a conjugacyClass object
-        ##         conjugacyResult <- conjugacyObj$checkConjugacy(model, targetNode, depNodes)    ## workhorse for checking conjugacy
-        ##         if(is.null(conjugacyResult))     next
-        ##         return(conjugacyResult)
-        ##     }
-        ##     return(NULL)  # didn't find a matching conjugacy class: not conjugate, return NULL
-        ## },
         checkConjugacy2 = function(model, nodeIDs) {
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
@@ -266,14 +253,6 @@ conjugacyClass <- setRefClass(
             dependentDistNames <<- names(dependents)
         },
 
-        ## this would be the new, more efficient approach -- not yet implemented
-        ## checkConjugacyAll = function(model, nodes) {
-        ##     depNodesAll <- lapply(nodes, function(n) model$getDependencies(n, stochOnly=TRUE, self=FALSE))
-        ##     ## unfinished
-        ##     stop('work in progress')
-        ##     warning('don\'t forget to check dependent nodes for truncation => not conjugate')
-        ## },
-
         ## used by new checkConjugacy2 system
         ## see checkConjugacy for more explanation of each step
         checkConjugacyOneDep = function(model, targetNode, depNode) {
@@ -306,7 +285,7 @@ conjugacyClass <- setRefClass(
                 dependentObj <- dependents[[depNodeDist]]
                 linearityCheckExpr <- model$getNodeParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
-                ## next line is a NEW ADDITION, prevents a minor bug in conjugacy checking:
+                ## next line prevents the following potential error:
                 ## when targetNode doesn't appear in 'param' expr (hence passes the linearlity check),
                 ## and targetNode appears in *exactly one* other parameter expr (hence passing cc_otherParamsCheck()),
                 ## which also explains why depNode is identified as a dependent node in the first place.

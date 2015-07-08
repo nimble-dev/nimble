@@ -8,22 +8,16 @@
 cppDefinition <- setRefClass('cppDefinition', 
                              fields = list(
                                  filename = 'ANY',	#'character',  ## what filename (to which .h and .cpp will be appended) is this definition in
-                             #    Hincludes = 'ANY',	#''list', ## list of either character strings for direct includes or other cppDefinition objects, from which filename can be taken
-                             #    CPPincludes = 'ANY',	#''list',
                                  CPPusings = 'ANY',	#''character',
                                  neededTypeDefs = 'ANY',	#''list',
                                
                                Hincludes = 'list',
                                CPPincludes = 'list',
-                              # CPPusings = 'character',
-                              # neededTypeDefs = 'list',
                                
                                  nimbleProject = 'ANY'),  
                              methods = list(
                                  initialize = function(..., project) {
                                  	filename <<- character()
-                              #   	if(!is.list(Hincludes))	Hincludes <<- list()
-                              #   	if(!is.list(CPPincludes))	CPPincludes <<- list()
                                  	if(!is.character(CPPusings))	CPPusings <<- character()
                                  	if(!is.list(neededTypeDefs))	neededTypeDefs <<- list()
                                      nimbleProject <<- if(missing(project)) NULL else project
@@ -46,24 +40,14 @@ cppNamespace <- setRefClass('cppNamespace',
                             fields = list(
                                 name = 'ANY',	#'character',
                                 objectDefs = 'ANY', ## This one must be ANY because it could be a list or a symbolTable
-                              ##  classDefs = 'list',
-                                functionDefs = 'ANY'),		#'list'),
-                              ##  typeDefs = 'list',
-                              ##  namespaces = 'list'),
+                                functionDefs = 'ANY'),
                             methods = list(
                                 initialize = function(...) {name <<- character();functionDefs <<- list(); objectDefs <<- list(); callSuper(...)}, ## By default a list, but can be a symbolTable
                                 addObject = function(newName, newObj) objectDefs[[newName]] <<- newObj,
-                           ##     addClass = function(newName, newClass) classDefs[[newName]] <<- newClass,
                                 addFunction = function(newName, newFun) functionDefs[[newName]] <<- newFun,
-                              ##  addTypeDef = function(newName, newTD) typeDefs[[newName]] <<- newTD,
-                             ##   addNamespace = function(newName, newNS) namespaces[[newName]] <<- c(namespaces, newNS),
                                 generate = function() {
                                     objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                     output <- c(generateNameSpaceHeader(name$generate()),
-                                                ## 3 categories to be added in future
-                                                ## typeDefs 
-                                                ## classDefs
-                                                ## namespaces
                                                 generateObjectDefs(objectDefsToUse),
                                                 generateAll(functionDefs, declaration = TRUE),
                                                 '};'
@@ -89,10 +73,6 @@ cppClassDef <- setRefClass('cppClassDef',
                            methods = list(
                                initialize = function(...) {
                                    useGenerator <<- TRUE
-                                 #  inheritance <<- list()
-                                 #  private <<- list()
-                                  # if(!isHincludes <<- list()
-                                  # CPPincludes <<- list()
                                    Hincludes <<-	c(Hincludes, '<Rinternals.h>')	
                                    CPPincludes <<-	c(CPPincludes, '<iostream>') 
                                    callSuper(...)
@@ -130,9 +110,6 @@ cppClassDef <- setRefClass('cppClassDef',
                                    if(declaration) {
                                        objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                        output <- c(generateClassHeader(name, inheritance),
-                                                   ## typeDefs ## 3 to be added in future
-                                                   ## classDefs
-                                                   ## namespaces
                                                    list('public:'), ## In the future we can separate public and private
                                                    lapply(generateObjectDefs(objectDefsToUse), pasteSemicolon, indent = '  '),
                                                    generateAll(functionDefs, declaration = TRUE),

@@ -72,9 +72,9 @@ makeMapExprFromBrackets <- function(code) {
         sourceNdim <- length(sourceSizeExprs)
         sourceStrideRexprs <- code$args[[1]]$args[[5]]
     } else {
-        sourceVarName <- code$args[[1]]$name ## nimDeparse(mapExpr$args[[1]])
+        sourceVarName <- code$args[[1]]$name
         if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
-        sourceVarExpr <- as.name(sourceVarName) ##parse(text = sourceVarName, keep.source = FALSE)[[1]]
+        sourceVarExpr <- as.name(sourceVarName)
         sourceOffsetRexpr <- quote(0)
         sourceSizeExprs <- code$args[[1]]$sizeExprs
         sourceNdim <- length(sourceSizeExprs)
@@ -119,7 +119,6 @@ makeMapExprFromBrackets <- function(code) {
     }
     targetSizeExprs <- code$sizeExprs
     targetStrideRexprs <- sourceStrideRexprs[blockBool]
-##    targetVarName <- Rname2CppName(deparse(targetVarExpr))
     targetNdim <- length(targetSizeExprs)
 
     ## this is an unusual exprClass object because args is just a regular list.  Its elements are not exprClass objects
@@ -139,7 +138,6 @@ nimArrMapExpr <- function(code, symTab, typeEnv, newName) {
         writeLines("Strange, in nimArrMap, there is a case of nDim == 0")
         browser()
     }
- ##   targetType <- get(varName, envir = typeEnv, inherits = FALSE)
     if(!symTab$symbolExists(mapName, TRUE)) {
         newSym <- symbolBasic(name = mapName,
                               nDim = code$nDim,
@@ -175,7 +173,6 @@ eigenizeNameStrided <- function(code, symTab, typeEnv, workEnv) {
         writeLines("Strange, in eigenizeNameStrided, there is a case of nDim == 0")
         browser()
     }
-##    targetType <- get(varName, envir = typeEnv, inherits = FALSE)
     
     mapSizeExprs <- code$args[[4]]
     mapStrideExprs <- code$args[[5]]

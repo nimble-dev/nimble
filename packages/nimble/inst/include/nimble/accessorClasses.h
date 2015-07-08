@@ -1,7 +1,5 @@
-// VERY IMPORTANT NOTE: THESE FUNCTIONS WILL ASSUME MODELS ARE OF CLASS
+// NOTE: THESE FUNCTIONS WILL ASSUME MODELS ARE OF CLASS
 // "ModelBase". THIS CLASS CAN BE FOUND IN "ModelClassUtils.h" 
-
-
 
 // This file contains new components for accessing and copying from groups of node Functions or subsets of variables in models or modelValues
 #ifndef __ACCESSORCLASSES

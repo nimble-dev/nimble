@@ -75,7 +75,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL) {
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
-                                     ##argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
                                      argsCode = RCfunProc$RCfun$arguments
                                      argNames <- names(argsCode)
                                      

@@ -167,7 +167,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
         return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS))
     } else {
           userDist <- as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE)
-          RHS <- addArg(RHS, 1, 'log')  # ifelse(userDist, 'log_value', 'log'))   # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
+          RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
           if(diff) {
               code <- substitute(LocalNewLogProb <- STOCHCALC,
                                  list(LOGPROB = logProbNodeExpr,
@@ -297,5 +297,4 @@ ndf_createVirtualNodeFunctionDefinitionsList <- function(userAdded = FALSE) {
 
 virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList()
 createNamedObjectsFromList(virtualNodeFunctionDefinitions)
-# createNamedObjectsFromList(virtualNodeFunctionDefinitions, writeToFile = 'TEMP_virtualNodeFunctionDefinitions.R')
 
