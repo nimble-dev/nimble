@@ -220,13 +220,14 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 
 SEXPscalarConvertFunctions <- list(double  = 'SEXP_2_double',
                                    integer = 'SEXP_2_int',
-                                   logical = 'SEXP_2_bool'
-)
+                                   logical = 'SEXP_2_bool',
+                                   character = 'STRSEXP_2_string')
+
 
 toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
                                      integer = 'int_2_SEXP',
-                                     logical = 'bool_2_SEXP'
-)
+                                     logical = 'bool_2_SEXP',
+                                     character = 'string_2_STRSEXP')
 
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
     if(inherits(toSym, 'symbolBasic')) {
@@ -235,9 +236,14 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
                                                         FROM = as.name(fromSym$name),
                                                         CONVERT = as.name(SEXPscalarConvertFunctions[[toSym$type]]) ) )
         } else {
-            ans <- substitute(template(SEXP_2_NimArr,NDIM)(FROM, TO), list(TO = as.name(toSym$name),
-                                                                           FROM = as.name(fromSym$name),
-                                                                           NDIM = toSym$nDim))
+            if(toSym$type == 'character') {
+                ans <- substitute(STRSEXP_2_vectorString(FROM, TO), list(TO = as.name(toSym$name),
+                                                                           FROM = as.name(fromSym$name)))
+            } else {
+                ans <- substitute(template(SEXP_2_NimArr,NDIM)(FROM, TO), list(TO = as.name(toSym$name),
+                                                                               FROM = as.name(fromSym$name),
+                                                                               NDIM = toSym$nDim))
+            }
         }
         return(ans)
     }
@@ -251,9 +257,14 @@ buildCopyLineToSEXP <- function(fromSym, toSym) {
                                                         FROM = as.name(fromSym$name),
                                                         CONVERT = as.name(toSEXPscalarConvertFunctions[[fromSym$type]] ) ) )
         } else {
-            ans <- substitute(PROTECT(TO <- template(NimArr_2_SEXP, NDIM)(FROM)), list(TO = as.name(toSym$name),
-                                                                            FROM = as.name(fromSym$name),
-                                                                            NDIM = fromSym$nDim))
+            if(fromSym$type == 'character') {
+                ans <- substitute(PROTECT(TO <- vectorString_2_STRSEXP(FROM)), list(TO = as.name(toSym$name),
+                                                                           FROM = as.name(fromSym$name)))
+            } else {
+                ans <- substitute(PROTECT(TO <- template(NimArr_2_SEXP, NDIM)(FROM)), list(TO = as.name(toSym$name),
+                                                                                           FROM = as.name(fromSym$name),
+                                                                                           NDIM = fromSym$nDim))
+            }
         }
         return(ans)
     }

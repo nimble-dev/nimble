@@ -1,8 +1,8 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
-                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
-                makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
+               makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
+               makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
                makeCallList(unaryOperators, 'sizeUnaryCwise'), 
                makeCallList(unaryOrNonaryOperators, 'sizeUnaryNonaryCwise'),
                makeCallList(assignmentOperators, 'sizeAssign'), 
@@ -144,7 +144,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                 return(sizeRCfunction(code, symTab, typeEnv, nfmObj))
             }
         }
-        
     }
     invisible(NULL)
 }

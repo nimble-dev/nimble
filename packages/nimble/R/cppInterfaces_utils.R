@@ -106,3 +106,33 @@ setBoolValue <- function(elementPtr, value,  pointDepth = 1){
         return(NULL)
     jnk = .Call("SEXP_2_bool", elementPtr, as.integer(pointDepth), value )
 }
+
+getBoolValue <- function(elementPtr, pointDepth = 1){
+    if(!inherits(elementPtr, "externalptr") ) 
+        return(NULL)
+    .Call("bool_2_SEXP", elementPtr, as.integer(pointDepth) ) 
+}
+
+setCharacterValue <- function(elementPtr, value){
+    if(!inherits(elementPtr, "externalptr"))    
+        return(NULL)
+    jnk = .Call("SEXP_2_string", elementPtr, value )
+}
+
+getCharacterValue <- function(elementPtr){
+    if(!inherits(elementPtr, "externalptr") ) 
+        return(NULL)
+    .Call("string_2_SEXP", elementPtr ) 
+}
+
+setCharacterVectorValue <- function(elementPtr, value){
+    if(!inherits(elementPtr, "externalptr"))    
+        return(NULL)
+    jnk = .Call("SEXP_2_stringVector", elementPtr, value )
+}
+
+getCharacterVectorValue <- function(elementPtr){
+    if(!inherits(elementPtr, "externalptr") ) 
+        return(NULL)
+    .Call("stringVector_2_SEXP", elementPtr) 
+}

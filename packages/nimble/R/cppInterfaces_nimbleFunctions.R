@@ -114,8 +114,27 @@ makeNFBindingFields <- function(symTab, cppNames) {
             ## setter: call setPtrVectorOfPtrs(accessorExtPtr, contentsExtrPtr.  Then iterate and call setOnePtrVectorOfPtrs(accessorPtr, i, nimPtrList[[i]]$.basePtr)
             next
         }
-        if(inherits(thisSymbol, 'symbolBase')) {
-            if(thisSymbol$nDim > 0) {
+        if(thisSymbol$type == "character") {
+            if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
+                eval(substitute( fieldList$VARNAME <- function(x){
+                    if(missing(x) ) 
+                        getCharacterVectorValue(VPTR)
+                    else
+                        setCharacterVectorValue(VPTR, x)
+                }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
+            next
+            } else {                    ## character scalar
+                eval(substitute( fieldList$VARNAME <- function(x){
+                    if(missing(x) ) 
+                        getCharacterValue(VPTR)
+                    else
+                        setCharacterValue(VPTR, x)
+                }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
+                next
+            }
+        }
+        if(inherits(thisSymbol, 'symbolBase')) { ## All numeric and logical cases
+            if(thisSymbol$nDim > 0) {            ## Anything vector
                 eval(substitute( fieldList$VARNAME <- function(x){
                     
                     if(missing(x) ) 
@@ -126,7 +145,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                 next
             }
             
-            if(thisSymbol$type == "double"){
+            if(thisSymbol$type == "double"){     ## Scalar double
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
                         getDoubleValue(VPTR)
@@ -136,7 +155,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
             }
-            if(thisSymbol$type == "integer"){
+            if(thisSymbol$type == "integer"){    ## Scalar int
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
                         getIntValue(VPTR)
@@ -145,7 +164,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
             }
-            if(thisSymbol$type == "logical"){
+            if(thisSymbol$type == "logical"){    ## Scalar logical
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
                         getBoolValue(VPTR)
@@ -303,7 +322,10 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                        .self[[v]][[i]] <<- Robj[[v]][[i]]
                                                    }
                                                    next
-                                               }               
+                                               }
+                                               else if(cppCopyTypes[[v]] == 'character') {
+                                                   .self[[v]] <<- Robj[[v]]
+                                               }
                                                else if(cppCopyTypes[[v]] == 'numeric') {
                                                    .self[[v]] <<- Robj[[v]]
                                                }
@@ -344,6 +366,7 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
         else if(inherits(thisSymbol, 'symbolNumericList')) {ans[[thisSymbol$name]] <- 'numericList'; next}
         else if(inherits(thisSymbol, 'symbolNimPtrList')) {ans[[thisSymbol$name]] <- 'nimPtrList'; next}
         else if(inherits(thisSymbol, 'symbolCopierVector')) {ans[[thisSymbol$name]] <- 'copierVector'; next}
+        else if(inherits(thisSymbol, 'symbolString')) {ans[[thisSymbol$name]] <- 'character'; next}
         else ans[[thisSymbol$name]] <- 'numeric'
     }
     ans

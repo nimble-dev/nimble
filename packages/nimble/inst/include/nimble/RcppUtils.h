@@ -26,7 +26,10 @@ double t(double x);
 int prod(int x);
 double prod(double x);
 
-string STRSEXP_2_string(SEXP Ss, int i);
+string STRSEXP_2_string(SEXP Ss, int i = 0);
+SEXP   string_2_STRSEXP(string v);
+void   STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans);
+SEXP   vectorString_2_STRSEXP(const vector<string> &v);
 
 vector<double> SEXP_2_vectorDouble( SEXP Sn ); /* Sn can be numeric or integer from R*/
 double SEXP_2_double(SEXP Sn, int i = 0); /* Ditto */
@@ -105,12 +108,15 @@ extern "C" {
 
   SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP double_2_SEXP(SEXP rPtr, SEXP refNum);
-  SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum);
   SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP int_2_SEXP(SEXP rPtr, SEXP refNum);
 
+  SEXP SEXP_2_string(SEXP rPtr, SEXP rString);
+  SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector);
+  SEXP string_2_SEXP(SEXP rPtr);
+  SEXP stringVector_2_SEXP(SEXP rPtr);
 
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);

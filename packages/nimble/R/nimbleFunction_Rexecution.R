@@ -1,6 +1,10 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+nimbleStop <- function(...) stop(...)
+
+checkInterrupt <- function() {}
+
 #' Turn a numeric vector into a single-row or single-column matrix
 #'
 #' Turns a numeric vector into a matrix that has 1 row or 1 column.  Part of NIMBLE language executable in R.
