@@ -831,6 +831,8 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
 ### 2. add in option to sample latent states - could work by adding monitor
 ### for x and then setting model[[x]] as a weighted draw from xs produced by 
 ### particle filter with smoothing = T.
+### 3. particle number optimization uses procedure from pitt et al., 2011, 
+### "On some properties of Markov chain Monte Carlo simulation methods based on the particle filter"
 sampler_RW_PFilter <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
