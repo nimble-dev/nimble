@@ -213,6 +213,7 @@ MCMCsuiteClass <- setRefClass(
             makePlot       = TRUE,
             savePlot       = TRUE,
             plotName       = 'MCMCsuite',
+            setSeed        = TRUE,
             debug          = FALSE) {
             
             code <<- code
@@ -243,13 +244,14 @@ MCMCsuiteClass <- setRefClass(
             checkMCMCdefNames()
             init_output()
             writeModelFile()
-            if(debug) browser()
+            if(debug)            browser()
+            if(setSeed)          set.seed(0)
             if(bugsMCMCflag)     run_bugs()
             if(jagsMCMCflag)     run_jags()
             if(stanMCMCflag)     run_stan()
             if(nimbleMCMCflag)   run_nimble()
             unlink(modelFileName)
-            if(makePlot) generate_plots()
+            if(makePlot)         generate_plots()
         },
         
         setMonitors = function(newMonitors) {
