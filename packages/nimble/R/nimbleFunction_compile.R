@@ -341,9 +341,6 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     	if(!(optReadyClassName %in% names(neededTypes))) neededTypes[[optReadyClassName]] <<- newSym
     	return(NULL)
     }
-    if(is.character(instances[[1]][[name]])) {
-        return(symbolBase(name = name, type = 'Ronly'))
-    }
     if(is.nf(instances[[1]][[name]])) { ## nimbleFunction
         funList <- lapply(instances, `[[`, name)
         nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
@@ -445,12 +442,50 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     }
     if(inherits(instances[[1]][[name]], 'modelValuesAccessorVector')){
     	return(symbolModelValuesAccessorVector(name = name) )     	
-    }    
+    }
+    ## if(is.character(instances[[1]][[name]])) {
+    ##     return(symbolBase(name = name, type = 'Ronly'))
+    ## }
+    if(is.character(instances[[1]][[name]])) {
+        if(firstOnly) {
+            nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
+            if(nDim > 1) {
+                warning('character object with nDim > 1 being handled as a vector')
+                nDim <- 1
+            }
+            size <- if(length(instances[[1]][[name]])==1) 1L else as.numeric(NA)
+            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+            }
+            return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
+        } else {
+            instanceObjs <- lapply(instances, `[[`, name)
+            types <- unlist(lapply(instanceObjs, storage.mode))
+            if(!all(types == 'character')) stop(paste('Inconsistent types for setup variable', name))
+            dims <- lapply(instanceObjs, dim)
+            dimsNULL <- unlist(lapply(dims, is.null))
+            if(any(dimsNULL)) { ## dimsNULL TRUE means it is a vector
+                if(!all(dimsNULL)) {
+                    warning(paste0('Dimensions do no all match for ', name, 'but they will be treated as all vectors anyway.'))
+                }
+            }
+            nDim <- 1
+            lengths <- unlist(lapply(instanceObjs, length))
+            size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
+            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+            }
+            return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
+        }
+    }
     if(is.numeric(instances[[1]][[name]]) | is.logical(instances[[1]][[name]])) {
         if(firstOnly) {
             type <- storage.mode(instances[[1]][[name]])
             nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
             size <- if(length(instances[[1]][[name]])==1) rep(1L, nDim) else rep(as.numeric(NA), nDim)
+            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+            }
             return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
         } else {
             instanceObjs <- lapply(instances, `[[`, name)

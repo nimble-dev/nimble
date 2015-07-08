@@ -10,6 +10,9 @@ bool decide(double lMHr) { // simple function accept or reject based on log Metr
   return(false);
 }
 
+void nimbleStop(string msg) {NIMERROR(msg.c_str());}
+void nimbleStop() {NIMERROR("");}
+
 double ilogit(double x) {return(1./(1. + exp(-x)));}
 
 double icloglog(double x) {return(1.-exp(-exp(x)));}

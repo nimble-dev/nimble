@@ -5,6 +5,8 @@
 #include "R.h"
 #include<Rinternals.h>
 #include<Rmath.h>
+#include <string>
+using std::string;
 
 //using namespace std;
 
@@ -91,6 +93,9 @@
 
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
+
+void nimbleStop(string msg);
+void nimbleStop();
 
 // needed for link functions
 double ilogit(double x);

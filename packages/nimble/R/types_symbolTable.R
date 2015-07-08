@@ -4,11 +4,11 @@ buildSymbolTable <- function(vars, type, size){
     symTab <- symbolTable()
     for(i in 1:length(vars) ) {
         if(is.list(size) ) 
-      symTab$addSymbol( symbolBasic(name = vars[i], type = type[i], nDim = length(size[[i]]) , size = size[[i]] ) )
-    else
-      symTab$addSymbol( symbolBasic(name = vars[i], type = type[i], nDim = length(size) , size = size ) )
-  }
-  return(symTab)
+            symTab$addSymbol( symbolBasic(name = vars[i], type = type[i], nDim = length(size[[i]]) , size = size[[i]] ) )
+        else
+            symTab$addSymbol( symbolBasic(name = vars[i], type = type[i], nDim = length(size) , size = size ) )
+    }
+    return(symTab)
 }
 
 argTypeList2symbolTable <- function(ATL) {
@@ -36,8 +36,16 @@ argType2symbol <- function(AT, name = character()) {
         else
             eval(AT[[3]])
     }
-        
-    symbolBasic(name = name, type = type, nDim = nDim, size = size)
+    if(type == "character") {
+        if(nDim > 1) {
+            warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
+            nDim <- 1
+            size <- if(any(is.na(size))) as.numeric(NA) else product(size)
+        }
+        symbolString(name = name, type = "character", nDim = nDim, size = size) 
+    } else {
+        symbolBasic(name = name, type = type, nDim = nDim, size = size)
+    }
 }
 
 symbolTable2cppVars <- function(symTab, arguments = character(), include, parentST = NULL) {
@@ -119,6 +127,23 @@ symbolPtr <- setRefClass(
             cppVar(name = name,
                    ptr = 1,
                    baseType = cType)
+        })
+    )
+
+symbolString <- setRefClass(
+    Class = "symbolString",
+    contains = "symbolBasic", ## inheriting from symbolBasic instead of symbolBase make initSizes work smoothly
+    ## fields   = list(
+    ##     nDim  = 'ANY',
+    ##     size = 'ANY'), 
+    methods = list(
+        show = function() writeLines(paste('symbolString', name)),
+        genCppVar = function(...) {
+            if(nDim == 0) {
+                cppVar(name = name, baseType = "std::string")
+            } else {
+                cppVarFull(name = name, baseType = "vector", templateArgs = list(cppVar(baseType = "std::string")))
+            }
         })
     )
 

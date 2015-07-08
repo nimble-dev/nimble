@@ -72,6 +72,36 @@ string STRSEXP_2_string(SEXP Ss, int i) {
   return(ans);
 }
 
+void STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans) {
+  if(!isString(Ss)) {
+    PRINTF("Error: STRSEXP_2_vectorString called for SEXP that is not a string!\n"); 
+    return;
+  }
+  int nn = LENGTH(Ss);
+  ans.resize(nn);
+  for(int i = 0; i < nn; i++) {
+    ans[i].assign(CHAR(STRING_ELT(Ss, i)), LENGTH(STRING_ELT(Ss, i)));
+  }
+}
+
+SEXP string_2_STRSEXP(string v) {
+  SEXP Sans;
+  PROTECT(Sans = allocVector(STRSXP, 1));
+  SET_STRING_ELT(Sans, 0, mkChar(v.c_str()));
+  UNPROTECT(1);
+  return(Sans);
+}
+
+SEXP vectorString_2_STRSEXP(const vector<string> &v) {
+  SEXP Sans;
+  int nn = v.size();
+  PROTECT(Sans = allocVector(STRSXP, nn));
+  for(int i = 0; i < nn; i++) {
+    SET_STRING_ELT(Sans, i, mkChar(v[i].c_str()));
+  }
+  UNPROTECT(1);
+  return(Sans);
+}
 
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
@@ -153,7 +183,7 @@ double SEXP_2_double(SEXP Sn, int i) {
 
 SEXP double_2_SEXP(double v) {
   SEXP Sans;
-  PROTECT(Sans = allocVector(REALSXP, 1));
+  PROTECT(Sans = allocVector(STRSXP, 1));
   REAL(Sans)[0] = v;
   UNPROTECT(1);
   return(Sans);
@@ -1188,6 +1218,43 @@ SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
     return(Sans);
 }
 
+SEXP SEXP_2_string(SEXP rPtr, SEXP rString) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  *static_cast<string*>(vPtr) = STRSEXP_2_string(rString, 0);
+  return(R_NilValue);
+}
+
+SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  STRSEXP_2_vectorString(rStringVector, *static_cast<vector<string> *>(vPtr));
+  return(R_NilValue);
+}
+
+SEXP string_2_SEXP(SEXP rPtr) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  return(string_2_STRSEXP(*static_cast<string *>(vPtr)));
+}
+
+SEXP stringVector_2_SEXP(SEXP rPtr) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  return(vectorString_2_STRSEXP(*static_cast<vector<string> *>(vPtr)));
+}
 
 
 
