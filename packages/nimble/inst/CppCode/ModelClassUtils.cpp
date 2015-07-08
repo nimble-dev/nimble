@@ -75,11 +75,3 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
   return(R_NilValue);
 }
 
-/*
-SEXP setSinglePtrFromSinglePtr(SEXP SPtrTo, SEXP SPtrToSet){
-  void *toPtr = R_ExternalPtrAddr(SPtrTo); 
-  void *toSetPtr = static_cast<void *>(R_ExternalPtrAddr(SPtrToSet)); 
-  toSetPtr = toPtr;
-  return(R_NilValue);
-}
-*/

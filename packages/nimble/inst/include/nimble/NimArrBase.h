@@ -4,11 +4,9 @@
 #include <string>
 #include <R.h>
 #include <typeinfo>
-#include <iostream>			//Added
-//#include <Rinternals.h>
+#include <iostream>
 
 using std::vector;
-//#include <Eigen/Dense>
 
 enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 
@@ -83,10 +81,6 @@ class NimArrBase: public NimArrType {
   template<class Tfrom>
     void genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs);
 };
-
-//template<> NimArrBase<double>::NimArrBase(){length = 0; myType = DOUBLE;};
-//template<> NimArrBase<int>::NimArrBase(){length = 0; myType = INT;};
-
 
 template<class T>
 class VecNimArrBase : public NimVecType {

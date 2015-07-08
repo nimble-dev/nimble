@@ -1,5 +1,3 @@
-
-
 cGetNRow <- function(cMV, compIndex = 1)
 {
   nRow = .Call(getNativeSymbolInfo("getNRow"), cMV$componentExtptrs[[compIndex]])
@@ -71,14 +69,6 @@ setDoublePtrFromSinglePtr <- function(elementPtr, value) {
     .Call('setDoublePtrFromSinglePtr', elementPtr, value)
     value
 }
-
-# setSinglePtrFromSinglePtr <- function(elementPtr, value) {
-#     if(!inherits(elementPtr, 'externalptr')) return(NULL)
-#     if(!inherits(value, 'externalptr')) return(NULL)
-#     .Call('setSinglePtrFromSinglePtr', elementPtr, value)
-#     value
-# }
-
 
 getDoubleValue <- function(elementPtr, pointDepth = 1){
   if(!inherits(elementPtr, "externalptr") ) 

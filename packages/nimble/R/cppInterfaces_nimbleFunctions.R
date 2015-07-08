@@ -204,7 +204,6 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                if(is.nf(thisObj)) {
                                                    RCO <- nf_getRefClassObject(thisObj)
                                                    if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                                                 ##  if(!exists('.CobjectInterface', envir = environment(thisObj), inherits = FALSE)) {
                                                        neededObjects[[iName]] <<- nimbleProject$instantiateNimbleFunction(thisObj, dll)
                                                    }
                                                    next
@@ -214,10 +213,9 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                    for(i in seq_along(thisObj$contentsList)) {
                                                        RCO <- nf_getRefClassObject(thisObj[[i]])
                                                        if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                                                           ##if(!exists('.CobjectInterface', envir = environment(thisObj[[i]]), inherits = FALSE)) {
                                                            neededObjects[[iName]][[i]] <<- nimbleProject$instantiateNimbleFunction(thisObj[[i]], dll)
                                                        } else {
-                                                           neededObjects[[iName]][[i]] <<- RCO$.CobjectInterface ##environment(thisObj[[i]])$.CobjectInterface
+                                                           neededObjects[[iName]][[i]] <<- RCO$.CobjectInterface 
                                                        }
                                                    }
                                                    names(neededObjects[[iName]]$contentsList) <<- names(thisObj$contentsList)
@@ -374,8 +372,6 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         symTab <- compiledNodeFun$nfProc$setupSymTab
         defaults$cnf <- compiledNodeFun
     }
-    ##  testObj = .Call(basePtrCall)  ## We can no longer do this because we sometimes get here before there C++ code has been compiled and loaded
-    ## cppNames = sort(.Call("getAvailableNames", testObj) )
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
     cppNames <- compiledNodeFun$objectDefs$getSymbolNames() 
     NFBF <-  makeNFBindingFields(symTab, cppNames)
@@ -396,10 +392,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         compiledNodeFun <<- defaults$cnf
         vPtrNames <- 	paste0('.', cppNames, '_Ptr')	
         for(vn in seq_along(cppNames) ){
-#            vPtrName <- paste(".", vn, "_Ptr", sep = "")
-#            eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, cppNames[vn]), list(.DUMMY = as.name(vPtrNames[vn]) ) ) ) 
             .self[[vPtrNames[vn]]] <- newObjElementPtr(.basePtr, cppNames[vn])
-            #.self[[vPtrName]] <- newObjElementPtr(.basePtr, vn)
         }
         if(!missing(nfObject)) {
             setRobject(nfObject)
@@ -411,9 +404,6 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
       # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization
       # function is called.  So change the .Call('name') to .Call(lookupSymbol('name')) which will use this objects
       # dll field.
-    ## if(is.character(basePtrCall)) 
-    ##     fun[[3]][[3]][[3]][[2]] = substitute(lookupSymbol(symname), list(symname = basePtrCall))
-
     
     methodsList[[length(methodsList) + 1]] <- fun 
     names(methodsList)[length(methodsList)] <- 'initialize'
@@ -430,7 +420,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
 
     ans <- function(nfObject, dll = NULL, project) {
     	wrappedInterfaceBuild <- newClass$new
-    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project)
+    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project) ## Only purpose of wrappedInterfaceBuild is to have a helpful name for Rprof that is not "new"
 #        newClass$new(nfObject, defaults, dll = dll, project = project)
     }
     return(ans)

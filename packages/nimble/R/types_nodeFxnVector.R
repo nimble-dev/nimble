@@ -34,10 +34,4 @@ nodeFunctionVector <- setRefClass(
 
 getNodeFxnPtrs <- function(cModel){	
     lapply( cModel$nodes, `[[`, '.basePtr' )
-    ## output <- list()
-    ## rNodeFxnVecNames = names(cModel$nodes)						
-    ## for(vN in rNodeFxnVecNames){
-    ##     output[[vN]] <- cModel$nodes[[vN]]$.basePtr		
-    ## }
-    ## return(output)
 }

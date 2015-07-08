@@ -61,10 +61,6 @@ void simulate(NodeVectorClass &nodes) {
 		// Cliff's note: actually, we have changed the paradigm. We now make one variable accessor per node, which can appear in many different
 		// ManyVariableAccessors. All unique singleAccessors will be held in a single SpecializedNumberedObjects, which takes care of the finalizer.
 ManyVariablesAccessor::~ManyVariablesAccessor(){
-//	int k = varAccessors.size();
-//	Rprintf("skipping the deletion of singleVariableAccesses for debugging purposes\n");
-//	for(int i = 0; i < k; i++)
-//		delete static_cast<SingleVariableAccess*>(varAccessors[i]);
 }
 
 
@@ -162,16 +158,10 @@ void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
     case DOUBLE:
       SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
       dynamicMapCopyFlatToDim<T, double>(SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
-      // std::copy(nimArr.getPtr() + nimBegin,
-      // 	      nimArr.getPtr() + SMA_length + nimBegin, 
-      // 	      SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
       break;
     case INT:
       SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
       dynamicMapCopyFlatToDim<T, int>(SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
-      // std::copy(nimArr.getPtr() + nimBegin,
-      // 	      nimArr.getPtr() + SMA_length +nimBegin, 
-      // 	      SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() );
       break;
     default:
       PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
@@ -231,19 +221,10 @@ void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
     case DOUBLE:
       SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
       dynamicMapCopyDimToFlat<double, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes() );
-      
-      // 	std::copy(SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart(),
-      // 	SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() + SMA_length ,
-      // 	 nimArr.getPtr()  + nimBegin);
-
       break;
     case INT:
       SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
       dynamicMapCopyDimToFlat<int, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes());
-      
-      // 	std::copy(SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart(),
-      // 	SMA_NimArrPtr->getPtr() + SMVAPtr->getIndexStart() + SMA_length ,
-      // 	 nimArr.getPtr()  + nimBegin);
       break;
     default:
       PRINTF("Copying type for SingleModelAccess_2_nimArr not supported\n");

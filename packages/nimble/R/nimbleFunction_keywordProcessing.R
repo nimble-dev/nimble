@@ -669,12 +669,6 @@ addDistKeywordProcessors <- function(distList, keywordEnv){
 addDistList2matchFunctions(matchDistList, matchFunctions)
 addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
 
-
-
-    
-    
-
-
 #	processKeyword function to be called by nfProc
 processKeyword <- function(code, nfProc){
   thisKeywordInfo <- keywordList[[ as.character(code[[1]]) ]]

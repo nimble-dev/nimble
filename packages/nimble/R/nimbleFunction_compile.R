@@ -9,11 +9,6 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        cppDef = 'ANY'
                                        ),
                                    methods = list(
-                                       ## setClassName = function(className) {
-                                       ##     print('what to do with setClassName'); browser()
-                                       ##     name <<- className
-                                       ##     assign('CclassName', name, envir = environment(nfGenerator)) ## to avoid warnings on <<-
-                                       ## },
                                        show = function() {
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
@@ -31,10 +26,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                }
                                                if(missing(className)) {
                                                    sf <- environment(nfGenerator)$name
-                                                   ##setClassName(Rname2CppName(deparse(sf)))
                                                    name <<- Rname2CppName(sf)
                                                } else {
-                                                   ##setClassName(className)
                                                    name <<- className
                                                }
                                                origMethods <<- nf_getMethodList(nfGenerator)
@@ -107,9 +100,7 @@ nfProcessing <- setRefClass('nfProcessing',
 
                               ##NEW PROCESSING TOOLS.   
                               processKeywords_all = function(){},
-##                              processKeywords_one = function(){}, ## pushing to RCfunProcessing
                               matchKeywords_all = function(){},
-##                              matchKeywords_one = function(){},   ## ditto
                               
                               doSetupTypeInference_processNF = function() {},
                               makeTypeObject = function() {},
@@ -125,19 +116,6 @@ nfProcessing <- setRefClass('nfProcessing',
                                       RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab)
                                   }
                               },
-                              ## buildRCfun = function(RCname) {
-                              ##     ans <- RCfunctionDef$new()
-                              ##     ans$buildFunction(RCfunProcs[[RCname]])
-                              ##     ans$buildSEXPinterfaceFun(className = name)
-                              ##     ans
-                              ## },
-                              ## buildRCfuns = function() {
-                              ##     RCfuns <<- list()
-                              ##     for(i in seq_along(RCfunProcs)) {
-                              ##         RCname <- names(RCfunProcs)[i]
-                              ##         RCfuns[[RCname]] <<- buildRCfun(RCname)
-                              ##     }
-                              ## },
                               collectRCfunNeededTypes = function() {
                                   for(i in seq_along(RCfunProcs)) {
                                       for(j in names(RCfunProcs[[i]]$neededRCfuns)) {
@@ -152,7 +130,6 @@ nfProcessing <- setRefClass('nfProcessing',
                                   ## If this class has a virtual base class, we add it to the needed types here
                                   contains <- environment(nfGenerator)$contains
                                   if(!is.null(contains)) {
-                                      ## generatorFun <- nf_getGeneratorFunction(contains)
                                       className <- environment(contains)$className
                                       nfp <- nimbleProject$setupVirtualNimbleFunction(contains, fromModel = inModel)
                                       newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunctionVirtual', nfProc = nfp) 
@@ -226,8 +203,6 @@ nfProcessing <- setRefClass('nfProcessing',
 
                                   collectRCfunNeededTypes()
 
-##                                  buildRCfuns() ## This should go somewhere else, I think in cppNimbleFunction
-                                  
                                   if(debug) {
                                       print('done with RCfunProcessing')
                                       browser()
@@ -257,12 +232,9 @@ nfProcessing$methods(evalNewSetupLinesOneInstance = function(instance, check = F
         }
         if(!go) return(invisible(NULL))
     }
+    ## Warning: this relies on the fact that although refClass environments are closed, we can
+    ## eval in them and create new variables in them that way.
     eval(newSetupCodeOneExpr, envir = instance)
-    ## for(j in seq_along(newSetupCode)) {
-    ##     ## Warning: this relies on the fact that althought refClass environments are closed, we can
-    ##     ## eval in them and create new variables in them that way.
-    ##     eval(newSetupCode[[j]], envir = instance)
-    ## }
     instance$.newSetupLinesProcessed <- TRUE
 })
 
@@ -555,68 +527,14 @@ nfProcessing$methods(determineNdimsFromInstances = function(modelExpr, varOrNode
 nfProcessing$methods(processKeywords_all = function(){	
     for(i in seq_along(compileInfos)){
         RCfunProcs[[i]]$processKeywords(.self)
-        ##        compileInfos[[i]]$newRcode <<- processKeywords_one(compileInfos[[i]]$origRcode)
     }
 })
-
-## nfProcessing$methods(processKeywords_one = function(code){
-##     cl = length(code)
-##     if(cl == 1){
-##         if(is.call(code)){
-##             if(length(code[[1]]) > 1)	code[[1]] <- processKeywords_one(code[[1]])
-##         }
-##         return(code)
-##     }
-    
-##     if(length(code[[1]]) == 1)
-##         {
-##             code <- processKeyword(code, .self)
-##         }
-    
-##     cl = length(code)
-    
-##     if(is.call(code)) {
-##         if(length(code[[1]]) > 1) code[[1]] <- processKeywords_one(code[[1]])
-##         if(cl >= 2) {
-##             for(i in 2:cl) {
-##                 code[[i]] <- processKeywords_one(code[[i]])
-##             }
-##         }
-##     }
-##     return(code)
-## })
 
 nfProcessing$methods(matchKeywords_all = function(){
 	for(i in seq_along(compileInfos))
             RCfunProcs[[i]]$matchKeywords(.self)
             ##	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
 })
-
-## nfProcessing$methods(matchKeywords_one = function(code){
-## 	cl = length(code)
-## 	if(cl == 1){
-## 		if(is.call(code)){
-## 			if(length(code[[1]]) > 1)	code[[1]] <- matchKeywords_one(code[[1]])
-## 		}
-## 		return(code)
-## 	}
-## 	if(length(code[[1]]) == 1)
-## 		code <- matchKeywordCode(code) 
-## 	if(is.call(code)) {
-##         if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_one(code[[1]])
-##         if(cl >= 2) {
-##             for(i in 2:cl) {
-##                 code[[i]] <- matchKeywords_one(code[[i]])
-##             }
-##         }
-##     }
-##     return(code)
-## })
-
-
-
-
-
 
 singleVarAccessClass <- setRefClass('singleVarAccessClass',
                                     fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
@@ -643,20 +561,3 @@ singleModelValuesAccess <- function(modelValues, var) {
     singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
 }
 
-
-
-#getnfProcFromProject_fromnfClassName <- function(nfClassName, nimbleProject){
-#	compInfoNames <- names(nimbleProject$nfCompInfos)
-#	i = 0
-#	foundClass = FALSE
-#	while(i < length(compInfoNames) & !foundClass){
-#		i = i+1
-#		foundClass <- grepl(pattern = compInfoNames[i], x = nfClassName)
-#	}
-#	if(!foundClass){
-#		errorMessage <-paste0("class not found in available names. nfClassName = ", nfClassName, " available names = ", compInfoNames)
-#		stop(errorMessage)
-#	}
-#	nfProc <- nimbleProject$nfCompInfos[[compInfoNames[i] ]]$nfProc
-#	return(nfProc)
-#}

@@ -22,7 +22,6 @@ Collate: config.R
  distributions_processInputList.R
  distributions_implementations.R
  BUGS_BUGSdecl.R
- BUGS_nodeInfo.R
  BUGS_contexts.R
  BUGS_modelDef.R
  BUGS_model.R

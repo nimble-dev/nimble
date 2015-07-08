@@ -371,7 +371,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
 
 checkNimbleOrRfunctionNames <- function(functionName) {
     if(any(functionName == nimbleOrRfunctionNames)) return(TRUE)
-    if(exists(functionName) && is.rcf(get(functionName))) return(TRUE)  # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
+    if(exists(functionName) && is.rcf(get(functionName))) return(TRUE)  ## Would like to do this by R's scoping rules here and in genCpp_sizeProcessing (currently line 139) but that is problematic
     return(FALSE)
 }
 

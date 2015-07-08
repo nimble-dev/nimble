@@ -92,7 +92,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = generatorName)
                                                           if(is.null(thisCppDef)) {
                                                               className <- names(nfProc$neededTypes)[i]
-                                                              ##CclassName <- paste0(className,'_nfClass')
                                                               if(neededType$type == 'nimbleFunction')
                                                                   thisCppDef <- nimbleProject$buildNimbleFunctionCompilationInfo(generatorName = generatorName, fromModel = fromModel)
                                                               else if(neededType$type == 'nimbleFunctionVirtual')
@@ -103,17 +102,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                               Hincludes <<- c(Hincludes, thisCppDef)
                                                               CPPincludes <<- c(CPPincludes, thisCppDef)
                                                           }
-                                                          ## ##     if a cppClass doesn't already exist
-                                                      ##     if(is.null(thisCppDef)) {
-                                                      ##         className <- names(nfProc$neededTypes)[i]
-                                                      ##         CclassName <- paste0(className,'_nfClass')
-                                                      ##         newCppClass <- makeCppNIMBLEfunction(neededType$generatorFun, CclassName, debugCpp = debugCpp)
-                                                      ##         neededTypeDefs[[ className ]] <<- newCppClass
-                                                      ##     } else {
-                                                      ##         ## Otherwise include the header of the already-existing code
-                                                      ##         Hincludes <<- c(Hincludes, thisCppDef)
-                                                      ##         CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                      ##     }
                                                           next
                                                       }
                                                       
@@ -154,11 +142,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       if(is.null(baseClassObj)) {
                                                           inheritance <<- c(inheritance, 'nodeFun')
                                                       }
-                                                      ## This step is done in buildAll, for node or non-node
-                                                      ## else {
-                                                      ##     baseClassName <- environment(baseClassObj)$CclassName
-                                                      ##     addInheritance(baseClassName)
-                                                      ## }
                                                   }
                                                   built <<- FALSE
                                                   loaded <<- FALSE
@@ -167,11 +150,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               processNFproc = function(nfp, debugCpp = FALSE, fromModel = FALSE) {
                                                   nfp$cppDef <- .self
                                                   nfProc <<- nfp
-##                                                  assign('cppDef', .self, envir = environment(nfProc$nfGenerator))
                                                   genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
                                                   objectDefs <<- symbolTable2cppVars(nfp$setupSymTab)
                                                   buildFunctionDefs()
-##                                                  functionDefs <<- nfp$RCfuns
                                                   ## This is slightly klugey
                                                   ## The objectDefs here are for the member data
                                                   ## We need them to be the parentST for each member function
@@ -200,15 +181,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL){
-                                              		nfRefClassObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)             
-                                              		return(nfRefClassObject)
-                                              
-                                              #		$runRelated
-                                              #		callFxn = function(...)
-                                              #			nfRefClassObject$run(...)
-                                              #		environment(callFxn) = new.env(parent = parent.frame() ) 
-                                              #		environment(callFxn)$nfRefClassObject = nfRefClassObject
-                                              #		return(callFxn)
+                                                  nfRefClassObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)             
+                                                  return(nfRefClassObject)
                                               },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains

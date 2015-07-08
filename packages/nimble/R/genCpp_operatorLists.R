@@ -51,7 +51,7 @@ makeCallList <- function(opList, call) {
 
 ## used for cppOutputs
 ## eigProxyCalls <- c('eigTranspose', 'eigCos', 'eigSin', 'eigTan', 'eigAcos', 'eigAsin', 'eigExp', 'eigLog', 'eigCube', 'cwiseProduct', 'cwiseQuotient', 'eigArray', 'eigMatrix', 'eigInverse', 'setAll', 'eigEval')
-## things here shuold have the inverse listing in the eigenizeTranslate list
+## things here should have the inverse listing in the eigenizeTranslate list
 eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigCos = 'cos',
                        eigSin = 'sin',
@@ -130,16 +130,16 @@ cppCasts = list(as.numeric = 'double',
 
 ## Used to decide when to put parentheses around LHS or RHS based on operator precendence.
 operatorRank <- c(
-				  list('<-' = 100, '^' = 4, llt = 3),
-                  makeCallList(c('*','/','%*%', '%%'), 5),
-                  makeCallList(c('+', '-'), 6),
-                  makeCallList(c('>','<','<=', '>='), 7),
-                  makeCallList(c('==','!='), 8),
-                  list('&' = 13,
-                       '|' = 14,
-                       '&&' = 13,
-                       '||' = 14)                  
-                  )
+    list('<-' = 100, '^' = 4, llt = 3),
+    makeCallList(c('*','/','%*%', '%%'), 5),
+    makeCallList(c('+', '-'), 6),
+    makeCallList(c('>','<','<=', '>='), 7),
+    makeCallList(c('==','!='), 8),
+    list('&' = 13,
+         '|' = 14,
+         '&&' = 13,
+         '||' = 14)                  
+)
 
 distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector'), dIncluded = TRUE)
 distribution_rFuns <- gsub("^d", "r", distribution_dFuns)

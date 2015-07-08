@@ -43,8 +43,6 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
                                           setupSymbolTables = function(parentST = NULL) {
-                                              ##  compileInfo$origLocalSymTab <<- argTypeList2symbolTable(RCfun$argInfo) ## will be used for function args.  must be a better way.
-                                              ##compileInfo$newLocalSymTab <<-  argTypeList2symbolTable(RCfun$argInfo)
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
@@ -188,8 +186,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
 
-                                       passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) ## as.list(names(RCfun$argInfo))
-                                       names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() ## names(RCfun$argInfo)
+                                       passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
+                                       names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  
   
                                        exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
