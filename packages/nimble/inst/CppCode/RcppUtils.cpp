@@ -183,7 +183,7 @@ double SEXP_2_double(SEXP Sn, int i) {
 
 SEXP double_2_SEXP(double v) {
   SEXP Sans;
-  PROTECT(Sans = allocVector(STRSXP, 1));
+  PROTECT(Sans = allocVector(REALSXP, 1));
   REAL(Sans)[0] = v;
   UNPROTECT(1);
   return(Sans);
