@@ -54,11 +54,12 @@
 #' \'bugs\' specifies WinBUGS/BUGS;
 #' \'jags\' specifies JAGS;
 #' \'stan\' specifies Stan; in this case, must also provide the \'stan_model\' argument;
-#' \'nimble\' specifies NIMBLE\'s default MCMC algorithm,
-#' \'nimble_RW\' specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\'RW\') samplers,
-#' \'nimble_slice\' specifies NIMBLE MCMC algorithm using only slice (\'slice\') samplers.
+#' \'nimble\' specifies NIMBLE\'s default MCMC algorithm;
+#' \'nimble_RW\' specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\'RW\') samplers;
+#' \'nimble_slice\' specifies NIMBLE MCMC algorithm using only slice (\'slice\') samplers;
+#' \'autoBlock\' specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
 #' Anything else will be interpreted as NIMBLE MCMC algorithms, and must have associated entries in the MCMCdefs argument.
-#' Default value is c(\'jags\', \'nimble\', \'nimble_RW\', \'nimble_slice\').
+#' Default value is c(\'jags\', \'nimble\', \'nimble_RW\', \'nimble_slice\', \'autoBlock\').
 #' 
 #' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \'MCMCs\' argument.
 #' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
@@ -89,6 +90,9 @@
 #' @param plotName Character string, giving the file name for saving the trace plots and density plots.
 #' Only used when makePlot == TRUE and savePlot == TRUE.
 #' Default value is \'MCMCsuite\'.
+#'
+#' @param setSeed Logical argument, specifying whether to set.seed(0) prior to MCMC sampling.
+#' Default value is TRUE.
 #' 
 #' @param debug Logical argument, specifying whether to enter a broswer() at the onset of executing each MCMC algrithm.
 #' For use in debugging individual MCMC algorithms, if necessary.
