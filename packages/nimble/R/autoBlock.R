@@ -362,11 +362,12 @@ autoBlockClass <- setRefClass(
             for(nodeGroup in groups) addSamplerToSpec(abModel$Rmodel, spec, nodeGroup)
             return(spec)
         },
-
+        
         sortGroups = function(groups) {
-            groupsAsStrings <- lapply(groups, function(grp) paste0(grp, collapse = '_'))
+            eachGroupSorted <- lapply(groups, sort)
+            groupsAsStrings <- lapply(eachGroupSorted, function(grp) paste0(grp, collapse = '_'))
             sortedInd <- sort(unlist(groupsAsStrings), index.return = TRUE)$ix
-            sortedGroups <- groups[sortedInd]
+            sortedGroups <- eachGroupSorted[sortedInd]
             return(sortedGroups)
         },
         
