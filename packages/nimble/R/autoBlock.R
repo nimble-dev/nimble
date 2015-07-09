@@ -29,15 +29,15 @@ autoBlock <- function(Rmodel,
     ab <- autoBlockClass(Rmodel, control)
     if(!'auto' %in% run) run <- c(run, 'auto')  ## always use 'autoBlock' routine
     ab$run(run)
-    lastAutoInd <- max(grep('^auto', ab$naming))   ## index of final 'auto' iteration
-    lastAutoGrouping <- ab$grouping[[lastAutoInd]]  ## grouping of final 'auto' iteration
-    nonTrivialGroups <- lastAutoGrouping[unlist(lapply(lastAutoGrouping, function(x) length(x)>1))]
     abList <- list(ab)
     names(abList)[1] <- 'model'
     df <- createDFfromABlist(abList, autoIt)
     dfmin <- reduceDF(df, round = round)
     cat('\nAuto-Blocking summary:\n')
     print(dfmin)
+    lastAutoInd <- max(grep('^auto', ab$naming))   ## index of final 'auto' iteration
+    lastAutoGrouping <- ab$grouping[[lastAutoInd]]  ## grouping of final 'auto' iteration
+    nonTrivialGroups <- lastAutoGrouping[unlist(lapply(lastAutoGrouping, function(x) length(x)>1))]
     if(length(nonTrivialGroups) > 0) {
         cat('\nAuto-Blocking converged on the node groupings:\n')
         for(i in seq_along(nonTrivialGroups)) {
@@ -602,9 +602,6 @@ reduceDF <- function(df, addAutoMax=TRUE, sortOutput=TRUE, round=TRUE) {
     }
     return(dfOut)
 }
-
-
-
 
 
 
