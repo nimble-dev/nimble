@@ -67,6 +67,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                 neededTypes =  'ANY',		#'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
                               neededObjectNames =  'ANY',		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
                                 newSetupOutputNames =  'ANY',		#'character',
+                                blockFromCppNames = 'ANY',
                                 newSetupCode =  'ANY',		#'list',
                                 newSetupCodeOneExpr = 'ANY',
                                 nimbleProject = 'ANY',
@@ -94,6 +95,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                       instances <<- if(inherits(f, 'list')) lapply(f, nf_getRefClassObject) else list(nf_getRefClassObject(f))
                                      
                                       newSetupOutputNames <<- character()
+                                      blockFromCppNames <<- character()
                                       newSetupCode <<- list()
                                   }
                               },
@@ -267,9 +269,49 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
     }
     if(setupNew) {
+        ## Kluge that results from adding string handling to the compiler:
+        ## Previously any character objects were assigned a symbol object with
+        ## type 'Ronly'.  In later processing all 'Ronly' types are filtered out of
+        ## propagation to C++.
+        ## Now that we have added string handling, character objects are assigned
+        ## a symbolString symbol with type "character" and not automatically filtered.
+        ## Unfortunately this means that vectors of node names that are only used
+        ## in lines like calculate(model, nodeNames), which undergoes keyword processing
+        ## would be propogated to C++ wastefully.
+        ## As a kluge, we will step in here, during second round of setup type inference
+        ## to re-assign type 'Ronly' to any symbols that, as a result of
+        ## keyword processing, we can now see are not needed
+        ## We also need the section added below to filter out newSetupOutputs
+        ## that are really created as intermediates for others that are really needed
+        ## during the keyword processing, the newSetupOutputNames is used for
+        ## bookkeeping, so it would not be trivial to remove them at an earlier stage.
+        
+        origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
+        newRcodeList <- lapply(compileInfos, `[[`, 'newRcode')
+        allNamesInCodeAfterKeywordProcessing <- unique(unlist(lapply(newRcodeList, all.names)))
+        origSetupOutputNamesToKeep <- intersect(allNamesInCodeAfterKeywordProcessing, origSetupOutputs)
+        origSetupOutputNamesNotNeeded <- setdiff(origSetupOutputs,origSetupOutputNamesToKeep) ## order matters
+        for(nameNotNeeded in origSetupOutputNamesNotNeeded) {
+            thisSym <- setupSymTab$getSymbolObject(nameNotNeeded)
+            if(!is.null(thisSym)) thisSym$type <- 'Ronly'
+        }
+
         outputNames <- c(outputNames, newSetupOutputNames)
     }
     doSetupTypeInference_processNF(setupSymTab, outputNames, instances, add = TRUE)   # add info about each setupOutput to symTab
+
+    if(setupNew) {
+        ## This is the second part of the kluge.
+        ## Probably it would be ok to never add these to the symbol table in the first place
+        ## but right now I am doing it this way to minimize unforeseen consequences by more closely mimicing what would have been created prior to adding string support
+        ## This is trickier because keyword processing can create objects for propogation to C++ that never appear in method code (e.g. manyVariableAccessors used to construct copierVectors)
+        ## So I added a blockFromCppNames that is populated during keyword processing
+        
+        for(nameNotNeeded in blockFromCppNames) {
+            thisSym <- setupSymTab$getSymbolObject(nameNotNeeded)
+            if(!is.null(thisSym)) thisSym$type <- 'Ronly'
+        }
+    }
 })
 
 nfProcessing$methods(doSetupTypeInference_processNF = function(symTab, setupOutputNames, instances, add = FALSE, firstOnly = FALSE) {
