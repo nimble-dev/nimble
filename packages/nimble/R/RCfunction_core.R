@@ -1,9 +1,9 @@
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
-                    step = 'nimbleStep',
-                    equals = 'nimbleEquals',
-                    dim = 'nimbleDim',
-                    stop = 'nimbleStop')
+                    step = 'nimStep',
+                    equals = 'nimEquals',
+                    dim = 'nimDim',
+                    stop = 'nimStop')
 
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',

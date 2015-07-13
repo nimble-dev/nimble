@@ -94,8 +94,8 @@ using std::string;
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
 
-void nimbleStop(string msg);
-void nimbleStop();
+void nimStop(string msg);
+void nimStop();
 
 // needed for link functions
 double ilogit(double x);
@@ -104,17 +104,17 @@ double iprobit(double x);
 double probit(double x);
 //double abs(double x);
 double cloglog(double x);
-int nimbleEquals(double x1, double x2);
+int nimEquals(double x1, double x2);
 double nimbleIfElse(bool condition, double x1, double x2);
 double lfactorial(double x);
 double factorial(double x);
 //double loggam(double x);
 double logit(double x);
-double nimbleRound(double x);
+double nimRound(double x);
 double pairmax(double x1, double x2);
 double pairmin(double x1, double x2);
 //double phi(double x);
-int nimbleStep(double x); 
+int nimStep(double x); 
 double cube(double x);
 double inprod(double v1, double v2);
 

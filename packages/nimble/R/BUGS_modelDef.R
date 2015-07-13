@@ -19,14 +19,12 @@ graphNode <- setRefClass(
     )
 )
 
-
 #' Class for NIMBLE model definition
 #'
 #' Class for NIMBLE model definition that is not usually needed directly by a user.
 #'
 #' @details See \code{?modelBaseClass} for information about creating NIMBLE BUGS models.
 modelDefClass <- setRefClass('modelDefClass',
-                             
                              fields = list(
                                  ## set in the call modelDefClass$new(name)
                                  name = 'ANY',
@@ -123,6 +121,7 @@ modelDefClass <- setRefClass('modelDefClass',
 ## set v3 = FALSE to use old processing
 modelDefClass$methods(setupModel = function(code, constants, dimensions, debug = FALSE) {
     if(debug) browser()
+    code <- codeProcessIfThenElse(code, parent.frame()) ## evaluate definition-time if-then-else
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
@@ -162,6 +161,22 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
 ## not used any more    removeEmptyBUGSdeclarations()     ## removes any declInfo[[i]] BUGSdecl objects for which length(indexedNodeInfo) == 0
     
 })
+
+codeProcessIfThenElse <- function(code, envir = parent.frame()) {
+    codeLength <- length(code)
+    if(code[[1]] == '{') {
+        if(codeLength > 1) for(i in 2:codeLength) code[[i]] <- codeProcessIfThenElse(code[[i]], envir)
+        return(code)
+    } else {
+        if(codeLength > 1) if(code[[1]] == 'if') {
+            evaluatedCondition <- eval(code[[2]], envir = envir)
+            if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]])) else {
+                if(length(code) == 4) return(codeProcessIfThenElse(code[[4]]))
+                else return(NULL)
+            }
+        } else return(code) else return(code)
+    }
+}
 
 modelDefClass$methods(setModelValuesClassName = function() {
     ## use this line to always ensure a unique internal refClass name

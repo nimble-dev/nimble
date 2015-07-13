@@ -653,17 +653,16 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 }
 
 addDistKeywordProcessors <- function(distList, keywordEnv){
-		for(thisDist in distList){
-		pFun <- paste0('p', thisDist)
-		qFun <- paste0('q', thisDist)
-		dFun <- paste0('d', thisDist)
-		
-		keywordEnv[[dFun]] <- d_dist_keywordInfo
-		keywordEnv[[pFun]] <- qp_dist_keywordInfo
-		keywordEnv[[qFun]] <- qp_dist_keywordInfo
+		for(thisDist in distList) {
+                    pFun <- paste0('p', thisDist)
+                    qFun <- paste0('q', thisDist)
+                    dFun <- paste0('d', thisDist)
+                    
+                    keywordEnv[[dFun]] <- d_dist_keywordInfo
+                    keywordEnv[[pFun]] <- qp_dist_keywordInfo
+                    keywordEnv[[qFun]] <- qp_dist_keywordInfo
 		}
-		
-}
+            }
           
 
 addDistList2matchFunctions(matchDistList, matchFunctions)

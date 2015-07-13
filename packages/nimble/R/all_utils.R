@@ -25,7 +25,7 @@ dimOrLength <- function(obj) {
 
 #' return sizes of an object whether it is a vector, matrix or array
 #'
-#' R's regular \code{dim} function returns NULL for a vector.  It is useful to have this function that treats a vector similarly to a matrix or array.  Works in R and NIMBLE.  In NIMBLE \code{dim} is identical to \code{nimbleDim}, not to R's \code{dim}
+#' R's regular \code{dim} function returns NULL for a vector.  It is useful to have this function that treats a vector similarly to a matrix or array.  Works in R and NIMBLE.  In NIMBLE \code{dim} is identical to \code{nimDim}, not to R's \code{dim}
 #'
 #' @param obj  objects for which the sizes are requested
 #'
@@ -36,11 +36,11 @@ dimOrLength <- function(obj) {
 #' @examples
 #' x <- rnorm(4)
 #' dim(x)
-#' nimbleDim(x)
+#' nimDim(x)
 #' y <- matrix(x, nrow = 2)
 #' dim(y)
-#' nimbleDim(y)
-nimbleDim <- function(obj) {
+#' nimDim(y)
+nimDim <- function(obj) {
     if(is.null(dim(obj))) return(length(obj))
     return(dim(obj))
 }
