@@ -1,7 +1,7 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
-nimbleStop <- function(...) stop(...)
+nimStop <- function(...) stop(...)
 
 checkInterrupt <- function() {}
 

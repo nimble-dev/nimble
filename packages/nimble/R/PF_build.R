@@ -63,7 +63,7 @@ buildPF <- nimbleFunction(
     setup = function(model, nodes, silent = FALSE) {
         my_initializeModel <- initializeModel(model, silent = silent)
         nodes <- model$expandNodeNames(nodes, sort = TRUE)
-        dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
+        dims <- lapply(nodes, function(n) nimDim(model[[n]]))
         if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
         mv <- modelValues(modelValuesSpec(vars = c('x', 'xs'),
                                           type = c('double', 'double'),
