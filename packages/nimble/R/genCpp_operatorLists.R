@@ -3,13 +3,13 @@ ifOrWhile <- c('if','while')
 ## Following are a set of operators organized into categories that various processing steps use
 binaryMidLogicalOperators <- c('==','!=','<=','>=','<','>','&','|')
 binaryMidOperators <- c('/','*','%%','^')
-binaryLeftOperators <- c('pow','pmin','pmax', 'nimMod', 'nimbleEquals','pairmin','pairmax')
+binaryLeftOperators <- c('pow','pmin','pmax', 'nimMod', 'nimEquals','pairmin','pairmax')
 binaryOperators <- c(binaryMidOperators, binaryLeftOperators)
 binaryOrUnaryOperators <- c('+','-')
 unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
                     'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
                     'lgamma1p', 'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
-                    'abs','nimbleRound','ftrunc','ceil','floor','nimbleStep', 
+                    'abs','nimbleRound','ftrunc','ceil','floor','nimStep', 
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
 unaryOrNonaryOperators <- list() 
 assignmentOperators <- c('<-','<<-','=')
@@ -36,7 +36,7 @@ midOperators <- c(midOperators, list('$' = '$', '%*%' = ' %*% ', ':' = ':', '%o%
 
 brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
 
-callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimbleEquals')
+callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals')
 
 ## This takes a character vector as the first argument and length-1 character vector as the second argument.
 ## It returns a list with the first vector as names and the second argument as the value of each element.
@@ -51,7 +51,7 @@ makeCallList <- function(opList, call) {
 
 ## used for cppOutputs
 ## eigProxyCalls <- c('eigTranspose', 'eigCos', 'eigSin', 'eigTan', 'eigAcos', 'eigAsin', 'eigExp', 'eigLog', 'eigCube', 'cwiseProduct', 'cwiseQuotient', 'eigArray', 'eigMatrix', 'eigInverse', 'setAll', 'eigEval')
-## things here shuold have the inverse listing in the eigenizeTranslate list
+## things here should have the inverse listing in the eigenizeTranslate list
 eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigCos = 'cos',
                        eigSin = 'sin',
@@ -117,7 +117,7 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
                                        eigFtrunc = c('ftrunc', 'double', 'double'),
                                        eigCeil = c('ceil', 'double', 'double'),
                                        eigFloor = c('floor', 'double', 'double'),
-                                       eigNimbleStep = c('nimbleStep', 'double', 'int')
+                                       eigNimStep = c('nimStep', 'double', 'int')
                                        )
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
@@ -130,16 +130,16 @@ cppCasts = list(as.numeric = 'double',
 
 ## Used to decide when to put parentheses around LHS or RHS based on operator precendence.
 operatorRank <- c(
-				  list('<-' = 100, '^' = 4, llt = 3),
-                  makeCallList(c('*','/','%*%', '%%'), 5),
-                  makeCallList(c('+', '-'), 6),
-                  makeCallList(c('>','<','<=', '>='), 7),
-                  makeCallList(c('==','!='), 8),
-                  list('&' = 13,
-                       '|' = 14,
-                       '&&' = 13,
-                       '||' = 14)                  
-                  )
+    list('<-' = 100, '^' = 4, llt = 3),
+    makeCallList(c('*','/','%*%', '%%'), 5),
+    makeCallList(c('+', '-'), 6),
+    makeCallList(c('>','<','<=', '>='), 7),
+    makeCallList(c('==','!='), 8),
+    list('&' = 13,
+         '|' = 14,
+         '&&' = 13,
+         '||' = 14)                  
+)
 
 distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector'), dIncluded = TRUE)
 distribution_rFuns <- gsub("^d", "r", distribution_dFuns)

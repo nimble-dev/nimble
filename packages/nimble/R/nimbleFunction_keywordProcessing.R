@@ -221,7 +221,7 @@ calculate_keywordInfo <- keywordInfoClass(
 		if(isCodeArgBlank(code, 'nodes')){
 			LHSnodes_ArgList <- list(model = code$model)
 			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc)
+			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
 			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
 			}
 		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -243,7 +243,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
 		if(isCodeArgBlank(code, 'nodes')){
 			LHSnodes_ArgList <- list(model = code$model)
 			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc)
+			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
 			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
 			}
 		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -267,7 +267,7 @@ simulate_keywordInfo <- keywordInfoClass(
 		if(isCodeArgBlank(code, 'nodes')){
 			LHSnodes_ArgList <- list(model = code$model)
 			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc)
+			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
 			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
 			}
 		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -290,7 +290,7 @@ getLogProb_keywordInfo <- keywordInfoClass(
 		if(isCodeArgBlank(code, 'nodes')){
 			LHSnodes_ArgList <- list(model = code$model)
 			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc)
+			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
 			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
 			}
 		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -325,13 +325,13 @@ nimCopy_keywordInfo <- keywordInfoClass(
 			if(from_ArgList$class == 'symbolModel'){
 				node_ArgList <- list(model = from_ArgList$name)
 				allNodes_name <- allModelNodes_SetupTemplate$makeName( node_ArgList )
-				addNecessarySetupCode(allNodes_name, node_ArgList, allModelNodes_SetupTemplate, nfProc)
+				addNecessarySetupCode(allNodes_name, node_ArgList, allModelNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
 			}
 			else if(from_ArgList$class == 'symbolModelValues'){
 				from_ArgList$row = code$row
 				mvVar_ArgList <- list(modelValues = from_ArgList$name)
 				allNodes_name <- allModelValuesVars_SetupTemplate$makeName(mvVar_ArgList)
-				addNecessarySetupCode(allNodes_name, mvVar_ArgList, allModelValuesVars_SetupTemplate, nfProc)
+				addNecessarySetupCode(allNodes_name, mvVar_ArgList, allModelValuesVars_SetupTemplate, nfProc, allowToCpp = FALSE)
 			}
 			from_ArgList$nodes <- as.name(allNodes_name)
 		}
@@ -653,27 +653,20 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 }
 
 addDistKeywordProcessors <- function(distList, keywordEnv){
-		for(thisDist in distList){
-		pFun <- paste0('p', thisDist)
-		qFun <- paste0('q', thisDist)
-		dFun <- paste0('d', thisDist)
-		
-		keywordEnv[[dFun]] <- d_dist_keywordInfo
-		keywordEnv[[pFun]] <- qp_dist_keywordInfo
-		keywordEnv[[qFun]] <- qp_dist_keywordInfo
+		for(thisDist in distList) {
+                    pFun <- paste0('p', thisDist)
+                    qFun <- paste0('q', thisDist)
+                    dFun <- paste0('d', thisDist)
+                    
+                    keywordEnv[[dFun]] <- d_dist_keywordInfo
+                    keywordEnv[[pFun]] <- qp_dist_keywordInfo
+                    keywordEnv[[qFun]] <- qp_dist_keywordInfo
 		}
-		
-}
+            }
           
 
 addDistList2matchFunctions(matchDistList, matchFunctions)
 addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
-
-
-
-    
-    
-
 
 #	processKeyword function to be called by nfProc
 processKeyword <- function(code, nfProc){
@@ -913,13 +906,15 @@ isCodeArgBlank <- function(code, arg){
 
 # Utility functions to make things a little neater
 isSetupCodeGenerated <- function(name, nfProc)
-	name %in% nfProc$newSetupOutputNames
+    name %in% nfProc$newSetupOutputNames
 addSetupCodeNames <- function(name, otherNames, nfProc)
-	nfProc$newSetupOutputNames <- c(name, otherNames, nfProc$newSetupOutputNames)
+    nfProc$newSetupOutputNames <- c(name, otherNames, nfProc$newSetupOutputNames)
+addBlockFromCppName <- function(name, nfProc)
+    nfProc$blockFromCppNames <- c(name, nfProc$blockFromCppNames)
 addNewCode <- function(name, subList, template, nfProc)
-	nfProc$newSetupCode[[name]] <- eval(substitute(substitute(TEMPLATE, subList), list(TEMPLATE = template$codeTemplate) ) )
+    nfProc$newSetupCode[[name]] <- eval(substitute(substitute(TEMPLATE, subList), list(TEMPLATE = template$codeTemplate) ) )
 
-addNecessarySetupCode <- function(name, argList, template, nfProc){
+addNecessarySetupCode <- function(name, argList, template, nfProc, allowToCpp = TRUE){
     if(is.null(nfProc)) stop("Trying to add setup code for a nimbleFunction with no setup code.")
                                         #	name <- template$makeName(argList)
     test <- try(length(isSetupCodeGenerated(name, nfProc)))
@@ -927,6 +922,7 @@ addNecessarySetupCode <- function(name, argList, template, nfProc){
         addSetupCodeNames(name, template$makeOtherNames(name, argList), nfProc)
         subList <- template$makeCodeSubList(name, argList)
         addNewCode(name, subList, template, nfProc)
+        if(!allowToCpp) addBlockFromCppName(name, nfProc) ## ignores makeOtherNames for now
     }
 }
 

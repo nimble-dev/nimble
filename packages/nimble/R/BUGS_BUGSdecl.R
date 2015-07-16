@@ -2,8 +2,8 @@
 
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
 nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
-                            'equals','inprod','nimbleEquals',
-                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimbleStep', 'inverse',
+                            'equals','inprod','nimEquals',
+                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimStep', 'inverse',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
                             'ceiling', 'floor', 'round', 'trunc',
@@ -371,7 +371,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
 
 checkNimbleOrRfunctionNames <- function(functionName) {
     if(any(functionName == nimbleOrRfunctionNames)) return(TRUE)
-    if(exists(functionName) && is.rcf(get(functionName))) return(TRUE)  # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
+    if(exists(functionName) && is.rcf(get(functionName))) return(TRUE)  ## Would like to do this by R's scoping rules here and in genCpp_sizeProcessing (currently line 139) but that is problematic
     return(FALSE)
 }
 

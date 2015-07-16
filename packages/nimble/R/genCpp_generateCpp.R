@@ -18,17 +18,11 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          '[' = 'cppOutputBracket',
                          mvAccessRow = 'cppOutputBracket',
                          '(' = 'cppOutputParen',
-                     ##    setSize = 'cppOutputMemberFunction',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
                          nfVar = 'cppOutputNFvar',
                          getsize = 'cppOutputMemberFunctionDeref',
-                       ##  size = 'cppOutputMemberFunction', 
                          resizeNoPtr = 'cppOutputMemberFunction',
-                      ##   getPtr = 'cppOutputMemberFunction',
-                         
-                      ##   dim = 'cppOutputMemberFunction',
-                      ##   strides = 'cppOutputMemberFunction',
                          AssignEigenMap = 'cppOutputEigenMapAssign',
                          chainedCall = 'cppOutputChainedCall',
                          template = 'cppOutputTemplate',
@@ -37,14 +31,9 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          cppPtrType = 'cppOutputPtrType', ## mytype* (needed in templates like myfun<a*>(b)
                          cppDereference = 'cppOutputDereference', ## *(arg)
                          cppMemberDereference = 'cppOutputMidOperator', ## arg1->arg2
-                      ##   access = 'cppOutputAccess',
-                      ##   mvAccess = 'cppOutputMVAccess',
-                      ##   nimFunListAccess = 'cppOutputNimFunListAccess',
-                         '[[' = 'cppOutputDoubleBracket',
-                         
+                         '[[' = 'cppOutputDoubleBracket',                         
                          as.integer = 'cppOutputCast',
                          as.numeric = 'cppOutputCast',
-                         
                          numListAccess = 'cppOutputNumList',
                          blank = 'cppOutputBlank',
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
@@ -53,10 +42,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          )
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
-##cppMidOperators <- list('%*%' = ' * ', '*' = ' * ','+' = ' + ', '<-' = ' = ', '==' = ' == ')
 cppMidOperators <- midOperators
 cppMidOperators[['%*%']] <- ' * '
-##cppMidOperators[['%%']] <- ' % '
 cppMidOperators[['cppMemberDereference']] <- '->'
 cppMidOperators[['nfVar']] <- '->'
 cppMidOperators[['&']] <- ' && '
@@ -65,7 +52,6 @@ for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
       
 nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile)
-
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
 ## and the elements are the name of the function to use to generate output for that name
@@ -76,7 +62,6 @@ nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile)
 ## Main function for generating C++ output
 nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE, asArg = FALSE) {
     if(is.numeric(code)) return(code)
-  #  if(is.numeric(code)) return( if(code == as.integer(code)) paste0(code, ".") else code)
     if(is.character(code)) return(paste0('\"', gsub("\\n","\\\\n", code), '\"'))
     if(is.null(code)) return('R_NilValue')
     if(is.logical(code) ) return(code)
@@ -102,26 +87,27 @@ nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE,
     return(cppOutputCallAsIs(code, symTab))
 }
 
-## exprName2Cpp <- function(code, symTab, asArg = FALSE) {
-##     if(!is.null(symTab)) {
-##         sym <- symTab$getSymbolObject(code$name, inherits = TRUE)
-##         if(!is.null(sym)) return(sym$generateUse(asArg = asArg))
-##         return(code$name)
-##     } else {
-##         return(code$name)
-##     }
-## }
-
 exprName2Cpp <- function(code, symTab, asArg = FALSE) {
     if(!is.null(symTab)) {
         sym <- symTab$getSymbolObject(code$name, inherits = TRUE)
         if(!is.null(sym)) return(sym$generateUse(asArg = asArg))
-        ans <- code$name
+        return(code$name)
     } else {
-        ans <- code$name
+        return(code$name)
     }
-    if(ans == 'dnorm') 'nim_dnorm' else ans
 }
+
+## This was an experiment about computational cost of Rmath's dnorm
+## exprName2Cpp <- function(code, symTab, asArg = FALSE) {
+##     if(!is.null(symTab)) {
+##         sym <- symTab$getSymbolObject(code$name, inherits = TRUE)
+##         if(!is.null(sym)) return(sym$generateUse(asArg = asArg))
+##         ans <- code$name
+##     } else {
+##         ans <- code$name
+##     }
+##     if(ans == 'dnorm') 'nim_dnorm' else ans
+## }
 
 cppOutputVoidPtr <- function(code, symTab) {
     paste('static_cast<void *>(&',code$args[[1]]$name,')')
@@ -251,8 +237,6 @@ cppOutputNFvar <- function(code, symTab) {
 cppOutputNFmethod <- function(code, symTab) {
     if(length(code$args) < 2) stop('Error: expecting at least 2 arguments for operator ',code$name)
     paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]) ##, ## No nimGenerateCpp on code$args[[2]] because it should be a string
-
-    ##'(', paste0(unlist(lapply(code$args[-c(1,2)], nimGenerateCpp, symTab)), collapse = ','), ')' ) 
     ## This used to take method args in this argList.  But now they are in a chainedCall
 }
 
@@ -292,7 +276,6 @@ cppOutputBinaryOrUnary <- function(code, symTab) {
 
 cppMinusOne <- function(x) {
     if(is.numeric(x)) return(x-1)
-    ##RparseTree2ExprClasses(substitute(A-1, list(A = x)))
     paste0('(',x,') - 1')
 }
 

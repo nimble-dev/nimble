@@ -79,15 +79,6 @@ exprClasses_initSizes <- function(code, symTab = NULL, sizeList = NULL, typeEnv 
                     sizeExprs <- makeSizeExpressions(sizeVec, code$name)
                 }
             
-                ## This would populate the nDim, type and sizes fields.
-                ## Actually we're going to do that later.
-                ## code$nDim <- length(sizeVec)
-                ## code$sizes <- vector('list', code$nDim)
-                ## code$type <- type
-                ## for(i in seq_along(sizeVec)) {
-                ##     code$sizes[[i]] <- if(is.na(sizeVec[i])) buildNdimExpr(code$name, i) else sizeVec[i]
-                ## }
-                
                 ## Put the new object in the typeEnv
                 assign(code$name, exprTypeInfoClass$new(nDim = nDim, sizeExprs = sizeExprs, type = type), envir = typeEnv)
             }

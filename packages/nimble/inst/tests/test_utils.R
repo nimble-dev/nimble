@@ -122,12 +122,14 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # classic-bugs example specified by name
   	dir = getBUGSexampleDir(example)
     if(missing(model)) model <- example
-    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE)
+    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
+                            check = FALSE)
   } else {
     # code, data and inits specified directly where 'model' contains the code
     example = deparse(substitute(model))
     if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-    Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE)
+    Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
+                            check = FALSE)
   }
 
 

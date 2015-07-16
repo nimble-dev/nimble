@@ -1,8 +1,9 @@
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
-                    step = 'nimbleStep',
-                    equals = 'nimbleEquals',
-                    dim = 'nimbleDim')
+                    step = 'nimStep',
+                    equals = 'nimEquals',
+                    dim = 'nimDim',
+                    stop = 'nimStop')
 
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',
@@ -90,8 +91,12 @@ nf_changeNimKeywords <- function(code){
 
 nf_changeNimKeywordsOne <- function(code){
     if(length(code) == 1){
-        if(as.character(code) %in% names(nimKeyWords) )
-            code <- as.name( nimKeyWords[[as.character(code)]] )
+        if(as.character(code) %in% names(nimKeyWords) ) {
+            if(is.call(code)) 
+                code[[1]] <- as.name( nimKeyWords[[as.character(code)]] )
+            else
+                code <- as.name( nimKeyWords[[as.character(code)]] )
+        }
     }
     else if(length(code) > 1){	
         for(i in seq_along(code) ) {

@@ -66,10 +66,6 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ##
                                        ## 1. generate CnodeFunClasses
                                        ##     - by iterating through the nodeGenerators in the Rmodel
-                                       ##browser()
-                                       
-
-                                       
                                        nodesEnv <- new.env()
                                        for(i in names(Rmodel$nodeFunctions)) {
                                            nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll)
@@ -95,7 +91,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        		
                                        		gIDs_withNAs = unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2GraphID_values, USE.NAMES = FALSE))
                                        		validIndices = which(!is.na(gIDs_withNAs))
-                                       		gIDs = gIDs_withNAs[validIndices] 	#Rmodel$expandNodeNames(namesWflatIndices, returnScalarComponents = TRUE, returnType = 'ids')
+                                       		gIDs = gIDs_withNAs[validIndices] 
 											
                                        		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr , vName, as.integer(gIDs), as.integer(validIndices), .nodeValPointers_byGID$.ptr)
                                        		logVNames <- modelDef$nodeName2LogProbName(vName)
@@ -107,28 +103,6 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
 	                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), as.integer(validIndices), .nodeLogProbPointers_byGID$.ptr)
 	                                       		}
                                        }
-                                       ## for(i in seq_along(Rmodel$nodeGenerators)) {
-                                       ##     nodeGenName <- names(Rmodel$nodeGenerators)[i]
-                                       ##     nfName <- environment(compiledModel$nodeFuns[[nodeGenName]]$Rgenerator)$refName
-                                       ##     CnodeFunClasses[[nfName]] <<- compiledModel$nodeFuns[[nodeGenName]]$Rgenerator
-                                           
-                                       ##     ## using eval(substitute is purely to avoid a warning about <- instead of <<-
-                                       ##     ## nfName is the name of the class created in buildNimbleFxnInterface, i.e. the interface class
-                                       ##     ## I don't think this is used anywhere else.
-                                       ##     eval(substitute(environment(RM_$nodeGenerators[[nodeGenName]])$CnimbleFunClassName <- nfName, list(RM_ = as.name('Rmodel'))))
-                                       ## }
-                                       ## ## 2. generate each node object
-                                       ## ##     - by iterating through either the nodeFunctions or the instances of the nodeGenerators
-                                       ## ##     - the former have names but we must look up the nodeGenerator
-                                       ## ##     - the latter don't have names, but the nodeGenerator is there
-                                       ## ##         - We will insert a CnimbleFunClassName into the nodeGenerator and iterator over nodeFunctions
-                                       ## for(i in names(Rmodel$nodeFunctions)) {
-                                       ##     ## We could have a better structure here
-                                       ##     nfName <- environment(nf_getRefClassObject(Rmodel$nodeFunctions[[i]])$.generatorFunction)$CnimbleFunClassName
-                                       ##     nodes[[i]] <<- CnodeFunClasses[[nfName]](Rmodel$nodeFunctions[[i]], dll = dll)
-                                       ##     ## avoid <<- warning:
-                                       ##     assign('.CobjectInterface', nodes[[i]], envir = environment(Rmodel$nodeFunctions[[i]]))
-                                       ## }
                                    }
                                    )
                                )
@@ -204,7 +178,6 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
                                                      	.self[[vPtrName]] <<- newObjElementPtr(.basePtr, vn)
-                                                      #  eval(substitute(.DUMMY <<- newObjElementPtr(.basePtr, vn), list(.DUMMY = as.name(vPtrName)) ) ) 
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)

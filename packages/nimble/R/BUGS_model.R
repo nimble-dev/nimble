@@ -194,19 +194,7 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       ans <- expandNodeNames(modelDef$maps$graphID_2_nodeName[validValues], 
                                       						 returnScalarComponents = returnScalarComponents,
                                       						 returnType = returnType) 
-                                      return(ans)
-#                                      if(returnType == 'names')
-#                                          return(validNames)
-#                                      
-#                                      if(returnType == 'ids')
-#                                          return(modelDef$maps$nodeName_2_graphID[validNames])
-                                      
-#                                      if(returnType == 'nodeVector')
-#                                          stop('returning nodeVector from model$getNodeNames not currently supported. Need to figure out how to determine if nodeVector is nodeFunctions or nodeValues')
-                                      
- #                                     if(!(returnType %in% c('ids', 'nodeVector', 'names')))
-                                          stop('instead getNodeNames, imporper returnType chosen')
-                                      
+                                      return(ans)                                      
                                   },
                                   
                                   expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE){
@@ -237,11 +225,7 @@ sort: should names be topologically sorted before being returned?
                                           if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
                                           return(graphID)
                                       }                  
-                                      if(returnType == 'nodeVector') {
-                                          print("NIMBLE development message: expandNodeNames called with returnType = nodeVector.  Checking to see if this ever is used.")
-                                          return(nodeVector(origNodeNames = nodeNames))	
-                                      }
-                                      if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+                                      if(!(returnType %in% c('ids','names')))
                                       	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
                                   
@@ -403,12 +387,12 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       }
                                       else if(inherits(nodes, 'numeric'))
                                           nodeIDs <- nodes
-                                      else if(inherits(nodes, 'nodeVector')){ 
-                                          if(!returnScalarComponenets)
-                                              nodeIDs <- nodes$getOrigIDs_functions()
-                                          else
-                                              nodeIDs <- nodes$getOrigIDs_values()
-                                      }
+                                      ## else if(inherits(nodes, 'nodeVector')){ 
+                                      ##     if(!returnScalarComponenets)
+                                      ##         nodeIDs <- nodes$getOrigIDs_functions()
+                                      ##     else
+                                      ##         nodeIDs <- nodes$getOrigIDs_values()
+                                      ## }
                                       
                                       if(inherits(omit, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
@@ -419,12 +403,12 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       }
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
-                                      else if(inherits(omit, 'nodeVector')){ 
-                                          if(!returnScalarComponenets)
-                                              omitIDs <- omit$getOrigIDs_functions()
-                                          else
-                                              omitIDs <- omit$getOrigIDs_values()
-                                      }
+                                      ## else if(inherits(omit, 'nodeVector')){ 
+                                      ##     if(!returnScalarComponenets)
+                                      ##         omitIDs <- omit$getOrigIDs_functions()
+                                      ##     else
+                                      ##         omitIDs <- omit$getOrigIDs_values()
+                                      ## }
                                       
                                       depIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
@@ -434,14 +418,6 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(!includeData)	depIDs <- depIDs[!isDataFromGraphID(depIDs)]
                                       if(dataOnly)		depIDs <- depIDs[isDataFromGraphID(depIDs)]
                                       
-                                      if(returnType == 'nodeVector'){
-                                          print("nimble development message: somewhere is calling getDependencies with returnType = nodeVector")
-                                          if(!returnScalarComponents)
-                                              depNodes <- nodeVector(origGraphIDs_functions = depIDs, model = .self)
-                                          else
-                                              depNodes <- nodeVector(origGraphIDs_values = depIDs, model = .self)
-                                          return(depNodes)
-                                      }
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
                                           depIDs = unique(depIDs)
@@ -454,7 +430,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                               return(modelDef$maps$elementNames[depIDs])
                                           return(modelDef$maps$nodeNames[depIDs])
                                       }
-                                      if(!(returnType %in% c('ids', 'nodeVector', 'names')))
+                                      if(!(returnType %in% c('ids', 'names')))
                                           stop('instead getDependencies, imporper returnType chosen')
                                   },
                                   
@@ -486,11 +462,6 @@ inits: A named list.  The names of list elements must correspond to model variab
                                           } else  .self[[names(inits)[i]]] <- inits[[i]]
                                       }
                                   },
-
-                                  ## checkConjugacyAll = function(nodes) {
-                                  ##     ## new version to handle a batch of nodes together
-                                  ##     conjugacyRelationshipsObject$checkConjugacyAll(.self, nodes)
-                                  ## },
                                   
                                   checkConjugacy = function(nodeVector) {
                                       '
@@ -666,7 +637,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
 
                                            ## If it is a singleton with no replacements, we can build the node simply:
-                                           if(length(setupOutputExprs)==0) { ## if(nrow(BUGSdecl$unrolledIndicesMatrix)==0) {
+                                           if(length(setupOutputExprs)==0) { 
                                                nodeFunctions[[iNextNodeFunction]] <<- nfGenerator(.self)
                                                nodeFunctionGeneratorNames[iNextNodeFunction] <<- thisNodeGeneratorName
                                                names(nodeFunctions)[iNextNodeFunction] <<- newNodeFunctionNames
@@ -688,19 +659,10 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            }, envir = BUGSdecl$replacementsEnv)
                                            
                                            numNewFunctions <- BUGSdecl$outputSize
-                                           #nfGenWrap <- function(i) {browser(); eval(eval(substitute(substitute(nfGenCall, list(i = i)), list(nfGenCall = nfGenCall))))}
-                                           #assign('nfGenCall_UNIQUE_NAME_', nfGenCall, envir = BUGSdecl$replacementsEnv)
-                                           #assign('nfGenWrap_UNIQUE_NAME_', nfGenWrap, envir = BUGSdecl$replacementsEnv)
                                            nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- evalq(lapply(1:outputSize, nfGenWrap_UNIQUE_NAME_), envir = BUGSdecl$replacementsEnv)
                                            nodeFunctionGeneratorNames[iNextNodeFunction-1+(1:numNewFunctions)] <<- thisNodeGeneratorName
                                            rm(list = c('MODEL_UNIQUE_NAME_', 'nfGenCall_UNIQUE_NAME_', 'nfGenerator_UNIQUE_NAME_', 'nfGenWrap_UNIQUE_NAME_'), envir = BUGSdecl$replacementsEnv)
                                            
-                                           ## cn <- colnames(BUGSdecl$unrolledIndicesMatrix)
-                                           ## nfGenCall <- as.call(c(list(quote(nfGenerator)), list(model = quote(.self)), lapply(names(setupOutputExprs), function(z) substitute(x[i], list(i = which(z == cn))))))
-                                           ## nfGenWrap <- function(x) x
-                                           ## body(nfGenWrap) <- nfGenCall
-                                           ## numNewFunctions <- nrow(BUGSdecl$unrolledIndicesMatrix)
-                                           ## nodeFunctions[iNextNodeFunction-1+(1:numNewFunctions)] <<- apply(BUGSdecl$unrolledIndicesMatrix, 1, nfGenWrap)
                                            names(nodeFunctions)[iNextNodeFunction-1+(1:numNewFunctions)] <<- BUGSdecl$nodeFunctionNames
                                            iNextNodeFunction <- iNextNodeFunction + numNewFunctions
                                        }
@@ -712,7 +674,6 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                     },
                                    show = function() {
                                        cat(paste0('Rmodel object with     name: \'', name,    '\'\n'))
-##                                       cat(paste0('                      cName: \'', cName, '\'\n'))
                                    }
                                )
 )
@@ -779,7 +740,7 @@ makeBUGSclassFields <- function(vars) {
 makeBUGSactiveBindingDef <- function(envVarName, varVarName, rowVarName) {
     eval( substitute( substitute(aBT, list(ENVNAME = as.name(envVarName), VARNAME = as.name(varVarName), ROWNAME = as.name(rowVarName))), list(aBT = activeBindingTemplate) ) )
 }
-## makeBUGSactiveBindingDef('.env_x','.name_x','.row_x')
+##e.g.  makeBUGSactiveBindingDef('.env_x','.name_x','.row_x')
 
 ## Parse tree template for the active binding functions
 activeBindingTemplate <- quote( function(value) {

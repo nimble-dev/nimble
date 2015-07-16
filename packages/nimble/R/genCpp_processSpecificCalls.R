@@ -25,7 +25,8 @@ specificCallReplacements <- list(
     round = 'nimbleRound',
     ceiling = 'ceil',
     trunc = 'ftrunc',
-    nimbleDim = 'dim')
+    nimDim = 'dim',
+    checkInterrupt = 'R_CheckUserInterrupt')
     
 
 specificCallHandlers = c(

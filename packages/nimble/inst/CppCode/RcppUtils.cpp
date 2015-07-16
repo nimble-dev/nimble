@@ -72,6 +72,36 @@ string STRSEXP_2_string(SEXP Ss, int i) {
   return(ans);
 }
 
+void STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans) {
+  if(!isString(Ss)) {
+    PRINTF("Error: STRSEXP_2_vectorString called for SEXP that is not a string!\n"); 
+    return;
+  }
+  int nn = LENGTH(Ss);
+  ans.resize(nn);
+  for(int i = 0; i < nn; i++) {
+    ans[i].assign(CHAR(STRING_ELT(Ss, i)), LENGTH(STRING_ELT(Ss, i)));
+  }
+}
+
+SEXP string_2_STRSEXP(string v) {
+  SEXP Sans;
+  PROTECT(Sans = allocVector(STRSXP, 1));
+  SET_STRING_ELT(Sans, 0, mkChar(v.c_str()));
+  UNPROTECT(1);
+  return(Sans);
+}
+
+SEXP vectorString_2_STRSEXP(const vector<string> &v) {
+  SEXP Sans;
+  int nn = v.size();
+  PROTECT(Sans = allocVector(STRSXP, nn));
+  for(int i = 0; i < nn; i++) {
+    SET_STRING_ELT(Sans, i, mkChar(v[i].c_str()));
+  }
+  UNPROTECT(1);
+  return(Sans);
+}
 
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
@@ -113,29 +143,6 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
     }
   }
 };
-
-/*
-template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, bool> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
-  int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
-  ans.setSize(nn);
-  if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
-  } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
-    }
-  }
-};
-*/
-
 
 
 vector<double> SEXP_2_vectorDouble( SEXP Sn ) {
@@ -337,10 +344,6 @@ SEXP getVec(SEXP Sextptr) {
     PRINTF("Error: Sextptr is not a valid external pointer\n");
     return(R_NilValue);
   }
-  //  vector<double> *vecPtr = *static_cast< vector<double>** >(R_ExternalPtrAddr(Sextptr));
-/*  NimArrBase<double> *vecPtr = *static_cast< NimArrBase<double> ** >(R_ExternalPtrAddr(Sextptr));  
-Original Code*/
-
 
   NimArrBase<double> *vecPtr = static_cast< NimArrBase<double> * >(R_ExternalPtrAddr(Sextptr));
 
@@ -349,7 +352,6 @@ Original Code*/
   
   PROTECT(Sans = allocVector(REALSXP, len));
 	std::copy(vecPtr->v.begin(), vecPtr->v.end() , REAL(Sans) );
-/*  std::copy(vecPtr->v, vecPtr->v + len, REAL(Sans) );  	Original Code */
   
   int numDims = vecPtr->numDims();
   if(numDims > 1) {
@@ -808,17 +810,6 @@ SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims){
 	return(R_NilValue);
 }
 
-/*		Automatically resizes row
-SEXP setNumList(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
-	vector<int> inputDims = getSEXPdims(Svalue);
-	NimVecType* listBasePtr = static_cast<NimVecType* >(R_ExternalPtrAddr(Sextptr) ) ;
-	int cRow = INTEGER(Sindex)[0]-1;	
-	int setWorked = (*listBasePtr).setRowDims(cRow, inputDims);
-	if(setWorked == false)
-		return(returnStatus(false));
-	return(setMVElement(Sextptr, Sindex, Svalue));
-}		*/
-
 SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
     if(!isInteger(Sindex)) {
     PRINTF("Error: Sindex is not an integer!\n");
@@ -875,10 +866,8 @@ SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum) {
     return(R_NilValue);
   }
   VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(SextptrStorageVar));
-//vector< vector<double> > *matPtr = static_cast< vector< vector<double> >* >(R_ExternalPtrAddr(SextptrStorageVar));
-NimArrBase<double> **vecPtr = static_cast< NimArrBase<double>** >(R_ExternalPtrAddr(SextptrModelVar));
-    //vector<double> **vecPtr = static_cast< vector<double>** >(R_ExternalPtrAddr(SextptrModelVar));
-   (*vecPtr) = matPtr->getBasePtr( INTEGER(Srownum)[0] );
+  NimArrBase<double> **vecPtr = static_cast< NimArrBase<double>** >(R_ExternalPtrAddr(SextptrModelVar));
+  (*vecPtr) = matPtr->getBasePtr( INTEGER(Srownum)[0] );
   return(R_NilValue);
 }
 
@@ -1206,32 +1195,6 @@ SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
 }
 
 
-/*
-SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
-    void* vPtr = R_ExternalPtrAddr(rPtr);
-    if(vPtr == NULL){
-        PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
-        return(R_NilValue);
-    }
-    int* cPtr;
-    int cRefNum = INTEGER(refNum)[0];
-    if(cRefNum == 1)
-        cPtr = static_cast<int*>( vPtr );
-    else if(cRefNum == 2)
-        cPtr = (*static_cast<int**> ( vPtr ) );
-    
-    if(isLogical(rScalar) )
-      (*cPtr) = LOGICAL(rScalar)[0];
-    else if(isInteger(rScalar) )
-      (*cPtr) = INTEGER(rScalar)[0];
-    else if(isReal(rScalar) )
-      (*cPtr) = REAL(rScalar)[0];
-    else
-      PRINTF("R class not identified. Currently numeric and integers supported\n");
-    return(R_NilValue);
-}
-*/
-
 SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
@@ -1255,6 +1218,43 @@ SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
     return(Sans);
 }
 
+SEXP SEXP_2_string(SEXP rPtr, SEXP rString) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  *static_cast<string*>(vPtr) = STRSEXP_2_string(rString, 0);
+  return(R_NilValue);
+}
+
+SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  STRSEXP_2_vectorString(rStringVector, *static_cast<vector<string> *>(vPtr));
+  return(R_NilValue);
+}
+
+SEXP string_2_SEXP(SEXP rPtr) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  return(string_2_STRSEXP(*static_cast<string *>(vPtr)));
+}
+
+SEXP stringVector_2_SEXP(SEXP rPtr) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  return(vectorString_2_STRSEXP(*static_cast<vector<string> *>(vPtr)));
+}
 
 
 

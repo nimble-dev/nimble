@@ -62,11 +62,6 @@ sampler_RW <- nimbleFunction(
     },
     
     run = function() {
-        ## modelLP0 <- getLogProb(model, calcNodes)
-        ## propValue <- rnorm(1, mean = model[[target]], sd = scale)
-     	## model[[target]] <<- propValue
-        ## modelLP1 <- calculate(model, calcNodes)
-        ## logMHR <- modelLP1 - modelLP0
     ##    print('entering sampler for nodeID ',nodeID,'\n')
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
      	model[[target]] <<- propValue
@@ -141,11 +136,6 @@ sampler_RW_log <- nimbleFunction(
     },
     
     run = function() {
-        ## modelLP0 <- getLogProb(model, calcNodes)
-        ## propValue <- rnorm(1, mean = model[[target]], sd = scale)
-     	## model[[target]] <<- propValue
-        ## modelLP1 <- calculate(model, calcNodes)
-        ## logMHR <- modelLP1 - modelLP0
         logCurrentValue <- log(model[[target]])
         logPropValue <- rnorm(1, mean = logCurrentValue, sd = scale)
         propValue <- exp(logPropValue)
@@ -306,7 +296,6 @@ sampler_RW_block <- nimbleFunction(
     },
     
     run = function() {
-       ## modelLP0 <- getLogProb(model, calcNodes)
         propValueVector <- generateProposalVector()
         lpMHR <- my_setAndCalculateDiff$run(propValueVector)
         jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
@@ -316,12 +305,6 @@ sampler_RW_block <- nimbleFunction(
     methods = list(
         
         generateProposalVector = function() {
-            ##declare(origValueVector, double(1, d))
-            ##origValueVector <- values(model, target)
-            ##declare(normalVarVector, double(1, d))
-            ##for(i in 1:d)     {   normalVarVector[i] <- rnorm(1, 0, 1)   }
-            ##propValueMatrix <- asRow(origValueVector) + asRow(normalVarVector) %*% chol_propCov * scale
-            ##propValueVector <- propValueMatrix[1, ]
             propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
             returnType(double(1))
             return(propValueVector)
@@ -422,12 +405,6 @@ sampler_RW_block_noDiff <- nimbleFunction(
     methods = list(
         
         generateProposalVector = function() {
-            ##declare(origValueVector, double(1, d))
-            ##origValueVector <- values(model, target)
-            ##declare(normalVarVector, double(1, d))
-            ##for(i in 1:d)     {   normalVarVector[i] <- rnorm(1, 0, 1)   }
-            ##propValueMatrix <- asRow(origValueVector) + asRow(normalVarVector) %*% chol_propCov * scale
-            ##propValueVector <- propValueMatrix[1, ]
             propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
             returnType(double(1))
             return(propValueVector)

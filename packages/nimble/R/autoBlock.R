@@ -21,22 +21,23 @@
 autoBlock <- function(Rmodel,
                       autoIt = 20000,
                       run = list('all', 'default'),
+                      setSeed = TRUE,
                       verbose = FALSE,
                       round = TRUE ) {
     if(autoIt < 10000) stop('Minimum auto-blocking iterations is 10,000')
-    control <- list(niter=autoIt, verbose=verbose)
+    control <- list(niter=autoIt, setSeed=setSeed, verbose=verbose)
     ab <- autoBlockClass(Rmodel, control)
     if(!'auto' %in% run) run <- c(run, 'auto')  ## always use 'autoBlock' routine
     ab$run(run)
-    lastAutoInd <- max(grep('^auto', ab$naming))   ## index of final 'auto' iteration
-    lastAutoGrouping <- ab$grouping[[lastAutoInd]]  ## grouping of final 'auto' iteration
-    nonTrivialGroups <- lastAutoGrouping[unlist(lapply(lastAutoGrouping, function(x) length(x)>1))]
     abList <- list(ab)
     names(abList)[1] <- 'model'
     df <- createDFfromABlist(abList, autoIt)
     dfmin <- reduceDF(df, round = round)
     cat('\nAuto-Blocking summary:\n')
     print(dfmin)
+    lastAutoInd <- max(grep('^auto', ab$naming))   ## index of final 'auto' iteration
+    lastAutoGrouping <- ab$grouping[[lastAutoInd]]  ## grouping of final 'auto' iteration
+    nonTrivialGroups <- lastAutoGrouping[unlist(lapply(lastAutoGrouping, function(x) length(x)>1))]
     if(length(nonTrivialGroups) > 0) {
         cat('\nAuto-Blocking converged on the node groupings:\n')
         for(i in seq_along(nonTrivialGroups)) {
@@ -59,7 +60,9 @@ autoBlock <- function(Rmodel,
 autoBlockModel <- setRefClass(
     Class = 'autoBlockModel',
     fields = list(
+        Rmodel_orig = 'ANY',
         Rmodel = 'ANY',
+        Cmodel = 'ANY',
         md = 'ANY',
         scalarNodeVector = 'character',
         scalarNodeVectorCont = 'character',
@@ -72,6 +75,7 @@ autoBlockModel <- setRefClass(
     methods = list(
         initialize = function(Rmodel_orig) {
             require(nimble)
+            Rmodel_orig <<- Rmodel_orig
             md <<- Rmodel_orig$modelDef
             Rmodel <<- Rmodel_orig$newModel(replicate = TRUE)
             ##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
@@ -95,7 +99,7 @@ autoBlockModel <- setRefClass(
             addCustomizedSamplersToInitialMCMCspec(runList)
             initialMCMCspec$addMonitors(monitorsVector, print=FALSE)
             RinitialMCMC <- buildMCMC(initialMCMCspec)
-            Cmodel <- compileNimble(Rmodel)
+            Cmodel <<- compileNimble(Rmodel)
             CinitialMCMC <- compileNimble(RinitialMCMC, project = Rmodel)   ## (new version) yes, we need this compileNimble call -- this is the whole point!
             initialMCMCspec$setSamplers(1:nInitialSamplers, print=FALSE)  ## important for new version: removes all news samplers added to initial MCMC spec
         },
@@ -119,6 +123,10 @@ autoBlockModel <- setRefClass(
             nodeList <- lapply(nodes, function(x) x)
             for(ng in listOfBlocks) nodeList[[length(nodeList)+1]] <- ng
             return(nodeList)
+        },
+        resetCmodelInitialValues = function() {
+            nimCopy(from = Rmodel_orig, to = Cmodel, logProb = TRUE)
+            calculate(Cmodel)
         }
     )
 )
@@ -129,6 +137,7 @@ autoBlockParamDefaults <- function() {
     list(
         makePlots = FALSE,
         niter = 20000,
+        setSeed = TRUE,
         verbose = FALSE
         )
 }
@@ -147,6 +156,7 @@ autoBlockClass <- setRefClass(
         ## overall control
         makePlots = 'logical',
         niter = 'numeric',
+        setSeed = 'logical',
         verbose = 'logical',
 
         ## persistant lists of historical data
@@ -202,7 +212,13 @@ autoBlockClass <- setRefClass(
                        all =     { specList <- list(createSpecFromGroups(abModel$nodeGroupAllBlocked))
                                    runSpecListAndSaveBest(specList, 'all') },
 
-                       default = { specList <- list(configureMCMC(oldSpec = abModel$initialMCMCspec))
+                       default = { ##specList <- list(configureMCMC(oldSpec = abModel$initialMCMCspec))
+                                   ## forcing this processing through createSpecFromGroups()
+                                   ## in order to always standardize the ordering of samplers;
+                                   ## even though this might result in a different sampler ordering
+                                   ## than the true NIMBLE 'default' MCMC spec
+                                   groups <- determineGroupsFromSpec(abModel$initialMCMCspec)
+                                   specList <- list(createSpecFromGroups(groups))
                                    runSpecListAndSaveBest(specList, 'default') },
 
                        blocks =  { specList <- list(createSpecFromGroups(abModel$createGroups(runListElement)))
@@ -258,6 +274,8 @@ autoBlockClass <- setRefClass(
             if(!is.list(CmcmcList)) CmcmcList <- list(CmcmcList)  ## make sure compileNimble() returns a list...
             timingList <- essList <- essPTList <- essPTminList <- list()
             for(i in seq_along(CmcmcList)) {
+                if(setSeed) set.seed(0)
+                abModel$resetCmodelInitialValues()
                 timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter))[3])
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[i]])
                 essList[[i]] <- apply(burnedSamples, 2, effectiveSize)
@@ -337,11 +355,20 @@ autoBlockClass <- setRefClass(
         },
         
         createSpecFromGroups = function(groups) {
+            groups <- sortGroups(groups)
             ##spec <- configureMCMC(Rmodel, nodes=NULL, monitors=character(0)) ## original version
             spec <- configureMCMC(oldSpec = abModel$initialMCMCspec)  ## new version
             spec$setSamplers()  ## new version -- removes all the samplers from initalMCMCspec
             for(nodeGroup in groups) addSamplerToSpec(abModel$Rmodel, spec, nodeGroup)
             return(spec)
+        },
+        
+        sortGroups = function(groups) {
+            eachGroupSorted <- lapply(groups, sort)
+            groupsAsStrings <- lapply(eachGroupSorted, function(grp) paste0(grp, collapse = '_'))
+            sortedInd <- sort(unlist(groupsAsStrings), index.return = TRUE)$ix
+            sortedGroups <- eachGroupSorted[sortedInd]
+            return(sortedGroups)
         },
         
         checkOverMCMCspec = function(spec) {
@@ -575,9 +602,6 @@ reduceDF <- function(df, addAutoMax=TRUE, sortOutput=TRUE, round=TRUE) {
     }
     return(dfOut)
 }
-
-
-
 
 
 

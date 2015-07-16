@@ -85,18 +85,12 @@ nimbleFunction <- function(setup         = NULL,
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     methodList <- lapply(methodList, nfMethodRC)
     ## create the reference class definition
-##    if(is.na(className)) className <- nf_refClassLabelMaker()
     nfRefClassDef <- nf_createRefClassDef(setup, methodList, className)
     nfRefClass    <- eval(nfRefClassDef)
     ## create a list to hold all specializations (instances) of this nimble function.  The following objects are accessed in environment(generatorFunction) in the future
-##    instances <- list()
-##    CclassName <- as.character(NA) ##Rname2CppName(className)
-##    cppDef <- NULL ## This is for the cppNIMBLEfunctionClass object later
-##    nfProc <- NULL ## this is for the nfProcessing object.  This is needed because it may be created with only setupTypeInference (round 1) done so another nimbleFunction can determine types of setupOutputs
     ## create the generator function, which is returned from nimbleFunction()
     generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
     force(contains) ## eval the contains so it is in this environment
-##    Cwritten <- compiled <- loadedSO <- FALSE
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
     return(generatorFunction)
 }
@@ -126,7 +120,7 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
                     where   = where),
         list(NFREFCLASS_CLASSNAME = className,
              NFREFCLASS_FIELDS    = nf_createRefClassDef_fields(setup, methodList),
-             NFREFCLASS_METHODS   = finalMethodList ##lapply(methodList, function(nfMethodRCobject) nfMethodRCobject$generateFunctionObject())
+             NFREFCLASS_METHODS   = finalMethodList
             )
         )
 }
@@ -189,18 +183,9 @@ nf_createGeneratorFunctionDef <- function(setup) {
             nfRefClassObject <- nfRefClass()   # create an object of the reference class
             nfRefClassObject$.generatorFunction <- generatorFunction   # link upwards to get the generating function of this nf
             for(.var_unique_name_1415927 in nf_namesNotHidden(names(nfRefClass$fields())))    { nfRefClassObject[[.var_unique_name_1415927]] <- get(.var_unique_name_1415927) }     # assign setupOutputs into reference class object
-            ## instances[[length(instances)+1]] <<- nfRefClassObject   # record this instance of the reference class
-            
             #	$runRelated	
             
             return(nfRefClassObject)
-            
-            
-            
-    #        nf <- function(...) { nfRefClassObject$run(...) }       # create the wrapper function to hold the reference class object
-   #         environment(nf) <- new.env(parent = parent.frame())
-   #         environment(nf)$nfRefClassObject <- nfRefClassObject    # assign reference class object into function environment
-   #         return(nf)
         },
         list(SETUPCODE = nf_processSetupFunctionBody(setup, returnCode = TRUE)))
     generatorFunctionDef[[4]] <- NULL

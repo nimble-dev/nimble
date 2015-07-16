@@ -1,8 +1,8 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
-                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
-                makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
+               makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
+               makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
                makeCallList(unaryOperators, 'sizeUnaryCwise'), 
                makeCallList(unaryOrNonaryOperators, 'sizeUnaryNonaryCwise'),
                makeCallList(assignmentOperators, 'sizeAssign'), 
@@ -29,9 +29,6 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     'while' = 'recurseSetSizes',
                     callC = 'sizecallC', 
                     'for' = 'sizeFor', 
-##                    mvAccess = 'sizeUnaryCwise',
- ##                   numListAccess = 'sizeNumListAccess',                   
-#                    numListAccess = 'sizemvAccessBracket',
                     
                     values = 'sizeValues',
                     '(' = 'sizeUnaryCwise',
@@ -130,11 +127,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
         if(!is.null(sizeCall)) {
             return(eval(call(sizeCall, code, symTab, typeEnv)))
         }
-
-        ## if(!is.null(tempSizeHandlers[[code$name]])) {
-        ##     return(tempSizeHandlers[[code$name]](code, symTab, typeEnv))
-        ## }
-
         if(symTab$symbolExists(code$name, TRUE)) { ## could be a nimbleFunction object
             return(sizeNimbleFunction(code, symTab, typeEnv) )
         }
@@ -152,7 +144,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                 return(sizeRCfunction(code, symTab, typeEnv, nfmObj))
             }
         }
-        
     }
     invisible(NULL)
 }
@@ -198,13 +189,9 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 
     if(a1$nDim == 1) {
         if(code$name == 'asRow') {
-            ##setAsRowOrCol(code, 1, 'asRow', type = a1$type)
-            ##code <- removeExprClassLayer(code, 1)
             code$nDim <- 2
             code$sizeExprs <- c(list(1), a1$sizeExprs[[1]])
         } else {
-            ##setAsRowOrCol(code, 1, 'asCol', type = a1$type)
-            ##code <- removeExprClassLayer(code, 1)
             code$nDim <- 2
             code$sizeExprs <- c(a1$sizeExprs[[1]], list(1))
         }
@@ -714,12 +701,6 @@ sizeScalarRecurse <- function(code, symTab, typeEnv) {
     asserts
 }
 
-#sizeNumListAccess <- function(code, symTab, typeEnv){
-#	sym = symTab$getSymbolObject(code$args[[1]]$name, TRUE)
-#	code$type <- sym$type
-#	
-#}
-
 sizeUndefined <- function(code, symTab, typeEnv) {
     code$nDim <- 0
     code$type <- as.character(NA)
@@ -1086,11 +1067,9 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
     ## The programmer can always use asRow or asCol to control it explicitly
 
     if(a1$nDim == 1 & a2$nDim == 1) {
-        ##a1 <- setAsRowOrCol(code, 1, 'asRow', type = a1$type)
         origSizeExprs <- a1$sizeExprs[[1]]
         a1 <- insertExprClassLayer(code, 1, 'asRow', type = a1$type)
         a1$sizeExprs <- c(list(1), origSizeExprs)
-        ##a2 <- setAsRowOrCol(code, 2, 'asCol', type = a2$type)
         origSizeExprs <- a2$sizeExprs[[1]]
         a2 <- insertExprClassLayer(code, 2, 'asCol', type = a2$type)
         a2$sizeExprs <- c(origSizeExprs, list(1))
@@ -1111,12 +1090,10 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
             origSizeExprs <- a2$sizeExprs[[1]]
             if(a1$nDim != 2) stop(paste0('Problem in ', nimDeparse(code), '.  Second arg has nDim = 1 and 1st arg has nDim = ', a1$nDim, '.'), call. = FALSE) 
             if(identical(a1$sizeExprs[[2]], 1)) {
-                ##a2 <- setAsRowOrCol(code, 2, 'asRow', type = a2$type)
                 a2 <- insertExprClassLayer(code, 2, 'asRow', type = a2$type)
                 a2$sizeExprs <- c(list(1), origSizeExprs)
            }
             else { 
-##               a2 <- setAsRowOrCol(code, 2, 'asCol', type = a2$type)
                 a2 <- insertExprClassLayer(code, 2, 'asCol', type = a2$type)
                 a2$sizeExprs <- c(origSizeExprs, list(1))
             }
@@ -1316,7 +1293,6 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
             if(a1nDim == 2 & a2nDim == 1) {
                 a1IsCol <- identical(a1sizeExprs[[2]], 1)
                 asFun <- if(a1IsCol) 'asCol' else 'asRow'
-                ##a2 <- setAsRowOrCol(code, 2, asFun, type = a2type)
                 a2 <- insertExprClassLayer(code, 2, asFun, type = a2type)
                 a2$sizeExprs <- a1sizeExprs
                 a2$nDim <- a1nDim
@@ -1333,7 +1309,6 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
             } else {
                 a2IsCol <- identical(a2sizeExprs[[2]], 1)
                 asFun <- if(a2IsCol) 'asCol' else 'asRow'
-                ##a1 <- setAsRowOrCol(code, 1, asFun, type = a1type)
                 a1 <- insertExprClassLayer(code, 1, asFun, type = a1type)
                 a1$sizeExprs <- a2sizeExprs
                 a1$type <- a1type
