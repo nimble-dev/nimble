@@ -22,7 +22,7 @@ specificCallReplacements <- list(
     gamma = 'gammafn',
     expit = 'ilogit',
     phi = 'iprobit',
-    round = 'nimbleRound',
+    round = 'nimRound',
     ceiling = 'ceil',
     trunc = 'ftrunc',
     nimDim = 'dim',

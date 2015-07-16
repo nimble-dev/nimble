@@ -28,7 +28,7 @@ double lfactorial(double x) {return(lgamma1p(x));}
 double factorial(double x) {return(gammafn(1+x));}
 //double loggam(double x) {return(lgammafn(x));}
 double logit(double x) {return(log(x / (1.-x)));}
-double nimbleRound(double x) {return(fround(x, 0.));}
+double nimRound(double x) {return(fround(x, 0.));}
 double pairmax(double x1, double x2) {return(x1 > x2 ? x1 : x2);}
 double pairmin(double x1, double x2) {return(x1 < x2 ? x1 : x2);}
 //double phi(double x) {return(pnorm(x, 0., 1., 1, 0));}

@@ -41,6 +41,7 @@ valuesAccessorVector <- setRefClass( ## new implementation
     ),
     methods = list(
         initialize = function(modelOrModelValues, nodeNames, logProb = FALSE) { ## will need to work with IDs too
+            cat('in valueaccinit ', date(), '\n')
             sourceObject <<- modelOrModelValues
             inputNodeNames <- nodeNames
              if(!logProb)
@@ -52,14 +53,16 @@ valuesAccessorVector <- setRefClass( ## new implementation
                  nodeNames <<- c(inputNodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(inputNodeNames[!isLogProbName]))
             }
             logProb <<- logProb
-            code <<- lapply(.self$nodeNames, function(x) parse(text = x, keep.source = FALSE)[[1]])
+            # code <<- lapply(.self$nodeNames, function(x) parse(text = x, keep.source = FALSE)[[1]])
             numAccessors <<- length(code)
             length <<- NA
             mapInfo <<- NULL
+                        cat('end valueaccinit ', date(), '\n')
         },
         makeMapInfo = function() {
             length <<- 0
-            mapInfo <<- lapply(code, function(x) {
+            tmpcode <- lapply(.self$nodeNames, function(x) parse(text = x, keep.source = FALSE)[[1]])
+            tmpmapInfo <- lapply(tmpcode, function(x) {
                 varAndIndices <- getVarAndIndices(x)
                 varName <- as.character(varAndIndices$varName)
                 varSym <- sourceObject$getSymbolTable()$getSymbolObject(varName) ## previously from model$getVarInfo(varName)
@@ -71,16 +74,17 @@ valuesAccessorVector <- setRefClass( ## new implementation
                 ans$length <- anslength ## putting it last so it doesn't mess up current C++ code
                 ans
             }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
-            invisible(NULL)
+            invisible(tmpmapInfo)
+            #invisible(NULL)
         },
         getMapInfo = function() {
             if(is.null(mapInfo)) makeMapInfo()
-            mapInfo
+            #mapInfo
         },
         getLength = function(i = NA) {
-            if(is.null(mapInfo)) makeMapInfo()
+            if(is.null(mapInfo)) tmpmapinfo <- makeMapInfo()
             if(is.na(i)) return(length)
-            mapInfo[[i]]$length
+            tmpmapInfo[[i]]$length
         }
     )
     )
@@ -97,17 +101,19 @@ modelValuesAccessorVector <- setRefClass( ## new implementation
     fields = list(row = 'ANY'),
     methods = list(
         initialize = function(...) {
+            cat('in mvAcc ', date(), '\n')
             callSuper(...)
             row <<- as.integer(NA)
             makeAccessAndSetCode()
+                        cat('end mvAcc ', date(), '\n')
         },
         makeAccessAndSetCode = function() {
-            accessCode <<- lapply(code, function(temp) {
-                if(is.name(temp)) return(substitute(sourceObject$B[[localrow]], list(B = temp)))
-                temp[[2]] <- substitute(sourceObject$B[[localrow]], list(B = temp[[2]]))
-                temp
-            })
-            setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
+            #accessCode <<- lapply(code, function(temp) {
+            #    if(is.name(temp)) return(substitute(sourceObject$B[[localrow]], list(B = temp)))
+            #    temp[[2]] <- substitute(sourceObject$B[[localrow]], list(B = temp[[2]]))
+             #   temp
+            #})
+            #setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
         },
         setRow = function(row) {
             row <<- row
@@ -115,12 +121,12 @@ modelValuesAccessorVector <- setRefClass( ## new implementation
         getValues = function(i, row = NA) {
             ## model version
             localrow <- if(is.na(row)) .self$row else row
-            eval(accessCode[[i]])
+#            eval(accessCode[[i]])
         },
         setValues = function(i, vals, row = NA) {
             ## model version
             localrow <- if(is.na(row)) .self$row else row
-            eval(setCode[[i]])
+ #           eval(setCode[[i]])
         }
     ))
 

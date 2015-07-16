@@ -9,7 +9,7 @@ binaryOrUnaryOperators <- c('+','-')
 unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
                     'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
                     'lgamma1p', 'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
-                    'abs','nimbleRound','ftrunc','ceil','floor','nimStep', 
+                    'abs','nimRound','ftrunc','ceil','floor','nimStep', 
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
 unaryOrNonaryOperators <- list() 
 assignmentOperators <- c('<-','<<-','=')
@@ -113,7 +113,7 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
                                        eigFactorial = c('factorial', 'double', 'double'),
                                        eigCloglog = c('cloglog', 'double', 'double'),
                                        eigIcloglog = c('icloglog', 'double', 'double'),
-                                       eigNimbleRound = c('nimbleRound', 'double', 'double'),
+                                       eigNimRound = c('nimRound', 'double', 'double'),
                                        eigFtrunc = c('ftrunc', 'double', 'double'),
                                        eigCeil = c('ceil', 'double', 'double'),
                                        eigFloor = c('floor', 'double', 'double'),

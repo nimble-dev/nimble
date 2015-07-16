@@ -228,9 +228,9 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
                                            print('compileInfo$newLocalSymTab')
-                                           print(compileInfo$newLocalSymTab)
-                                           print('ls(compileInfo$typeEnv)')
-                                           print(ls(compileInfo$typeEnv))
+                                           #print(compileInfo$newLocalSymTab)
+                                           #print('ls(compileInfo$typeEnv)')
+                                           #print(ls(compileInfo$typeEnv))
                                            
                                            writeLines('***** READY FOR liftMaps*****')
                                            browser()
