@@ -249,7 +249,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         declInfo <<- list()
     }
     for(i in 1:length(code)) {
-        if(code[[i]] == '{') next  ## skip { lines
+        if(code[[i]] == '{') if(length(code[[i]])==1) next  ## skip { lines
         lineNumber <- lineNumber + 1
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
@@ -281,8 +281,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             }
             lineNumber <- processBUGScode(recurseCode, nextContextID, lineNumber = lineNumber)  ## Recursive call to process the contents of the for loop
         }
-        ## could consider definition-time if-then
-        if(!deparse(code[[i]][[1]]) %in% c('~', '<-', 'for')) 
+        if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
+            lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber)
+        }
+        if(!deparse(code[[i]][[1]]) %in% c('~', '<-', 'for', '{')) 
             stop("Error: ", deparse(code[[i]][[1]]), " not allowed in BUGS code in ", deparse(code[[i]]))
     }
     lineNumber
