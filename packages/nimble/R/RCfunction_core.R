@@ -3,7 +3,8 @@ nimKeyWords <- list(copy = 'nimCopy',
                     step = 'nimStep',
                     equals = 'nimEquals',
                     dim = 'nimDim',
-                    stop = 'nimStop')
+                    stop = 'nimStop',
+                    round = 'nimRound')
 
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',
