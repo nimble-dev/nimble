@@ -27,18 +27,18 @@ modelVariableAccessorVector<- setRefClass( ## new implementation
             makeAccessAndSetCode()
         },
         makeAccessAndSetCode = function() {
-            #accessCode <<- lapply(code, function(temp) {
-            #    if(is.name(temp)) return(substitute(sourceObject$B, list(B = temp)))
-            #    temp[[2]] <- substitute(sourceObject$B, list(B = temp[[2]]))
-            #    temp
-            #})
-            #setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
+            accessCode <<- lapply(code, function(temp) {
+                if(is.name(temp)) return(substitute(sourceObject$B, list(B = temp)))
+                temp[[2]] <- substitute(sourceObject$B, list(B = temp[[2]]))
+                temp
+            })
+            setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
         },
         getValues = function(i) {
-            #eval(accessCode[[i]])
+            eval(accessCode[[i]])
         },
         setValues = function(i, vals) {
-            #eval(setCode[[i]])
+            eval(setCode[[i]])
         }
     ))
 

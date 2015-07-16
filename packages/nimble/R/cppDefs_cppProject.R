@@ -208,7 +208,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
                                        
-                                       browser()
                                        status = system(SHLIBcmd)
 				       if(status != 0)
                                           stop(structure(simpleError("Failed to create the shared library"), 

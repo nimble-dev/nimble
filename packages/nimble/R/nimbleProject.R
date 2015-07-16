@@ -297,7 +297,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          cppProj$writeFiles(filename)
                                      }
                                      if(control$compileCpp) {
-                                         browser()
                                          cppProj$compileFile(filename)
                                      }
                                      if(control$loadSO) {
@@ -607,7 +606,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                      if(!nfCompInfos[[generatorName]]$cppCompiled && control$compileCpp) {
                                          if(control$compileCpp) {
-                                             browser()
                                              cppProj$compileFile(filename)
                                              nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
                                          } else writeLines('Skipping compilation because control$compileCpp is FALSE')
