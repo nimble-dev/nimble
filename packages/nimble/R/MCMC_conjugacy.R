@@ -188,7 +188,7 @@ conjugacyRelationshipsClass <- setRefClass(
             return(conjugacyResultsAll)
         },
         checkConjugacy_singleDeclaration = function(model, nodes) {
-            browser()
+            ##browser()   ## removed by DT, July 2015, not sure why this was here
             if(model$isTruncated(nodes[1])) return(list())   ## we say non-conjugate if the targetNode is truncated
             dist <- model$getNodeDistribution(nodes[1])
             if(!dist %in% names(conjugacys)) return(list())
@@ -950,15 +950,35 @@ cc_combineExprsDivision <- function(expr1, expr2) {
 ##############################################################################################
 ## create object: conjugacyRelationshipsObject
 ## also, generate all conjugate sampler nimbleFunctions
+## and a function to rebuild conjugate sampler functions
 ##############################################################################################
 ##############################################################################################
 
 
+## this is still *necessary* (and exported):
 conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList)
 
+
+## this is still created (and exported) because it's handy:
 conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()
-##createNamedObjectsFromList(conjugateSamplerDefinitions)
-createNamedObjectsFromList(conjugateSamplerDefinitions, writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
+
+
+#' Rebuild conjugate sampler functions
+#'
+#' @export
+buildConjugateSamplerFunctions <- function(writeToFile = NULL) {
+    conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList)
+    conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()
+    createNamedObjectsFromList(conjugateSamplerDefinitions, writeToFile = writeToFile, envir = parent.frame())
+}
+
+
+buildConjugateSamplerFunctions(writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
+
+
+
+
+
 
 
 
