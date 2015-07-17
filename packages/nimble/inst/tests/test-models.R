@@ -316,3 +316,51 @@ expect_that(sum("x[2]" %in% m$getNodeNames()), equals(1), info = "'x[2]' does no
 })
 
 
+# test of use of alias names for distributions
+
+model <- function() {
+  y ~ dnbinom(p, n)
+  p ~ dbeta(3,3)
+  yalt ~ dnegbin(p, n)
+  
+  y2 ~ dbin(p2, n)
+  p2 ~ dbeta(3,3)
+  yalt2 ~ dbinom(p2, n)
+}
+
+data = list(y = 3, yalt = 3, y2 = 3, yalt2 = 3)
+constants = list(n = 10)
+inits <- list(p = 0.5, p2 = 0.5)
+
+testBUGSmodel(example = 'test_dist_aliases', dir = "",
+              model = model, data = c(constants, data), inits = inits,
+              useInits = TRUE)
+
+m <- nimbleModel(body(model), constants = constants, inits = inits, check = FALSE)
+cm <- compileNimble(m)
+
+set.seed(0)
+simulate(m, c('y','y2'))
+set.seed(0)
+simulate(m, c('yalt','yalt2'))
+set.seed(0)
+simulate(cm, c('y','y2'))
+set.seed(0)
+simulate(cm, c('yalt','yalt2'))
+
+try(test_that("dnegbin and dnbinom give same results in R model", expect_that(
+    m$y, equals(m$yalt), info = "simulate gives different results for dnegbin and dnbinom")))
+try(test_that("dnegbin and dnbinom give same results in R model", expect_that(
+    getLogProb(m, 'y'), equals(getLogProb(m, 'yalt')), info = "calculate gives different results for dnegbin and dnbinom")))
+try(test_that("dbin and dbinom give same results in R model", expect_that(
+    m$y2, equals(m$yalt2), info = "simulate gives different results for dbin and dbinom")))
+try(test_that("dbin and dbinom give same results in R model", expect_that(
+    getLogProb(m, 'y2'), equals(getLogProb(m, 'yalt2')), info = "calculate gives different results for dbin and dbinom")))
+try(test_that("dnegbin and dnbinom give same results in C model", expect_that(
+    cm$y, equals(cm$yalt), info = "simulate gives different results for dnegbin and dnbinom")))
+try(test_that("dnegbin and dnbinom give same results in C model", expect_that(
+    getLogProb(cm, 'y'), equals(getLogProb(cm, 'yalt')), info = "calculate gives different results for dnegbin and dnbinom")))
+try(test_that("dbin and dbinom give same results in C model", expect_that(
+    cm$y2, equals(cm$yalt2), info = "simulate gives different results for dbin and dbinom")))
+try(test_that("dbin and dbinom give same results in C model", expect_that(
+    getLogProb(cm, 'y2'), equals(getLogProb(cm, 'yalt2')), info = "calculate gives different results for dbin and dbinom")))
