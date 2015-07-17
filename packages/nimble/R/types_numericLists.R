@@ -102,11 +102,10 @@ setSize <- function(numList, ..., row){
         if(length(thisCall) < 3) stop("Insufficient information provided to setSize")
         as.numeric(thisCall[2:(length(thisCall) - 1)])
     } else {
-        ##as.numeric(thisCall[-1])
-        ## change made by DT to fix R execution of MCMC sampling in July 2015
-        ## I this this code (R function setSize) is still probably buggy,
+        ## change made by DT to fix R execution of MCMC sampling in July 2015.
+        ## I think this code (R function setSize) is still probably buggy,
         ## and should be reviewed in great detail.
-        ## opening a git issue for this.
+        ##as.numeric(thisCall[-1])
         as.numeric(eval(thisCall[[-1]], envir = parent.frame()))
     }
     if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
