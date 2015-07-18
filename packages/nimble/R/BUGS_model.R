@@ -484,7 +484,7 @@ Details: The return value is a named list, with an element corresponding to each
                                       conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
                                   check = function() {
-                                      lp <- calculate(.self)
+                                      lp <- try(calculate(.self))
                                       if(isValid(lp)) return(invisible(TRUE))
                                       varsToCheck <- character()
                                       for(v in .self$getVarNames())
@@ -758,6 +758,7 @@ createDefault_isDataObj <- function(obj) {
 }
 
 isValid <- function(value) {
+    if(is(value, 'try-error')) return(FALSE)
     if(any(is.nan(value))) return (FALSE)
     if(any(is.na(value))) return(FALSE)
     if(any(abs(value)==Inf)) return(FALSE)
