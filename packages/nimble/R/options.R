@@ -76,11 +76,13 @@ getNimbleOption <- function(x) {
 #' @examples
 #' nimbleOptions(verifyConjugatePosteriors = FALSE)
 nimbleOptions <- function(...) {
-    if(!is.list(args)) args <- list(...)
-    if(length(args)) {
-        for(i in seq_along(args))
-            setNimbleOption(names(args)[[i]], args[[i]])
-        invisible(args)
-    } else return(as.list(.nimbleOptions))
+    args <- list(...)
+    if(!(length(args) && is.null(names(args))))
+        if(length(args)) {
+            for(i in seq_along(args))
+                setNimbleOption(names(args)[[i]], args[[i]])
+            return(invisible(args))
+        } else return(as.list(.nimbleOptions))
+    return(as.list(.nimbleOptions)[args[[1]]][[1]])
 }
 
