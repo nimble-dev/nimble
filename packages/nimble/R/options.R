@@ -83,6 +83,9 @@ nimbleOptions <- function(...) {
                 setNimbleOption(names(args)[[i]], args[[i]])
             return(invisible(args))
         } else return(as.list(.nimbleOptions))
-    return(as.list(.nimbleOptions)[args[[1]]][[1]])
+    args <- unlist(args)
+    out <- as.list(.nimbleOptions)[args]
+    if(length(out) == 1) out <- out[[1]]
+    return(out)
 }
 
