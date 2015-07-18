@@ -202,7 +202,7 @@ symbolNodeFunctionVector <-
 symbolModel <- 
     setRefClass(Class = 'symbolModel',
                 contains = 'symbolBase',
-                fields = list(className = 'ANY'), 		#'character'), ## Only a name is needed to look up the type in .modelValuesSymbolTableLibrary
+                fields = list(className = 'ANY'), 
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)
@@ -221,7 +221,7 @@ symbolModel <-
 symbolModelValues <- 
     setRefClass(Class = 'symbolModelValues',
                 contains = 'symbolBase',
-                fields = list(mvSpec = 'ANY'), ## Only a name is needed to look up the type in .modelValuesSymbolTableLibrary
+                fields = list(mvSpec = 'ANY'), 
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)

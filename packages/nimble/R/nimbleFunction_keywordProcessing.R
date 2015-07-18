@@ -715,10 +715,10 @@ optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
                                           
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
-
+    onDemandPossible = TRUE,
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
-	makeCodeSubList = function(resultName, argList) {
+    makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
@@ -917,7 +917,6 @@ addNewCode <- function(name, subList, template, nfProc)
 addNecessarySetupCode <- function(name, argList, template, nfProc, allowToCpp = TRUE){
     if(is.null(nfProc)) stop("Trying to add setup code for a nimbleFunction with no setup code.")
                                         #	name <- template$makeName(argList)
-    test <- try(length(isSetupCodeGenerated(name, nfProc)))
     if(!isSetupCodeGenerated(name, nfProc)){
         addSetupCodeNames(name, template$makeOtherNames(name, argList), nfProc)
         subList <- template$makeCodeSubList(name, argList)

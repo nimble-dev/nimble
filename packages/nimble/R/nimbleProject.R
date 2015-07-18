@@ -479,13 +479,15 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$cppDef ## return value if already exists
                                      }
                                  },
-                                 instantiateNimbleFunction = function(nf, dll) {
+                                 instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) {
                                      if(!is.nf(nf)) stop("Can't instantiateNimbleFunction, nf is not a nimbleFunction")
-                                     generatorName <- nfGetDefVar(nf, 'name')
-                                                                          
-                                     ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
-                                     ## This was wrong (goes in the refClassObject now) and it is set in Rgenerator
-##                                     environment(nf)$.CobjectInterface <- ans
+                                     cat('instantiateNimbleFunction\n')
+                                     if(asTopLevel) {
+                                         generatorName <- nfGetDefVar(nf, 'name')
+                                         ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
+                                     } else {
+                                         ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator$addInstance(nf, dll = dll, project = .self)
+                                     }
                                      ans
                                  },
                                  setupVirtualNimbleFunction = function(vfun, fromModel = FALSE) {

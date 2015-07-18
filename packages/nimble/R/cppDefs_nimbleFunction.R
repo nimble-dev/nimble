@@ -172,15 +172,19 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
                                               },
-                                              buildRgenerator = function(where = globalenv(), dll = NULL) {
+                                              buildRgenerator = function(where = globalenv(), dll = NULL, asTopLevel = TRUE) {
                                                   sym = if(!is.null(dll))
                                                            getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                         else
-                                                           SEXPgeneratorFun$name
-                                                      
-                                                  Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
+                                                            SEXPgeneratorFun$name
+                                                  cat('buildRgenerator\n')
+                                                  if(asTopLevel)
+                                                      Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
+                                                  else
+                                                      Rgenerator <<- CmultiNimbleFunction(compiledNodeFun = .self, basePtrCall = sym)
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL){
+                                                  cat('buildCallable\n')
                                                   nfRefClassObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)             
                                                   return(nfRefClassObject)
                                               },
