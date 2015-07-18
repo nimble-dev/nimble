@@ -26,6 +26,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     cat("Building model...\n")
     model <- md$newModel(data=data, inits=inits, where=where, check=check)
     cat("Modeling building finished.\n")
+    return(model)
 }
 
 
