@@ -164,13 +164,13 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
     if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
-        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS))
+        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff))
     } else {
           userDist <- as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE)
           RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
           if(diff) {
               code <- substitute(LocalNewLogProb <- STOCHCALC,
-                                 list(LOGPROB = logProbNodeExpr,
+                                 list(##LOGPROB = logProbNodeExpr,
                                       STOCHCALC = RHS))
           } else {
               code <- substitute(LOGPROB <<- STOCHCALC,
@@ -182,7 +182,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
 }
 
 ## changes 'dnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated calculation
-ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS) {
+ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
     lowerPosn <- which("lower" == names(RHS))
     upperPosn <- which("upper" == names(RHS))
     lower <- RHS[[lowerPosn]]
@@ -213,22 +213,37 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS) {
 
     RHS <- addArg(RHS, 1, logName)  # add log=1 now that pdist() created without 'log'
 
-    # unlike JAGS we have (L < X <= U), i.e., (L,U], as otherwise we would need
-    # machinations to deal with the X=L case (pdist functions provide only P(X<=L),P(X>L))
-    # this only matters for discrete distributions
-    # one option if necessary would be to check for discrete and then use ddist too
-    code <- substitute(if(LOWER <= VALUE & VALUE <= UPPER)
-                           LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
-                       else LOGPROB <<- -Inf,
-                       list(
-                           LOWER = lower,
-                           UPPER = upper,
-                           VALUE = LHS,
-                           LOGPROB = logProbNodeExpr,
-                           DENSITY = RHS,
-                           PDIST_LOWER = PDIST_LOWER,
-                           PDIST_UPPER = PDIST_UPPER
-                       ))
+    ## unlike JAGS we have (L < X <= U), i.e., (L,U], as otherwise we would need
+    ## machinations to deal with the X=L case (pdist functions provide only P(X<=L),P(X>L))
+    ## this only matters for discrete distributions
+    ## one option if necessary would be to check for discrete and then use ddist too
+    if(diff) {
+        code <- substitute(if(LOWER <= VALUE & VALUE <= UPPER)
+                               LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                           else LocalNewLogProb <- -Inf,
+                           list(
+                               LOWER = lower,
+                               UPPER = upper,
+                               VALUE = LHS,
+##                               LOGPROB = logProbNodeExpr,
+                               DENSITY = RHS,
+                               PDIST_LOWER = PDIST_LOWER,
+                               PDIST_UPPER = PDIST_UPPER
+                           ))
+    } else {
+        code <- substitute(if(LOWER <= VALUE & VALUE <= UPPER)
+                               LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                           else LOGPROB <<- -Inf,
+                           list(
+                               LOWER = lower,
+                               UPPER = upper,
+                               VALUE = LHS,
+                               LOGPROB = logProbNodeExpr,
+                               DENSITY = RHS,
+                               PDIST_LOWER = PDIST_LOWER,
+                               PDIST_UPPER = PDIST_UPPER
+                           ))
+    }
     return(code)
 }
  
