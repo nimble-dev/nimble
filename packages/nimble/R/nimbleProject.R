@@ -61,7 +61,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  modelCppInterfaces =  'ANY',		#'list',
                                  models             =  'ANY',		#'list',
                                  nimbleFunctions    =  'ANY',		#'list',
-                                 nimbleFunctionCppInterfaces =  'ANY',		#'list',
+                                 ##nimbleFunctionCppInterfaces =  'ANY',		#'list',
                                  nfCompInfos        =  'ANY',		#'list', ## list of nfCompilationInfoClass objects
                                  cppProjects        =  'ANY',		#'list', ## list of cppProjectClass objects, 1 for each dll to be produced
                                  dirName            =  'ANY',		#'character',
@@ -81,7 +81,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  	modelCppInterfaces <<- new.env()				# list()
                                  	models <<- new.env()							# list()
                                  	nimbleFunctions <<- new.env()					# list()	
-                                 	nimbleFunctionCppInterfaces <<- new.env()		# list()
+                                 	##nimbleFunctionCppInterfaces <<- new.env()		# list()
                                  	nfCompInfos <<- list()							# list()
                                  	cppProjects <<- list()							#new.env()						#list()
                                  	refClassDefsEnv <<- new.env()
@@ -119,7 +119,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                      if(exists('name', envir = thisRCO, inherits = FALSE)) {
                                                          thisname <- thisRCO$name
                                                          nimbleFunctions[[ thisname ]] <<- NULL
-                                                         nimbleFunctionCppInterfaces[[ thisname ]] <<- NULL
+                                                         ##nimbleFunctionCppInterfaces[[ thisname ]] <<- NULL
                                                          rm('name', envir = thisRCO)
                                                      }
                                                      thisRCO[['nimbleProject']] <- NULL
@@ -203,7 +203,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          
                                          newEnvs <- lapply(seq_along(newLabels), new.env)
                                          names(newEnvs) <- newLabels
-                                         list2env(newEnvs, envir = nimbleFunctionCppInterfaces)
+                                         ## list2env(newEnvs, envir = nimbleFunctionCppInterfaces)
                                          CppNewLabels <- Rname2CppName(newLabels)
                                          for(j in seq_along(newLabels)) {
                                              funList[[genIDs[j]]][['Cname']] <- CppNewLabels[j]
@@ -237,7 +237,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                      nimbleFunctions[[ nf_getRefClassObject(fun)$name ]] <<- fun
                                      nfCompInfos[[generatorName]]$addRinstance(fun)
-                                     nimbleFunctionCppInterfaces[[ nf_getRefClassObject(fun)$name ]] <<- new.env()		#list(NULL)
+                                     ##nimbleFunctionCppInterfaces[[ nf_getRefClassObject(fun)$name ]] <<- new.env()		#list(NULL)
                                     
                                      if(!exists('Cname', envir = nf_getRefClassObject(fun), inherits = FALSE)) {
                                          assign('Cname', Rname2CppName(nf_getRefClassObject(fun)$name), envir = nf_getRefClassObject(fun))
@@ -479,14 +479,15 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$cppDef ## return value if already exists
                                      }
                                  },
-                                 instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) {
+                                 instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
+                                     ## to instantiate neededObjects
                                      if(!is.nf(nf)) stop("Can't instantiateNimbleFunction, nf is not a nimbleFunction")
                                      cat('instantiateNimbleFunction\n')
                                      if(asTopLevel) {
                                          generatorName <- nfGetDefVar(nf, 'name')
                                          ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
                                      } else {
-                                         ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator$addInstance(nf, dll = dll, project = .self)
+                                         ans <- getNimbleFunctionCppDef(generatorName = generatorName)$CmultiInterface$addInstance(nf, dll = dll, project = .self)
                                      }
                                      ans
                                  },
@@ -538,15 +539,15 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  compileNimbleFunction = function(fun, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
-                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE) {
-                                     ## fundamental difference: fun should be a specialized nf: nfGenerator will not longer track instances
+                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE,
+                                     asTopLevel = TRUE) {
                                      if(is.character(fun)) {
                                          tmp <- nimbleFunctions[[fun]]
                                          if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)
                                          if(reset) {
                                              nf_getRefClassObject(tmp)$.CobjectInterface <- NULL
-                                             ##                                             if(exists('.CobjectInterface', envir = environment(tmp), inherits = FALSE))
-##                                                 rm('.CobjectInterface', envir = environment(tmp))
+                                             ## if(exists('.CobjectInterface', envir = environment(tmp), inherits = FALSE))
+                                             ## rm('.CobjectInterface', envir = environment(tmp))
                                          }
                                          fun <- tmp
                                          funList <- list(fun)
@@ -620,8 +621,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ans <- vector('list', length(funList))
 
                                      for(i in seq_along(funList)) {
-                                         ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll)
-                                         nimbleFunctionCppInterfaces[[ nf_getRefClassObject(funList[[i]])$name ]] <<- ans[[i]]
+                                         ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll, asTopLevel = asTopLevel)
+                                         ##nimbleFunctionCppInterfaces[[ nf_getRefClassObject(funList[[i]])$name ]] <<- ans[[i]]
                                      }
                                      if(length(ans) == 1) ans[[1]] else ans
                                  }
