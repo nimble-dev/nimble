@@ -497,7 +497,7 @@ buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll) {
         if(is.nf(thisObj)) {
             RCO <- nf_getRefClassObject(thisObj)
             if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                neededObjects[[iName]] <<- nimbleProject$instantiateNimbleFunction(thisObj, dll)
+                neededObjects[[iName]] <<- nimbleProject$instantiateNimbleFunction(thisObj, dll, asTopLevel = FALSE)
             }
             next
         }
@@ -506,9 +506,10 @@ buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll) {
             for(i in seq_along(thisObj$contentsList)) {
                 RCO <- nf_getRefClassObject(thisObj[[i]])
                 if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                    neededObjects[[iName]][[i]] <<- nimbleProject$instantiateNimbleFunction(thisObj[[i]], dll)
+                    neededObjects[[iName]][[i]] <<- nimbleProject$instantiateNimbleFunction(thisObj[[i]], dll, asTopLevel = FALSE)
                 } else {
-                    neededObjects[[iName]][[i]] <<- RCO$.CobjectInterface 
+                    ## HERE COULD BE A PROBLEM
+                    neededObjects[[iName]][[i]] <<- RCO$.CobjectInterface
                 }
             }
             names(neededObjects[[iName]]$contentsList) <<- names(thisObj$contentsList)

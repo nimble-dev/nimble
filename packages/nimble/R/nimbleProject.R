@@ -483,8 +483,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ## to instantiate neededObjects
                                      if(!is.nf(nf)) stop("Can't instantiateNimbleFunction, nf is not a nimbleFunction")
                                      cat('instantiateNimbleFunction\n')
+                                     generatorName <- nfGetDefVar(nf, 'name')
                                      if(asTopLevel) {
-                                         generatorName <- nfGetDefVar(nf, 'name')
                                          ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
                                      } else {
                                          ans <- getNimbleFunctionCppDef(generatorName = generatorName)$CmultiInterface$addInstance(nf, dll = dll, project = .self)
@@ -539,8 +539,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  compileNimbleFunction = function(fun, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
-                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE,
-                                     asTopLevel = TRUE) {
+                                     reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE) {
                                      if(is.character(fun)) {
                                          tmp <- nimbleFunctions[[fun]]
                                          if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)
@@ -590,7 +589,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
 ##                                     Cname <- nf_getRefClassObject(funList[[1]])$Cname
                                      
-                                     ## what about virtuals?
                                      if(!exists('name', envir = nf_getRefClassObject(funList[[1]]), inherits = FALSE)) stop('Something is wrong if by this point in compileNimbleFunction there is no name.', call. = FALSE)
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
@@ -621,7 +619,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ans <- vector('list', length(funList))
 
                                      for(i in seq_along(funList)) {
-                                         ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll, asTopLevel = asTopLevel)
+                                         ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll, asTopLevel = TRUE)
                                          ##nimbleFunctionCppInterfaces[[ nf_getRefClassObject(funList[[i]])$name ]] <<- ans[[i]]
                                      }
                                      if(length(ans) == 1) ans[[1]] else ans

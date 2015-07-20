@@ -193,7 +193,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   cat('buildCallable\n')
                                                   if(asTopLevel) {
                                                       cppInterfaceObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)
-                                                  } else {
+                                                  } else { ## actually this particular pathway should never be taken. asTopLevel = FALSE will occur only for nimbleProject$instantiateNimbleFunction 
                                                       cppInterfaceObject <- CmultiInterface$addInstance(R_NimbleFxn, dll, project = nimbleProject)
                                                   }
                                                   return(cppInterfaceObject)
