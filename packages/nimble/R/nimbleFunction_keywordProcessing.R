@@ -715,7 +715,6 @@ optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
                                           
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
-    onDemandPossible = TRUE,
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
     makeCodeSubList = function(resultName, argList) {

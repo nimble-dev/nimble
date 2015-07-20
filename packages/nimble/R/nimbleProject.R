@@ -487,7 +487,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(asTopLevel) {
                                          ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
                                      } else {
-                                         ans <- getNimbleFunctionCppDef(generatorName = generatorName)$CmultiInterface$addInstance(nf, dll = dll, project = .self)
+                                         ans <- getNimbleFunctionCppDef(generatorName = generatorName)$CmultiInterface$addInstance(nf, dll = dll)
                                      }
                                      ans
                                  },

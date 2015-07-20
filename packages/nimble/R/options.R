@@ -21,6 +21,7 @@ nimbleUserNamespace <- as.environment(list())
         prioritizeColonLikeBUGS = TRUE, ## if FALSE, 1:2 + 1 evaluates to 2:3, consistent with R.  If TRUE, it evalutes to 1:3, consistent with BUGS 
         useNewNimCopy = TRUE, ## for development purposes.  FALSE will give 0.3-1 behavior
         compileOnly = FALSE,
+        useMultiInterfaceForNestedNimbleFunctions = TRUE,
 
         ## default settings for MCMC samplers
         ## (formerly controlDefaultList appearing in MCMCspec.R)

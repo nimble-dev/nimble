@@ -179,7 +179,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                          else
                                                              SEXPgeneratorFun$name
                                                   cat('buildCmultiInterface\n')
-                                                  CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym)
+                                                  CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                               },
                                               buildRgenerator = function(where = globalenv(), dll = NULL) {
                                                   sym <- if(!is.null(dll))
@@ -194,7 +194,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   if(asTopLevel) {
                                                       cppInterfaceObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)
                                                   } else { ## actually this particular pathway should never be taken. asTopLevel = FALSE will occur only for nimbleProject$instantiateNimbleFunction 
-                                                      cppInterfaceObject <- CmultiInterface$addInstance(R_NimbleFxn, dll, project = nimbleProject)
+                                                      cppInterfaceObject <- CmultiInterface$addInstance(R_NimbleFxn, dll)
                                                   }
                                                   return(cppInterfaceObject)
                                               },
