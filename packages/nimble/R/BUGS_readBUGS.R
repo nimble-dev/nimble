@@ -10,7 +10,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     if(length(data) && sum(names(data) == ""))
       stop("BUGSmodel: 'data' must be a named list")
     md <- modelDefClass$new(name = name)
-    cat("Defining model...\n")
+    message("defining model...")
     md$setupModel(code=code, constants=constants, dimensions=dimensions, debug=debug)
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
@@ -23,9 +23,9 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
         data <- c(data, constants[dataVarIndices])
         cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
     }
-    cat("Building model...\n")
+    message("building model...")
     model <- md$newModel(data=data, inits=inits, where=where, check=check)
-    cat("Modeling building finished.\n")
+    message("model building finished")
     return(model)
 }
 
