@@ -11,7 +11,6 @@ calc_asympVar = nimbleFunction(
     declare(h, integer(0)) #number of blocks to use for q function calculation
     declare(l, integer(0)) #length of each block
     declare(q, integer(0)) #total number of blocks available to sample from
-    declare(out, double(1, 2))
     l <- ceiling(min(1000, nsamps/10))  #method for choosing l, ensures it's not too big
     q <- nsamps - l + 1
     h <- ceiling(nsamps/l)
@@ -31,10 +30,8 @@ calc_asympVar = nimbleFunction(
     }
     svalsSD <- sd(svals)
     svalsVar <- svalsSD^2
-    out[1] <- svalsVar
-    out[2] <- numReps
-    returnType(double(1))
-    return(out)
+    returnType(double())
+    return(svalsVar)
   },where = getLoadingNamespace()
 )
     
@@ -247,9 +244,8 @@ buildAscentMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = lis
             optimOutput = optim(par = theta, fn = cCalc_E_llk$run, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
             theta = optimOutput$par    
             #varOut has two elements: varOut[1] is the sample variance, varOut[2] is the number of samples used to ccalculate the varianve
-            varOut <- cvarCalc$run(m, theta, thetaPrev) 
-            sigSq <- varOut[1]
-            ase <- sqrt(sigSq/varOut[2]) #asymptotic std. error
+            sigSq <- cvarCalc$run(m, theta, thetaPrev) 
+            ase <- sqrt(sigSq/numReps) #asymptotic std. error
             newQ <- cCalc_E_llk$run(theta)
             diff <- newQ-oldQ
             if((diff - zAlpha*ase)<0){ #swamped by mc error
@@ -267,8 +263,9 @@ buildAscentMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = lis
                 print(paste("Current number of MCMC iterations:", m, sep = " "))
                 output = optimOutput$par
                 names(output) = maxNodes
-                print(paste("Parameter Estimates:", output, sep = " "))
-                print(paste("Convergence criterion:", endCrit, sep = " "))
+                print("Parameter Estimates:")
+                print(output)
+                print(paste("Convergence Criterion:", endCrit, sep = " "))
               }
             }
           }
