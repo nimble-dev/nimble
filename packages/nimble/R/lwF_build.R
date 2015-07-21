@@ -198,7 +198,7 @@ buildLWF <- nimbleFunction(
       if(!(params%in%model$getNodeNames(stochOnly=T)))
         stop('parameters must be stochastic nodes')
     }
-    dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
+    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
                                       states varies')
     parDim <- length(params)

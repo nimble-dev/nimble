@@ -130,7 +130,7 @@ buildBootF <- nimbleFunction(
   setup = function(model, nodes, thresh = 0.5, silent = FALSE, saveAll = FALSE, smoothing = FALSE) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
-    dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
+    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll) smoothing <- FALSE

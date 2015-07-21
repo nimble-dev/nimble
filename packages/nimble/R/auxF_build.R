@@ -143,7 +143,7 @@ buildAuxF <- nimbleFunction(
   setup = function(model, nodes, thresh=.5, silent = FALSE, saveAll = FALSE) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
-    dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
+    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) 
       stop('sizes or dimension of latent states varies')
     if(thresh<0 || thresh>1 || !is.numeric(thresh)) 

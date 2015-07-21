@@ -205,7 +205,7 @@ buildENKF <- nimbleFunction(
   setup = function(model, nodes,  silent = FALSE, saveAll = FALSE) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
-    dims <- lapply(nodes, function(n) nimbleDim(model[[n]]))
+    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     xDim <- dims[[1]]
     #  get list of y nodes depening on each x node
@@ -214,7 +214,7 @@ buildENKF <- nimbleFunction(
     #  y[1,2] ~ dnorm(5*pow(x[1],2),1)
     #  where multiple separately specified y nodes depend on the same x node(s)
     yNodes <- lapply(nodes, function(n) model$getDependencies(n, dataOnly = TRUE))  
-    yDim <- lapply(yNodes, function(x){unname(sapply(x, function(z) nimbleDim(model[[z]])))}) #dimensions of each dependent y node
+    yDim <- lapply(yNodes, function(x){unname(sapply(x, function(z) nimDim(model[[z]])))}) #dimensions of each dependent y node
     
     # Create mv variables for x state.  If saveAll=T, 
     # the  x states will be recorded at each time point. 
