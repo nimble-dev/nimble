@@ -64,7 +64,7 @@
 #' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \'MCMCs\' argument.
 #' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
 #' specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \'Rmodel\',
-#' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalong \'mcmcspec\', to return this object.
+#' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalone \'mcmcspec\', to return this object.
 #' 
 #' @param bugs_directory A character string giving the directory of the executable BUGS program for the WinBUGS/BUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.

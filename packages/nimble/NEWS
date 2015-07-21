@@ -4,6 +4,10 @@ NOTE: WE SHOULD GO BACK THROUGH GITHUB ISSUES TO MAKE NOTE HERE OF VARIOUS CHANG
 
 USER LEVEL CHANGES
 
+-- [Perry - please add note about nimStep, nimRound, etc.]
+
+-- [daniel - please add note about check()]
+
 -- added additional parameterizations for dlnorm and dt
 
 -- improved handling of distribution functions in nimbleFunction run code (i.e., the DSL), allowing argument matching by name and use of default values
@@ -49,6 +53,8 @@ DEVELOPER LEVEL CHANGES
 -- nimbleFunction provided for use in algorithms: initializeModel(model), to perform sensible model initialization at the onset of an algorithm
 
 BUG FIXES
+
+-- updated package to use new igraph 1.x.x API and now explicitly link in LAPACK_LIBS and BLAS_LIBS when building libnimble.so as dpotrf not being found when using igraph 1.x.x
 
 -- fixed bug where dexp was passing the wrong parameter (rate instead of scale) to C++; we now use our own dexp_nimble, which calls Rmath's dexp correctly
 

@@ -38,7 +38,8 @@ rCalcNodes <- function(model, nodes){
 }
 
 rCalcDiffNodes <- function(model, nodes){
-	l_Prob = 0
+    ##l_Prob = 0
+    l_Prob <- -1 * getLogProb(model, nodes)
 	for(nName in nodes)
 		l_Prob = l_Prob + model$nodes[[nName]]$calculate()
 	return(l_Prob)

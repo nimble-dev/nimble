@@ -249,7 +249,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         declInfo <<- list()
     }
     for(i in 1:length(code)) {
-        if(code[[i]] == '{') next  ## skip { lines
+        if(code[[i]] == '{') if(length(code[[i]])==1) next  ## skip { lines
         lineNumber <- lineNumber + 1
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
@@ -281,8 +281,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             }
             lineNumber <- processBUGScode(recurseCode, nextContextID, lineNumber = lineNumber)  ## Recursive call to process the contents of the for loop
         }
-        ## could consider definition-time if-then
-        if(!deparse(code[[i]][[1]]) %in% c('~', '<-', 'for')) 
+        if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
+            lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber)
+        }
+        if(!deparse(code[[i]][[1]]) %in% c('~', '<-', 'for', '{')) 
             stop("Error: ", deparse(code[[i]][[1]]), " not allowed in BUGS code in ", deparse(code[[i]]))
     }
     lineNumber
@@ -1680,7 +1682,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     
     ## 10. Build the graph for topological sorting
     if(debug) browser()
-    require(igraph)
     graph <<- graph.empty()
     graph <<- add.vertices(graph, length(allVertexNames), name = allVertexNames) ## add all vertices at once
     allEdges <- as.numeric(t(cbind(edgesFrom, edgesTo)))
@@ -1989,8 +1990,10 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## if(modelName == character(0)) stop('Error, empty name for a new model', call. = FALSE)
     model <- modelClass(name = modelName)
     model$setGraph(graph)
+    cat("Building node functions...\n")
     model$buildNodeFunctions(where = where)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
+    cat("Setting data and initial values if supplied...\n")
     model$setData(data)
     # prevent overwriting of data values by inits
     if(FALSE) {  # should now be handled by checking if setInits tries to overwrite data nodes
@@ -2014,7 +2017,10 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$setInits(inits[!nonVarIndices])
     ## model checking
     ## added by DT, June 2015
-    if(check) model$check()
+    if(check) {
+        cat("Checking model (set 'check = FALSE' in nimbleModel() to skip this step) ...\n")
+        model$check()
+    }
     ## fixing the problem with RStudio hanging: over-writing the str() method for this model class
     ## added by DT, April 2015
     thisClassName <- as.character(class(model))

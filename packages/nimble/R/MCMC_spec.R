@@ -1,6 +1,5 @@
 
 
-
 controlDefaultList <- list(
     adaptive = TRUE,
     adaptScaleOnly = FALSE,
@@ -11,6 +10,7 @@ controlDefaultList <- list(
     sliceMaxSteps = 100,
     m = 1000
 )
+
 
 
 samplerSpec <- setRefClass(
@@ -92,7 +92,7 @@ MCMCspec <- setRefClass(
             useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
             print = FALSE) {	
             '
-Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC().
+Creates a default MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC().
 
 Arguments:
 
@@ -106,7 +106,7 @@ If NULL, then no samplers are added.
 control: An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
 For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\', 
 and also \'targetNode\' however this should not generally be provided as a control list element to configureMCMC().
-The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are contained in the \'controlDefaultList\' object.
+The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the NIMBLE system option \'MCMCcontrolDefaultList\'.
 
 monitors: A character vector of node names or variable names, to record during MCMC sampling.
 This set of monitors will be recorded with thinning interval \'thin\', and the samples will be stored into the \'mvSamples\' object.
@@ -140,7 +140,8 @@ print: Boolean argument, specifying whether to print the ordered list of default
             thin  <<- thin
             thin2 <<- thin2
             samplerSpecs    <<- list()
-            controlDefaults <<- controlDefaultList
+            ## moved controlDefaultList to be a NIMBLE system option (as a single list: MCMCcontrolDefaultList)
+            controlDefaults <<- getNimbleOption('MCMCcontrolDefaultList')
             for(i in seq_along(control))     controlDefaults[[names(control)[i]]] <<- control[[i]]
             controlNamesLibrary <<- list()
             if(identical(nodes, character())) { nodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
@@ -205,9 +206,9 @@ target: The target node or nodes to be sampled.  This may be specified as a char
 type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either samplerType or sampler_newSamplertype must correspond to a nimbleFunction generator.  Alternatively, the type argument may be provided as a nimbleFunction generator object, itself.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node.
 
 control: A list of control arguments specific to the sampler function.
-These will override the defaults contained in the \'controlDefaultList\' object, and any specified in the control list argument to configureMCMC().
+These will override the defaults provided in the NIMBLE system option \'MCMCcontrolDefaultList\', and any specified in the control list argument to configureMCMC().
 An error results if the sampler function requires any control elements which are 
-not present in this argument, the control list argument to configureMCMC(), or in the \'controlDefaultList\' object.
+not present in this argument, the control list argument to configureMCMC(), or in the NIMBLE system option \'MCMCcontrolDefaultList\'.
 
 print: Boolean argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
@@ -492,7 +493,7 @@ Details: See the initialize() function
 #'@param control An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
 #'For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\', 
 #'and also \'targetNode\' however this should not generally be provided as a control list element to configureMCMC().
-#'The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are contained in the \'controlDefaultList\' object.
+#'The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the NIMBLE system option \'MCMCcontrolDefaultList\'.
 #'@param monitors A character vector of node names or variable names, to record during MCMC sampling.
 #'This set of monitors will be recorded with thinning interval \'thin\', and the samples will be stored into the \'mvSamples\' object.
 #'The default value is all top-level stochastic nodes of the model -- those having no stochastic parent nodes.
@@ -558,4 +559,7 @@ newSpacesFunction <- function(m) {
     log10max <- floor(log10(m))
     function(i) paste0(rep(' ', log10max-floor(log10(i))), collapse = '')
 }
+
+
+
 

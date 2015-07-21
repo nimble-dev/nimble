@@ -484,7 +484,7 @@ Details: The return value is a named list, with an element corresponding to each
                                       conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
                                   check = function() {
-                                      lp <- calculate(.self)
+                                      lp <- try(calculate(.self))
                                       if(isValid(lp)) return(invisible(TRUE))
                                       varsToCheck <- character()
                                       for(v in .self$getVarNames())
@@ -503,14 +503,14 @@ Details: The return value is a named list, with an element corresponding to each
                                           } else if(type == 'determ') {
                                               test <- try(calculate(.self, nn))
                                               if(class(test) == 'try-error')
-                                                  warning(paste0("Cannot calculate logProb for node ", nn))
+                                                  cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                               val <- .self[[nn]]
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                           } else if(type == 'stoch') {
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                               test <- try(val <- calculate(.self, nn))
                                               if(class(test) == 'try-error')
-                                                  warning(paste0("Cannot calculate logProb for node ", nn))
+                                                  cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                               
                                               if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
                                           } else stop('unknown node type: ', type)
@@ -522,7 +522,7 @@ Details: The return value is a named list, with an element corresponding to each
                                       for(i in seq_along(conds)) {
                                           v <- badVars[[conds[[i]][1]]]
                                           m <- conds[[i]][2]
-                                          if(!is.null(v)) warning(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, call.=FALSE)
+                                          if(!is.null(v)) cat(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, ".\n", sep = '')
                                       }
                                   },
                                   newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = TRUE) {
@@ -758,6 +758,7 @@ createDefault_isDataObj <- function(obj) {
 }
 
 isValid <- function(value) {
+    if(is(value, 'try-error')) return(FALSE)
     if(any(is.nan(value))) return (FALSE)
     if(any(is.na(value))) return(FALSE)
     if(any(abs(value)==Inf)) return(FALSE)

@@ -28,6 +28,12 @@ distributionsInputList <- list(
                    range = c(0, 1),
                    pqAvail = TRUE),
     
+    dbinom  = list(BUGSdist = 'dbinom(prob, size)',
+                   Rdist    = 'dbinom(size, prob)',
+                   discrete = TRUE,
+                   range = c(0, 1),
+                   pqAvail = TRUE),
+    
     dcat    = list(BUGSdist = 'dcat(prob)',
                    Rdist    = 'dcat(prob)',
                    types    = c('prob = double(1)'),
@@ -58,6 +64,12 @@ distributionsInputList <- list(
                    range    = c(0, Inf),
                    pqAvail = TRUE),
     
+    dnbinom = list(BUGSdist = 'dnbinom(prob, size)',
+                   Rdist    = 'dnbinom(size, prob)',
+                   discrete = TRUE,
+                   range    = c(0, Inf),
+                   pqAvail = TRUE),
+    
     dpois   = list(BUGSdist = 'dpois(lambda)',
                    discrete = TRUE,
                    range    = c(0, Inf),
@@ -76,6 +88,10 @@ distributionsInputList <- list(
                    pqAvail  = TRUE),
     
     dchisq  = list(BUGSdist = 'dchisq(df)',
+                   range    = c(0, Inf),
+                   pqAvail  = TRUE),
+
+    dchisqr = list(BUGSdist = 'dchisqr(df)',
                    range    = c(0, Inf),
                    pqAvail  = TRUE),
     
@@ -130,6 +146,12 @@ distributionsInputList <- list(
                    range   = c(0, Inf),
                    pqAvail = TRUE),
     
+    dweibull = list(BUGSdist = 'dweibull(shape, lambda, scale, rate)',
+                   Rdist    = c('dweibull(shape, scale = lambda^(-1/shape))', 'dweibull(shape, scale = 1/rate)'),
+                   altParams= c('rate = 1/scale', 'lambda = scale^(-shape)'),
+                   range   = c(0, Inf),
+                   pqAvail = TRUE),
+    
     
     ####################################
     #### multivariate distributions ####
@@ -141,6 +163,11 @@ distributionsInputList <- list(
                    types    = c('value = double(1)', 'alpha = double(1)'),
                    range    = c(0, 1)),
     
+    ddirich = list(BUGSdist = 'ddirich(alpha)',
+                   Rdist    = 'ddirch(alpha)',
+                   types    = c('value = double(1)', 'alpha = double(1)'),
+                   range    = c(0, 1)),
+
     dmnorm  = list(BUGSdist = 'dmnorm(mean, prec, cov, cholesky, prec_param)',
                    Rdist    = c('dmnorm_chol(mean, cholesky = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, cholesky = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, cholesky, prec_param)'),
                   altParams= c('prec = calc_dmnormAltParams(cholesky, prec_param, 1)', 'cov = calc_dmnormAltParams(cholesky, prec_param, 0)'),
