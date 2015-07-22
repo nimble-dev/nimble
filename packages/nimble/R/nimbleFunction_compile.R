@@ -302,11 +302,11 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
         origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
         newRcodeList <- lapply(compileInfos, `[[`, 'newRcode')
         allNamesInCodeAfterKeywordProcessing <- unique(unlist(lapply(newRcodeList, all.names)))
-        origSetupOutputNamesToKeep <- intersect(allNamesInCodeAfterKeywordProcessing, origSetupOutputs)
+        origSetupOutputNamesToKeep <- intersect(allNamesInCodeAfterKeywordProcessing, origSetupOutputs) ## this loses mv!
         origSetupOutputNamesNotNeeded <- setdiff(origSetupOutputs,origSetupOutputNamesToKeep) ## order matters
         for(nameNotNeeded in origSetupOutputNamesNotNeeded) {
             thisSym <- setupSymTab$getSymbolObject(nameNotNeeded)
-            if(!is.null(thisSym)) thisSym$type <- 'Ronly'
+            if(!is.null(thisSym))  if(!thisSym$type == 'Values') thisSym$type <- 'Ronly' ## must keep modelValues, nimbleFunctions, possibly others
         }
 
         outputNames <- c(outputNames, newSetupOutputNames)

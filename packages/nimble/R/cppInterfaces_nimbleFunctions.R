@@ -698,7 +698,7 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
             for(vN in vNames)
                 Cmv[vN,] <- rModelValues[vN,]
             Cmv$symTab <- rModelValues$symTab	
-            getSetModelValue(v, Cmv, basePtr)
+            getSetModelValues(v, Cmv, basePtr)
             ##            .self[[v]] <- Cmv
             next
         }
@@ -812,7 +812,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         for(vn in seq_along(cppNames) ){
             .self[[vPtrNames[vn]]] <- newObjElementPtr(.basePtr, cppNames[vn])
         }
-        if(!missing(nfObject)) {
+         if(!missing(nfObject)) {
             setRobject(nfObject)
             ##buildNeededObjects()
             neededObjects <<- buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
