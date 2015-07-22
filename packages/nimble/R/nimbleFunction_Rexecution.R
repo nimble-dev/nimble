@@ -192,25 +192,44 @@ getValues <- function(vals, model, nodes, envir = parent.frame()) {
 }
 
 getValuesAccess <- function(access) {
-    if(access$numAccessors==0) return(numeric())
-    unlist(lapply(1:access$numAccessors, function(i) access$getValues(i)))
+    fromCode <- makeGetCodeFromAccessorVector(access)
+    if(length(fromCode)==0) return(numeric())
+    unlist(lapply(fromCode, function(i) eval(i)))
+
+##    if(access$numAccessors==0) return(numeric()) ## NEW ACCESSORS
+##    unlist(lapply(1:access$numAccessors, function(i) access$getValues(i)))
+
 }
 
 
 setValuesAccess <- function(input, access) {
-    if(access$numAccessors==0) return(NULL)
+
+    toCode <- makeSetCodeFromAccessorVector(access)
+    mapInfo <- makeMapInfoFromAccessorVector(access) ## inefficient to do both of these, but we need the lengths!
+    if(length(toCode)==0) return(NULL)
     nextIndex <- 0
-    if(access$getLength() != length(input)) {
-        writeLines('Length of input does not match accessor')
-        if(access$getLength() > length(input)) stop('Bailing out because not enough values were provided for accessor')
-        writeLines('Too many input values provided.  Continuing anyway')
-    }
-    for(i in 1:length(access$code)) {
-        nextLength <- access$getLength(i)
-        access$setValues(i, input[nextIndex + (1:nextLength)])
+    ## not easy to check lengths any more
+    for(i in 1:length(toCode)) {
+        nextLength <- mapInfo[[i]]$length
+        oneValue <- input[nextIndex + (1:nextLength)]
+        eval(toCode[[i]])
         nextIndex <- nextIndex + nextLength
     }
     invisible(NULL)
+
+    ## if(access$numAccessors==0) return(NULL) ## NEW ACCESSORS
+    ## nextIndex <- 0
+    ## if(access$getLength() != length(input)) {
+    ##     writeLines('Length of input does not match accessor')
+    ##     if(access$getLength() > length(input)) stop('Bailing out because not enough values were provided for accessor')
+    ##     writeLines('Too many input values provided.  Continuing anyway')
+    ## }
+    ## for(i in 1:length(access$code)) {
+    ##     nextLength <- access$getLength(i)
+    ##     access$setValues(i, input[nextIndex + (1:nextLength)])
+    ##     nextIndex <- nextIndex + nextLength
+    ## }
+    ## invisible(NULL)
 }
 
 
@@ -337,7 +356,7 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
             accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
             if(is.na(row))
                 stop("Error: need to supply 'row' for a modelValues copy")
-            accessFrom$setRow(row)
+            ##accessFrom$setRow(row) ## NEW ACCESSORS
         }
         else stop('argument "from" in nimCopy is neither a model nor modelValues')
 
@@ -355,18 +374,32 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
                 accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
             if(is.na(rowTo))
                 rowTo = row
-            accessTo$setRow(rowTo)
+            ##accessTo$setRow(rowTo) ## NEW ACCESSORS
         }
         else stop('argument "to" in nimCopy is neither a model nor modelValues')
- 
-    lengthTo <- length(accessTo$code)
-    if(length(accessFrom$code) != lengthTo)
-        stop('unequal number of entries in nimCopy') 
+
+    sourceToObject <- accessTo[[1]]
+    sourceFromObject <- accessFrom[[1]]
+    setCode <- makeSetCodeFromAccessorVector(accessTo)
+    getCode <- makeGetCodeFromAccessorVector(accessFrom)
+    lengthTo <- length(setCode)
+    if(length(getCode) != lengthTo)
+    stop('unequal number of entries in nimCopy') 
     if(lengthTo > 0){
         for(i in 1:lengthTo){
-            accessTo$setValues( i, accessFrom$getValues(i) )
+            oneValue <- eval(getCode[[i]]) ## may have row hardwired in
+            eval(setCode[[i]]) ## oneValue is hard-wired in. may have rowTo hardwired in
         }
     }
+    
+    ## lengthTo <- length(accessTo$code) ## NEW ACCESSORS
+    ## if(length(accessFrom$code) != lengthTo)
+    ##     stop('unequal number of entries in nimCopy') 
+    ## if(lengthTo > 0){
+    ##     for(i in 1:lengthTo){
+    ##         accessTo$setValues( i, accessFrom$getValues(i) )
+    ##     }
+    ## }
 }
 
 

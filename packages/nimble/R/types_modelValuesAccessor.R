@@ -26,6 +26,117 @@ copierVector <- function(accessFrom_name, accessTo_name, isFromMV, isToMV) {
     ans
 }
 
+modelValuesAccessorVector <- function(mv, nodeNames, logProb = FALSE) {
+    ans <- list(mv, substitute(nodeNames), logProb, parent.frame())
+    class(ans) <- c('modelValuesAccessorVector', 'valuesAccessorVector')
+    ans
+}
+
+makeSetCodeFromAccessorVector <- function(accessorVector) {
+    nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])
+    modelOrModelValues <- accessorVector[[1]]
+    if(accessorVector[[3]]) {## logProb == TRUE
+        isLogProbName <- grepl('logProb_', nodeNames)
+        nodeNames <- c(nodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+    }
+    if(inherits(accessorVector, 'modelValuesAccessorVector'))
+        setCode <- lapply(nodeNames, function(nn) {
+            temp <- parse(text = nn, keep.source = FALSE)[[1]]
+            if(is.name(temp)) return(substitute(sourceToObject$B[[rowTo]] <- oneValue, list(B = temp)))
+            temp[[2]] <- substitute(sourceToObject$B[[rowTo]], list(B = temp[[2]]))
+            substitute(A <- oneValue, list(A = temp))
+        })
+    else
+        setCode <- lapply(nodeNames, function(nn) {
+            temp <- parse(text = nn, keep.source = FALSE)[[1]]
+            if(is.name(temp)) return(substitute(sourceToObject$B <- oneValue, list(B = temp)))
+            temp[[2]] <- substitute(sourceToObject$B, list(B = temp[[2]]))
+            substitute(A <- oneValue, list(A = temp))
+        })
+    setCode
+}
+
+makeGetCodeFromAccessorVector <- function(accessorVector) {
+    nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])
+    modelOrModelValues <- accessorVector[[1]]
+    if(accessorVector[[3]]) {## logProb == TRUE
+        isLogProbName <- grepl('logProb_', nodeNames)
+        nodeNames <- c(nodeNames, modelOrModelValues$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+    }
+    if(inherits(accessorVector, 'modelValuesAccessorVector'))
+        getCode <- lapply(nodeNames, function(nn) {
+            temp <- parse(text = nn, keep.source = FALSE)[[1]]
+            if(is.name(temp)) return(substitute(sourceFromObject$B[[row]], list(B = temp)))
+            temp[[2]] <- substitute(sourceFromObject$B[[row]], list(B = temp[[2]]))
+            temp
+        })
+    else
+        getCode <- lapply(nodeNames, function(nn) {
+            temp <- parse(text = nn, keep.source = FALSE)[[1]]
+            if(is.name(temp)) return(substitute(sourceFromObject$B, list(B = temp)))
+            temp[[2]] <- substitute(sourceFromObject$B, list(B = temp[[2]]))
+            temp
+        })
+    getCode
+}
+
+## getValues.modelValuesAccessorVector <- function(accessorVector, i, row = NA) {
+##     if(is.na(row)) stop('Can no longer use row = NA in getValues.modelValuesAccessorVector')
+##     nodeName <- eval(accessorVector[[2]], envir = accessorVector[[4]])[i]
+##     nodeCode <- parse(text = nodeName, keep.source = FALSE)[[1]]
+##     sourceObject <- accessorVector[[1]]
+##     if(is.name(nodeCode)) return(sourceObject[[nodeName]][[row]])
+##     nodeCode[[2]] <- substitute(sourceObject[[VN]][[row]], list(VN = as.character(nodeCode[[2]]) ) )
+##     eval(nodeCode)
+## }
+## setValues.modelValuesAccessorVector <- function(accessorVector, i, vals, row = NA) {
+##     if(is.na(row)) stop('Can no longer use row = NA in setValues.modelValuesAccessorVector')
+##     nodeName <- eval(accessorVector[[2]], envir = accessorVector[[4]])[i]
+##     nodeCode <- parse(text = nodeName, keep.source = FALSE)[[1]]
+##     sourceObject <- accessorVector[[1]]
+##     if(is.name(nodeCode)) nodeCode <- quote(sourceObject[[nodeName]][[row]])
+##     nodeCode[[2]] <- substitute(sourceObject[[VN]][[row]], list(VN = as.character(nodeCode[[2]]) ) )
+##     eval(substitute(A <- vals), list(A = nodeCode))
+## }
+
+## STOPPED HERE:
+## 1. put in logProb stuff
+## 2. handle copying in a joint function
+## 3. change .Call('populateValueMapAccessors'
+## 4. Go over other grep results
+## 5. look at accessorLength setup output... trickiest...
+##       this will be annoyingly tricky, but we could have makeMapInfoFromAccessorVector also assign a length value to the parent.frame(), which is the setup environment.
+
+makeMapInfoFromAccessorVector <- function(accessorVector ) {
+    length <- 0
+    nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])
+    sourceObject <- accessorVector[[1]] ## a model or modelValues
+    
+    if(accessorVector[[3]]) {## logProb == TRUE
+        isLogProbName <- grepl('logProb_', nodeNames)
+        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+    }
+    
+    mapInfo <- lapply(nodeNames, function(z) {
+        x <- parse(text = z, keep.source = FALSE)[[1]]
+        varAndIndices <- getVarAndIndices(x)
+        varName <- as.character(varAndIndices$varName)
+        varSym <- sourceObject$getSymbolTable()$getSymbolObject(varName) ## previously from model$getVarInfo(varName)
+        ans <- varAndIndices2mapParts(varAndIndices, varSym$size, varSym$nDim)
+        ans$varName <- varName
+        anslength <- prod(ans$sizes)
+        length <<- length + anslength
+        ans$singleton <- anslength == 1
+        ans$length <- anslength ## putting it last so it doesn't mess up current C++ code
+        ans
+    }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
+
+    if(length(accessorVector) > 4) { ## set the length variable in the calling (setup) environment if needed
+        assign(accessorVector[[5]], length, envir = accessorVector[[4]]) 
+    }
+    mapInfo
+}
+
 valuesAccessorVector <- setRefClass( ## new implementation
     Class = 'valuesAccessorVector',
     fields = list(
@@ -91,38 +202,39 @@ valuesAccessorVector <- setRefClass( ## new implementation
 ## 	return(modelValuesAccessor(id = id, modelValues = modelValues))
 ##     }
 
-modelValuesAccessorVector <- setRefClass( ## new implementation
-   Class = 'modelValuesAccessorVector',
-    contains = 'valuesAccessorVector',
-    fields = list(row = 'ANY'),
-    methods = list(
-        initialize = function(...) {
-            callSuper(...)
-            row <<- as.integer(NA)
-            makeAccessAndSetCode()
-        },
-        makeAccessAndSetCode = function() {
-            accessCode <<- lapply(code, function(temp) {
-                if(is.name(temp)) return(substitute(sourceObject$B[[localrow]], list(B = temp)))
-                temp[[2]] <- substitute(sourceObject$B[[localrow]], list(B = temp[[2]]))
-                temp
-            })
-            setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
-        },
-        setRow = function(row) {
-            row <<- row
-        },
-        getValues = function(i, row = NA) {
-            ## model version
-            localrow <- if(is.na(row)) .self$row else row
-            eval(accessCode[[i]])
-        },
-        setValues = function(i, vals, row = NA) {
-            ## model version
-            localrow <- if(is.na(row)) .self$row else row
-            eval(setCode[[i]])
-        }
-    ))
 
-length.modelValuesAccessorVector <- function(access)
-	return(access$length)
+## modelValuesAccessorVector <- setRefClass( ## new implementation
+##    Class = 'modelValuesAccessorVector',
+##     contains = 'valuesAccessorVector',
+##     fields = list(row = 'ANY'),
+##     methods = list(
+##         initialize = function(...) {
+##             callSuper(...)
+##             row <<- as.integer(NA)
+##             makeAccessAndSetCode()
+##         },
+##         makeAccessAndSetCode = function() {
+##             accessCode <<- lapply(code, function(temp) {
+##                 if(is.name(temp)) return(substitute(sourceObject$B[[localrow]], list(B = temp)))
+##                 temp[[2]] <- substitute(sourceObject$B[[localrow]], list(B = temp[[2]]))
+##                 temp
+##             })
+##             setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
+##         },
+##         setRow = function(row) {
+##             row <<- row
+##         },
+##         getValues = function(i, row = NA) {
+##             ## model version
+##             localrow <- if(is.na(row)) .self$row else row
+##             eval(accessCode[[i]])
+##         },
+##         setValues = function(i, vals, row = NA) {
+##             ## model version
+##             localrow <- if(is.na(row)) .self$row else row
+##             eval(setCode[[i]])
+##         }
+##     ))
+
+## length.modelValuesAccessorVector <- function(access)
+## 	return(access$length)

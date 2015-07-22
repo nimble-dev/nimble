@@ -41,18 +41,27 @@ populateCopierVector <- function(fxnPtr, Robject, vecName) {
 
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## new version
     manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-    cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface
+    cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
+    ## cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS 
     if(is(cModel, 'uninitializedField'))
         stop('Compiled C++ model not available; please include the model in your compilation call (or compile it in advance).', call. = FALSE)
-    if(Robject[[manyAccessName]]$getLength() > 0) {
-        .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModel$.basePtr)
+
+    mapInfo <- makeMapInfoFromAccessorVector(Robject[[manyAccessName]])
+    if(length(mapInfo) > 0) {
+        .Call('populateValueMapAccessors', manyAccessPtr, mapInfo, cModel$.basePtr)
     }
+
+    ##if(Robject[[manyAccessName]]$getLength() > 0) { ## NEW ACCESSORS 
+        ##.Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModel$.basePtr) 
+    ##}
 }
 
 populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName){ ## new version. nearly identical to populateManyModelVarMapAccess
     manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
-    cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface
-    .Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModelValues$extptr)
+    ##cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS
+    cModelValues <- Robject[[manyAccessName]][[1]]$CobjectInterface
+    ##.Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModelValues$extptr) ## NEW ACCESSORS
+    .Call('populateValueMapAccessors', manyAccessPtr, makeMapInfoFromAccessorVector(Robject[[manyAccessName]]), cModelValues$extptr)
 }
 
 addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){

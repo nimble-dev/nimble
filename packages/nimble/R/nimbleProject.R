@@ -482,7 +482,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
                                      ## to instantiate neededObjects
                                      if(!is.nf(nf)) stop("Can't instantiateNimbleFunction, nf is not a nimbleFunction")
-                                     cat('instantiateNimbleFunction\n')
                                      generatorName <- nfGetDefVar(nf, 'name')
                                      if(asTopLevel) {
                                          ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)

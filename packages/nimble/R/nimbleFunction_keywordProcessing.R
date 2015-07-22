@@ -750,15 +750,26 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 
     
-accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass(
+accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
   #Note to programmer: required fields of argList are accessName
  
   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-  codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
+    codeTemplate = quote({ACCESSLENGTH <- 0;
+        ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
   makeCodeSubList = function(resultName, argList){
-  	list(ACCESSNAME = as.name(argList$accessName),
-  		ACCESSLENGTH = as.name(resultName) )
-  	})
+      list(ACCESSNAME = as.name(argList$accessName),
+           ACCESSLENGTH = as.name(resultName),
+           ACCESSLENGTHNAME = resultName)
+  })
+
+## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## NEW ACCESSORS
+##   #Note to programmer: required fields of argList are accessName 
+##   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
+##   codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
+##   makeCodeSubList = function(resultName, argList){
+##   	list(ACCESSNAME = as.name(argList$accessName),
+##   		ACCESSLENGTH = as.name(resultName) )
+##   	})
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(

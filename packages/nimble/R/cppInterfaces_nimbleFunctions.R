@@ -222,7 +222,7 @@ getSetModelValues <- function(name, value, basePtr) {
         return(NULL)
     } else {
         vptr <- newObjElementPtr(basePtr, name)
-        setDoublePtrFromSinglePtr(vptr, value$extPtr)
+        setDoublePtrFromSinglePtr(vptr, value$extptr)
     }  
 }
 
@@ -236,8 +236,6 @@ getSetNimPtrList <- function(name, value, basePtr) {
         vptr <- newObjElementPtr(basePtr, name)
         accessptr <- newObjElementPtr(basePtr, paste0(name, '_setter'))
         setPtrVectorOfPtrs(accessptr, vptr, length(value$contentsList))
-
-        cat('doing getSetNimPtrList\n')
         for(i in seq_along(value$contentsList)) {
             if(is.list(value[[i]])) { ## case of list(CmultiNimbleFunction, index)
                 basePtr <- value[[i]][[1]]$basePtrList[[ value[[i]][[2]] ]]
@@ -905,6 +903,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  newNeededObjects <- buildNeededObjects(newRobject, compiledNodeFun, list(), dll, nimbleProject)
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
                                                  copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr)
+                                                 ## cat('clearing\n')
+                                                 ## compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              }
                                              ##setRobject = function() {},
