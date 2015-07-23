@@ -165,7 +165,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 callSuper()
                                                 .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- getMVptr(.basePtr)
-                                                defaultModelValues <<- CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = getMVName(.modelValues_Ptr) )
+                                                defaultModelValues <<- CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = getMVName(.modelValues_Ptr), initialized = TRUE )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
                                                 vars <<- model$vars

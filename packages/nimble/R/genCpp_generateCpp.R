@@ -23,6 +23,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          nfVar = 'cppOutputNFvar',
                          getsize = 'cppOutputMemberFunctionDeref',
                          resizeNoPtr = 'cppOutputMemberFunction',
+                         cppMemberFunction = 'cppOutputMemberFunctionGeneric',
                          AssignEigenMap = 'cppOutputEigenMapAssign',
                          chainedCall = 'cppOutputChainedCall',
                          template = 'cppOutputTemplate',
@@ -204,6 +205,10 @@ cppOutputEigenMapAssign <- function(code, symTab) {
 
 cppOutputMemberFunction <- function(code, symTab) {
     paste0( nimGenerateCpp(code$args[[1]], symTab), '.', paste0(code$name, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab) ), collapse = ', '), ')' ))
+}
+
+cppOutputMemberFunctionGeneric <- function(code, symTab) { ##cppMemberFunction(myfun(myobj, arg1, arg2)) will generate myobj.myfun(arg1, arg2)
+    cppOutputMemberFunction(code$args[[1]], symTab)
 }
 
 cppOutputEigExternalUnaryFunction <- function(code, symTab) {

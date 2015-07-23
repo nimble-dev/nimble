@@ -476,7 +476,7 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
         else if(inherits(thisSymbol, 'symbolModelValuesAccessorVector')) {ans[[thisSymbol$name]] <- 'modelValuesAccess';next}
         else if(inherits(thisSymbol, 'symbolModelValues')) {ans[[thisSymbol$name]] <- 'modelValues'; next}
         else if(inherits(thisSymbol, 'symbolNimbleFunction')) {ans[[thisSymbol$name]] <- 'nimbleFunction'; next}
-        else if(inherits(thisSymbol, 'symbolVecNimArrPtr')) {ans[[thisSymbol$name]] <- 'modelValuesPtr'; next}
+        else if(inherits(thisSymbol, 'symbolVecNimArrPtr')) {ans[[thisSymbol$name]] <- 'modelValuesPtr'; next} ## from a singleModelValuesAccessClass, from e.g. mv[i, 'x']
         else if(inherits(thisSymbol, 'symbolNumericList')) {ans[[thisSymbol$name]] <- 'numericList'; next}
         else if(inherits(thisSymbol, 'symbolNimPtrList')) {ans[[thisSymbol$name]] <- 'nimPtrList'; next}
         else if(inherits(thisSymbol, 'symbolCopierVector')) {ans[[thisSymbol$name]] <- 'copierVector'; next}
@@ -586,12 +586,16 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
         else if(cppCopyTypes[[v]] == 'modelValues') { ## somewhat similar to modelVar
             rModelValues <- Robj[[v]]
             Cmv <- rModelValues$CobjectInterface
-            k = getsize(rModelValues)
-            resize(Cmv, k)
-            vNames = rModelValues[['varNames']]
-            for(vN in vNames)
-                Cmv[vN,] <- rModelValues[vN,]
-            Cmv$symTab <- rModelValues$symTab	
+            if(!Cmv$initialized) {
+                cat('We are copying modelValues during copyFromRobjectViaActiveBindings\n')
+                k = getsize(rModelValues)
+                resize(Cmv, k)
+                vNames = rModelValues[['varNames']]
+                for(vN in vNames)
+                    Cmv[vN,] <- rModelValues[vN,]
+                Cmv$symTab <- rModelValues$symTab
+                Cmv$initialized <- TRUE
+            }
             .self[[v]] <- Cmv
             next
         }
@@ -690,14 +694,17 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
         }
         else if(cppCopyTypes[[v]] == 'modelValues') { ## somewhat similar to modelVar
             rModelValues <- Robj[[v]]
-            cat('We are copying modelValue during copyFromRobject\n')
             Cmv <- rModelValues$CobjectInterface
-            k = getsize(rModelValues)
-            resize(Cmv, k)
-            vNames = rModelValues[['varNames']]
-            for(vN in vNames)
-                Cmv[vN,] <- rModelValues[vN,]
-            Cmv$symTab <- rModelValues$symTab	
+            if(!Cmv$initialized) {
+                cat('We are copying modelValues during copyFromRobject\n')
+                k = getsize(rModelValues)
+                resize(Cmv, k)
+                vNames = rModelValues[['varNames']]
+                for(vN in vNames)
+                    Cmv[vN,] <- rModelValues[vN,]
+                Cmv$symTab <- rModelValues$symTab
+                Cmv$initialized <- TRUE
+            }
             getSetModelValues(v, Cmv, basePtr)
             ##            .self[[v]] <- Cmv
             next
@@ -720,7 +727,7 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
         else if(cppCopyTypes[[v]] == "modelValuesPtr"){
             curObj <- Robj[[v]]
             mvPtr = curObj$modelValues$CobjectInterface$componentExtptrs[[curObj$var]]
-            getSetModelValuePtr(v, mvPtr, basePtr)
+            getSetModelValuesPtr(v, mvPtr, basePtr)
             ## .self[[v]] <<- mvPtr
             next
         }
@@ -906,9 +913,33 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  ## cat('clearing\n')
                                                  ## compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
+                                             },
+                                             memberData = function(index, name, value) { ## value can be missing
+                                                 ## This isn't very useful as written for many names because it just gets and sets the external pointers.  It doesn't wrap them in an interface object
+                                                 browser()
+                                                 if(!(name %in% cppNames)) stop(paste0('Name ', name, ' is not a valid member variable in the requested object.', call.=FALSE))
+                                                 basePtr <- basePtrList[[index]]
+                                                 if(!inherits(basePtr, 'externalptr')) stop('Invalid index or basePtr', call. = FALSE)
+                                                 ans <- switch(cppCopyTypes[name],
+                                                               modelVar = getSetModelVarPtr(name, value, basePtr), ## only makes sense internally
+                                                               nimbleFunction = getSetNimbleFunction(v, value, basePtr), ## ditto
+                                                               nimPtrList = getSetNimPtrList(v, value, basePtr), ## ditto
+                                                               modelValues = getSetModelValues(v, value, basePtr), ## ditto
+                                                               characterVector = getSetCharacterVector(v, value, basePtr),
+                                                               characterScalar = getSetCharacterScalar(v, value, basePtr),
+                                                               numericVector = getSetNumericVector(v, value, basePtr),
+                                                               doubleScalar = getSetDoubleScalar(v, value, basePtr),
+                                                               integerScalar = getSetIntegerScalar(v, value, basePtr),
+                                                               logicalScalar = getSetLogicalScalar(v, value, basePtr),
+                                                               'Could not get or set a value for this variable')
+                                                 ans
                                              }
                                              ##setRobject = function() {},
                                              ##buildNeededObjects = function() {},
                                              ##copyFromRobject = function() {},
                                              ##lookupSymbol = function() {}
                                          ))
+
+valueInCompiledNimbleFunction <- function(cnf, name, value) { ## value can be missing
+    cnf[[1]]$memberData(cnf[[2]], name, value) 
+}

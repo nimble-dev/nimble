@@ -70,6 +70,8 @@ class SingleVariableMapAccessBase {
 
 class ManyVariablesMapAccessorBase {
  public:
+  int totalLength;
+  int &getTotalLength() {return(totalLength);}
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector()=0;
   virtual void  setRow(int i) = 0;
   virtual ~ManyVariablesMapAccessorBase() {};
