@@ -381,7 +381,10 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(inherits(nodes, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
                                           if(returnScalarComponents)
-                                              nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs])     ## turn into IDs in the graph
+                                              nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                                                   FALSE,
+                                                                   FALSE,
+                                                                   NA))
                                           else
                                               nodeIDs <- elementIDs
                                       }
@@ -397,7 +400,10 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(inherits(omit, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
                                           if(returnScalarComponents)
-                                              omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs])
+                                              omitIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+                                                                   FALSE,
+                                                                   FALSE,
+                                                                   NA))
                                           else
                                               omitIDs <- elementIDs
                                       }
@@ -420,7 +426,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
-                                          depIDs = unique(depIDs)
+                                          depIDs = .Internal(unique(depIDs, FALSE, FALSE, NA))
                                       if(returnType == 'ids'){
                                           if(returnScalarComponents) print("nimble development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
                                           return(depIDs)

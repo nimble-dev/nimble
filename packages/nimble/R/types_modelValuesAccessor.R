@@ -107,6 +107,53 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
 ## 5. look at accessorLength setup output... trickiest...
 ##       this will be annoyingly tricky, but we could have makeMapInfoFromAccessorVector also assign a length value to the parent.frame(), which is the setup environment.
 
+SINGLE_LAPPLY_OF_INTEREST <- function( varNames, symTab ) {
+    ans <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
+    ans
+}
+
+nodeName2LogProbName_OF_INTEREST <- function(md, arg1) {
+    ans <- md$nodeName2LogProbName(arg1)
+    ans
+}
+
+makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
+##    length <- 0
+    nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])
+    sourceObject <- accessorVector[[1]] ## a model or modelValues
+    
+    if(accessorVector[[3]]) {## logProb == TRUE
+        isLogProbName <- grepl('logProb_', nodeNames)
+##        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        nodeNames <- c(nodeNames, nodeName2LogProbName_OF_INTEREST(sourceObject$modelDef, nodeNames[!isLogProbName]))
+    }
+
+    varNames <- .Call('parseVar', nodeNames)
+    symTab <- sourceObject$getSymbolTable()
+##    varSizesAndNDims <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
+    varSizesAndNDims <- SINGLE_LAPPLY_OF_INTEREST(varNames, symTab)
+    
+    list(nodeNames, varSizesAndNDims)
+    ## mapInfo <- lapply(nodeNames, function(z) {
+    ##     x <- parse(text = z, keep.source = FALSE)[[1]]
+    ##     varAndIndices <- getVarAndIndices(x)
+    ##     varName <- as.character(varAndIndices$varName)
+    ##     varSym <- sourceObject$getSymbolTable()$getSymbolObject(varName) ## previously from model$getVarInfo(varName)
+    ##     ans <- varAndIndices2mapParts(varAndIndices, varSym$size, varSym$nDim)
+    ##     ans$varName <- varName
+    ##     anslength <- prod(ans$sizes)
+    ##     length <<- length + anslength
+    ##     ans$singleton <- anslength == 1
+    ##     ans$length <- anslength ## putting it last so it doesn't mess up current C++ code
+    ##     ans
+    ## }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
+
+    ## if(length(accessorVector) > 4) { ## set the length variable in the calling (setup) environment if needed
+    ##     assign(accessorVector[[5]], length, envir = accessorVector[[4]]) 
+    ## }
+    ## mapInfo
+}
+
 makeMapInfoFromAccessorVector <- function(accessorVector ) {
     length <- 0
     nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])

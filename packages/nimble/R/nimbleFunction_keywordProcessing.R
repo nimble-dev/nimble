@@ -981,8 +981,8 @@ matchAndFill.call <- function(def, call){
   return(newCall)
 }
 
-pasteExpr <- function(expr1, expr2)
-	parse(text=paste0(as.character(expr1), as.character(expr2) ) )[[1]]
+## pasteExpr <- function(expr1, expr2)
+## 	parse(text=paste0(as.character(expr1), as.character(expr2) ) )[[1]]
 
 
 determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {

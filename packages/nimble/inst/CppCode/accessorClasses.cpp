@@ -1092,6 +1092,289 @@ SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP S
 
 ///NEW
 
+string _NIMBLE_WHITESPACE(" \t");
+string _NIMBLE_WHITESPACEBRACKET(" \t[");
+
+void parseVar(const vector<string> &input, vector<string> &output) {
+  int vecSize = input.size();
+  std::size_t iEnd, iBegin;
+  output.resize( vecSize );
+  for(int i = 0; i < vecSize; i++) {
+    iBegin = input[i].find_first_not_of(_NIMBLE_WHITESPACE);
+    iEnd = input[i].find_first_of(_NIMBLE_WHITESPACEBRACKET, iBegin);
+    if(iBegin < iEnd)
+      output[i].assign( input[i].substr(iBegin, iEnd - iBegin) );
+    else
+      output[i].assign( string("") );
+    //    if(iBracket != std::string::npos)
+
+    //    else
+    //   output[i].assign( input[i] );
+  }
+}
+
+SEXP parseVar(SEXP Sinput) {
+  vector<string> input, output;
+  STRSEXP_2_vectorString(Sinput, input);
+  parseVar(input, output);
+  return(vectorString_2_STRSEXP(output));
+}
+
+class varAndIndicesClass {
+public:
+  string varName;
+  vector< vector<int> > indices;
+};
+
+class mapInfoClass {
+public:
+  int offset;
+  vector<int> sizes;
+  vector<int> strides;
+};
+
+void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string &varName, vector<vector<int> > &inds) {
+  output.indices.resize(0);
+  std::size_t iBracket = input.find_first_of('[');
+  //std::cout<<iBracket<<"\n";
+  if(iBracket == std::string::npos) { // no bracket
+    output.varName = input;
+    //    std::cout<<output.varName<<"\n";
+    return;
+  }
+  output.varName = input.substr(0, iBracket);
+  //  std::cout<<output.varName<<"\n";
+
+  string restOfInput = input.substr(iBracket+1);
+  //  std::cout<<restOfInput<<"\n";
+  bool done(false);
+
+  vector<int> oneAns;
+  std::size_t iColon, iComma;
+  int firstNum, secondNum;
+  std::size_t iNextStart, iNonBlank;
+  string spacecommabracket(" ,]");
+  iBracket = restOfInput.find_first_of(']');
+  if(iBracket == std::string::npos) std::cout<<"problem in parseVarAndInds: there is no closing bracket\n";
+
+  while(!done) {
+    iColon   = restOfInput.find_first_of(':');
+    iComma   = restOfInput.find_first_of(',');
+    if(iColon < iBracket & iColon < iComma) { // next is a colon expr like 2:5
+      firstNum = std::stoi(restOfInput);
+      // test x[11 :4]
+      iNextStart = iColon + 1;
+      restOfInput = restOfInput.substr(iNextStart);
+      iComma   = restOfInput.find_first_of(',');
+      iBracket = restOfInput.find_first_of(']');
+      //std::cout<<restOfInput<<"\n";
+      secondNum   = std::stoi(restOfInput);
+      if(iComma < iBracket) iNextStart = iComma + 1; else {iNextStart = iBracket; done = true;}
+      restOfInput = restOfInput.substr(iNextStart);
+      //    std::cout<<"got "<<firstNum<<" : "<<secondNum<<"\n";
+      //    std::cout<<restOfInput<<"\n";
+      oneAns.push_back(firstNum);
+      oneAns.push_back(secondNum);
+      output.indices.push_back(oneAns);
+      oneAns.clear();
+    } else {
+      // test for blanks
+      // this bit ends in either a comma or the bracket
+      if(iComma >= iBracket) {iComma = iBracket; done = true;} // now iComma is the ending index after here
+      iNonBlank = restOfInput.find_first_not_of(spacecommabracket);
+      if(iNonBlank < iComma) { // there is a number
+	firstNum = std::stoi(restOfInput);
+	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
+	//	  if(iEndOfNum < iColon) iEndOfNum = iColon;
+	restOfInput = restOfInput.substr(iNextStart);
+	//	std::cout<<"got "<<firstNum<<"\n";
+	//	std::cout<<restOfInput<<"\n";
+	oneAns.push_back(firstNum);
+	output.indices.push_back(oneAns);
+	oneAns.clear();
+      } else { // there is a blank
+	output.indices.push_back(oneAns);
+	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
+	restOfInput = restOfInput.substr(iNextStart);
+	//	std::cout<<"got blank\n";
+	//	std::cout<<restOfInput<<"\n";
+      }
+    }
+    iBracket = restOfInput.find_first_of(']');
+  }
+}
+
+SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
+  SEXP Soutput, Sindices;
+  PROTECT(Soutput = allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(Soutput, 0, string_2_STRSEXP(input.varName));
+  int numinds = input.indices.size();
+  PROTECT(Sindices = allocVector(VECSXP, numinds));
+  for(int i = 0; i < numinds; i++) {
+    SET_VECTOR_ELT(Sindices, i, vectorInt_2_SEXP(input.indices[i]));
+  }
+  SET_VECTOR_ELT(Soutput, 1, Sindices);
+  
+  vector<string> newNames(2);
+  newNames[0].assign("varName");
+  newNames[1].assign("indices");
+  SEXP SnewNames;
+  PROTECT(SnewNames = vectorString_2_STRSEXP(newNames));
+  setAttrib(Soutput, R_NamesSymbol, SnewNames);
+
+  UNPROTECT(3);
+  return(Soutput);
+}
+
+static void varAndIndicesClassFinalizer(SEXP ptr) {
+  void *cptr = R_ExternalPtrAddr(ptr);
+  if(!cptr) return;
+  varAndIndicesClass *result = static_cast< varAndIndicesClass *>(cptr);
+  //  std::cout<<"about to delete\n";
+  delete result;
+  //  std::cout<<"done deleting\n";
+  R_ClearExternalPtr(ptr); /* not really needed according R-exts.html */
+}
+
+SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr) {
+  bool returnExtPtr(SEXP_2_bool(SboolExtPtr, 0));
+  string input(STRSEXP_2_string(Sstring, 0));
+  varAndIndicesClass output;
+  parseVarAndInds(input, output);
+  if(returnExtPtr) {
+    varAndIndicesClass *result = new varAndIndicesClass(output);
+    SEXP Sans;
+    PROTECT(Sans = R_MakeExternalPtr(result, R_NilValue, R_NilValue));
+    R_RegisterCFinalizerEx(Sans, varAndIndicesClassFinalizer, TRUE);
+    UNPROTECT(1);
+    return(Sans);
+  }
+  return(varAndIndices2Rlist(output));
+}
+
+SEXP getVarAndIndices(SEXP Sstring) {
+  string input(STRSEXP_2_string(Sstring, 0));
+  varAndIndicesClass output;
+  parseVarAndInds(input, output);
+  return(varAndIndices2Rlist(output));
+}
+
+void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int nDim, const vector<int> &sizes, mapInfoClass &output) {
+  output.sizes.resize(0);
+  output.strides.resize(0);
+  //  bool sizeOne(sizes.size() == 0);
+  int Rindexing(1); // assume indexing comes in R form (Starting at 1).  output does not depend on indexing.
+  int offset = 0;
+  int currentStride = 1;    
+  if(nDim > 0 & varAndInds.indices.size() == 0) {
+    if(sizes.size() == 0) output.sizes.push_back(1); else output.sizes = sizes;
+    output.strides.push_back(1);
+    if(nDim > 1) {
+      for(int i = 1; i < nDim; i++) output.strides.push_back( output.strides[i-1] * output.sizes[i-1] );
+    }
+  } else {
+    //    vector<bool> blockBool(nDim, false);
+    int thisSize;
+    if(nDim != sizes.size()) std::cout<<"Confused in varAndInds2MapParts: nDim != sizes.size()\n";
+    if(nDim != varAndInds.indices.size()) std::cout<<"Confused in varAndInds2MapParts: nDim != varAndInds.indices.size()\n";
+    for(int i = 0; i < nDim; ++i) {
+      thisSize = varAndInds.indices[i].size();
+      switch(thisSize) {
+      case 0: // index is blank
+	//	blockBool[i] = true;
+	output.sizes.push_back( sizes[i] );
+	output.strides.push_back( currentStride );
+	break;
+      case 1: // index is single number
+	offset += (varAndInds.indices[i][0] - Rindexing) * currentStride;
+	break;
+      case 2:  // index is a block range
+	offset += (varAndInds.indices[i][0] - Rindexing) * currentStride;
+	output.sizes.push_back(varAndInds.indices[i][1] - varAndInds.indices[i][0] + 1);
+	output.strides.push_back( currentStride );
+	break;
+      default:
+	std::cout<<"Confused in varAndInds2MapParts: an index content has length > 2\n";
+	break;
+      }
+      currentStride *= sizes[i];
+    }
+  }
+  output.offset = offset;
+}
+
+SEXP mapInfo2Rlist(const mapInfoClass &input) {
+  SEXP Soutput;
+  PROTECT(Soutput = allocVector(VECSXP, 3));
+  SET_VECTOR_ELT(Soutput, 0, int_2_SEXP(input.offset));
+  SET_VECTOR_ELT(Soutput, 1, vectorInt_2_SEXP(input.sizes));
+  SET_VECTOR_ELT(Soutput, 2, vectorInt_2_SEXP(input.strides));
+  vector<string> newNames(3);
+  newNames[0].assign("offset");
+  newNames[1].assign("sizes");
+  newNames[2].assign("strides");
+  SEXP SnewNames;
+  PROTECT(SnewNames = vectorString_2_STRSEXP(newNames));
+  setAttrib(Soutput, R_NamesSymbol, SnewNames);
+  UNPROTECT(2);
+  return(Soutput);
+}
+
+SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim) {
+  varAndIndicesClass *varAndIndicesPtr = static_cast<varAndIndicesClass *>(R_ExternalPtrAddr(SvarAndIndicesExtPtr));
+  vector<int> sizes(SEXP_2_vectorInt(Ssizes, 0));
+  int nDim(SEXP_2_int(SnDim, 0, 0));
+  mapInfoClass output;
+  varAndIndices2mapParts(*varAndIndicesPtr, nDim, sizes, output);
+  return(mapInfo2Rlist(output));
+}
+
+SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim) {
+  string input(STRSEXP_2_string(Sinput, 0));
+  varAndIndicesClass varAndIndices;
+  parseVarAndInds(input, varAndIndices);
+  vector<int> sizes(SEXP_2_vectorInt(Ssizes, 0));
+  int nDim(SEXP_2_int(SnDim, 0, 0));
+  mapInfoClass output;
+  varAndIndices2mapParts(varAndIndices, nDim, sizes, output);
+  return(mapInfo2Rlist(output));
+}
+
+SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
+  vector<string> nodeNames;
+  STRSEXP_2_vectorString(SnodeNames, nodeNames);
+  NamedObjects *sourceNamedObject = static_cast<NamedObjects*>(R_ExternalPtrAddr(SModelOrModelValuesPtr));
+  ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );
+  int numNames = nodeNames.size();
+  valuesAccessor->resize(numNames);
+  vector<SingleVariableMapAccessBase *> *singleAccessors = &(valuesAccessor->getMapAccessVector());
+  varAndIndicesClass varAndIndices;
+  int nDim;
+  vector<int> sizes;
+  SEXP SoneSizesAndNdims;
+  mapInfoClass mapInfo;
+  int totalLength = 0;
+  
+  for(int i = 0; i < numNames; i++) {
+    PROTECT(SoneSizesAndNdims = VECTOR_ELT(SsizesAndNdims, i));
+    sizes = SEXP_2_vectorInt(VECTOR_ELT(SoneSizesAndNdims, 0));
+    nDim = SEXP_2_int(VECTOR_ELT(SoneSizesAndNdims, 1));
+    parseVarAndInds(nodeNames[i], varAndIndices);
+    varAndIndices2mapParts(varAndIndices, nDim, sizes, mapInfo);
+
+    (*singleAccessors)[i]->getOffset() = mapInfo.offset;
+    (*singleAccessors)[i]->getSizes() = mapInfo.sizes;
+    (*singleAccessors)[i]->calculateLength();
+    totalLength += (*singleAccessors)[i]->getLength();
+    (*singleAccessors)[i]->getStrides() = mapInfo.strides;
+    (*singleAccessors)[i]->getSingleton() = (*singleAccessors)[i]->getLength() == 1;
+    (*singleAccessors)[i]->setObject( sourceNamedObject->getObjectPtr(varAndIndices.varName) );
+    UNPROTECT(1);
+  }
+  valuesAccessor->getTotalLength() = totalLength;
+  return(R_NilValue);
+}
+
 SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr ) {
   // typeCode = 1 for model, 2 for modelValues
   ManyVariablesMapAccessorBase* valuesAccessor = static_cast<ManyVariablesMapAccessorBase*>(R_ExternalPtrAddr(StargetPtr) );

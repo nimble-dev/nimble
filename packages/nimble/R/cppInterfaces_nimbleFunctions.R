@@ -587,7 +587,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
             rModelValues <- Robj[[v]]
             Cmv <- rModelValues$CobjectInterface
             if(!Cmv$initialized) {
-                cat('We are copying modelValues during copyFromRobjectViaActiveBindings\n')
+                ##cat('We are copying modelValues during copyFromRobjectViaActiveBindings\n')
                 k = getsize(rModelValues)
                 resize(Cmv, k)
                 vNames = rModelValues[['varNames']]
@@ -696,7 +696,7 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
             rModelValues <- Robj[[v]]
             Cmv <- rModelValues$CobjectInterface
             if(!Cmv$initialized) {
-                cat('We are copying modelValues during copyFromRobject\n')
+                ##cat('We are copying modelValues during copyFromRobject\n')
                 k = getsize(rModelValues)
                 resize(Cmv, k)
                 vNames = rModelValues[['varNames']]

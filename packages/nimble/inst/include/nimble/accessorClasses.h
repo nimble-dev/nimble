@@ -548,8 +548,15 @@ extern "C" {
 	 
   SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
 
+  SEXP parseVar(SEXP Sinput);
+  SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr);
+  SEXP getVarAndIndices(SEXP Sstring);
+  SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim);
+  SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim);
+  
   SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
   SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj);
+  SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr );
   SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr );
   //	SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj);
   SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP GIDs, SEXP curRow, SEXP SnumbObj);
