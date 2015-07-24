@@ -184,7 +184,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
               )
       }
       if(is.null(R_samples)) {
-        cat("R MCMC failed.\n")
+          cat("R MCMC failed.\n")
       }
 
       if(doCpp) {

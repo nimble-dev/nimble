@@ -14,6 +14,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     if(!returnModel) return(md)
     # move any data lumped in 'constants' into 'data' for
     # backwards compatibility with JAGS/BUGS
+    if(debug) browser()
     vars <- names(md$varInfo) # varNames contains logProb vars too...
     dataVarIndices <- names(constants) %in% vars & !names(constants) %in% names(data)  # don't overwrite anything in 'data'
     if(sum(names(constants) %in% names(data)))
@@ -22,7 +23,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
         data <- c(data, constants[dataVarIndices])
         cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
     }
-    model <- md$newModel(data=data, inits=inits, where=where, check=check)
+    model <- md$newModel(data=data, inits=inits, where=where, check=check, debug = debug)
 }
 
 

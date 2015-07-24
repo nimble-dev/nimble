@@ -178,7 +178,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                              getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                          else
                                                              SEXPgeneratorFun$name
-                                                  cat('buildCmultiInterface\n')
                                                   CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                               },
                                               buildRgenerator = function(where = globalenv(), dll = NULL) {
@@ -186,7 +185,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                              getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                          else
                                                             SEXPgeneratorFun$name
-                                                  cat('buildRgenerator\n')
                                                   Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){

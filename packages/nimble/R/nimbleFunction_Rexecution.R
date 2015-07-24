@@ -194,6 +194,7 @@ getValues <- function(vals, model, nodes, envir = parent.frame()) {
 getValuesAccess <- function(access) {
     fromCode <- makeGetCodeFromAccessorVector(access)
     if(length(fromCode)==0) return(numeric())
+    sourceFromObject <- access[[1]]
     unlist(lapply(fromCode, function(i) eval(i)))
 
 ##    if(access$numAccessors==0) return(numeric()) ## NEW ACCESSORS
@@ -207,6 +208,7 @@ setValuesAccess <- function(input, access) {
     toCode <- makeSetCodeFromAccessorVector(access)
     mapInfo <- makeMapInfoFromAccessorVector(access) ## inefficient to do both of these, but we need the lengths!
     if(length(toCode)==0) return(NULL)
+    sourceToObject <- access[[1]]
     nextIndex <- 0
     ## not easy to check lengths any more
     for(i in 1:length(toCode)) {

@@ -83,7 +83,7 @@ assignLogProbID <- function(nodeName2LogProbMap, nodeName2LogProbIDMap){
 	return(logProbIDs_2_LogProbName)
 }
 
-mapsClass$methods(setPositions3 = function(graph) {
+mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used any more!
     ## new version to work with XXX3 system from modelDefClass
 
     ## determine who has any stochastic dependents (descendents)

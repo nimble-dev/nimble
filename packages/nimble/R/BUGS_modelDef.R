@@ -1970,7 +1970,8 @@ modelDefClass$methods(buildSymbolTable = function() {
 })
 
 
-modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = TRUE) {
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = TRUE, debug = FALSE) {
+    if(debug) browser()
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')
         logProbVars <- lapply(logProbVarInfo, `[[`, 'maxs')
@@ -1990,7 +1991,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## if(modelName == character(0)) stop('Error, empty name for a new model', call. = FALSE)
     model <- modelClass(name = modelName)
     model$setGraph(graph)
-    model$buildNodeFunctions(where = where)
+    model$buildNodeFunctions(where = where, debug = debug)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     model$setData(data)
     # prevent overwriting of data values by inits

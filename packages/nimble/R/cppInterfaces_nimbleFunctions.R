@@ -911,7 +911,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
                                                  copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr)
                                                  ## cat('clearing\n')
-                                                 ## compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
+                                                 compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              },
                                              memberData = function(index, name, value) { ## value can be missing
