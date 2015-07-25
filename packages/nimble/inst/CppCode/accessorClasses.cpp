@@ -1,5 +1,7 @@
 #include "nimble/accessorClasses.h"
 #include "nimble/RcppUtils.h"
+#include<sstream>
+using std::istringstream;
 
 // 1. NodeVectors
 double calculateOld(NodeVectorClass &nodes) {
@@ -1094,6 +1096,19 @@ SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP S
 
 string _NIMBLE_WHITESPACE(" \t");
 string _NIMBLE_WHITESPACEBRACKET(" \t[");
+string _NIMBLE_NUMERICS("0123456789.");
+
+// std::stoi not consistent across C++ and not worth the portability worries, so we made our own using istringstream
+int nimble_stoi(const string &input) {
+  istringstream converter;
+  std::size_t iStart(input.find_first_not_of(_NIMBLE_WHITESPACE));
+  std::size_t iEnd(input.find_first_not_of(_NIMBLE_NUMERICS));
+  if(iEnd != std::string::npos && iEnd > iStart) iEnd--;
+  converter.str(input.substr(iStart, iEnd - iStart + 1));
+  int ans;
+  converter >> ans;
+  return ans;
+}
 
 void parseVar(const vector<string> &input, vector<string> &output) {
   int vecSize = input.size();
@@ -1161,14 +1176,14 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
     iColon   = restOfInput.find_first_of(':');
     iComma   = restOfInput.find_first_of(',');
     if(iColon < iBracket & iColon < iComma) { // next is a colon expr like 2:5
-      firstNum = std::stoi(restOfInput);
+      firstNum = nimble_stoi(restOfInput); 
       // test x[11 :4]
       iNextStart = iColon + 1;
       restOfInput = restOfInput.substr(iNextStart);
       iComma   = restOfInput.find_first_of(',');
       iBracket = restOfInput.find_first_of(']');
       //std::cout<<restOfInput<<"\n";
-      secondNum   = std::stoi(restOfInput);
+      secondNum   = nimble_stoi(restOfInput);
       if(iComma < iBracket) iNextStart = iComma + 1; else {iNextStart = iBracket; done = true;}
       restOfInput = restOfInput.substr(iNextStart);
       //    std::cout<<"got "<<firstNum<<" : "<<secondNum<<"\n";
@@ -1183,7 +1198,7 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
       if(iComma >= iBracket) {iComma = iBracket; done = true;} // now iComma is the ending index after here
       iNonBlank = restOfInput.find_first_not_of(spacecommabracket);
       if(iNonBlank < iComma) { // there is a number
-	firstNum = std::stoi(restOfInput);
+	firstNum = nimble_stoi(restOfInput);
 	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
 	//	  if(iEndOfNum < iColon) iEndOfNum = iColon;
 	restOfInput = restOfInput.substr(iNextStart);

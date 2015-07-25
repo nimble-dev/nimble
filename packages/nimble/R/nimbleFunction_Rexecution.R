@@ -32,16 +32,26 @@ asCol <- function(x) {
 
 rCalcNodes <- function(model, nodes){
 	l_Prob = 0
-	for(nName in nodes)
-		l_Prob = l_Prob + model$nodes[[nName]]$calculate()
-	return(l_Prob)
+
+        if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+            for(nName in nodes)
+                l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
+        else
+            for(nName in nodes)
+                l_Prob = l_Prob + model$nodes[[nName]]$calculate()
+        
+      	return(l_Prob)
 }
 
 rCalcDiffNodes <- function(model, nodes){
-	l_Prob = 0
-	for(nName in nodes)
-		l_Prob = l_Prob + model$nodes[[nName]]$calculate()
-	return(l_Prob)
+    l_Prob <- 0
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculateDiff')
+    else
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]]$calculateDiff()
+    return(l_Prob)
 }
 
 
@@ -106,8 +116,13 @@ calculateDiff <- function(model, nodes, nodeFxnVector)
 
 rGetLogProbsNodes <- function(model, nodes){
     l_Prob = 0
-    for(nName in nodes)
-        l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
+
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'getLogProb')
+    else
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
     return(l_Prob)
 }
 
@@ -131,8 +146,12 @@ getLogProb <- function(model, nodes, nodeFxnVector)
 
 
 rSimNodes <- function(model, nodes){
-	for(nName in nodes)
-		model$nodes[[nName]]$simulate()
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'simulate')
+    else 
+        for(nName in nodes)
+            model$nodes[[nName]]$simulate()
 }
 
 simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		

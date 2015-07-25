@@ -211,7 +211,6 @@ getSetNimbleFunction <- function(name, value, basePtr) {
         return(NULL)
     } else {
         vptr <- newObjElementPtr(basePtr, name)
-        cat('getSetNimbleFunction: I think this .basePtr value will work but not sure \n')
         setDoublePtrFromSinglePtr(vptr, value) ## previously value$.basePtr
     }
 }
@@ -501,16 +500,18 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
     ans
 }
 
-makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun) {
+makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelfAsArg = FALSE, embedInBrackets = FALSE) {
     numFuns <- length(compiledNodeFun$RCfunDefs)
-    ans <- quote(list()) 
+    ans <- if(!embedInBrackets) quote(list()) else quote({}) 
     if(numFuns == 0) return(ans)
+    funNames <- names(compiledNodeFun$RCfunDefs)
+    funNames[funNames == 'operator()'] <- 'run'
     for(i in seq_along(compiledNodeFun$RCfunDefs)) {
         ## note that the className is really used as a boolean: any non-NULL value triggers treatment as a class, but name isn't needed
-        ans[[i+1]] <- compiledNodeFun$RCfunDefs[[i]]$buildRwrapperFunCode(className = compiledNodeFun$nfProc$name, includeLHS = FALSE, returnArgsAsList = FALSE, includeDotSelf = '.basePtr')
+        ans[[i+1]] <- compiledNodeFun$RCfunDefs[[i]]$buildRwrapperFunCode(className = compiledNodeFun$nfProc$name, includeLHS = FALSE, returnArgsAsList = FALSE, includeDotSelf = '.basePtr', includeDotSelfAsArg = includeDotSelfAsArg)
+        if(embedInBrackets) ans[[i+1]] <- substitute(THISNAME <- FUNDEF, list(THISNAME = as.name(funNames[i]), FUNDEF = ans[[i+1]]))
     }
-    names(ans) <- c('', names(compiledNodeFun$RCfunDefs))
-    names(ans)[names(ans) == 'operator()'] <- 'run'
+    if(!embedInBrackets) names(ans) <- c('', funNames)
     ans
 }
 
@@ -867,7 +868,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              basePtrList = 'ANY',
                                              RobjectList = 'ANY',
                                              neededObjectsList = 'ANY',
-                                             compiledNodeFun = 'ANY'    ## a cppNimbleFunctionClass
+                                             compiledNodeFun = 'ANY',    ## a cppNimbleFunctionClass
+                                             callEnv = 'ANY'
                                          ),
                                          methods = list(
                                              show = function() {
@@ -889,7 +891,9 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  cppNames <<- compiledNodeFun$objectDefs$getSymbolNames()
                                                  cppCopyTypes <<- makeNimbleFxnCppCopyTypes(symTab, cppNames)
                                                  ##                                          methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun) ## can do this but need to pass another pointer in
-
+                                                 callCode <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun, includeDotSelfAsArg = TRUE, embedInBrackets = TRUE)
+                                                 callEnv <<- new.env()
+                                                 eval(callCode, envir = callEnv)
                                              },
                                              addInstance = function(nfObject, dll = NULL) { ## role of initialize
                                                  if(!is.null(.self$dll)) {
@@ -911,8 +915,11 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
                                                  copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr)
                                                  ## cat('clearing\n')
-                                                 compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
+                                                 if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
+                                             },
+                                             callMemberFunction = function(index, funName, ...) {
+                                                 callEnv[[funName]](..., .basePtr = basePtrList[[index]])
                                              },
                                              memberData = function(index, name, value) { ## value can be missing
                                                  ## This isn't very useful as written for many names because it just gets and sets the external pointers.  It doesn't wrap them in an interface object
