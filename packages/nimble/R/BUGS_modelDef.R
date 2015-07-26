@@ -1990,10 +1990,10 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## if(modelName == character(0)) stop('Error, empty name for a new model', call. = FALSE)
     model <- modelClass(name = modelName)
     model$setGraph(graph)
-    cat("Building node functions...\n")
     model$buildNodeFunctions(where = where)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
-    cat("Setting data and initial values if supplied...\n")
+    if(length(data) + length(inits) > 0)
+        message("setting data and initial values...")
     model$setData(data)
     # prevent overwriting of data values by inits
     if(FALSE) {  # should now be handled by checking if setInits tries to overwrite data nodes
@@ -2018,7 +2018,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## model checking
     ## added by DT, June 2015
     if(check) {
-        cat("Checking model (set 'check = FALSE' in nimbleModel() to skip this step) ...\n")
+        message("checking model...   (use nimbleModel(..., check = FALSE) to skip model check)")
         model$check()
     }
     ## fixing the problem with RStudio hanging: over-writing the str() method for this model class
