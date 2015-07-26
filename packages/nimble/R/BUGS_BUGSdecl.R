@@ -124,7 +124,7 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated
     ## targetExpr, valueExpr
     ## targetVarExpr, targetNodeExpr
     ## targetVarName, targetNodeName
-    
+        
     contextID <<- contextID
     sourceLineNumber <<- sourceLineNum
     code <<- code
@@ -133,6 +133,7 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated
     
     if(code[[1]] == '~') {
         type <<- 'stoch'
+
         if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == getDistributionsInfo('namesVector')) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
             stop(paste0('Improper syntax for stochastic declaration: ', deparse(code)))
     } else if(code[[1]] == '<-') {

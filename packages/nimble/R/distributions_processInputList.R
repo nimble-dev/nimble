@@ -427,7 +427,7 @@ BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
      
 #####################################################################################################
 #####################################################################################################
-#####  executable code, creates global system variable 'distributions' ##############################
+#####  executable code, creates global system variable 'distributions' and 'distribution_aliases  ###
 #####################################################################################################
 #####################################################################################################
 
@@ -438,7 +438,16 @@ distributions <- distributionsClass(distributionsInputList)
 #   distributions
 # }
 
-
+processDistributionAliases <- function(distributionsInputList) {
+    tmp <- sapply(distributionsInputList, function(x) if(length(x$alias)) x$alias else NULL)
+    # next two lines avoid need for regex processing if we used unlist() when a dist has multiple aliases
+    aliases <- rep(names(tmp), sapply(tmp, length))
+    names(aliases) <- unlist(tmp, use.names = FALSE) 
+   
+    return(aliases)
+}
+                  
+distributionAliases <- processDistributionAliases(distributionsInputList) 
 
 
 

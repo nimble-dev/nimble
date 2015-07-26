@@ -254,6 +254,15 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
+            if(code[[i]][[1]] == '~') {
+                # check/replace distribution aliases
+                dist <- as.character(code[[i]][[3]][[1]])
+                if(dist %in% names(distributionAliases)) {
+                    dist <- as.name(distributionAliases[dist])
+                    code[[i]][[3]][[1]] <- dist
+                }
+            }
+
             BUGSdeclClassObject$setup(code[[i]], contextID, lineNumber)
             declInfo[[iAns]] <<- BUGSdeclClassObject
         }
@@ -264,12 +273,12 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
             forCode[[3]] <- indexRangeExpr
-            sinlgeContexts <- c(if(contextID == 1) NULL else contexts[[contextID]]$singleContexts, ## concatenate any current contexts
+            singleContexts <- c(if(contextID == 1) NULL else contexts[[contextID]]$singleContexts, ## concatenate any current contexts
                                 list(BUGSsingleContextClass$new(indexVarExpr = indexVarExpr,       ## Add the new context
                                                                 indexRangeExpr = indexRangeExpr,
                                                                 forCode = forCode)))
             BUGScontextClassObject <- BUGScontextClass$new()
-            BUGScontextClassObject$setup(singleContexts = sinlgeContexts)
+            BUGScontextClassObject$setup(singleContexts = singleContexts)
             contexts[[nextContextID]] <<- BUGScontextClassObject
             if(length(code[[i]][[4]])==1) {
                 stop(paste0('Error, not sure what to do with ', deparse(code[[i]])))
