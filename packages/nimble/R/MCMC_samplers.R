@@ -687,7 +687,7 @@ sampler_crossLevel <- nimbleFunction(
 
 #' MCMC Sampling Algorithms
 #'
-#' Details of the control argument for customizing sampling algorithms provided with the NIMBLE MCMC engine.
+#' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
 #'
 #' The precise behaviour NIMBLE's MCMC sampling algorithms may be customized using the control argument provided to addSampler().  The usage syntax is:
 #'
@@ -773,9 +773,13 @@ sampler_crossLevel <- nimbleFunction(
 #' @seealso configureMCMC addSampler buildMCMC
 #'
 #' @references Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte Carlo Methods. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 72(3), 269-342.
+#' 
 #' @references Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
+#' 
 #' @references Neal, Radford M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
+#' 
 #' @references Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
+#' 
 #' @references Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
 NULL
 
