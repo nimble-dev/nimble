@@ -434,7 +434,9 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(returnType == 'names') {
                                           if(returnScalarComponents)
                                               return(modelDef$maps$elementNames[depIDs])
-                                          return(modelDef$maps$nodeNames[depIDs])
+                                          retVal <- modelDef$maps$nodeNames[depIDs]
+                                          ##attr(retVal, 'nodeName') <- TRUE
+                                          return(retVal)
                                       }
                                       if(!(returnType %in% c('ids', 'names')))
                                           stop('instead getDependencies, imporper returnType chosen')

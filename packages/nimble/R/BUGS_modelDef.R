@@ -1829,6 +1829,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
     maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
+    
+    maps$nodeName_2_graphID <<- list2env( modelDef$nodeName2GraphIDs(maps$nodeNames) )
+    maps$nodeName_2_logProbName <<- list2env( modelDef$nodeName2LogProbName(maps$nodeNames) )
+    
     NULL
 })
 
@@ -2043,27 +2047,40 @@ modelDefClass$methods(printDI = function() {
 
 
 modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
-	if(length(nodeName) == 0)
-		return(NULL)	
-	if(nodeFunctionID)
-            ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-            ## old system had IDs for RHSonly things here.  This puts that back in for now.
-            output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-	else
-            ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
-            ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
-            output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
-            return(output[!is.na(output)])
+    if(length(nodeName) == 0)
+        return(NULL)
+
+    ## if(!is.null(attr(nodeName, 'nodeName'))) { ## we know the input has fully formed node names, not just arbitrary blocks of variables
+    ##     output <- unlist(mget(nodeName, maps$nodeName_2_graphID, ifnotfound = NA))
+    ##     return(output[!is.na(output)])
+    ## }
+    
+    if(nodeFunctionID) 
+        ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+        ## old system had IDs for RHSonly things here.  This puts that back in for now.
+        output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
+    else
+        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
+        ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
+        output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
+    return(output[!is.na(output)])
 })
 
 ## next two functions work for properly formed nodeNames.
 modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 places: MCMC_build, valuesAccessorVector, and cppInterfaces_models
     ## This function needs better processing.
+    
+    
     if(length(nodeName) == 0)
         return(NULL)
 ##    output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
 ##    return(output[!is.na(output)])
 
+    ## if(!is.null(attr(nodeName, 'nodeName'))) { ## we know the input has fully formed node names, not just arbitrary blocks of variables
+    ##     output <- unlist(mget(nodeName, maps$nodeName_2_logProbNodeName, ifnotfound = NA))
+    ##     return(output[!is.na(output)])
+    ## }
+    
     ## 1. so this needs to first get to a nodeFunctionID
     graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
 ##    eval(parse(text="w1[3:4, 1:2]", keep.source = FALSE)[[1]], envir= maps$vars2GraphID_functions)

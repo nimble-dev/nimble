@@ -29,7 +29,7 @@ mapsClass <- setRefClass(
         ## varName2GraphID maps
         vars2GraphID_values = 		'ANY',
         vars2GraphID_functions =	'ANY',
-        vars2GraphID_functions_and_RHSonly = 'ANY',
+        vars2GraphID_functions_and_RHSonly = 'ANY', 
         vars2ID_elements = 'ANY',
         vars2LogProbName =			'ANY',
         vars2LogProbID = 			'ANY',
