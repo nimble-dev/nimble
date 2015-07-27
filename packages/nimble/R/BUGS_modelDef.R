@@ -254,14 +254,8 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
-            if(code[[i]][[1]] == '~') {
-                # check/replace distribution aliases
-                dist <- as.character(code[[i]][[3]][[1]])
-                if(dist %in% names(distributionAliases)) {
-                    dist <- as.name(distributionAliases[dist])
-                    code[[i]][[3]][[1]] <- dist
-                }
-            }
+            if(code[[i]][[1]] == '~') 
+                code[[i]] <- replaceDistributionAliases(code[[i]])
 
             BUGSdeclClassObject$setup(code[[i]], contextID, lineNumber)
             declInfo[[iAns]] <<- BUGSdeclClassObject
@@ -298,6 +292,19 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+replaceDistributionAliases <- function(code) {
+    dist <- as.character(code[[3]][[1]])
+    if(dist %in% c("T", "I")) {
+        dist <- as.character(code[[3]][[2]][[1]])
+        trunc <- TRUE
+    }
+    if(dist %in% names(distributionAliases)) {
+        dist <- as.name(distributionAliases[dist])
+        if(trunc) code[[3]][[2]][[1]] <- dist else code[[3]][[1]] <- dist
+    }
+    return(code)
+}
 
 modelDefClass$methods(splitConstantsAndData = function() {
     # removes items from constantsNamesList that appear as variables in declInfo

@@ -400,3 +400,94 @@ try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expe
 try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu2')$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu2")))
 try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu3')$name, is_identical_to('conjugate_dnorm'), info = "incorrectly not assigning conjugate sampler for mu3")))
    
+# test that truncation on discrete distribution correctly uses [L, U]
+# and test use with alias too
+
+code <- nimbleCode({
+   y[1] ~ T(dbinom(p, n), 1, 2)
+   y[2] ~ T(dbinom(p, n), 0.5, 2)
+   y[3] ~ T(dbinom(p, n), a, 2)
+   y[4] ~ T(dbinom(p, n), -Inf, 1)
+   y[5] ~ T(dbinom(p, n), n-1, Inf)
+   a ~ dunif(0.5, 0.8)
+})
+
+n <- 10; p <- 0.3
+m <- nimbleModel(code, constants = list(n = n, p = p),
+                 inits = list(a = 0.6, y = c(1,1,1,1,n-1)))
+cm <- compileNimble(m)
+
+tmp <- dbinom(1:2, n, p)
+dens_y123 <- tmp / sum(tmp)
+tmp <- dbinom(0:1, n, p)
+dens_y4 <- tmp / sum(tmp)
+tmp <- dbinom((n-1):n, n, p)
+dens_y5 <- tmp / sum(tmp)
+
+N <- 1000
+simVals <- array(0, c(N, 5, 2))
+set.seed(0)
+for(i in 1:N) {
+    simulate(m)
+    simVals[i, , 1] <- m$y
+}
+set.seed(0)
+for(i in 1:N) {
+    simulate(cm)
+    simVals[i, , 2] <- cm$y
+}
+
+simProbs <- matrix(0, nrow = 5, ncol = 2)
+for(j in 1:5) {
+    if(j < 4) val <- 1 else if(j == 4) val <- 0 else val <- n-1
+    simProbs[j, 1] <- mean(simVals[ , j, 1] == val)
+    simProbs[j, 2] <- mean(simVals[ , j, 2] == val)
+}
+
+diffProbsR <- abs(simProbs - c(dens_y123[1], dens_y123[1], dens_y123[1], dens_y4[1], dens_y5[1]))
+
+try(test_that("Test that truncation with discrete distribution gives correct simulation: ", expect_that(max(diffProbsR), is_less_than(0.015), info = "simulation does not give approximate density values")))
+
+m$y[1] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[1]'), equals(log(dens_y123[1])), info = "incorrect R model density for y[1]=1")))
+m$y[1] <- 2
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[1]'), equals(log(dens_y123[2])), info = "incorrect R model density for y[1]=2")))
+m$y[2] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[2]'), equals(log(dens_y123[1])), info = "incorrect R model density for y[2]=1")))
+m$y[2] <- 2
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[2]'), equals(log(dens_y123[2])), info = "incorrect R model density for y[2]=2")))
+m$y[3] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[3]'), equals(log(dens_y123[1])), info = "incorrect R model density for y[3]=1")))
+m$y[3] <- 2
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[3]'), equals(log(dens_y123[2])), info = "incorrect R model density for y[3]=2")))
+m$y[4] <- 0
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[4]'), equals(log(dens_y4[1])), info = "incorrect R model density for y[4]=0")))
+m$y[4] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[4]'), equals(log(dens_y4[2])), info = "incorrect R model density for y[4]=1")))
+m$y[5] <- n-1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[5]'), equals(log(dens_y5[1])), info = "incorrect R model density for y[5]=n-1")))
+m$y[5] <- n
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(m, 'y[5]') , equals(log(dens_y5[2])), info = "incorrect R model density for y[5]=n")))
+
+cm$y[1] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[1]'), equals(log(dens_y123[1])), info = "incorrect C model density for y[1]=1")))
+cm$y[1] <- 2
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[1]'), equals(log(dens_y123[2])), info = "incorrect C model density for y[1]=2")))
+cm$y[2] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[2]'), equals(log(dens_y123[1])), info = "incorrect C model density for y[2]=1")))
+cm$y[2] <- 2
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[2]'), equals(log(dens_y123[2])), info = "incorrect C model density for y[2]=2")))
+cm$y[3] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[3]'), equals(log(dens_y123[1])), info = "incorrect C model density for y[3]=1")))
+cm$y[3] <- 2
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[3]'), equals(log(dens_y123[2])), info = "incorrect C model density for y[3]=2")))
+cm$y[4] <- 0
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[4]'), equals(log(dens_y4[1])), info = "incorrect C model density for y[4]=0")))
+cm$y[4] <- 1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[4]'), equals(log(dens_y4[2])), info = "incorrect C model density for y[4]=1")))
+cm$y[5] <- n-1
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[5]'), equals(log(dens_y5[1])), info = "incorrect C model density for y[5]=n-1")))
+cm$y[5] <- n
+try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_that(calculate(cm, 'y[5]'), equals(log(dens_y5[2])), info = "incorrect C model density for y[5]=n")))
+
+

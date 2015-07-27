@@ -89,6 +89,12 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
     return(methodList)
 }
 
+replaceDistributionAliasesNameOnly <- function(dist) {
+    if (as.character(dist) %in% names(distributionAliases)) {
+        dist <- as.name(distributionAliases[dist])
+    }
+    return(dist)
+}
 
 
 ## helper function that adds an argument to a call
@@ -104,18 +110,19 @@ addArg <- function(code, value, name) {
 
 ## changes 'dnorm(mean=1, sd=2)' into 'rnorm(1, mean=1, sd=2)'
 ndf_createStochSimulate <- function(RHS) {
-    RHS[[1]] <- as.name(getDistribution(as.character(RHS[[1]]))$simulateName)   # does the appropriate substituion of the distribution name
+    BUGSdistName <- as.character(RHS[[1]])
+    RHS[[1]] <- as.name(getDistribution(BUGSdistName)$simulateName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- 1;     names(RHS)[2] <- ''    # adds the first (unnamed) argument '1'
     if("lower" %in% names(RHS) || "upper" %in% names(RHS))
-        RHS <- ndf_createStochSimulateTrunc(RHS)
+        RHS <- ndf_createStochSimulateTrunc(RHS, discrete = getDistributionsInfo('discrete')[BUGSdistName])
     return(RHS)
 }
 
 
 ## changes 'rnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated simulation
 ##   using inverse CDF
-ndf_createStochSimulateTrunc <- function(RHS) {
+ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
     lowerPosn <- which("lower" == names(RHS))
     upperPosn <- which("upper" == names(RHS))
     lower <- RHS[[lowerPosn]]
@@ -126,18 +133,30 @@ ndf_createStochSimulateTrunc <- function(RHS) {
     # back to using periods in name because we now mangle the nf arg names
     lowerTailName <- 'lower.tail' # ifelse(userDist, 'lower_tail', 'lower.tail')
     logpName <- 'log.p'  # ifelse(userDist, 'log_p', 'log.p')
+    logName <- 'log' # ifelse(userDist, 'log_value', 'log')
     # setup for runif(1, pdist(lower,...), pdist(upper,...))
     # pdist() expression template for inputs to runif()
     pdistTemplate <- RHS
     pdistTemplate[[1]] <- as.name(paste0("p", dist))
     pdistTemplate <- addArg(pdistTemplate, 1, lowerTailName)
     pdistTemplate <- addArg(pdistTemplate, 0, logpName)
+
+    if(discrete) {
+        ddistTemplate <- RHS
+        ddistTemplate[[1]] <- as.name(paste0("d", dist))
+        ddistTemplate <- addArg(ddistTemplate, 0, logName)
+    } else ddistTemplate <- NULL
+    
     # create bounds for runif() using pdist expressions
     MIN_EXPR <- 0
     MAX_EXPR <- 1
+    VALUE_EXPR <- 0
     if(lower != -Inf) {
         pdistTemplate[[2]] <- lower
         MIN_EXPR <- pdistTemplate
+        if(discrete)
+            ddistTemplate[[2]] <- lower
+        VALUE_EXPR <- ddistTemplate
     } 
     if(upper != Inf) {
         pdistTemplate[[2]] <- upper
@@ -145,9 +164,15 @@ ndf_createStochSimulateTrunc <- function(RHS) {
     }
     
     # now create full runif() expression
-    RUNIF_EXPR <- substitute(runif(1, MIN, MAX), list(
+    if(discrete && lower != -Inf) {
+        substCode <- quote(runif(1, MIN - VALUE, MAX))
+    } else {
+          substCode <- quote(runif(1, MIN, MAX))
+      }
+    RUNIF_EXPR <- eval(substitute(substitute(e, list(
         MIN = MIN_EXPR,
-        MAX = MAX_EXPR))
+        MAX = MAX_EXPR,
+        VALUE = VALUE_EXPR)), list(e = substCode)))
 
     # create full qdist(runif(...),...) expression
     RHS[[1]] <- as.name(paste0("q", dist))
@@ -160,13 +185,14 @@ ndf_createStochSimulateTrunc <- function(RHS) {
 
 ## changes 'dnorm(mean=1, sd=2)' into 'dnorm(LHS, mean=1, sd=2, log=TRUE)'
 ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
-    RHS[[1]] <- as.name(getDistribution(as.character(RHS[[1]]))$densityName)   # does the appropriate substituion of the distribution name
+    BUGSdistName <- as.character(RHS[[1]])
+    RHS[[1]] <- as.name(getDistribution(BUGSdistName)$densityName)   # does the appropriate substituion of the distribution name
     if(length(RHS) > 1) {    for(i in (length(RHS)+1):3)   { RHS[i] <- RHS[i-1];     names(RHS)[i] <- names(RHS)[i-1] } }    # scoots all named arguments right 1 position
     RHS[[2]] <- LHS;     names(RHS)[2] <- ''    # adds the first (unnamed) argument LHS
     if("lower" %in% names(RHS) || "upper" %in% names(RHS)) {
-        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff))
+        return(ndf_createStochCalculateTrunc(logProbNodeExpr, LHS, RHS, diff = diff, discrete = getDistributionsInfo('discrete')[BUGSdistName]))
     } else {
-          userDist <- as.character(RHS[[1]]) %in% getDistributionsInfo('namesVector', userOnly = TRUE)
+          userDist <- BUGSdistName %in% getDistributionsInfo('namesVector', userOnly = TRUE)
           RHS <- addArg(RHS, 1, 'log')  # adds the last argument log=TRUE (log_value for user-defined) # This was changed to 1 from TRUE for easier C++ generation
           if(diff) {
               code <- substitute(LocalNewLogProb <- STOCHCALC,
@@ -182,7 +208,7 @@ ndf_createStochCalculate <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
 }
 
 ## changes 'dnorm(mean=1, sd=2, lower=0, upper=3)' into correct truncated calculation
-ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE) {
+ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALSE, discrete = FALSE) {
     lowerPosn <- which("lower" == names(RHS))
     upperPosn <- which("upper" == names(RHS))
     lower <- RHS[[lowerPosn]]
@@ -200,11 +226,21 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
     pdistTemplate <- addArg(pdistTemplate, 1, lowerTailName)
     pdistTemplate <- addArg(pdistTemplate, 0, logpName)
 
+    if(discrete) {
+        ddistTemplate <- RHS
+        ddistTemplate[[1]] <- as.name(paste0("d", dist))
+        ddistTemplate <- addArg(ddistTemplate, 0, logName)
+    } else ddistTemplate <- NULL
+    
     PDIST_LOWER <- 0
     PDIST_UPPER <- 1
+    DDIST_LOWER <- 0
     if(lower != -Inf) {
         pdistTemplate[[2]] <- lower
+        if(discrete)
+            ddistTemplate[[2]] <- lower
         PDIST_LOWER <- pdistTemplate
+        DDIST_LOWER <- ddistTemplate
     } 
     if(upper != Inf) {
         pdistTemplate[[2]] <- upper
@@ -213,14 +249,17 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 
     RHS <- addArg(RHS, 1, logName)  # add log=1 now that pdist() created without 'log'
 
-    ## unlike JAGS we have (L < X <= U), i.e., (L,U], as otherwise we would need
-    ## machinations to deal with the X=L case (pdist functions provide only P(X<=L),P(X>L))
-    ## this only matters for discrete distributions
-    ## one option if necessary would be to check for discrete and then use ddist too
     if(diff) {
-        code <- substitute(if(LOWER <= VALUE & VALUE <= UPPER)
-                               LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
-                           else LocalNewLogProb <- -Inf,
+        if(discrete && lower != -Inf) {
+            substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                                   LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                               else LocalNewLogProb <- -Inf)
+        } else {
+              substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                                     LocalNewLogProb <- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                 else LocalNewLogProb <- -Inf)
+          }
+        code <- eval(substitute(substitute(e, 
                            list(
                                LOWER = lower,
                                UPPER = upper,
@@ -228,12 +267,20 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 ##                               LOGPROB = logProbNodeExpr,
                                DENSITY = RHS,
                                PDIST_LOWER = PDIST_LOWER,
-                               PDIST_UPPER = PDIST_UPPER
-                           ))
+                               PDIST_UPPER = PDIST_UPPER,
+                               DDIST_LOWER = DDIST_LOWER
+                               )), list( e = substCode)))
     } else {
-        code <- substitute(if(LOWER <= VALUE & VALUE <= UPPER)
-                               LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
-                           else LOGPROB <<- -Inf,
+          if(discrete && lower != -Inf) {
+              substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                                     LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER + DDIST_LOWER)
+                                 else LOGPROB <<- -Inf)
+          } else {
+                substCode <- quote(if(LOWER <= VALUE & VALUE <= UPPER)
+                                       LOGPROB <<- DENSITY - log(PDIST_UPPER - PDIST_LOWER)
+                                   else LOGPROB <<- -Inf)
+            }
+        code <- eval(substitute(substitute(e, 
                            list(
                                LOWER = lower,
                                UPPER = upper,
@@ -241,12 +288,15 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                LOGPROB = logProbNodeExpr,
                                DENSITY = RHS,
                                PDIST_LOWER = PDIST_LOWER,
-                               PDIST_UPPER = PDIST_UPPER
-                           ))
+                               PDIST_UPPER = PDIST_UPPER,
+                               DDIST_LOWER = DDIST_LOWER
+                           )), list(e = substCode)))
     }
     return(code)
 }
- 
+
+
+
 
 ## creates the accessor method to return value 'expr'
 ndf_generateGetParamFunction <- function(expr, type, nDim) {

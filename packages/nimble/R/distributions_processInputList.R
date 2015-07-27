@@ -259,7 +259,7 @@ getValueDim <- function(distObject)
 #' a optional logical indicating if the distribution is that of a discrete random variable. If not supplied, distribution is assumed to be for a continuous random variable.
 #' }
 #' \item{\code{pqAvail}} {
-#' a optional logical indicating if distribution (CDF) and quantile (inverse CDF) functions are provided as nimbleFunctions. These are required for one to be able to use truncated versions of the distribution. Only applicable for univariate distributions. If not supplied, assumed to be FALSE.
+#' an optional logical indicating if distribution (CDF) and quantile (inverse CDF) functions are provided as nimbleFunctions. These are required for one to be able to use truncated versions of the distribution. Only applicable for univariate distributions. If not supplied, assumed to be FALSE.
 #' }
 #' \item{\code{altParams}} {
 #' a character vector of comma-separated 'name = value' pairs that provide the mathematical expressions relating non-default parameters to default parameters. These inverse functions are used for MCMC conjugacy calculations when a conjugate relationship is expressed in terms of non-default parameters (such as the precision for normal-normal conjugacy). If not supplied, the system will still functional but at a possible loss of efficiency in certain algorithms.
@@ -373,6 +373,7 @@ deregisterDistributions <- function(distributionsNames) {
 # - pqAvail(distName)
 # - getDistributionNames()
 # at the moment it is still somewhat tied to the internal structure of our distributionsClass
+# note that if we do implement these we need to account for user-supplied distributions too
 # - Chris
 
 # this is a hack because having trouble calling getDistribution() from within nodeInfoClass$isDiscrete; (as of 5/8/15 doesn't seem to be needed)
@@ -394,10 +395,10 @@ getDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
             out <- c(out, get(kind, nimbleUserNamespace$distributions))
         return(out)
     }
-    if(kind == 'pqAvail') {
-        if(userOnly) out <- NULL else out <- sapply(distributions$distObjects, '[[', 'pqAvail')
+    if(kind %in% c('pqAvail', 'discrete')) {
+        if(userOnly) out <- NULL else out <- sapply(distributions$distObjects, '[[', kind)
         if(!nimbleOnly && exists('distributions', nimbleUserNamespace))
-            out <- c(out, sapply(nimbleUserNamespace$distributions$distObjects, '[[', 'pqAvail'))
+            out <- c(out, sapply(nimbleUserNamespace$distributions$distObjects, '[[', kind))
         return(out)
     }
     stop(paste0("getDistributionInfo: ", kind, " is not available from the distributions information."))
