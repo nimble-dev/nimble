@@ -621,3 +621,6 @@ declare <- function(name, def){
 is.na.vec <- function(x) any(is.na(x))
 
 is.nan.vec <- function(x) any(is.nan(x))
+
+nimRound <- round
+
