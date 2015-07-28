@@ -58,7 +58,7 @@ pfStep <- nimbleFunction(
 #' my_PF <- buildPF(model, 'x[1:100]')
 #' Cmodel <- compileNimble(model)
 #' Cmy_PF <- compileNimble(my_PF, project = model)
-#' logLike <- Cmy_PF(m = 100000)
+#' logLike <- Cmy_PF$run(m = 100000)
 buildPF <- nimbleFunction(
     setup = function(model, nodes, silent = FALSE) {
         my_initializeModel <- initializeModel(model, silent = silent)
