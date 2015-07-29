@@ -112,6 +112,7 @@ nfProcessing <- setRefClass('nfProcessing',
                               evalNewSetupLinesOneInstance = function(instances, check = FALSE){},
                               setupTypesForUsingFunction = function(){},
                               doSetupTypeInference = function(){},
+                              clearSetupOutputs = function() {},
                               addMemberFunctionsToSymbolTable = function(){},
                               setupLocalSymbolTables = function() {
                                   for(i in seq_along(RCfunProcs)) {
@@ -223,7 +224,17 @@ nfProcessing$methods(evalNewSetupLines = function() {
 nfProcessing$methods(makeNewSetupLinesOneExpr = function() {
     newSetupCodeOneExpr <<- as.call(c(list(as.name('{')), newSetupCode))
 })
-                     
+
+nfProcessing$methods(clearSetupOutputs = function(inst) {
+    for(i in nf_getSetupOutputNames(nfGenerator)) {
+        inst[[i]] <- NULL
+    }
+    for(i in newSetupOutputNames) {
+        inst[[i]] <- NULL
+    }
+    NULL
+})
+
 nfProcessing$methods(evalNewSetupLinesOneInstance = function(instance, check = FALSE) {
     if(is.nf(instance)) instance <- nf_getRefClassObject(instance)
     if(check) {
@@ -241,8 +252,10 @@ nfProcessing$methods(evalNewSetupLinesOneInstance = function(instance, check = F
 })
 
 nfProcessing$methods(setupTypesForUsingFunction = function() {
-    doSetupTypeInference(TRUE, FALSE)
-    addMemberFunctionsToSymbolTable()
+    if(inherits(setupSymTab, 'uninitializedField')) {
+        doSetupTypeInference(TRUE, FALSE)
+        addMemberFunctionsToSymbolTable()
+    }
 })
 
 nfProcessing$methods(addMemberFunctionsToSymbolTable = function() {
@@ -289,11 +302,11 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
         origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
         newRcodeList <- lapply(compileInfos, `[[`, 'newRcode')
         allNamesInCodeAfterKeywordProcessing <- unique(unlist(lapply(newRcodeList, all.names)))
-        origSetupOutputNamesToKeep <- intersect(allNamesInCodeAfterKeywordProcessing, origSetupOutputs)
+        origSetupOutputNamesToKeep <- intersect(allNamesInCodeAfterKeywordProcessing, origSetupOutputs) ## this loses mv!
         origSetupOutputNamesNotNeeded <- setdiff(origSetupOutputs,origSetupOutputNamesToKeep) ## order matters
         for(nameNotNeeded in origSetupOutputNamesNotNeeded) {
             thisSym <- setupSymTab$getSymbolObject(nameNotNeeded)
-            if(!is.null(thisSym)) thisSym$type <- 'Ronly'
+            if(!is.null(thisSym))  if(!thisSym$type == 'Values') thisSym$type <- 'Ronly' ## must keep modelValues, nimbleFunctions, possibly others
         }
 
         outputNames <- c(outputNames, newSetupOutputNames)
@@ -475,7 +488,6 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         return(symbolVecNimArrPtr(name = name, type = type, nDim = nDim, size = varSym$size))
     }
 
-
     if(inherits(instances[[1]][[name]], 'nodeFunctionVector')) { 
         return(symbolNodeFunctionVector(name = name))
     }
@@ -613,28 +625,47 @@ nfProcessing$methods(matchKeywords_all = function(){
             ##	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
 })
 
+## singleVarAccessClass <- setRefClass('singleVarAccessClass',
+##                                     fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
+##                                     methods = list(
+##                                         show = function() {
+##                                             writeLines(paste('singleVarAccess for model',model$name,'to var',var))
+##                                         })
+##                                     )
+## singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
+##     singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
+## }
+
 singleVarAccessClass <- setRefClass('singleVarAccessClass',
-                                    fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
-                                    methods = list(
-                                        show = function() {
-                                            writeLines(paste('singleVarAccess for model',model$name,'to var',var))
-                                        })
-                                    )
+                                       methods = list(
+                                           initialize = function() cat('Oops: building a singleVarAccessClass refClass -- should be defunct\n')
+                                       ))
 
 singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
-    singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
+    ans <- list(model = model, var = var, useSingleIndex = useSingleIndex)
+    class(ans) <- 'singleVarAccessClass'
+    ans
 }
 
+## singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
+##                                     fields = list(modelValues = 'ANY', var = 'ANY'),
+##                                     methods = list(
+##                                         show = function() {
+##                                             writeLines(paste('singleModelValuesAccess for model to var',var))
+##                                         })
+##                                     )
+## singleModelValuesAccess <- function(modelValues, var) {
+##     singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
+## }
 
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
-                                    fields = list(modelValues = 'ANY', var = 'ANY'),
-                                    methods = list(
-                                        show = function() {
-                                            writeLines(paste('singleModelValuesAccess for model to var',var))
-                                        })
-                                    )
+                                     methods = list(
+                                           initialize = function() cat('Oops: building a singleModelValuesAccessClass refClass -- should be defunct\n')
+                                     ))
 
 singleModelValuesAccess <- function(modelValues, var) {
-    singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
+    ans <- list(modelValues = modelValues, var = var)
+    class(ans) <- 'singleModelValuesAccessClass'
+    ans
 }
 

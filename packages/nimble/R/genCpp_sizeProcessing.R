@@ -279,8 +279,9 @@ sizeValues <- function(code, symTab, typeEnv) {
     code$type <- 'double'
     code$toEigenize <- 'no'
     sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
-    if(length(sym$lengthName)==0) stop(paste0("Error the size information for ", nimDeparse(code), " is missing."), call. = FALSE) 
-    code$sizeExprs <- list(as.name(sym$lengthName))
+##    if(length(sym$lengthName)==0) stop(paste0("Error the size information for ", nimDeparse(code), " is missing."), call. = FALSE) 
+##    code$sizeExprs <- list(as.name(sym$lengthName))
+    code$sizeExprs <- list(substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name))))
     asserts <- list()
    
     if(code$caller$name %in% assignmentOperators) {
@@ -289,8 +290,9 @@ sizeValues <- function(code, symTab, typeEnv) {
             LHS <- code$caller$args[[1]]
             if(LHS$isName) { ## It is a little awkward to insert setSize here, but this is different from other cases in sizeAssignAfterRecursing
                 assertSS <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
-                sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
-                assertSS[[1]][[3]] <- as.name(sym$lengthName)
+                ##sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
+                ## assertSS[[1]][[3]] <- as.name(sym$lengthName) ## this is from when we used to have a separate setup output with the size
+                assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
                 asserts <- c(assertSS, asserts)
             }
         } ## values(...) <- P, don't change it

@@ -13,6 +13,7 @@ branches:
     - master
     - devel
     - travis
+    - reduceMemory3
 
 install:
   - Rscript -e "install.packages('devtools',  repo = 'http://cran.us.r-project.org')"

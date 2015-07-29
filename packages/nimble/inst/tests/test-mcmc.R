@@ -119,7 +119,7 @@ test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
 
 system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
 system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
-# need nimbleStep in data block as we no longer have step
+# need nimStep in data block as we no longer have step
 system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug"))) 
 test_mcmc(model = file.path(tempdir(), "leuk.bug"), name = 'leuk', inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
           results = list(mean = list(beta = 1.58), sd = list(beta = 0.43)),
