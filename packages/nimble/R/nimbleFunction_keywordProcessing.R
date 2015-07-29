@@ -200,10 +200,10 @@ values_keywordInfo <- keywordInfoClass(
       accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE)
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
-      	
-      accessLengthArgList <- list(accessName = accessName)
-      accessLengthName <- accessorVectorLength_setupCodeTemplate$makeName(accessLengthArgList)
-      addNecessarySetupCode(accessLengthName, accessLengthArgList, accessorVectorLength_setupCodeTemplate, nfProc)
+      
+      ## accessLengthArgList <- list(accessName = accessName)
+      ## accessLengthName <- accessorVectorLength_setupCodeTemplate$makeName(accessLengthArgList)
+      ## addNecessarySetupCode(accessLengthName, accessLengthArgList, accessorVectorLength_setupCodeTemplate, nfProc)
 
       newRunCode <- substitute(values(accessor = ACCESS_NAME), 
                                list(ACCESS_NAME = as.name(accessName)))
@@ -715,10 +715,9 @@ optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
                                           
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
-
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
     codeTemplate = quote( ACCESSNAME <- modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
-	makeCodeSubList = function(resultName, argList) {
+    makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
              NODES = argList$nodes,
@@ -751,15 +750,26 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 
     
-accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass(
+accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
   #Note to programmer: required fields of argList are accessName
  
   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-  codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
+    codeTemplate = quote({ACCESSLENGTH <- 0;
+        ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
   makeCodeSubList = function(resultName, argList){
-  	list(ACCESSNAME = as.name(argList$accessName),
-  		ACCESSLENGTH = as.name(resultName) )
-  	})
+      list(ACCESSNAME = as.name(argList$accessName),
+           ACCESSLENGTH = as.name(resultName),
+           ACCESSLENGTHNAME = resultName)
+  })
+
+## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## NEW ACCESSORS
+##   #Note to programmer: required fields of argList are accessName 
+##   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
+##   codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
+##   makeCodeSubList = function(resultName, argList){
+##   	list(ACCESSNAME = as.name(argList$accessName),
+##   		ACCESSLENGTH = as.name(resultName) )
+##   	})
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
@@ -917,7 +927,6 @@ addNewCode <- function(name, subList, template, nfProc)
 addNecessarySetupCode <- function(name, argList, template, nfProc, allowToCpp = TRUE){
     if(is.null(nfProc)) stop("Trying to add setup code for a nimbleFunction with no setup code.")
                                         #	name <- template$makeName(argList)
-    test <- try(length(isSetupCodeGenerated(name, nfProc)))
     if(!isSetupCodeGenerated(name, nfProc)){
         addSetupCodeNames(name, template$makeOtherNames(name, argList), nfProc)
         subList <- template$makeCodeSubList(name, argList)
@@ -972,8 +981,8 @@ matchAndFill.call <- function(def, call){
   return(newCall)
 }
 
-pasteExpr <- function(expr1, expr2)
-	parse(text=paste0(as.character(expr1), as.character(expr2) ) )[[1]]
+## pasteExpr <- function(expr1, expr2)
+## 	parse(text=paste0(as.character(expr1), as.character(expr2) ) )[[1]]
 
 
 determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
@@ -1199,7 +1208,7 @@ handleScaleAndRateForGamma <- function(code){
     rateArg <- code$rate
     if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma or dexp')
     if(is.null(scaleArg)) {
-        scaleArg <- substitute(1/(A), list(A = code$rate)) ## parse(text = paste0('1/', code$rate))[[1]]
+        scaleArg <- substitute(1.0/(A), list(A = code$rate)) ## parse(text = paste0('1/', code$rate))[[1]]
         code$rate <- scaleArg
         names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
     }
@@ -1212,7 +1221,7 @@ handleScaleAndRateForExpNimble <- function(code){
     rateArg <- code$rate
     if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dexp_nimble')
     if(is.null(rateArg)) {
-        rateArg <- substitute(1/(A), list(A = code$scale)) ##parse(text = paste0('1/', code$scale))[[1]]
+        rateArg <- substitute(1.0/(A), list(A = code$scale)) ##parse(text = paste0('1/', code$scale))[[1]]
         code$scale <- rateArg
         names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
     }

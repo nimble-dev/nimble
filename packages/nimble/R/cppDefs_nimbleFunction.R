@@ -40,6 +40,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           nfProc = 'ANY', ## an nfProcessing class, needed to get the member data symbol table post-compilation
 
                                           Rgenerator = 'ANY' , ## function to generate and wrap a new object from an R object
+                                          CmultiInterface = 'ANY', ## object for interfacing multiple C instances when a top-level interface is not needed
                                           built = 'ANY',
                                        	  loaded = 'ANY',
                                        	  Cwritten = 'ANY',
@@ -172,17 +173,28 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
                                               },
+                                              buildCmultiInterface = function(dll = NULL) {
+                                                  sym <- if(!is.null(dll))
+                                                             getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
+                                                         else
+                                                             SEXPgeneratorFun$name
+                                                  CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
+                                              },
                                               buildRgenerator = function(where = globalenv(), dll = NULL) {
-                                                  sym = if(!is.null(dll))
-                                                           getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
-                                                        else
-                                                           SEXPgeneratorFun$name
-                                                      
+                                                  sym <- if(!is.null(dll))
+                                                             getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
+                                                         else
+                                                            SEXPgeneratorFun$name
                                                   Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                               },
-                                              buildCallable = function(R_NimbleFxn, dll = NULL){
-                                                  nfRefClassObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)             
-                                                  return(nfRefClassObject)
+                                              buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){
+                                             ##     cat('buildCallable\n')
+                                                  if(asTopLevel) {
+                                                      cppInterfaceObject <- Rgenerator(R_NimbleFxn, dll, project = nimbleProject)
+                                                  } else { ## actually this particular pathway should never be taken. asTopLevel = FALSE will occur only for nimbleProject$instantiateNimbleFunction 
+                                                      cppInterfaceObject <- CmultiInterface$addInstance(R_NimbleFxn, dll)
+                                                  }
+                                                  return(cppInterfaceObject)
                                               },
                                               buildAll = function(where = where) {
                                                   baseClassObj <- environment(nfProc$nfGenerator)$contains
@@ -196,6 +208,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   buildSEXPgenerator()
                                                   buildSEXPfinalizer()
                                                   buildRgenerator(where = where)
+                                                  buildCmultiInterface()
                                               },
                                               makeCppNames = function() {
                                                   Rnames2CppNames <<- as.list(Rname2CppName(objectDefs$getSymbolNames()))

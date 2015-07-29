@@ -18,6 +18,9 @@ nimbleUserNamespace <- as.environment(list())
         processBackwardsModelIndexRanges = FALSE,    ## if FALSE (default), for(i in 9:7) in model code becomes for(i in 7).  if TRUE, becomes for(i in c(9, 8, 7))
         prioritizeColonLikeBUGS = TRUE, ## if FALSE, 1:2 + 1 evaluates to 2:3, consistent with R.  If TRUE, it evalutes to 1:3, consistent with BUGS 
         useNewNimCopy = TRUE, ## for development purposes.  FALSE will give 0.3-1 behavior
+        compileOnly = FALSE,
+        useMultiInterfaceForNestedNimbleFunctions = TRUE,
+        clearNimbleFunctionsAfterCompiling = FALSE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:

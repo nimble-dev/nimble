@@ -66,7 +66,6 @@ test_math <- function(input, verbose = TRUE, size = 3) {
 
 ### Function for testing MCMC called from test_mcmc.R
 
-
 test_mcmc <- function(example, model, data = NULL, inits = NULL,
                       verbose = TRUE, numItsR = 5, numItsC = 1000,
                       basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
@@ -86,55 +85,55 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # single multivar sampler: samplers(type = "RW_block", target = 'x')
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
-       
-  setSampler <- function(var, spec) {
-      currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
-    # remove already defined scalar samplers
-      inds <- which(unlist(var$target) %in% currentTargets)
-      spec$removeSamplers(inds, print = FALSE)
-    # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
-      inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
-#      inds <- which(sapply(spec$samplerSpecs, function(x)
-#          gsub("\\[[0-9]+\\]", "", x$target))
-#                         %in% var$target)
-      spec$removeSamplers(inds, print = FALSE)
-
-      if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
-      if(length(var$target) == 1 || (var$type == "RW_block" && !is.list(var$target))) 
-          tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) spec$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
-  }
-  
-  if(is.null(name)) {
-      if(!missing(example)) {
-          name <- example
-      } else {
+    
+    setSampler <- function(var, spec) {
+        currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
+                                        # remove already defined scalar samplers
+        inds <- which(unlist(var$target) %in% currentTargets)
+        spec$removeSamplers(inds, print = FALSE)
+                                        # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
+        inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
+                                        #      inds <- which(sapply(spec$samplerSpecs, function(x)
+                                        #          gsub("\\[[0-9]+\\]", "", x$target))
+                                        #                         %in% var$target)
+        spec$removeSamplers(inds, print = FALSE)
+        
+        if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
+        if(length(var$target) == 1 || (var$type == "RW_block" && !is.list(var$target))) 
+            tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) spec$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
+    }
+    
+    if(is.null(name)) {
+        if(!missing(example)) {
+            name <- example
+        } else {
             if(is.character(model)) {
                 name <- model
             } else {
-                  name <- 'unnamed case'
-              }
+                name <- 'unnamed case'
+            }
         }
-  }
-
-  cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
-  
-  if(!missing(example)) {
-    # classic-bugs example specified by name
+    }
+    
+    cat("===== Starting MCMC test for ", name, ". =====\n", sep = "")
+    
+    if(!missing(example)) {
+                                        # classic-bugs example specified by name
   	dir = getBUGSexampleDir(example)
-    if(missing(model)) model <- example
-    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
-                            check = FALSE)
-  } else {
-    # code, data and inits specified directly where 'model' contains the code
-    example = deparse(substitute(model))
-    if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-    Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
-                            check = FALSE)
-  }
-
-
+        if(missing(model)) model <- example
+        Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
+                                check = FALSE)
+    } else {
+                                        # code, data and inits specified directly where 'model' contains the code
+        example = deparse(substitute(model))
+        if(missing(model)) stop("Neither BUGS example nor model code supplied.")
+        Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
+                                check = FALSE)
+    }
+    
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)
+      cat('done compiling model\n')
   }
   if(!is.null(mcmcControl)) mcmcspec <- configureMCMC(Rmodel, control = mcmcControl) else mcmcspec <- configureMCMC(Rmodel)
   if(removeAllDefaultSamplers) mcmcspec$removeSamplers()
@@ -184,7 +183,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
               )
       }
       if(is.null(R_samples)) {
-        cat("R MCMC failed.\n")
+          cat("R MCMC failed.\n")
       }
 
       if(doCpp) {

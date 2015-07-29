@@ -72,7 +72,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnType <<- RCfunProc$compileInfo$returnSymbol$genCppVar()
                                      invisible(NULL)
                                  },
-                                 buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL) {
+                                 buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
@@ -104,7 +104,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      	if(argsCode[i] != '')
                                      		argNamesCall[i] = paste(argNames[i], " = ", as.character(argsCode[[i]]) )
                                      }
-
+                                     if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
+                                     
                                      funCode <- parse(text = paste0('function(', paste0(argNamesCall, collapse = ','),') A'), keep.source = FALSE)[[1]]
                                      bodyCode <- substitute({ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
