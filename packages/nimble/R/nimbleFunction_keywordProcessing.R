@@ -1199,7 +1199,7 @@ handleScaleAndRateForGamma <- function(code){
 		rateArg <- code$rate
 		if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma or dexp')
 		if(is.null(scaleArg)) {
-			scaleArg <- parse(text = paste0('1/', code$rate))[[1]]
+			scaleArg <- substitute(1/(A), list(A = code$rate)) ## parse(text = paste0('1/', code$rate))[[1]]
                         code$rate <- scaleArg
                         names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
                     }
@@ -1212,7 +1212,7 @@ handleScaleAndRateForExpNimble <- function(code){
     rateArg <- code$rate
     if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dexp_nimble')
     if(is.null(rateArg)) {
-        rateArg <- parse(text = paste0('1/', code$scale))[[1]]
+        rateArg <- substitute(1/(A), list(A = code$scale)) ##parse(text = paste0('1/', code$scale))[[1]]
         code$scale <- rateArg
         names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
     }
