@@ -1097,12 +1097,13 @@ SEXP populateCopierVector(SEXP ScopierVector, SEXP SfromPtr, SEXP StoPtr, SEXP S
 string _NIMBLE_WHITESPACE(" \t");
 string _NIMBLE_WHITESPACEBRACKET(" \t[");
 string _NIMBLE_NUMERICS("0123456789.");
+string _NIMBLE_SPACECOMMABRACKET(" ,]");
 
 // std::stoi not consistent across C++ and not worth the portability worries, so we made our own using istringstream
 int nimble_stoi(const string &input) {
   istringstream converter;
   std::size_t iStart(input.find_first_not_of(_NIMBLE_WHITESPACE));
-  std::size_t iEnd(input.find_first_not_of(_NIMBLE_NUMERICS));
+  std::size_t iEnd(input.find_first_not_of(_NIMBLE_NUMERICS, iStart));
   if(iEnd != std::string::npos && iEnd > iStart) iEnd--;
   converter.str(input.substr(iStart, iEnd - iStart + 1));
   int ans;
@@ -1168,7 +1169,6 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
   std::size_t iColon, iComma;
   int firstNum, secondNum;
   std::size_t iNextStart, iNonBlank;
-  string spacecommabracket(" ,]");
   iBracket = restOfInput.find_first_of(']');
   if(iBracket == std::string::npos) std::cout<<"problem in parseVarAndInds: there is no closing bracket\n";
 
@@ -1196,7 +1196,7 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
       // test for blanks
       // this bit ends in either a comma or the bracket
       if(iComma >= iBracket) {iComma = iBracket; done = true;} // now iComma is the ending index after here
-      iNonBlank = restOfInput.find_first_not_of(spacecommabracket);
+      iNonBlank = restOfInput.find_first_not_of(_NIMBLE_SPACECOMMABRACKET);
       if(iNonBlank < iComma) { // there is a number
 	firstNum = nimble_stoi(restOfInput);
 	if(iComma < iBracket) iNextStart = iComma + 1; else iNextStart = iBracket;
@@ -1355,6 +1355,7 @@ SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim) {
   return(mapInfo2Rlist(output));
 }
 
+//#define _DEBUG_POPULATE_MAP_ACCESSORS
 
 // call both with a bunch of output generated...
 SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
@@ -1371,14 +1372,32 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   SEXP SoneSizesAndNdims;
   mapInfoClass mapInfo;
   int totalLength = 0;
+
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+  std::cout<<"New: "<<numNames<<"\n";
+#endif
   
   for(int i = 0; i < numNames; i++) {
     PROTECT(SoneSizesAndNdims = VECTOR_ELT(SsizesAndNdims, i));
     sizes = SEXP_2_vectorInt(VECTOR_ELT(SoneSizesAndNdims, 0));
     nDim = SEXP_2_int(VECTOR_ELT(SoneSizesAndNdims, 1));
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+    std::cout<<nodeNames[i]<<"\n";
+#endif
     parseVarAndInds(nodeNames[i], varAndIndices);
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+    std::cout<<varAndIndices.varName<<" parsed: (";
+    for(int j = 0; j < varAndIndices.indices.size(); j++) {
+      std::cout<<"(";
+      for(int k = 0; k < varAndIndices.indices[j].size(); k++) std::cout<<varAndIndices.indices[j][k]<<" ";
+      std::cout<<") ";
+    }
+    std::cout<<"\n";
+    std::cout<<"input nDim "<< nDim << "(";
+    for(int j = 0; j < sizes.size(); j++) std::cout<<sizes[j]<<" ";
+    std::cout<<")\n";
+#endif
     varAndIndices2mapParts(varAndIndices, nDim, sizes, mapInfo);
-
     (*singleAccessors)[i]->getOffset() = mapInfo.offset;
     (*singleAccessors)[i]->getSizes() = mapInfo.sizes;
     (*singleAccessors)[i]->calculateLength();
@@ -1386,9 +1405,22 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
     (*singleAccessors)[i]->getStrides() = mapInfo.strides;
     (*singleAccessors)[i]->getSingleton() = (*singleAccessors)[i]->getLength() == 1;
     (*singleAccessors)[i]->setObject( sourceNamedObject->getObjectPtr(varAndIndices.varName) );
+
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+    std::cout<< varAndIndices.varName <<" "<<mapInfo.offset<<", (";
+    for(int j = 0; j < mapInfo.sizes.size(); j++) std::cout<<mapInfo.sizes[j]<<",";
+    std::cout<<"), "<<(*singleAccessors)[i]->getLength()<<", (";
+    for(int j = 0; j < mapInfo.strides.size(); j++) std::cout<<mapInfo.strides[j]<<",";
+    std::cout<<"), "<<(*singleAccessors)[i]->getSingleton()<<".\n";
+#endif
+
+
     UNPROTECT(1);
   }
   valuesAccessor->getTotalLength() = totalLength;
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+  std::cout<<totalLength<<"\n";
+#endif
   return(R_NilValue);
 }
 
@@ -1403,6 +1435,12 @@ SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrM
   SEXP SoneSource;
   string varName;
   int totalLength = 0;
+
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+  std::cout<<"Old: "<<numAccessors<<"\n";
+#endif
+
+  
   for(int i = 0; i < numAccessors; ++i) {
     PROTECT(SoneSource = VECTOR_ELT(SsourceList, i));
     (*singleAccessors)[i]->getOffset() = SEXP_2_int(VECTOR_ELT(SoneSource, 0));
@@ -1413,9 +1451,21 @@ SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrM
     (*singleAccessors)[i]->getSingleton() = static_cast<bool>(SEXP_2_int(VECTOR_ELT(SoneSource, 4)));
     varName = STRSEXP_2_string(VECTOR_ELT(SoneSource, 3), 0);
     (*singleAccessors)[i]->setObject( sourceNamedObject->getObjectPtr(varName) );
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+    std::cout<< varName <<" "<<(*singleAccessors)[i]->getOffset()<<", (";
+    for(int j = 0; j < (*singleAccessors)[i]->getSizes().size(); j++) std::cout<<(*singleAccessors)[i]->getSizes()[j]<<",";
+    std::cout<<"), "<<(*singleAccessors)[i]->getLength()<<", (";
+    for(int j = 0; j < (*singleAccessors)[i]->getStrides().size(); j++) std::cout<<(*singleAccessors)[i]->getStrides()[j]<<",";
+    std::cout<<"), "<<(*singleAccessors)[i]->getSingleton()<<".\n";
+#endif
+
     UNPROTECT(1);
   }
   valuesAccessor->getTotalLength() = totalLength;
+#ifdef _DEBUG_POPULATE_MAP_ACCESSORS
+  std::cout<<totalLength<<"\n";
+#endif
+
   return(R_NilValue);
 }
 

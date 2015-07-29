@@ -131,9 +131,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                                 check = FALSE)
     }
     
-    ##PERRY
-    cat('done reading model\n')
-
   if(doCpp) {
       Cmodel <- compileNimble(Rmodel)
       cat('done compiling model\n')
@@ -156,8 +153,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   Rmcmc <- buildMCMC(mcmcspec)
   if(doCpp) {
       Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
-      ## PERRY
-      cat('done compiling mcmc\n')
   }
       
   if(basic) {
@@ -165,8 +160,6 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       if(doR) {
           set.seed(seed);
           RmcmcOut <- try(Rmcmc$run(numItsR))
-          ## PERRY
-          cat('done running uncompiled MCMC\n')
           if(!is(RmcmcOut, "try-error")) {
             RmvSample  <- nfVar(Rmcmc, 'mvSamples')
             R_samples <- as.matrix(RmvSample)
@@ -174,10 +167,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       }
       if(doCpp) {
           set.seed(seed)
-          browser()
           Cmcmc$run(numItsC)
-          ## PERRY
-          cat('done running uncompiled MCMC\n')
           CmvSample <- nfVar(Cmcmc, 'mvSamples')    
           C_samples <- as.matrix(CmvSample)
           ## for some reason columns in different order in CmvSample...

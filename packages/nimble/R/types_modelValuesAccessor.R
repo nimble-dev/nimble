@@ -99,15 +99,17 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
 ##     eval(substitute(A <- vals), list(A = nodeCode))
 ## }
 
-SINGLE_LAPPLY_OF_INTEREST <- function( varNames, symTab ) {
-    ans <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
-    ans
-}
+## A wrapper on one lapply to get clearer Rprof results
+## SINGLE_LAPPLY_FOR_PROFILING <- function( varNames, symTab ) {
+##     ans <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
+##     ans
+## }
 
-nodeName2LogProbName_OF_INTEREST <- function(md, arg1) {
-    ans <- md$nodeName2LogProbName(arg1)
-    ans
-}
+## A wrapper on one member function to get clearer Rprof results
+## nodeName2LogProbName_FOR_PROFILING <- function(md, arg1) {
+##     ans <- md$nodeName2LogProbName(arg1)
+##     ans
+## }
 
 makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
 ##    length <- 0
@@ -116,14 +118,14 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
     
     if(accessorVector[[3]]) {## logProb == TRUE
         isLogProbName <- grepl('logProb_', nodeNames)
-##        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
-        nodeNames <- c(nodeNames, nodeName2LogProbName_OF_INTEREST(sourceObject$modelDef, nodeNames[!isLogProbName]))
+        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+##        nodeNames <- c(nodeNames, nodeName2LogProbName_FOR_PROFILING(sourceObject$modelDef, nodeNames[!isLogProbName]))
     }
 
     varNames <- .Call('parseVar', nodeNames)
     symTab <- sourceObject$getSymbolTable()
-##    varSizesAndNDims <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
-    varSizesAndNDims <- SINGLE_LAPPLY_OF_INTEREST(varNames, symTab)
+    varSizesAndNDims <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
+##    varSizesAndNDims <- SINGLE_LAPPLY_FOR_PROFILING(varNames, symTab)
     
     list(nodeNames, varSizesAndNDims)
     ## mapInfo <- lapply(nodeNames, function(z) {

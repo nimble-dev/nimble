@@ -46,19 +46,21 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## 
     if(is(cModel, 'uninitializedField'))
         stop('Compiled C++ model not available; please include the model in your compilation call (or compile it in advance).', call. = FALSE)
 
-    mapInfo <- makeMapInfoFromAccessorVector(Robject[[manyAccessName]]) ## slower
-    if(length(mapInfo) > 0) {
-        .Call('populateValueMapAccessors', manyAccessPtr, mapInfo, cModel$.basePtr)
-    }
+    ## intermediate version
+    ## mapInfo <- makeMapInfoFromAccessorVector(Robject[[manyAccessName]]) ## slower
+    ## if(length(mapInfo) > 0) {
+    ##     .Call('populateValueMapAccessors', manyAccessPtr, mapInfo, cModel$.basePtr)
+    ## }
 
+    ## fastest version
     ## doing it above way is safe, but
     ##   doing it the following way induces the crashing.
-    ## mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
-    ## if(length(mapInfo[[1]]) > 0) {
-    ##     .Call('populateValueMapAccessorsFromNodeNames', manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
-    ## }
+    mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
+    if(length(mapInfo[[1]]) > 0) {
+        .Call('populateValueMapAccessorsFromNodeNames', manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
+    }
     
-    
+    ## oldest version
     ##if(Robject[[manyAccessName]]$getLength() > 0) { ## NEW ACCESSORS 
         ##.Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModel$.basePtr) 
     ##}
@@ -68,10 +70,16 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName){ #
     manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
     ##cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS
     cModelValues <- Robject[[manyAccessName]][[1]]$CobjectInterface
+
+    ## oldest
     ##.Call('populateValueMapAccessors', manyAccessPtr, Robject[[manyAccessName]]$getMapInfo(), cModelValues$extptr) ## NEW ACCESSORS
-      .Call('populateValueMapAccessors', manyAccessPtr, makeMapInfoFromAccessorVector(Robject[[manyAccessName]]), cModelValues$extptr) ## slower
-    ##mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]]) ##faster
-    ##.Call('populateValueMapAccessorsFromNodeNames', manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
+
+    ## intermediate
+    ##    .Call('populateValueMapAccessors', manyAccessPtr, makeMapInfoFromAccessorVector(Robject[[manyAccessName]]), cModelValues$extptr) ## slower
+        
+    ##fastest
+    mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]]) ##faster
+    .Call('populateValueMapAccessorsFromNodeNames', manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
 }
 
 addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
