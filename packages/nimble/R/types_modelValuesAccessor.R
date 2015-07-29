@@ -99,14 +99,6 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
 ##     eval(substitute(A <- vals), list(A = nodeCode))
 ## }
 
-## STOPPED HERE:
-## 1. put in logProb stuff
-## 2. handle copying in a joint function
-## 3. change .Call('populateValueMapAccessors'
-## 4. Go over other grep results
-## 5. look at accessorLength setup output... trickiest...
-##       this will be annoyingly tricky, but we could have makeMapInfoFromAccessorVector also assign a length value to the parent.frame(), which is the setup environment.
-
 SINGLE_LAPPLY_OF_INTEREST <- function( varNames, symTab ) {
     ans <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
     ans

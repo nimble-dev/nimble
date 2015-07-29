@@ -1355,6 +1355,8 @@ SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim) {
   return(mapInfo2Rlist(output));
 }
 
+
+// call both with a bunch of output generated...
 SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr ) {
   vector<string> nodeNames;
   STRSEXP_2_vectorString(SnodeNames, nodeNames);
@@ -1643,59 +1645,73 @@ SEXP manualSetNRows(SEXP Sextptr, SEXP nRows){
 
 
 void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
-	SpecialNumberedObjects<SingleModelValuesAccess>* np 
-	= static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
-	delete np;		
+  SpecialNumberedObjects<SingleModelValuesAccess>* np 
+    = static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
+  if(!np) return;
+  delete np;
+  R_ClearExternalPtr(Snp);
 }
 
 SEXP new_SingleModelValuesAccessor_NumberedObjects(){
-	SpecialNumberedObjects<SingleModelValuesAccess>* np = new SpecialNumberedObjects<SingleModelValuesAccess>;
-	SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
-	PROTECT(rPtr);
-	R_RegisterCFinalizerEx(rPtr, &SingleModelValuesAccessor_NumberedObjects_Finalizer, TRUE);
-	UNPROTECT(1);
-	return(rPtr);
-	}
+  SpecialNumberedObjects<SingleModelValuesAccess>* np = new SpecialNumberedObjects<SingleModelValuesAccess>;
+  SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
+  PROTECT(rPtr);
+  R_RegisterCFinalizerEx(rPtr, &SingleModelValuesAccessor_NumberedObjects_Finalizer, TRUE);
+  UNPROTECT(1);
+  return(rPtr);
+}
 
 void SingleVariableAccessBase_NumberedObjects_Finalizer(SEXP Snp){
-	SpecialNumberedObjects<SingleVariableAccessBase>* np 
-	= static_cast<SpecialNumberedObjects<SingleVariableAccessBase>*>(R_ExternalPtrAddr(Snp));
-	delete np;	
+  SpecialNumberedObjects<SingleVariableAccessBase>* np 
+    = static_cast<SpecialNumberedObjects<SingleVariableAccessBase>*>(R_ExternalPtrAddr(Snp));
+  if(!np) return;
+  delete np;
+  R_ClearExternalPtr(Snp);
 }
 
 SEXP new_SingleModelVariablesAccessor_NumberedObjects(){
-	SpecialNumberedObjects<SingleVariableAccessBase>* np = new SpecialNumberedObjects<SingleVariableAccessBase>;
-	SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
-	PROTECT(rPtr);
-	R_RegisterCFinalizerEx(rPtr, &SingleVariableAccessBase_NumberedObjects_Finalizer, TRUE);
-	UNPROTECT(1);
-	return(rPtr);
-	}
+  SpecialNumberedObjects<SingleVariableAccessBase>* np = new SpecialNumberedObjects<SingleVariableAccessBase>;
+  SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
+  PROTECT(rPtr);
+  R_RegisterCFinalizerEx(rPtr, &SingleVariableAccessBase_NumberedObjects_Finalizer, TRUE);
+  UNPROTECT(1);
+  return(rPtr);
+}
 
 void  SingleMVA_Finalizer ( SEXP Sv ) {
-	SingleModelValuesAccess* oldObj;
-	oldObj = static_cast<SingleModelValuesAccess *>(R_ExternalPtrAddr(Sv));
-	delete oldObj;
+  SingleModelValuesAccess* oldObj;
+  oldObj = static_cast<SingleModelValuesAccess *>(R_ExternalPtrAddr(Sv));
+  if(!oldObj) return;
+  delete oldObj;
+  R_ClearExternalPtr(Sv);
 }
 
 
 void  SingleVA_Finalizer ( SEXP Sv ) {
-	SingleVariableAccess* oldObj;
-	oldObj = static_cast<SingleVariableAccess *>(R_ExternalPtrAddr(Sv));
-	delete oldObj;
+  SingleVariableAccess* oldObj;
+  oldObj = static_cast<SingleVariableAccess *>(R_ExternalPtrAddr(Sv));
+  if(!oldObj) return;
+  delete oldObj;
+  R_ClearExternalPtr(Sv);
 }
 
 void NodeVector_Finalizer( SEXP Sv) {
-	NodeVectorClass* nVPtr = static_cast<NodeVectorClass *>(R_ExternalPtrAddr(Sv));
-	delete nVPtr;
+  NodeVectorClass* nVPtr = static_cast<NodeVectorClass *>(R_ExternalPtrAddr(Sv));
+  if(!nVPtr) return;
+  delete nVPtr;
+  R_ClearExternalPtr(Sv);
 }
 
 void ManyVariable_Finalizer(SEXP Sv){
-	ManyVariablesAccessor* mVAPtr = static_cast<ManyVariablesAccessor*>(R_ExternalPtrAddr(Sv));
-	delete mVAPtr;
+  ManyVariablesAccessor* mVAPtr = static_cast<ManyVariablesAccessor*>(R_ExternalPtrAddr(Sv));
+  if(!mVAPtr) return;
+  delete mVAPtr;
+  R_ClearExternalPtr(Sv);
 }
 
 void ManyMV_Finalizer(SEXP Sv){
-	ManyModelValuesAccessor* mVPtr = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(Sv));
-	delete mVPtr;
+  ManyModelValuesAccessor* mVPtr = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(Sv));
+  if(!mVPtr) return;
+  delete mVPtr;
+  R_ClearExternalPtr(Sv);
 }

@@ -200,10 +200,10 @@ values_keywordInfo <- keywordInfoClass(
       accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE)
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
-      	
-      accessLengthArgList <- list(accessName = accessName)
-      accessLengthName <- accessorVectorLength_setupCodeTemplate$makeName(accessLengthArgList)
-      addNecessarySetupCode(accessLengthName, accessLengthArgList, accessorVectorLength_setupCodeTemplate, nfProc)
+      
+      ## accessLengthArgList <- list(accessName = accessName)
+      ## accessLengthName <- accessorVectorLength_setupCodeTemplate$makeName(accessLengthArgList)
+      ## addNecessarySetupCode(accessLengthName, accessLengthArgList, accessorVectorLength_setupCodeTemplate, nfProc)
 
       newRunCode <- substitute(values(accessor = ACCESS_NAME), 
                                list(ACCESS_NAME = as.name(accessName)))

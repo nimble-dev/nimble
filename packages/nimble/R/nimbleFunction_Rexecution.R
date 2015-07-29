@@ -31,16 +31,16 @@ asCol <- function(x) {
 }
 
 rCalcNodes <- function(model, nodes){
-	l_Prob = 0
-
-        if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
-            for(nName in nodes)
-                l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
-        else
-            for(nName in nodes)
-                l_Prob = l_Prob + model$nodes[[nName]]$calculate()
-        
-      	return(l_Prob)
+    l_Prob = 0
+    
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
+    else
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]]$calculate()
+    
+    return(l_Prob)
 }
 
 rCalcDiffNodes <- function(model, nodes){
