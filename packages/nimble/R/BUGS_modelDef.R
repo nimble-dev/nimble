@@ -295,6 +295,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
 
 replaceDistributionAliases <- function(code) {
     dist <- as.character(code[[3]][[1]])
+    trunc <- FALSE
     if(dist %in% c("T", "I")) {
         dist <- as.character(code[[3]][[2]][[1]])
         trunc <- TRUE
