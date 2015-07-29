@@ -21,9 +21,11 @@ install:
   - R CMD INSTALL packages/nimble
 
 script:
-##  - Rscript -e "library(nimble); warning('warning'); print(1)" 2>&1 | tee out
-    - Rscript packages/nimble/tests/test-selections.R 2>&1 | tee out
-##  - Rscript packages/nimble/tests/test-all.R 2>&1 | tee out
+##  - Rscript packages/nimble/tests/test-all.R    2>&1 | tee out
+##  - Rscript packages/nimble/tests/test-mcmc.R   2>&1 | tee out
+##  - Rscript packages/nimble/tests/test-models.R 2>&1 | tee out
+  - Rscript packages/nimble/tests/test-trunc.R  2>&1 | tee out
+##  - Rscript packages/nimble/tests/test-others.R 2>&1 | tee out  ## 31 minutes
 
 after_script:
   - sed -n -E '/[Ww]arning|[Ee]rror[^=]|[Ff]ailure/p' out > error
