@@ -1194,17 +1194,17 @@ makeSingleIndexAccessCodeNames <- function(baseName) {
 }
 
 handleScaleAndRateForGamma <- function(code){
-    # also handles core R dexp
-		scaleArg <- code$scale
-		rateArg <- code$rate
-		if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma or dexp')
-		if(is.null(scaleArg)) {
-			scaleArg <- substitute(1/(A), list(A = code$rate)) ## parse(text = paste0('1/', code$rate))[[1]]
-                        code$rate <- scaleArg
-                        names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
-                    }
-		code$rate <- NULL
-		return(code)
+    ## also handles core R dexp
+    scaleArg <- code$scale
+    rateArg <- code$rate
+    if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma or dexp')
+    if(is.null(scaleArg)) {
+        scaleArg <- substitute(1/(A), list(A = code$rate)) ## parse(text = paste0('1/', code$rate))[[1]]
+        code$rate <- scaleArg
+        names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
+    }
+    code$rate <- NULL
+    return(code)
 }
 
 handleScaleAndRateForExpNimble <- function(code){

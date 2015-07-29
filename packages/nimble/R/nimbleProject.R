@@ -482,7 +482,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  instantiateNimbleFunction = function(nf, dll) {
                                      if(!is.nf(nf)) stop("Can't instantiateNimbleFunction, nf is not a nimbleFunction")
                                      generatorName <- nfGetDefVar(nf, 'name')
-                                                                          
+                                     nfCppDef <- getNimbleFunctionCppDef(generatorName = generatorName)
+                                     if(is.null(nfCppDef$Rgenerator)) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
                                      ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
                                      ## This was wrong (goes in the refClassObject now) and it is set in Rgenerator
 ##                                     environment(nf)$.CobjectInterface <- ans
