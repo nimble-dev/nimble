@@ -8,7 +8,7 @@
 std::ostringstream _nimble_global_output;
 
 void nimble_print_to_R(std::ostringstream &input) {
-  printf("%s", input.str().c_str());
+  PRINTF("%s", input.str().c_str());
   input.str("");
   input.clear();
 }
