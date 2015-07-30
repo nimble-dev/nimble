@@ -67,18 +67,20 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ## 1. generate CnodeFunClasses
                                        ##     - by iterating through the nodeGenerators in the Rmodel
                                        nodesEnv <- new.env()
+                                       asTopLevel <- !getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')
                                        for(i in names(Rmodel$nodeFunctions)) {
-                                           nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll)
+                                           nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll, asTopLevel = asTopLevel)
                                        }
                                        nodes <<- nodesEnv
                                        
                                        .nodeFxnPointers_byGID <<- new('numberedObjects') 
                                        maxID = max(modelDef$maps$graphIDs)
                                        .nodeFxnPointers_byGID$resize(maxID)
-                                       for(nodeName in ls(nodes)){
-                                       		gID <- modelDef$nodeName2GraphIDs(nodeName)
-                                       		.self$.nodeFxnPointers_byGID[gID] <- nodes[[nodeName]]$.basePtr
-                                       		}
+                                       for(nodeName in ls(nodes)) {
+                                           gID <- modelDef$nodeName2GraphIDs(nodeName)
+                                           basePtr <- if(is.list(nodes[[nodeName]])) nodes[[nodeName]][[1]]$basePtrList[[ nodes[[nodeName]][[2]] ]] else nodes[[nodeName]]$.basePtr
+                                           .self$.nodeFxnPointers_byGID[gID] <- basePtr ## nodes[[nodeName]]$.basePtr
+                                       }
                                        		
                                        .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
                                        .nodeValPointers_byGID$resize(maxID)
@@ -163,7 +165,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 callSuper()
                                                 .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- getMVptr(.basePtr)
-                                                defaultModelValues <<- CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = getMVName(.modelValues_Ptr) )
+                                                defaultModelValues <<- CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = getMVName(.modelValues_Ptr), initialized = TRUE )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
                                                 vars <<- model$vars

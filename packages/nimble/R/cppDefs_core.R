@@ -99,8 +99,12 @@ cppClassDef <- setRefClass('cppClassDef',
                                    CPPuse
                                },
                                getDefs = function() {
-                                   if(useGenerator)
-                                       list(.self, SEXPgeneratorFun, SEXPfinalizerFun)
+                                   if(useGenerator) {
+                                       if(inherits(SEXPfinalizerFun, 'uninitializedField'))
+                                           list(.self, SEXPgeneratorFun)
+                                       else
+                                           list(.self, SEXPgeneratorFun, SEXPfinalizerFun)
+                                   }
                                    else
                                        list(.self)
                                },
@@ -120,18 +124,19 @@ cppClassDef <- setRefClass('cppClassDef',
                                    }
                                    output
                                },
-                               buildSEXPgenerator = function() { ## build a function that will provide a new object and return an external pointer
+                               buildSEXPgenerator = function(finalizer = NULL) { ## build a function that will provide a new object and return an external pointer
                                    CBobjectDefs <- list(cppVar(name = 'newObj', baseType = name, ptr = 1),
                                                       Sans = cppSEXP(name = 'Sans'));
                                    newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'), 'PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))
                                    notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
-                                       paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << R_ExternalPtrAddr(Sans) << \"\\n\";')
-                                   else character(0)
+                                                           paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << R_ExternalPtrAddr(Sans) << \"\\n\";')
+                                                       else character(0)
+                                   if(is.null(finalizer)) finalizer <- paste0(name,'_Finalizer')
                                    codeLines <- substitute({
-                                       R_RegisterCFinalizerEx(Sans, cppReference(FINALIZER), TRUE)
+                                       R_RegisterCFinalizerEx(Sans, cppReference(FINALIZER), FALSE) ## last argument is whether to call finalizer upon R exit.  If TRUE we can generate segfaults if the library has been dyn.unloaded, unfortunately
                                        UNPROTECT(1)
                                        return(Sans)
-                                   }, list(TYPE = as.name(name), FINALIZER = as.name(paste0(name,'_Finalizer'))))
+                                   }, list(TYPE = as.name(name), FINALIZER = as.name(finalizer)))
                                    allCode <- putCodeLinesInBrackets(list(newCodeLine, cppLiteral(notificationLine), codeLines))
                                    SEXPgeneratorFun <<- cppFunctionDef(name = paste0('new_',name),
                                                                        args = list(),
@@ -146,7 +151,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                        paste0('std::cout<< \"In finalizer for ', name, ' with pointer \" << R_ExternalPtrAddr(Sv) << \"\\n\";')
                                    else character(0)
                                    castLine <- paste0('oldObj = static_cast<',name,' *>(R_ExternalPtrAddr(Sv));')
-                                   deleteLine <- 'delete oldObj;'
+                                   deleteLine <- c('if(oldObj) delete oldObj;', 'R_ClearExternalPtr(Sv);')
                                    code <- putCodeLinesInBrackets(list(cppLiteral(c(notificationLine, castLine, deleteLine))))
                                    SEXPfinalizerFun <<- cppFunctionDef(
                                        name = paste0(name,'_Finalizer'),

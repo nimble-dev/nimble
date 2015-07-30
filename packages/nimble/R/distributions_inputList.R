@@ -26,13 +26,8 @@ distributionsInputList <- list(
                    Rdist    = 'dbinom(size, prob)',
                    discrete = TRUE,
                    range = c(0, 1),
-                   pqAvail = TRUE),
-    
-    dbinom  = list(BUGSdist = 'dbinom(prob, size)',
-                   Rdist    = 'dbinom(size, prob)',
-                   discrete = TRUE,
-                   range = c(0, 1),
-                   pqAvail = TRUE),
+                   pqAvail = TRUE,
+                   alias   = 'dbinom'),
     
     dcat    = list(BUGSdist = 'dcat(prob)',
                    Rdist    = 'dcat(prob)',
@@ -56,19 +51,15 @@ distributionsInputList <- list(
                    Rdist    = 'dmulti(size, prob)',
                    types    = c('value = double(1)', 'prob = double(1)'),
                    range    = c(0, Inf),
-                   discrete = TRUE),
+                   discrete = TRUE,
+                   alias    = 'dmultinom'),
     
     dnegbin = list(BUGSdist = 'dnegbin(prob, size)',
                    Rdist    = 'dnbinom(size, prob)',
                    discrete = TRUE,
                    range    = c(0, Inf),
-                   pqAvail = TRUE),
-    
-    dnbinom = list(BUGSdist = 'dnbinom(prob, size)',
-                   Rdist    = 'dnbinom(size, prob)',
-                   discrete = TRUE,
-                   range    = c(0, Inf),
-                   pqAvail = TRUE),
+                   pqAvail  = TRUE,
+                   alias    = 'dnbinom'),
     
     dpois   = list(BUGSdist = 'dpois(lambda)',
                    discrete = TRUE,
@@ -89,13 +80,11 @@ distributionsInputList <- list(
     
     dchisq  = list(BUGSdist = 'dchisq(df)',
                    range    = c(0, Inf),
-                   pqAvail  = TRUE),
+                   pqAvail  = TRUE,
+                   alias    = 'dchisqr'),
 
-    dchisqr = list(BUGSdist = 'dchisqr(df)',
-                   range    = c(0, Inf),
-                   pqAvail  = TRUE),
-    
     ## ddexp   = list('ddexp(location, scale, rate)'),   ## 'ddexp' function not implemented yet?  -DT
+    ## provide 'laplace' as alias
     
     dexp    = list(BUGSdist = 'dexp(rate, scale)',
                    Rdist    = 'dexp_nimble(rate = 1/scale)',
@@ -144,13 +133,8 @@ distributionsInputList <- list(
                    Rdist    = c('dweibull(shape, scale = lambda^(-1/shape))', 'dweibull(shape, scale = 1/rate)'),
                    altParams= c('rate = 1/scale', 'lambda = scale^(-shape)'),
                    range   = c(0, Inf),
-                   pqAvail = TRUE),
-    
-    dweibull = list(BUGSdist = 'dweibull(shape, lambda, scale, rate)',
-                   Rdist    = c('dweibull(shape, scale = lambda^(-1/shape))', 'dweibull(shape, scale = 1/rate)'),
-                   altParams= c('rate = 1/scale', 'lambda = scale^(-shape)'),
-                   range   = c(0, Inf),
-                   pqAvail = TRUE),
+                   pqAvail = TRUE,
+                   alias = 'dweibull'),
     
     
     ####################################
@@ -161,13 +145,9 @@ distributionsInputList <- list(
     ddirch  = list(BUGSdist = 'ddirch(alpha)',
                    Rdist    = 'ddirch(alpha)',
                    types    = c('value = double(1)', 'alpha = double(1)'),
-                   range    = c(0, 1)),
+                   range    = c(0, 1),
+                   alias    = 'ddirich'),
     
-    ddirich = list(BUGSdist = 'ddirich(alpha)',
-                   Rdist    = 'ddirch(alpha)',
-                   types    = c('value = double(1)', 'alpha = double(1)'),
-                   range    = c(0, 1)),
-
     dmnorm  = list(BUGSdist = 'dmnorm(mean, prec, cov, cholesky, prec_param)',
                    Rdist    = c('dmnorm_chol(mean, cholesky = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, cholesky = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, cholesky, prec_param)'),
                   altParams= c('prec = calc_dmnormAltParams(cholesky, prec_param, 1)', 'cov = calc_dmnormAltParams(cholesky, prec_param, 0)'),
@@ -181,7 +161,8 @@ distributionsInputList <- list(
     dwish   = list(BUGSdist = 'dwish(R, df, S)',
                    Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)', 'dwish_chol(cholesky = chol(S), df, scale_param = 1)'),
                   # altParams = c('R = cholesky', 'S = cholesky'), ##NOT CORRECT. These are placeholders to get other parts working.
-                  altParams= c('R = inverse(t(cholesky)%*%cholesky)', 'S = inverse(t(cholesky)%*%cholesky)'),
+                   altParams = c('R = inverse(t(cholesky)%*%cholesky)', 'S = inverse(t(cholesky)%*%cholesky)'),
+                   alias    = 'dwishart',
                    types    = c('value = double(2)', 'R = double(2)', 'S = double(2)', 'cholesky = double(2)'))
     # altParams ok here (but still would like back/forwardsolve), because code in altParams only used for R if S was provided by user and vice versa, so don't need 'if'
 )

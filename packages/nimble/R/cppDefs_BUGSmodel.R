@@ -109,8 +109,9 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          makeCppNames() 
                                          buildVars()
                                          buildConstructorFunctionDef()
-                                         buildSEXPgenerator()
-                                         buildSEXPfinalizer()
+                                         buildSEXPgenerator(finalizer = 'namedObjects_Finalizer')
+                                         ##buildSEXPgenerator()
+                                         ##buildSEXPfinalizer()
                                          buildPointAtAll()
                                          if(buildNodeDefs) buildNodes(where = where, debugCpp = debugCpp)
                                      }
@@ -137,7 +138,7 @@ compileBUGSmodel <- function(model, name, fileName, dirName, compileNodes = TRUE
     }
     if(!inherits(model, 'cppProjectClass')) {
         cppProj <- cppProjectClass$new(dirName = dirName)
-        mvc <- modelDefCpp$genModelValuesCppClass() ## This function records the cppClass in the .modelValuesSymbolTableLibrary, so it is tracked through that.
+        mvc <- modelDefCpp$genModelValuesCppClass() 
         cppProj$addClass(mvc, filename = Cname)
         cppProj$addClass(modelDefCpp, Cname)
         if(compileNodes) {

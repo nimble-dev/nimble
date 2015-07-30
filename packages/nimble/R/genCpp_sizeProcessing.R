@@ -279,8 +279,9 @@ sizeValues <- function(code, symTab, typeEnv) {
     code$type <- 'double'
     code$toEigenize <- 'no'
     sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
-    if(length(sym$lengthName)==0) stop(paste0("Error the size information for ", nimDeparse(code), " is missing."), call. = FALSE) 
-    code$sizeExprs <- list(as.name(sym$lengthName))
+##    if(length(sym$lengthName)==0) stop(paste0("Error the size information for ", nimDeparse(code), " is missing."), call. = FALSE) 
+##    code$sizeExprs <- list(as.name(sym$lengthName))
+    code$sizeExprs <- list(substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name))))
     asserts <- list()
    
     if(code$caller$name %in% assignmentOperators) {
@@ -289,8 +290,9 @@ sizeValues <- function(code, symTab, typeEnv) {
             LHS <- code$caller$args[[1]]
             if(LHS$isName) { ## It is a little awkward to insert setSize here, but this is different from other cases in sizeAssignAfterRecursing
                 assertSS <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
-                sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
-                assertSS[[1]][[3]] <- as.name(sym$lengthName)
+                ##sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
+                ## assertSS[[1]][[3]] <- as.name(sym$lengthName) ## this is from when we used to have a separate setup output with the size
+                assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
                 asserts <- c(assertSS, asserts)
             }
         } ## values(...) <- P, don't change it
@@ -593,7 +595,28 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         test <- try(assert[[1]][[i + 2]] <- RHS$sizeExprs[[i]])
                         if(inherits(test, 'try-error')) browser()
                     }
-                } else {
+                } else { ## We have an indexed LHS of an eigenizable expression
+                    ## need special handling if it is a row assignment like x[i,] <- ...
+                    ## also need to generate size assertions
+                    if(LHS$nDim == 1) {
+                        if(RHS$nDim == 2) {
+                            if(is.numeric(RHS$sizeExprs[[1]])) {
+                                if(RHS$sizeExprs[[1]] == 1) {
+                                    newExpr <- insertExprClassLayer(code, 1, 'asRow', type = LHS$type)
+                                    newExpr$sizeExprs <- RHS$sizeExprs 
+                                    newExpr$type <- LHS$type
+                                    newExpr$nDim <- RHS$nDim
+                                    if(!is.numeric(LHS$sizeExprs[[1]]) | !is.numeric(RHS$sizeExprs[[2]])) {
+                                        assertMessage <- paste0("Run-time size error: expected ", deparse(LHS$sizeExprs[[1]]), " == ", deparse(RHS$sizeExprs[[2]]))
+                                        thisAssert <- identityAssert(LHS$sizeExprs[[1]], RHS$sizeExprs[[2]], assertMessage)
+                                        if(!is.null(thisAssert)) assert[[length(assert) + 1]] <- thisAssert 
+                                    } else {
+                                        if(LHS$sizeExprs[[1]] != RHS$sizeExprs[[2]]) stop(paste0('Fixed size mismatch in', nimDeparse(code)), call. = FALSE)
+                                    }
+                                }
+                            }
+                        }
+                    }
 ##                    cat('Warning: we do not yet generate size matching assertions for indexed LHS expressions')
                 }
             }

@@ -110,7 +110,7 @@ setSize <- function(numList, ..., row){
     }
     if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
     if(is.numeric(numList)) {
-        oldDims <- dimOrLength(numList)
+        oldDims <- nimDim(numList)
         if(length(oldDims) != length(newDims)) stop("Number of dimensions provided does not match object to change in setSize") 
         if(length(oldDims) == 1) {
             if(oldDims[1] < newDims[1]) {
@@ -136,7 +136,7 @@ setSize <- function(numList, ..., row){
     dims = newDims
     dims <- dims[!is.na(dims)]
     if(inherits(numList, "RNumericList") ) {
-        oldDims = dimOrLength(numList[[row]])
+        oldDims = nimDim(numList[[row]])
         if(length(oldDims) != length(dims) )
             stop("Wrong number of dimensions")
         numList$Values[[row]] <- array(data = 0, dim = dims)

@@ -105,9 +105,17 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 
 
 void numberedObjects_Finalizer(SEXP Snp){
-	NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
-	delete np;
+  NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
+  if(np) delete np;
+  R_ClearExternalPtr(Snp);
 }
+
+void namedObjects_Finalizer(SEXP Snp){
+  NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
+  if(np) delete np;
+  R_ClearExternalPtr(Snp);
+}
+
 
 SEXP newNumberedObjects(){
 	NumberedObjects* np = new NumberedObjects;

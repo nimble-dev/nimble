@@ -254,6 +254,9 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
+            if(code[[i]][[1]] == '~') 
+                code[[i]] <- replaceDistributionAliases(code[[i]])
+
             BUGSdeclClassObject$setup(code[[i]], contextID, lineNumber)
             declInfo[[iAns]] <<- BUGSdeclClassObject
         }
@@ -264,12 +267,12 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             nextContextID <- length(contexts) + 1
             forCode <- code[[i]][1:3]        ## This is the (for i in 1:N) without the code block
             forCode[[3]] <- indexRangeExpr
-            sinlgeContexts <- c(if(contextID == 1) NULL else contexts[[contextID]]$singleContexts, ## concatenate any current contexts
+            singleContexts <- c(if(contextID == 1) NULL else contexts[[contextID]]$singleContexts, ## concatenate any current contexts
                                 list(BUGSsingleContextClass$new(indexVarExpr = indexVarExpr,       ## Add the new context
                                                                 indexRangeExpr = indexRangeExpr,
                                                                 forCode = forCode)))
             BUGScontextClassObject <- BUGScontextClass$new()
-            BUGScontextClassObject$setup(singleContexts = sinlgeContexts)
+            BUGScontextClassObject$setup(singleContexts = singleContexts)
             contexts[[nextContextID]] <<- BUGScontextClassObject
             if(length(code[[i]][[4]])==1) {
                 stop(paste0('Error, not sure what to do with ', deparse(code[[i]])))
@@ -289,6 +292,20 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+replaceDistributionAliases <- function(code) {
+    dist <- as.character(code[[3]][[1]])
+    trunc <- FALSE
+    if(dist %in% c("T", "I")) {
+        dist <- as.character(code[[3]][[2]][[1]])
+        trunc <- TRUE
+    }
+    if(dist %in% names(distributionAliases)) {
+        dist <- as.name(distributionAliases[dist])
+        if(trunc) code[[3]][[2]][[1]] <- dist else code[[3]][[1]] <- dist
+    }
+    return(code)
+}
 
 modelDefClass$methods(splitConstantsAndData = function() {
     # removes items from constantsNamesList that appear as variables in declInfo
@@ -1829,6 +1846,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$edgesFrom2To <<- split(maps$edgesTo, fedgesFrom)
     maps$edgesFrom2ParentExprID <<- split(maps$edgesParentExprID, fedgesFrom)
     maps$graphIDs <<- 1:length(maps$graphID_2_nodeName)
+    
+##    maps$nodeName_2_graphID <<- list2env( nodeName2GraphIDs(maps$nodeNames) )
+##    maps$nodeName_2_logProbName <<- list2env( nodeName2LogProbName(maps$nodeNames) )
+    
     NULL
 })
 
@@ -1970,7 +1991,8 @@ modelDefClass$methods(buildSymbolTable = function() {
 })
 
 
-modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = TRUE) {
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = TRUE, debug = FALSE) {
+    if(debug) browser()
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')
         logProbVars <- lapply(logProbVarInfo, `[[`, 'maxs')
@@ -1990,7 +2012,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## if(modelName == character(0)) stop('Error, empty name for a new model', call. = FALSE)
     model <- modelClass(name = modelName)
     model$setGraph(graph)
-    model$buildNodeFunctions(where = where)
+    model$buildNodeFunctions(where = where, debug = debug)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     if(length(data) + length(inits) > 0)
         message("setting data and initial values...")
@@ -2047,27 +2069,40 @@ modelDefClass$methods(printDI = function() {
 
 
 modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
-	if(length(nodeName) == 0)
-		return(NULL)	
-	if(nodeFunctionID)
-            ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-            ## old system had IDs for RHSonly things here.  This puts that back in for now.
-            output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-	else
-            ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
-            ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
-            output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
-            return(output[!is.na(output)])
+    if(length(nodeName) == 0)
+        return(NULL)
+
+    ## if(!is.null(attr(nodeName, 'nodeName'))) { ## we know the input has fully formed node names, not just arbitrary blocks of variables
+    ##     output <- unlist(mget(nodeName, maps$nodeName_2_graphID, ifnotfound = NA))
+    ##     return(output[!is.na(output)])
+    ## }
+    
+    if(nodeFunctionID) 
+        ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+        ## old system had IDs for RHSonly things here.  This puts that back in for now.
+        output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
+    else
+        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
+        ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
+        output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
+    return(output[!is.na(output)])
 })
 
 ## next two functions work for properly formed nodeNames.
 modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 places: MCMC_build, valuesAccessorVector, and cppInterfaces_models
     ## This function needs better processing.
+    
+    
     if(length(nodeName) == 0)
         return(NULL)
 ##    output <- unique(unlist(sapply(nodeName, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
 ##    return(output[!is.na(output)])
 
+    ## if(!is.null(attr(nodeName, 'nodeName'))) { ## we know the input has fully formed node names, not just arbitrary blocks of variables
+    ##     output <- unlist(mget(nodeName, maps$nodeName_2_logProbNodeName, ifnotfound = NA))
+    ##     return(output[!is.na(output)])
+    ## }
+    
     ## 1. so this needs to first get to a nodeFunctionID
     graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
 ##    eval(parse(text="w1[3:4, 1:2]", keep.source = FALSE)[[1]], envir= maps$vars2GraphID_functions)

@@ -11,13 +11,10 @@ nfGetDefVar <- function(f, var) {
 }
 
 is.nf <- function(f) {
-	#		$runRelated
-	if(inherits(f, 'nimbleFunctionBase'))
-		return(TRUE)
-		
+    if(inherits(f, 'nimbleFunctionBase')) return(TRUE)
+    #	$runRelated
     return(is.function(f) && 
-               existsFunctionEnvVar(f, 'nfRefClassObject') )
- 	
+               existsFunctionEnvVar(f, 'nfRefClassObject') ) 	
 }
 
 is.nfGenerator <- function(f) {

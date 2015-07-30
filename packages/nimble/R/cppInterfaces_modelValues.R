@@ -34,6 +34,7 @@ CmodelValues <- setRefClass(
         .nodePtrs_byGID = 'ANY',
         GID_map = 'ANY',
         symTab = 'ANY',
+        initialized = 'ANY',
     	sizes = function(){
     		if(length(varNames) == 0)
     			return(NULL)
@@ -56,7 +57,7 @@ CmodelValues <- setRefClass(
             return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
                                            flatIndices = flatIndices))
         },
-        initialize = function(buildCall, existingPtr ) {
+        initialize = function(buildCall, existingPtr, initialized = FALSE ) {
             if(missing(existingPtr) ) {
                 if(is.character(buildCall)) {
                     warning("a call to getNativeSymbolInfo with only a name and no DLL")
@@ -67,6 +68,7 @@ CmodelValues <- setRefClass(
             else{
                 extptr <<- existingPtr
             }
+            initialized <<- initialized
             if(missing(buildCall) ) 
                 break("Cannot build object without buildCall!")
             extptrCall <<- buildCall

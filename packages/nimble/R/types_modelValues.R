@@ -1,7 +1,3 @@
-##modelValuesClassLabelCreator <- labelFunctionCreator('modelValuesClass')
-## This keeps track of every derived modelValues class
-##.modelValuesSymbolTableLibrary <- new.env(, emptyenv())
-
 ## Options for requesting a modelValues
 ## 1. by a model
 ## 2. by a symbolTable (which can be created with buildSymbolTable)
@@ -42,17 +38,6 @@ modelValues <- function(spec, m = 1) {
         return(mvClass(m))
     }
 }	
-
-## Background:
-## modelValues is a general concept for storing model values.
-## We need different "flavors", i.e different groups of variables in different classes
-## e.g. sometimes we need ALL model variables to be included, but sometimes only some of them.
-## As a result we generate multiple derived modelValues classes.
-## What happens is we might in multiple places (multiple nimbleFunctions) we might end up wanting the same flavor (set of variables).
-## We don't want to generate two different classes that are identical, because we want them to be recognized as them same
-## The .modelValuesSymbolTableLibrary keeps track of the definition of each flavor, so that a flavor (derived class) can be re-used if it already exists.
-
-## Here is the base class
 
 #' Class \code{modelValuesBaseClass}
 #' @export
@@ -328,7 +313,7 @@ pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb 
 
 makeMV_GID_Map <- function(mv){
 	sizeList = mv$sizes
-    varNames = sort(mv$varNames)
+    varNames = .Internal(sort(mv$varNames, FALSE)) ##sort(mv$varNames)
     nodeNames = NA
     nodeIndex = 0
     nodeNames2GID_maps <- new.env()

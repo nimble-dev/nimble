@@ -14,7 +14,7 @@ class NamedObjects {
 public:
   map< string, void * > namedObjects;
   virtual void* getObjectPtr( string &name );
-  virtual ~NamedObjects() {};
+  virtual ~NamedObjects() { };
 };
 
 extern "C" {
@@ -23,23 +23,25 @@ extern "C" {
 }
 
 class NumberedObjects {
-public:
-	vector<void*> numberedObjects;
-	void* getObjectPtr(int index);
-	void setObjectPtr(int index, void* newPtr);
-	void resize(int size);
-	virtual ~NumberedObjects(){};
+ public:
+  vector<void*> numberedObjects;
+  void* getObjectPtr(int index);
+  void setObjectPtr(int index, void* newPtr);
+  void resize(int size);
+  virtual ~NumberedObjects(){};
 };
 
 extern "C" {
-	SEXP getNumberedObject(SEXP Snp, SEXP index);
-	SEXP setNumberedObject(SEXP Snp, SEXP index, SEXP val);
-	SEXP resizeNumberedObjects(SEXP Snp, SEXP size);
-	SEXP getSizeNumberedObjects(SEXP Snp);
-	SEXP newNumberedObjects();
+  SEXP getNumberedObject(SEXP Snp, SEXP index);
+  SEXP setNumberedObject(SEXP Snp, SEXP index, SEXP val);
+  SEXP resizeNumberedObjects(SEXP Snp, SEXP size);
+  SEXP getSizeNumberedObjects(SEXP Snp);
+  SEXP newNumberedObjects();
 }
 
 void numberedObjects_Finalizer(SEXP Snp);
+
+void namedObjects_Finalizer(SEXP Sno);
 
 
 // This is a class which is basically identical to NumberedObjects,
@@ -47,17 +49,17 @@ void numberedObjects_Finalizer(SEXP Snp);
 // no external pointer. Thus, the finalizer must be specialized for class<T>
 template<class T>
 class SpecialNumberedObjects : public NumberedObjects{
-	public:
-	virtual ~SpecialNumberedObjects(){
-		int len = numberedObjects.size();
-		T* ptr;
-		for(int i = 0; i < len; i++){
-			ptr = static_cast<T*>(getObjectPtr(i));
-			if(ptr != 0){
-				delete ptr;	
-				}
-		}
-	}
+ public:
+  virtual ~SpecialNumberedObjects(){
+    int len = numberedObjects.size();
+    T* ptr;
+    for(int i = 0; i < len; i++){
+      ptr = static_cast<T*>(getObjectPtr(i));
+      if(ptr != 0){
+	delete ptr;	
+      }
+    }
+  }
 };
 
 template<class T>

@@ -8,6 +8,8 @@ USER LEVEL CHANGES
 
 -- [daniel - please add note about check()]
 
+-- added alternative distribution names (aliases) usable in BUGS code (via an extensible system for adding additional aliases as desired): dbinom for dbin, dmultinom for dmulti, dnbinom for dnegbin, dchisqr for dchisq, dweibull for dweib, ddirich for ddirch, dwishart for dwish
+
 -- added additional parameterizations for dlnorm and dt
 
 -- improved handling of distribution functions in nimbleFunction run code (i.e., the DSL), allowing argument matching by name and use of default values

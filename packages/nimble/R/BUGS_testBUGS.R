@@ -149,7 +149,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
       }
     })
 
-    # dyn.unload(project$cppProjects[[1]]$getSOName())
+    dyn.unload(project$cppProjects[[1]]$getSOName())
     # this works to avoid having too many DLLs, but gives segfault when one quits R afterwards
     if(debug) browser()
   } else warning("testBUGSmodel: testthat package is required")
