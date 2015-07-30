@@ -327,8 +327,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
 
   if(doCpp) {
-    dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName())
-    dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[1]]$getSOName())
+    dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
+    dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
   }
   return(returnVal)
 
