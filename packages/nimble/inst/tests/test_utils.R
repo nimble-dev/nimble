@@ -327,9 +327,8 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
 
   if(doCpp) {
-    # DTL is looking at issue with segFault when close R
-  #  dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName())
-  #  dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[1]]$getSOName())
+    dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName())
+    dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[1]]$getSOName())
   }
   return(returnVal)
 
