@@ -205,8 +205,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   }
                                                   makeCppNames()
                                                   buildConstructorFunctionDef()
-                                                  buildSEXPgenerator()
-                                                  buildSEXPfinalizer()
+                                                  buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
+                                                  ##buildSEXPgenerator()
+                                                  ##buildSEXPfinalizer()
                                                   buildRgenerator(where = where)
                                                   buildCmultiInterface()
                                               },
