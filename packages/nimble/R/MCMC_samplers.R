@@ -733,7 +733,7 @@ sampler_crossLevel <- nimbleFunction(
 #'
 #' The RW\_llFunction sampler accepts the following control list elements:
 #' \itemize{
-#' \item adaptive. A logical argument, specifying whether the sampler should adapt the \scale (proposal standard deviation) throughout the course of MCMC execution. (default = TRUE)
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation. (default = 1)
 #' \item llFunction. A specialized nimbleFunction that accepts no arguments and returns a scalar double number.  The return value must be the total log-likelihood of all stochastic dependents of the target nodes -- and, if includesTarget = TRUE, of the target node(s) themselves --  or whatever surrogate is being used for the total log-likelihood.  This is a required element with no default.
