@@ -149,7 +149,7 @@ cppOutputFor <- function(code, symTab) {
     begin <- nimGenerateCpp(code$args[[2]]$args[[1]], symTab)
     end <- nimGenerateCpp(code$args[[2]]$args[[2]], symTab)
     iterVar <- nimGenerateCpp(code$args[[1]], symTab)
-    part1 <- paste0('for(', iterVar ,'=', begin,'; ', iterVar, '<=', end, '; ++', iterVar,')')
+    part1 <- paste0('for(', iterVar ,'=', begin,'; ', iterVar, '<= static_cast<int>(', end, '); ++', iterVar,')')
     part2 <- nimGenerateCpp(code$args[[3]], symTab)
     if(is.list(part2)) {
         part2[[1]] <- paste(part1, part2[[1]])
