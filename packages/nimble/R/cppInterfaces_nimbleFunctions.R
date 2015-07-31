@@ -923,21 +923,20 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              },
                                              memberData = function(index, name, value) { ## value can be missing
                                                  ## This isn't very useful as written for many names because it just gets and sets the external pointers.  It doesn't wrap them in an interface object
-                                                 browser()
                                                  if(!(name %in% cppNames)) stop(paste0('Name ', name, ' is not a valid member variable in the requested object.', call.=FALSE))
                                                  basePtr <- basePtrList[[index]]
                                                  if(!inherits(basePtr, 'externalptr')) stop('Invalid index or basePtr', call. = FALSE)
-                                                 ans <- switch(cppCopyTypes[name],
+                                                 ans <- switch(cppCopyTypes[[name]],
                                                                modelVar = getSetModelVarPtr(name, value, basePtr), ## only makes sense internally
-                                                               nimbleFunction = getSetNimbleFunction(v, value, basePtr), ## ditto
-                                                               nimPtrList = getSetNimPtrList(v, value, basePtr), ## ditto
-                                                               modelValues = getSetModelValues(v, value, basePtr), ## ditto
-                                                               characterVector = getSetCharacterVector(v, value, basePtr),
-                                                               characterScalar = getSetCharacterScalar(v, value, basePtr),
-                                                               numericVector = getSetNumericVector(v, value, basePtr),
-                                                               doubleScalar = getSetDoubleScalar(v, value, basePtr),
-                                                               integerScalar = getSetIntegerScalar(v, value, basePtr),
-                                                               logicalScalar = getSetLogicalScalar(v, value, basePtr),
+                                                               nimbleFunction = getSetNimbleFunction(name, value, basePtr), ## ditto
+                                                               nimPtrList = getSetNimPtrList(name, value, basePtr), ## ditto
+                                                               modelValues = getSetModelValues(name, value, basePtr), ## ditto
+                                                               characterVector = getSetCharacterVector(name, value, basePtr),
+                                                               characterScalar = getSetCharacterScalar(name, value, basePtr),
+                                                               numericVector = getSetNumericVector(name, value, basePtr),
+                                                               doubleScalar = getSetDoubleScalar(name, value, basePtr),
+                                                               integerScalar = getSetIntegerScalar(name, value, basePtr),
+                                                               logicalScalar = getSetLogicalScalar(name, value, basePtr),
                                                                'Could not get or set a value for this variable')
                                                  ans
                                              }

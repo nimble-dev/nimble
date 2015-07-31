@@ -84,8 +84,12 @@ nimbleFunction <- function(setup         = NULL,
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     methodList <- lapply(methodList, nfMethodRC)
+    ## record any setupOutputs declared by setupOutput()
+    setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
+    declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
+    rm(setupOutputsDeclaration)
     ## create the reference class definition
-    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup)
+    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
     nfRefClass    <- eval(nfRefClassDef)
 
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
@@ -122,7 +126,7 @@ nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase',
 
 
 ## template for the reference class internal to all nimble functions
-nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup) {
+nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup, declaredSetupOutputNames) {
     finalMethodList <- lapply(methodList, function(nfMethodRCobject) nfMethodRCobject$generateFunctionObject())
     finalMethodList[['show']] <- eval(substitute(function() writeLines(paste0('reference class object for nimble function class ', className)),
                                                  list(className = className)))
@@ -133,7 +137,7 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
                     contains = 'nimbleFunctionBase',	#	$runRelated
                     where   = where),
         list(NFREFCLASS_CLASSNAME = className,
-             NFREFCLASS_FIELDS    = nf_createRefClassDef_fields(setup, methodList, globalSetup),
+             NFREFCLASS_FIELDS    = nf_createRefClassDef_fields(setup, methodList, globalSetup, declaredSetupOutputNames),
              NFREFCLASS_METHODS   = finalMethodList
             )
         )
@@ -141,9 +145,9 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
 
 
 ## creates a list of the fields (setupOutputs) for a nimble function reference class
-nf_createRefClassDef_fields <- function(setup, methodList, globalSetup) {
-    setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
-    setupOutputNames <- nf_createSetupOutputNames(setup, methodList, setupOutputsDeclaration, globalSetup)
+nf_createRefClassDef_fields <- function(setup, methodList, globalSetup, declaredSetupOutputNames) {
+##    setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
+    setupOutputNames <- nf_createSetupOutputNames(setup, methodList, declaredSetupOutputNames, globalSetup)
     if(FALSE) print(setupOutputNames)
     fields <- as.list(rep('ANY', length(setupOutputNames)))
     names(fields) <- setupOutputNames
@@ -153,12 +157,12 @@ nf_createRefClassDef_fields <- function(setup, methodList, globalSetup) {
     return(fields)
 }
 
-nf_createSetupOutputNames <- function(setup, methodList, setupOutputsDeclaration, globalSetup) {
+nf_createSetupOutputNames <- function(setup, methodList, declaredSetupOutputNames, globalSetup) {
     setupOutputNames <- character(0)
     setupOutputNames <- c(setupOutputNames, names(formals(setup)))   # add all setupArgs to potential setupOutputs
     setupOutputNames <- c(setupOutputNames, nf_assignmentLHSvars(body(setup)), nf_assignmentLHSvars(body(globalSetup)))  # add all variables on LHS of <- in setup to potential setupOutputs
     setupOutputNames <- intersect(setupOutputNames, nf_createAllNamesFromMethodList(methodList))
-    setupOutputNames <- c(setupOutputNames, nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration))
+    setupOutputNames <- c(setupOutputNames, declaredSetupOutputNames)
     setupOutputNames <- unique(setupOutputNames)
     return(setupOutputNames)
 }
