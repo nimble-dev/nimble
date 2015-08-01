@@ -81,21 +81,17 @@ numericList <- function(type = double(2), length = 1, buildType = 'R', extPtr = 
 #'
 #' set the size of a numeric variable in NIMBLE.  This works in R and NIMBLE, but in R it usually has no effect.
 #'
-#' @param numList  This is the object to be resized
+#' @param numObj   This is the object to be resized
 #' @param row      Optional argument that is not currently used
-#' @param d1       first size
-#' @param d2       second size
-#' @param d3       third size
+#' @param ...      sizes, provided as scalars, in order, with exactly as many as needed for the object
 #'
 #' @author NIMBLE development team
 #' @export
 #' @details
-#' This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 3 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, or prior to a call to getValues.
+#' This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 4 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, if the object is not already an appropriate size for the assignment.
 #'
-#' When executed in R, this works but usually has no effect, because R objects will be dynamically resized anyway.  It is important for it to work so that nimbleFunctions can be executed in R. 
-#'
-#' At the moment the version that executes in R is primarily defined for numericLists, which are a type to be provided in future versions of NIMBLE.
-setSize <- function(numList, ..., row){
+#' This does work in uncompiled (R) and well as compiled execution, but it is really only necessary for compiled execution. During uncompiled execution, it may not catch bugs due to resizing because R objects will be dynamically resized during assignments anyway.
+setSize <- function(numObj, ..., row){
     thisCall <- as.list(match.call()[-1])
     if(length(thisCall) < 2) stop("No information provided to setSize")
     newDims <- unlist(list(...))
@@ -116,22 +112,22 @@ setSize <- function(numList, ..., row){
     ##     as.numeric(unlist(lapply(thisCall[-1], eval, envir = parent.frame())))
     ## }
     if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
-    if(is.numeric(numList)) {
-        oldDims <- nimDim(numList)
+    if(is.numeric(numObj)) {
+        oldDims <- nimDim(numObj)
         if(length(oldDims) != length(newDims)) stop("Number of dimensions provided does not match object to change in setSize") 
         if(length(oldDims) == 1) {
             if(oldDims[1] < newDims[1]) {
                 newObj <- rep(0, newDims[1])
-                newObj[1:oldDims[1]] <- numList
+                newObj[1:oldDims[1]] <- numObj
             } else {
-                newObj <- numList[1:newDims[1]]
+                newObj <- numObj[1:newDims[1]]
             }
         } else {
             newObj <- array(0, newDims)
-            if(length(numList) < length(newObj))
-                newObj[1:length(numList)] <- numList
+            if(length(numObj) < length(newObj))
+                newObj[1:length(numObj)] <- numObj
             else
-                newObj[1:length(newObj)] <- numList[1:length(newObj)]
+                newObj[1:length(newObj)] <- numObj[1:length(newObj)]
         }
         assign("_SETSIZE_TEMP_VAL", newObj, parent.frame())
         assignCall <- substitute(A <- B, list(A = thisCall[[1]], B = as.name("_SETSIZE_TEMP_VAL")))
@@ -142,14 +138,14 @@ setSize <- function(numList, ..., row){
     ## what follows is partly defunct -- to be examined
     dims = newDims
     dims <- dims[!is.na(dims)]
-    if(inherits(numList, "RNumericList") ) {
-        oldDims = nimDim(numList[[row]])
+    if(inherits(numObj, "RNumericList") ) {
+        oldDims = nimDim(numObj[[row]])
         if(length(oldDims) != length(dims) )
             stop("Wrong number of dimensions")
-        numList$Values[[row]] <- array(data = 0, dim = dims)
+        numObj$Values[[row]] <- array(data = 0, dim = dims)
     }
-    if(inherits(numList, "CNumericList") ) 
-        jnk <- .Call("resizeNumListRow", numList$valuesPtr, as.integer(row), as.integer(dims) )
+    if(inherits(numObj, "CNumericList") ) 
+        jnk <- .Call("resizeNumListRow", numObj$valuesPtr, as.integer(row), as.integer(dims) )
 }
 
 CNumericList <- setRefClass(Class = "CNumericList",

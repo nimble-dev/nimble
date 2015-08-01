@@ -4,7 +4,27 @@ NOTE: WE SHOULD GO BACK THROUGH GITHUB ISSUES TO MAKE NOTE HERE OF VARIOUS CHANG
 
 USER LEVEL CHANGES
 
--- [Perry - please add note about nimStep, nimRound, etc.]
+-- almost everything is faster in almost all cases, sometimes very much faster, especially during R processing.
+
+-- added DSL functions stop("Error message") and checkInterrupt() to check for a user interrupt (via R_checkUserInterrupt() in C++).
+
+-- added support for scalar and vector character strings in the compiler.  The ony meaningful use currently is as argument(s) to print or stop.
+
+-- added calculateDiff as a fourth fundamental method (after calculate, simulate, getLogProb) in model node functions.
+
+-- nearly all calls to DSL functions or other nimbleFunctions handle R-style named or ordered arguments.
+
+-- dots (".") are allowed in nimbleFunction argument names.
+
+-- most Windows compiler warnings about comparing unsigned and signed ints should be gone.  Harmless warnings remain and some objects possibly being used before initialization.
+
+-- more informative error messages added in many cases.
+
+-- nimble version of some common R functions is now consistently prefixed with "nim" instead of "nimble".  E.g. nimRound, nimStop, nimPrint, nimCopy.  These can still used without the prefix in the DSL, e.g. round, stop, print, copy.
+
+-- added nimbleOptions useMultiInterfaceForNestedNimbleFunctions (default TRUE) and (experimental) clearNimbleFunctionsAfterCompiling (default FALSE) to reduce memory use. See User Manual section 9.6
+
+-- setSize now consistently works in both compiled and uncompiled uses as setSize(X, size1, size2, etc.), not setSize(X, c(size1, size2, etc.))
 
 -- [daniel - please add note about check()]
 
@@ -38,6 +58,24 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
+[NOT PUTTING ENTRIES HERE THAT BASICALLY ECHO USER-LEVEL CHANGES. -Perry]
+
+-- re-wrote model definition processing and R nodeFunction instantiation to do more work at the level of a BUGS declaration rather than for each individual node.
+
+-- re-wrote checkConjugacy to use the new model definition content.
+
+-- re-wrote C++ nimCopy system and corresponding R partial evaluation to do more processing in R and set up C++ for faster processing.
+
+-- added test-copy for nimCopy, values() and values()<-
+
+-- added nimbleProjectClass method for adding groups of nimbleFunctions from same generator at once.
+
+-- modified core samplers like RW to use the new calculateDiff nodeFunction method.
+
+-- added CmultiNimbleFunctionInterface to interface compiled nimbleFunctions contained within other nimbleFunctions.
+
+-- removed some old code deemed to be fully defunct.
+
 -- added 'range' variable to all distributions; when truncation is specified this modifies the range and also sets the 'truncated' flag to TRUE; range is not at the moment used but could be used by developers in algorithms
 
 -- added a variety of error checking for various distribution functions and now generally use doubles in distribution functions in C++
@@ -55,6 +93,14 @@ DEVELOPER LEVEL CHANGES
 -- nimbleFunction provided for use in algorithms: initializeModel(model), to perform sensible model initialization at the onset of an algorithm
 
 BUG FIXES
+
+-- setSize fixed
+
+-- generation of "1/(scale)" type bits in keyword processing for exp and gamma fixed.
+
+-- fixed bug where quitting R after dyn.unload()ing in OS X / linux caused a segfault.  Now we rely on a finalizer that uses the base class virtual destructor, which is in the package dll, not the generated one(s).  We still have segfaults on Windows after dyn.unload()ing.
+
+-- made row subset assignment work in the compiler, e.g. x[i,] <- foo(a)
 
 -- updated package to use new igraph 1.x.x API and now explicitly link in LAPACK_LIBS and BLAS_LIBS when building libnimble.so as dpotrf not being found when using igraph 1.x.x
 
