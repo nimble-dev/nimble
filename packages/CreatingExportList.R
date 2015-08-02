@@ -189,7 +189,8 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'parseTreeSubstitute',
 'projectNameCreator',
 'UseLibraryMakevars',
-'replaceDistributionAliasesNameOnly'
+'replaceDistributionAliasesNameOnly',
+'copierVectorClass'
 )
 
 maskFileVector = c(

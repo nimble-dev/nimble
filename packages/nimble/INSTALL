@@ -3,11 +3,11 @@ You can install the package with
 or
   install.packages("nimble_0.4.tar.gz", repos = NULL)
 
-You can also install the package directly from the NIMBLE repository [set this up]
+You can also install the package directly from the NIMBLE repository 
   install.packages("nimble", repos = "http://r-nimble.org/R")
 
 There are two configuration options:  --enable-lib and --with-eigen.
---enable-lib is currently only supported on UNIX/Linux/OSX platforms,
+--enable-lib is currently only supported on UNIX/Linux/OS X platforms,
 i.e. not Windows.
 
  --enable-lib=false/true  controls whether we compile the shared C++ code that is used
