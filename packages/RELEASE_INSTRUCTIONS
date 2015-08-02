@@ -33,6 +33,7 @@ git checkout master
 git merge devel
 git commit -am'merged new version onto master'
 
-git branch version_0.2
-git push -u origin version_0.2
+git tag -a v0.3 -m 'NIMBLE version 0.3 release, December 31, 2014'
+git push --tags    ## this is how you push *tags* to the remote
+
 

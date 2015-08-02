@@ -77,6 +77,7 @@ rCalcDiffNodes <- function(model, nodes){
 #' 
 #' @param model        A NIMBLE model, either the compiled or uncompiled version
 #' @param nodes        A character vector of node names, with index blocks allowed, such as 'x', 'y[2]', or 'z[1:3, 2:4]'
+#' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \link{simulate}
 #' @author NIMBLE development team
 #' @export
 #' @details

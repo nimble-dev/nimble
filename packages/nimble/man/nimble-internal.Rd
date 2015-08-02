@@ -127,6 +127,7 @@
 \alias{conjugacyRelationshipsInputList}
 \alias{conjugacyRelationshipsObject}
 \alias{conjugateSamplerDefinitions}
+\alias{copierVector}
 \alias{copierVector_setupCodeTemplate}
 \alias{copyFromRobject}
 \alias{copyFromRobjectViaActiveBindings}
@@ -492,6 +493,7 @@
 \alias{modelValuesAccessorVector}
 \alias{modelValuesAccessorVector_setupCodeTemplate}
 \alias{modelValuesElement2Matrix}
+\alias{modelVariableAccessorVector}
 \alias{modelVariableAccessorVector_setupCodeTemplate}
 \alias{ModifiedRmmParseKeywords2}
 \alias{mvAccessHandler}

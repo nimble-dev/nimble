@@ -5,20 +5,7 @@
 ## copy(modelValues_nodes_accessors$row(i), xxx)
 ## modelValuesAccessorVector$getAccessors() returns a list of the modelValuesAccessor objects
 
-## I don't think this is used any more
-## modelValuesAccessor <- setRefClass(
-##     Class = 'modelValuesAccessor',
-##     fields = list(modelValues = 'ANY',
-##     			   id = 'ANY'
-##    #               var         = 'ANY', 		#'character',
-##    #               first       = 'ANY', 		#'numeric',
-##    #               last        = 'ANY', 		#'numeric',
-##    #               length	  = 'ANY' 		#'numeric'
-##     ),
-##     methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
-##                    show  = function() cat(paste0(toStr(), '\n'))
-##     )
-## )
+
 
 copierVector <- function(accessFrom_name, accessTo_name, isFromMV, isToMV) {
     ans <- list(deparse(substitute(accessFrom_name)), deparse(substitute(accessTo_name)), isFromMV, isToMV)
@@ -279,3 +266,18 @@ valuesAccessorVector <- setRefClass( ## new implementation
 
 ## length.modelValuesAccessorVector <- function(access)
 ## 	return(access$length)
+
+## I don't think this is used any more
+## modelValuesAccessor <- setRefClass(
+##     Class = 'modelValuesAccessor',
+##     fields = list(modelValues = 'ANY',
+##     			   id = 'ANY'
+##    #               var         = 'ANY', 		#'character',
+##    #               first       = 'ANY', 		#'numeric',
+##    #               last        = 'ANY', 		#'numeric',
+##    #               length	  = 'ANY' 		#'numeric'
+##     ),
+##     methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
+##                    show  = function() cat(paste0(toStr(), '\n'))
+##     )
+## )
