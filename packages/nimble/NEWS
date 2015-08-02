@@ -1,10 +1,8 @@
-                        CHANGES IN VERSION 0.4 (TBD)
-
-NOTE: WE SHOULD GO BACK THROUGH GITHUB ISSUES TO MAKE NOTE HERE OF VARIOUS CHANGES
+                        CHANGES IN VERSION 0.4 (Aug. 2, 2015)
 
 USER LEVEL CHANGES
 
--- almost everything is faster in almost all cases, sometimes very much faster, especially during R processing.
+-- almost everything is faster in almost all cases (building models, configuring MCMCs, compiling models and nimbleFunctions), sometimes very much faster, especially during R processing.
 
 -- added DSL functions stop("Error message") and checkInterrupt() to check for a user interrupt (via R_checkUserInterrupt() in C++).
 
@@ -22,55 +20,48 @@ USER LEVEL CHANGES
 
 -- nimble version of some common R functions is now consistently prefixed with "nim" instead of "nimble".  E.g. nimRound, nimStop, nimPrint, nimCopy.  These can still used without the prefix in the DSL, e.g. round, stop, print, copy.
 
--- added nimbleOptions useMultiInterfaceForNestedNimbleFunctions (default TRUE) and (experimental) clearNimbleFunctionsAfterCompiling (default FALSE) to reduce memory use. See User Manual section 9.6
+-- added nimbleOptions useMultiInterfaceForNestedNimbleFunctions (default TRUE) and (experimental) clearNimbleFunctionsAfterCompiling (default FALSE) to reduce memory use. See User Manual section 9.6.
 
--- setSize now consistently works in both compiled and uncompiled uses as setSize(X, size1, size2, etc.), not setSize(X, c(size1, size2, etc.))
+-- setSize now consistently works in both compiled and uncompiled uses as setSize(X, size1, size2, etc.), not setSize(X, c(size1, size2, etc.)).
 
--- [daniel - please add note about check()]
+-- added support for user-defined functions in BUGS code.
 
--- improved speed and reduced memory use when building models, configuring MCMCs, and compiling models and nimbleFunctions [Perry check language]
+-- added support for use of user-defined distributions in BUGS code, with the distribution density, simulate, distribution and quantile functions coded as nimbleFunctions and registered via registerDistributions().
 
--- added support for use of user-defined functions in BUGS code
+-- added support for truncation (T(,) and I(,) syntax in BUGS) plus dinterval distribution for censoring, both following the JAGS functionality.
 
--- added support for use of user-defined distributions in BUGS code, with the distribution density, simulate, distribution and quantile functions coded as nimbleFunctions and registered via registerDistributions()
+-- added ability to impose constraints via the dconstraint syntax; these constraints act like data and therefore only take effect a posteriori and are not imposed when simulating from the model.
 
--- added support for truncation (T(,) and I(,) syntax in BUGS) plus dinterval distribution for censoring, both following the JAGS functionality
+-- added alternative distribution names (aliases) usable in BUGS code (via an extensible system for adding additional aliases as desired): dbinom for dbin, dmultinom for dmulti, dnbinom for dnegbin, dchisqr for dchisq, dweibull for dweib, ddirich for ddirch, dwishart for dwish.
 
--- added ability to impose constraints via the dconstraint syntax; these constraints act like data and therefore only take effect a posteriori and are not imposed when simulating from the model
-
--- added alternative distribution names (aliases) usable in BUGS code (via an extensible system for adding additional aliases as desired): dbinom for dbin, dmultinom for dmulti, dnbinom for dnegbin, dchisqr for dchisq, dweibull for dweib, ddirich for ddirch, dwishart for dwish
-
--- added additional parameterizations for dlnorm and dt
+-- added additional parameterizations for dlnorm and dt.
 
 -- improved handling of distribution functions in nimbleFunction run code (i.e., the DSL), allowing argument matching by name and use of default values. Distribution functions can also be used as deterministic functions (e.g., pnorm to do probit calculations) in BUGS code. 
 
--- added a check when building model that alerts user to presence of nodes without values and log probability calculations that return NA
+-- added an optional check when building model that alerts user to presence of nodes without values and log probability calculations that return NA.
 
--- model$checkConjugacy(nodes) now accepts a character vector argument of node/variable names, and returns a named list identifying conjugate relationships
+-- model$checkConjugacy(nodes) now accepts a character vector argument of node/variable names, and returns a named list identifying conjugate relationships.
 
--- added support for truncated distributions in MCMC conjugacy checking
+-- added support for truncated distributions in MCMC conjugacy checking.
 
--- incorporated automated blocking into MCMC engine: configureMCMC(model, autoBLock=TRUE) returns an MCMCspec defined by automated blocking procedure, and buildMCMC(model, autoBlock=TRUE) returns the corresponding MCMC algorithm
+-- incorporated automated blocking into MCMC engine: configureMCMC(model, autoBLock=TRUE) returns an MCMCspec defined by automated blocking procedure, and buildMCMC(model, autoBlock=TRUE) returns the corresponding MCMC algorithm.
 
--- new syntax for MCMCspec$addSampler(type, target, control).  mandatory 'type' argument specifies sampler type, which may be a character string or nimbleFunction object.  mandatory 'target' argument specifices a character vector of target model nodes.  optional 'control' list argument overrides default sampler control parameters
+-- new syntax for MCMCspec$addSampler(type, target, control).  mandatory 'type' argument specifies sampler type, which may be a character string or nimbleFunction object.  mandatory 'target' argument specifices a character vector of target model nodes.  optional 'control' list argument overrides default sampler control parameters.
 
--- MCMCspec$getSamplers(ind), MCMCspec$setSamplers(ind), and MCMCspec$removeSamplers(ind) can optionally also accept a character vector argument, and will act on all samplers which sample the nodes specified
+-- MCMCspec$getSamplers(ind), MCMCspec$setSamplers(ind), and MCMCspec$removeSamplers(ind) can optionally also accept a character vector argument, and will act on all samplers which sample the nodes specified.
 
--- cleaned up formatting of output when querying and setting MCMC samplers [Daniel to check language]
+-- cleaned up formatting of output when querying and setting MCMC samplers.
 
--- NIMBLE will no longer "hang" when used in RStudio
+-- NIMBLE will no longer "hang" when used in RStudio.
 
--- reordered argument names to nimbleModel to put in more logical order of importance
+-- reordered argument names to nimbleModel to put in more logical order of importance.
 
--- added documentation of NIMBLE's built-in MCMC samplers via help(samplers)
+-- added documentation of NIMBLE's built-in MCMC samplers via help(samplers).
 
--- added more informative error messages for common errors encountered when calling nimbleModel() and compileNimble()
+-- added more informative error messages for common errors encountered when calling nimbleModel() and compileNimble().
 
--- now provide a calculateDiff() function that will calculate the difference between a stored log probability and current log probability [Perry to check language]
 
 DEVELOPER LEVEL CHANGES
-
-[NOT PUTTING ENTRIES HERE THAT BASICALLY ECHO USER-LEVEL CHANGES. -Perry]
 
 -- re-wrote model definition processing and R nodeFunction instantiation to do more work at the level of a BUGS declaration rather than for each individual node.
 
@@ -78,7 +69,7 @@ DEVELOPER LEVEL CHANGES
 
 -- re-wrote C++ nimCopy system and corresponding R partial evaluation to do more processing in R and set up C++ for faster processing.
 
--- added test-copy for nimCopy, values() and values()<-
+-- added test-copy for nimCopy, values() and values()<- .
 
 -- added nimbleProjectClass method for adding groups of nimbleFunctions from same generator at once.
 
@@ -88,37 +79,37 @@ DEVELOPER LEVEL CHANGES
 
 -- removed some old code deemed to be fully defunct.
 
--- added 'range' variable to all distributions; when truncation is specified this modifies the range and also sets the 'truncated' flag to TRUE; range is not at the moment used but could be used by developers in algorithms
+-- added 'range' variable to all distributions; when truncation is specified this modifies the range and also sets the 'truncated' flag to TRUE; range is not at the moment used but could be used by developers in algorithms.
 
--- added a variety of error checking for various distribution functions and now generally use doubles in distribution functions in C++
+-- added a variety of error checking for various distribution functions and now generally use doubles in distribution functions in C++.
 
 -- modified API for nimble options to mimic R's options(), including nimbleOptions() and getOptions() and renaming of the underlying nimble options object to be .nimbleOptions.
 
 -- added an environment, nimbleUserNamespace, in the package namespace, that allows user-supplied information to control the behavior of NIMBLE. At the moment, only used for user-supplied distributions list.
 
--- testing of user-defined distributions and functions in BUGS code (tests/test-user.R)
+-- testing of user-defined distributions and functions in BUGS code (tests/test-user.R).
 
--- full suite of testing for truncation/censoring/constraints added (tests/test-trunc.R)
+-- full suite of testing for truncation/censoring/constraints added (tests/test-trunc.R).
 
--- names of custom MCMC sampler nimbleFunctions need not begin with "sampler_"
+-- names of custom MCMC sampler nimbleFunctions need not begin with "sampler_".
 
--- nimbleFunction provided for use in algorithms: initializeModel(model), to perform sensible model initialization at the onset of an algorithm
+-- added initializeModel() nimbleFunction for use in algorithms; it performs sensible model initialization at the onset of an algorithm.
 
 BUG FIXES
 
--- setSize fixed
+-- setSize fixed.
 
 -- generation of "1/(scale)" type bits in keyword processing for exp and gamma fixed.
 
--- fixed bug where quitting R after dyn.unload()ing in OS X / linux caused a segfault.  Now we rely on a finalizer that uses the base class virtual destructor, which is in the package dll, not the generated one(s).  We still have segfaults on Windows after dyn.unload()ing.
+-- fixed bug where quitting R after dyn.unload()ing in OS X / Linux caused a segfault.  Now we rely on a finalizer that uses the base class virtual destructor, which is in the package dll, not the generated one(s).  We still have segfaults on Windows after dyn.unload()ing.
 
--- made row subset assignment work in the compiler, e.g. x[i,] <- foo(a)
+-- made row subset assignment work in the compiler, e.g. x[i,] <- foo(a).
 
--- updated package to use new igraph 1.x.x API and now explicitly link in LAPACK_LIBS and BLAS_LIBS when building libnimble.so as dpotrf not being found when using igraph 1.x.x
+-- updated package to use new igraph 1.x.x API and now explicitly link in LAPACK_LIBS and BLAS_LIBS when building libnimble.so as dpotrf not being found when using igraph 1.x.x.
 
--- fixed bug where dexp was passing the wrong parameter (rate instead of scale) to C++; we now use our own dexp_nimble, which calls Rmath's dexp correctly
+-- fixed bug where dexp was passing the wrong parameter (rate instead of scale) to C++; we now use our own dexp_nimble, which calls Rmath's dexp correctly.
 
--- set default for deparse to width.cutoff=500L to avoid splitting of lines when going from expressions to string names
+-- set default for deparse to width.cutoff=500L to avoid splitting of lines when going from expressions to string names.
 
                         CHANGES IN VERSION 0.3-1 (Mar. 7, 2015)
 
