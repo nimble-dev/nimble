@@ -91,7 +91,6 @@ Collate: config.R
  ENKF_build.R
  bootF_build.R
  ascentMCEM_build.R
- normConst_build.R
  optimTools.R
  NF_utils.R
  miscFunctions.R
