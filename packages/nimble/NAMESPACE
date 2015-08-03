@@ -46,15 +46,12 @@ export(autoBlock)
 export(autoBlockClass)
 export(autoBlockModel)
 export(autoBlockParamDefaults)
-<<<<<<< HEAD
 export(buildNeededObjects)
 export(BUGScode)
 export(BUGScontextClass)
 export(BUGSdeclClass)
 export(BUGSsingleContextClass)
 export(buildAscentMCEM)
-=======
->>>>>>> upstream/devel
 export(buildConjugateSamplerFunctions)
 export(buildMCEM)
 export(buildMCMC)
@@ -75,15 +72,12 @@ export(calcNodesMV)
 export(calc_E_llk_gen)
 export(calc_dmnormAltParams)
 export(calculate)
-<<<<<<< HEAD
 export(calculate_keywordInfo)
 export(calculateDiff)
 export(calculateDiff_keywordInfo)
-=======
 export(calculateDiff)
 export(calculateDiff_keywordInfo)
 export(calculate_keywordInfo)
->>>>>>> upstream/devel
 export(callToPackVPtrs)
 export(cc_createStructureExpr)
 export(cc_structureExprName)
@@ -390,15 +384,12 @@ export(sampler_conjugate_dnorm)
 export(sampler_conjugate_dwish)
 export(sampler_crossLevel)
 export(sampler_end)
-<<<<<<< HEAD
 export(sampler_RW)
 export(sampler_RW_log)
 export(sampler_RW_block)
 export(sampler_RW_llFunction)
 export(sampler_RW_PFilter)
 export(sampler_RW_llFunctionBlock)
-=======
->>>>>>> upstream/devel
 export(sampler_slice)
 export(setAndCalculate)
 export(setAndCalculateDiff)
