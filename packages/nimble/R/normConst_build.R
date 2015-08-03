@@ -262,8 +262,8 @@ getNormConst <-nimbleFunction(
         } 
       }
     }
-    ## initial value for coefficient of variation of importance sampling weights.  if the getCV() method
-    ## is called before the normalizing constant has been estimated, a cv of 0 will be returned.
+    ## initial value for variance of importance sampling weights.  if the getSD() method
+    ## is called before the normalizing constant has been estimated, a sd of -1 will be returned.
     CV <- 0
   },
   run = function(mcmcSamps = integer(0), importanceSamps = integer(0)){

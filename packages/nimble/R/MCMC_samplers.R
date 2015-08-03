@@ -1099,6 +1099,11 @@ sampler_RW_PFilter <- nimbleFunction(
 #' \cr
 #' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University. \cr
 #' 
+<<<<<<< HEAD
 #' @references Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
+=======
+NULL
 
+
+>>>>>>> upstream/devel
 
