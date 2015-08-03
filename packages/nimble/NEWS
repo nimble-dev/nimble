@@ -48,13 +48,15 @@ USER LEVEL CHANGES
 
 -- new syntax for MCMCspec$addSampler(type, target, control).  mandatory 'type' argument specifies sampler type, which may be a character string or nimbleFunction object.  mandatory 'target' argument specifices a character vector of target model nodes.  optional 'control' list argument overrides default sampler control parameters.
 
+-- default control parameters for MCMC sampling algorithms are now a NIMBLE system level option: MCMCcontrolDefaultList.
+
 -- MCMCspec$getSamplers(ind), MCMCspec$setSamplers(ind), and MCMCspec$removeSamplers(ind) can optionally also accept a character vector argument, and will act on all samplers which sample the nodes specified.
 
 -- cleaned up formatting of output when querying and setting MCMC samplers.
 
 -- NIMBLE will no longer "hang" when used in RStudio.
 
--- reordered argument names to nimbleModel to put in more logical order of importance.
+-- reordered argument names to nimbleModel to put in more logical order of importance. first four arguments are: code, constants, data, inits.
 
 -- added documentation of NIMBLE's built-in MCMC samplers via help(samplers).
 
