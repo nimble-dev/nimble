@@ -298,8 +298,10 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
         ## that are really created as intermediates for others that are really needed
         ## during the keyword processing, the newSetupOutputNames is used for
         ## bookkeeping, so it would not be trivial to remove them at an earlier stage.
-        
+
         origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
+        declaredSetupOutputs <- getFunctionEnvVar(nfGenerator, 'declaredSetupOutputNames')
+        origSetupOutputs <- setdiff(origSetupOutputs, declaredSetupOutputs)
         newRcodeList <- lapply(compileInfos, `[[`, 'newRcode')
         allNamesInCodeAfterKeywordProcessing <- unique(unlist(lapply(newRcodeList, all.names)))
         origSetupOutputNamesToKeep <- intersect(allNamesInCodeAfterKeywordProcessing, origSetupOutputs) ## this loses mv!

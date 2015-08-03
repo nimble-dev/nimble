@@ -31,11 +31,11 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 }
 
 
-#' Create a NIMBLE BUGS model
+#' Create a NIMBLE mode from BUGS code 
 #' 
 #' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition
 #' 
-#' @param code code for the model in the form returned by \code{nimbleCode} or (equivalently) \code{quote}
+#' @param code code for the model in the form returned by \link{nimbleCode} or (equivalently) \code{quote}
 #' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
 #' @param data named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
 #' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
@@ -68,7 +68,7 @@ nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimen
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
-#' Simply keeps model code as an R call object, the form needed by \code{nimbleModel} and optionally usable by \code{readBUGSmodel}
+#' Simply keeps model code as an R call object, the form needed by \link{nimbleModel} and optionally usable by \link{readBUGSmodel}
 #' 
 #' @param code expression providing the code for the model 
 #' @author Daniel Turek

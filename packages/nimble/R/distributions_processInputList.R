@@ -265,10 +265,11 @@ getValueDim <- function(distObject)
 #' a character vector of comma-separated 'name = value' pairs that provide the mathematical expressions relating non-canonical parameters to canonical parameters (canonical parameters are those passed as arguments to your distribution functions). These inverse functions are used for MCMC conjugacy calculations when a conjugate relationship is expressed in terms of non-default parameters (such as the precision for normal-normal conjugacy). If not supplied, the system will still function but with a possible loss of efficiency in certain algorithms.
 #' }
 #' \item{\code{types}} {
-#' a character vector of comma-separated 'name = input' pairs indicating the type and dimension of the random variable and parameters (including default and alternative parameters). 'input' should take the form 'double(d)' or 'integer(d)', where 'd' is 0 for scalars, 1 for vectors, 2 for matrices. Note that since NIMBLE uses doubles for numerical calculations and the default type  is \cd{double(0)}, one should generally use 'double' and one need only specify the type for non-scalars. 'name' should be either 'value' to indicate the random variable itself or the parameter name to indicate a given parameter.  
+#' a character vector of comma-separated 'name = input' pairs indicating the type and dimension of the random variable and parameters (including default and alternative parameters). 'input' should take the form 'double(d)' or 'integer(d)', where 'd' is 0 for scalars, 1 for vectors, 2 for matrices. Note that since NIMBLE uses doubles for numerical calculations and the default type  is \code{double(0)}, one should generally use 'double' and one need only specify the type for non-scalars. 'name' should be either 'value' to indicate the random variable itself or the parameter name to indicate a given parameter.  
 #' }
 #' \item{\code{range}} {
 #' a vector of two values giving the range of the distribution for possible use in future algorithms (not used currently). When the lower or upper limit involves a strict inequality (e.g., $x>0$), you should simply treat it as a non-strict inequality ($x>=0$, and set the lower value to 0). Also we do not handle ranges that are functions of parameters, so simply use the smallest/largest possible values given the possible parameter values. If not supplied this is taken to be \code{(-Inf, Inf)}.
+#' }
 #' }
 #' @examples
 #' dmyexp <- nimbleFunction(
@@ -453,5 +454,15 @@ processDistributionAliases <- function(distributionsInputList) {
 distributionAliases <- processDistributionAliases(distributionsInputList) 
 
 
+distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector'), dIncluded = TRUE)
+distribution_rFuns <- gsub("^d", "r", distribution_dFuns)
+
+pqAvail <- names(which(getDistributionsInfo('pqAvail')))
+pqDists <- BUGSdistToRdist(pqAvail, dIncluded = TRUE)
+
+distribution_pFuns <- gsub("^d", "p", pqDists)
+distribution_qFuns <- gsub("^d", "q", pqDists)
+
+distributionFuns <- c(distribution_dFuns, distribution_rFuns, distribution_pFuns, distribution_qFuns)
 
 

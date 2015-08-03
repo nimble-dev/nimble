@@ -16,6 +16,8 @@ nf_refClassLabelMaker <- labelFunctionCreator('nfRefClass')
 #'
 #' @details See the NIMBLE User Manual section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
 #'
+#' @seealso \link{nimbleFunction}
+#' 
 #' @return An object that can be passed as the \code{contains} argument to \code{nimbleFunction} or as the argument to \code{nimbleFunctionList}
 nimbleFunctionVirtual <- function(contains = NULL,
                                   run = function() { },
@@ -41,8 +43,8 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #'
 #' @param setup An optional R function definition for setup processing.
 #' @param run An optional NIMBLE function definition the executes the primary job of the nimbleFunction
-#' @param methods An optional named list of NIMBLE function definitions for other class methods that can be called via \code{nfMethod}.
-#' @param contains An optional object returned from \code{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
+#' @param methods An optional named list of NIMBLE function definitions for other class methods.
+#' @param contains An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
 #' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
 #'
@@ -51,9 +53,9 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @export
 #'
 #' @details
-#' This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE User Manual, so only a brief summary will be made here.
+#' This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE User Manual, so only a brief summary will be given here.
 #'
-#' If a \code{setup} function is provided, then \code{nimbleFunction} returns a generator: a function that when called with arguments for the setup function will execute that function and return a specialized nimbleFunction.   When the specialized nimbleFunction is called, the \code{run} function is executed, which can use objects that were created in or passed to the \code{setup} function.  Additional member functions provided in the \code{methods} argument can be accessed using \code{nfMethod}.
+#' If a \code{setup} function is provided, then \code{nimbleFunction} returns a generator: a function that when called with arguments for the setup function will execute that function and return a specialized nimbleFunction.   The \code{run} and other methods can be called using \code{$} like in other R classes, e.g. \code{nf$run()}. The methods can use objects that were created in or passed to the \code{setup} function.
 #'
 #' If no \code{setup} function is provided, then \code{nimbleFunction} returns a function that executes the \code{run} function.  It is not a generator in this case, and no other \code{methods} can be provided.
 #'
@@ -84,8 +86,12 @@ nimbleFunction <- function(setup         = NULL,
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     methodList <- lapply(methodList, nfMethodRC)
+    ## record any setupOutputs declared by setupOutput()
+    setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
+    declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
+    rm(setupOutputsDeclaration)
     ## create the reference class definition
-    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup)
+    nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
     nfRefClass    <- eval(nfRefClassDef)
 
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
@@ -122,7 +128,7 @@ nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase',
 
 
 ## template for the reference class internal to all nimble functions
-nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup) {
+nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabelMaker(), globalSetup, declaredSetupOutputNames) {
     finalMethodList <- lapply(methodList, function(nfMethodRCobject) nfMethodRCobject$generateFunctionObject())
     finalMethodList[['show']] <- eval(substitute(function() writeLines(paste0('reference class object for nimble function class ', className)),
                                                  list(className = className)))
@@ -133,7 +139,7 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
                     contains = 'nimbleFunctionBase',	#	$runRelated
                     where   = where),
         list(NFREFCLASS_CLASSNAME = className,
-             NFREFCLASS_FIELDS    = nf_createRefClassDef_fields(setup, methodList, globalSetup),
+             NFREFCLASS_FIELDS    = nf_createRefClassDef_fields(setup, methodList, globalSetup, declaredSetupOutputNames),
              NFREFCLASS_METHODS   = finalMethodList
             )
         )
@@ -141,9 +147,9 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
 
 
 ## creates a list of the fields (setupOutputs) for a nimble function reference class
-nf_createRefClassDef_fields <- function(setup, methodList, globalSetup) {
-    setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
-    setupOutputNames <- nf_createSetupOutputNames(setup, methodList, setupOutputsDeclaration, globalSetup)
+nf_createRefClassDef_fields <- function(setup, methodList, globalSetup, declaredSetupOutputNames) {
+##    setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
+    setupOutputNames <- nf_createSetupOutputNames(setup, methodList, declaredSetupOutputNames, globalSetup)
     if(FALSE) print(setupOutputNames)
     fields <- as.list(rep('ANY', length(setupOutputNames)))
     names(fields) <- setupOutputNames
@@ -153,12 +159,12 @@ nf_createRefClassDef_fields <- function(setup, methodList, globalSetup) {
     return(fields)
 }
 
-nf_createSetupOutputNames <- function(setup, methodList, setupOutputsDeclaration, globalSetup) {
+nf_createSetupOutputNames <- function(setup, methodList, declaredSetupOutputNames, globalSetup) {
     setupOutputNames <- character(0)
     setupOutputNames <- c(setupOutputNames, names(formals(setup)))   # add all setupArgs to potential setupOutputs
     setupOutputNames <- c(setupOutputNames, nf_assignmentLHSvars(body(setup)), nf_assignmentLHSvars(body(globalSetup)))  # add all variables on LHS of <- in setup to potential setupOutputs
     setupOutputNames <- intersect(setupOutputNames, nf_createAllNamesFromMethodList(methodList))
-    setupOutputNames <- c(setupOutputNames, nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration))
+    setupOutputNames <- c(setupOutputNames, declaredSetupOutputNames)
     setupOutputNames <- unique(setupOutputNames)
     return(setupOutputNames)
 }

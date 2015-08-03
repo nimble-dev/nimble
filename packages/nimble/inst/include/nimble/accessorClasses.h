@@ -56,7 +56,7 @@ class SingleVariableMapAccessBase {
   virtual NimArrType *getNimArrPtr()=0;
   void calculateLength() {
     length = 1;
-    for(int i = 0 ; i < sizes.size(); ++i) {length *= sizes[i];}
+    for(unsigned int i = 0 ; i < sizes.size(); ++i) {length *= sizes[i];}
   }
   int &getLength() {return(length);}
   int &getOffset() {return(offset);}

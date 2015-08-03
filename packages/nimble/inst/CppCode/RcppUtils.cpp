@@ -3,6 +3,15 @@
 #include "nimble/RcppUtils.h"
 #include "nimble/Utils.h"
 #include<iostream>
+#include<sstream>
+
+std::ostringstream _nimble_global_output;
+
+void nimble_print_to_R(std::ostringstream &input) {
+  PRINTF("%s", input.str().c_str());
+  input.str("");
+  input.clear();
+}
 
 void multivarTestCall(double *x, int n) {
   std::cout<<"In multivarTestCall\n";

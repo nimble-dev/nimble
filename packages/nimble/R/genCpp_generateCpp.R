@@ -135,6 +135,7 @@ cppOutputReturn <- function(code, symTab) {
 
 cppOutputCout <- function(code, symTab) {
     paste0('std::cout <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"')
+    paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
 }
 
 cppOutputChainedCall <- function(code, symTab) {
@@ -148,7 +149,7 @@ cppOutputFor <- function(code, symTab) {
     begin <- nimGenerateCpp(code$args[[2]]$args[[1]], symTab)
     end <- nimGenerateCpp(code$args[[2]]$args[[2]], symTab)
     iterVar <- nimGenerateCpp(code$args[[1]], symTab)
-    part1 <- paste0('for(', iterVar ,'=', begin,'; ', iterVar, '<=', end, '; ++', iterVar,')')
+    part1 <- paste0('for(', iterVar ,'=', begin,'; ', iterVar, '<= static_cast<int>(', end, '); ++', iterVar,')')
     part2 <- nimGenerateCpp(code$args[[3]], symTab)
     if(is.list(part2)) {
         part2[[1]] <- paste(part1, part2[[1]])
