@@ -9,11 +9,6 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        cppDef = 'ANY'
                                        ),
                                    methods = list(
-                                       ## setClassName = function(className) {
-                                       ##     print('what to do with setClassName'); browser()
-                                       ##     name <<- className
-                                       ##     assign('CclassName', name, envir = environment(nfGenerator)) ## to avoid warnings on <<-
-                                       ## },
                                        show = function() {
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
@@ -31,10 +26,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                }
                                                if(missing(className)) {
                                                    sf <- environment(nfGenerator)$name
-                                                   ##setClassName(Rname2CppName(deparse(sf)))
                                                    name <<- Rname2CppName(sf)
                                                } else {
-                                                   ##setClassName(className)
                                                    name <<- className
                                                }
                                                origMethods <<- nf_getMethodList(nfGenerator)
@@ -55,7 +48,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        },
                                        doRCfunProcess = function(control = list(debug = FALSE, debugCpp = FALSE)) {
                                            for(i in seq_along(RCfunProcs)) {
-                                               RCfunProcs[[i]]$process(debug = control$debug, debugCpp = control$debugCpp, debugCppLabel = name)
+                                               RCfunProcs[[i]]$process(debug = control$debug, debugCpp = control$debugCpp, debugCppLabel = name, doKeywords = FALSE)
                                            }
                                        },
                                        process = function(control = list(debug = FALSE, debugCpp = FALSE)) {
@@ -74,6 +67,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                 neededTypes =  'ANY',		#'list', ## A list of symbolTable entries of non-native types, such as derived models or modelValues, that will be needed
                               neededObjectNames =  'ANY',		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
                                 newSetupOutputNames =  'ANY',		#'character',
+                                blockFromCppNames = 'ANY',
                                 newSetupCode =  'ANY',		#'list',
                                 newSetupCodeOneExpr = 'ANY',
                                 nimbleProject = 'ANY',
@@ -101,19 +95,15 @@ nfProcessing <- setRefClass('nfProcessing',
                                       instances <<- if(inherits(f, 'list')) lapply(f, nf_getRefClassObject) else list(nf_getRefClassObject(f))
                                      
                                       newSetupOutputNames <<- character()
+                                      blockFromCppNames <<- character()
                                       newSetupCode <<- list()
                                   }
                               },
 
-
-								##NEW PROCESSING TOOLS.   
-								processKeywords_all = function(){},
-								processKeywords_one = function(){},
-								matchKeywords_all = function(){},
-								matchKeywords_one = function(){},
-
-  
-  
+                              ##NEW PROCESSING TOOLS.   
+                              processKeywords_all = function(){},
+                              matchKeywords_all = function(){},
+                              
                               doSetupTypeInference_processNF = function() {},
                               makeTypeObject = function() {},
                               replaceCall = function() {},
@@ -122,25 +112,13 @@ nfProcessing <- setRefClass('nfProcessing',
                               evalNewSetupLinesOneInstance = function(instances, check = FALSE){},
                               setupTypesForUsingFunction = function(){},
                               doSetupTypeInference = function(){},
+                              clearSetupOutputs = function() {},
                               addMemberFunctionsToSymbolTable = function(){},
                               setupLocalSymbolTables = function() {
                                   for(i in seq_along(RCfunProcs)) {
                                       RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab)
                                   }
                               },
-                              ## buildRCfun = function(RCname) {
-                              ##     ans <- RCfunctionDef$new()
-                              ##     ans$buildFunction(RCfunProcs[[RCname]])
-                              ##     ans$buildSEXPinterfaceFun(className = name)
-                              ##     ans
-                              ## },
-                              ## buildRCfuns = function() {
-                              ##     RCfuns <<- list()
-                              ##     for(i in seq_along(RCfunProcs)) {
-                              ##         RCname <- names(RCfunProcs)[i]
-                              ##         RCfuns[[RCname]] <<- buildRCfun(RCname)
-                              ##     }
-                              ## },
                               collectRCfunNeededTypes = function() {
                                   for(i in seq_along(RCfunProcs)) {
                                       for(j in names(RCfunProcs[[i]]$neededRCfuns)) {
@@ -155,7 +133,6 @@ nfProcessing <- setRefClass('nfProcessing',
                                   ## If this class has a virtual base class, we add it to the needed types here
                                   contains <- environment(nfGenerator)$contains
                                   if(!is.null(contains)) {
-                                      ## generatorFun <- nf_getGeneratorFunction(contains)
                                       className <- environment(contains)$className
                                       nfp <- nimbleProject$setupVirtualNimbleFunction(contains, fromModel = inModel)
                                       newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunctionVirtual', nfProc = nfp) 
@@ -166,11 +143,11 @@ nfProcessing <- setRefClass('nfProcessing',
                                   ## Modifications to R code
                                   debug <- control$debug
                                   debugCpp <- control$debugCpp
-                                  if(!is.null(nimbleOptions$debugNFProcessing)) {
-                                      if(nimbleOptions$debugNFProcessing) {
+                                  if(!is.null(nimbleOptions()$debugNFProcessing)) {
+                                      if(nimbleOptions()$debugNFProcessing) {
                                           debug <- TRUE
                                           control$debug <- TRUE
-                                          writeLines('Debugging nfProcessing (nimbleOptions$debugRCfunProcessing is set to TRUE)') 
+                                          writeLines('Debugging nfProcessing (nimbleOptions()$debugRCfunProcessing is set to TRUE)') 
                                       }
                                   }
                                   
@@ -190,12 +167,10 @@ nfProcessing <- setRefClass('nfProcessing',
                                   if(debug) browser()
                                   addBaseClassTypes()
 								
-									##NEW PROCESSING TOOLS.   
-									matchKeywords_all()
-									processKeywords_all()
-
-
-
+                                  ##NEW PROCESSING TOOLS.   
+                                  matchKeywords_all()
+                                  processKeywords_all()
+                                  
                                   if(debug) browser()
 
                                   makeNewSetupLinesOneExpr()
@@ -231,8 +206,6 @@ nfProcessing <- setRefClass('nfProcessing',
 
                                   collectRCfunNeededTypes()
 
-##                                  buildRCfuns() ## This should go somewhere else, I think in cppNimbleFunction
-                                  
                                   if(debug) {
                                       print('done with RCfunProcessing')
                                       browser()
@@ -251,7 +224,17 @@ nfProcessing$methods(evalNewSetupLines = function() {
 nfProcessing$methods(makeNewSetupLinesOneExpr = function() {
     newSetupCodeOneExpr <<- as.call(c(list(as.name('{')), newSetupCode))
 })
-                     
+
+nfProcessing$methods(clearSetupOutputs = function(inst) {
+    for(i in nf_getSetupOutputNames(nfGenerator)) {
+        inst[[i]] <- NULL
+    }
+    for(i in newSetupOutputNames) {
+        inst[[i]] <- NULL
+    }
+    NULL
+})
+
 nfProcessing$methods(evalNewSetupLinesOneInstance = function(instance, check = FALSE) {
     if(is.nf(instance)) instance <- nf_getRefClassObject(instance)
     if(check) {
@@ -262,18 +245,17 @@ nfProcessing$methods(evalNewSetupLinesOneInstance = function(instance, check = F
         }
         if(!go) return(invisible(NULL))
     }
+    ## Warning: this relies on the fact that although refClass environments are closed, we can
+    ## eval in them and create new variables in them that way.
     eval(newSetupCodeOneExpr, envir = instance)
-    ## for(j in seq_along(newSetupCode)) {
-    ##     ## Warning: this relies on the fact that althought refClass environments are closed, we can
-    ##     ## eval in them and create new variables in them that way.
-    ##     eval(newSetupCode[[j]], envir = instance)
-    ## }
     instance$.newSetupLinesProcessed <- TRUE
 })
 
 nfProcessing$methods(setupTypesForUsingFunction = function() {
-    doSetupTypeInference(TRUE, FALSE)
-    addMemberFunctionsToSymbolTable()
+    if(inherits(setupSymTab, 'uninitializedField')) {
+        doSetupTypeInference(TRUE, FALSE)
+        addMemberFunctionsToSymbolTable()
+    }
 })
 
 nfProcessing$methods(addMemberFunctionsToSymbolTable = function() {
@@ -300,9 +282,51 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
     }
     if(setupNew) {
+        ## Kluge that results from adding string handling to the compiler:
+        ## Previously any character objects were assigned a symbol object with
+        ## type 'Ronly'.  In later processing all 'Ronly' types are filtered out of
+        ## propagation to C++.
+        ## Now that we have added string handling, character objects are assigned
+        ## a symbolString symbol with type "character" and not automatically filtered.
+        ## Unfortunately this means that vectors of node names that are only used
+        ## in lines like calculate(model, nodeNames), which undergoes keyword processing
+        ## would be propogated to C++ wastefully.
+        ## As a kluge, we will step in here, during second round of setup type inference
+        ## to re-assign type 'Ronly' to any symbols that, as a result of
+        ## keyword processing, we can now see are not needed
+        ## We also need the section added below to filter out newSetupOutputs
+        ## that are really created as intermediates for others that are really needed
+        ## during the keyword processing, the newSetupOutputNames is used for
+        ## bookkeeping, so it would not be trivial to remove them at an earlier stage.
+
+        origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
+        declaredSetupOutputs <- getFunctionEnvVar(nfGenerator, 'declaredSetupOutputNames')
+        origSetupOutputs <- setdiff(origSetupOutputs, declaredSetupOutputs)
+        newRcodeList <- lapply(compileInfos, `[[`, 'newRcode')
+        allNamesInCodeAfterKeywordProcessing <- unique(unlist(lapply(newRcodeList, all.names)))
+        origSetupOutputNamesToKeep <- intersect(allNamesInCodeAfterKeywordProcessing, origSetupOutputs) ## this loses mv!
+        origSetupOutputNamesNotNeeded <- setdiff(origSetupOutputs,origSetupOutputNamesToKeep) ## order matters
+        for(nameNotNeeded in origSetupOutputNamesNotNeeded) {
+            thisSym <- setupSymTab$getSymbolObject(nameNotNeeded)
+            if(!is.null(thisSym))  if(!thisSym$type == 'Values') thisSym$type <- 'Ronly' ## must keep modelValues, nimbleFunctions, possibly others
+        }
+
         outputNames <- c(outputNames, newSetupOutputNames)
     }
     doSetupTypeInference_processNF(setupSymTab, outputNames, instances, add = TRUE)   # add info about each setupOutput to symTab
+
+    if(setupNew) {
+        ## This is the second part of the kluge.
+        ## Probably it would be ok to never add these to the symbol table in the first place
+        ## but right now I am doing it this way to minimize unforeseen consequences by more closely mimicing what would have been created prior to adding string support
+        ## This is trickier because keyword processing can create objects for propogation to C++ that never appear in method code (e.g. manyVariableAccessors used to construct copierVectors)
+        ## So I added a blockFromCppNames that is populated during keyword processing
+        
+        for(nameNotNeeded in blockFromCppNames) {
+            thisSym <- setupSymTab$getSymbolObject(nameNotNeeded)
+            if(!is.null(thisSym)) thisSym$type <- 'Ronly'
+        }
+    }
 })
 
 nfProcessing$methods(doSetupTypeInference_processNF = function(symTab, setupOutputNames, instances, add = FALSE, firstOnly = FALSE) {
@@ -312,6 +336,7 @@ nfProcessing$methods(doSetupTypeInference_processNF = function(symTab, setupOutp
     }
     for(name in setupOutputNames) {
         symbolRCobject <- makeTypeObject(name, instances, firstOnly)
+        if(is.null(symbolRCobject)) next
         if(is.logical(symbolRCobject)) {
             warning(paste0('There is an error involving the type of ', name,'.  Going into browser(). Press Q to exit.'), call. = FALSE)
             browser()
@@ -359,8 +384,19 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         }
         return(newSym)
     }
-    if(is.character(instances[[1]][[name]])) {
-        return(symbolBase(name = name, type = 'Ronly'))
+    if(inherits(instances[[1]][[name]], 'OptimReadyFunction')){
+    	    	
+    	thisObj <- instances[[1]][[name]]
+    	nfName <- thisObj$getOriginalName()
+   		funList <- lapply(instances, `[[`, nfName)
+        nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
+    	newSym <- symbolOptimReadyFunction(name = name, type = 'OptimReadyFunction', nfName = nfName, nfProc = nfp, genName = thisObj$getGeneratorName())
+    	
+    	baseClassName <- class(nf_getRefClassObject(funList[[1]]))
+    	optReadyClassName <- paste0('OPTIMREADY_', baseClassName)
+    	    	
+    	if(!(optReadyClassName %in% names(neededTypes))) neededTypes[[optReadyClassName]] <<- newSym
+    	return(NULL)
     }
     if(is.nf(instances[[1]][[name]])) { ## nimbleFunction
         funList <- lapply(instances, `[[`, name)
@@ -370,6 +406,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         neededObjectNames <<- c(neededObjectNames, name)
         newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunction', nfProc = nfp)
         if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+
         return(newSym)
     }
     if(inherits(instances[[1]][[name]], 'modelValuesBaseClass')) { ## In some cases these could be different derived classes.  If locally defined they must be the same
@@ -422,6 +459,11 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         return(symbolNumericList(name = name, type = varinfo$listType, nDim = max(varinfo$nDim, 1),  className = class(instances[[1]][[name]]))) 
     }
 
+    if(inherits(instances[[1]][[name]], 'copierVectorClass')) {
+        newSym <- symbolCopierVector(name = name, type = 'symbolCopierVector')
+        return(newSym)
+    }
+    
     if(inherits(instances[[1]][[name]], 'singleVarAccessClass')) {
         ## Keeping this simple: only doing first instance for now
         varInfo <- instances[[1]][[name]]$model$getVarInfo( instances[[1]][[name]]$var )
@@ -448,7 +490,6 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         return(symbolVecNimArrPtr(name = name, type = type, nDim = nDim, size = varSym$size))
     }
 
-
     if(inherits(instances[[1]][[name]], 'nodeFunctionVector')) { 
         return(symbolNodeFunctionVector(name = name))
     }
@@ -457,12 +498,50 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     }
     if(inherits(instances[[1]][[name]], 'modelValuesAccessorVector')){
     	return(symbolModelValuesAccessorVector(name = name) )     	
-    }    
+    }
+    ## if(is.character(instances[[1]][[name]])) {
+    ##     return(symbolBase(name = name, type = 'Ronly'))
+    ## }
+    if(is.character(instances[[1]][[name]])) {
+        if(firstOnly) {
+            nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
+            if(nDim > 1) {
+                warning('character object with nDim > 1 being handled as a vector')
+                nDim <- 1
+            }
+            size <- if(length(instances[[1]][[name]])==1) 1L else as.numeric(NA)
+            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+            }
+            return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
+        } else {
+            instanceObjs <- lapply(instances, `[[`, name)
+            types <- unlist(lapply(instanceObjs, storage.mode))
+            if(!all(types == 'character')) stop(paste('Inconsistent types for setup variable', name))
+            dims <- lapply(instanceObjs, dim)
+            dimsNULL <- unlist(lapply(dims, is.null))
+            if(any(dimsNULL)) { ## dimsNULL TRUE means it is a vector
+                if(!all(dimsNULL)) {
+                    warning(paste0('Dimensions do no all match for ', name, 'but they will be treated as all vectors anyway.'))
+                }
+            }
+            nDim <- 1
+            lengths <- unlist(lapply(instanceObjs, length))
+            size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
+            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+            }
+            return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
+        }
+    }
     if(is.numeric(instances[[1]][[name]]) | is.logical(instances[[1]][[name]])) {
         if(firstOnly) {
             type <- storage.mode(instances[[1]][[name]])
             nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
             size <- if(length(instances[[1]][[name]])==1) rep(1L, nDim) else rep(as.numeric(NA), nDim)
+            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+            }
             return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
         } else {
             instanceObjs <- lapply(instances, `[[`, name)
@@ -477,7 +556,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
                 nDim <- 1
                 lengths <- unlist(lapply(instanceObjs, length))
                 size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
-                if(nimbleOptions$convertSingleVectorsToScalarsInSetupArgs) {
+                if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
                     if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
                 }
             } else {
@@ -537,94 +616,58 @@ nfProcessing$methods(determineNdimsFromInstances = function(modelExpr, varOrNode
 
 
 nfProcessing$methods(processKeywords_all = function(){	
-	for(i in seq_along(compileInfos)){
-		compileInfos[[i]]$newRcode <<- processKeywords_one(compileInfos[[i]]$origRcode)
-		}
-	})
-
-nfProcessing$methods(processKeywords_one = function(code){
-	cl = length(code)
-	if(cl == 1){
-		if(is.call(code)){
-			if(length(code[[1]]) > 1)	code[[1]] <- processKeywords_one(code[[1]])
-		}
-		return(code)
-	}
-
-	if(length(code[[1]]) == 1)
-		{
-		code <- processKeyword(code, .self)
-		}
-
-	cl = length(code)
-
-  if(is.call(code)) {
-        if(length(code[[1]]) > 1) code[[1]] <- processKeywords_one(code[[1]])
-        if(cl >= 2) {
-            for(i in 2:cl) {
-                code[[i]] <- processKeywords_one(code[[i]])
-            }
-        }
+    for(i in seq_along(compileInfos)){
+        RCfunProcs[[i]]$processKeywords(.self)
     }
-	return(code)
 })
 
 nfProcessing$methods(matchKeywords_all = function(){
 	for(i in seq_along(compileInfos))
-	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
+            RCfunProcs[[i]]$matchKeywords(.self)
+            ##	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
 })
 
-nfProcessing$methods(matchKeywords_one = function(code){
-	cl = length(code)
-	if(cl == 1){
-		if(is.call(code)){
-			if(length(code[[1]]) > 1)	code[[1]] <- matchKeywords_one(code[[1]])
-		}
-		return(code)
-	}
-	if(length(code[[1]]) == 1)
-		code <- matchKeywordCode(code) 
-	if(is.call(code)) {
-        if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_one(code[[1]])
-        if(cl >= 2) {
-            for(i in 2:cl) {
-                code[[i]] <- matchKeywords_one(code[[i]])
-            }
-        }
-    }
-    return(code)
-})
-
-
-
-
-
+## singleVarAccessClass <- setRefClass('singleVarAccessClass',
+##                                     fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
+##                                     methods = list(
+##                                         show = function() {
+##                                             writeLines(paste('singleVarAccess for model',model$name,'to var',var))
+##                                         })
+##                                     )
+## singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
+##     singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
+## }
 
 singleVarAccessClass <- setRefClass('singleVarAccessClass',
-                                    fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
-                                    methods = list(
-                                        show = function() {
-                                            writeLines(paste('singleVarAccess for model',model$name,'to var',var))
-                                        })
-                                    )
+                                       methods = list(
+                                           initialize = function() cat('Oops: building a singleVarAccessClass refClass -- should be defunct\n')
+                                       ))
 
 singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
-    singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
+    ans <- list(model = model, var = var, useSingleIndex = useSingleIndex)
+    class(ans) <- 'singleVarAccessClass'
+    ans
 }
 
+## singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
+##                                     fields = list(modelValues = 'ANY', var = 'ANY'),
+##                                     methods = list(
+##                                         show = function() {
+##                                             writeLines(paste('singleModelValuesAccess for model to var',var))
+##                                         })
+##                                     )
+## singleModelValuesAccess <- function(modelValues, var) {
+##     singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
+## }
 
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
-                                    fields = list(modelValues = 'ANY', var = 'ANY'),
-                                    methods = list(
-                                        show = function() {
-                                            writeLines(paste('singleModelValuesAccess for model to var',var))
-                                        })
-                                    )
+                                     methods = list(
+                                           initialize = function() cat('Oops: building a singleModelValuesAccessClass refClass -- should be defunct\n')
+                                     ))
 
 singleModelValuesAccess <- function(modelValues, var) {
-    singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
+    ans <- list(modelValues = modelValues, var = var)
+    class(ans) <- 'singleModelValuesAccessClass'
+    ans
 }
-
-
-
 

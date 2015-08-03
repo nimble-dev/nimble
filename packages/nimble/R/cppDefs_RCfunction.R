@@ -63,24 +63,25 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  buildFunction = function(RCfun, parentST = NULL) {
                                      RCfunProc <<- RCfun
                                      name <<- RCfunProc$name
-                                     argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
+                                     argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames() ## this has only the original arguments
                                      args <<- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = argNames, parentST = parentST)
-                                     allNames <- RCfunProc$compileInfo$newLocalSymTab$getSymbolNames()
+                                     allNames <- RCfunProc$compileInfo$newLocalSymTab$getSymbolNames() ## this has had local variables added
                                      localArgs <- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = allNames[!(allNames %in% argNames)], parentST = args)
                                      code <<- cppCodeBlock(code = RCfunProc$compileInfo$nimExpr,
                                                            objectDefs = localArgs)
                                      returnType <<- RCfunProc$compileInfo$returnSymbol$genCppVar()
                                      invisible(NULL)
                                  },
-                                 buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL) {
+                                 buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
-                                     argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
+                                     argsCode = RCfunProc$RCfun$arguments
+                                     argNames <- names(argsCode)
                                      
-if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
-   warning("creating a .Call() expression with no DLL information")
-   browser()                                     
-}
+                                     if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
+                                         warning("creating a .Call() expression with no DLL information")
+                                         browser()                                     
+                                     }
                                      dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
                                      for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                      if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
@@ -97,15 +98,14 @@ if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
                                          else
                                              namesAssign <- quote(ans <- invisible(NULL))
                                      }
-
-
-                                     argsCode = RCfunProc$RCfun$arguments
+                                     
                                      argNamesCall = argNames
                                      for(i in seq_along(argNamesCall) ){
                                      	if(argsCode[i] != '')
                                      		argNamesCall[i] = paste(argNames[i], " = ", as.character(argsCode[[i]]) )
                                      }
-
+                                     if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
+                                     
                                      funCode <- parse(text = paste0('function(', paste0(argNamesCall, collapse = ','),') A'), keep.source = FALSE)[[1]]
                                      bodyCode <- substitute({ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
@@ -221,13 +221,14 @@ if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
 
 SEXPscalarConvertFunctions <- list(double  = 'SEXP_2_double',
                                    integer = 'SEXP_2_int',
-                                   logical = 'SEXP_2_bool'
-)
+                                   logical = 'SEXP_2_bool',
+                                   character = 'STRSEXP_2_string')
+
 
 toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
                                      integer = 'int_2_SEXP',
-                                     logical = 'bool_2_SEXP'
-)
+                                     logical = 'bool_2_SEXP',
+                                     character = 'string_2_STRSEXP')
 
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
     if(inherits(toSym, 'symbolBasic')) {
@@ -236,9 +237,14 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
                                                         FROM = as.name(fromSym$name),
                                                         CONVERT = as.name(SEXPscalarConvertFunctions[[toSym$type]]) ) )
         } else {
-            ans <- substitute(template(SEXP_2_NimArr,NDIM)(FROM, TO), list(TO = as.name(toSym$name),
-                                                                           FROM = as.name(fromSym$name),
-                                                                           NDIM = toSym$nDim))
+            if(toSym$type == 'character') {
+                ans <- substitute(STRSEXP_2_vectorString(FROM, TO), list(TO = as.name(toSym$name),
+                                                                           FROM = as.name(fromSym$name)))
+            } else {
+                ans <- substitute(template(SEXP_2_NimArr,NDIM)(FROM, TO), list(TO = as.name(toSym$name),
+                                                                               FROM = as.name(fromSym$name),
+                                                                               NDIM = toSym$nDim))
+            }
         }
         return(ans)
     }
@@ -252,9 +258,14 @@ buildCopyLineToSEXP <- function(fromSym, toSym) {
                                                         FROM = as.name(fromSym$name),
                                                         CONVERT = as.name(toSEXPscalarConvertFunctions[[fromSym$type]] ) ) )
         } else {
-            ans <- substitute(PROTECT(TO <- template(NimArr_2_SEXP, NDIM)(FROM)), list(TO = as.name(toSym$name),
-                                                                            FROM = as.name(fromSym$name),
-                                                                            NDIM = fromSym$nDim))
+            if(fromSym$type == 'character') {
+                ans <- substitute(PROTECT(TO <- vectorString_2_STRSEXP(FROM)), list(TO = as.name(toSym$name),
+                                                                           FROM = as.name(fromSym$name)))
+            } else {
+                ans <- substitute(PROTECT(TO <- template(NimArr_2_SEXP, NDIM)(FROM)), list(TO = as.name(toSym$name),
+                                                                                           FROM = as.name(fromSym$name),
+                                                                                           NDIM = fromSym$nDim))
+            }
         }
         return(ans)
     }

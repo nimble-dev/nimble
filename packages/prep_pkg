@@ -8,7 +8,6 @@ require(methods)
 
 ## NAMESPACE 
 
-nimble_version <- system("grep 'Version:' nimble/DESCRIPTION | cut -d' ' -f2", intern = TRUE)
 
 # do this first as it empties the global env
 source("CreatingExportList.R")
@@ -32,6 +31,8 @@ cat(paste(imports, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
 
 system("R CMD build nimble")
 
+nimble_version <- system("grep 'Version:' nimble/DESCRIPTION | cut -d' ' -f2", intern = TRUE)
+
 system(paste0("R CMD INSTALL nimble_", nimble_version, ".tar.gz"))
 
 # need to remove existing Rd files or get errors with
@@ -52,7 +53,6 @@ require(nimble)
 #Error in .walkClassGraph(classDef, "subclasses", where) : 
 
 # not sure the issue, but rerunning prep_pkg usually fixes things
-
 Rpath <- file.path("nimble", "R")
 files <- list.files(Rpath, pattern = "*R$")  # omit config.R.in
 roclet = rd_roclet()

@@ -1,7 +1,3 @@
-##modelValuesClassLabelCreator <- labelFunctionCreator('modelValuesClass')
-## This keeps track of every derived modelValues class
-##.modelValuesSymbolTableLibrary <- new.env(, emptyenv())
-
 ## Options for requesting a modelValues
 ## 1. by a model
 ## 2. by a symbolTable (which can be created with buildSymbolTable)
@@ -42,17 +38,6 @@ modelValues <- function(spec, m = 1) {
         return(mvClass(m))
     }
 }	
-
-## Background:
-## modelValues is a general concept for storing model values.
-## We need different "flavors", i.e different groups of variables in different classes
-## e.g. sometimes we need ALL model variables to be included, but sometimes only some of them.
-## As a result we generate multiple derived modelValues classes.
-## What happens is we might in multiple places (multiple nimbleFunctions) we might end up wanting the same flavor (set of variables).
-## We don't want to generate two different classes that are identical, because we want them to be recognized as them same
-## The .modelValuesSymbolTableLibrary keeps track of the definition of each flavor, so that a flavor (derived class) can be re-used if it already exists.
-
-## Here is the base class
 
 #' Class \code{modelValuesBaseClass}
 #' @export
@@ -98,9 +83,9 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         GID_map = 'ANY'),
                                     methods = list(
                                         initialize = function(nrow = 1L,...) {
-                                        	callSuper(...)
+                                            callSuper(...)
                                             nrow <<- nrow
-   #                                         types <<- list()
+                                    
                                             for(vN in varNames) {
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
@@ -110,15 +95,15 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                             return(symTab)
                                         },
                                         getVarNames = function(includeLogProb = FALSE){
-                                        	if(!includeLogProb)
-                                        		return(varNames)
-                                        	return(varNames[!grepl('logProb_', varNames)])
+                                            if(includeLogProb)
+                                                return(varNames)
+                                            return(varNames[!grepl('logProb_', varNames)])
                                         },
                                         expandNodeNames = function(nodeNames, returnType = "names", flatIndices = TRUE) 
-										{
-	    									return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
-	    								}                          
-                                      )
+                                            {
+                                                return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, flatIndices = flatIndices))
+                                            }                          
+                                    )
                                     )
 
 
@@ -306,10 +291,10 @@ makeModelValuesClassFields <- function(vars) {
 
 pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb = FALSE) {
     if(is.null(vars)) {
-        vars <- model$getVarNames(logProb = TRUE)
+        vars <- model$getVarNames(includeLogProb = TRUE)
     } else {
-        if(!all(vars %in% model$getVarNames(logProb = TRUE)))
-            stop(paste('Error, trying to do pointAt incorrectly for variable(s):', paste(vars[ which(!(vars %in% model$getVarNames(logProb = TRUE)))], collapse = ', ')))
+        if(!all(vars %in% model$getVarNames(includeLogProb = TRUE)))
+            stop(paste('Error, trying to do pointAt incorrectly for variable(s):', paste(vars[ which(!(vars %in% model$getVarNames(includeLogProb = TRUE)))], collapse = ', ')))
     }
     
     ## This won't work generally because it needs to determine which vars actually have logProbs
@@ -328,7 +313,7 @@ pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb 
 
 makeMV_GID_Map <- function(mv){
 	sizeList = mv$sizes
-    varNames = sort(mv$varNames)
+    varNames = .Internal(sort(mv$varNames, FALSE)) ##sort(mv$varNames)
     nodeNames = NA
     nodeIndex = 0
     nodeNames2GID_maps <- new.env()

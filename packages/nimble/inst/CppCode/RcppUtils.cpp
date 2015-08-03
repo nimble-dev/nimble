@@ -3,6 +3,15 @@
 #include "nimble/RcppUtils.h"
 #include "nimble/Utils.h"
 #include<iostream>
+#include<sstream>
+
+std::ostringstream _nimble_global_output;
+
+void nimble_print_to_R(std::ostringstream &input) {
+  PRINTF("%s", input.str().c_str());
+  input.str("");
+  input.clear();
+}
 
 void multivarTestCall(double *x, int n) {
   std::cout<<"In multivarTestCall\n";
@@ -72,6 +81,36 @@ string STRSEXP_2_string(SEXP Ss, int i) {
   return(ans);
 }
 
+void STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans) {
+  if(!isString(Ss)) {
+    PRINTF("Error: STRSEXP_2_vectorString called for SEXP that is not a string!\n"); 
+    return;
+  }
+  int nn = LENGTH(Ss);
+  ans.resize(nn);
+  for(int i = 0; i < nn; i++) {
+    ans[i].assign(CHAR(STRING_ELT(Ss, i)), LENGTH(STRING_ELT(Ss, i)));
+  }
+}
+
+SEXP string_2_STRSEXP(string v) {
+  SEXP Sans;
+  PROTECT(Sans = allocVector(STRSXP, 1));
+  SET_STRING_ELT(Sans, 0, mkChar(v.c_str()));
+  UNPROTECT(1);
+  return(Sans);
+}
+
+SEXP vectorString_2_STRSEXP(const vector<string> &v) {
+  SEXP Sans;
+  int nn = v.size();
+  PROTECT(Sans = allocVector(STRSXP, nn));
+  for(int i = 0; i < nn; i++) {
+    SET_STRING_ELT(Sans, i, mkChar(v[i].c_str()));
+  }
+  UNPROTECT(1);
+  return(Sans);
+}
 
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
@@ -113,29 +152,6 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
     }
   }
 };
-
-/*
-template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, bool> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
-  int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
-  ans.setSize(nn);
-  if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
-  } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
-    }
-  }
-};
-*/
-
 
 
 vector<double> SEXP_2_vectorDouble( SEXP Sn ) {
@@ -211,11 +227,9 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   vector<int> ans(nn);
   if(isInteger(Sn) || isLogical(Sn)) {
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    for(int i = 0; i < nn; ++i) {
-      ans[i] = iSn[i] + offset;
-    }
+    copy(iSn, iSn + nn, ans.begin());
   } else {
-    if(!isReal(Sn)) {
+    if(isReal(Sn)) {
       double *dSn = REAL(Sn);
       bool warning = false;
       for(int i = 0; i < nn; ++i) {
@@ -339,10 +353,6 @@ SEXP getVec(SEXP Sextptr) {
     PRINTF("Error: Sextptr is not a valid external pointer\n");
     return(R_NilValue);
   }
-  //  vector<double> *vecPtr = *static_cast< vector<double>** >(R_ExternalPtrAddr(Sextptr));
-/*  NimArrBase<double> *vecPtr = *static_cast< NimArrBase<double> ** >(R_ExternalPtrAddr(Sextptr));  
-Original Code*/
-
 
   NimArrBase<double> *vecPtr = static_cast< NimArrBase<double> * >(R_ExternalPtrAddr(Sextptr));
 
@@ -351,7 +361,6 @@ Original Code*/
   
   PROTECT(Sans = allocVector(REALSXP, len));
 	std::copy(vecPtr->v.begin(), vecPtr->v.end() , REAL(Sans) );
-/*  std::copy(vecPtr->v, vecPtr->v + len, REAL(Sans) );  	Original Code */
   
   int numDims = vecPtr->numDims();
   if(numDims > 1) {
@@ -810,17 +819,6 @@ SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims){
 	return(R_NilValue);
 }
 
-/*		Automatically resizes row
-SEXP setNumList(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
-	vector<int> inputDims = getSEXPdims(Svalue);
-	NimVecType* listBasePtr = static_cast<NimVecType* >(R_ExternalPtrAddr(Sextptr) ) ;
-	int cRow = INTEGER(Sindex)[0]-1;	
-	int setWorked = (*listBasePtr).setRowDims(cRow, inputDims);
-	if(setWorked == false)
-		return(returnStatus(false));
-	return(setMVElement(Sextptr, Sindex, Svalue));
-}		*/
-
 SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
     if(!isInteger(Sindex)) {
     PRINTF("Error: Sindex is not an integer!\n");
@@ -877,10 +875,8 @@ SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum) {
     return(R_NilValue);
   }
   VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(R_ExternalPtrAddr(SextptrStorageVar));
-//vector< vector<double> > *matPtr = static_cast< vector< vector<double> >* >(R_ExternalPtrAddr(SextptrStorageVar));
-NimArrBase<double> **vecPtr = static_cast< NimArrBase<double>** >(R_ExternalPtrAddr(SextptrModelVar));
-    //vector<double> **vecPtr = static_cast< vector<double>** >(R_ExternalPtrAddr(SextptrModelVar));
-   (*vecPtr) = matPtr->getBasePtr( INTEGER(Srownum)[0] );
+  NimArrBase<double> **vecPtr = static_cast< NimArrBase<double>** >(R_ExternalPtrAddr(SextptrModelVar));
+  (*vecPtr) = matPtr->getBasePtr( INTEGER(Srownum)[0] );
   return(R_NilValue);
 }
 
@@ -947,44 +943,44 @@ NimArrType* getNimTypePtr(SEXP &rPtr, SEXP &refNum)
 }
 
 void SEXP_2_NimArrDouble (SEXP rValues, NimArrBase<double> &NimArrDbl){
-	int rLength = LENGTH(rValues);
-	if(rLength != NimArrDbl.size() ) {
-		PRINTF("Warning: R object of different size than NimArrDouble!\n");
+  int rLength = LENGTH(rValues);
+  if(rLength != NimArrDbl.size() ) {
+    PRINTF("Warning: R object of different size than NimArrDouble. R obj has size %i but NimArrDbl has size %i.\n", rLength, NimArrDbl.size());
     return;
-	}
-    if(isReal(rValues) ) {
-	for(int i = 0; i < rLength; i++)
-		NimArrDbl[i] = REAL(rValues)[i];
-    }
-    else if(isInteger(rValues) ) {
-        for(int i = 0; i < rLength; i++)
-            NimArrDbl[i] = INTEGER(rValues)[i];
-    }
-    
-    else
-        PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");
-	return;
+  }
+  if(isReal(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrDbl[i] = REAL(rValues)[i];
+  }
+  else if(isInteger(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrDbl[i] = INTEGER(rValues)[i];
+  }
+  
+  else
+    PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");
+  return;
 }
 
 void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
-	int rLength = LENGTH(rValues);
-	if(rLength != NimArrInt.size() ) {
-		PRINTF("Warning: R object of different size than NimArrDouble!\n");
-		return;		
-	}
-	
-    if(isInteger(rValues) ) {
-	for(int i = 0; i < rLength; i++)
-		NimArrInt[i] = INTEGER(rValues)[i];
-	}
-   else if(isReal(rValues) ) {
-        for(int i = 0; i < rLength; i++)
-            NimArrInt[i] = REAL(rValues)[i];
-	}
-	
-   else
-       PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");    
-    return;
+  int rLength = LENGTH(rValues);
+  if(rLength != NimArrInt.size() ) {
+    PRINTF("Warning: R object of different size than NimArrInt!\n");
+    return;		
+  }
+  
+  if(isInteger(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrInt[i] = INTEGER(rValues)[i];
+  }
+  else if(isReal(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrInt[i] = REAL(rValues)[i];
+  }
+  
+  else
+    PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");    
+  return;
 }
 
 
@@ -1208,32 +1204,6 @@ SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
 }
 
 
-/*
-SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
-    void* vPtr = R_ExternalPtrAddr(rPtr);
-    if(vPtr == NULL){
-        PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
-        return(R_NilValue);
-    }
-    int* cPtr;
-    int cRefNum = INTEGER(refNum)[0];
-    if(cRefNum == 1)
-        cPtr = static_cast<int*>( vPtr );
-    else if(cRefNum == 2)
-        cPtr = (*static_cast<int**> ( vPtr ) );
-    
-    if(isLogical(rScalar) )
-      (*cPtr) = LOGICAL(rScalar)[0];
-    else if(isInteger(rScalar) )
-      (*cPtr) = INTEGER(rScalar)[0];
-    else if(isReal(rScalar) )
-      (*cPtr) = REAL(rScalar)[0];
-    else
-      PRINTF("R class not identified. Currently numeric and integers supported\n");
-    return(R_NilValue);
-}
-*/
-
 SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
@@ -1257,6 +1227,43 @@ SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
     return(Sans);
 }
 
+SEXP SEXP_2_string(SEXP rPtr, SEXP rString) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  *static_cast<string*>(vPtr) = STRSEXP_2_string(rString, 0);
+  return(R_NilValue);
+}
+
+SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  STRSEXP_2_vectorString(rStringVector, *static_cast<vector<string> *>(vPtr));
+  return(R_NilValue);
+}
+
+SEXP string_2_SEXP(SEXP rPtr) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  return(string_2_STRSEXP(*static_cast<string *>(vPtr)));
+}
+
+SEXP stringVector_2_SEXP(SEXP rPtr) {
+  void* vPtr = R_ExternalPtrAddr(rPtr);
+  if(vPtr == NULL){
+    PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+    return(R_NilValue);
+  }
+  return(vectorString_2_STRSEXP(*static_cast<vector<string> *>(vPtr)));
+}
 
 
 
@@ -1381,129 +1388,101 @@ double nimMod(double a, double b) {
   return(fmod(a, b));
 }
 
-bool compareOrderedPair(orderedPair a, orderedPair b){			//function called for sort 
-	return( a.value < b.value );
+bool compareOrderedPair(orderedPair a, orderedPair b) {  //function called for sort 
+  return(a.value < b.value);
 }
 
-/*
-void rawSample(double* p, int c_samps, int N, int* ans){
-	vector<double> cdf(N+1);
-	cdf[0] = 0;
-	for(int i = 1; i < N+1; i++ )
-		cdf[i] = cdf[i-1] + p[i-1];
-	double sum = cdf[N];
-	if(sum != 1){
-		for(int i = 1; i < N+1; i++)
-			cdf[i] = cdf[i]/sum;
-	}
-	vector<orderedPair> sampP(c_samps + 1);
-	for(int i = 0; i < c_samps ; i++){
-		(sampP[i]).value = unif_rand();
-		(sampP[i]).rank = i;
-		}
-	sampP[c_samps].value = 2;
-	sort(sampP.begin(), sampP.end(),compareOrderedPair);
-	int curP = 0;
-	for(int i = 1; i < N + 1; i++){
-		while(cdf[i] >= (sampP[curP]).value ){
-			ans[ (sampP[curP]).rank] = i;
-			curP++;
-//			if(curP == c_samps){
-//				return;
-//			}
-		}
-	}	
-}
-*/
-void rawSample(double* p, int c_samps, int N, int* ans, bool unsort){
-	vector<double> cdf(N+1);
-	cdf[0] = 0;
-	bool badVals = false;
-	for(int i = 1; i < N+1; i++ ){
-		cdf[i] = cdf[i-1] + p[i-1];
-		if(!(p[i-1] >= 0)){
-			badVals = true;
-			PRINTF("Warning: negative probability given to rankSample. Returning rep(1, size)\n");
-			cdf[N] = 1;
-			break;
-			}
-	}
-	double sum = cdf[N];
-	if(sum == 0){
-		badVals = true;
-		PRINTF("Warning: sum of weights = 0 in rankSample. Returning rep(1, size)\n");
-	}
-	if(badVals){
-		for(int i = 1; i <= c_samps; i++)
-			ans[i-1] = 1;
-			return;
-	}
-	cdf[N] = sum + 1;
-	vector<double> sampP(c_samps + 1);
-	sampP[0] = 1 - exp( log( unif_rand() ) / c_samps );
+void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent) {
+  vector<double> cdf(N+1);
+  cdf[0] = 0;
+  bool badVals = false;
+  for(int i = 1; i < N+1; i++ ){
+    cdf[i] = cdf[i-1] + p[i-1];
+    if(!(p[i-1] >= 0)){
+      badVals = true;
+      if(!silent)
+	PRINTF("Warning: negative probability given to rankSample. Returning a uniform sample.\n");
+      cdf[N] = 1;
+      break;
+    }
+  }
+  double sum = cdf[N];
+  if(sum == 0){
+    badVals = true;
+    if(!silent)
+      PRINTF("Warning: sum of weights = 0 in rankSample. Returning a uniform sample.\n");
+  }
+  if(badVals){
+    for(int i = 1; i <= c_samps; i++)
+      ans[i-1] = ((i-1) % N) + 1;  // generates a cyclic uniform sample (DT, May 2015)
+    return;
+  }
+  cdf[N] = sum + 1;
+  vector<double> sampP(c_samps + 1);
+  sampP[0] = 1 - exp( log( unif_rand() ) / c_samps );
 	
-	sampP[0] = sampP[0] * sum;
-	sampP[c_samps] = sum + 1;
+  sampP[0] = sampP[0] * sum;
+  sampP[c_samps] = sum + 1;
 	
-	GetRNGstate();
-
+  for(int i = 1; i < c_samps ; i++)
+    sampP[i] = (1 - exp(  log(unif_rand()) / (c_samps - i)   ) )* (sum - sampP[i-1]) + sampP[i-1];
+  int curP = 0;
+  if(unsort == false){
+    for(int i = 1; i <= N; i++){
+      while(cdf[i] > (sampP[curP])){
+	ans[curP] = i;
+	curP++;
+      }
+    }
+    return;	
+  }
+  // unsort must be true to get here
+  vector<double> sortAns(c_samps);	
+  for(int i = 1; i <= N; i++){
+    while(cdf[i] > (sampP[curP])){
+      sortAns[curP] = i;
+      curP++;
+    }
+  }
 	
-	for(int i = 1; i < c_samps ; i++)
-		sampP[i] = (1 - exp(  log(unif_rand()) / (c_samps - i)   ) )* (sum - sampP[i-1]) + sampP[i-1];
-	int curP = 0;
-	if(unsort == false){
-		for(int i = 1; i <= N; i++){
-			while(cdf[i] > (sampP[curP])){
-				ans[curP] = i;
-				curP++;
-			}
-		}
-	PutRNGstate();
-	return;	
-	}
-// unsort must be true to get here
-		vector<double> sortAns(c_samps);	
-		for(int i = 1; i <= N; i++){
-			while(cdf[i] > (sampP[curP])){
-				sortAns[curP] = i;
-				curP++;
-			}
-		}
-	
-	vector<int> newOrder(c_samps);
-	for(int i = 0; i < c_samps;i++)
-		newOrder[i] = i;
-	int drawIndex;
-	for(int i = c_samps-1; i >= 0; i--){
-		drawIndex = unif_rand() * i;
-		ans[i] = sortAns[newOrder[drawIndex]];
-		newOrder[drawIndex] = newOrder[i];
-	}
-	PutRNGstate();
-
+  vector<int> newOrder(c_samps);
+  for(int i = 0; i < c_samps;i++)
+    newOrder[i] = i;
+  int drawIndex;
+  for(int i = c_samps-1; i >= 0; i--){
+    drawIndex = unif_rand() * i;
+    ans[i] = sortAns[newOrder[drawIndex]];
+    newOrder[drawIndex] = newOrder[i];
+  }
 }
 
-
-
-SEXP rankSample(SEXP p, SEXP n){
-	int N = LENGTH(p);
-	int c_samps = INTEGER(n)[0];
-	SEXP output;
-	PROTECT(output = allocVector(INTSXP, c_samps ) );
-	GetRNGstate();
-	rawSample(REAL(p), c_samps, N, INTEGER(output), false);
-	PutRNGstate();
-	UNPROTECT(1);
-	return(output);
+SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
+  //PRINTF("in SEXP rankSample\n");
+  int N = LENGTH(p);
+  int c_samps = INTEGER(n)[0];
+  bool silent = LOGICAL(s)[0];
+  SEXP output;
+  PROTECT(output = allocVector(INTSXP, c_samps ));
+  GetRNGstate();
+  rawSample(REAL(p), c_samps, N, INTEGER(output), false, silent);
+  PutRNGstate();
+  UNPROTECT(1);
+  return(output);
 }
 
-void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output){
-	output.setSize(n);
-	int N = weights.size();
-	GetRNGstate();
-	rawSample(weights.getPtr(), n, N, output.getPtr(), false );	
-	PutRNGstate();
-	}
+void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output) {
+  bool silent = false;
+  rankSample(weights, n, output, silent);
+}
+
+void rankSample(NimArr<1, double> &weights, int &n, NimArr<1, int> &output, bool& silent) {
+  //PRINTF("in VOID rankSample\n");
+  output.setSize(n);
+  int N = weights.size();
+  //GetRNGstate();
+  rawSample(weights.getPtr(), n, N, output.getPtr(), false, silent);
+  //PutRNGstate();
+}
 
 
 
@@ -1628,3 +1607,132 @@ SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex){
  SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal){						
   	return(setEnvVar_Sindex(sString, sEnv, sVal, ScalarInteger(1)));
   }
+  
+  
+/* tools for R's optim	*/
+
+
+//   FRAMEWORK FOR USING R'S OPTIM FUNCTIONS IN NIMBLE
+
+
+
+
+void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int nargs,  ...){
+	int n1 = initPar.size();
+	NM_OptimControl* nmControl = new NM_OptimControl(1.0, 0.5, 2.0,0.0001, 0.0001, 500, 0);
+	OptimAns* optAns = new OptimAns(n1);
+	optAns->Fmin = 100;
+	vector<void*>* otherArgs = new vector<void*>(nargs);
+	va_list vl;
+	va_start(vl, nargs);
+	for(int i = 0; i < nargs; i++)
+		(*otherArgs)[i] = va_arg(vl, void*);
+	va_end(vl);
+	
+    void* vp_otherArgs = static_cast<void*>(otherArgs);
+    
+	nimble_optim(nfPtr, static_cast<OptimControl*>(nmControl), optAns,
+					 initPar, vp_otherArgs, objFxn);
+	
+	Rprintf("Called bareBonesOptim, final value = %f\n", optAns->Fmin);
+	
+    delete nmControl;
+    delete optAns;
+    delete otherArgs;
+	
+}	
+	
+// NEW CORE GENERIC FUNCTIONS
+
+//We hope this function will be generic (i.e. not requiring generated function)
+//objFxn is the double (int, double*, void*) that we want to optimize
+//objFxn has to be built dynamically 
+//Also, not 100% sure what to do about the nimbleFunction it self. Right now I'm 
+//assuming it will be passed as a void pointer
+void nimble_optim(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, void* otherArgs,
+				 	optimfn objFxn){
+
+	//Steps required:	
+	//Unpack parts of control (things that are required for all optimizers)
+	//Decide optimizer {
+	//Based on optimizer, unpack specialized part of optimControl and call appropriate optimizer	
+	//  unpack results of optimizer into ans
+	//	}
+	// ?return ans (depends if we want to allow return of nimble functions)
+
+	// Generic Unpacking	
+	int n = par.size();
+	double* xin = &(par[0]);	//IF we want to leave par untouched by optim, we could copy these values instead of pointing at them
+	double* x = &(ans->par[0]);
+	double* Fmin = &(ans->Fmin);
+	int* fail = &(ans->fail);
+	int* fncount = &(ans->fncount);
+	
+	vector<void*>* ex = new vector<void*> (2);
+	(*ex)[0] = nimFun;
+	(*ex)[1] = otherArgs;
+
+	
+	//Choosing and applying optimizer
+	//Just using Nelder Mead as example here
+	if( control->optimType == 1 ){
+		NM_OptimControl* nmControl = static_cast<NM_OptimControl*>(control);	
+			nmmin(n, xin, x, Fmin, objFxn, fail, nmControl->abstol, nmControl->intol,
+			static_cast<void*> (ex), nmControl->alpha, nmControl->beta, nmControl->gamma, nmControl->trace,
+			fncount, nmControl->maxit);
+	
+	}		
+	
+	
+		delete ex;
+		
+	//actually, nothing else to do at this point! 
+	//Could return ans if we decided to build it on the fly here instead of providing it as argument
+}	
+
+
+
+void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, optimfn objFxn,
+				 	int numOtherArgs, ...){
+
+	//Steps required:	
+	//Unpack parts of control (things that are required for all optimizers)
+	//Decide optimizer {
+	//Based on optimizer, unpack specialized part of optimControl and call appropriate optimizer	
+	//  unpack results of optimizer into ans
+	//	}
+	// ?return ans (depends if we want to allow return of nimble functions)
+
+	// Generic Unpacking	
+	int n = par.size();
+	double* xin = &(par[0]);	//IF we want to leave par untouched by optim, we could copy these values instead of pointing at them
+	double* x = &(ans->par[0]);
+	double* Fmin = &(ans->Fmin);
+	int* fail = &(ans->fail);
+	int* fncount = &(ans->fncount);
+	vector<void*>* otherArgs = new vector<void*>(numOtherArgs);
+	va_list vl;
+	va_start(vl, numOtherArgs);
+	for(int i = 0; i < numOtherArgs; i++)
+		(*otherArgs)[i] = va_arg(vl, void*);
+	va_end(vl);
+	vector<void*>* ex = new vector<void*> (2);
+	(*ex)[0] = nimFun;
+	(*ex)[1] = otherArgs;
+	//Choosing and applying optimizer
+	//Just using Nelder Mead as example here
+	if( control->optimType == 1 ){
+		NM_OptimControl* nmControl = static_cast<NM_OptimControl*>(control);	
+			nmmin(n, xin, x, Fmin, objFxn, fail, nmControl->abstol, nmControl->intol,
+			static_cast<void*> (ex), nmControl->alpha, nmControl->beta, nmControl->gamma, nmControl->trace,
+			fncount, nmControl->maxit);
+	
+	}		
+		delete ex;
+		delete otherArgs;
+	//actually, nothing else to do at this point! 
+	//Could return ans if we decided to build it on the fly here instead of providing it as argument
+}	
+

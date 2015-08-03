@@ -321,14 +321,6 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs
 }
 
-## eigenize_assign <- function(code, symTab, typeEnv, workEnv) {
-##     newName <- eigenizeTranslate[[code$name]]
-##     if(is.null(newName)) stop(paste0('Error, missing eigenizeTranslate entry for ', code$name,' in ', nimDeparse(code)))
-##     code$name <- newName
-##     code$eigMatrix <- code$args[[1]]$eigMatrix
-##     invisible(NULL)
-## }
-
 eigenize_chol <- function(code, symTab, typeEnv, workEnv) {
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
     code$eigMatrix <- TRUE
@@ -609,7 +601,6 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     if(!identical(as.integer(targetSym$nDim), as.integer(code$nDim))) { writeLines('found a case where !identical(targetSym$nDim, code$nDim)'); browser() }
     if(!identical(targetSym$type, code$type)) { writeLines('found a case where !identical(targetSym$type, code$type)'); browser() }
     if(!identical(targetSym$name, code$name)) { writeLines('found a case where !identical(targetSym$name, code$name)'); browser() }
-    ##targetType <- get(code$name, envir = typeEnv, inherits = FALSE) ## Turns out this is not the right thing if names have been re-used!
     targetTypeSizeExprs <- code$sizeExprs
 
     if(length(targetTypeSizeExprs) > 2) {stop('Error, cannot eigenize a map of dimensions > 2')}

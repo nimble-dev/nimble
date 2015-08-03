@@ -1,14 +1,19 @@
 ## The BUGSdeclClass contains the pulled-apart content of a BUGS declaration line
 
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
-nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%',
-                            'equals','inprod','nimbleEquals',
-                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimbleStep', 'inverse',
+nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
+                            'equals','inprod','nimEquals',
+                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimStep', 'inverse',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
                             'ceiling', 'floor', 'round', 'trunc',
                             'mean','sum','max','min','prod',
-                            'asRow', 'asCol')
+                            'asRow', 'asCol',
+                            '>', '<', '>=', '<=', '==', '!=', '&', '|',
+                            distributionFuns,
+                            # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
+                            paste0(c('d','r','q','p'), 't'),
+                            paste0(c('d','r','q','p'), 'exp'))
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass('BUGSdeclClass',
@@ -28,6 +33,10 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  targetVarName = 'ANY',
                                  targetNodeName = 'ANY',
                                  
+                                 ## truncation information
+                                 truncated = 'ANY',
+                                 range = 'ANY',
+                                 
                                  ## set in setIndexVariableExprs(), and never changes.
                                  indexVariableExprs = 'ANY',
                                  
@@ -45,7 +54,23 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  
                                  ## the following are set in modelDefClass$genNodeInfo(), and never change:
                                  indexedNodeInfo = 'ANY',
-                                 indexedNodeNames = 'ANY'
+                                 indexedNodeNames = 'ANY',
+
+                                 ## new for version 3
+                                 targetExprReplaced = 'ANY',
+                                 valueExprReplaced = 'ANY',
+                                 symbolicParentNodesReplaced = 'ANY',
+                                 rhsVars = 'ANY',
+                                 targetIndexNamePieces = 'ANY',
+                                 parentIndexNamePieces = 'ANY',
+                                 replacementsEnv = 'ANY',
+                                 nodeFunctionNames = 'ANY',
+
+                                 outputSize = 'ANY', ## should match nrow(unrolledIndicesMatrix)
+                                 origIDs = 'ANY',
+                                 graphIDs = 'ANY',
+                                 unrolledIndicesMatrix = 'ANY',
+                                 numUnrolledNodes = 'ANY' ## differs from outputSize ONLY for a no-context singleton, a ~ dnorm(b, c), so numUnrolledNodes is 1 but outputSize is 0
                              ),   
                              
                              methods = list(
@@ -54,7 +79,9 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  genSymbolicParentNodes         = function() {},
                                  genReplacementsAndCodeReplaced = function() {},
                                  genAltParamsModifyCodeReplaced = function() {},
-                                 
+
+                                 genReplacedTargetValueAndParentInfo = function() {},
+
                                  allParentVarNames = function() {
                                      unlist(lapply(symbolicParentNodes, function(x) if(length(x) == 1) as.character(x) else if(x[[1]] == '[') as.character(x[[2]]) else stop('Error in allParentVarNames')))
                                  },
@@ -84,13 +111,16 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                                                                   nl_expandNodeIndexExpr(x$targetNodeExpr), 
                                                                                   sep = '&', collapse = '&'), '&') else NULL))
                                      return(c(edgesIn, edgesOut))
+                                 },
+                                 getDistributionName = function() {
+                                     if(type != 'stoch')  stop('getting distribution of non-stochastic node')
+                                     return(as.character(valueExprReplaced[[1]]))
                                  }
-                                 
                              )
 )
 
 
-BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum) {
+BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated = FALSE, range = NULL) {
     ## master entry function.
     ## uses 'contextID' to set the field: contextID.
     ## uses 'code' argument, to set the fields:
@@ -98,21 +128,25 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum) {
     ## targetExpr, valueExpr
     ## targetVarExpr, targetNodeExpr
     ## targetVarName, targetNodeName
-    
+        
     contextID <<- contextID
     sourceLineNumber <<- sourceLineNum
     code <<- code
+    truncated <<- truncated
+    range <<- range
     
     if(code[[1]] == '~') {
         type <<- 'stoch'
-        if(!is.call(code[[3]]) || !any(code[[3]][[1]] == distributions$namesVector))
-            stop(paste0('Improper syntax for stochastic declaration: ', deparse(code, width.cutoff=500L)))
+
+        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == getDistributionsInfo('namesVector')) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
+            stop(paste0('Improper syntax for stochastic declaration: ', deparse(code)))
     } else if(code[[1]] == '<-') {
         type <<- 'determ'
-        if( is.call(code[[3]]) &&  any(code[[3]][[1]] == distributions$namesVector))
-            stop(paste0('Improper syntax for determistic declaration: ', deparse(code, width.cutoff=500L)))
+        # if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getDistributionsInfo('namesVector')))
+        #    stop(paste0('Improper syntax for determistic declaration: ', deparse(code)))
+        # commented out by CJP 7/30/15 as preventing use of "<- dDIST()", which we now allow
     } else {
-        stop(paste0('Improper syntax for declaration: ', deparse(code, width.cutoff=500L)))
+        stop(paste0('Improper syntax for declaration: ', deparse(code)))
     }
     
     targetExpr <<- code[[2]]
@@ -151,6 +185,15 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum) {
     
     targetVarName <<- deparse(targetVarExpr)
     targetNodeName <<- deparse(targetNodeExpr)
+
+    if(type == 'stoch' && is.null(range)) {
+        tmp <- as.character(valueExpr[[1]])
+        if(!(tmp %in% c("T", "I"))) {
+            # T/I not always stripped out at this stage
+            distRange <- getDistribution(tmp)$range
+            range <<- list(lower = distRange[1], upper = distRange[2])
+        }
+    }
 })
 
 
@@ -164,7 +207,37 @@ BUGSdeclClass$methods(genSymbolicParentNodes = function(constantsNamesList, cont
     symbolicParentNodes <<- unique(getSymbolicParentNodes(valueExpr, constantsNamesList, context$indexVarExprs, nimFunNames)) 
 })
 
+## move this to a util file when everything is working.  It is convenient here for now
+makeIndexNamePieces <- function(indexCode) {
+    if(length(indexCode) == 1) return(if(is.numeric(indexCode)) indexCode else as.character(indexCode))
+    ## Diagnostic for messed up indexing here
+    if(as.character(indexCode[[1]] != ':')) stop(paste0("Error processing model: something is wrong with the index ", deparse(indexCode),". Note that any variables in index expressions must be provided as constants.  NIMBLE does not yet allow indices that are model nodes."), call. = FALSE)
+    p1 <- indexCode[[2]]
+    p2 <- indexCode[[3]]
+    list( if(is.numeric(p1)) p1 else as.character(p1),
+      if(is.numeric(p2)) p2 else as.character(p2))
+    ## e.g. makeIndexNamePieces(quote(i))
+    ##      makeIndexNamePieces(quote(i:100))
+}
 
+BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNamesList, context, nimFunNames) { ## assuming codeReplaced is there
+    ## generate hasBracket info
+    
+    targetExprReplaced <<- codeReplaced[[2]] ## shouldn't have any link functions at this point
+    valueExprReplaced <<- codeReplaced[[3]]
+
+    symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
+    rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) if(length(x) == 1) as.character(x) else as.character(x[[2]])))
+
+    ## note that makeIndexNamePieces is designed only for indices that are a single name or number or a `:` operator with single name or number for each argument
+    ## This relies on the fact that any expression will have been lifted by this point and what it has been replaced with is simply a name
+    ## This means makeIndexNamePieces can include a diagnostic
+    targetIndexNamePieces <<- try(if(length(targetExprReplaced) > 1) lapply(targetExprReplaced[-c(1,2)], makeIndexNamePieces) else NULL)
+    if(inherits(targetIndexNamePieces, 'try-error')) stop(paste('Error occurred defining ', deparse(targetExprReplaced)), call. = FALSE)
+    parentIndexNamePieces <<- lapply(symbolicParentNodesReplaced, function(x) if(length(x) > 1) lapply(x[-c(1,2)], makeIndexNamePieces) else NULL)
+    NULL
+})
+                      
 BUGSdeclClass$methods(genReplacementsAndCodeReplaced = function(constantsNamesList, context, nimFunNames) {
     replacementsAndCode <- genReplacementsAndCodeRecurse(code, c(constantsNamesList,context$indexVarExprs), nimFunNames)
     replacements <<- replacementsAndCode$replacements
@@ -178,12 +251,13 @@ BUGSdeclClass$methods(genReplacementsAndCodeReplaced = function(constantsNamesLi
     }
     
     replacementNameExprs <<- lapply(as.list(names(replacements)), as.name)
+    names(replacementNameExprs) <<- names(replacements)
 })
 
 ## only affects stochastic nodes
 ## removes any params in codeReplaced which begin with '.'
 ## generates the altParamExprs list, which contains the expression for each alternate parameter,
-## which is taken from the .param expression (no longer taken from distributions[[distName]]$altParams, ever)
+## which is taken from the .param expression (no longer taken from getDistribution(distName)$altParams, ever)
 BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
     
     altParamExprs <<- list()
@@ -198,12 +272,12 @@ BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
         altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
         names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
 #         dotParamNames <- names(dotParamExprs)
-#         distRuleAltParamExprs <- distributions[[as.character(RHSreplaced[[1]])]]$altParams
+#         distRuleAltParamExprs <- getDistribution(as.character(RHSreplaced[[1]]))$altParams
 #         for(altParam in names(distRuleAltParamExprs)) {
 #             if(altParam %in% dotParamNames) {
 #                 altParamExprs[[altParam]] <<- dotParamExprs[[altParam]]
 #             } else {
-#                 defaultParamExpr <- distributions[[as.character(RHSreplaced[[1]])]]$altParams[[altParam]]
+#                 defaultParamExpr <- getDistributions(as.character(RHSreplaced[[1]]))$altParams[[altParam]]
 #                 subParamExpr <- eval(substitute(substitute(EXPR, as.list(RHSreplaced)[-1]), list(EXPR=defaultParamExpr)))
 #                 altParamExprs[[altParam]] <<- subParamExpr
 #             }
@@ -215,7 +289,7 @@ getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(
     ## replaceConstants looks to see if name of a function exists in R
     ## getSymbolicVariables requires a list of nimbleFunctionNames.
     ## The latter could take the former approach
-    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, distributions$namesExprList)
+    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, getDistributionsInfo('namesExprList'))
     ans <- getSymbolicParentNodesRecurse(code, constNames, indexNames, nimbleFunctionNames)
     return(ans$code)
 }
@@ -243,7 +317,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             return(list(code = list(code), replaceable = FALSE, hasIndex = FALSE))
         }
     }
-    
+
     if(is.call(code)) {
         if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
@@ -281,16 +355,30 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 allContentsReplaceable <- TRUE
             }
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
+            funName <- deparse(code[[1]])
             isRonly <- isRfunction &
-                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
-            if(isRonly & !allContentsReplaceable) stop(paste('Error, R function', deparse(code[[1]]),' has non-replaceable node values as arguments.  Must be a nimble function.'))
-            
+                !checkNimbleOrRfunctionNames(funName)
+#                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+            if(isRonly & !allContentsReplaceable) {
+                if(!exists(funName))
+                    stop("R function '", funName,"' does not exist.")
+                unreplaceable <- sapply(contents[!contentsReplaceable], function(x) as.character(x$code))
+                stop("R function '", funName,"' has arguments that cannot be evaluated; either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ", paste(unreplaceable, collapse = ","), ".")
+            }
+            # old text:  non-replaceable node values as arguments.  Must be a nimble function.
+
             return(list(code = contentsCode,
                         replaceable = allContentsReplaceable & isRfunction,
                         hasIndex = any(contentsHasIndex)))
         }
     }
     stop(paste('Something went wrong in getSymbolicVariablesRecurse with', deparse(code)))
+}
+
+checkNimbleOrRfunctionNames <- function(functionName) {
+    if(any(functionName == nimbleOrRfunctionNames)) return(TRUE)
+    if(exists(functionName) && is.rcf(get(functionName))) return(TRUE)  ## Would like to do this by R's scoping rules here and in genCpp_sizeProcessing (currently line 139) but that is problematic
+    return(FALSE)
 }
 
 
@@ -339,7 +427,8 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2, replaceable=allContentsReplaceable))
         if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
-        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+#        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
+        isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
         if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))
         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
@@ -347,7 +436,7 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
     stop(paste('Something went wrong in genReplacementsAndCodeRecurse with', deparse(code)))
 }
 replaceAllCodeSuccessfully <- function(code) {
-    deparsedCode <- nameMashupFromExpr(code, colonsOK = TRUE)
+    deparsedCode <- Rname2CppName(code, colonsOK = TRUE) ## nameMashup
     replacements <- list()
     replacements[[deparsedCode]] <- code
     return(list(codeReplaced = as.name(deparsedCode), replacements = replacements, replaceable = TRUE))
@@ -363,7 +452,6 @@ replaceWhatWeCan <- function(code, contentsCodeReplaced, contentsReplacements, c
     list(codeReplaced = codeReplaced, replacements = replacements, replaceable = replaceable)
 }
 genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs) {
-    
     logProbNodeExpr <- codeReplaced[[2]]   ## initially, we'll use the replaced version
     replacements <- list()
     
@@ -383,7 +471,7 @@ genLogProbNodeExprAndReplacements <- function(code, codeReplaced, indexVarExprs)
                 if(any(indexVarExprs %in% all.vars(origIndex))) {
                     ## the vectorized index includes a loop-indexing variable; we will create a replacement, for a memberData, for each nodeFunction
                     replacementExpr <- substitute(min(EXPR), list(EXPR=origIndex))
-                    replacementName <- nameMashupFromExpr(replacementExpr, colonsOK = TRUE)
+                    replacementName <- Rname2CppName(replacementExpr, colonsOK = TRUE)##nameMashup
                     logProbNodeExpr[[i]] <- as.name(replacementName)
                     replacements[[replacementName]] <- replacementExpr
                 } else {

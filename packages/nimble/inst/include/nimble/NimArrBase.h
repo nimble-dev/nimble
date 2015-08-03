@@ -4,11 +4,9 @@
 #include <string>
 #include <R.h>
 #include <typeinfo>
-#include <iostream>			//Added
-//#include <Rinternals.h>
+#include <iostream>
 
 using std::vector;
-//#include <Eigen/Dense>
 
 enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 
@@ -50,7 +48,8 @@ class NimArrBase: public NimArrType {
   int size() const {return(NAlength);}
   virtual int numDims() const = 0;
   virtual int dimSize(int i) const = 0;
-  T &operator[](int i) {return((*vPtr)[offset + i * stride1]);}
+  T &operator[](int i) {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
+  virtual int calculateIndex(vector<int> &i)=0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
   void setLength(int l) {NAlength = l; v.resize(l); } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
@@ -79,11 +78,9 @@ class NimArrBase: public NimArrType {
  NimArrBase(const vector<T> &vm, int off) : vPtr(&vm), offset(off), boolMap(true) {
     setMyType();
   }
+  template<class Tfrom>
+    void genericMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs);
 };
-
-//template<> NimArrBase<double>::NimArrBase(){length = 0; myType = DOUBLE;};
-//template<> NimArrBase<int>::NimArrBase(){length = 0; myType = INT;};
-
 
 template<class T>
 class VecNimArrBase : public NimVecType {

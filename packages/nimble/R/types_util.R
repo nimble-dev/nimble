@@ -75,7 +75,7 @@ nl_checkNodeNamesInModel <- function(model, nodeNames, determOnly = FALSE, stoch
 
 ## checks that all varNames are present in model
 nl_checkVarNamesInModel <- function(model, varNames) {
-    if(!all(varNames %in% model$getVarNames(logProb = TRUE)))      stop('all variable names are not in model')
+    if(!all(varNames %in% model$getVarNames(includeLogProb = TRUE)))      stop('all variable names are not in model')
 }
 
 #nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
@@ -284,19 +284,3 @@ matrix2mv <- function(mat, mv){
 		stop('argument mv is neither a CmodelValues or RmodelValues object')
 }
 
-#modelValues2Matrix <-function(mv, varNames){
-#	if(missing(varNames))
-#			varNames <- mv$varNames
-#	nrows = getsize(mv)
-#	flatNames = expandMVNames(mv, varNames)
-#	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
-#	colIndex = 1
-#	for(i in seq_along(varNames)){
-#		#ans[1:nrows, colIndex + 1:prod(mv$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(mv, varNames[i])
-#		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(mv, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
-#		#This method is faster than the commented out method, especially if there are a lot of variables (as apposed to nodes)
-#		colIndex = colIndex + prod(mv$sizes[[varNames[i] ]])
-#		}
-#	colnames(ans) <- flatNames
-#	return(ans)
-#}

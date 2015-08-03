@@ -1,13 +1,15 @@
+
+
 labelFunctionCreator <- function(lead, start = 1) {
   nextIndex <- start
   force(lead)
-  labelGenerator <- function(reset = FALSE) {
+  labelGenerator <- function(reset = FALSE, count = 1) {
     if(reset) {
       nextIndex <<- 1
       return(invisible(NULL))
     }
-    ans <- paste0(lead, nextIndex)
-    nextIndex <<- nextIndex + 1
+    ans <- paste0(lead, nextIndex - 1 + (1:count))
+    nextIndex <<- nextIndex + count
     ans
   }
   labelGenerator
@@ -23,7 +25,7 @@ dimOrLength <- function(obj) {
 
 #' return sizes of an object whether it is a vector, matrix or array
 #'
-#' R's regular \code{dim} function returns NULL for a vector.  It is useful to have this function that treats a vector similarly to a matrix or array.  Works in R and NIMBLE.  In NIMBLE \code{dim} is identical to \code{nimbleDim}, not to R's \code{dim}
+#' R's regular \code{dim} function returns NULL for a vector.  It is useful to have this function that treats a vector similarly to a matrix or array.  Works in R and NIMBLE.  In NIMBLE \code{dim} is identical to \code{nimDim}, not to R's \code{dim}
 #'
 #' @param obj  objects for which the sizes are requested
 #'
@@ -34,17 +36,17 @@ dimOrLength <- function(obj) {
 #' @examples
 #' x <- rnorm(4)
 #' dim(x)
-#' nimbleDim(x)
+#' nimDim(x)
 #' y <- matrix(x, nrow = 2)
 #' dim(y)
-#' nimbleDim(y)
-nimbleDim <- function(obj) {
+#' nimDim(y)
+nimDim <- function(obj) {
     if(is.null(dim(obj))) return(length(obj))
     return(dim(obj))
 }
 
 getLoadingNamespace <- function() {
-    if(!is.null(nimbleOptions[['notUsingPackage']])) if(nimbleOptions[['notUsingPackage']]) return(globalenv())
+    if(!is.null(nimbleOptions()$notUsingPackage)) if(nimbleOptions()$notUsingPackage) return(globalenv())
     if(system.file(package = "nimble") == "")
          return(globalenv())
     
@@ -69,9 +71,10 @@ getLoadingNamespace <- function() {
 #' as.matrix(mv)
 #' resize(mv, 3)
 #' as.matrix(mv)
-resize <- function(container, k)
-	container$resize( as.integer(k) ) 
-	
+resize <- function(container, k) {
+    container$resize( as.integer(k) ) 
+}
+
 #' Returns number of rows of modelValues
 #' 
 #' Returns the number of rows of NIMBLE modelValues object. Works in R and NIMBLE. 
@@ -87,10 +90,16 @@ resize <- function(container, k)
 #'	mv <- modelValues(mvSpec)
 #'  resize(mv, 10)
 #'	getsize(mv)
-getsize <- function(container)
-	container$getSize()
+getsize <- function(container) {
+    container$getSize()
+}
 
-
-
-
+# simply adds width.cutoff = 500 as the default to deal with creation of long variable names from expressions
+deparse <- function(...) {
+    if("width.cutoff" %in% names(list(...))) {
+        base:::deparse(...)
+    } else {
+          base:::deparse(..., width.cutoff = 500L)
+      }
+}
 

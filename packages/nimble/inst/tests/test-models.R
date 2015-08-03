@@ -39,8 +39,8 @@ testBUGSmodel('birats', model = 'birats2.bug', inits = 'birats-inits.R',
 # test of leuk; needs var info on Y and dN since these are used in data block
 system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
 system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
-# need nimbleStep in data block as we no longer have step
-system(paste("sed -i -e 's/step/nimbleStep/g'", file.path(tempdir(), "leuk.bug"))) 
+# need nimStep in data block as we no longer have step
+system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug"))) 
 testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'),  useInits = TRUE)
 
 # salm: need dimensionality of logx
@@ -201,7 +201,7 @@ testBUGSmodel(example = 'test', dir = "",
 # test handling of lumped data and constants, and overwriting of
 # data by inits
 
-test_that("test of the distinguishing lumped data and constants:", {
+test_that("test of distinguishing lumped data and constants:", {
 
 code <- nimbleCode({
     x ~ dnorm(mu,sig)
@@ -316,3 +316,51 @@ expect_that(sum("x[2]" %in% m$getNodeNames()), equals(1), info = "'x[2]' does no
 })
 
 
+# test of use of alias names for distributions
+
+model <- function() {
+  y ~ dnbinom(p, n)
+  p ~ dbeta(3,3)
+  yalt ~ dnegbin(p, n)
+  
+  y2 ~ dbin(p2, n)
+  p2 ~ dbeta(3,3)
+  yalt2 ~ dbinom(p2, n)
+}
+
+data = list(y = 3, yalt = 3, y2 = 3, yalt2 = 3)
+constants = list(n = 10)
+inits <- list(p = 0.5, p2 = 0.5)
+
+testBUGSmodel(example = 'test_dist_aliases', dir = "",
+              model = model, data = c(constants, data), inits = inits,
+              useInits = TRUE)
+
+m <- nimbleModel(body(model), constants = constants, inits = inits, check = FALSE)
+cm <- compileNimble(m)
+
+set.seed(0)
+simulate(m, c('y','y2'))
+set.seed(0)
+simulate(m, c('yalt','yalt2'))
+set.seed(0)
+simulate(cm, c('y','y2'))
+set.seed(0)
+simulate(cm, c('yalt','yalt2'))
+
+try(test_that("dnegbin and dnbinom give same results in R model", expect_that(
+    m$y, equals(m$yalt), info = "simulate gives different results for dnegbin and dnbinom")))
+try(test_that("dnegbin and dnbinom give same results in R model", expect_that(
+    getLogProb(m, 'y'), equals(getLogProb(m, 'yalt')), info = "calculate gives different results for dnegbin and dnbinom")))
+try(test_that("dbin and dbinom give same results in R model", expect_that(
+    m$y2, equals(m$yalt2), info = "simulate gives different results for dbin and dbinom")))
+try(test_that("dbin and dbinom give same results in R model", expect_that(
+    getLogProb(m, 'y2'), equals(getLogProb(m, 'yalt2')), info = "calculate gives different results for dbin and dbinom")))
+try(test_that("dnegbin and dnbinom give same results in C model", expect_that(
+    cm$y, equals(cm$yalt), info = "simulate gives different results for dnegbin and dnbinom")))
+try(test_that("dnegbin and dnbinom give same results in C model", expect_that(
+    getLogProb(cm, 'y'), equals(getLogProb(cm, 'yalt')), info = "calculate gives different results for dnegbin and dnbinom")))
+try(test_that("dbin and dbinom give same results in C model", expect_that(
+    cm$y2, equals(cm$yalt2), info = "simulate gives different results for dbin and dbinom")))
+try(test_that("dbin and dbinom give same results in C model", expect_that(
+    getLogProb(cm, 'y2'), equals(getLogProb(cm, 'yalt2')), info = "calculate gives different results for dbin and dbinom")))

@@ -105,9 +105,17 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 
 
 void numberedObjects_Finalizer(SEXP Snp){
-	NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
-	delete np;
+  NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
+  if(np) delete np;
+  R_ClearExternalPtr(Snp);
 }
+
+void namedObjects_Finalizer(SEXP Snp){
+  NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
+  if(np) delete np;
+  R_ClearExternalPtr(Snp);
+}
+
 
 SEXP newNumberedObjects(){
 	NumberedObjects* np = new NumberedObjects;
@@ -119,7 +127,7 @@ SEXP newNumberedObjects(){
 }
 
 /*		This is an example of a finalizer for the templated numbered objects
-		Apparently R doesn't allow for templated finalizers, so they must be written by hand
+		They must be written by hand
 		for each template
 void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
 	SpecialNumberedObjects<SingleModelValuesAccess>* np 

@@ -82,11 +82,22 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                                                   code = cppCodeBlock( code = putCodeLinesInBrackets(codeLines)))
                                          functionDefs[['pointAtAll']] <<- newFun
                                      },
+
                                      buildNodes = function(where = globalenv(), debugCpp = FALSE) {
-                                         for(i in names(model$nodeFunctions)) {
-                                             nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
-                                         }
-                                         nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE, returnCppClass = TRUE, fromModel = TRUE) ## fromModel is redundant here
+                                         ## for(i in names(model$nodeFunctions)) {
+                                         ##     nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
+                                         ## }
+                                         nimbleProject$addNimbleFunctionMulti(model$nodeFunctions, fromModel = TRUE, model$nodeFunctionGeneratorNames)
+                                         
+                                         ##for(i in seq_along(model$nodeFunctions)) {
+                                         ##    nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
+                                         ##}
+                                         
+                                         nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE,
+                                                                                               returnCppClass = TRUE,
+                                                                                               fromModel = TRUE,
+                                                                                               generatorFunNames = model$nodeFunctionGeneratorNames,
+                                                                                               alreadyAdded = TRUE) ## fromModel is redundant here
                                          ##for(i in names(model$nodeGenerators)) {
                                              ##nfName <- paste0('nf',i)
                                           
@@ -94,12 +105,13 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                          ##   nimbleProject$buildNimbleFunctionCompilationInfo(generatorName = generatorName)
                                          ##}
                                      },
-                                     buildAll = function(buildNodeDefs = TRUE, where = globalenv(), debugCpp = FALSE) {
+                                     buildAll = function(buildNodeDefs = TRUE, where = globalenv(), ...) {
                                          makeCppNames() 
                                          buildVars()
                                          buildConstructorFunctionDef()
-                                         buildSEXPgenerator()
-                                         buildSEXPfinalizer()
+                                         buildSEXPgenerator(finalizer = 'namedObjects_Finalizer')
+                                         ##buildSEXPgenerator()
+                                         ##buildSEXPfinalizer()
                                          buildPointAtAll()
                                          if(buildNodeDefs) buildNodes(where = where, debugCpp = debugCpp)
                                      }
@@ -126,7 +138,7 @@ compileBUGSmodel <- function(model, name, fileName, dirName, compileNodes = TRUE
     }
     if(!inherits(model, 'cppProjectClass')) {
         cppProj <- cppProjectClass$new(dirName = dirName)
-        mvc <- modelDefCpp$genModelValuesCppClass() ## This function records the cppClass in the .modelValuesSymbolTableLibrary, so it is tracked through that.
+        mvc <- modelDefCpp$genModelValuesCppClass() 
         cppProj$addClass(mvc, filename = Cname)
         cppProj$addClass(modelDefCpp, Cname)
         if(compileNodes) {

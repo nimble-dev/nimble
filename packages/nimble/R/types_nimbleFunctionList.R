@@ -53,7 +53,7 @@ checkNimbleFunctionListCpp <- function(nfl) {
     otherProblem <- try(
         {
             baseClassName <- environment(nfl$baseClass)$name
-            containedClassNames <- lapply( nfl$contentsList, function(x) x$compiledNodeFun$inheritance)
+            containedClassNames <- lapply( nfl$contentsList, function(x) if(is.list(x)) x[[1]]$compiledNodeFun$inheritance else x$compiledNodeFun$inheritance)
             ok <- lapply(containedClassNames, function(x) any(unlist(x) == baseClassName))
             if(all(unlist(ok))) return(TRUE) else return(FALSE)
         })

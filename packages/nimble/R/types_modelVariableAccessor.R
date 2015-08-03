@@ -1,82 +1,76 @@
+
 ## CASE 2: modelVariableAccessorVector
 ## copy(model1, xxx, nodes) becomes:
 ## model1_nodes_accessors <- modelVariableAccessorVector(model1, nodes)
 ## copy(model1_nodes_accessors, xxx)
 ## model1_nodes_accessors$getAccessors() returns a list of the modelVariableAccessor objects
 
-modelVariableAccessor <- setRefClass(
-    Class = 'modelVariableAccessor',
-    fields = list(model = 'ANY',
-                  var   = 'ANY', 		# 'character',
-                  first = 'ANY', 		#'numeric',
-                  last  = 'ANY', 		#'numeric',
-                  length = 'ANY' 		#'numeric'
-    ),
-    methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
-                   show  = function() cat(paste0(toStr(), '\n'))
-    )
-)
 
-modelVariableAccessorVector <- setRefClass(
-    Class = 'modelVariableAccessorVector',
-    fields = list(model = 	'ANY',
-    			  gids = 	'ANY',
-    			  l_gids = 	'ANY',	#graph IDS for log probabilities, which is a different set of graph IDs than for nodes
-                  length = 	'ANY'
-                   ),		
-    methods = list(
-        initialize = function(model, nodeNames, logProb = FALSE, env = parent.frame()) {
-        	isLogProbName <- grepl('logProb_', nodeNames)
-        	nodeOnlyNames <- nodeNames[!isLogProbName]
-        	logProbNames <- nodeNames[isLogProbName]
-        	gids <<- model$expandNodeNames(nodeOnlyNames, returnScalarComponents = TRUE, returnType = 'ids')
-        	l_gids <<- numeric(0)
-			if(length(logProbNames) > 0){
-				nodeName_fromLogProbName <- gsub('logProb_', '', logProbNames)
-				l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeName_fromLogProbName))
-			}
-        	if(logProb)
-        		l_gids <<- c(l_gids, model$modelDef$nodeName2LogProbID(nodeOnlyNames))
-            length <<- length(gids) + length(l_gids)
-   			model <<- model
-         },
-        getSingleValue_fromGID = function(accessID){
-        	len_variables <- length(gids)
-        	if(accessID <= len_variables){
-	        	thisExpr <- parse(text = model$expandNodeNames(gids[accessID]))[[1]]
-	        	return( eval(thisExpr, envir = model) )
-	        	}
-	        else{
-	        	logVarID <- l_gids[accessID - len_variables]
-	        	logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
-	        	thisExpr <- parse(text = logProbName)[[1]]
-	        	return(eval(thisExpr, envir = model))
-	        	}
-	        	
-        },
-        setSingleValue_fromGID = function(value, accessID){
-        	len_variables <- length(gids)
-        	if(accessID <= len_variables){
-	        	thisExpr <- parse(text = paste0(model$expandNodeNames(gids[accessID]), '<-', value))		
-	        	eval(thisExpr, envir = model)
-	        }
-	        else{
-	        	logVarID <- l_gids[accessID - len_variables]
-	        	logProbName <- model$modelDef$maps$logProbIDs_2_LogProbName[logVarID]
-	        	thisExpr <- parse(text = paste0(logProbName, '<-', value))[[1]]
-				eval(thisExpr, envir = model)
-	        }
-        },
-        getNodeNames = function(){
-        	c(model$expandNodeNames(gids, returnScalarComponents = TRUE), 	model$modelDef$maps$logProbIDs_2_LogProbName[l_gids])
-        },
-        show = function(){
-	        cat(paste0('modelVariableAccessorVector: ', paste0(lapply(modelVariableAccessors, function(x) x$toStr()), collapse=', '), '\n'))
-	        }
-    )
-)
+modelVariableAccessorVector <- function(mv, nodeNames, logProb = FALSE) {
+    ans <- list(mv, substitute(nodeNames), logProb, parent.frame())
+    class(ans) <- c('modelVariableAccessorVector', 'valuesAccessorVector')
+    ans
+}
 
-# This function allows you to just call "length(access)", rather than access$length
-# Motivation for this is to make it easier to generically use accessors
-length.modelVariableAccessorVector <- function(access)
-	return(access$length)
+## getValues.modelVariableAccessorVector <- function(accessorVector, i) {
+##     nodeName <- eval(accessorVector[[2]], envir = accessorVector[[4]])[i]
+##     nodeCode <- parse(text = nodeName, keep.source = FALSE)[[1]]
+##     sourceObject <- accessorVector[[1]]
+##     if(is.name(nodeCode)) return(sourceObject[[nodeName]])
+##     nodeCode[[2]] <- substitute(sourceObject[[VN]], list(VN = as.character(nodeCode[[2]]) ) )
+##     eval(nodeCode)
+## }
+## setValues.modelVariableAccessorVector <- function(accessorVector, i, vals, row = NA) {
+##     if(is.na(row)) stop('Can no longer use row = NA in setValues.modelVariableAccessorVector')
+##     nodeName <- eval(accessorVector[[2]], envir = accessorVector[[4]])[i]
+##     nodeCode <- parse(text = nodeName, keep.source = FALSE)[[1]]
+##     sourceObject <- accessorVector[[1]]
+##     if(is.name(nodeCode)) nodeCode <- quote(sourceObject[[nodeName]])
+##     nodeCode[[2]] <- substitute(sourceObject[[VN]], list(VN = as.character(nodeCode[[2]]) ) )
+##     eval(substitute(A <- vals), list(A = nodeCode))
+## }
+
+
+## modelVariableAccessorVector<- setRefClass( ## new implementation
+##     Class = 'modelVariableAccessorVector',
+##     contains = 'valuesAccessorVector',
+##     methods = list(
+##         initialize = function(...) {
+##             callSuper(...)
+##             makeAccessAndSetCode()
+##         },
+##         makeAccessAndSetCode = function() {
+##             accessCode <<- lapply(code, function(temp) {
+##                 if(is.name(temp)) return(substitute(sourceObject$B, list(B = temp)))
+##                 temp[[2]] <- substitute(sourceObject$B, list(B = temp[[2]]))
+##                 temp
+##             })
+##             setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
+##         },
+##         getValues = function(i) {
+##             eval(accessCode[[i]])
+##         },
+##         setValues = function(i, vals) {
+##             eval(setCode[[i]])
+##         }
+##     ))
+
+
+## # This function allows you to just call "length(access)", rather than access$length
+## # Motivation for this is to make it easier to generically use accessors
+## length.modelVariableAccessorVector <- function(access)
+##     return(access$length)
+
+## I think this is not needed anymore
+## modelVariableAccessor <- setRefClass(
+##     Class = 'modelVariableAccessor',
+##     fields = list(model = 'ANY',
+##                   var   = 'ANY', 		# 'character',
+##                   first = 'ANY', 		#'numeric',
+##                   last  = 'ANY', 		#'numeric',
+##                   length = 'ANY' 		#'numeric'
+##     ),
+##     methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
+##                    show  = function() cat(paste0(toStr(), '\n'))
+##     )
+## )

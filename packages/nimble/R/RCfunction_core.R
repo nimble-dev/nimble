@@ -1,14 +1,17 @@
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
-                    step = 'nimbleStep',
-                    equals = 'nimbleEquals',
-                    dim = 'nimbleDim')
+                    step = 'nimStep',
+                    equals = 'nimEquals',
+                    dim = 'nimDim',
+                    stop = 'nimStop',
+                    round = 'nimRound')
 
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',
                 fields  = list(
                     argInfo    = 'ANY',
                     arguments  = 'ANY',
+                    template   = 'ANY',
                     code       = 'ANY',
                     returnType = 'ANY',
                     uniqueName = 'character',
@@ -23,12 +26,20 @@ nfMethodRC <-
                         code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                         if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))
                         generateArgs()
+                        generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
                     },
                     generateArgs = function() {
                         argsList <- nf_createAList(names(argInfo))
                         for(i in seq_along(argsList)) { if('default' %in% names(argInfo[[i]]))      argsList[[i]] <- argInfo[[i]]$default }
                         arguments <<- as.pairlist(argsList)
+                    },
+                    generateTemplate = function() {
+                        functionAsList <- list(as.name('function'))
+                        functionAsList[2] <- list(NULL)
+                        if(!is.null(args)) functionAsList[[2]] <- arguments
+                        functionAsList[[3]] <- quote({})
+                        template <<- eval(as.call(functionAsList))
                     },
                     removeAndSetReturnType = function() {
                         returnLineNum <- 0
@@ -81,8 +92,12 @@ nf_changeNimKeywords <- function(code){
 
 nf_changeNimKeywordsOne <- function(code){
     if(length(code) == 1){
-        if(as.character(code) %in% names(nimKeyWords) )
-            code <- as.name( nimKeyWords[[as.character(code)]] )
+        if(as.character(code) %in% names(nimKeyWords) ) {
+            if(is.call(code)) 
+                code[[1]] <- as.name( nimKeyWords[[as.character(code)]] )
+            else
+                code <- as.name( nimKeyWords[[as.character(code)]] )
+        }
     }
     else if(length(code) > 1){	
         for(i in seq_along(code) ) {

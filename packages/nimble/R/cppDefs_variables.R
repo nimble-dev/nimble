@@ -235,8 +235,13 @@ cppSEXP <- function(name = character(0), ...) cppVar(name = name, baseType = 'SE
 
 cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClass', ptr = 0, ...) 
 
+## to be defunct
 cppModelVariableAccessorVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'ManyVariablesAccessor', ptr = 0, ...) 
-
+## to be defunct
 cppModelValuesAccessorVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'ManyModelValuesAccessor', ptr = 0, ...) 
+
+cppModelVariableMapAccessorVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'ManyVariablesMapAccessor', ptr = 0, ...) 
+
+cppModelValuesMapAccessorVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'ManyModelValuesMapAccessor', ptr = 0, ...) 
 
 cppVecVoidPtr <- function(name = character(0), ...) cppVar(name = name, baseType = 'vector<void*>', ...)

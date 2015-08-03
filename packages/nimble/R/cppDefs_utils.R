@@ -21,8 +21,6 @@ codeSubstitute <- function(code, subList) {
 putCodeLinesInBrackets <- function(codeLines) {
     as.call(c(as.name('{'), codeLines))
 }
-## groupCodeLines <- putCodeLinesInBrackets
-## putCodeLinesInBrackets(list(l1, l2))
 
 # This is the location of the RcppUtils.cpp, etc. files.
 IncludeCodeDir = character()

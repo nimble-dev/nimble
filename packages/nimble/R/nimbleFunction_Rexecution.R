@@ -1,9 +1,27 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+#' Halt execution of a nimbleFunction function method.  Part of the NIMBLE language
+#'
+#' @param msg Character object to be output as an error message
+#'
+#' @author Perry de Valpine
+#' @export
+#' @details
+#' The NIMBLE stop is similar to the native R stop, but it takes only one argument, the error message to be output.  During uncompiled NIMBLE execution, nimStop simply calls R's stop funtion. During compiled execution it calls the error function from the R headers.  stop is an alias for nimStop in the NIMBLE language  
+nimStop <- function(msg) stop(msg)
+
+#' Check for interrupt (e.g. Ctrl-C) during nimbleFunction execution. Part of the NIMBLE language.
+#'
+#' @author Perry de Valpine
+#' @export
+#' @details
+#' During execution of nimbleFunctions that take a long time, it is nice to occassionally check if the user has entered an interrupt and bail out of execution if so.  This function does that.  During uncompiled nimbleFunction execution, it does nothing.  During compiled execution, it calls R_checkUserInterrupt() of the R headers. 
+checkInterrupt <- function() {}
+
 #' Turn a numeric vector into a single-row or single-column matrix
 #'
-#' Turns a numeric vector into a matrix that has 1 row or 1 column.  Part of NIMBLE language executable in R.
+#' Turns a numeric vector into a matrix that has 1 row or 1 column.  Part of NIMBLE language.
 #'
 #' @aliases asCol
 #'
@@ -27,26 +45,47 @@ asCol <- function(x) {
 }
 
 rCalcNodes <- function(model, nodes){
-	l_Prob = 0
-	for(nName in nodes)
-		l_Prob = l_Prob + model$nodes[[nName]]$calculate()
-	return(l_Prob)
+    l_Prob = 0
+    
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
+    else
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]]$calculate()
+    
+    return(l_Prob)
 }
 
-#' calculate, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
+rCalcDiffNodes <- function(model, nodes){
+    l_Prob <- 0
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculateDiff')
+    else
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]]$calculateDiff()
+    return(l_Prob)
+}
+
+
+#' calculate, calculateDiff, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
 #'
-#' calculate, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
+#' calculate, calculateDiff, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
 #'
-#' @aliases simulate getLogProb
+#' @aliases calculateDiff simulate getLogProb
 #' 
 #' @param model        A NIMBLE model, either the compiled or uncompiled version
 #' @param nodes        A character vector of node names, with index blocks allowed, such as 'x', 'y[2]', or 'z[1:3, 2:4]'
+#' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \link{simulate}
 #' @author NIMBLE development team
 #' @export
 #' @details
 #' These functions expands the nodes and then process them in the model in the order provided.  Expanding nodes means turning 'y[1:2]' into c('y[1]','y[2]') if y is a vector of scalar nodes.
 #' Calculation is defined for a stochastic node as executing the log probability (density) calculation and for a deterministic node as calculating whatever function was provided on the right-hand side of the model declaration.
 #'
+#' Difference calculation (calculateDiff) executes the operation(s) on the model as calculate, but it returns the sum of the difference between the new log probabilities and the previous ones.
+#' 
 #' Simulation is defined for a stochastic node as drawing a random value from its distribution, and for deterministic node as equivalent to calculate.
 #'
 #' getLogProb simply collects the sum of the log probabilities of nodes if they are known to have already been calculated.
@@ -55,32 +94,57 @@ rCalcNodes <- function(model, nodes){
 #'
 #' It is common to want the nodes to be provided in topologically sorted order, so that they will be calculated or simulated following the order of the model graph.  Functions such as model$getDependencies(nodes, ...) return nodes in topologically sorted order.  They can be directly sorted by model$topologicallySortNodes(nodes), but if so it is a good idea to expand names first by model$topologicallySortNodes(model$expandNodeNames(nodes))
 #'
-#' @return calculate and getLogProb return the sum of the log probabilities (densities) of the calculated nodes, with a contribution of 0 from any deterministic nodes  simulate returns NULL.
+#' @return calculate and getLogProb return the sum of the log probabilities (densities) of the calculated nodes, with a contribution of 0 from any deterministic nodes
+#'
+#' @return calculateDiff returns the sum of the difference between the new and old log probabilities (densities) of the calculated nodes, with a contribution of 0 from any deterministic nodes.
+#'
+#' simulate returns NULL.
 #' 
 #' @examples
 #' calculate(model, c('x', 'y[2:4]', 'z[2:5, 1:10]'))
 #' 
 calculate <- function(model, nodes, nodeFxnVector)		
 {
-	if(!missing(nodeFxnVector)){
-			model <- nodeFxnVector$model
-			nodes <- nodeFxnVector$getNodeNames()
-		return(rCalcNodes(model, nodes))
-		}
-	if(inherits(model, 'modelBaseClass') ){
-		if(missing(nodes) ) 
-			nodes <- model$getMaps('nodeNamesLHSall')
-		nfv <- nodeFunctionVector(model, nodes)
-		nodeNames <- nfv$getNodeNames()
-		return(rCalcNodes(model, nodeNames))
-	}	
+    if(!missing(nodeFxnVector)){
+        model <- nodeFxnVector$model
+        nodes <- nodeFxnVector$getNodeNames()
+        return(rCalcNodes(model, nodes))
+    }
+    if(inherits(model, 'modelBaseClass') ){
+        if(missing(nodes) ) 
+            nodes <- model$getMaps('nodeNamesLHSall')
+        nfv <- nodeFunctionVector(model, nodes)
+        nodeNames <- nfv$getNodeNames()
+        return(rCalcNodes(model, nodeNames))
+    }	
+}
+
+calculateDiff <- function(model, nodes, nodeFxnVector)		
+{
+    if(!missing(nodeFxnVector)){
+        model <- nodeFxnVector$model
+        nodes <- nodeFxnVector$getNodeNames()
+        return(rCalcDiffNodes(model, nodes))
+    }
+    if(inherits(model, 'modelBaseClass') ){
+        if(missing(nodes) ) 
+            nodes <- model$getMaps('nodeNamesLHSall')
+        nfv <- nodeFunctionVector(model, nodes)
+        nodeNames <- nfv$getNodeNames()
+        return(rCalcDiffNodes(model, nodeNames))
+    }	
 }
 
 rGetLogProbsNodes <- function(model, nodes){
-	l_Prob = 0
-	for(nName in nodes)
-		l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
-	return(l_Prob)
+    l_Prob = 0
+
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'getLogProb')
+    else
+        for(nName in nodes)
+            l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
+    return(l_Prob)
 }
 
 getLogProb <- function(model, nodes, nodeFxnVector)		
@@ -103,8 +167,12 @@ getLogProb <- function(model, nodes, nodeFxnVector)
 
 
 rSimNodes <- function(model, nodes){
-	for(nName in nodes)
-		model$nodes[[nName]]$simulate()
+    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+        for(nName in nodes)
+            model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'simulate')
+    else 
+        for(nName in nodes)
+            model$nodes[[nName]]$simulate()
 }
 
 simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
@@ -147,42 +215,65 @@ simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)
 # @return NULL, but this function works by the side-effect of modifying P in the calling environment.
 
 
-getValues <- function(vals, model, nodes)
-	{
-	valsExp = substitute(vals)
-	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
-	output = getValuesAccess(vals, access)
-	assign(as.character(valsExp), output, envir = parent.frame(n = 1) )
-	}
+getValues <- function(vals, model, nodes, envir = parent.frame()) {
+    valsExp = substitute(vals)
+    access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
+    output = getValuesAccess(access)
+    if(is.name(valsExp))
+        assign(as.character(valsExp), output, envir = parent.frame(n = 1) ) ## again this assumes valsExp has no indexing -- need to fix
+    else {
+        varName <- valsExp[[2]]
+        orig <- get(varName, envir = envir)
+        assignTarget <- valsExp
+        assignTarget[[2]] <- quote(orig)
+        eval(substitute(AT <- output, list(AT = assignTarget)))
+        assign(varName, orig, envir = envir)
+    }
+}
 
-getValuesAccess <- function(vals, access){
-#	if(length(vals)!= length(access) ) {
-#		writeLines('Length of object to copy into does not match')
-#	}
-	output = as.numeric(NA)
-	totValues <- length(access$gids) + length(access$l_gids)
-	for(i in seq_along(access$gids) )
-		output[i] <- access$getSingleValue_fromGID(i)
-	gid_len = length(access$gids)
-	for(i in seq_along(access$l_gids))
-		output[i + gid_len] = access$getSingleValue_fromGID(i + gid_len)
-	return(output)
+getValuesAccess <- function(access) {
+    fromCode <- makeGetCodeFromAccessorVector(access)
+    if(length(fromCode)==0) return(numeric())
+    sourceFromObject <- access[[1]]
+    unlist(lapply(fromCode, function(i) eval(i)))
+
+##    if(access$numAccessors==0) return(numeric()) ## NEW ACCESSORS
+##    unlist(lapply(1:access$numAccessors, function(i) access$getValues(i)))
+
 }
 
 
+setValuesAccess <- function(input, access) {
 
-setValuesAccess <- function(input, access){
-	tot_length = length(access$gids) + length(access$l_gids)
-	if(length(input)!= tot_length ) 
-		writeLines('Length of input does not match accessor')
-	else{
-		for(i in seq_along(access$gids) )
-			access$setSingleValue_fromGID(input[i], i)
-		gid_len = length(access$gids)
-		for(i in seq_along(access$l_gids) )
-			access$setSingleValue_fromGID(input[i+gid_len], i + gid_len)
-	}
-}	
+    toCode <- makeSetCodeFromAccessorVector(access)
+    mapInfo <- makeMapInfoFromAccessorVector(access) ## inefficient to do both of these, but we need the lengths!
+    if(length(toCode)==0) return(NULL)
+    sourceToObject <- access[[1]]
+    nextIndex <- 0
+    ## not easy to check lengths any more
+    for(i in 1:length(toCode)) {
+        nextLength <- mapInfo[[i]]$length
+        oneValue <- input[nextIndex + (1:nextLength)]
+        eval(toCode[[i]])
+        nextIndex <- nextIndex + nextLength
+    }
+    invisible(NULL)
+
+    ## if(access$numAccessors==0) return(NULL) ## NEW ACCESSORS
+    ## nextIndex <- 0
+    ## if(access$getLength() != length(input)) {
+    ##     writeLines('Length of input does not match accessor')
+    ##     if(access$getLength() > length(input)) stop('Bailing out because not enough values were provided for accessor')
+    ##     writeLines('Too many input values provided.  Continuing anyway')
+    ## }
+    ## for(i in 1:length(access$code)) {
+    ##     nextLength <- access$getLength(i)
+    ##     access$setValues(i, input[nextIndex + (1:nextLength)])
+    ##     nextIndex <- nextIndex + nextLength
+    ## }
+    ## invisible(NULL)
+}
+
 
 # Fill a set of nodes in a model from a vector of values
 #
@@ -210,7 +301,6 @@ setValuesAccess <- function(input, access){
 setValues <- function(input, model, nodes){
 	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
 	setValuesAccess(input, access)
-	
 }
 
 #' Access values for a set of nodes in a model
@@ -241,7 +331,7 @@ setValues <- function(input, model, nodes){
 #' @return A vector of values concatenated from the provided nodes in the model
 values <- function(model, nodes){
 	ans <- NA
-	getValues(ans, model, nodes)
+	getValues(ans, model, nodes, parent.frame())
 	ans
 }
 
@@ -297,98 +387,65 @@ values <- function(model, nodes){
 #' cModel[['x']] <- rnorm(100)
 #' 
 #' cCopy() ## execute the copy with the compiled function
-nimCopy <- function(from, to, nodes, nodesTo = NA, row = NA, rowTo = NA, logProb = FALSE){
-
-	isFromModel = NA
-	isToModel = NA
-    if(missing(nodes) ) 
-        nodes = allNodeNames(from)
+nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
+    if(is.null(nodes) )
+        nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
         accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
-        rowFrom = NA
-        isFromModel = TRUE
     }
-    else if(inherits(from, "modelValuesBaseClass"))
-    {
-        accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
-        if(is.na(row))
-            stop("Error: need to supply 'row' for a modelValues copy")
-        rowFrom = row
-        isFromModel = FALSE
-    }
+    else
+        if(inherits(from, "modelValuesBaseClass")) {
+            accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
+            if(is.na(row))
+                stop("Error: need to supply 'row' for a modelValues copy")
+            ##accessFrom$setRow(row) ## NEW ACCESSORS
+        }
+        else stop('argument "from" in nimCopy is neither a model nor modelValues')
+
     if( inherits(to, "modelBaseClass") ){
-        if(is.na(nodesTo[[1]]) ) 
+        if(is.null(nodesTo) ) 
             accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
-		else
-			accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
-		rowTo = NA
-		isToModel = TRUE
-		}
-	else if(inherits(to, "modelValuesBaseClass"))
-		{
-		if(is.na(nodesTo[[1]]) ) 
-			accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
-		else
-			accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
-		if(is.na(rowTo))
-			rowTo = row
-		isToModel = FALSE
-		}
-		if(is.na(isFromModel))
-			stop('argument "from" in nimCopy is neither a model nor modelValues')
-		if(is.na(isToModel))
-			stop('argument "to" in nimCopy is neither a model nor modelValues')
+        else
+            accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
+    }
+    else
+        if(inherits(to, "modelValuesBaseClass")) {
+            if(is.null(nodesTo) ) 
+                accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
+            else
+                accessTo = modelValuesAccessorVector(to, nodesTo, logProb = logProb)
+            if(is.na(rowTo))
+                rowTo = row
+            ##accessTo$setRow(rowTo) ## NEW ACCESSORS
+        }
+        else stop('argument "to" in nimCopy is neither a model nor modelValues')
 
-		
-		lengthTo = accessTo$length
-		lengthFrom = accessFrom$length
-		if(lengthTo != lengthFrom)
-			stop('lengths not equal in nimCopy') 
-		if(lengthTo > 0){
-			for(i in 1:lengthTo){
-				if(isFromModel)
-					valueFrom = accessFrom$getSingleValue_fromGID(i)
-				else
-					valueFrom = accessFrom$getSingleValue_fromGID(i, rowFrom)
-				
-				if(isToModel)
-					accessTo$setSingleValue_fromGID(valueFrom, i)
-				else
-					accessTo$setSingleValue_fromGID(valueFrom, i, rowTo)
-			}
-		}
+    sourceToObject <- accessTo[[1]]
+    sourceFromObject <- accessFrom[[1]]
+    setCode <- makeSetCodeFromAccessorVector(accessTo)
+    getCode <- makeGetCodeFromAccessorVector(accessFrom)
+    lengthTo <- length(setCode)
+    if(length(getCode) != lengthTo)
+    stop('unequal number of entries in nimCopy') 
+    if(lengthTo > 0){
+        for(i in 1:lengthTo){
+            oneValue <- eval(getCode[[i]]) ## may have row hardwired in
+            eval(setCode[[i]]) ## oneValue is hard-wired in. may have rowTo hardwired in
+        }
+    }
+    
+    ## lengthTo <- length(accessTo$code) ## NEW ACCESSORS
+    ## if(length(accessFrom$code) != lengthTo)
+    ##     stop('unequal number of entries in nimCopy') 
+    ## if(lengthTo > 0){
+    ##     for(i in 1:lengthTo){
+    ##         accessTo$setValues( i, accessFrom$getValues(i) )
+    ##     }
+    ## }
 }
 
 
-allNodeNames <- function(object, logProb = FALSE){
-	if(inherits(object, 'modelValuesBaseClass') ) {	
-		if(!is.null(object$modelDef))
-			all.Names <- ls(object$modelDef$nodeInfo)
-		else
-			all.Names = object$varNames
-		if(logProb == TRUE)
-				return(all.Names)
-		for(i in 1:length(all.Names) ) {
-			if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-				all.Names[i] = NA		
-		}
-		all.Names = all.Names[!is.na(all.Names)]
-		return(all.Names)	
-		}
-	if(inherits(object, 'modelBaseClass') ) {
-		all.Names <- object$getNodeNames()	
-		if(logProb == TRUE)
-				return(all.Names)
-		for(i in 1:length(all.Names) ) {
-			if(gsub("logProb_", "", all.Names[i]) != all.Names[i])
-				all.Names[i] = NA		
-		}
-		all.Names = all.Names[!is.na(all.Names)]
-		return(all.Names)	
-	}
-}
-
-#' Access or set a member variable of a nimbleFunction created during \code{setup}
+#' Internal way to access or set a member variable of a nimbleFunction created during \code{setup}.  Normally in NIMBLE code you would use \code{nf$var} instead of \code{nfVar(nf, var)}. 
 #'
 #' @aliases nfVar nfVar<-
 #'
@@ -400,11 +457,10 @@ allNodeNames <- function(object, logProb = FALSE){
 #' @author NIMBLE development team
 #' @export
 #' @details
-#' When \code{nimbleFunction} is called and a \code{setup} function is provided, then \code{nimbleFunction} returns a function.  That function is a generator that should be called with arguments to the \code{setup} function and returns another function that will execute the \code{run} function.  The \code{run} function and any other \code{methods} provided can use objects created or passed to \code{setup}.  \code{nfVar} provides direct access to those objects by name.
+#' When \code{nimbleFunction} is called and a \code{setup} function is provided, then \code{nimbleFunction} returns a function.  That function is a generator that should be called with arguments to the \code{setup} function and returns another function with \code{run} and possibly other member functions.  The member functions can use objects created or passed to \code{setup}.  During internal processing, the NIMBLE compiler turns some cases of \code{nf$var} into \code{nfVar(nf, var)}. These provide direct access to setup variables (member data).  \code{nfVar} is not typically called by a NIMBLE user or programmer.
 #'
-#' In R, \code{nfVar} can retrieve anything in \code{setup}, including models, other nimbleFunctions, and vectors of node lists.  In NIMBLE, it can only retrieve numeric variables
 #'
-#' For access to methods of \code{nf}, see \code{nfMethod}.
+#' For internal access to methods of \code{nf}, see \link{nfMethod}.
 #' 
 #' For more information, see \code{?nimbleFunction} and the NIMBLE User Manual.
 #'
@@ -445,9 +501,9 @@ nfVar <- function(nf, varName) {
     return(nf)
 }
 
-#' access a member function (or method) of a nimbleFunction
+#' Internal function for accessing a member function (method) of a nimbleFunction.  Normally a user will write \code{nf$method(x)} instead of \code{nfMethod(nf, method)(x)}.
 #'
-#' access (call) a member function of a nimbleFunction other than \code{run}, which calling the nimbleFunction directly uses.  Works in R and NIMBLE.
+#' access (call) a member function of a nimbleFunction, including \code{run}.
 #'
 #' @param nf          a specialized nimbleFunction, i.e. one that has already had setup parameters processed
 #' @param methodName  a character string giving the name of the member function to call
@@ -456,7 +512,7 @@ nfVar <- function(nf, varName) {
 #' @export
 #' @details
 #' nimbleFunctions have a default member function called \code{run}, and may have other member functions provided via the \code{methods} argument to \code{nimbleFunction}.
-#' \code{nfMethod} is primarily used to call the latter, although it could be used with \code{methodName = 'run'}.  Normally arguments will be provided after \code{nfMethod}, e.g. \code{nfMethod(myNimbleFunction, 'foo')(x)}.
+#' As an internal step, the NIMBLE compiler turns \code{nf$method(x)} into \code{nfMethod(nf, method)(x)}, but a NIMBLE user or programmer would not normally need to use \code{nfMethod} directly.
 #'
 #' @return a function that can be called.
 nfMethod <- function(nf, methodName) {
@@ -512,10 +568,11 @@ nfMethod <- function(nf, methodName) {
 #' cSamp <- compileNimble(rSamp)
 #' cSamp(1:4, 5)
 #' #[1] 1 1 4 4 4
-rankSample <- function(weights, size, output){
-	if(!is.loaded('rankSample') )
-		stop('rankSample does not work because we have not loaded any nimble code yet')
-	assign(as.character(substitute(output) ), value = .Call('rankSample', as.numeric(weights), as.integer(size), as.integer(output)), envir = parent.frame(n = 1) ) 
+rankSample <- function(weights, size, output, silent = FALSE) {
+    ##cat('in R version rankSample\n')
+    if(!is.loaded('rankSample'))
+        stop('rankSample does not work because we have not loaded any nimble code yet')
+    assign(as.character(substitute(output)), .Call('rankSample', as.numeric(weights), as.integer(size), as.integer(output), as.logical(silent)), envir = parent.frame())
 }
 
 #' print function for use in nimbleFunctions, where it is identical to \code{print}, but not R's \code{print}.
@@ -584,3 +641,6 @@ declare <- function(name, def){
 is.na.vec <- function(x) any(is.na(x))
 
 is.nan.vec <- function(x) any(is.nan(x))
+
+nimRound <- round
+

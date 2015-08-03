@@ -180,7 +180,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                         'ModelClassUtils.cpp', 
                                                         'accessorClasses.cpp'
                                                         )
-                                       if(nimbleOptions$includeCPPdists) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
+                                       if(nimbleOptions()$includeCPPdists) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
 
                                        isWindows = (.Platform$OS.type == "windows")
 
@@ -207,7 +207,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        cur = getwd()
                                        setwd(dirName)
                                        on.exit(setwd(cur))
-                                       
                                        
                                        status = system(SHLIBcmd)
 				       if(status != 0)

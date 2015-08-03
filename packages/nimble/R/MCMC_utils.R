@@ -1,11 +1,9 @@
-
-
 #' Makes the Metropolis-Hastings acceptance decision, based upon the input (log) Metropolis-Hastings ratio
 #' 
 #' This function returns a logical TRUE/FALSE value, indicating whether the proposed transition should be accepted (TRUE) or rejected (FALSE).
 #' 
 #' 
-#' @param logMetropolisRatio The log of the Metropolis-Hastings ratio, which is calculated from model probabilities and forward/reverse transition probabilities
+#' @param logMetropolisRatio The log of the Metropolis-Hastings ratio, which is calculated from model probabilities and forward/reverse transition probabilities. Calculated as the ratio of the model probability under the proposal to that under the current values multiplied by the ratio of the reverse transition probability to the forward transition probability.
 #'
 #' @details The Metropolis-Hastings accept/reject decisions is made as follows.  If \code{logMetropolisRatio} is greater than 0, accept (return \code{TRUE}).  Otherwise draw a uniform random number between 0 and 1 and accept if it is less that \code{exp(logMetropolisRatio}.  The proposed transition will be rejected (return \code{FALSE}). If \code{logMetropolisRatio} is NA, NaN, or -Inf, a reject (\code{FALSE}) decision will be returned.
 #' 
@@ -66,6 +64,7 @@ decideAndJump <- nimbleFunction(
         return(jump)
     }, where = getLoadingNamespace()
 )
+
 
 
 
@@ -143,6 +142,18 @@ setAndCalculate <- nimbleFunction(
     }, where = getLoadingNamespace()
 )
 
+setAndCalculateDiff <- nimbleFunction(
+    setup = function(model, targetNodes) {
+        targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(targetNodes)
+    },
+    run = function(targetValues = double(1)) {
+        values(model, targetNodesAsScalar) <<- targetValues
+        lpD <- calculateDiff(model, calcNodes)
+        returnType(double())
+        return(lpD)
+    }, where = getLoadingNamespace()
+)
 
 
 calcAdaptationFactor <- nimbleFunction(
@@ -172,48 +183,6 @@ calcAdaptationFactor <- nimbleFunction(
 
 
 
-RHSonlyInit_virtual <- nimbleFunctionVirtual()
-RHSonlyInit <- nimbleFunction(
-    contains = RHSonlyInit_virtual,
-    setup = function(model, node) {},
-    run = function() {
-        nv <- values(model, node)
-        if(is.na.vec(nv) | is.nan.vec(nv))     print('missing value in right-hand-side only node; cannot initialize model')
-    }, where = getLoadingNamespace()
-)
-
-
-mcmcNodeInit_virtual <- nimbleFunctionVirtual()
-mcmcNodeInit <- nimbleFunction(
-    contains = mcmcNodeInit_virtual,
-    setup = function(model, node) {
-		gID <- model$modelDef$nodeName2GraphIDs(node)
-		type <- model$modelDef$maps$types[gID]
-		isDeterm = FALSE
-		isStoch = FALSE
-		if(type == 'stoch')
-			isStoch = TRUE
-		else if(type == 'determ')
-			isDeterm = TRUE
-    },
-    run = function() {
-        if(isDeterm) {
-            calculate(model, node)
-            nv <- values(model, node)
-            if(is.na.vec(nv) | is.nan.vec(nv))     print('deterministic model node is NA or NaN in model initialization')
-        }
-        if(isStoch) {
-            nv <- values(model, node)
-            if(is.na.vec(nv)) {
-                simulate(model, node)
-                nv <- values(model, node)
-            }
-            if(is.na.vec(nv) | is.nan.vec(nv))     print('stochastic model node is NA or NaN in model initialization')
-            lp <- calculate(model, node)
-            if(is.na(lp) | is.nan(lp) | lp < -1e12)              print('stochastic model value is NA, NaN or too small in model initialization')
-        }
-    }, where = getLoadingNamespace()
-)
 
 
 
@@ -288,88 +257,3 @@ mcmc_findControlListNamesInCode <- function(code) {
 
 
 
-## possibly obsolete, using the new (0, current) method for calculaating coefficients and offsets  -DT
-# calcCoeffAndOffset <- nimbleFunction(
-#     setup = TRUE,
-#     run = function(x1=double(), x2=double(), y1=double(), y2=double()) {
-#         coeff <- (y2-y1) / (x2-x1)
-#         offset <- y1 - coeff*x1
-#         declare(coeffAndOffset, double(1,2))
-#         coeffAndOffset[1] <- coeff
-#         coeffAndOffset[2] <- offset
-#         returnType(double(1))
-#         return(coeffAndOffset)
-#     }, where = getLoadingNamespace()
-# )
-
-
-## covToCor <- nimbleFunction(
-##     setup = function(d) {},
-##     run = function(cov = double(2)) {
-##         declare(tauMatrix, double(2, c(d,d)))
-##         for(i in 1:d) {
-##             for(j in 1:d) {
-##                 tauMatrix[i,j] <- 0
-##             }
-##             tauMatrix[i,i] <- 1/sqrt(cov[i,i])
-##         }
-##         declare(cor, double(2, c(d,d)))
-##         cor <- tauMatrix %*% cov %*% tauMatrix
-##         returnType(double(2))
-##         return(cor)
-##     }, where = getLoadingNamespace()
-## )
-
-
-## covToSDmatrix <- nimbleFunction(
-##     setup = function(d) {},
-##     run = function(cov = double(2)) {
-##         declare(sdMatrix, double(2, c(d,d)))
-##         for(i in 1:d) {
-##             for(j in 1:d) {
-##                 sdMatrix[i,j] <- 0
-##             }
-##             sdMatrix[i,i] <- sqrt(cov[i,i])
-##         }
-##         returnType(double(2))
-##         return(sdMatrix)
-##     }, where = getLoadingNamespace()
-## )
-
-
-
-
-
-mcmcStochNode_Init <- nimbleFunction(
-	contains = nimble:::mcmcNodeInit_virtual,	## remove the nimble:::, dummy
-
-	setup = function(model, node){},
-	run = function(){
-		theseVals <- values(model, node)
-		if(is.na.vec(theseVals))
-			simulate(model, node)
-		lp <- calculate(model, node)
-		if(is.na(lp) | lp < -1e12)
-			print('Problem when attempting to initialize stochastic node')
-	},
-	where = getLoadingNamespace()
-)
-
-mcmcFillDetermTop_Init <- nimbleFunction(
-	contains  = nimble:::mcmcNodeInit_virtual,	##remove the nimble:::, dummy
-	setup = function(model, node){},
-	run = function(){
-		nil <- calculate(model, node)
-	}, where = getLoadingNamespace()
-)
-
-mcmcCheckRHS_Init <- nimbleFunction(
-	contains  = nimble:::mcmcNodeInit_virtual,	##	remove the nimble:::, dummy
-	setup = function(model, node){},			##	note: node is really a list of the RHS only nodes
-	run = function(){
-		vals <- values(model, node)
-		if(is.na.vec(vals))
-			print('Value of right hand side only node not initialized')
-	},
-	where = getLoadingNamespace()
-)

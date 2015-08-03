@@ -8,22 +8,16 @@
 cppDefinition <- setRefClass('cppDefinition', 
                              fields = list(
                                  filename = 'ANY',	#'character',  ## what filename (to which .h and .cpp will be appended) is this definition in
-                             #    Hincludes = 'ANY',	#''list', ## list of either character strings for direct includes or other cppDefinition objects, from which filename can be taken
-                             #    CPPincludes = 'ANY',	#''list',
                                  CPPusings = 'ANY',	#''character',
                                  neededTypeDefs = 'ANY',	#''list',
                                
                                Hincludes = 'list',
                                CPPincludes = 'list',
-                              # CPPusings = 'character',
-                              # neededTypeDefs = 'list',
                                
                                  nimbleProject = 'ANY'),  
                              methods = list(
                                  initialize = function(..., project) {
                                  	filename <<- character()
-                              #   	if(!is.list(Hincludes))	Hincludes <<- list()
-                              #   	if(!is.list(CPPincludes))	CPPincludes <<- list()
                                  	if(!is.character(CPPusings))	CPPusings <<- character()
                                  	if(!is.list(neededTypeDefs))	neededTypeDefs <<- list()
                                      nimbleProject <<- if(missing(project)) NULL else project
@@ -46,24 +40,14 @@ cppNamespace <- setRefClass('cppNamespace',
                             fields = list(
                                 name = 'ANY',	#'character',
                                 objectDefs = 'ANY', ## This one must be ANY because it could be a list or a symbolTable
-                              ##  classDefs = 'list',
-                                functionDefs = 'ANY'),		#'list'),
-                              ##  typeDefs = 'list',
-                              ##  namespaces = 'list'),
+                                functionDefs = 'ANY'),
                             methods = list(
                                 initialize = function(...) {name <<- character();functionDefs <<- list(); objectDefs <<- list(); callSuper(...)}, ## By default a list, but can be a symbolTable
                                 addObject = function(newName, newObj) objectDefs[[newName]] <<- newObj,
-                           ##     addClass = function(newName, newClass) classDefs[[newName]] <<- newClass,
                                 addFunction = function(newName, newFun) functionDefs[[newName]] <<- newFun,
-                              ##  addTypeDef = function(newName, newTD) typeDefs[[newName]] <<- newTD,
-                             ##   addNamespace = function(newName, newNS) namespaces[[newName]] <<- c(namespaces, newNS),
                                 generate = function() {
                                     objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                     output <- c(generateNameSpaceHeader(name$generate()),
-                                                ## 3 categories to be added in future
-                                                ## typeDefs 
-                                                ## classDefs
-                                                ## namespaces
                                                 generateObjectDefs(objectDefsToUse),
                                                 generateAll(functionDefs, declaration = TRUE),
                                                 '};'
@@ -89,10 +73,6 @@ cppClassDef <- setRefClass('cppClassDef',
                            methods = list(
                                initialize = function(...) {
                                    useGenerator <<- TRUE
-                                 #  inheritance <<- list()
-                                 #  private <<- list()
-                                  # if(!isHincludes <<- list()
-                                  # CPPincludes <<- list()
                                    Hincludes <<-	c(Hincludes, '<Rinternals.h>')	
                                    CPPincludes <<-	c(CPPincludes, '<iostream>') 
                                    callSuper(...)
@@ -119,8 +99,12 @@ cppClassDef <- setRefClass('cppClassDef',
                                    CPPuse
                                },
                                getDefs = function() {
-                                   if(useGenerator)
-                                       list(.self, SEXPgeneratorFun, SEXPfinalizerFun)
+                                   if(useGenerator) {
+                                       if(inherits(SEXPfinalizerFun, 'uninitializedField'))
+                                           list(.self, SEXPgeneratorFun)
+                                       else
+                                           list(.self, SEXPgeneratorFun, SEXPfinalizerFun)
+                                   }
                                    else
                                        list(.self)
                                },
@@ -130,9 +114,6 @@ cppClassDef <- setRefClass('cppClassDef',
                                    if(declaration) {
                                        objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                        output <- c(generateClassHeader(name, inheritance),
-                                                   ## typeDefs ## 3 to be added in future
-                                                   ## classDefs
-                                                   ## namespaces
                                                    list('public:'), ## In the future we can separate public and private
                                                    lapply(generateObjectDefs(objectDefsToUse), pasteSemicolon, indent = '  '),
                                                    generateAll(functionDefs, declaration = TRUE),
@@ -143,18 +124,19 @@ cppClassDef <- setRefClass('cppClassDef',
                                    }
                                    output
                                },
-                               buildSEXPgenerator = function() { ## build a function that will provide a new object and return an external pointer
+                               buildSEXPgenerator = function(finalizer = NULL) { ## build a function that will provide a new object and return an external pointer
                                    CBobjectDefs <- list(cppVar(name = 'newObj', baseType = name, ptr = 1),
                                                       Sans = cppSEXP(name = 'Sans'));
                                    newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'), 'PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))
-                                   notificationLine <- if(nimbleOptions$messagesWhenBuildingOrFinalizingCppObjects)
-                                       paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << R_ExternalPtrAddr(Sans) << \"\\n\";')
-                                   else character(0)
+                                   notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
+                                                           paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << R_ExternalPtrAddr(Sans) << \"\\n\";')
+                                                       else character(0)
+                                   if(is.null(finalizer)) finalizer <- paste0(name,'_Finalizer')
                                    codeLines <- substitute({
-                                       R_RegisterCFinalizerEx(Sans, cppReference(FINALIZER), TRUE)
+                                       R_RegisterCFinalizerEx(Sans, cppReference(FINALIZER), FALSE) ## last argument is whether to call finalizer upon R exit.  If TRUE we can generate segfaults if the library has been dyn.unloaded, unfortunately
                                        UNPROTECT(1)
                                        return(Sans)
-                                   }, list(TYPE = as.name(name), FINALIZER = as.name(paste0(name,'_Finalizer'))))
+                                   }, list(TYPE = as.name(name), FINALIZER = as.name(finalizer)))
                                    allCode <- putCodeLinesInBrackets(list(newCodeLine, cppLiteral(notificationLine), codeLines))
                                    SEXPgeneratorFun <<- cppFunctionDef(name = paste0('new_',name),
                                                                        args = list(),
@@ -165,11 +147,11 @@ cppClassDef <- setRefClass('cppClassDef',
                                buildSEXPfinalizer = function() {
                                    CBobjectDefs <- list(cppVar(name = 'oldObj', baseType = name, ptr = 1))
                                    inputArgs <- list(cppSEXP(name = 'Sv'))
-                                   notificationLine <- if(nimbleOptions$messagesWhenBuildingOrFinalizingCppObjects)
+                                   notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
                                        paste0('std::cout<< \"In finalizer for ', name, ' with pointer \" << R_ExternalPtrAddr(Sv) << \"\\n\";')
                                    else character(0)
                                    castLine <- paste0('oldObj = static_cast<',name,' *>(R_ExternalPtrAddr(Sv));')
-                                   deleteLine <- 'delete oldObj;'
+                                   deleteLine <- c('if(oldObj) delete oldObj;', 'R_ClearExternalPtr(Sv);')
                                    code <- putCodeLinesInBrackets(list(cppLiteral(c(notificationLine, castLine, deleteLine))))
                                    SEXPfinalizerFun <<- cppFunctionDef(
                                        name = paste0(name,'_Finalizer'),

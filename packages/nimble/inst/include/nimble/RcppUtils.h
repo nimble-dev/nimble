@@ -7,10 +7,21 @@
 #include "Utils.h"
 #include <string>
 #include <vector>
+#include<iostream>
+#include<sstream>
+
 #include <Rinternals.h>
+
+#include <R_ext/Applic.h>	/* this is required for optim */
+#include <stdarg.h> 		/* this is required for variable number of arguments */
+
+extern std::ostringstream _nimble_global_output;
+
 using namespace std;
 #define Inf R_PosInf
 #define NA 0
+
+void nimble_print_to_R(std::ostringstream &input);
 
 void multivarTestCall(double *x, int n);
 
@@ -21,7 +32,10 @@ double t(double x);
 int prod(int x);
 double prod(double x);
 
-string STRSEXP_2_string(SEXP Ss, int i);
+string STRSEXP_2_string(SEXP Ss, int i = 0);
+SEXP   string_2_STRSEXP(string v);
+void   STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans);
+SEXP   vectorString_2_STRSEXP(const vector<string> &v);
 
 vector<double> SEXP_2_vectorDouble( SEXP Sn ); /* Sn can be numeric or integer from R*/
 double SEXP_2_double(SEXP Sn, int i = 0); /* Ditto */
@@ -100,18 +114,21 @@ extern "C" {
 
   SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP double_2_SEXP(SEXP rPtr, SEXP refNum);
-  SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum);
   SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
   SEXP int_2_SEXP(SEXP rPtr, SEXP refNum);
 
+  SEXP SEXP_2_string(SEXP rPtr, SEXP rString);
+  SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector);
+  SEXP string_2_SEXP(SEXP rPtr);
+  SEXP stringVector_2_SEXP(SEXP rPtr);
 
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
   SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
   
-  SEXP rankSample(SEXP p, SEXP n);
+  SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s);
   
   
   SEXP getEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sIndex);// This is a utility for looking up a field of an environment
@@ -323,8 +340,70 @@ class orderedPair	//simple class which is used to be sorted by value, but rememb
 	int rank;
 	};
 
-bool compareOrderedPair(orderedPair a, orderedPair b);			//function called for sort 
+bool compareOrderedPair(orderedPair a, orderedPair b);	 //function called for sort 
 
-void rawSample(double* p, int c_samps, int N, int* ans, bool unsort);
-void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);		
+void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent);
+
+void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output);
+void rankSample(NimArr<1, double>& weights, int& n, NimArr<1, int>& output, bool& silent);
+
+
+/*	optim tools	*/
+
+
+//	 NEW CLASSES (may be classes for which nimble functions can inherit from to allow for easy 
+
+
+//This is a class that will be used to store outcome of a call to optim
+//By giving the optim functions pointers to these elements, 
+//there is actually no need to "unpack" the results
+//The following two classes COULD be a nimbleFunction
+class OptimAns{
+	public: 
+	NimArr<1, double> par;
+	double Fmin;
+	int fail, fncount;
+	OptimAns(int n){
+		par = NimArr<1, double> (n);
+	};
+};		
+
+
+//This is a class that will be used to store inputs to various optims
+//Will further specialize classes for each version of optim!
+
+
+class OptimControl{
+	public:
+	int optimType, maxit, trace;
+	//Choices of optimType: 1 = Nelder Mead, 2 = BFG, 3 = BFG with Box Constraints, 4 = Conjugate Gradient, 5 = Simulated Annealing
+};		
+					
+					
+//	This is a specialized control specifically for Nelder Mead optimizer						
+class NM_OptimControl : public OptimControl{
+	public:
+	double alpha, beta, gamma, abstol, intol;
+	NM_OptimControl(double ialpha, double ibeta, double igamma, double iabstol, double iintol, int imaxit, int itrace){
+		alpha = ialpha; beta = ibeta; gamma = igamma; abstol = iabstol; intol = iintol;
+		maxit = imaxit; trace = itrace;
+		optimType = 1;
+	};
+};
+
+
+void bareBonesOptim(NimArr<1, double> initPar, optimfn objFxn, void* nfPtr, int nargs,  ...);
+
+void nimble_optim(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, void* otherArgs,
+				 	optimfn objFxn);
+
+void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans,
+				 	NimArr<1, double> par, optimfn objFxn,
+				 	int numOtherArgs, ...);
+
+
+
 #endif
+
+

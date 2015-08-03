@@ -1,5 +1,3 @@
-
-
 cGetNRow <- function(cMV, compIndex = 1)
 {
   nRow = .Call(getNativeSymbolInfo("getNRow"), cMV$componentExtptrs[[compIndex]])
@@ -29,8 +27,6 @@ cCopyVariableRows <- function(cMVFrom, cMVTo, varIndex, rowsFrom = 1:cGetNRow(cM
   if(status == FALSE)
     stop("Did not correctly copy from one ModelValues to another")
 }
-
-
 
 newObjElementPtr = function(rPtr, name){
   .Call("getModelObjectPtr", rPtr, name)
@@ -74,14 +70,6 @@ setDoublePtrFromSinglePtr <- function(elementPtr, value) {
     value
 }
 
-# setSinglePtrFromSinglePtr <- function(elementPtr, value) {
-#     if(!inherits(elementPtr, 'externalptr')) return(NULL)
-#     if(!inherits(value, 'externalptr')) return(NULL)
-#     .Call('setSinglePtrFromSinglePtr', elementPtr, value)
-#     value
-# }
-
-
 getDoubleValue <- function(elementPtr, pointDepth = 1){
   if(!inherits(elementPtr, "externalptr") ) 
     return(NULL)
@@ -117,4 +105,34 @@ setBoolValue <- function(elementPtr, value,  pointDepth = 1){
     if(!inherits(elementPtr, "externalptr"))    
         return(NULL)
     jnk = .Call("SEXP_2_bool", elementPtr, as.integer(pointDepth), value )
+}
+
+getBoolValue <- function(elementPtr, pointDepth = 1){
+    if(!inherits(elementPtr, "externalptr") ) 
+        return(NULL)
+    .Call("bool_2_SEXP", elementPtr, as.integer(pointDepth) ) 
+}
+
+setCharacterValue <- function(elementPtr, value){
+    if(!inherits(elementPtr, "externalptr"))    
+        return(NULL)
+    jnk = .Call("SEXP_2_string", elementPtr, value )
+}
+
+getCharacterValue <- function(elementPtr){
+    if(!inherits(elementPtr, "externalptr") ) 
+        return(NULL)
+    .Call("string_2_SEXP", elementPtr ) 
+}
+
+setCharacterVectorValue <- function(elementPtr, value){
+    if(!inherits(elementPtr, "externalptr"))    
+        return(NULL)
+    jnk = .Call("SEXP_2_stringVector", elementPtr, value )
+}
+
+getCharacterVectorValue <- function(elementPtr){
+    if(!inherits(elementPtr, "externalptr") ) 
+        return(NULL)
+    .Call("stringVector_2_SEXP", elementPtr) 
 }

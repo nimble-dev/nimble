@@ -96,6 +96,9 @@ test_mcmc('birats', model = 'birats3.bug', inits = 'birats-inits.R',
 test_mcmc('birats', model = 'birats2.bug', inits = 'birats-inits.R',
             data = 'birats-data.R', numItsC = 1000, resampleData = TRUE)
 # looks fine now that values() returns in order
+# result changes as of v0.4 because in v0.3-1 'omega.beta' was found
+# as both topNode and nontopNode and was being simulated into
+# incorrectly in resampleData - this affected values further downstream
 
 test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
               data = 'ice-data.R', numItsC = 1000, resampleData = TRUE)
@@ -116,24 +119,24 @@ test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
 
 system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
 system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
-# need nimbleStep in data block as we no longer have step
-system(paste("sed -i -e 's/step/nimbleStep/g'", file.path(tempdir(), "leuk.bug"))) 
-test_mcmc(model = file.path(tempdir(), "leuk.bug"), inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
+# need nimStep in data block as we no longer have step
+system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug"))) 
+test_mcmc(model = file.path(tempdir(), "leuk.bug"), name = 'leuk', inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
           results = list(mean = list(beta = 1.58), sd = list(beta = 0.43)),
           resultsTolerance = list(mean = list(beta = 0.02), sd = list(beta = 0.02)))
 
 system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug"))) 
 system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
-test_mcmc(model = file.path(tempdir(), "salm.bug"), inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000)
+test_mcmc(model = file.path(tempdir(), "salm.bug"), name = 'salm', inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000)
 # looks good compared to JAGS
 
 system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
 system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug"))) 
-test_mcmc(model = file.path(tempdir(), "air.bug"), inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000)
+test_mcmc(model = file.path(tempdir(), "air.bug"), name = 'air', inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000)
 # theta[2] posterior is a bit off from JAGS - would be worth more investigation
 
 system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
-test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
+test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
 # C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
 
 
@@ -172,7 +175,7 @@ data =list(M=4,N=20, Y = matrix(c(47.8, 46.4, 46.3, 45.1, 47.6, 52.5, 51.2, 49.8
 49.5, 55.3, 48.4, 51.8)  , 20, 4), age = c(8, 8.5, 9, 9.5),
   R = matrix(c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), 4 ,4),
   ones = rep(1, 4))
-test_mcmc(model = model, data = data, inits = inits, numItsC = 1000)
+test_mcmc(model = model, name = 'dmnorm-dwish example', data = data, inits = inits, numItsC = 1000)
 }
 
   
@@ -205,7 +208,7 @@ gapCode <- nimbleCode({
 test_mcmc(model = gapCode, seed = 0, numItsC = 100000,
 				results = list(mean = list(`a[2]` = 0) ),
 				resultsTolerance = list(mean = list(`a[2]` = 0.1)),
-				samplers = list(list(type = 'RW', control = list(targetNode = 'a[2]')))
+				samplers = list(list(type = 'RW', target = 'a[2]'))
 				)
 
 
@@ -219,7 +222,7 @@ code <- nimbleCode({
 })
 data = list(y = 3)
 
-test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
+test_mcmc(model = code, name = 'very simple example', data = data, resampleData = FALSE, results = list(
                                        mean = list(x = 6/5, z = 5),
                                        sd = list(x = 1/sqrt(5), z = 1/2)),
           resultsTolerance = list(mean = list(x = .1, z = .1),
@@ -235,30 +238,30 @@ code <- nimbleCode({
 })
 data = list(y = -1:1)
 
-test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
+test_mcmc(model = code, name = 'basic no-block sampler', data = data, resampleData = FALSE, results = list(
                                        mean = list(x = c(-2/3,0,2/3)),
                                        var = list(x = rep(1/3,3))),
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = rep(.05,3))))
 
-test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
+test_mcmc(model = code, name = 'basic block sampler on scalars', data = data, resampleData = FALSE, results = list(
                                        mean = list(x = c(-2/3,0,2/3)),
                                        var = list(x = rep(1/3,3))),
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = rep(.05,3))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x[1]')),
-            list(type = 'RW_block', control = list(targetNodes = 'x[2]')),
-            list(type = 'RW_block', control = list(targetNodes = 'x[3]'))
+            list(type = 'RW_block', target = 'x[1]'),
+            list(type = 'RW_block', target = 'x[2]'),
+            list(type = 'RW_block', target = 'x[3]')
             ), removeAllDefaultSamplers = TRUE, numItsC = 10000)
 
-test_mcmc(model = code, data = data, resampleData = FALSE, results = list(
+test_mcmc(model = code, name = 'basic block sampler on vector', data = data, resampleData = FALSE, results = list(
                                        mean = list(x = c(-2/3,0,2/3)),
                                        var = list(x = rep(1/3,3))),
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = rep(.05,3))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x', adaptInterval = 500))
+            list(type = 'RW_block', target = 'x', control = list(adaptInterval = 500))
             ), numItsC = 10000)
 
 
@@ -274,7 +277,7 @@ code <- BUGScode({
     binom20_p3 ~ dbin(size=20, prob=0.3)
 })
 
-test_mcmc(model = code, resampleData = FALSE, results = list(
+test_mcmc(model = code, name = "slice sampler example", resampleData = FALSE, results = list(
                                        mean = list(z = 0, "beta1_1" = 0.5, "beta3_5" = 3/(3+5),
                                          "binom10_p5" = 10*.5, "binom20_p3" = 20*.3),
                                          sd = list(z = 1, "beta1_1" = sqrt(1/12),
@@ -286,12 +289,12 @@ test_mcmc(model = code, resampleData = FALSE, results = list(
                                          "binom10_p5" = .25, "binom20_p3" = .25),
                                          sd = list(z = .1, "beta1_1" = .05, "beta3_5" = .03,
                                           "binom10_p5" = .2, "binom20_p3" = .25)),
-          samplers = list(list(type = 'slice', control = list(targetNode = 'z', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'normal5_10', adaptInterval = 10)),
-           list(type = 'slice', control = list(targetNode = 'beta1_1', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'beta3_5', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'binom10_p5', adaptInterval = 10)),
-            list(type = 'slice', control = list(targetNode = 'binom20_p3', adaptInterval = 10))))
+          samplers = list(list(type = 'slice', target = 'z', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'normal5_10', control = list(adaptInterval = 10)),
+           list(type = 'slice', target = 'beta1_1', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'beta3_5', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'binom10_p5', control = list(adaptInterval = 10)),
+            list(type = 'slice', target = 'binom20_p3', control = list(adaptInterval = 10))))
 
 
 
@@ -304,7 +307,7 @@ code <- BUGScode({
 })
 data = list(y = c(3,4))
 
-test_mcmc(model = code, data = data, exactSample = list(x = c(0.195510839527966, 0.332847482503424,0.247768152764931, 0.121748195439553, 0.157842271774841, 0.197566496350904, 0.216991517500577, 0.276609942874852, 0.165733872345582, 0.144695512780252)), seed = 0)
+test_mcmc(model = code, name = 'check of beta-binom conjugacy', data = data, exactSample = list(x = c(0.195510839527966, 0.332847482503424,0.247768152764931, 0.121748195439553, 0.157842271774841, 0.197566496350904, 0.216991517500577, 0.276609942874852, 0.165733872345582, 0.144695512780252)), seed = 0)
 
 ### checkConjugacy_demo3_run.R - various conjugacies
 
@@ -326,9 +329,14 @@ code <- BUGScode({
 sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738, 2.223758981790340, 2.386291653164086, 3.266282048060261, 3.064019155073057, 3.229661999356182, 1.985990552839427, 2.057249437940977),
   c = c( 0.010341199485849559, 0.010341199485849559, 0.003846483017887228, 0.003846483017887228, 0.007257679932131476, 0.009680314740728335, 0.012594777095902964, 0.012594777095902964, 0.018179641351556003, 0.018179641351556003))
 
-test_mcmc(model = code, exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
+test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
 
 ### Dirichlet-multinomial conjugacy
+
+# as of v0.4, exact numerical results here have changed because
+# ddirch now sometimes returns NaN rather than -Inf (when an
+# alpha is proposed to be negative) -- this changes the RNG
+# sequence because NaN values result in no runif() call in decide()
 
 # single multinomial
 set.seed(0)
@@ -349,7 +357,7 @@ code <- function() {
 inits <- list(p = rep(1/K, K), alpha = rep(K, K))
 data <- list(n = n, K = K, y = y)
 
-test_mcmc(model = code, data= data, seed = 0, numItsC = 10000,
+test_mcmc(model = code, name = 'Dirichlet-multinomial example', data= data, seed = 0, numItsC = 10000,
           inits = inits,
           results = list(mean = list(p = p)),
           resultsTolerance = list(mean = list(p = rep(.06, K))))
@@ -380,7 +388,7 @@ code <- function() {
 inits <- list(p = matrix(1/K, m, K), alpha = rep(1/K, K))
 data <- list(n = n, K = K, m = m, y = y)
 
-test_mcmc(model = code, data= data, seed = 0, numItsC = 1000,
+test_mcmc(model = code, name = 'Dirichlet-multinomial with replication', data= data, seed = 0, numItsC = 1000,
           inits = inits, numItsC_results = 100000,
           results = list(mean = list(p = p, alpha = alpha)),
           resultsTolerance = list(mean = list(p = matrix(.05, m, K),
@@ -404,18 +412,18 @@ Q = matrix(c(1.0,0.2,-1.0,0.2,4.04,1.6,-1.0,1.6,10.81), nrow=3)
 data = list(Q = Q)
 inits = list(x = c(10, 20, 30))
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+test_mcmc(model = code, name = 'block sampler on multivariate node', data = data, seed = 0, numItsC = 10000,
           results = list(mean = list(x = c(10,20,30)),
           var = list(x = diag(solve(Q)))),
           resultsTolerance = list(mean = list(x = rep(1,3)),
             var = list(x = c(.1, .03, .01))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
+            list(type = 'RW_block', target = 'x[1:3]')))
 # caution: setting targetNodes='x' works but the initial end sampler is not removed because x[1:3] in targetNode in default sampler != 'x' in targetNodes passed in
 if(FALSE) {
     Rmodel <- nimbleModel(code, constants = list(Q=Q))
     mcmcspec <- MCMCspec(Rmodel, nodes = NULL)
-    mcmcspec$addSampler(type = 'RW_block', control = list(targetNodes = 'x', adaptInterval=500))
+    mcmcspec$addSampler(type = 'RW_block', target = 'x', control = list(adaptInterval=500))
     mcmcspec$getMonitors()
     Rmcmc <- buildMCMC(mcmcspec)
     Cmodel <- compileNimble(Rmodel)
@@ -453,13 +461,13 @@ code <- nimbleCode({
 })
 data = list(P = P, mu = mu)
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
+test_mcmc(model = code, name = 'second block sampler on multivariate node', data = data, seed = 0, numItsC = 100000,
           results = list(mean = list(x = mu),
           var = list(x = varr)),
           resultsTolerance = list(mean = list(x = rep(.1,3)),
             var = list(x = c(.1,.1,.1))),
           samplers = list(
-            list(type = 'RW_block', control = list(targetNodes = 'x[1:3]'))))
+            list(type = 'RW_block', target = 'x[1:3]')))
 
 
 
@@ -501,7 +509,7 @@ data = list(mu0 = mu0, Q0 = Q0, Q = Q, a = a, B = B, y = y)
 muQtrue = t(B) %*% Q%*%B + Q0
 muMeanTrue = c(solve(muQtrue, crossprod(B, Q%*%(y-a)) + Q0%*%mu0))
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
+test_mcmc(model = code, name = 'two-level multivariate normal', data = data, seed = 0, numItsC = 10000,
           results = list(mean = list(mu = muMeanTrue),
                            cov = list(mu = solve(muQtrue))),
           resultsTolerance = list(mean = list(mu = rep(.02,3)),
@@ -511,14 +519,14 @@ test_mcmc(model = code, data = data, seed = 0, numItsC = 10000,
 
 ### scalar RW updates in place of conjugate mv update
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 100000,
+test_mcmc(model = code, name = 'two-level multivariate normal with scalar updaters', data = data, seed = 0, numItsC = 100000,
           results = list(mean = list(mu = muMeanTrue),
                            cov = list(mu = solve(muQtrue))),
           resultsTolerance = list(mean = list(mu = rep(.03,3)),
             cov = list(mu = matrix(.03, 3, 3))),
-          samplers = list(list(type = 'RW', control = list(targetNode = 'mu[1]')),
-            list(type = 'RW', control = list(targetNode = 'mu[2]')),
-            list(type = 'RW', control = list(targetNode = 'mu[3]'))),
+          samplers = list(list(type = 'RW', target = 'mu[1]'),
+            list(type = 'RW', target = 'mu[2]'),
+            list(type = 'RW', target = 'mu[3]')),
           removeAllDefaultSamplers = TRUE)
 
 ### test of conjugate Wishart
@@ -556,7 +564,7 @@ for(i in 1:10000) {
 }
 OmegaSimTrueSDs = apply(wishRV, c(1,2), sd)
 
-test_mcmc(model = code, data = data, seed = 0, numItsC = 1000,
+test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numItsC = 1000, inits = list(Omega = OmegaTrueMean),
           results = list(mean = list(Omega = OmegaTrueMean ),
             sd = list(Omega = OmegaSimTrueSDs)),
           resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),

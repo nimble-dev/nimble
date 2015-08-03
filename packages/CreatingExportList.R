@@ -12,6 +12,8 @@ individualExportClassNames = c(
  'nimbleFunctionBase')
 
 individualExportNames = c(
+ 'checkInterrupt',
+ 'codeProcessIfThenElse',
  'parseEvalNumeric',
  'makeMV_GID_Map',
  'nimbleCode', 
@@ -22,6 +24,7 @@ individualExportNames = c(
  'populateNodeFxnVec',
  'simulate',
  'calculate',
+ 'calculateDiff',
  'getLogProb',
  'nfVar',
  'BUGScontextClass',
@@ -40,6 +43,7 @@ individualExportNames = c(
  'nimCopy',
   'nimPrint',
  '`nfVar<-`',
+ 'OptimReadyFunction',
  'getValues', 
  'setValues',
  'values',
@@ -50,7 +54,14 @@ individualExportNames = c(
     'declare',
     'asRow',
     'getBUGSexampleDir',
-    'asCol'
+    'asCol',
+    'getNimbleOption',
+    'nimbleOptions',
+    'registerDistributions',
+    'deregisterDistributions',
+    'getDistribution',
+    'calc_dmnormAltParams',
+    'getDependencyPaths'
 )
 
 individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
@@ -61,34 +72,41 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'C_dmulti',
 'C_dt_nonstandard',
 'C_dwish_chol',
+'C_dexp_nimble',
 'C_rcat',
 'C_rdirch',
 'C_rmnorm_chol',
 'C_rmulti',
 'C_rt_nonstandard',
 'C_rwish_chol',
-
+'C_rexp_nimble',
+'C_pt_nonstandard',
+'C_pexp_nimble',
+'C_qt_nonstandard',
+'C_qexp_nimble',
 
 #'node_determ',
-#'node_stoch_dbern',
-#'node_stoch_dbeta',
-#'node_stoch_dbin',
-#'node_stoch_dcat',
-#'node_stoch_dchisq',
-#'node_stoch_ddirch',
-#'node_stoch_dexp',
-#'node_stoch_dgamma',
-#'node_stoch_dlnorm',
-#'node_stoch_dlogis',
-#'node_stoch_dmnorm',
-#'node_stoch_dmulti',
-#'node_stoch_dnegbin',
-#'node_stoch_dnorm',
-#'node_stoch_dpois',
-#'node_stoch_dt',
-#'node_stoch_dunif',
-#'node_stoch_dweib',
-#'node_stoch_dwish',
+'node_stoch_dbern',
+'node_stoch_dbeta',
+'node_stoch_dbin',
+'node_stoch_dcat',
+'node_stoch_dchisq',
+'node_stoch_dconstraint',
+'node_stoch_ddirch',
+'node_stoch_dexp',
+'node_stoch_dgamma',
+'node_stoch_dinterval',
+'node_stoch_dlnorm',
+'node_stoch_dlogis',
+'node_stoch_dmnorm',
+'node_stoch_dmulti',
+'node_stoch_dnegbin',
+'node_stoch_dnorm',
+'node_stoch_dpois',
+'node_stoch_dt',
+'node_stoch_dunif',
+'node_stoch_dweib',
+'node_stoch_dwish',
 
 
 'makeBUGSactiveBindingDef',
@@ -170,7 +188,8 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'NeedMakevarsFile',
 'parseTreeSubstitute',
 'projectNameCreator',
-'UseLibraryMakevars'
+'UseLibraryMakevars',
+'replaceDistributionAliasesNameOnly'
 )
 
 maskFileVector = c(

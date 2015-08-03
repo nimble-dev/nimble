@@ -49,35 +49,14 @@ buildMCMC <- nimbleFunction(
     	if(inherits(mcmcspec, 'modelBaseClass'))
     		mcmcspec <- configureMCMC(mcmcspec, ...)
     	
-    	else if(!inherits(mcmcspec, 'MCMCspec'))	
-            stop('mcmcspec must either be a nimbleModel or a MCMCspec object (created by configureMCMC(...) )')
+    	else if(!inherits(mcmcspec, 'MCMCspec')) stop('mcmcspec must either be a nimbleModel or a MCMCspec object (created by configureMCMC(...) )')
         
         model <- mcmcspec$model
-        
-        RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
-        hasRHSonlyNodes <- length(RHSonlyNodes) > 0
-
-        AllDetermNodes <- model$getNodeNames(determOnly = TRUE)
-        determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = AllDetermNodes)
-        
-        stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
-        
-        initFunctionList <- nimbleFunctionList(mcmcNodeInit_virtual)
-        tot_length = hasRHSonlyNodes + length(stochNonDataNodes)
-
-        iter = 1
-        if(hasRHSonlyNodes){
-            initFunctionList[[iter]] <- mcmcCheckRHS_Init(model = model, node = RHSonlyNodes)
-            iter = iter + 1
-        }
-        
-        for(i in seq_along(stochNonDataNodes)){
-            initFunctionList[[iter + i - 1]] <- mcmcStochNode_Init(model, stochNonDataNodes[i])
-        }
-        
+        my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        for(i in seq_along(mcmcspec$samplerSpecs))     { samplerFunctions[[i]] <- mcmcspec$samplerSpecs[[i]]$buildSampler(model=model, mvSaved=mvSaved) }
+        for(i in seq_along(mcmcspec$samplerSpecs))
+            samplerFunctions[[i]] <- mcmcspec$samplerSpecs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
         
         monitors  <- processMonitorNames(model, mcmcspec$monitors)
         monitors2 <- processMonitorNames(model, mcmcspec$monitors2)
@@ -91,14 +70,11 @@ buildMCMC <- nimbleFunction(
     
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE)) {
         if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
+        my_initializeModel$run()
         if(reset) {
-            for(i in seq_along(initFunctionList))  {   
-            	calculate(nodeFxnVector = determNodesNodeFxnVector)
-            	initFunctionList[[i]]$run()
-   			}
-            calculate(model)
             nimCopy(from = model, to = mvSaved, row = 1, logProb = TRUE)
-            for(i in seq_along(samplerFunctions))      {   samplerFunctions[[i]]$reset()   }
+            for(i in seq_along(samplerFunctions))
+                samplerFunctions[[i]]$reset()
             mvSamples_offset  <- 0
             mvSamples2_offset <- 0
             resize(mvSamples,  niter/thin)
@@ -111,9 +87,12 @@ buildMCMC <- nimbleFunction(
         }
         
         for(iter in 1:niter) {
-            for(i in seq_along(samplerFunctions))      {   samplerFunctions[[i]]$run()   }
-            if(iter %% thin  == 0) { nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors) }
-            if(iter %% thin2 == 0) { nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thin2, nodes = monitors2) }
+            for(i in seq_along(samplerFunctions))
+                samplerFunctions[[i]]$run()
+            if(iter %% thin  == 0)
+                nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors)
+            if(iter %% thin2 == 0)
+                nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thin2, nodes = monitors2)
         }
     },  where = getLoadingNamespace()
 )

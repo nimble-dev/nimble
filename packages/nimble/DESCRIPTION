@@ -2,11 +2,11 @@ Package: nimble
 Title: Flexible BUGS-compatible system for hierarchical statistical modeling
     and algorithm development
 Description: A package for flexibly applying algorithms to models specified in the BUGS language. Algorithms can be written in the NIMBLE language and made available to any model.
-Version: 0.3-1
+Version: 0.4
 Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
 Depends:  R (>= 3.0.1)
-Imports: igraph, methods
+Imports: methods,igraph
 Suggests: testthat
 License: BSD_3_clause + file LICENSE
 Note: For convenience, the package includes the necessary header files for the Eigen distribution.
@@ -22,7 +22,6 @@ Collate: config.R
  distributions_processInputList.R
  distributions_implementations.R
  BUGS_BUGSdecl.R
- BUGS_nodeInfo.R
  BUGS_contexts.R
  BUGS_modelDef.R
  BUGS_model.R
@@ -77,14 +76,19 @@ Collate: config.R
  cppInterfaces_nimbleFunctions.R
  cppInterfaces_otherTypes.R
  nimbleProject.R
+ initializeModel.R
  MCMC_utils.R
  MCMC_spec.R
  MCMC_build.R
  MCMC_samplers.R
  MCMC_conjugacy.R
  MCMC_suite.R
+ autoBlock.R
  MCEM_build.R
+ PF_build.R
+ optimTools.R
  NF_utils.R
+ miscFunctions.R
  makevars.R
  registration.R
  nimble-package.r
