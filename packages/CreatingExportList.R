@@ -12,8 +12,6 @@ individualExportClassNames = c(
  'nimbleFunctionBase')
 
 individualExportNames = c(
- 'checkInterrupt',
- 'codeProcessIfThenElse',
  'parseEvalNumeric',
  'makeMV_GID_Map',
  'nimbleCode', 
@@ -24,7 +22,6 @@ individualExportNames = c(
  'populateNodeFxnVec',
  'simulate',
  'calculate',
- 'calculateDiff',
  'getLogProb',
  'nfVar',
  'BUGScontextClass',
@@ -60,8 +57,7 @@ individualExportNames = c(
     'registerDistributions',
     'deregisterDistributions',
     'getDistribution',
-    'calc_dmnormAltParams',
-    'getDependencyPaths'
+    'calc_dmnormAltParams'
 )
 
 individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
@@ -188,8 +184,7 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'NeedMakevarsFile',
 'parseTreeSubstitute',
 'projectNameCreator',
-'UseLibraryMakevars',
-'replaceDistributionAliasesNameOnly'
+'UseLibraryMakevars'
 )
 
 maskFileVector = c(

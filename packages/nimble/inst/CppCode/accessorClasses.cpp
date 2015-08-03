@@ -69,7 +69,7 @@ ManyVariablesAccessor::~ManyVariablesAccessor(){
 SingleVariableMapAccessBase::~SingleVariableMapAccessBase(){}
 
 ManyVariablesMapAccessor::~ManyVariablesMapAccessor(){
-    for(unsigned int i = 0; i < varAccessors.size(); ++i)
+    for(int i = 0; i < varAccessors.size(); ++i)
       delete static_cast<SingleVariableMapAccess*>(varAccessors[i]);
 }
 
@@ -89,7 +89,7 @@ ManyModelValuesMapAccessor::ManyModelValuesMapAccessor() : currentRow(0) {
 
 
 ManyModelValuesMapAccessor::~ManyModelValuesMapAccessor() {
-    for(unsigned int i = 0; i < varAccessors.size(); ++i)
+    for(int i = 0; i < varAccessors.size(); ++i)
       delete static_cast<SingleModelValuesMapAccess*>(varAccessors[i]);
 };
 
@@ -694,7 +694,6 @@ void singletonCopyCheck(NimArrType *NAT, int offset) {
     break;
   default:
     PRINTF("Error with a NimArrType type\n");
-    return;
     break;
   }
   if(offset < 0 || offset >= NATsize) PRINTF("Run-time error: bad singleton offset\n");
@@ -712,12 +711,11 @@ void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vect
     break;
   default:
     PRINTF("Error with a NimArrType type\n");
-    return;
     break;
   }
   if(offset < 0 || offset >= NATsize) PRINTF("Run-time error: bad offset\n");
   int lastOffset = offset;
-  for(unsigned int i = 0; i < strides.size(); ++i) {
+  for(int i = 0; i < strides.size(); ++i) {
     lastOffset += sizes[i] * strides[i];
   }
   if(lastOffset < 0 || lastOffset >= NATsize) PRINTF("Run-time error: bad lastOffset\n");
@@ -1177,7 +1175,7 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
   while(!done) {
     iColon   = restOfInput.find_first_of(':');
     iComma   = restOfInput.find_first_of(',');
-    if((iColon < iBracket) & (iColon < iComma)) { // next is a colon expr like 2:5
+    if(iColon < iBracket & iColon < iComma) { // next is a colon expr like 2:5
       firstNum = nimble_stoi(restOfInput); 
       // test x[11 :4]
       iNextStart = iColon + 1;
@@ -1276,26 +1274,25 @@ SEXP getVarAndIndices(SEXP Sstring) {
   return(varAndIndices2Rlist(output));
 }
 
-void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int snDim, const vector<int> &sizes, mapInfoClass &output) {
-  unsigned int nDim = static_cast<unsigned int>(snDim);
+void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int nDim, const vector<int> &sizes, mapInfoClass &output) {
   output.sizes.resize(0);
   output.strides.resize(0);
   //  bool sizeOne(sizes.size() == 0);
   int Rindexing(1); // assume indexing comes in R form (Starting at 1).  output does not depend on indexing.
   int offset = 0;
   int currentStride = 1;    
-  if((nDim > 0) & (varAndInds.indices.size() == 0)) {
+  if(nDim > 0 & varAndInds.indices.size() == 0) {
     if(sizes.size() == 0) output.sizes.push_back(1); else output.sizes = sizes;
     output.strides.push_back(1);
     if(nDim > 1) {
-      for(unsigned int i = 1; i < nDim; i++) output.strides.push_back( output.strides[i-1] * output.sizes[i-1] );
+      for(int i = 1; i < nDim; i++) output.strides.push_back( output.strides[i-1] * output.sizes[i-1] );
     }
   } else {
     //    vector<bool> blockBool(nDim, false);
     int thisSize;
     if(nDim != sizes.size()) std::cout<<"Confused in varAndInds2MapParts: nDim != sizes.size()\n";
     if(nDim != varAndInds.indices.size()) std::cout<<"Confused in varAndInds2MapParts: nDim != varAndInds.indices.size()\n";
-    for(unsigned int i = 0; i < nDim; ++i) {
+    for(int i = 0; i < nDim; ++i) {
       thisSize = varAndInds.indices[i].size();
       switch(thisSize) {
       case 0: // index is blank

@@ -9,11 +9,7 @@ nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%'
                             'ceiling', 'floor', 'round', 'trunc',
                             'mean','sum','max','min','prod',
                             'asRow', 'asCol',
-                            '>', '<', '>=', '<=', '==', '!=', '&', '|',
-                            distributionFuns,
-                            # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
-                            paste0(c('d','r','q','p'), 't'),
-                            paste0(c('d','r','q','p'), 'exp'))
+                            '>', '<', '>=', '<=', '==', '!=', '&', '|')
 
 #' BUGSdeclClass contains the information extracted from one BUGS declaration
 BUGSdeclClass <- setRefClass('BUGSdeclClass',
@@ -142,9 +138,8 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated
             stop(paste0('Improper syntax for stochastic declaration: ', deparse(code)))
     } else if(code[[1]] == '<-') {
         type <<- 'determ'
-        # if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getDistributionsInfo('namesVector')))
-        #    stop(paste0('Improper syntax for determistic declaration: ', deparse(code)))
-        # commented out by CJP 7/30/15 as preventing use of "<- dDIST()", which we now allow
+        if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getDistributionsInfo('namesVector')))
+            stop(paste0('Improper syntax for determistic declaration: ', deparse(code)))
     } else {
         stop(paste0('Improper syntax for declaration: ', deparse(code)))
     }

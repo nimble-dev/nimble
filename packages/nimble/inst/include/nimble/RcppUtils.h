@@ -7,21 +7,15 @@
 #include "Utils.h"
 #include <string>
 #include <vector>
-#include<iostream>
-#include<sstream>
-
 #include <Rinternals.h>
 
 #include <R_ext/Applic.h>	/* this is required for optim */
 #include <stdarg.h> 		/* this is required for variable number of arguments */
 
-extern std::ostringstream _nimble_global_output;
 
 using namespace std;
 #define Inf R_PosInf
 #define NA 0
-
-void nimble_print_to_R(std::ostringstream &input);
 
 void multivarTestCall(double *x, int n);
 

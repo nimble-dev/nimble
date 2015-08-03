@@ -256,8 +256,6 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
             if(code[[i]][[1]] == '~') 
                 code[[i]] <- replaceDistributionAliases(code[[i]])
-            if(code[[i]][[1]] == '<-')
-                checkForDeterministicDorR(code[[i]])
 
             BUGSdeclClassObject$setup(code[[i]], contextID, lineNumber)
             declInfo[[iAns]] <<- BUGSdeclClassObject
@@ -307,19 +305,6 @@ replaceDistributionAliases <- function(code) {
         if(trunc) code[[3]][[2]][[1]] <- dist else code[[3]][[1]] <- dist
     }
     return(code)
-}
-
-checkForDeterministicDorR <- function(code) {
-    if(is.call(code[[3]])) {
-        drFuns <- c(distribution_dFuns, distribution_rFuns)
-        if(exists("distributions", nimbleUserNamespace)) {
-            dFunsUser <- get('namesVector', nimbleUserNamespace$distributions)
-            drFuns <- c(drFuns, dFunsUser, paste0("r", stripPrefix(dFunsUser)))
-        }
-        if(as.character(code[[3]][[1]]) %in% drFuns)
-            warning("Model includes deterministic assignment using '<-' of the result of a density ('d') or simulation ('r') calculation. This is likely not what you intended")
-    }
-    return(NULL)
 }
 
 modelDefClass$methods(splitConstantsAndData = function() {
