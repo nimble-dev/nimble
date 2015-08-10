@@ -447,7 +447,7 @@ MCMCsuiteClass <- setRefClass(
         
         generate_plots = function() {
             cols <- c(2:6, 8:9)
-            if(nMCMCs > length(cols))    { cat('too many MCMCs to plot'); return() }
+            if(nMCMCs > length(cols))    { message('too many MCMCs to plot'); return() }
             
             ## for each monitorNode, generate traceplot for each MCMC
             for(monitorNode in monitorNodesNIMBLE) {
