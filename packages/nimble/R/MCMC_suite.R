@@ -50,6 +50,8 @@
 #' or a character string which when parsed and evaluted will define such a function (e.g., \'function(x) mean(sqrt(x))\').
 #' Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
 #' 
+#' @param calculateEfficiency A logical, specifying whether to calculate the efficiency for each MCMC algorithm.  Efficiency is defined as the effective sample size (ESS) of each model parameter divided by the algorithm runtime (in seconds).  Default is FALSE.
+#'
 #' @param MCMCs A character vector specifying the MCMC algorithms to run.
 #' \'winbugs\' specifies WinBUGS;
 #' \'openbugs\' specifies OpenBUGS;
@@ -166,6 +168,7 @@ MCMCsuiteClass <- setRefClass(
         
         ## setSummaryStats()
         summaryStats = 'character',    ## character vector of parseable summary statistic functions    --- ORIGINAL ARGUMENT
+        calculateEfficiency = 'logical',   ## logical specifying whether to calculate ESS and Efficiency    --- ORIGINAL ARGUMENT
         summaryStatFunctions = 'list',  ## list of the function objects for summary statistics
         summaryStatDimNames = 'character',   ## character vector of the dimension names in output$summary
         nSummaryStats = 'numeric',   ## the number of summary statistics
@@ -212,27 +215,28 @@ MCMCsuiteClass <- setRefClass(
         
         initialize = function(
             code,
-            constants          = list(),
-            data               = list(),
-            inits              = list(),
-            monitors           = character(),
-            niter              = 10000,
-            burnin             = 2000,
-            thin               = 1,
-            summaryStats       = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
-            MCMCs              = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
-            MCMCdefs           = list(),
-            winbugs_directory  = 'C:/WinBUGS14',
-            winbugs_program    = 'WinBUGS',
-            openbugs_directory = 'C:/OpenBUGS323',
-            openbugs_program   = 'OpenBUGS',
-            stan_model         = '',
-            stanNameMaps       = list(),
-            makePlot           = TRUE,
-            savePlot           = TRUE,
-            plotName           = 'MCMCsuite',
-            setSeed            = TRUE,
-            debug              = FALSE) {
+            constants           = list(),
+            data                = list(),
+            inits               = list(),
+            monitors            = character(),
+            niter               = 10000,
+            burnin              = 2000,
+            thin                = 1,
+            summaryStats        = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
+            calculateEfficiency = FALSE,
+            MCMCs               = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
+            MCMCdefs            = list(),
+            winbugs_directory   = 'C:/WinBUGS14',
+            winbugs_program     = 'WinBUGS',
+            openbugs_directory  = 'C:/OpenBUGS323',
+            openbugs_program    = 'OpenBUGS',
+            stan_model          = '',
+            stanNameMaps        = list(),
+            makePlot            = TRUE,
+            savePlot            = TRUE,
+            plotName            = 'MCMCsuite',
+            setSeed             = TRUE,
+            debug               = FALSE) {
             
             code <<- code
             constants <<- constants
@@ -245,7 +249,7 @@ MCMCsuiteClass <- setRefClass(
             thin <<- thin
             nkeep <<- floor(niter/thin) - burnin
             setMonitors(monitors)
-            setSummaryStats(summaryStats)
+            setSummaryStats(summaryStats, calculateEfficiency)
             setMCMCs(MCMCs)
             setMCMCdefs(MCMCdefs)
             winbugs_directory <<- winbugs_directory
@@ -287,8 +291,16 @@ MCMCsuiteClass <- setRefClass(
             nMonitorNodes <<- length(monitorNodesNIMBLE)
         },
         
-        setSummaryStats = function(summaryStats) {
-            summaryStats <<- summaryStats
+        setSummaryStats = function(summaryStats_arg, calculateEfficiency) {
+            calculateEfficiency <<- calculateEfficiency
+            if(calculateEfficiency) {
+                require(coda)
+                n <- length
+                ess <- coda::effectiveSize
+                efficiency <- function(x) return(0)   ## placeholder; calculation done in addToOutput()
+                summaryStats_arg <- c(summaryStats_arg, 'n', 'ess', 'efficiency')
+            }
+            summaryStats <<- summaryStats_arg
             CI95_low <- function(x) quantile(x, probs = 0.025)
             CI95_upp <- function(x) quantile(x, probs = 0.975)
             summaryStatFunctions <<- lapply(summaryStats, function(txt) eval(parse(text=txt)[[1]]))
@@ -326,7 +338,9 @@ MCMCsuiteClass <- setRefClass(
             timing <- rep(NA, nMCMCs+1)
             names(timing) <- c(MCMCs, 'nimble_compile')
             if(stanMCMCflag) timing['stan_compile'] <- NA
-            output <<- list(samples=samples, summary=summary, timing=timing)
+            initialOutput <- list(samples=samples, summary=summary, timing=timing)
+            if(calculateEfficiency) initialOutput$efficiency <- list(min=NA, mean=NA)
+            output <<- initialOutput
         },
         
         run_winbugs = function() {
@@ -432,13 +446,23 @@ MCMCsuiteClass <- setRefClass(
         },
         
         addToOutput = function(MCMCtag, samplesArray, timeResult) {
+            output$samples[MCMCtag, , ] <<- t(samplesArray) ## makes dim1:monitors, and dim2:iter
+            addTimeResult(MCMCtag, timeResult)
             summaryArray <- array(NA, c(nSummaryStats, nMonitorNodes))
             for(iStat in seq_along(summaryStats)) {
                 summaryArray[iStat, ] <- apply(samplesArray, 2, summaryStatFunctions[[iStat]])
             }
-            output$samples[MCMCtag, , ] <<- t(samplesArray)      ## makes dim1:monitors, and dim2:iter
+            if(calculateEfficiency) {
+                essDim <- which(summaryStatDimNames == 'ess')
+                effDim <- which(summaryStatDimNames == 'efficiency')
+                thisTime <- output$timing[[MCMCtag]]
+                summaryArray[effDim, ] <- summaryArray[essDim, ] / thisTime
+            }
             output$summary[MCMCtag, , ] <<- summaryArray
-            addTimeResult(MCMCtag, timeResult)
+            if(calculateEfficiency) {
+                output$efficiency$min  <<- apply(output$summary[, 'efficiency', ], 1, min)
+                output$efficiency$mean <<- apply(output$summary[, 'efficiency', ], 1, mean)
+            }
         },
         
         addTimeResult = function(MCMCtag, timeResult) {
