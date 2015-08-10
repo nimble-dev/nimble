@@ -438,7 +438,7 @@ MCMCsuiteClass <- setRefClass(
         },
         
         addTimeResult = function(MCMCtag, timeResult) {
-            output$timing[MCMCtag] <<- timeResult[[3]] / 60
+            output$timing[MCMCtag] <<- timeResult[[3]]
         },
         
         generate_plots = function() {
