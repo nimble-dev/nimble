@@ -372,10 +372,14 @@ MCMCsuiteClass <- setRefClass(
             timeResult <- system.time(stan_mod <- stan_model(file = stan_model))
             addTimeResult('stan_compile', timeResult)
             
-            if(is.null(initsStan)) { ## missing model.init.R file (stan inits file)
+            if(is.null(initsStan)) {
+                ## missing model.init.R file (stan inits file)
                 timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
-            } else { ## we have the model.init.R file
-                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan))) } ## this one includes inits = ...
+            } else {
+                ## we have the model.init.R file
+                ## this one includes inits = ...
+                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))
+            }
             
             tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
             for(BUGSname in names(StanNameMaps)) {
