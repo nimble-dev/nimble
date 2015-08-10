@@ -5,7 +5,7 @@
 #' Executes multiple MCMC algorithms and organizes results.
 #'
 #' Creates, runs, and organizes output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
-#' This can include BUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
+#' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
 #' @details
@@ -51,7 +51,8 @@
 #' Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
 #' 
 #' @param MCMCs A character vector specifying the MCMC algorithms to run.
-#' \'bugs\' specifies WinBUGS/BUGS;
+#' \'winbugs\' specifies WinBUGS;
+#' \'openbugs\' specifies OpenBUGS;
 #' \'jags\' specifies JAGS;
 #' \'stan\' specifies Stan; in this case, must also provide the \'stan_model\' argument;
 #' \'nimble\' specifies NIMBLE\'s default MCMC algorithm;
@@ -66,13 +67,21 @@
 #' specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \'Rmodel\',
 #' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalone \'mcmcspec\', to return this object.
 #' 
-#' @param bugs_directory A character string giving the directory of the executable BUGS program for the WinBUGS/BUGS MCMC.
+#' @param winbugs_directory A character string giving the directory of the executable WinBUGS program for the WinBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
 #' Default value is \'C:/WinBUGS14\'.
 #' 
-#' @param bugs_program A character string giving the name of the BUGS program, for the WinBUGS/BUGS MCMC.
+#' @param winbugs_program A character string giving the name of the WinBUGS program, for the WinBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
 #' Default value is \'WinBUGS\'.
+#'
+#' @param openbugs_directory A character string giving the directory of the executable OpenBUGS program for the OpenBUGS MCMC.
+#' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
+#' Default value is \'C:/OpenBUGS323\'.
+#' 
+#' @param openbugs_program A character string giving the name of the OpenBUGS program, for the OpenBUGS MCMC.
+#' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
+#' Default value is \'OpenBUGS\'.
 #' 
 #' @param stan_model A character string specifying the location and name of the model file (\'modelName.stan\') for use with the Stan MCMC program.
 #' This argument must include the \'.stan\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
@@ -114,7 +123,7 @@
 #'                     inits = list(mu=0),
 #'                     niter = 10000,
 #'                     monitors = 'mu',
-#'                     MCMCs = c('bugs', 'jags', 'nimble'),
+#'                     MCMCs = c('winbugs', 'jags', 'nimble'),
 #'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
 #'                     plotName = 'example')
 #' 
@@ -139,14 +148,14 @@ MCMCsuiteClass <- setRefClass(
         constants = 'list',   ## list of the constants (ORIGINAL ARGUMENT)
         data = 'list',   ## list of the data    --- ORIGINAL ARGUMENT
         inits = 'list',  ## named list of initial values used for all MCMC algorithms    --- ORIGINAL ARGUMENT
-        constantsAndData = 'list',   ## data list used for BUGS and JAGS.  is equal to c(constantList, dataList)
+        constantsAndData = 'list',   ## data list used for WinBUGS, OpenBUGS, JAGS.  is equal to c(constantList, dataList)
         Rmodel = 'ANY',   ## Rmodel object
         
         ## setMonitors()
         monitors = 'character',    ## the original character vector argument to initialize()    --- ORIGINAL ARGUMENT --- SLIGHTLY MODIFIED
         monitorVars = 'character',    ## character vector of VARIABLE names of parameters to save
         monitorNodesNIMBLE = 'character',  ## character vector of the monitor node names, with spaces as in nimble: 'y[1, 1]'
-        monitorNodesBUGS = 'character',    ## same as monitorNodes, except for BUGS: no spaces in node names: 'y[1,1]'
+        monitorNodesBUGS = 'character',    ## same as monitorNodes, except for WinBUGS and OpenBUGS: no spaces in node names: 'y[1,1]'
         nMonitorNodes = 'numeric',   ## number of monitorNodes
         
         ## set in initialize()
@@ -162,8 +171,9 @@ MCMCsuiteClass <- setRefClass(
         nSummaryStats = 'numeric',   ## the number of summary statistics
         
         ## setMCMCs()
-        MCMCs = 'character',   ## character vector of the MCMC analyses.  'bugs', 'jags', 'stan', or anything else is nimble    --- ORIGINAL ARGUMENT
-        bugsMCMCflag = 'logical',   ## whether 'bugs' is in MCMCs
+        MCMCs = 'character',   ## character vector of the MCMC analyses.  'winbugs', 'openbugs', 'jags', 'stan', or anything else is nimble    --- ORIGINAL ARGUMENT
+        winbugsMCMCflag = 'logical',   ## whether 'winbugs' is in MCMCs
+        openbugsMCMCflag = 'logical',   ## whether 'openbugs' is in MCMCs
         jagsMCMCflag = 'logical',   ## whether 'jags' is in MCMCs
         stanMCMCflag = 'logical',   ## whether 'stan' is in MCMCs
         nimbleMCMCs = 'character',    ## the names of the remaining (presumably nimble) MCMCs
@@ -176,8 +186,10 @@ MCMCsuiteClass <- setRefClass(
         MCMCdefNames = 'character',   ## names of the MCMCdefs list
         
         ## set in initialize()
-        bugs_directory = 'character',    ## directory for BUGS program    --- ORIGINAL ARGUMENT
-        bugs_program = 'character',     ## program for BUGS    --- ORIGINAL ARGUMENT
+        winbugs_directory = 'character',    ## directory for WinBUGS program    --- ORIGINAL ARGUMENT
+        winbugs_program = 'character',     ## program for WinBUGS    --- ORIGINAL ARGUMENT
+        openbugs_directory = 'character',    ## directory for OpenBUGS program    --- ORIGINAL ARGUMENT
+        openbugs_program = 'character',     ## program for OpenBUGS    --- ORIGINAL ARGUMENT
         stan_model = 'character',     ## *.stan model file    --- ORIGINAL ARGUMENT
         makePlot = 'logical',    ## whether to generate plots    --- ORIGINAL ARGUMENT
         savePlot = 'logical',   ## whether or not to save plot PDFs    --- ORIGINAL ARGUMENT
@@ -185,7 +197,7 @@ MCMCsuiteClass <- setRefClass(
         debug = 'logical',   ## whether to enter browser() before running each algorithm    --- ORIGINAL ARGUMENT
         modelFileName = 'character',     ## name of the text file where we write the model code, set to a fixed value
 
-        ## Maps with possible transformations from Stan to BUGS
+        ## Maps with possible transformations from Stan to WinBUGS/OpenBUGS
         ## e.g. for blocker: StanNameMaps <- list(tau = list(StanSourceName = 'sigmasq_delta', transform = function(x) 1/x)) ## transform can be omitted
         StanNameMaps = 'ANY',
         
@@ -200,25 +212,27 @@ MCMCsuiteClass <- setRefClass(
         
         initialize = function(
             code,
-            constants      = list(),
-            data           = list(),
-            inits          = list(),
-            monitors       = character(),
-            niter          = 10000,
-            burnin         = 2000,
-            thin           = 1,
-            summaryStats   = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
-            MCMCs          = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
-            MCMCdefs       = list(),
-            bugs_directory = 'C:/WinBUGS14',
-            bugs_program   = 'WinBUGS',
-            stan_model     = '',
-            stanNameMaps   = list(),
-            makePlot       = TRUE,
-            savePlot       = TRUE,
-            plotName       = 'MCMCsuite',
-            setSeed        = TRUE,
-            debug          = FALSE) {
+            constants          = list(),
+            data               = list(),
+            inits              = list(),
+            monitors           = character(),
+            niter              = 10000,
+            burnin             = 2000,
+            thin               = 1,
+            summaryStats       = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
+            MCMCs              = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
+            MCMCdefs           = list(),
+            winbugs_directory  = 'C:/WinBUGS14',
+            winbugs_program    = 'WinBUGS',
+            openbugs_directory = 'C:/OpenBUGS323',
+            openbugs_program   = 'OpenBUGS',
+            stan_model         = '',
+            stanNameMaps       = list(),
+            makePlot           = TRUE,
+            savePlot           = TRUE,
+            plotName           = 'MCMCsuite',
+            setSeed            = TRUE,
+            debug              = FALSE) {
             
             code <<- code
             constants <<- constants
@@ -234,8 +248,10 @@ MCMCsuiteClass <- setRefClass(
             setSummaryStats(summaryStats)
             setMCMCs(MCMCs)
             setMCMCdefs(MCMCdefs)
-            bugs_directory <<- bugs_directory
-            bugs_program <<- bugs_program
+            winbugs_directory <<- winbugs_directory
+            winbugs_program <<- winbugs_program
+            openbugs_directory <<- openbugs_directory
+            openbugs_program <<- openbugs_program
             stan_model <<- stan_model
             StanNameMaps <<- stanNameMaps
             makePlot <<- makePlot
@@ -248,14 +264,15 @@ MCMCsuiteClass <- setRefClass(
             checkMCMCdefNames()
             init_output()
             writeModelFile()
-            if(debug)            browser()
-            if(setSeed)          set.seed(0)
-            if(bugsMCMCflag)     run_bugs()
-            if(jagsMCMCflag)     run_jags()
-            if(stanMCMCflag)     run_stan()
-            if(nimbleMCMCflag)   run_nimble()
+            if(debug)              browser()
+            if(setSeed)            set.seed(0)
+            if(winbugsMCMCflag)    run_winbugs()
+            if(openbugsMCMCflag)   run_openbugs()
+            if(jagsMCMCflag)       run_jags()
+            if(stanMCMCflag)       run_stan()
+            if(nimbleMCMCflag)     run_nimble()
             unlink(modelFileName)
-            if(makePlot)         generate_plots()
+            if(makePlot)           generate_plots()
         },
         
         setMonitors = function(newMonitors) {
@@ -282,10 +299,11 @@ MCMCsuiteClass <- setRefClass(
         
         setMCMCs = function(MCMCs) {
             MCMCs <<- unique(MCMCs)
-            bugsMCMCflag <<- 'bugs' %in% MCMCs
+            winbugsMCMCflag <<- 'winbugs' %in% MCMCs
+            openbugsMCMCflag <<- 'openbugs' %in% MCMCs
             jagsMCMCflag <<- 'jags' %in% MCMCs
             stanMCMCflag <<- 'stan' %in% MCMCs
-            nimbleMCMCs <<- setdiff(MCMCs, c('bugs', 'jags', 'stan'))
+            nimbleMCMCs <<- setdiff(MCMCs, c('winbugs', 'openbugs', 'jags', 'stan'))
             nNimbleMCMCs <<- length(nimbleMCMCs)
             nimbleMCMCflag <<- if(nNimbleMCMCs > 0) TRUE else FALSE
             nMCMCs <<- length(MCMCs)
@@ -311,15 +329,26 @@ MCMCsuiteClass <- setRefClass(
             output <<- list(samples=samples, summary=summary, timing=timing)
         },
         
-        run_bugs = function() {
+        run_winbugs = function() {
             require(R2WinBUGS)
             timeResult <- system.time({
-                bugs_out <- bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
-                                 n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=bugs_directory, program=bugs_program)
+                winbugs_out <- bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
+                                 n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=winbugs_directory, program=winbugs_program)
             })
-            tempArray <- bugs_out$sims.array[, 1, ]        ## must use sims.array
+            tempArray <- winbugs_out$sims.array[, 1, ]        ## must use sims.array
             samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
-            addToOutput('bugs', samplesArray, timeResult)
+            addToOutput('winbugs', samplesArray, timeResult)
+        },
+        
+        run_openbugs = function() {
+            require(R2WinBUGS)
+            timeResult <- system.time({
+                openbugs_out <- bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
+                                 n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=openbugs_directory, program=openbugs_program)
+            })
+            tempArray <- openbugs_out$sims.array[, 1, ]        ## must use sims.array
+            samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
+            addToOutput('openbugs', samplesArray, timeResult)
         },
         
         run_jags = function() {
