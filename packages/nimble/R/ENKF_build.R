@@ -23,7 +23,7 @@ ENKFFuncVirtual <- nimbleFunctionVirtual(
 #  returns mean and cov matrix for MVN data node
 enkfMultFunc = nimbleFunction(
   contains = ENKFFuncVirtual,
-  setup = function(model, thisData, mv, thisXName){
+  setup = function(model, thisData, mv, thisXSName){
     data <- model[[thisData]]
     dataFuncList <- nimbleFunctionList(node_stoch_dmnorm)
     dataFuncList[[1]] <- model$nodeFunctions[[thisData]]
@@ -43,7 +43,7 @@ enkfMultFunc = nimbleFunction(
 #  returns mean (as vector) and var (as matrix) for normal data node  
 enkfScalFunc = nimbleFunction(
   contains = ENKFFuncVirtual,
-  setup = function(model, thisData, mv, thisXName){
+  setup = function(model, thisData, mv, thisXSName){
     data <- model[[thisData]]
     output <- c(0,0)
     dataFuncList <- nimbleFunctionList(node_stoch_dnorm) 
@@ -83,12 +83,12 @@ ENKFStep <- nimbleFunction(
     yObs <- c(sapply(thisData, function(x) model[[x]])) #all dependent data for this time point
     # Get names of xs node for current and previous time point (used in copy)
     if(saveAll == 1){
-      prevXName <- paste("x[,",t-1,"]",sep="")
-      thisXName <- paste("x[,",t,"]",sep="")
+      prevXSName <- paste("xs[,",t-1,"]",sep="")
+      thisXSName <- paste("xs[,",t,"]",sep="")
     }
     else{
-      prevXName <- "x"
-      thisXName <- "x"
+      prevXSName <- "xs"
+      thisXSName <- "xs"
     }
     yLength <- sum(yDim)  #total number of dependent data points for this time point
     meanVec <- rep(0, yLength)
@@ -108,10 +108,10 @@ ENKFStep <- nimbleFunction(
     ENKFFuncList <- nimbleFunctionList(ENKFFuncVirtual) 
     for(yNode in 1:length(yDim)){
       if(yDim[yNode] > 1){
-        ENKFFuncList[[yNode]] <- enkfMultFunc(model, thisData[yNode],  mv, thisXName)
+        ENKFFuncList[[yNode]] <- enkfMultFunc(model, thisData[yNode],  mv, thisXSName)
       }
       else{
-        ENKFFuncList[[yNode]] <- enkfScalFunc(model, thisData[yNode],  mv, thisXName)
+        ENKFFuncList[[yNode]] <- enkfScalFunc(model, thisData[yNode],  mv, thisXSName)
       } 
     }
   },
@@ -133,7 +133,7 @@ ENKFStep <- nimbleFunction(
       yVar <- ENKFFuncList[[j]]$getVar() # var doesn't depend on x value
       for(i in 1:m) {
         if(notFirst) {
-          copy(mv, model, nodes = prevXName, nodesTo = prevNode, row = i)
+          copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = i)
           calculate(model, prevDeterm) 
         }
         simulate(model, thisNode)
@@ -166,14 +166,14 @@ ENKFStep <- nimbleFunction(
     if(yLength == 1){
       for(i in 1:m){
         preturb[1,i] <-yObs[1] + rnorm(1, 0, sqrt(varMat[1,1]))
-        mv[thisXName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
+        mv[thisXSName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
       }
     }
     else{
       cholesky <- chol(varMat)    
       for(i in 1:m){
         preturb[,i] <- yObs + rmnorm_chol(1, meanVec, cholesky, 0) 
-        mv[thisXName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
+        mv[thisXSName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
       }
     }
   }, where = getLoadingNamespace()
@@ -202,12 +202,18 @@ ENKFStep <- nimbleFunction(
 #' hist(ENKF_X)
 #' @export
 buildENKF <- nimbleFunction(
-  setup = function(model, nodes,  silent = FALSE, saveAll = FALSE) {
+  setup = function(model, nodes, filterControl = list( silent = FALSE, saveAll = FALSE)) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     xDim <- dims[[1]]
+    
+    saveAll <- filterControl[['saveAll']]
+    silent <- filterControl[['silent']]
+    if(is.null(silent)) silent <- FALSE
+    if(is.null(saveAll)) saveAll <- FALSE
+    
     #  get list of y nodes depening on each x node
     #  necessary if the bugs model specifies something like:
     #  y[1,1] ~ dnorm(x[1], 1)
@@ -215,21 +221,22 @@ buildENKF <- nimbleFunction(
     #  where multiple separately specified y nodes depend on the same x node(s)
     yNodes <- lapply(nodes, function(n) model$getDependencies(n, dataOnly = TRUE))  
     yDim <- lapply(yNodes, function(x){unname(sapply(x, function(z) nimDim(model[[z]])))}) #dimensions of each dependent y node
-    
     # Create mv variables for x state.  If saveAll=T, 
     # the  x states will be recorded at each time point. 
     if(!saveAll){
-      mv <- modelValues(modelValuesSpec(vars = c('x'),  
+      mv <- modelValues(modelValuesSpec(vars = c('xs'),  
                                         type = c('double'),
-                                        size = list(x = xDim)))
+                                        size = list(xs = xDim)))
     }
     
     else{
-      mv <- modelValues(modelValuesSpec(vars = c('x'),
+      mv <- modelValues(modelValuesSpec(vars = c('xs'),
                                         type = c('double'),
-                                        size = list(x = c(xDim,
+                                        size = list(xs = c(xDim,
                                                           length(dims)))))
     }
+    
+    
     ENKFStepFunctions <- nimbleFunctionList(ENKFStepVirtual)
     for(iNode in seq_along(nodes)){
      ENKFStepFunctions[[iNode]] <- ENKFStep(model, mv, nodes, 

@@ -57,6 +57,9 @@ bootFStep <- nimbleFunction(
         copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
       }
+      ## below line is used to get around the R version of this funciton shrinking mv[wts, i] to a one dimensional object when saveAll ==F,
+      ## when it must remain two dimensional.  We add an unnecessary second column, which we fill with 0's
+      if(!notFirst & !saveAll) mv['wts', i][1,2]  <<- 0
       simulate(model, thisNode)
       copy(model, mv, nodes = thisNode, nodesTo = thisXName, row = i)
       calculate(model, thisDeterm)
@@ -99,7 +102,7 @@ bootFStep <- nimbleFunction(
       }
     }
     return(out)
-  },  where = getLoadingNamespace()
+  }, where = getLoadingNamespace()
 )
 
 #' Creates a bootstrap particle filter algorithm to estimate log-likelihood.
@@ -127,11 +130,21 @@ bootFStep <- nimbleFunction(
 #' boot_X <- Cmy_BootF$mv['xs',]
 #' @export
 buildBootF <- nimbleFunction(
-  setup = function(model, nodes, thresh = 0.5, silent = FALSE, saveAll = FALSE, smoothing = FALSE) {
+  setup = function(model, nodes, filterControl = list(thresh = 0.5,  silent = FALSE, saveAll = FALSE, smoothing = FALSE)) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
+    
+    thresh <- filterControl[['thresh']]
+    saveAll <- filterControl[['saveAll']]
+    smoothing <- filterControl[['smoothing']]
+    silent <- filterControl[['silent']]
+    if(is.null(silent)) silent <- FALSE
+    if(is.null(saveAll)) saveAll <- FALSE
+    if(is.null(smoothing)) smoothing <- FALSE
+    if(is.null(thresh)) thresh <- .5
+    
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll) smoothing <- FALSE
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
@@ -144,7 +157,7 @@ buildBootF <- nimbleFunction(
                                         type = c('double', 'double','double'),
                                         size = list(x = dims[[1]],
                                                     xs = dims[[1]],
-                                                    wts = c(dims[[1]], 1))))
+                                                    wts =  c(1,2))))
     }
     
     else{
@@ -154,7 +167,7 @@ buildBootF <- nimbleFunction(
                                                           length(dims)),
                                                     xs = c(dims[[1]],
                                                            length(dims)),
-                                                    wts = c(dims[[1]],
+                                                    wts = c(1,
                                                             length(dims)))))
      
     }
@@ -172,7 +185,6 @@ buildBootF <- nimbleFunction(
     resize(mv, m)
     threshNum <- ceiling(thresh*m)
     logL <- 0   
-    
     # prevSamp indicates whether resampling took place at the
     # previous time point.
     prevSamp <- 1
@@ -183,5 +195,5 @@ buildBootF <- nimbleFunction(
       if(logL == -Inf) return(logL)
     }
     return(logL)
-  },  where = getLoadingNamespace()
+  }, where = getLoadingNamespace()
 )

@@ -61,7 +61,7 @@ auxFStep <- nimbleFunction(
         model[[thisNode]] <<-meanFuncList[[1]]$get_mean() # returns E(x_t+1 | x_t)
         calculate(model, thisDeterm)
         auxl[i] <- exp(calculate(model, thisData))
-        auxWts[i] <- auxl[i]*mv['wts',i][1,prevInd]
+        auxWts[i] <- auxl[i]*mv['wts',i][1,prevInd]        
       }
       auxWts <- auxWts/sum(auxWts)
       ess <- 1/sum(auxWts^2)
@@ -80,6 +80,10 @@ auxFStep <- nimbleFunction(
       }
     }   
     for(i in 1:m) {
+      ## below line is used to get around the R version of this funciton shrinking mv[wts, i] to a one dimensional object when saveAll ==F,
+      ## when it must remain two dimensional.  We add an unnecessary second column, which we fill with 0's
+      if(!notFirst & !saveAll) mv['wts', i][1,2]  <<- 0
+      
       if(notFirst) {
         copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
@@ -140,12 +144,22 @@ auxFStep <- nimbleFunction(
 #' hist(as.matrix(Cmy_Auxf$mv, 'xs'))
 #' @export
 buildAuxF <- nimbleFunction(
-  setup = function(model, nodes, thresh=.5, silent = FALSE, saveAll = FALSE) {
+  setup = function(model, nodes, filterControl = list(thresh = 0.5,  silent = FALSE, saveAll = FALSE)) {
+                   
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) 
       stop('sizes or dimension of latent states varies')
+
+    
+    thresh <- filterControl[['thresh']]
+    saveAll <- filterControl[['saveAll']]
+    silent <- filterControl[['silent']]
+    if(is.null(silent)) silent <- FALSE
+    if(is.null(saveAll)) saveAll <- FALSE
+    if(is.null(thresh)) thresh <- .5
+    
     if(thresh<0 || thresh>1 || !is.numeric(thresh)) 
       stop('thresh must be between 0 and 1')
     
@@ -159,7 +173,7 @@ buildAuxF <- nimbleFunction(
                                         type = c('double', 'double','double'),
                                         size = list(x = dims[[1]],
                                                     xs = dims[[1]],
-                                                    wts = c(dims[[1]],1))))
+                                                    wts = c(1,2))))
     }
     else{
       mv <- modelValues(modelValuesSpec(vars = c('x', 'xs','wts'),  
@@ -168,7 +182,7 @@ buildAuxF <- nimbleFunction(
                                                           length(dims)),
                                                     xs = c(dims[[1]],
                                                            length(dims)),
-                                                    wts = c(dims[[1]],
+                                                    wts = c(1,
                                                                length(dims))))) 
     }
     auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
