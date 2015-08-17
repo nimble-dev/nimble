@@ -7,6 +7,8 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 # before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions
 ./prep_pkg # this creates man pages and updates NAMESPACE
 
+warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
+
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
 
@@ -24,13 +26,14 @@ update NEWS info on webpage as high-level summary of NEWS in package
 
 update version numbering on license and citation page
 
-send notice to nimble-announce, nimble-users
+send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
 make sure to merge devel into master branch and create a branch for the new version
 git checkout master
 git merge devel
 git commit -am'merged new version onto master'
 
-git branch version_0.2
-git push -u origin version_0.2
+git tag -a v0.3 -m 'NIMBLE version 0.3 release, December 31, 2014'
+git push --tags    ## this is how you push *tags* to the remote
+
 

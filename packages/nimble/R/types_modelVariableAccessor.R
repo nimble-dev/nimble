@@ -1,22 +1,10 @@
+
 ## CASE 2: modelVariableAccessorVector
 ## copy(model1, xxx, nodes) becomes:
 ## model1_nodes_accessors <- modelVariableAccessorVector(model1, nodes)
 ## copy(model1_nodes_accessors, xxx)
 ## model1_nodes_accessors$getAccessors() returns a list of the modelVariableAccessor objects
 
-## I think this is not needed anymore
-## modelVariableAccessor <- setRefClass(
-##     Class = 'modelVariableAccessor',
-##     fields = list(model = 'ANY',
-##                   var   = 'ANY', 		# 'character',
-##                   first = 'ANY', 		#'numeric',
-##                   last  = 'ANY', 		#'numeric',
-##                   length = 'ANY' 		#'numeric'
-##     ),
-##     methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
-##                    show  = function() cat(paste0(toStr(), '\n'))
-##     )
-## )
 
 modelVariableAccessorVector <- function(mv, nodeNames, logProb = FALSE) {
     ans <- list(mv, substitute(nodeNames), logProb, parent.frame())
@@ -72,3 +60,17 @@ modelVariableAccessorVector <- function(mv, nodeNames, logProb = FALSE) {
 ## # Motivation for this is to make it easier to generically use accessors
 ## length.modelVariableAccessorVector <- function(access)
 ##     return(access$length)
+
+## I think this is not needed anymore
+## modelVariableAccessor <- setRefClass(
+##     Class = 'modelVariableAccessor',
+##     fields = list(model = 'ANY',
+##                   var   = 'ANY', 		# 'character',
+##                   first = 'ANY', 		#'numeric',
+##                   last  = 'ANY', 		#'numeric',
+##                   length = 'ANY' 		#'numeric'
+##     ),
+##     methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
+##                    show  = function() cat(paste0(toStr(), '\n'))
+##     )
+## )

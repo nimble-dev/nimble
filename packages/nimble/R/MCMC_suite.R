@@ -94,7 +94,7 @@
 #' @param setSeed Logical argument, specifying whether to set.seed(0) prior to MCMC sampling.
 #' Default value is TRUE.
 #' 
-#' @param debug Logical argument, specifying whether to enter a broswer() at the onset of executing each MCMC algrithm.
+#' @param debug Logical argument, specifying whether to enter a browser() at the onset of executing each MCMC algrithm.
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
 #'

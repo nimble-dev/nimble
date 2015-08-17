@@ -15,7 +15,7 @@ copyTestModelCode <- nimbleCode({
     for(i in 1:4) for(j in 1:4) for(k in 1:4) {x3[i,j,k] ~ dnorm(0, 1); d3[i,j,k] <- x3[i,j,k]+10000}
     for(i in 1:4) for(j in 1:4) for(k in 1:4) for(l in 1:4) {x4[i,j,k,l] ~ dnorm(0, 1); d4[i,j,k,l] <- x4[i,j,k,l]+10000}
     v1[1:4] ~ dmnorm(v1mu[1:4], v1sigma[1:4, 1:4]) ## not testing indexing here!
-    for(i in 1:5) w1[ 2:5, i] ~ dmnorm(v1mu[1:3], v1sigma[1:4, 1:4])
+    for(i in 1:5) w1[ 2:5, i] ~ dmnorm(v1mu[1:4], v1sigma[1:4, 1:4])
     for(i in 1:4) foo[i] <- w1[i+1, 1]
 })
 

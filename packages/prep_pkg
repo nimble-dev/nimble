@@ -53,7 +53,6 @@ require(nimble)
 #Error in .walkClassGraph(classDef, "subclasses", where) : 
 
 # not sure the issue, but rerunning prep_pkg usually fixes things
-
 Rpath <- file.path("nimble", "R")
 files <- list.files(Rpath, pattern = "*R$")  # omit config.R.in
 roclet = rd_roclet()

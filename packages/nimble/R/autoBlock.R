@@ -23,9 +23,10 @@ autoBlock <- function(Rmodel,
                       run = list('all', 'default'),
                       setSeed = TRUE,
                       verbose = FALSE,
+                      makePlots = FALSE,
                       round = TRUE ) {
     if(autoIt < 10000) stop('Minimum auto-blocking iterations is 10,000')
-    control <- list(niter=autoIt, setSeed=setSeed, verbose=verbose)
+    control <- list(niter=autoIt, setSeed=setSeed, verbose=verbose, makePlots=makePlots)
     ab <- autoBlockClass(Rmodel, control)
     if(!'auto' %in% run) run <- c(run, 'auto')  ## always use 'autoBlock' routine
     ab$run(run)

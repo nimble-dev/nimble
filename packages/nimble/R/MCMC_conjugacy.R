@@ -235,13 +235,13 @@ conjugacyClass <- setRefClass(
     ),
     methods = list(
         initialize = function(cr) {
-        	dependents <<- list()
+            dependents <<- list()
             samplerType <<- cc_makeSamplerTypeName(cr$prior)
             prior <<- cr$prior
             link <<- cr$link
             initialize_addDependents(cr$dependents)
             needsLinearityCheck <<- link %in% c('multiplicative', 'linear')
-            posteriorObject <<- posteriorClass(cr$posterior)
+            posteriorObject <<- posteriorClass(cr$posterior, prior)
             model <<- NA
             },
         
@@ -476,7 +476,7 @@ conjugacyClass <- setRefClass(
                         declare(DEP_COEFF_VAR,  double(DEP_COEFF_VAR_NDIM,  DECLARE_SIZE_COEFF))                ## DECLARE() statement
                     }, list(DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset')),          ## DECLARE() statement
                             DEP_COEFF_VAR       = as.name(paste0('dependents_', distName, '_coeff')),           ## DECLARE() statement
-                            DEP_OFFSET_VAR_NDIM = 1 + targetNdim,                                           ## DECLARE() statement
+                            DEP_OFFSET_VAR_NDIM = 1 + targetNdim,                                               ## DECLARE() statement
                             DEP_COEFF_VAR_NDIM  = 1 + targetCoeffNdim,                                          ## DECLARE() statement
                             DECLARE_SIZE_OFFSET = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), targetNdim),
                             DECLARE_SIZE_COEFF  = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), targetCoeffNdim)))
@@ -588,9 +588,15 @@ conjugacyClass <- setRefClass(
             
             targetNdim <- getDistribution(prior)$types$value$nDim
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
-            
-            functionBody$addCode(firstTime <- 1)
-            
+            ##functionBody$addCode(firstTime <- 1)
+            ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
+            for(contributionName in posteriorObject$neededContributionNames) {
+                contribNdim <- posteriorObject$neededContributionDims[[contributionName]]
+                functionBody$addCode(CONTRIB_NAME <- CONTRIB_INITIAL_DECLARATION,
+                                     list(CONTRIB_NAME                = as.name(contributionName),
+                                          CONTRIB_INITIAL_DECLARATION = switch(as.character(contribNdim),
+                                              `0` = 0, `1` = quote(nimVector(0, d)), `2` = quote(nimArray(0, d, d)), stop())))
+            }
             for(distName in dependentDistNames) {
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                 depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
@@ -601,25 +607,29 @@ conjugacyClass <- setRefClass(
                 subList$offset <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_offset')), targetNdim)
 
                 subList$coeff  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_coeff')),  targetCoeffNdim)
-                forLoopBodyFirst <- codeBlockClass()
-                forLoopBody      <- codeBlockClass()
-                forLoopBodyFirst$addCode(firstTime <- 0)
+                ##forLoopBodyFirst <- codeBlockClass()
+                forLoopBody <- codeBlockClass()
+                ##forLoopBodyFirst$addCode(firstTime<- 0)
                 for(contributionName in posteriorObject$neededContributionNames) {
                     if(!(contributionName %in% dependents[[distName]]$contributionNames))     next
                     contributionExpr <- eval(substitute(substitute(EXPR, subList), list(EXPR=dependents[[distName]]$contributionExprs[[contributionName]])))
-                    forLoopBodyFirst$addCode(CONTRIB_NAME <- CONTRIB_EXPR,
-                                             list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
-                    forLoopBody$addCode(     CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
-                                             list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+                ##    forLoopBodyFirst$addCode(CONTRIB_NAME <- CONTRIB_EXPR,
+                ##                             list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
+                    forLoopBody$addCode(CONTRIB_NAME <- CONTRIB_NAME + CONTRIB_EXPR,
+                                        list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                 }
-                ifStatementBody <- codeBlockClass()
-                ifStatementBody$addCode(
-                    if(firstTime == 1) FORLOOPBODYFIRST else FORLOOPBODY,
-                    list(FORLOOPBODYFIRST = forLoopBodyFirst$getCode(),
-                         FORLOOPBODY      = forLoopBody$getCode()))
-                functionBody$addCode(for(i in seq_along(DEP_NODEFUNCTIONS)) IFSTATEMENTBODY,
+                ##ifStatementBody <- codeBlockClass()
+                ##ifStatementBody$addCode(
+                ##    if(firstTime == 1) FORLOOPBODYFIRST else FORLOOPBODY,
+                ##    list(FORLOOPBODYFIRST = forLoopBodyFirst$getCode(),
+                ##         FORLOOPBODY      = forLoopBody$getCode()))
+                ##functionBody$addCode(for(i in seq_along(DEP_NODEFUNCTIONS)) IFSTATEMENTBODY,
+                ##                     list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                ##                          IFSTATEMENTBODY   = ifStatementBody$getCode()))
+                functionBody$addCode(for(i in seq_along(DEP_NODEFUNCTIONS)) FORLOOPBODY,
                                      list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                          IFSTATEMENTBODY   = ifStatementBody$getCode()))
+                                          FORLOOPBODY       = forLoopBody$getCode()))
+                
             }
         },
         
@@ -684,10 +694,11 @@ posteriorClass <- setRefClass(
         rCallExpr =               'ANY',   ## the actual 'rnorm(1, ...)' call, which will be substituted into the conjugate sampler function
         dCallExpr =               'ANY',   ## the 'dnorm(value, ...)' call, which can be used to get values of the posterior density
         neededPriorParams =       'ANY',   ## the names of any prior parameters (e.g., 'mean') which appear in the posterior expression as 'prior_mean'
-        neededContributionNames = 'ANY'    ## the names of contributions from dependent nodes, such as 'contribution_scale'
+        neededContributionNames = 'ANY',   ## the names of contributions from dependent nodes, such as 'contribution_scale'
+        neededContributionDims =  'ANY'    ## a named list of contribution dimensions (0, 1, or 2). List element names are, e.g., 'contribution_scale'
     ),
     methods = list(
-        initialize = function(posteriorText) {
+        initialize = function(posteriorText, prior) {
             posteriorExpr <<- parse(text = posteriorText)[[1]]
             rDistribution <<- cc_makeRDistributionName(as.character(posteriorExpr[[1]]))
             dDistribution <<- as.character(posteriorExpr[[1]])
@@ -698,6 +709,32 @@ posteriorClass <- setRefClass(
             posteriorVars <- all.vars(rCallExpr)
             neededPriorParams <<- gsub('^prior_', '', posteriorVars[grepl('^prior_', posteriorVars)])
             neededContributionNames <<- posteriorVars[grepl('^contribution_', posteriorVars)]
+            neededContributionDims <<- inferContributionTermDimensions(prior)
+        },
+        inferContributionTermDimensions = function(prior) {
+            distToLookup <- if(dDistribution %in% distributions$namesVector) dDistribution else if(prior %in% distributions$namesVector) prior else stop('cannot locate prior or posterior distribution in conjugacy processing')
+            targetNdim <- getDistribution(distToLookup)$types$value$nDim
+            ## if posterior distribution is univariate, assume all contributions are scalar
+            if(targetNdim == 0) {
+                theDims <- lapply(neededContributionNames, function(x) 0)
+                names(theDims) <- neededContributionNames
+                return(theDims)
+            }
+            ## if posterior distribution is multivariate, attempt to infer contribution dimensionality from the *name* of each contribution term
+            theDims <- list()
+            typeNamesAvailable <- names(getDistribution(distToLookup)$types)
+            for(contribName in neededContributionNames) {
+                contribNameBase <- gsub('^contribution_', '', contribName)
+                if(contribNameBase %in% typeNamesAvailable) {
+                    ## contribution base name matches a parameter name of the posterior
+                    theDims[[contribName]] <- getDistribution(distToLookup)$types[[contribNameBase]]$nDim
+                } else {
+                    ## contribution base name doesn't match any paramter; can't easily infer the dimensionality
+                    browser()
+                    message('The NIMBLE conjugacy system is attempting to infer the dimensionality of the contribution term: ', contribName, '. However, since the posterior distribution is multivariate, and the contribution name doesn\'t match any parameter names of the posterior distribution, NIMBLE can\'t infer this one. This means the conjugacy system might need to be extended, to allow users to provide the dimensionality of contribution terms. Or perhaps something more clever. -DT August 2015')
+                }
+            }
+            return(theDims)
         }
     )
 )

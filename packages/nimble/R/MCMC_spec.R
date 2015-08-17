@@ -47,13 +47,14 @@ samplerSpec <- setRefClass(
 ## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
 
 #' Class \code{MCMCspec}
-#' @aliases MCMCspec configureMCMC addSampler removeSamplers setSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors setThin setThin2
+#' @aliases MCMCspec addSampler removeSamplers setSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors setThin setThin2
 #' @export
 #' @description
-#' Objects of this class fully specify an MCMC algorithm, specific to a particular model.
-#' Given an object spec of class MCMCspec, the actual MCMC function may subsequently be built by calling buildMCMC(spec).
-#' See documentation for method initialize() or configureMCMC(), for details of creating an MCMCspec object.
+#' Objects of this class specify an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \link{configureMCMC}.
+#' Given an MCMCspec object, the actual MCMC function can be built by calling \link{buildMCMC}\code{(spec)}.
+#' See documentation below for method initialize() for details of creating an MCMCspec object.
 #' @author Daniel Turek
+#' @seealso \link{configureMCMC}
 #' @examples
 #' code <- nimbleCode({
 #'  mu ~ dnorm(0, 1)
@@ -92,7 +93,7 @@ MCMCspec <- setRefClass(
             useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
             print = FALSE) {	
             '
-Creates a default MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC().
+Creates a MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
 Arguments:
 
@@ -106,7 +107,7 @@ If NULL, then no samplers are added.
 control: An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
 For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\', 
 and also \'targetNode\' however this should not generally be provided as a control list element to configureMCMC().
-The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the NIMBLE system option \'MCMCcontrolDefaultList\'.
+The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC) are in the NIMBLE system option \'MCMCcontrolDefaultList\'.
 
 monitors: A character vector of node names or variable names, to record during MCMC sampling.
 This set of monitors will be recorded with thinning interval \'thin\', and the samples will be stored into the \'mvSamples\' object.
@@ -120,17 +121,17 @@ thin: The thinning interval for \'monitors\'.  Default value is one.
 
 thin2: The thinning interval for \'monitors2\'.  Default value is one.
 
-useConjugacy: A boolean argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
+useConjugacy: A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
 
-onlyRW: A boolean argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (sampler_RW) will be assigned for all non-terminal continuous-valued nodes nodes.
+onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (sampler_RW) will be assigned for all non-terminal continuous-valued nodes nodes.
 Discrete-valued nodes are assigned a slice sampler (sampler_slice), and terminal (predictive) nodes are assigned an end sampler (sampler_end).
 
-onlySlice: A boolean argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
+onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
 Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
 
-multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
+multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
-print: Boolean argument, specifying whether to print the ordered list of default samplers.
+print: A logical argument, specifying whether to print the ordered list of default samplers.
 '
             
             samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
@@ -203,20 +204,20 @@ Arguments:
 
 target: The target node or nodes to be sampled.  This may be specified as a character vector of model node and/or variable names.  This argument is required.
 
-type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either samplerType or sampler_newSamplertype must correspond to a nimbleFunction generator.  Alternatively, the type argument may be provided as a nimbleFunction generator object, itself.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node.
+type: The type of sampler to add, specified as either a character string or a nimbleFunction object.  If the character argument type=\'newSamplerType\', then either newSamplerType or sampler_newSamplertype must correspond to a nimbleFunction (i.e. a function returned by nimbleFunction, not a specialized nimbleFunction).  Alternatively, the type argument may be provided as a nimbleFunction itself rather than its name.  In that case, the \'name\' argument may also be supplied to provide a meaningful name for this sampler.  The default value is \'RW\' which specifies scalar adaptive Metropolis-Hastings sampling with a normal proposal distribution. This default will result in an error if \'target\' specifies more than one target node.
 
 control: A list of control arguments specific to the sampler function.
 These will override the defaults provided in the NIMBLE system option \'MCMCcontrolDefaultList\', and any specified in the control list argument to configureMCMC().
 An error results if the sampler function requires any control elements which are 
 not present in this argument, the control list argument to configureMCMC(), or in the NIMBLE system option \'MCMCcontrolDefaultList\'.
 
-print: Boolean argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
+print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
-name: A character string name for the sampler, which is only used when the \'type\' argument is provided as a nimbleFunction generator object.  If \'name\' is not provided, then deparse(substitute(type)) is used as the default sampler name.
+name: A character string name for the sampler, which is only used when the \'type\' argument is provided as a nimbleFunction generator object.  If \'name\' is not provided, then the text of the \'type\' argument (i.e. the result of \'deparse(substitute(type))\') is used as the default sampler name.
 
 Details: A single instance of the newly specified sampler is added to the end of the list of samplers for this MCMCspec object.
 
-Invisibly returns a list of the currnet sampler specifications, which are samplerSpec reference class objects.
+Invisibly returns a list of the current sampler specifications, which are samplerSpec reference class objects.
 '
 
             if(is.character(type)) {
@@ -262,7 +263,7 @@ Arguments:
 
 ind: A numeric vector or character vector specifying the samplers to remove.  A numeric vector may specify the indices of the samplers to be removed.  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and all samplers whose \'target\' is among these nodes will be removed.  If omitted, then all samplers are removed.
 
-print: Boolean argument, default value TRUE, specifying whether to print the current list of samplers once the removal has been done.
+print: A logical argument, default value TRUE, specifying whether to print the current list of samplers once the removal has been done.
 '      
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
@@ -280,7 +281,7 @@ Arguments:
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indicies for the new list of MCMC samplers, in terms of the current ordered list of samplers.
 For example, if the MCMCspec object currently has 3 samplers, then the ordering may be reversed by calling mcmcspec$setSamplers(3:1), or all samplers may be removed by calling mcmcspec$setSamplers(numeric(0)).  Alternatively, a character vector may be used to specify a set of model nodes and/or variables, and the sampler list will modified to only those samplers acting on these target nodes.
 
-print: Boolean argument, default value TRUE, specifying whether to print the new list of samplers.
+print: A logical argument, default value TRUE, specifying whether to print the new list of samplers.
 '   
             if(missing(ind))        ind <- numeric(0)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
@@ -323,7 +324,7 @@ Arguments:
 
 vars: A character vector of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors list.
 
-print: A boolean variable, specifying whether to print all current monitors.
+print: A logical argument, specifying whether to print all current monitors.
 
 Details: See the initialize() function
             '
@@ -355,7 +356,7 @@ Arguments:
 
 vars: A character vector of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors2 list.
 
-print: A boolean variable, specifying whether to print all current monitors.
+print: A logical argument, specifying whether to print all current monitors.
 
 Details: See the initialize() function
             '
@@ -399,7 +400,7 @@ Arguments:
 
 thin: The new value for the thinning interval \'thin\'.
 
-print: A boolean variable, specifying whether to print all current monitors.
+print: A logical argument, specifying whether to print all current monitors.
 
 Details: See the initialize() function
             '
@@ -415,7 +416,7 @@ Arguments:
 
 thin2: The new value for the thinning interval \'thin2\'.
 
-print: A boolean variable, specifying whether to print all current monitors.
+print: A logical argument, specifying whether to print all current monitors.
 
 Details: See the initialize() function
             '
@@ -464,52 +465,53 @@ Details: See the initialize() function
 
 
 
-#' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
-#'
-#' Simply keeps model code as an R call object, the form needed by \code{nimbleModel} and optionally usable by \code{readBUGSmodel}
-#' 
-#' @param code expression providing the code for the model 
-#' @author Daniel Turek
-#' @export
-#' @details It is equivalent to use the R function \code{quote}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
-#' @examples
-#' code <- nimbleCode({
-#'     x ~ dnorm(mu, sd = 1)
-#'     mu ~ dnorm(0, sd = prior_sd)
-#' })
+## This appeared to be roxygen content that didn't belong here.  It is in BUGS_readBUGS.R.  -Perry 8/1/15 
+## # Turn BUGS model code into an object for use in nimbleModel or readBUGSmodel
+## #
+## # Simply keeps model code as an R call object, the form needed by \code{nimbleModel} and optionally usable by \code{readBUGSmodel}
+## # 
+## # @param code expression providing the code for the model 
+## # @author Daniel Turek
+## # @export
+## # @details It is equivalent to use the R function \code{quote}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
+## # @examples
+## # code <- nimbleCode({
+## #     x ~ dnorm(mu, sd = 1)
+## #     mu ~ dnorm(0, sd = prior_sd)
+## # })
 
 
 
 
 #' Build the MCMCspec object for construction of an MCMC object
 #'
-#' Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC(). 
+#' Creates a defaut MCMC specification for a given model.  The resulting object is suitable as an argument to \link{buildMCMC}. 
 #'
-#'@param model A NIMBLE model object, created from nimbleModel(...)
-#'@param nodes An optional character vector, specifying the nodes for which samplers should be created.
-#'Nodes may be specified in their indexed form, \'y[1, 3]\', or nodes specified without indexing will be expanded fully, e.g., \'x\' will be expanded to \'x[1]\', \'x[2]\', etc.
+#'@param model A NIMBLE model object, created from \link{nimbleModel}
+#'@param nodes An optional character vector, specifying the nodes and/or variables for which samplers should be created.
+#'Nodes may be specified in their indexed form, \code{y[1, 3]}.  Alternatively, nodes specified without indexing will be expanded fully, e.g., \code{x} will be expanded to \code{x[1]}, \code{x[2]}, etc.
 #'If missing, the default value is all non-data stochastic nodes.
 #'If NULL, then no samplers are added.
 #'@param control An optional list of control arguments to sampler functions.  If a control list is provided, the elements will be provided to all sampler functions which utilize the named elements given.
-#'For example, the standard Metropolis-Hastings random walk sampler (sampler_RW) utilizes control list elements \'adaptive\', \'adaptInterval\', \'scale\', 
-#'and also \'targetNode\' however this should not generally be provided as a control list element to configureMCMC().
-#'The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the NIMBLE system option \'MCMCcontrolDefaultList\'.
+#'For example, the standard Metropolis-Hastings random walk sampler (\link{sampler_RW}) utilizes control list elements \code{adaptive}, \code{adaptInterval}, and \code{scale}.
+#' (Internally it also uses \code{targetNode}, but this should not generally be provided as a control list element).
+#'The default values for control list arguments for samplers (if not otherwise provided as an argument to configureMCMC() ) are in the NIMBLE system option \code{MCMCcontrolDefaultList}.
 #'@param monitors A character vector of node names or variable names, to record during MCMC sampling.
-#'This set of monitors will be recorded with thinning interval \'thin\', and the samples will be stored into the \'mvSamples\' object.
+#'This set of monitors will be recorded with thinning interval \code{thin}, and the samples will be stored into the \code{mvSamples} object.
 #'The default value is all top-level stochastic nodes of the model -- those having no stochastic parent nodes.
 #'@param monitors2 A character vector of node names or variable names, to record during MCMC sampling.
-#'This set of monitors will be recorded with thinning interval \'thin2\', and the samples will be stored into the \'mvSamples2\' object.
+#'This set of monitors will be recorded with thinning interval \code{thin2}, and the samples will be stored into the \code{mvSamples2} object.
 #'The default value is an empty character vector, i.e. no values will be recorded.
-#'@param thin The thinning interval for \'monitors\'.  Default value is one.
-#'@param thin2 The thinning interval for \'monitors2\'.  Default value is one.
-#'@param useConjugacy A boolean argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
-#'@param onlyRW A boolean argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (sampler_RW) will be assigned for all non-terminal continuous-valued nodes nodes.
-#'Discrete-valued nodes are assigned a slice sampler (sampler_slice), and terminal (predictive) nodes are assigned an end sampler (sampler_end).
-#'@param onlySlice A boolean argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
+#'@param thin The thinning interval for \code{monitors}.  Default value is one.
+#'@param thin2 The thinning interval for \code{monitors2}.  Default value is one.
+#'@param useConjugacy A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
+#'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes.
+#'Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal (predictive) nodes are assigned an end sampler (\link{sampler_end}).
+#'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
 #'Terminal (predIctive) nodes are still assigned an end sampler (sampler_end).
-#'@param multivariateNodesAsScalars: A boolean argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
-#'@param autoBlock Boolean argument specifying whether to use an automated blocking provedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC specification object will be created and returned corresponding to the results of the automated paramter blocking.  Default value is FALSE.
-#'@param print Boolean argument, specifying whether to print the ordered list of default samplers.
+#'@param multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
+#'@param autoBlock A logical argument specifying whether to use an automated blocking provedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC specification object will be created and returned corresponding to the results of the automated paramter blocking.  Default value is FALSE.
+#'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@author Daniel Turek
 #'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
 configureMCMC <- function(model, nodes, control = list(), 

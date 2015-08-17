@@ -6,6 +6,7 @@
 \alias{BUGSdeclClass-class}
 \title{BUGSdeclClass contains the information extracted from one BUGS declaration}
 \description{
-BUGSdeclClass contains the information extracted from one BUGS declaration
+BUGSdeclClass contains the information extracted from one
+BUGS declaration
 }
 
