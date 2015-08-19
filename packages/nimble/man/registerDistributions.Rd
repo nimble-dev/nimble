@@ -14,7 +14,7 @@ registerDistributions(distributionsInputList)
   \code{discrete}, \code{pqAvail}, \code{types}. See Details
   for more information. If only one distribution is supplied
   it may be a list rather than a list containing a list.}
-}
+
 \description{
 Register distributional information so that NIMBLE can
 process user-supplied distributions in BUGS model code

@@ -14,7 +14,7 @@ bootStepVirtual <- nimbleFunctionVirtual(
 
 bootFStep <- nimbleFunction(
   contains = bootStepVirtual,
-  setup = function(model, mv, nodes, iNode, saveAll, smoothing, silent = FALSE) {
+  setup = function(model, mvEWSamp, mvWSamp, nodes, iNode, names, saveAll, smoothing, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
@@ -24,21 +24,17 @@ bootFStep <- nimbleFunction(
     t <- iNode  # current time point
     # Get names of xs node for current and previous time point (used in copy)
     if(saveAll == 1){
-      prevXSName <- paste("xs[,",t-1,"]",sep="")    
-      thisXSName <- paste("xs[,",t,"]",sep="")
-      prevXName <- paste("x[,",t-1,"]",sep="")
-      thisXName <- paste("x[,",t,"]",sep="")
+      prevXName <- prevNode    
+      thisXName <- thisNode
       currInd <- t
       prevInd <- t-1
     }
     else{
-      prevXSName <- "xs"
-      thisXSName <- "xs"
-      prevXName <- "x"
-      thisXName <- "x"
+      prevXName <- names    
+      thisXName <- names
       currInd <- 1
       prevInd <- 1 
-    }
+   }
     isLast <- (iNode == length(nodes))
   },
   run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
@@ -52,20 +48,20 @@ bootFStep <- nimbleFunction(
     for(i in 1:m) {
       if(notFirst) {  
         if(smoothing == 1){
-          copy(mv, mv, nodes = 'xs', nodesTo = 'x', row = i)
+          copy(mvEWSamp, mvWSamp, nodes = thisXName, nodesTo = thisXName, row = i)
         }
-        copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = i)
+        copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
       }
       ## below line is used to get around the R version of this funciton shrinking mv[wts, i] to a one dimensional object when saveAll ==F,
       ## when it must remain two dimensional.  We add an unnecessary second column, which we fill with 0's
-      if(!notFirst & !saveAll) mv['wts', i][1,2]  <<- 0
+      #if(!notFirst & !saveAll) mv['wts', i][1,2]  <<- 0
       simulate(model, thisNode)
-      copy(model, mv, nodes = thisNode, nodesTo = thisXName, row = i)
+      copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row = i)
       calculate(model, thisDeterm)
       wts[i]  <- exp(calculate(model, thisData))
       if(prevSamp == 0){
-        llEst[i] <- wts[i]*mv['wts',i][1,prevInd]
+        llEst[i] <- wts[i]*mvWSamp['wts',i][prevInd]
       }
       else{
         llEst[i] <- wts[i]/m
@@ -85,20 +81,20 @@ bootFStep <- nimbleFunction(
       out[2] <- 1
       for(i in 1:m){
         if(smoothing == 0)
-          copy(mv, mv, nodes = thisXName, nodesTo = thisXSName, row = ids[i], rowTo = i)
+          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
         else
-          copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = ids[i], rowTo = i)
-        mv['wts',i][1,currInd] <<- wts[i]
+          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
+        mvWSamp['wts',i][currInd] <<- wts[i]
       }
     }
     else{
       out[2] <- 0
       for(i in 1:m){
         if(smoothing == 0)
-          copy(mv, mv, nodes = thisXName, nodesTo = thisXSName, row = i, rowTo = i)
+          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = i, rowTo = i)
         else
-          copy(mv, mv, nodes = 'x', nodesTo = 'xs', row = i, rowTo = i)
-        mv['wts',i][1,currInd] <<- wts[i]
+          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = i, rowTo = i)
+        mvWSamp['wts',i][currInd] <<- wts[i]
       }
     }
     return(out)
@@ -135,6 +131,8 @@ buildBootF <- nimbleFunction(
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
+    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+    
     
     thresh <- filterControl[['thresh']]
     saveAll <- filterControl[['saveAll']]
@@ -144,55 +142,73 @@ buildBootF <- nimbleFunction(
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(thresh)) thresh <- .5
+
     
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll) smoothing <- FALSE
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
     # the sampled x states will be recorded at each time point. 
-    # Note: the algorithm will no longer run in R, since R automatically
-    # reduces the dimension of the "wts"  variable in the mv, which
-    # breaks the step function.  C keeps 2 dimensions and works fine.
-    if(!saveAll){
-      mv <- modelValues(modelValuesSpec(vars = c('x', 'xs','wts'),  
-                                        type = c('double', 'double','double'),
-                                        size = list(x = dims[[1]],
-                                                    xs = dims[[1]],
-                                                    wts =  c(1,2))))
-    }
-    
-    else{
-      mv <- modelValues(modelValuesSpec(vars = c('x', 'xs', 'wts'),
-                                        type = c('double', 'double', 'double'),
-                                        size = list(x = c(dims[[1]],
-                                                          length(dims)),
-                                                    xs = c(dims[[1]],
-                                                           length(dims)),
-                                                    wts = c(1,
-                                                            length(dims)))))
+   modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
+   if(saveAll){
+      
+     names <- sapply(modelSymbolObjects, function(x)return(x$name))
+     type <- sapply(modelSymbolObjects, function(x)return(x$type))
+     size <- lapply(modelSymbolObjects, function(x)return(x$size))
      
+     mvEWSamp <- modelValues(modelValuesSpec(vars = names,
+                                             type = type,
+                                             size = size))
+     
+     names <- c(names, "wts")
+     type <- c(type, "double")
+     size$wts <- length(dims)
+     mvWSamp  <- modelValues(modelValuesSpec(vars = names,
+                                                 type = type,
+                                                 size = size))
+     
+   }
+    else{
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x)return(x$size))
+      size[[1]] <- as.numeric(dims[[1]])
+      
+      
+      mvEWSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
+      names <- c(names, "wts")
+      type <- c(type, "double")
+      size$wts <- 1
+      mvWSamp  <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
     }
-    
+   
+    names <- names[1]
     bootStepFunctions <- nimbleFunctionList(bootStepVirtual)
     for(iNode in seq_along(nodes)){
-      bootStepFunctions[[iNode]] <- bootFStep(model, mv, nodes,
-                                               iNode, saveAll, smoothing, silent) 
+     bootStepFunctions[[iNode]] <- bootFStep(model, mvEWSamp, mvWSamp, nodes,
+                                              iNode, names, saveAll, smoothing, silent) 
     }
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
     declare(out, double(1,2))
     my_initializeModel$run()
-    resize(mv, m)
+    resize(mvWSamp, m)
+    resize(mvEWSamp, m)
     threshNum <- ceiling(thresh*m)
     logL <- 0   
     # prevSamp indicates whether resampling took place at the
     # previous time point.
     prevSamp <- 1
     for(iNode in seq_along(bootStepFunctions)) { 
-      out <- bootStepFunctions[[iNode]]$run(m,threshNum, prevSamp)
-      logL <- logL + out[1]
-      prevSamp <- out[2]
-      if(logL == -Inf) return(logL)
+     out <- bootStepFunctions[[iNode]]$run(m,threshNum, prevSamp)
+     logL <- logL + out[1]
+     prevSamp <- out[2]
+     if(logL == -Inf) return(logL)
     }
     return(logL)
   }, where = getLoadingNamespace()

@@ -45,15 +45,16 @@ enkfScalFunc = nimbleFunction(
   contains = ENKFFuncVirtual,
   setup = function(model, thisData, mv, thisXSName){
     data <- model[[thisData]]
-    output <- c(0,0)
+    #output <- c(0,0)
     dataFuncList <- nimbleFunctionList(node_stoch_dnorm) 
     dataFuncList[[1]] <- model$nodeFunctions[[thisData]]
   },
   methods = list(
     getMean = function(){
       returnType(double(1))
-      setSize(output, 1)
-      output[1] <<- dataFuncList[[1]]$get_mean()
+      #  output is length 2 to ensure it is not recast as a scalar, only first element is used
+      declare(output, double(1, 2))  
+      output[1] <- dataFuncList[[1]]$get_mean()
       return(output)
     },
     getVar = function(){
@@ -152,14 +153,12 @@ ENKFStep <- nimbleFunction(
       }
     }
     
-
     #  Analysis step
     #  first calculate approx Kalman gain matrix (pg. 350)
     oneVec <- nimVector(1,m)
     efx <- xf - (1/md)*(xf%*%oneVec%*%t(oneVec))
     efy <- yf -  (1/md)*(yf%*%oneVec%*%t(oneVec))
     kMat <- (1/(md-1))*efx%*%t(efy)%*%inverse((1/(md-1))*(efy%*%t(efy)+varMat))
-
     
     #  next, cycle through particles, create preturbed observations,
     #  and store in model values object

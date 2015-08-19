@@ -1,8 +1,9 @@
 ##  Contains code to run auxiliary particle filters.
 ##  We have a build function (buildAuxF),
-##  and step function (auxFStep.  
-
-
+##  and step function (auxFStep)
+##  The details of the specific APF algorithm are in
+##  "A Tutorial on Particle Filtering and Smoothing:
+##   Fifteen years later" by Doucet and Johansen
 
 auxStepVirtual <- nimbleFunctionVirtual(
   run = function(m = integer(), thresh_num=double()) 
@@ -14,7 +15,7 @@ auxStepVirtual <- nimbleFunctionVirtual(
 
 auxFStep <- nimbleFunction(
   contains = auxStepVirtual,
-  setup = function(model, mv, nodes, iNode, saveAll, silent = FALSE) {
+  setup = function(model, mvEWSamp, mvWSamp, nodes, iNode, names, saveAll, silent) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
@@ -26,21 +27,17 @@ auxFStep <- nimbleFunction(
     # Get names of x and xs node for current and previous time point,
     # will be different depending on whether we are saving all time points
     # or only the most recent
-    if(saveAll==1){
-      prevXSName <- paste("xs[,",t-1,"]",sep="")    
-      thisXSName <- paste("xs[,",t,"]",sep="")
-      prevXName <- paste("x[,",t-1,"]",sep="")
-      thisXName <- paste("x[,",t,"]",sep="")
+    if(saveAll == 1){
+      prevXName <- prevNode    
+      thisXName <- thisNode
       currInd <- t
       prevInd <- t-1
     }
     else{
-      prevXSName <- "xs"
-      thisXSName <- "xs"
-      prevXName <- "x"
-      thisXName <- "x"
+      prevXName <- names    
+      thisXName <- names
       currInd <- 1
-      prevInd <- 1
+      prevInd <- 1 
     }
     isLast <- (iNode == length(nodes))
     meanFuncList <- nimbleFunctionList(node_stoch_dnorm)
@@ -53,69 +50,75 @@ auxFStep <- nimbleFunction(
     declare(wts, double(1,m))
     declare(ids, integer(1, m))
     declare(l, double(1,m))
+    declare(LL, double(1,m))
     ess <- 0
-    if(notFirst){
+    if(notFirst){ 
       for(i in 1:m) {
-        copy(mv, model, prevXName, prevNode, row=i)
+        copy(mvWSamp, model, prevXName, prevNode, row=i)
+        if(i==1 & iNode == 2) model[[prevNode]]
+        
         calculate(model, prevDeterm) 
         model[[thisNode]] <<-meanFuncList[[1]]$get_mean() # returns E(x_t+1 | x_t)
         calculate(model, thisDeterm)
         auxl[i] <- exp(calculate(model, thisData))
-        auxWts[i] <- auxl[i]*mv['wts',i][1,prevInd]        
+        auxWts[i] <- auxl[i]*mvWSamp['wts',i][prevInd]        
       }
       auxWts <- auxWts/sum(auxWts)
       ess <- 1/sum(auxWts^2)
+      
       if(ess<thresh_num){
         resamp <- 1
         rankSample(auxWts, m, ids, silent)
         for(i in 1:m){
-          copy(mv, mv, prevXName, prevXSName, ids[i],i)
+          copy(mvWSamp, mvEWSamp, prevXName, prevXName, ids[i],i)
+          mvWSamp['wts',i][prevInd]   <<- 1/m
         }
       }
-      else{
-        resamp <- 0
-        for(i in 1:m){
-          copy(mv, mv, prevXName, prevXSName, i,i)
-        }
-      }
+     else{
+       resamp <- 0
+       for(i in 1:m){
+         copy(mvWSamp, mvEWSamp, prevXName, prevXName, i,i)
+         mvWSamp['wts',i][prevInd]   <<- auxWts[i]      
+       }
+     }
     }   
-    for(i in 1:m) {
-      ## below line is used to get around the R version of this funciton shrinking mv[wts, i] to a one dimensional object when saveAll ==F,
-      ## when it must remain two dimensional.  We add an unnecessary second column, which we fill with 0's
-      if(!notFirst & !saveAll) mv['wts', i][1,2]  <<- 0
+   for(i in 1:m) {
+     if(notFirst) {
+       copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
+       calculate(model, prevDeterm) 
+     }
+     simulate(model, thisNode)
+     copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row=i)
+     calculate(model, thisDeterm)
+     l[i]  <- exp(calculate(model, thisData))
+     if(notFirst){
+       if(resamp == 1){
+         mvWSamp['wts',i][currInd] <<- l[i]/auxl[ids[i]]
+         LL[i] <- l[i]/auxl[ids[i]]
+       }
+       else{
+         mvWSamp['wts',i][currInd] <<- l[i]/auxl[i]
+         LL[i] <- l[i]/auxl[i]
+       }
+     }
       
-      if(notFirst) {
-        copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = i)
-        calculate(model, prevDeterm) 
-      }
-      simulate(model, thisNode)
-      copy(model, mv, nodes = thisNode, nodesTo = thisXName, row = i)
-      calculate(model, thisDeterm)
-      l[i]  <- exp(calculate(model, thisData))
-      if(notFirst){
-        if(resamp == 1){
-          mv['wts',i][1,currInd] <<- l[i]/auxl[ids[i]]
-        }
-        else{
-          mv['wts',i][1,currInd] <<- l[i]/auxl[i]
-        }
-      }
-      
-      else{
-        mv['wts',i][1,currInd] <<- l[i]
-      }
-    }
+     else{
+       mvWSamp['wts',i][currInd] <<- l[i]
+       LL[i] <- l[i]
+     }
+   }
+ 
+   if(isLast){
+     for(i in 1:m){
+       wts[i] <-  mvWSamp['wts',i][currInd] 
+     }
+     rankSample(wts, m, ids, silent)
+     for(i in 1:m){
+       copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
+     }
+   }
     
-    if(isLast){
-      for(i in 1:m){
-        wts[i] <-  mv['wts',i][1,currInd] 
-      }
-      rankSample(wts, m, ids, silent)
-      for(i in 1:m){
-        copy(mv, mv, thisXName, thisXSName, ids[i], i)
-      }
-    }
-    return(log(mean(l)))
+    return(log(mean(LL)))
   }, where = getLoadingNamespace()
 )
 
@@ -149,6 +152,8 @@ buildAuxF <- nimbleFunction(
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
+    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+    
     if(length(unique(dims)) > 1) 
       stop('sizes or dimension of latent states varies')
 
@@ -165,36 +170,56 @@ buildAuxF <- nimbleFunction(
     
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
     # the sampled x states will be recorded at each time point. 
-    # Note: the algorithm will no longer run in R, since R automatically
-    # reduces the dimension of the "wts"  variable in the mv, which
-    # breaks the step function.  C keeps 2 dimensions and works fine.
-    if(!saveAll){
-      mv <- modelValues(modelValuesSpec(vars = c('x', 'xs','wts'),  
-                                        type = c('double', 'double','double'),
-                                        size = list(x = dims[[1]],
-                                                    xs = dims[[1]],
-                                                    wts = c(1,2))))
+    modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
+    if(saveAll){
+      
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x)return(x$size))
+      
+      mvEWSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
+      names <- c(names, "wts")
+      type <- c(type, "double")
+      size$wts <- length(dims)
+      mvWSamp  <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
     }
     else{
-      mv <- modelValues(modelValuesSpec(vars = c('x', 'xs','wts'),  
-                                        type = c('double', 'double','double'),
-                                        size = list(x = c(dims[[1]],
-                                                          length(dims)),
-                                                    xs = c(dims[[1]],
-                                                           length(dims)),
-                                                    wts = c(1,
-                                                               length(dims))))) 
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x)return(x$size))
+      size[[1]] <- as.numeric(dims[[1]])
+      
+      
+      mvEWSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
+      names <- c(names, "wts")
+      type <- c(type, "double")
+      size$wts <- 1
+      mvWSamp  <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
     }
+    
+    names <- names[1]
     auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
     for(iNode in seq_along(nodes))
-      auxStepFunctions[[iNode]] <- auxFStep(model, mv, nodes,
-                                             iNode, saveAll, silent)
+      auxStepFunctions[[iNode]] <- auxFStep(model, mvEWSamp, mvWSamp, nodes,
+                                             iNode, names, saveAll, silent)
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
     declare(logL, double())
     my_initializeModel$run()
-    resize(mv, m)  
+    resize(mvEWSamp, m) 
+    resize(mvWSamp, m)  
     thresh_num <- ceiling(thresh*m)
     logL <- 0
     for(iNode in seq_along(auxStepFunctions)) {
