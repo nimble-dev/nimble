@@ -30,9 +30,80 @@ normMean <- nimbleFunction(
   ), where = getLoadingNamespace()                                    
 )
 
-LWStep<- nimbleFunction(
+LWSetParVirtual <- nimbleFunctionVirtual(
+  methods = list(
+   scalarSet = function(scalars = double(1), mvWset = integer(), m = integer()){},
+   vectorSet = function(vectors = double(2), mvWset = integer(), m = integer()){},
+    scalarGet = function(mvWset = integer(), m = integer()){returnType(double(1))},
+     vectorGet = function(mvWset = integer(), m = integer(), length = integer()){returnType(double(2))}
+  )
+)
+
+doPars <- nimbleFunction(
+  contains = LWSetParVirtual,
+  setup = function(parName, mvWSamp, mvEWSamp) {
+  },
+   methods = list(
+    scalarSet = function(scalars = double(1), mvWset = integer(), m = integer()){
+      if(mvWset == 1){
+        for(i in 1:m){
+          mvWSamp[parName, i][1] <<- scalars[i]
+        }
+      }
+      else{
+        for(i in 1:m){
+          mvEWSamp[parName, i][1] <<- scalars[i]
+        }
+      }
+    },
+    vectorSet = function(vectors = double(2), mvWset = integer(), m = integer()){
+      if(mvWset == 1){
+        for(i in 1:m){
+          mvWSamp[parName, i] <<- vectors[,i]
+        }
+      }
+      else{
+        for(i in 1:m){
+          mvEWSamp[parName, i] <<- vectors[,i]
+        }
+      }
+    },
+    scalarGet = function(mvWset = integer(), m = integer()){
+      declare(vecOut, double(1,m))
+     if(mvWset == 1){
+       for(i in 1:m){
+         vecOut[i] <- mvWSamp[parName, i][1]
+       }
+     }
+     else{
+        for(i in 1:m){
+           vecOut[i] <- mvEWSamp[parName, i][1]
+         }
+       }
+      returnType(double(1))
+      return(vecOut)
+    },
+     vectorGet = function(mvWset = integer(), m = integer(), length = integer()){
+       declare(matOut, double(2,c(length,m)))
+      if(mvWset == 1){
+        for(i in 1:m){
+          matOut[,i] <- mvWSamp[parName, i]
+        }
+      }
+      else{
+        for(i in 1:m){
+          matOut[,i] <- mvEWSamp[parName, i]
+        }
+      }
+       returnType(double(2))
+       return(matOut)
+     } 
+  ), where = getLoadingNamespace())
+
+
+LWStep <- nimbleFunction(
   contains = LWStepVirtual,
-  setup = function(model, mv, nodes, parDim, iNode, paramNodes, saveAll, d, silent = FALSE) {
+  setup = function(model, mvWSamp, mvEWSamp, nodes, paramVarDims, iNode, paramNodes, paramVars, names, saveAll, d, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
@@ -40,28 +111,31 @@ LWStep<- nimbleFunction(
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
-    getmean <- normMean(model, thisNode)
+    getmean <- normMeanA(model, thisNode)
+    isLast <- (iNode == length(nodes))
     
     t <- iNode  # current time point
     # Get names of xs node for current and previous time point (used in copy)
     if(saveAll == 1){
-      prevXSName <- paste("xs[,",t-1,"]",sep="")    
-      thisXSName <- paste("xs[,",t,"]",sep="")
-      prevXName <- paste("x[,",t-1,"]",sep="")
-      thisXName <- paste("x[,",t,"]",sep="")
+      prevXName <- prevNode    
+      thisXName <- thisNode
       currInd <- t
       prevInd <- t-1
     }
     else{
-      prevXSName <- "xs"
-      thisXSName <- "xs"
-      prevXName <- "x"
-      thisXName <- "x"
+      prevXName <- names    
+      thisXName <- names
       currInd <- 1
       prevInd <- 1 
     }
-    parCalc <- LWparFunc(mv, d, parDim, prevInd) #d is discount factor, default to 0.99
+    numParams <- sum(paramVarDims)
+    numParamVars <- length(paramVars)
+    paramInds <- c(0,cumsum(paramVarDims)) 
+    parCalc <- LWparFunc(d, numParams, prevInd) #d is discount factor, default to 0.99  
     
+    doVarList <- nimbleFunctionList(LWSetParVirtual)
+    for(i in 1:numParamVars)
+      doVarList[[i]] <- doPars(paramVars[i], mvWSamp, mvEWSamp)
   },
   run = function(m = integer()) {
     returnType(double())
@@ -70,12 +144,25 @@ LWStep<- nimbleFunction(
     declare(wts, double(1, m))
     declare(ids, integer(1, m))
     declare(preWts, double(1,m))
-    declare(tmpPars, double(2, c(parDim, m)))
+    declare(tmpPars, double(2, c(numParams, m)))
     ess <- 0
-    if(notFirst){
-      meanVec <- parCalc$shrinkMean(m)  # shrink parameter particles towards mean  
+    
+     if(notFirst){
+      for(j in 1:numParamVars){
+            tmpSize <- paramInds[j+1]-paramInds[j]
+                 if(tmpSize == 1){
+                   tmpPars[paramInds[j+1], ] <- doVarList[[j]]$scalarGet(1,m)
+                 }
+                else{
+                  tmpPars[(paramInds[j]+1):paramInds[j+1], ] <- doVarList[[j]]$vectorGet(1, m, tmpSize)
+                }
+       }
+      for(i in 1:m){
+        wts[i] <- mvWSamp['wts',i][prevInd]
+      }
+      meanVec <- parCalc$shrinkMean(m, wts, tmpPars )  # shrink parameter particles towards mean  
       for(i in 1:m) {
-        copy(mv, model, prevXSName, prevNode, row=i)
+         copy(mvWSamp, model, prevXName, prevNode, row=i)
         values(model, paramNodes) <<- meanVec[,i]
         calculate(model, parDeterm) 
         calculate(model, prevDeterm) 
@@ -83,51 +170,82 @@ LWStep<- nimbleFunction(
         calculate(model, thisDeterm)
         auxWts[i] <- exp(calculate(model, thisData))
         if(is.nan(auxWts[i])) auxWts[i] <- 0 #check for ok param values
-        preWts[i] <- auxWts[i]*mv['wts',i][1,prevInd] #first resample weights
+        preWts[i] <- auxWts[i]*wts[i] #first resample weights
       }
       rankSample(preWts, m, ids, silent)
       # Reassign weights and pars so that cov matrix is calculated correctly
       for(i in 1:m){
-        wts[i] <- mv['wts',ids[i]][1,prevInd] 
-        tmpPars[,i] <- mv['pars', ids[i]] 
+        copy(mvWSamp, mvEWSamp, nodes = prevXName, nodesTo = prevXName, row = ids[i], rowTo = i)
+        wts[i] <- mvWSamp['wts',ids[i]][prevInd] 
       }
+      for(j in 1:numParamVars){
+        tmpSize <- paramInds[j+1]-paramInds[j]
+        if(tmpSize == 1){
+          tmpPars[paramInds[j+1], ] <- doVarList[[j]]$scalarGet(1,m)
+        }
+        else{
+          tmpPars[(paramInds[j]+1):paramInds[j+1], ] <- doVarList[[j]]$vectorGet(1, m, tmpSize)
+        }
+       }
       parChol <- parCalc$cholesVar(m,wts,tmpPars) #  calculate MC cov matrix
-    }
-
+     }
     for(i in 1:m) {
-      if(!notFirst & !saveAll) mv['wts', i][1,2]  <<- 0
       if(notFirst) {  
         tmpPars[,i] <- rmnorm_chol(1, meanVec[,ids[i]],parChol, prec_param=0) 
         values(model, paramNodes) <<- tmpPars[,i]
-        copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = ids[i]) 
+        copy(mvWSamp, model, nodes = prevXName, nodesTo = prevNode, row = ids[i]) 
       }
       else{
         simulate(model, paramNodes)
-        mv['pars',i] <<- values(model,paramNodes)
-      }
-      calculate(model, parDeterm) 
-      simulate(model, thisNode)
-      copy(model, mv, nodes = thisNode, nodesTo = thisXName, row = i) #copy to x instead of xs so that we don't overwrite values in xs
-      calculate(model, thisDeterm)
-      l[i]  <- exp(calculate(model, thisData))
-      if(is.nan(l[i])) l[i] <- 0
-      ess <- ess+(l[i])^2
+        tmpPars[,i] <- values(model,paramNodes)
+       }
+       calculate(model, parDeterm) 
+       simulate(model, thisNode)
+       copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, rowTo = i) #copy to x instead of xs so that we don't overwrite values in xs
+       calculate(model, thisDeterm)
+       l[i]  <- exp(calculate(model, thisData))
+       if(is.nan(l[i])) l[i] <- 0
+       ess <- ess+(l[i])^2
       #rescale weights by pre-sampling weight
       if(notFirst)
         wts[i] <- l[i]/auxWts[ids[i]]
       else 
         wts[i] <- l[i]
       if(is.nan(wts[i])) wts[i] <- 0
-    }
-    #normalizing weights and calculating effective sample size 
+      mvWSamp['wts',i][currInd] <<- wts[i] 
+     }
+#     #normalizing weights and calculating effective sample size 
     ess <- 1/(ess/(sum(l)^2))
-  
-      for(i in 1:m){
-        copy(mv, mv, thisXName, thisXSName, i, i)  
-        if(notFirst) mv['pars',i] <<- tmpPars[,i]
-        mv['wts',i][1,currInd] <<- wts[i] 
+
+    for(j in 1:numParamVars){
+      tmpSize <- paramInds[j+1]-paramInds[j]
+      if(tmpSize == 1){
+        doVarList[[j]]$scalarSet(tmpPars[paramInds[j+1], ], 1 ,m)
       }
-      return(log(mean(l)))
+      else{
+        doVarList[[j]]$vectorSet(tmpPars[(paramInds[j]+1):paramInds[j+1], ], 1 ,m)
+      }
+    }   
+
+    if(isLast){
+      for(i in 1:m){
+        wts[i] <-  mvWSamp['wts',i][currInd] 
+      }
+      rankSample(wts, m, ids, silent)
+      for(i in 1:m){
+        copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
+      }
+      for(j in 1:numParamVars){
+        tmpSize <- paramInds[j+1]-paramInds[j]
+        if(tmpSize == 1){
+          doVarList[[j]]$scalarSet(tmpPars[paramInds[j+1], ids[1:m]], 0 ,m)
+        }
+        else{
+          doVarList[[j]]$vectorSet(tmpPars[(paramInds[j]+1):paramInds[j+1], ids[1:m]], 0 ,m)
+        }
+      } 
+    }
+    return(log(mean(l)))
     },  where = getLoadingNamespace()
 )
 
@@ -135,21 +253,17 @@ LWStep<- nimbleFunction(
 # the mean of all particles, and cholesVar, which returns the cholesky 
 # decomposition of the weighted MC covariance matrix
 LWparFunc <- nimbleFunction(
-  setup = function(mv,d, parDim, prevInd){
+  setup = function(d, parDim, prevInd){
     # Calculate h^2 and a using specified discount factor d
     hsq <- 1-((3*d-1)/(2*d))^2 
     a <- sqrt(1-hsq)
   },  
   methods = list(                        
-    shrinkMean = function(m = integer()) {
+    shrinkMean = function(m = integer(), wts = double(1), pars = double(2)) {
       declare(parMean, double(2))
       declare(wtMean,double(2, c(parDim, m)))
-      declare(pars, double(2, c(parDim, m)))
-      declare(wts, double(1, m))
       declare(oneMat, double(1, m))
       for(i in 1:m){
-        pars[,i] <- mv['pars',i]  
-        wts[i] <- mv['wts',i][1, prevInd]
         oneMat[i] <- 1
       }
       wts <- wts/sum(wts)
@@ -225,59 +339,94 @@ buildLWF <- nimbleFunction(
            params <- setdiff(model$getNodeNames(stochOnly=T, includeData=F,
                                                 topOnly=T),nodes)
     }
+    params <- model$expandNodeNames(params, sort = TRUE)
+    
     if(identical(params, character(0)))
       stop('must be at least one higher level parameter for Liu and West filter to work')
     if(any(params %in% nodes))
       stop('parameters cannot be latent states')
-    if(!(params%in%model$getNodeNames(stochOnly=T)))
+    if(!all(params%in%model$getNodeNames(stochOnly=T)))
       stop('parameters must be stochastic nodes')
 
-  
-    
+    latentVars <- model$getVarNames(nodes = nodes)
+    paramVars <-  model$getVarNames(nodes =  params)  # need var names too
+
+      
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll) smoothing <- FALSE
     
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
                                       states varies')
-    parDim <- length(params)
+    paramDims <-   sapply(params, function(n) nimDim(model[[n]]))
     
     
-    if(!saveAll){
-      mv <- modelValues(modelValuesSpec(vars = c('x', 'xs','wts', 'pars'),  
-                                        type = c('double', 'double','double', 'double'),
-                                        size = list(x = dims[[1]],
-                                                    xs = dims[[1]],
-                                                    wts =  c(1,2),
-                                                    pars = parDim)))
-    }
-    
-    else{
-      mv <- modelValues(modelValuesSpec(vars = c('x', 'xs', 'wts', 'pars'),
-                                        type = c('double', 'double', 'double', 'pars'),
-                                        size = list(x = c(dims[[1]],
-                                                          length(dims)),
-                                                    xs = c(dims[[1]],
-                                                           length(dims)),
-                                                    wts = c(1,
-                                                            length(dims)),
-                                                    pars = parDim)))
+    modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[c(latentVars, paramVars)]
+    if(saveAll){
+      
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x){
+        if(identical(x$size, numeric(0))) return(1)
+        return(x$size)})      
+      mvEWSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
+      
+      names <- c(names, "wts")
+      type <- c(type, "double")
+      size$wts <- length(dims)
+      mvWSamp  <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
       
     }
-
+    else{
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x){
+        if(identical(x$size, numeric(0))) return(1)
+        return(x$size)})
+      
+        
+      size[[latentVars]] <- as.numeric(dims[[1]])
+      
+      
+      mvEWSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
+      names <- c(names, "wts")
+      type <- c(type, "double")
+      size$wts <- 1
+      mvWSamp  <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+    }
+    
+    
+    names <- names[1]
+    varSymbolObjects = model$getSymbolTable()$getSymbolObjects()[paramVars]
+    paramVarDims <- unlist(lapply(varSymbolObjects, function(x){
+      if(identical(x$size, numeric(0))) return(1)
+      return(x$size)}))
+    #names <- model$getSymbolTable()$getSymbolObjects()[[latentVars]]$name
     LWStepFunctions <- nimbleFunctionList(LWStepVirtual)
     for(iNode in seq_along(nodes))
-       LWStepFunctions[[iNode]] <- LWStep(model, mv, nodes, parDim, 
-                                            iNode, params, saveAll, d, silent)
+       LWStepFunctions[[iNode]] <- LWStep(model,  mvWSamp, mvEWSamp, nodes, paramVarDims, 
+                                            iNode, params, paramVars, names, saveAll, d, silent)
     
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
     declare(logL, double())
     my_initializeModel$run()
-    resize(mv, m)
+    resize(mvWSamp, m)
+    resize(mvEWSamp, m)
+    
     for(i in 1:m)
-      mv['wts',i][1, 1] <<- 1/m
+      mvWSamp['wts',i][1] <<- 1/m
     logL <- 0
     for(iNode in seq_along(LWStepFunctions)) {
       logL <- logL + LWStepFunctions[[iNode]]$run(m)

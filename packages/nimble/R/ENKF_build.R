@@ -23,7 +23,7 @@ ENKFFuncVirtual <- nimbleFunctionVirtual(
 #  returns mean and cov matrix for MVN data node
 enkfMultFunc = nimbleFunction(
   contains = ENKFFuncVirtual,
-  setup = function(model, thisData, mv, thisXSName){
+  setup = function(model, thisData, thisXSName){
     data <- model[[thisData]]
     dataFuncList <- nimbleFunctionList(node_stoch_dmnorm)
     dataFuncList[[1]] <- model$nodeFunctions[[thisData]]
@@ -43,7 +43,7 @@ enkfMultFunc = nimbleFunction(
 #  returns mean (as vector) and var (as matrix) for normal data node  
 enkfScalFunc = nimbleFunction(
   contains = ENKFFuncVirtual,
-  setup = function(model, thisData, mv, thisXSName){
+  setup = function(model, thisData, thisXSName){
     data <- model[[thisData]]
     #output <- c(0,0)
     dataFuncList <- nimbleFunctionList(node_stoch_dnorm) 
@@ -73,7 +73,7 @@ enkfScalFunc = nimbleFunction(
 
 ENKFStep <- nimbleFunction(
   contains = ENKFStepVirtual,
-  setup = function(model, mv, nodes, iNode, xDim, yDim, saveAll, silent = FALSE) {
+  setup = function(model, mvSamp, nodes, iNode, xDim, yDim, saveAll, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
@@ -84,12 +84,12 @@ ENKFStep <- nimbleFunction(
     yObs <- c(sapply(thisData, function(x) model[[x]])) #all dependent data for this time point
     # Get names of xs node for current and previous time point (used in copy)
     if(saveAll == 1){
-      prevXSName <- paste("xs[,",t-1,"]",sep="")
-      thisXSName <- paste("xs[,",t,"]",sep="")
+      prevXSName <- prevNode    
+      thisXSName <- thisNode
     }
     else{
-      prevXSName <- "xs"
-      thisXSName <- "xs"
+      prevXSName <- names    
+      thisXSName <- names
     }
     yLength <- sum(yDim)  #total number of dependent data points for this time point
     meanVec <- rep(0, yLength)
@@ -109,10 +109,10 @@ ENKFStep <- nimbleFunction(
     ENKFFuncList <- nimbleFunctionList(ENKFFuncVirtual) 
     for(yNode in 1:length(yDim)){
       if(yDim[yNode] > 1){
-        ENKFFuncList[[yNode]] <- enkfMultFunc(model, thisData[yNode],  mv, thisXSName)
+        ENKFFuncList[[yNode]] <- enkfMultFunc(model, thisData[yNode], thisXSName)
       }
       else{
-        ENKFFuncList[[yNode]] <- enkfScalFunc(model, thisData[yNode],  mv, thisXSName)
+        ENKFFuncList[[yNode]] <- enkfScalFunc(model, thisData[yNode], thisXSName)
       } 
     }
   },
@@ -134,7 +134,7 @@ ENKFStep <- nimbleFunction(
       yVar <- ENKFFuncList[[j]]$getVar() # var doesn't depend on x value
       for(i in 1:m) {
         if(notFirst) {
-          copy(mv, model, nodes = prevXSName, nodesTo = prevNode, row = i)
+          copy(mvSamp, model, nodes = prevXSName, nodesTo = prevNode, row = i)
           calculate(model, prevDeterm) 
         }
         simulate(model, thisNode)
@@ -165,14 +165,14 @@ ENKFStep <- nimbleFunction(
     if(yLength == 1){
       for(i in 1:m){
         preturb[1,i] <-yObs[1] + rnorm(1, 0, sqrt(varMat[1,1]))
-        mv[thisXSName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
+        mvSamp[thisXSName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
       }
     }
     else{
       cholesky <- chol(varMat)    
       for(i in 1:m){
         preturb[,i] <- yObs + rmnorm_chol(1, meanVec, cholesky, 0) 
-        mv[thisXSName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
+        mvSamp[thisXSName, i] <<-xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
       }
     }
   }, where = getLoadingNamespace()
@@ -221,30 +221,47 @@ buildENKF <- nimbleFunction(
     yNodes <- lapply(nodes, function(n) model$getDependencies(n, dataOnly = TRUE))  
     yDim <- lapply(yNodes, function(x){unname(sapply(x, function(z) nimDim(model[[z]])))}) #dimensions of each dependent y node
     # Create mv variables for x state.  If saveAll=T, 
-    # the  x states will be recorded at each time point. 
-    if(!saveAll){
-      mv <- modelValues(modelValuesSpec(vars = c('xs'),  
-                                        type = c('double'),
-                                        size = list(xs = xDim)))
+    # the  x states will be recorded at each time point.
+    if(saveAll){
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x){
+        if(identical(x$size, numeric(0))) return(1)
+        return(x$size)}
+      
+      mvSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+
+      
     }
-    
     else{
-      mv <- modelValues(modelValuesSpec(vars = c('xs'),
-                                        type = c('double'),
-                                        size = list(xs = c(xDim,
-                                                          length(dims)))))
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x){
+        if(identical(x$size, numeric(0))) return(1)
+        return(x$size)})
+      
+      
+      size[[latentVars]] <- as.numeric(dims[[1]])
+      
+      
+      mvSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
     }
+
     
     
     ENKFStepFunctions <- nimbleFunctionList(ENKFStepVirtual)
     for(iNode in seq_along(nodes)){
-     ENKFStepFunctions[[iNode]] <- ENKFStep(model, mv, nodes, 
+     ENKFStepFunctions[[iNode]] <- ENKFStep(model, mvSamp, nodes, 
                                                iNode, xDim, yDim[[iNode]], saveAll,  silent) 
     }
   },
   run = function(m = integer(default = 100)) {
     my_initializeModel$run()
-    resize(mv, m) 
+    resize(mvSamp, m) 
     for(iNode in seq_along(ENKFStepFunctions)) { 
       ENKFStepFunctions[[iNode]]$run(m)
     }

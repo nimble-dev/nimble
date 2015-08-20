@@ -54,9 +54,7 @@ auxFStep <- nimbleFunction(
     ess <- 0
     if(notFirst){ 
       for(i in 1:m) {
-        copy(mvWSamp, model, prevXName, prevNode, row=i)
-        if(i==1 & iNode == 2) model[[prevNode]]
-        
+        copy(mvWSamp, model, prevXName, prevNode, row=i)        
         calculate(model, prevDeterm) 
         model[[thisNode]] <<-meanFuncList[[1]]$get_mean() # returns E(x_t+1 | x_t)
         calculate(model, thisDeterm)
@@ -176,7 +174,6 @@ buildAuxF <- nimbleFunction(
       names <- sapply(modelSymbolObjects, function(x)return(x$name))
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
-      
       mvEWSamp <- modelValues(modelValuesSpec(vars = names,
                                               type = type,
                                               size = size))
