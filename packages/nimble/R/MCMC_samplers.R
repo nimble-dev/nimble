@@ -55,32 +55,25 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         scaleHistory          <- c(0, 0)
         acceptanceRateHistory <- c(0, 0)
-	# variables previously inside of nested functions:
+        ## variables previously inside of nested functions:
         optimalAR <- 0.44
         gamma1    <- 0
-    ##    nodeID <- which(model$modelDef$maps$graphID_2_nodeName == target)
     },
     
     run = function() {
-    ##    print('entering sampler for nodeID ',nodeID,'\n')
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
      	model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
-
         jump <- decide(logMHR)
-        if(jump) {
-      ##      print('accepting')
+        if(jump)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        }
-        else {
-       ##     print('rejecting')
+        else
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
-        }
         if(adaptive)     adaptiveProcedure(jump)
     },
     
     methods = list(
-    
+        
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
@@ -142,7 +135,6 @@ sampler_RW_log <- nimbleFunction(
         propRatio <- logPropValue - logCurrentValue
      	model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes) + propRatio
-
         jump <- decide(logMHR)
         if(jump)
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -152,78 +144,7 @@ sampler_RW_log <- nimbleFunction(
     },
     
     methods = list(
-    
-        adaptiveProcedure = function(jump = logical()) {
-            timesRan <<- timesRan + 1
-            if(jump)     timesAccepted <<- timesAccepted + 1
-            if(timesRan %% adaptInterval == 0) {
-                acceptanceRate <- timesAccepted / timesRan
-                timesAdapted <<- timesAdapted + 1
-                setSize(scaleHistory,          timesAdapted)
-                setSize(acceptanceRateHistory, timesAdapted)
-                scaleHistory[timesAdapted] <<- scale
-                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
-                gamma1 <<- 1/((timesAdapted + 3)^0.8)
-                gamma2 <- 10 * gamma1
-                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
-                scale <<- scale * adaptFactor
-                timesRan <<- 0
-                timesAccepted <<- 0
-            }
-        },
         
-        reset = function() {
-            scale <<- scaleOriginal
-            timesRan      <<- 0
-            timesAccepted <<- 0
-            timesAdapted  <<- 0
-            scaleHistory          <<- scaleHistory          * 0
-            acceptanceRateHistory <<- acceptanceRateHistory * 0
-            gamma1 <<- 0
-        }
-    ), where = getLoadingNamespace()
-)
-
-
-sampler_RW_nonDiff <- nimbleFunction(
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        ###  control list extraction  ###
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
-        ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('more than one target; cannot use RW sampler, try RW_block sampler')
-        calcNodes  <- model$getDependencies(target)
-        ###  numeric value generation  ###
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
-        scaleHistory          <- c(0, 0)
-        acceptanceRateHistory <- c(0, 0)
-	# variables previously inside of nested functions:
-        optimalAR <- 0.44
-        gamma1    <- 0
-    },
-    
-    run = function() {
-        modelLP0 <- getLogProb(model, calcNodes)
-        propValue <- rnorm(1, mean = model[[target]], sd = scale)
-     	model[[target]] <<- propValue
-        modelLP1 <- calculate(model, calcNodes)
-        logMHR <- modelLP1 - modelLP0
-        jump <- decide(logMHR)
-        if(jump)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        else
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
-        if(adaptive)     adaptiveProcedure(jump)
-    },
-    
-    methods = list(
-    
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
@@ -299,106 +220,6 @@ sampler_RW_block <- nimbleFunction(
         propValueVector <- generateProposalVector()
         lpMHR <- my_setAndCalculateDiff$run(propValueVector)
         jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-        if(adaptive)     adaptiveProcedure(jump)
-    },
-    
-    methods = list(
-        
-        generateProposalVector = function() {
-            propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
-            returnType(double(1))
-            return(propValueVector)
-        },
-        
-        adaptiveProcedure = function(jump = logical()) {
-            timesRan <<- timesRan + 1
-            if(jump)     timesAccepted <<- timesAccepted + 1
-            if(!adaptScaleOnly) {
-                declare(newValues, double(1, d))
-
-                newValues <- values(model, target)
-                statSums  <<- statSums + asRow(newValues)
-                statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
-            }
-            if(timesRan %% adaptInterval == 0) {
-                acceptanceRate <- timesAccepted / timesRan
-                timesAdapted <<- timesAdapted + 1
-                setSize(scaleHistory,          timesAdapted)
-                setSize(acceptanceRateHistory, timesAdapted)
-                scaleHistory[timesAdapted] <<- scale
-                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
-                adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
-                scale <<- scale * adaptFactor
-                ## calculate empirical covariance, and adapt proposal covariance
-                if(!adaptScaleOnly) {
-                    gamma1 <- my_calcAdaptationFactor$gamma1
-                    empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
-                    propCov <<- propCov + gamma1 * (empirCov - propCov)
-                    chol_propCov <<- chol(propCov)
-                    statSums  <<- statSums  * 0
-                    statProds <<- statProds * 0      ##  setAll(statProds, 0)    ## setAll() doesn't work in R, and doesn't work for vectors (only works for dim=2 objects)
-                }
-                timesRan <<- 0
-                timesAccepted <<- 0
-            }
-        },
-        
-        reset = function() {
-            scale   <<- scaleOriginal
-            propCov <<- propCovOriginal
-            chol_propCov <<- chol(propCov)
-            timesRan      <<- 0
-            timesAccepted <<- 0
-            timesAdapted  <<- 0
-            scaleHistory          <<- scaleHistory          * 0
-            acceptanceRateHistory <<- acceptanceRateHistory * 0
-            statSums  <<- statSums  * 0
-            statProds <<- statProds * 0
-            my_calcAdaptationFactor$reset()
-        }
-    ),  where = getLoadingNamespace()
-)
-
-sampler_RW_block_noDiff <- nimbleFunction(
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        ###  control list extraction  ###
-        adaptive       <- control$adaptive
-        adaptScaleOnly <- control$adaptScaleOnly
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        propCov        <- control$propCov
-        ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
-        ###  numeric value generation  ###
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
-        scaleHistory          <- c(0, 0)
-        acceptanceRateHistory <- c(0, 0)
-        d <- length(targetAsScalar)
-        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
-        if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
-        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
-        propCovOriginal <- propCov
-        chol_propCov <- chol(propCov)
-        statSums  <- matrix(0, nrow=1, ncol=d)   # sums of each node, stored as a row-matrix
-        statProds <- matrix(0, nrow=d, ncol=d)   # sums of pairwise products of nodes
-        ###  nested function and function list definitions  ###
-        my_setAndCalculate <- setAndCalculate(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor <- calcAdaptationFactor(d)
-    },
-    
-    run = function() {
-        modelLP0 <- getLogProb(model, calcNodes)
-        propValueVector <- generateProposalVector()
-        modelLP1 <- my_setAndCalculate$run(propValueVector)
-        jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive)     adaptiveProcedure(jump)
     },
     
@@ -653,22 +474,21 @@ sampler_crossLevel <- nimbleFunction(
     },
     
     run = function() {
-    	    	
         modelLP0 <- getLogProb(model, calcNodes)
         propLP0 <- 0
-        
         for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP0 <- propLP0 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
         propValueVector <- topRWblockSamplerFunction$generateProposalVector()
-        
         topLP <- my_setAndCalculateTop$run(propValueVector)
         if(is.na(topLP))
-        	jump <- my_decideAndJump$run(-Inf, 0, 0, 0)
-        else{
-	        for(iSF in seq_along(lowConjugateSamplerFunctions))        { lowConjugateSamplerFunctions[[iSF]]$run() }
-	        modelLP1 <- calculate(model, calcNodes)
-	        propLP1 <- 0
-	        for(iSF in seq_along(lowConjugateGetLogDensityFunctions))  { propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run() }
-	        jump <- my_decideAndJump$run(modelLP1, modelLP0, propLP1, propLP0) 
+            jump <- my_decideAndJump$run(-Inf, 0, 0, 0)
+        else {
+            for(iSF in seq_along(lowConjugateSamplerFunctions))
+                lowConjugateSamplerFunctions[[iSF]]$run()
+            modelLP1 <- calculate(model, calcNodes)
+            propLP1 <- 0
+            for(iSF in seq_along(lowConjugateGetLogDensityFunctions))
+                propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run()
+            jump <- my_decideAndJump$run(modelLP1, modelLP0, propLP1, propLP0) 
     	}    
         if(adaptive)     topRWblockSamplerFunction$adaptiveProcedure(jump)
     },
