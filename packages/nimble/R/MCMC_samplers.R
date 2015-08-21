@@ -420,6 +420,8 @@ sampler_slice <- nimbleFunction(
 
 
 
+
+
 ####################################################################
 ### elliptical slice sampler (dmnorm distributions) ################
 ####################################################################
@@ -428,7 +430,9 @@ sampler_slice <- nimbleFunction(
 sampler_ess <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
-        if(model$getNodeDistribution(target) != 'dmnorm_chol')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        target <- model$expandNodeNames(target)
+        if(length(target) > 1)   stop('elliptical slice sampler only applies to one target node')
+        if(model$getNodeDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
         ###  node list generation  ###
         calcNodes  <- model$getDependencies(target)
         ###  nested function and function list definitions  ###
@@ -439,17 +443,33 @@ sampler_ess <- nimbleFunction(
         u <- getLogProb(model, calcNodes) - rexp(1, 1)
         target_mean <- target_nodeFunctionList[[1]]$get_mean()
         f <- model[[target]] - target_mean
-        nu <- simulate(model, target) - target_mean
-        theta <- runif(1, 0, 2*pi)
-        theta_min <- theta - 2*pi
+        simulate(model, target)
+        nu <- model[[target]] - target_mean
+        theta <- runif(1, 0, 2*3.141593)      ## FIX PI
+        theta_min <- theta - 2*3.141593       ## FIX PI
         theta_max <- theta
         model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
         lp <- calculate(model, calcNodes)
+##        print('u: ', u)
+##        print('target_mean:'); print(target_mean)
+##        print('f:'); print(f)
+##        print('nu:'); print(nu)
+##        print('theta: ', theta)
+##        print('theta_min: ', theta_min)
+##        print('theta_max: ', theta_max)
+##        print('model[[target]]:'); print(model[[target]])
+##        print('lp: ', lp)
         while(is.nan(lp) | lp < u) {   # must be is.nan()
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
             model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
             lp <- calculate(model, calcNodes)
+##            print('NEW WHILE LOOP ITERATION')
+##            print('theta: ', theta)
+##            print('theta_min: ', theta_min)
+##            print('theta_max: ', theta_max)
+##            print('model[[target]]:'); print(model[[target]])
+##            print('lp: ', lp)
         }
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
