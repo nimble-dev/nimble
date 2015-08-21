@@ -375,7 +375,7 @@ sampler_slice <- nimbleFunction(
         }
         x1 <- L + runif(1, 0, 1) * (R - L)
         lp <- setAndCalculateTarget(x1)
-        while(is.nan(lp) | lp < u) {   # MUST be is.nan()
+        while(is.nan(lp) | lp < u) {   # must be is.nan()
             if(x1 < x0) { L <- x1
             } else      { R <- x1 }
             x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
