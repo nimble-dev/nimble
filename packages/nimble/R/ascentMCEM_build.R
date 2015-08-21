@@ -72,10 +72,7 @@ calc_E_llk_gen = nimbleFunction(
         return(mean_LL)
     },where = getLoadingNamespace())
 
-                                        #	This is an R function that builds an MCEM algorithm for a model. 
-                                        #	The latentNodes will be sampled and the rest of the stochastic non data nodes will be maximized
-
-
+                                      
 
 #' Builds an MCEM algorithm from a given NIMBLE model
 #' 
@@ -249,16 +246,11 @@ buildAscentMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = lis
             newQ <- cCalc_E_llk$run(theta)
             diff <- newQ-oldQ
             if((diff - zAlpha*ase)<0){ #swamped by mc error
-              print(diff)
-              print(ase)
               mAdd <- ceiling(m/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
               cmcmc_Latent$run(mAdd, reset = FALSE)
               m <- m + mAdd
             }
             else{
-              print("accept")
-              print(diff)
-              print(ase)
               acceptCrit <- 1
               endCrit <- diff + zGamma*ase #evaluate ending criterion
               cmcmc_Latent$run(m, reset = TRUE) #get Q(theta^(t-1),theta^(t-1)) as in equation 6

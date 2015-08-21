@@ -73,7 +73,7 @@ enkfScalFunc = nimbleFunction(
 
 ENKFStep <- nimbleFunction(
   contains = ENKFStepVirtual,
-  setup = function(model, mvSamp, nodes, iNode, xDim, yDim, saveAll, silent = FALSE) {
+  setup = function(model, mvSamp, nodes, iNode, xDim, yDim, saveAll, names, silent = FALSE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
@@ -98,6 +98,7 @@ ENKFStep <- nimbleFunction(
       yObs<-c(yObs,0)
       meanVec <- c(0,0)
     }
+    
     
     ## indices for locations of data from different nodes within our yf vector
     ## e.g. if there were two y nodes depending on x[t], with the first being a vector of length 2, and the second being 
@@ -182,14 +183,15 @@ ENKFStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes which the ENKF will estimate.
+#' @param filterControl  A list specifying different control options for the particle filter, described below.
 #' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
 #' @author Nick Michaud
 #' @details Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  
-#' Latent state (x[t]) and Observations (y[t]) can be scalars or vectors at each time point, 
+#' Latent states (x[t]) and observations (y[t]) can be scalars or vectors at each time point, 
 #' and sizes of observations can vary from time point to time point.
 #' In the BUGS model, the observations (y[t]) must be equal to some (possibly nonlinear) deterministic function
 #' of the latent state (x[t]) plus an additive error term.  Currently only normal/mvn error terms are supported.
-#' The transition from x(t) to x(t+1) does not have to be normal or linear.
+#' The transition from x[t] to x[t+1] does not have to be normal or linear.  Output is stored in mvSamps
 #' @family filtering methods
 #' @examples
 #' model <- nimbleModel(code = ...)
@@ -197,7 +199,7 @@ ENKFStep <- nimbleFunction(
 #' Cmodel <- compileNimble(model)
 #' Cmy_ENKF <- compileNimble(my_ENKF, project = model)
 #' Cmy_ENKF$run(m = 100000)
-#' ENKF_X <- as.matrix(Cmy_ENKF$mv, 'x')
+#' ENKF_X <- as.matrix(Cmy_ENKF$mvSamps, 'x')
 #' hist(ENKF_X)
 #' @export
 buildENKF <- nimbleFunction(
@@ -222,17 +224,20 @@ buildENKF <- nimbleFunction(
     yDim <- lapply(yNodes, function(x){unname(sapply(x, function(z) nimDim(model[[z]])))}) #dimensions of each dependent y node
     # Create mv variables for x state.  If saveAll=T, 
     # the  x states will be recorded at each time point.
+    
+    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+    modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
     if(saveAll){
       names <- sapply(modelSymbolObjects, function(x)return(x$name))
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
       size <- lapply(modelSymbolObjects, function(x){
         if(identical(x$size, numeric(0))) return(1)
-        return(x$size)}
+        return(x$size)})
       
       mvSamp <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
-
+                                            type = type,
+                                            size = size))
+      
       
     }
     else{
@@ -243,20 +248,20 @@ buildENKF <- nimbleFunction(
         return(x$size)})
       
       
-      size[[latentVars]] <- as.numeric(dims[[1]])
+      size[[1]] <- as.numeric(dims[[1]])
       
       
       mvSamp <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                            type = type,
+                                            size = size))
     }
-
     
     
+    names <- names[1]
     ENKFStepFunctions <- nimbleFunctionList(ENKFStepVirtual)
     for(iNode in seq_along(nodes)){
-     ENKFStepFunctions[[iNode]] <- ENKFStep(model, mvSamp, nodes, 
-                                               iNode, xDim, yDim[[iNode]], saveAll,  silent) 
+      ENKFStepFunctions[[iNode]] <- ENKFStep(model, mvSamp, nodes, 
+                                             iNode, xDim, yDim[[iNode]], saveAll, names, silent) 
     }
   },
   run = function(m = integer(default = 100)) {

@@ -58,95 +58,101 @@ auxFStep <- nimbleFunction(
         calculate(model, prevDeterm) 
         model[[thisNode]] <<-meanFuncList[[1]]$get_mean() # returns E(x_t+1 | x_t)
         calculate(model, thisDeterm)
-        auxl[i] <- exp(calculate(model, thisData))
-        auxWts[i] <- auxl[i]*mvWSamp['wts',i][prevInd]        
+        auxl[i] <- calculate(model, thisData)
+        auxWts[i] <- auxl[i] + mvWSamp['wts',i][prevInd]        
       }
-      auxWts <- auxWts/sum(auxWts)
+      auxWts <- exp(auxWts)/sum(exp(auxWts))
       ess <- 1/sum(auxWts^2)
       
       if(ess<thresh_num){
         resamp <- 1
         rankSample(auxWts, m, ids, silent)
         for(i in 1:m){
-          copy(mvWSamp, mvEWSamp, prevXName, prevXName, ids[i],i)
-          mvWSamp['wts',i][prevInd]   <<- 1/m
+          if(saveAll == 1)
+            copy(mvWSamp, mvEWSamp, prevXName, prevXName, ids[i],i)
+          mvWSamp['wts',i][prevInd]   <<- log(1/m)
         }
       }
-     else{
-       resamp <- 0
-       for(i in 1:m){
-         copy(mvWSamp, mvEWSamp, prevXName, prevXName, i,i)
-         mvWSamp['wts',i][prevInd]   <<- auxWts[i]      
-       }
-     }
+      else{
+        resamp <- 0
+        for(i in 1:m){
+          copy(mvWSamp, mvEWSamp, prevXName, prevXName, i,i)
+          mvWSamp['wts',i][prevInd]   <<- log(auxWts[i] )     
+        }
+      }
     }   
-   for(i in 1:m) {
-     if(notFirst) {
-       copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
-       calculate(model, prevDeterm) 
-     }
-     simulate(model, thisNode)
-     copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row=i)
-     calculate(model, thisDeterm)
-     l[i]  <- exp(calculate(model, thisData))
-     if(notFirst){
-       if(resamp == 1){
-         mvWSamp['wts',i][currInd] <<- l[i]/auxl[ids[i]]
-         LL[i] <- l[i]/auxl[ids[i]]
-       }
-       else{
-         mvWSamp['wts',i][currInd] <<- l[i]/auxl[i]
-         LL[i] <- l[i]/auxl[i]
-       }
-     }
+    for(i in 1:m) {
+      if(notFirst) {
+        copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
+        calculate(model, prevDeterm) 
+      }
+      simulate(model, thisNode)
+      copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row=i)
+      calculate(model, thisDeterm)
+      l[i]  <- calculate(model, thisData)
+      if(notFirst){
+        if(resamp == 1){
+          mvWSamp['wts',i][currInd] <<- l[i]-auxl[ids[i]]
+          LL[i] <- l[i]-auxl[ids[i]]
+        }
+        else{
+          mvWSamp['wts',i][currInd] <<- l[i] - auxl[i]
+          LL[i] <- l[i] - auxl[i]
+        }
+      }
       
-     else{
-       mvWSamp['wts',i][currInd] <<- l[i]
-       LL[i] <- l[i]
-     }
-   }
- 
-   if(isLast){
-     for(i in 1:m){
-       wts[i] <-  mvWSamp['wts',i][currInd] 
-     }
-     rankSample(wts, m, ids, silent)
-     for(i in 1:m){
-       copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
-     }
-   }
+      else{
+        mvWSamp['wts',i][currInd] <<- l[i]
+        LL[i] <- l[i]
+      }
+    }
     
-    return(log(mean(LL)))
+    if(isLast){
+      for(i in 1:m){
+        wts[i] <-  exp(mvWSamp['wts',i][currInd] )
+      }
+      rankSample(wts, m, ids, silent)
+      for(i in 1:m){
+        copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
+      }
+    }
+    
+    return(log(mean(exp(LL))))
   }, where = getLoadingNamespace()
 )
 
 
-#' Creates an auxiliary particle filter 
-#' 
+#' Creates an auxiliary particle filter algorithm to estimate log-likelihood.
+#'
 #' @param model A nimble model object, typically representing a state space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes over which the Auxiliary particle filter will stochastically integrate over to estimate the log-likelihood function
+#' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
+#' @param filterControl  A list specifying different control options for the particle filter, described below.
 #' @param thresh A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)
 #' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
-#' @author Nick Michaud
+#' @author  Nick Michaud
 #' @family filtering methods
 #' @details The resulting specialized particle filter algorthm will accept a
 #'  single integer argument (m, default 10,000), which specifies the number
 #'  of random \'particles\' to use for estimating the log-likelihood.  The algorithm 
 #'  returns the estimated log-likelihood value, and saves
 #'  unequally weighted samples from the posterior distribution of the latent
-#'  states in mv['x',], with corresponding unlogged weights in mv['wts',].
-#'  An equally weighted sample from the posterior can be found in mv['xs',]. 
+#'  states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
+#'  An equally weighted sample from the posterior can be found in mvEWsamp.  
+#'  
+#'   The auxiliary particle filter uses a lookeahead function to select promising particles before propogation.  Currently, the lookahead
+#'   funciton uses the expected valu of the latent state at the next time point given the current particle, e E(x[t+1]|x[t]).
+#'   The auxiliary particle filter currently only works for models with univariate normal transition densities. 
 #' @examples
 #' model <- nimbleModel(code = ...)
-#' my_AuxF <- buildAuxF(model, 'x[1:100]', .9)
+#' my_AuxF <- buildAuxF(model, 'x[1:100]', filterControl = list(thresh = 0.9))
 #' Cmodel <- compileNimble(model)
 #' Cmy_AuxF <- compileNimble(my_AuxF, project = model)
 #' logLike <- Cmy_AuxF(m = 100000)
-#' hist(as.matrix(Cmy_Auxf$mv, 'xs'))
+#' hist(as.matrix(Cmy_Auxf$mvEWSamp, 'x'))
 #' @export
 buildAuxF <- nimbleFunction(
   setup = function(model, nodes, filterControl = list(thresh = 0.5,  silent = FALSE, saveAll = FALSE)) {
-                   
+    
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
@@ -154,7 +160,7 @@ buildAuxF <- nimbleFunction(
     
     if(length(unique(dims)) > 1) 
       stop('sizes or dimension of latent states varies')
-
+    
     
     thresh <- filterControl[['thresh']]
     saveAll <- filterControl[['saveAll']]
@@ -209,7 +215,7 @@ buildAuxF <- nimbleFunction(
     auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
     for(iNode in seq_along(nodes))
       auxStepFunctions[[iNode]] <- auxFStep(model, mvEWSamp, mvWSamp, nodes,
-                                             iNode, names, saveAll, silent)
+                                            iNode, names, saveAll, silent)
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())

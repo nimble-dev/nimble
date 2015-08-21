@@ -90,6 +90,7 @@ Collate: config.R
  lwF_build.R
  ENKF_build.R
  bootF_build.R
+ normConst_build.R
  ascentMCEM_build.R
  optimTools.R
  NF_utils.R

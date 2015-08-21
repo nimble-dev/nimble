@@ -882,7 +882,7 @@ sampler_RW_PFilter <- nimbleFunction(
     my_setAndCalculate <- setAndCalculate(model, target)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     my_calcAdaptationFactor <- calcAdaptationFactor(d)
-    my_particleFilter <- buildBootF(model, latents, .5, saveAll=F)
+    my_particleFilter <- buildBootF(model, latents)
   },
   
   run = function() {
@@ -938,12 +938,6 @@ sampler_RW_PFilter <- nimbleFunction(
     },
     
     generateProposalVector = function() {
-      ##declare(origValueVector, double(1, d))
-      ##origValueVector <- values(model, target)
-      ##declare(normalVarVector, double(1, d))
-      ##for(i in 1:d)     {   normalVarVector[i] <- rnorm(1, 0, 1)   }
-      ##propValueMatrix <- asRow(origValueVector) + asRow(normalVarVector) %*% chol_propCov * scale
-      ##propValueVector <- propValueMatrix[1, ]
       propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
       returnType(double(1))
       return(propValueVector)
@@ -1081,9 +1075,41 @@ sampler_RW_PFilter <- nimbleFunction(
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity' or any positive definite matrix of the appropriate dimensions. (default = 'identity')
 #' }
 #' \cr
+#' @section RW_llFunctionBlock sampler:
+#' 
+#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu, 2010).  The RW_llFunctionBlock sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). \cr
+#' \cr
+#' The RW_llFunctionBlock sampler accepts the following control list elements: \cr
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
+#' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
+#' \item llFunction. A specialized nimbleFunction that accepts no arguments and returns a scalar double number.  The return value must be the total log-likelihood of all stochastic dependents of the target nodes -- and, if includesTarget = TRUE, of the target node(s) themselves --  or whatever surrogate is being used for the total log-likelihood.  This is a required element with no default.
+#' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
+#' }
+#' \cr
+#' @section RW_PFilter sampler
+#' 
+#' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  A bootstrap filter is used to integrate over latent states.
+#'  \cr
+#' The RW_PFilter sampler accepts the following control list elements: \cr
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
+#' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
+#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
+#' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
+#' \item resamp.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011. 
+#' }
+#' \cr
 #' @name samplers
 #' 
-#' @aliases sampler end RW RW_block RW_llFunction slice crossLevel sampler_end sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel
+#' @aliases sampler end RW RW_block RW_llFunction slice crossLevel sampler_end sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel RW_llFunctionBlock RW_PFilter
 #'
 #' @seealso configureMCMC addSampler buildMCMC
 #'

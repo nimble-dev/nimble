@@ -34,7 +34,7 @@ bootFStep <- nimbleFunction(
       thisXName <- names
       currInd <- 1
       prevInd <- 1 
-   }
+    }
     isLast <- (iNode == length(nodes))
   },
   run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
@@ -59,18 +59,18 @@ bootFStep <- nimbleFunction(
       simulate(model, thisNode)
       copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row = i)
       calculate(model, thisDeterm)
-      wts[i]  <- exp(calculate(model, thisData))
+      wts[i]  <- calculate(model, thisData)
       if(prevSamp == 0){
-        llEst[i] <- wts[i]*mvWSamp['wts',i][prevInd]
+        llEst[i] <- wts[i] + mvWSamp['wts',i][prevInd]
       }
       else{
-        llEst[i] <- wts[i]/m
+        llEst[i] <- wts[i] - log(m)
       }
     }
     
-    out[1] <- log(sum(llEst))
+    out[1] <- log(sum(exp(llEst)))
     # Normalize weights and calculate effective sample size 
-    wts <- wts/sum(wts)
+    wts <- exp(wts)/sum(exp(wts))
     ess <- 1/sum(wts^2) 
     
     # Determine whether to resample by weights or not
@@ -80,21 +80,15 @@ bootFStep <- nimbleFunction(
       # affects how ll estimate is calculated at next time point.
       out[2] <- 1
       for(i in 1:m){
-        if(smoothing == 0)
-          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
-        else
-          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
-        mvWSamp['wts',i][currInd] <<- wts[i]
+        copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
+        mvWSamp['wts',i][currInd] <<- log(wts[i])
       }
     }
     else{
       out[2] <- 0
       for(i in 1:m){
-        if(smoothing == 0)
-          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = i, rowTo = i)
-        else
-          copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = i, rowTo = i)
-        mvWSamp['wts',i][currInd] <<- wts[i]
+        copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = i, rowTo = i)
+        mvWSamp['wts',i][currInd] <<- log(wts[i])
       }
     }
     return(out)
@@ -105,17 +99,18 @@ bootFStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
+#' @param filterControl  A list specifying different control options for the particle filter, described below.
 #' @param thresh A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)
 #' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
-#' @param filtering  If saveAll = T, should we save filtered estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]), or save samples from f(x[t]|y[t]) at each time point.
-#' @author Daniel Turek
+#' @param smoothing Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),  or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T
+#' @author Daniel Turek and Nick Michaud
 #' @details The resulting specialized particle filter algorthm will accept a
 #'  single integer argument (m, default 10,000), which specifies the number
 #'  of random \'particles\' to use for estimating the log-likelihood.  The algorithm 
 #'  returns the estimated log-likelihood value, and saves
 #'  unequally weighted samples from the posterior distribution of the latent
-#'  states in mv['x',], with corresponding unlogged weights in mv['wts',].
-#'  An equally weighted sample from the posterior can be found in mv['xs',]. 
+#'  states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
+#'  An equally weighted sample from the posterior can be found in mvEWsamp.
 #' @family filtering methods
 #' @examples
 #' model <- nimbleModel(code = ...)
@@ -123,7 +118,7 @@ bootFStep <- nimbleFunction(
 #' Cmodel <- compileNimble(model)
 #' Cmy_BootF <- compileNimble(my_BootF, project = model)
 #' logLike <- Cmy_BootF(m = 100000)
-#' boot_X <- Cmy_BootF$mv['xs',]
+#' boot_X <- as.matrix(Cmy_BootF$mvEWSamp)
 #' @export
 buildBootF <- nimbleFunction(
   setup = function(model, nodes, filterControl = list(thresh = 0.5,  silent = FALSE, saveAll = FALSE, smoothing = FALSE)) {
@@ -142,31 +137,31 @@ buildBootF <- nimbleFunction(
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(thresh)) thresh <- .5
-
+    
     
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll) smoothing <- FALSE
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
     # the sampled x states will be recorded at each time point. 
-   modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
-   if(saveAll){
+    modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
+    if(saveAll){
       
-     names <- sapply(modelSymbolObjects, function(x)return(x$name))
-     type <- sapply(modelSymbolObjects, function(x)return(x$type))
-     size <- lapply(modelSymbolObjects, function(x)return(x$size))
-     
-     mvEWSamp <- modelValues(modelValuesSpec(vars = names,
-                                             type = type,
-                                             size = size))
-     
-     names <- c(names, "wts")
-     type <- c(type, "double")
-     size$wts <- length(dims)
-     mvWSamp  <- modelValues(modelValuesSpec(vars = names,
-                                                 type = type,
-                                                 size = size))
-     
-   }
+      names <- sapply(modelSymbolObjects, function(x)return(x$name))
+      type <- sapply(modelSymbolObjects, function(x)return(x$type))
+      size <- lapply(modelSymbolObjects, function(x)return(x$size))
+      
+      mvEWSamp <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
+      names <- c(names, "wts")
+      type <- c(type, "double")
+      size$wts <- length(dims)
+      mvWSamp  <- modelValues(modelValuesSpec(vars = names,
+                                              type = type,
+                                              size = size))
+      
+    }
     else{
       names <- sapply(modelSymbolObjects, function(x)return(x$name))
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
@@ -185,11 +180,11 @@ buildBootF <- nimbleFunction(
                                               type = type,
                                               size = size))
     }
-   
+    
     names <- names[1]
     bootStepFunctions <- nimbleFunctionList(bootStepVirtual)
     for(iNode in seq_along(nodes)){
-     bootStepFunctions[[iNode]] <- bootFStep(model, mvEWSamp, mvWSamp, nodes,
+      bootStepFunctions[[iNode]] <- bootFStep(model, mvEWSamp, mvWSamp, nodes,
                                               iNode, names, saveAll, smoothing, silent) 
     }
   },
@@ -205,10 +200,10 @@ buildBootF <- nimbleFunction(
     # previous time point.
     prevSamp <- 1
     for(iNode in seq_along(bootStepFunctions)) { 
-     out <- bootStepFunctions[[iNode]]$run(m,threshNum, prevSamp)
-     logL <- logL + out[1]
-     prevSamp <- out[2]
-     if(logL == -Inf) return(logL)
+      out <- bootStepFunctions[[iNode]]$run(m,threshNum, prevSamp)
+      logL <- logL + out[1]
+      prevSamp <- out[2]
+      if(logL == -Inf) return(logL)
     }
     return(logL)
   }, where = getLoadingNamespace()
