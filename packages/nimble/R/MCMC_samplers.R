@@ -421,6 +421,46 @@ sampler_slice <- nimbleFunction(
 
 
 ####################################################################
+### elliptical slice sampler (dmnorm distributions) ################
+####################################################################
+
+
+sampler_ess <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        if(model$getNodeDistribution(target) != 'dmnorm_chol')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        ###  node list generation  ###
+        calcNodes  <- model$getDependencies(target)
+        ###  nested function and function list definitions  ###
+        target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
+        target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
+    },
+    run = function() {
+        u <- getLogProb(model, calcNodes) - rexp(1, 1)
+        target_mean <- target_nodeFunctionList[[1]]$get_mean()
+        f <- model[[target]] - target_mean
+        nu <- simulate(model, target) - target_mean
+        theta <- runif(1, 0, 2*pi)
+        theta_min <- theta - 2*pi
+        theta_max <- theta
+        model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
+        lp <- calculate(model, calcNodes)
+        while(is.nan(lp) | lp < u) {   # must be is.nan()
+            if(theta < 0)   theta_min <- theta   else   theta_max <- theta
+            theta <- runif(1, theta_min, theta_max)
+            model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
+            lp <- calculate(model, calcNodes)
+        }
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+
+####################################################################
 ### crossLevel sampler #############################################
 ####################################################################
 
