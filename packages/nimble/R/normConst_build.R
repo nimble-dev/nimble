@@ -22,7 +22,7 @@ getValsFunc_Scalar = nimbleFunction(
     }
     returnType(double(2))
     return(sampsOut)
-  }
+  }, where = getLoadingNamespace()
 )
   
 getValsFunc_Vector = nimbleFunction(
@@ -39,7 +39,7 @@ getValsFunc_Vector = nimbleFunction(
     }
     returnType(double(2))
     return(sampsOut)
-  }
+  }, where = getLoadingNamespace()
 )
 
 getValsFunc_Matrix = nimbleFunction(
@@ -60,7 +60,7 @@ getValsFunc_Matrix = nimbleFunction(
     }
     returnType(double(2))
     return(sampsOut)
-  }
+  }, where = getLoadingNamespace()
 )
 
 impMV_simFunc = nimbleFunction(
@@ -81,7 +81,7 @@ impMV_simFunc = nimbleFunction(
     single_Cest <- numer/denom
     returnType(double())
     return(single_Cest)
-  }
+  }, where = getLoadingNamespace()
 )
 
 impScalar_simFunc = nimbleFunction(
@@ -102,7 +102,7 @@ impScalar_simFunc = nimbleFunction(
     single_Cest <- numer/denom
     returnType(double())
     return(single_Cest)
-  }
+  }, where = getLoadingNamespace()
 )
 
 ##  A function which calculates the mean and covariance matrix of the mcmc samples for all stochastic,
@@ -161,7 +161,7 @@ normImpSamp = nimbleFunction(
     out[2] <- sd(varLL)  # also return var. of log importance weights
     returnType(double(1))
     return(out)
-  }
+  }, where = getLoadingNamespace()
 )
     
                                   
