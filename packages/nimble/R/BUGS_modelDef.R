@@ -331,7 +331,7 @@ modelDefClass$methods(splitConstantsAndData = function() {
         constantsNames <- as.character(constantsNamesList)
         newDataVars <- constantsNames[constantsNames %in% vars]
         if(length(newDataVars)) {
-            cat("Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.\n")
+            if(nimbleOptions('verbose')) cat("Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.\n")
             constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
             constantsList[newDataVars] <<- NULL
             for(varName in newDataVars) eval(substitute(rm(varName, envir = constantsEnv), list(varName = varName)))
@@ -2030,7 +2030,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$buildNodeFunctions(where = where, debug = debug)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
     if(length(data) + length(inits) > 0)
-        message("setting data and initial values...")
+        if(nimbleOptions('verbose')) message("setting data and initial values...")
     model$setData(data)
     # prevent overwriting of data values by inits
     if(FALSE) {  # should now be handled by checking if setInits tries to overwrite data nodes
@@ -2055,7 +2055,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## model checking
     ## added by DT, June 2015
     if(check) {
-        message("checking model...   (use nimbleModel(..., check = FALSE) to skip model check)")
+        if(nimbleOptions('verbose')) message("checking model...   (use nimbleModel(..., check = FALSE) to skip model check)")
         model$check()
     }
     ## fixing the problem with RStudio hanging: over-writing the str() method for this model class

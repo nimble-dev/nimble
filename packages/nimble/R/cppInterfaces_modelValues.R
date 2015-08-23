@@ -157,25 +157,26 @@ setMethod('[<-', 'CmodelValues',
 
 setMethod('[[', 'CmodelValues',
           function(x, i, ...) {
-          		if(missing(i) )
-          			i <- x$varNames
-				if(length(i) == 1){
-					k <- getsize(x)
-             	 	ptr = x$componentExtptrs[[i]]
-             	 	if(is.null(ptr) ) 
-             	 		stop(paste('variable', i, ' not found in modelValues') ) 
-             	 	if(k == 1){
-             	 		output = .Call('getMVElement', ptr, as.integer(1) )
-             	 		return(output) 
-             	 		}
-             	 	output = .Call('getMVElementAsList', ptr, as.integer(1:k) )
-             	 	return(output)
-             	 	}
-             	output <- list() 	
-             	for(cmp in i)
-             		output[[cmp]] <- x[[cmp]]
-			return(output)
-		})
+              if(missing(i) )
+                  i <- x$varNames
+              if(length(i) == 1){
+                  k <- getsize(x)
+                  if(k == 0) return(list())
+                  ptr = x$componentExtptrs[[i]]
+                  if(is.null(ptr) ) 
+                      stop(paste('variable', i, ' not found in modelValues') )
+                  if(k == 1){
+                      output = .Call('getMVElement', ptr, as.integer(1) )
+                      return(output) 
+                  }
+                  output = .Call('getMVElementAsList', ptr, as.integer(1:k) )
+                  return(output)
+              }
+              output <- list() 	
+              for(cmp in i)
+                  output[[cmp]] <- x[[cmp]]
+              return(output)
+          })
 
 setMethod('[[<-', 'CmodelValues',
           function(x, i,..., value){

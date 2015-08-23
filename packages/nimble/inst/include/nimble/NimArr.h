@@ -883,6 +883,7 @@ class VecNimArr : public VecNimArrBase<T>  {
   }
   
   virtual vector<int> getRowDims(int row){
+    if(row >= size()) return(vector<int>(0));
   	NimArrBase<T>* nimBasePtr = VecNimArr<ndim, T>::getBasePtr(row);
   	int nRowDims = (*nimBasePtr).numDims();
   	vector<int> rowDims(nRowDims);
