@@ -331,5 +331,226 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
   }
   return(returnVal)
+}
 
+
+test_filter <- function(example, model, data = NULL, inits = NULL,
+                        verbose = TRUE, numItsR = 5, numItsC = 10000,
+                        basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
+                        numItsC_results = numItsC,
+                        seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
+                        doubleCompare = FALSE, filterType2 = NULL,
+                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+  # There are three modes of testing:
+  # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states and, if requested by passing likelihood into 'exactSample', will compare results to actual samples (you'll need to make sure the seed matches what was used to generate those samples)
+  # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries within tolerance specified in resultsTolerance
+  # 3) resampleData = TRUE: runs initial MCMC to get top level nodes then simulates from the rest of the model, including data, to get known parameter values, and fits to the new data, comparing parameter estimates from MCMC with the known parameter values
+  
+  # filterType determines which filter to use for the model.  Valid options are: "bootstrap", "auxiliary", "LW", "ENKF"
+  # filterControl specifies options to filter function, such as saveAll = T/F.
+  
+  
+  
+  if(is.null(name)) {
+    if(!missing(example)) {
+      name <- example
+    } else {
+      if(is.character(model)) {
+        name <- model
+      } else {
+        name <- 'unnamed case'
+      }
+    }
+  }
+  
+  cat("===== Starting Filter test for ", name, " using ", filterType, ". =====\n", sep = "")
+  
+  if(!missing(example)) {
+    # classic-bugs example specified by name
+    dir = getBUGSexampleDir(example)
+    if(missing(model)) model <- example
+    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
+                            check = FALSE)
+  } else {
+    # code, data and inits specified directly where 'model' contains the code
+    example = deparse(substitute(model))
+    if(missing(model)) stop("Neither BUGS example nor model code supplied.")
+    Rmodel <- readBUGSmodel(model, data = data, inits = inits, dir = "", useInits = TRUE,
+                            check = FALSE)
+  }
+  if(doCpp) {
+    Cmodel <- compileNimble(Rmodel)
+    cat('done compiling model\n')
+  }
+  
+  cat("Building filter\n")
+  if(filterType == "bootstrap"){
+    if(!is.null(filterControl))  Rfilter <- buildBootF(Rmodel, nodes = latentNodes, filterControl = filterControl)
+    else Rfilter <- buildBootF(Rmodel, nodes = latentNodes)
+  } 
+  if(filterType == "auxiliary"){
+    if(!is.null(filterControl))  Rfilter <- buildAuxF(Rmodel, nodes = latentNodes, filterControl = filterControl)
+    else Rfilter <- buildAuxF(Rmodel, nodes = latentNodes)
+  }  
+  if(filterType == "LW"){
+    if(!is.null(filterControl))  Rfilter <- buildLWFA(Rmodel, nodes = latentNodes, filterControl = filterControl)
+    else Rfilter <- buildLWFA(Rmodel, nodes = latentNodes)
+  }  
+  if(filterType == "ENKF"){
+    if(!is.null(filterControl))  Rfilter <- buildENKF(Rmodel, nodes = latentNodes, filterControl = filterControl)
+    else Rfilter <- buildENKF(Rmodel, nodes = latentNodes)
+  }  
+  
+  if(doCpp) {
+    Cfilter <- compileNimble(Rfilter, project = Rmodel)
+  }
+  
+  if(basic) {
+    ## do short runs and compare R and C filter output
+    if(doR) {
+      set.seed(seed);
+      RfilterOut <- try(Rfilter$run(numItsR))
+      if(!is(RfilterOut, "try-error")) {
+        if(filterType == "ENKF"){  
+          RmvSample  <- nfVar(Rfilter, 'mvSamp')
+          R_samples <- as.matrix(RmvSample)
+        }
+        else{
+          RmvSample  <- nfVar(Rfilter, 'mvWSamp')
+          RmvSample2 <- nfVar(Rfilter, 'mvEWSamp')
+          R_samples <- as.matrix(RmvSample)
+          R_samples2 <- as.matrix(RmvSample2)
+        }   
+      } else R_samples <- NULL
+    }
+    if(doCpp) {
+      set.seed(seed)
+      CfilterOut <- Cfilter$run(numItsR)
+      if(filterType == "ENKF"){  
+        CmvSample <- nfVar(Cfilter, 'mvSamp')
+        C_samples <- as.matrix(CmvSample)
+        C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
+      }
+      else{
+        CmvSample <- nfVar(Cfilter, 'mvWSamp')
+        CmvSample2 <- nfVar(Cfilter, 'mvEWSamp')
+        C_samples <- as.matrix(CmvSample)
+        C_samples2 <- as.matrix(CmvSample2)
+        C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
+        C_subSamples2 <- C_samples2[, attributes(R_samples2)$dimnames[[2]], drop = FALSE]
+      }
+      ## for some reason columns in different order in CmvSample...
+    }
+    
+    if(doR && doCpp && !is.null(R_samples)) {
+      context(paste0("testing ", example," ", filterType, " filter"))
+      if(filterType == "ENKF"){
+        try(
+          test_that(paste0("test of equality of output from R and C versions of ", example," ", filterType, " filter"), {
+            expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
+          })
+        )
+      }
+      else{
+        try(
+          test_that(paste0("test of equality of output from R and C versions of ", example," ", filterType, " filter"), {
+            expect_that(R_samples, equals(C_subSamples), info = paste("R and C weighted posterior samples are not equal"))
+            expect_that(R_samples2, equals(C_subSamples2), info = paste("R and C equally weighted posterior samples are not equal"))
+            expect_that(RfilterOut, equals(CfilterOut), info = paste("R and C log likelihood estimates are not equal"))
+          })
+        )
+      }
+    }
+    if(is.null(R_samples)) {
+      cat("R Filter failed.\n")
+    }
+    
+    if(doCpp) {
+      if(!is.null(exactSample)) {
+        for(varName in names(exactSample))
+          try(
+            test_that(paste("Test of filter result against known samples for", example, ":", varName), {
+              expect_that(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), equals(round(exactSample[[varName]], 8))) })
+          )
+      }
+    }
+    
+    summarize_posterior <- function(vals) 
+      return(c(mean = mean(vals), sd = sd(vals), quantile(vals, .025), quantile(vals, .975)))
+    
+    if(doCpp) {
+      if(verbose) {
+        try(print(apply(C_samples[, , drop = FALSE], 2, summarize_posterior)))
+      }
+    }
+  }
+  
+  ## assume doR and doCpp from here down
+  if(!is.null(results)) { 
+    # do (potentially) longer run and compare results to inputs given
+    set.seed(seed)
+    Cll <- Cfilter$run(numItsC_results)
+    CfilterSample <- nfVar(Cfilter, 'mv')
+    C_samples <- as.matrix(CmvSample)[, , drop = FALSE]
+    # dimnames(C_samples)[[2]] <- Rmodel$expandNodeNames(latentNodes, sort = TRUE)
+    for(metric in names(results)) {
+      if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov', 'll'))
+        stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', 'var', and 'cov'.")
+      if(!(metric %in% c('cov', 'll'))) {
+        postResult <- apply(C_samples, 2, metric)
+        for(varName in names(results[[metric]])) {
+          varName <- gsub("_([0-9]+)", "\\[\\1\\]", varName) # allow users to use theta_1 instead of "theta[1]" in defining their lists
+          samplesNames <- dimnames(C_samples)[[2]]
+          if(!grepl(varName, "\\[", fixed = TRUE)) 
+            samplesNames <- gsub("\\[.*\\]", "", samplesNames)
+          matched <- which(varName == samplesNames) 
+          diff <- abs(postResult[matched] - results[[metric]][[varName]])
+          for(ind in seq_along(diff)) {            
+            strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
+            try(
+              test_that(paste("Test of ", filterType, " filter posterior result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"), {
+                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+              })
+            )
+          }
+        }
+      } else if (metric == 'cov' ) {
+        for(varName in names(results[[metric]])) {
+          matched <- grep(varName, dimnames(C_samples)[[2]], fixed = TRUE)
+          postResult <- cov(C_samples[ , matched])
+          # next bit is on vectorized form of matrix so a bit awkward
+          diff <- c(abs(postResult - results[[metric]][[varName]]))
+          for(ind in seq_along(diff)) {
+            strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
+            try(
+              test_that(paste("Test of ", filterType, " filter posterior result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
+                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+              })
+            )
+          }
+        }
+      }
+      else{  # ll (log likelihood)
+        diff <- abs(Cll - results[[metric]][[1]][1])
+        try(
+          test_that(paste("Test of ", filterType, " filter log-likelihood result against known log-likelihood for", example, ":",  metric, "(", varName, ")", strInfo), {
+            expect_that(diff, is_less_than(resultsTolerance[[metric]][[1]][1]))
+          })
+        )
+      }
+    }
+  }
+  if(returnSamples) {
+    if(exists('CmvSample'))
+      returnVal <- as.matrix(CmvSample)
+  } else returnVal <- NULL
+  
+  
+  cat("===== Finished ", filterType, " filter test for ", name, ". =====\n", sep = "")
+  
+  if(doCpp) {
+    dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rfilter have the same project so they are interchangeable in these lines.
+    dyn.unload(getNimbleProject(Rmodel)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
+  }
+  return(returnVal)
 }

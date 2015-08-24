@@ -52,6 +52,7 @@ auxFStep <- nimbleFunction(
     declare(l, double(1,m))
     declare(LL, double(1,m))
     ess <- 0
+    resamp <- 0
     if(notFirst){ 
       for(i in 1:m) {
         copy(mvWSamp, model, prevXName, prevNode, row=i)        
@@ -74,7 +75,6 @@ auxFStep <- nimbleFunction(
         }
       }
       else{
-        resamp <- 0
         for(i in 1:m){
           copy(mvWSamp, mvEWSamp, prevXName, prevXName, i,i)
           mvWSamp['wts',i][prevInd]   <<- log(auxWts[i] )     
