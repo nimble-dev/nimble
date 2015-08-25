@@ -435,6 +435,8 @@ sampler_ess <- nimbleFunction(
         if(model$getNodeDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
         ###  node list generation  ###
         calcNodes  <- model$getDependencies(target)
+        ###  numeric value generation  ###
+        pi <- 141592653589793238462643383279502884197       ########## FIX PI
         ###  nested function and function list definitions  ###
         target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
         target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
@@ -445,8 +447,8 @@ sampler_ess <- nimbleFunction(
         f <- model[[target]] - target_mean
         simulate(model, target)
         nu <- model[[target]] - target_mean
-        theta <- runif(1, 0, 2*3.141593)      ## FIX PI
-        theta_min <- theta - 2*3.141593       ## FIX PI
+        theta <- runif(1, 0, 2*pi)
+        theta_min <- theta - 2*pi
         theta_max <- theta
         model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
         lp <- calculate(model, calcNodes)
