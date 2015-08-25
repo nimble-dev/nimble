@@ -238,6 +238,7 @@ MCMCsuiteClass <- setRefClass(
             setSeed             = TRUE,
             debug               = FALSE) {
             
+            if(debug) browser()
             code <<- code
             constants <<- constants
             data <<- data
@@ -281,7 +282,7 @@ MCMCsuiteClass <- setRefClass(
         
         setMonitors = function(newMonitors) {
             if(length(newMonitors) == 0) newMonitors <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
-            newMonitors <- Rmodel$expandNodeNames(newMonitors)
+            newMonitors <- Rmodel$expandNodeNames(newMonitors, returnScalarComponents = TRUE)
             dataFlags <- unlist(lapply(newMonitors, function(mon) eval(parse(text=mon, keep.source=FALSE)[[1]], envir=Rmodel$isDataEnv)))
             newMonitors <- newMonitors[!dataFlags]
             monitors <<- newMonitors
