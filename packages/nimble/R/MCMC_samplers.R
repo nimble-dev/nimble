@@ -436,7 +436,7 @@ sampler_ess <- nimbleFunction(
         ###  node list generation  ###
         calcNodes  <- model$getDependencies(target)
         ###  numeric value generation  ###
-        pi <- 141592653589793238462643383279502884197       ########## FIX PI
+        pi <- 3.141592653589793238462643383279502884197
         ###  nested function and function list definitions  ###
         target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
         target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
