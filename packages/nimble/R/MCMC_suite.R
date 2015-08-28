@@ -231,6 +231,8 @@ MCMCsuiteClass <- setRefClass(
             openbugs_directory  = 'C:/OpenBUGS323',
             openbugs_program    = 'OpenBUGS',
             stan_model          = '',
+            stan_inits          = NULL,
+            stan_data           = NULL,
             stanNameMaps        = list(),
             makePlot            = TRUE,
             savePlot            = TRUE,
@@ -265,6 +267,9 @@ MCMCsuiteClass <- setRefClass(
             debug <<- debug
             modelFileName <<- 'model.txt'
 
+            if(is.null(stan_inits)) stan_inits <- gsub('stan$', 'init.R', stan_model)
+            if(is.null(stan_data)) stan_data <- gsub('stan$', 'data.R', stan_model)
+            
             ## run
             checkMCMCdefNames()
             init_output()
@@ -274,7 +279,7 @@ MCMCsuiteClass <- setRefClass(
             if(winbugsMCMCflag)    run_winbugs()
             if(openbugsMCMCflag)   run_openbugs()
             if(jagsMCMCflag)       run_jags()
-            if(stanMCMCflag)       run_stan()
+            if(stanMCMCflag)       run_stan(stan_data, stan_inits)
             if(nimbleMCMCflag)     run_nimble()
             unlink(modelFileName)
             if(makePlot)           generate_plots()
@@ -376,14 +381,17 @@ MCMCsuiteClass <- setRefClass(
             addToOutput('jags', samplesArray, timeResult)
         },
 
-        run_stan = function() {
+        run_stan = function(dataFile, initFile) {
             require(rstan)
             if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
-            dataFile <- gsub('stan$', 'data.R', stan_model)
-            initFile <- gsub('stan$', 'init.R', stan_model)
+##            dataFile <- gsub('stan$', 'data.R', stan_model)
+##            initFile <- gsub('stan$', 'init.R', stan_model)
             constantsAndDataStan <- fileToList(dataFile)
-            initsStan <- fileToList(initFile)
-
+            if(file.exists(initFile))
+                initsStan <- fileToList(initFile)
+            else
+                initsStan <- NULL
+            
             timeResult <- system.time(stan_mod <- stan_model(file = stan_model))
             addTimeResult('stan_compile', timeResult)
             
