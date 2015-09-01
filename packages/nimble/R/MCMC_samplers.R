@@ -434,7 +434,7 @@ sampler_ess <- nimbleFunction(
         if(length(target) > 1)   stop('elliptical slice sampler only applies to one target node')
         if(model$getNodeDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
         ###  node list generation  ###
-        calcNodes  <- model$getDependencies(target)
+        calcNodes  <- model$getDependencies(target, self = FALSE)
         ###  numeric value generation  ###
         pi <- 3.141592653589793238462643383279502884197
         ###  nested function and function list definitions  ###
