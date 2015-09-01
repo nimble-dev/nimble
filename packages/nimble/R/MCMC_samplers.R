@@ -452,26 +452,11 @@ sampler_ess <- nimbleFunction(
         theta_max <- theta
         model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
         lp <- calculate(model, calcNodes)
-##        print('u: ', u)
-##        print('target_mean:'); print(target_mean)
-##        print('f:'); print(f)
-##        print('nu:'); print(nu)
-##        print('theta: ', theta)
-##        print('theta_min: ', theta_min)
-##        print('theta_max: ', theta_max)
-##        print('model[[target]]:'); print(model[[target]])
-##        print('lp: ', lp)
         while(is.nan(lp) | lp < u) {   # must be is.nan()
             if(theta < 0)   theta_min <- theta   else   theta_max <- theta
             theta <- runif(1, theta_min, theta_max)
             model[[target]] <<- f*cos(theta) + nu*sin(theta) + target_mean
             lp <- calculate(model, calcNodes)
-##            print('NEW WHILE LOOP ITERATION')
-##            print('theta: ', theta)
-##            print('theta_min: ', theta_min)
-##            print('theta_max: ', theta_max)
-##            print('model[[target]]:'); print(model[[target]])
-##            print('lp: ', lp)
         }
         nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
     },
