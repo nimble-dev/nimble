@@ -109,10 +109,11 @@
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
 #'
-#' @return Returns a named list containing three elements:
+#' @return Returns a named list containing elements:
 #' samples: A 3-dimensional array containing samples from each MCMC algorithm.
 #' summary: A 3-dimensional array containing summary statistics for each variable and algorithm.
 #' timing: A numeric vector containing timing information.
+#' efficiency: Minimum and mean sampling efficiencies for each algorithm (only provided if option calculateEfficiency = TRUE).
 #' See the NIMBLE User Manual for more information about the organization of the return object.
 #'  
 #' @examples
