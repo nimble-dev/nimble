@@ -683,9 +683,9 @@ sampler_crossLevel <- nimbleFunction(
     ),  where = getLoadingNamespace()
 )
 
-###################################################################################
+########################################################################################
 ### RW_llFunctionBlock, does a block RW, but using a generic log-likelihood function ###
-###################################################################################
+########################################################################################
 
 sampler_RW_llFunctionBlock <- nimbleFunction(
   contains = sampler_BASE,
@@ -800,14 +800,13 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
 
 
 #######################################################################################  
-### RW_PFilter, does a block RW, but using a particle filter likelihood function ###
+### RW_PFilter, does a block RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
-### note: still need to:
-### 1. fix warning message about loss of information on compiling
+
 ### 2. add in option to sample latent states - could work by adding monitor
 ### for x and then setting model[[x]] as a weighted draw from xs produced by 
-### particle filter with smoothing = T.
+### particle filter with smoothing = T
 ### 3. particle number optimization uses procedure from pitt et al., 2011, 
 ### "On some properties of Markov chain Monte Carlo simulation methods based on the particle filter"
 sampler_RW_PFilter <- nimbleFunction(
@@ -1107,9 +1106,12 @@ sampler_RW_PFilter <- nimbleFunction(
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
 #' }
 #' \cr
+#' 
 #' @name samplers
 #' 
-#' @aliases sampler end RW RW_block RW_llFunction slice crossLevel sampler_end sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel RW_llFunctionBlock RW_PFilter
+#' @export
+#' 
+#' @aliases sampler end RW RW_block RW_llFunction slice crossLevel RW_llFunctionBlock RW_PFilter sampler_end sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel sampler_RW_llFunctionBlock sampler_RW_PFilter
 #'
 #' @seealso configureMCMC addSampler buildMCMC
 #'
@@ -1125,7 +1127,7 @@ sampler_RW_PFilter <- nimbleFunction(
 #' \cr
 #' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University. \cr
 #' 
-#' @references Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
+
 
 
 

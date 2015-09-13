@@ -4,27 +4,39 @@
 \alias{buildBootF}
 \title{Creates a bootstrap particle filter algorithm to estimate log-likelihood.}
 \usage{
-buildBootF(model, nodes, control = structure(list(thresh = 0.5, silent =
-  FALSE, saveAll = FALSE, smoothing = FALSE), .Names = c("thresh", "silent",
-  "saveAll", "smoothing")))
+buildBootF(model, nodes, control = list())
 }
 \arguments{
-\item{model}{A nimble model object, typically representing a state space model or a hidden Markov model}
+\item{model}{A nimble model object, typically representing a state
+space model or a hidden Markov model}
 
-\item{nodes}{A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function}
+\item{nodes}{A character vector specifying the latent model nodes
+over which the particle filter will stochastically integrate over to
+estimate the log-likelihood function}
 
-\item{control}{A list specifying different control options for the particle filter, described below.}
-
-\item{thresh}{A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)}
-
-\item{saveAll}{Whether to save state samples for all time points (T), or only for the most recent time points (F)}
-
-\item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),  or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T}
+\item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }
 \description{
 Creates a bootstrap particle filter algorithm to estimate log-likelihood.
 }
 \details{
+Each of the control() list options are described in detail below:
+\describe{
+ \item{"thresh"}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
+  effective sample size is less than thresh*(number of particles).  Defaults to 0.5.}
+ \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+ \item{"smoothing"}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),
+ or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T}
+}
+
+ The bootstrap filter starts by generating a sample of estimates from the
+ prior distribution of the latent states of a state space model.  At each time point, these particles are propagated forward
+ by the model's transition equation.  Each particle is then given a weight
+ proportional to the value of the observation equation given that particle.
+ The weights are used to draw an equally-weighted sample of the particles at this time point.
+ The algorithm then proceeds
+ to the next time point.  Neither the transition nor the observation equations are required to
+ be normal for the bootstrap filter to work.
 The resulting specialized particle filter algorthm will accept a
  single integer argument (m, default 10,000), which specifies the number
  of random \'particles\' to use for estimating the log-likelihood.  The algorithm
@@ -42,10 +54,15 @@ logLike <- Cmy_BootF(m = 100000)
 boot_X <- as.matrix(Cmy_BootF$mvEWSamp)
 }
 \author{
-Daniel Turek and Nick Michaud
+Daniel Turek and Nicholas Michaud
+}
+\references{
+Gordon, Neil J., David J. Salmond, and Adrian FM Smith.
+"Novel approach to nonlinear/non-Gaussian Bayesian state estimation."
+IEE Proceedings F (Radar and Signal Processing). Vol. 140. No. 2. IET Digital Library, 1993.
 }
 \seealso{
-Other filtering.methods: \code{\link{buildAuxF}};
+Other particle filtering methods: \code{\link{buildAuxF}};
   \code{\link{buildENKF}}; \code{\link{buildLWF}}
 }
 

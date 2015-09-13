@@ -4,28 +4,33 @@
 \alias{buildENKF}
 \title{Creates an Ensemble Kalman filter algorithm to sample from latent states.}
 \usage{
-buildENKF(model, nodes, filterControl = structure(list(silent = FALSE, saveAll
-  = FALSE), .Names = c("silent", "saveAll")))
+buildENKF(model, nodes, control = list())
 }
 \arguments{
 \item{model}{A nimble model object, typically representing a state space model or a hidden Markov model}
 
 \item{nodes}{A character vector specifying the latent model nodes which the ENKF will estimate.}
 
-\item{filterControl}{A list specifying different control options for the particle filter, described below.}
-
-\item{saveAll}{Whether to save state samples for all time points (T), or only for the most recent time points (F)}
+\item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }
 \description{
 Creates an Ensemble Kalman filter algorithm to sample from latent states.
 }
 \details{
-Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.
+The control() list option is described in detail below:
+\describe{
+ \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+}
+
+Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  The ensemble Kalman filter
+is a monte-carlo approximation to a Kalman filter that can be used when the model's transition euqations do not follow a normal distribution.
 Latent states (x[t]) and observations (y[t]) can be scalars or vectors at each time point,
 and sizes of observations can vary from time point to time point.
 In the BUGS model, the observations (y[t]) must be equal to some (possibly nonlinear) deterministic function
-of the latent state (x[t]) plus an additive error term.  Currently only normal/mvn error terms are supported.
-The transition from x[t] to x[t+1] does not have to be normal or linear.  Output is stored in mvSamps
+of the latent state (x[t]) plus an additive error term.  Currently only normal and multivariate normal
+error terms are supported.
+The transition from x[t] to x[t+1] does not have to be normal or linear.  Output from the posterior distribution of the latent
+states is stored in mvSamps.
 }
 \examples{
 model <- nimbleModel(code = ...)
@@ -37,10 +42,15 @@ ENKF_X <- as.matrix(Cmy_ENKF$mvSamps, 'x')
 hist(ENKF_X)
 }
 \author{
-Nick Michaud
+Nicholas Michaud
+}
+\references{
+Houtekamer, Peter L., and Herschel L. Mitchell.
+ "Data assimilation using an ensemble Kalman filter technique."
+ Monthly Weather Review 126.3 (1998): 796-811.
 }
 \seealso{
-Other filtering.methods: \code{\link{buildAuxF}};
+Other particle filtering methods: \code{\link{buildAuxF}};
   \code{\link{buildBootF}}; \code{\link{buildLWF}}
 }
 

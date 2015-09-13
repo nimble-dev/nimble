@@ -4,9 +4,7 @@
 \alias{buildLWF}
 \title{Creates a Liu and West filter.}
 \usage{
-buildLWF(model, nodes, filterControl = structure(list(params = NA, d = 0.99,
-  thresh = 0.5, silent = FALSE, saveAll = FALSE), .Names = c("params", "d",
-  "thresh", "silent", "saveAll")))
+buildLWF(model, nodes, control = list())
 }
 \arguments{
 \item{model}{A nimble model object, typically representing a state
@@ -16,26 +14,33 @@ space model or a hidden Markov model}
 over which the particle filter will stochastically integrate over to
 estimate the log-likelihood function}
 
-\item{filterControl}{A list specifying different control options for the particle filter, described below.}
-
-\item{params}{A character vector sepcifying the parameters you would
-like to estimate the posterior distribution of.  If unspecified, parameter nodes are specified as all stochastic top level nodes which}
-
-\item{d}{A discount factor for the Liu-West filter.  Should be close to,
-but not above, 1.}
-
-\item{thresh}{A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)}
-
-\item{saveAll}{Whether to save state samples for all time points (T), or only for the most recent time points (F)}
+\item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }
 \description{
 Creates a Liu and West filter.
 }
 \details{
-The resulting specialized particle filter algorthm will accept a
+Each of the control() list options are described in detail below:
+\describe{
+ \item{"params"}{A character vector sepcifying the parameters you would
+ like to estimate the posterior distribution of.  If unspecified, parameter nodes are specified as all stochastic top level nodes which
+ are not in the set of latent nodes specified in 'nodes'.}
+ \item{"d"}{A discount factor for the Liu-West filter.  Should be close to,
+ but not above, 1.}
+ \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+}
+
+ The Liu and West filter samples from the posterior
+ distribution of both the latent states and top-level parameters for a state space model.
+ Each particle in the Liu and West filter contains values not only for latent states,
+ but also for top level parameters.  Latent states are propogated via an auxiliary step,
+ as in the auxiliary particle filter (\code{\link{buildAuxF}}).
+ Top-level parameters are propagated from one
+ time point to the next through a smoothed kernel density based on previous particle values.
+
+ The resulting specialized particle filter algorthm will accept a
  single integer argument (m, default 10,000), which specifies the number
- of random \'particles\' to use for estimating the log-likelihood.  The algorithm
- returns the estimated log-likelihood value, and saves
+ of random \'particles\' to use for sampling from the posterior distributions.  The algorithm  saves
  unequally weighted samples from the posterior distribution of the latent
  states and top-level parameters in mvWSamp, with corresponding logged weights in mvWSamp['wts',].
  An equally weighted sample from the posterior can be found in mvEWSamp.
@@ -46,14 +51,20 @@ my_LWF <- buildPF(model, 'x[1:100]')
 Cmodel <- compileNimble(model)
 Cmy_LWF <- compileNimble(my_LWF, project = model)
 logLike <- Cmy_LWF(m = 100000)
-lw_X <- Cmy_LWF$mvEWSamp['x',]
-lw_sigma <- Cmy_LWF$mvEWSamp['sigma',]
+lw_X <- as.matrix(Cmy_LWF$mvEWSamp, 'x')
+
+#samples from posterior of a top level parameter named sigma:
+lw_sigma <- as.matrix(Cmy_LWF$mvEWSamp, 'sigma')
 }
 \author{
-Nick Michaud
+Nicholas Michaud
+}
+\references{
+Liu, Jane, and Mike West. "Combined parameter and state estimation in simulation-based filtering."
+Sequential Monte Carlo methods in practice. Springer New York, 2001. 197-223.
 }
 \seealso{
-Other filtering.methods: \code{\link{buildAuxF}};
+Other particle filtering methods: \code{\link{buildAuxF}};
   \code{\link{buildBootF}}; \code{\link{buildENKF}}
 }
 

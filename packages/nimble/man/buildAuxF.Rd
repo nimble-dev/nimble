@@ -4,25 +4,33 @@
 \alias{buildAuxF}
 \title{Creates an auxiliary particle filter algorithm to estimate log-likelihood.}
 \usage{
-buildAuxF(model, nodes, filterControl = structure(list(thresh = 0.5, silent =
-  FALSE, saveAll = FALSE), .Names = c("thresh", "silent", "saveAll")))
+buildAuxF(model, nodes, control = list())
 }
 \arguments{
 \item{model}{A nimble model object, typically representing a state space model or a hidden Markov model}
 
 \item{nodes}{A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function}
 
-\item{filterControl}{A list specifying different control options for the particle filter, described below.}
-
-\item{thresh}{A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)}
-
-\item{saveAll}{Whether to save state samples for all time points (T), or only for the most recent time points (F)}
+\item{control}{A list specifying different control options for the particle filter.  Options are described in the details section below.}
 }
 \description{
 Creates an auxiliary particle filter algorithm to estimate log-likelihood.
 }
 \details{
-The resulting specialized particle filter algorthm will accept a
+\describe{
+ \item{"thresh"}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
+  effective sample size is less than thresh*(number of particles).  Defaults to 0.5.}
+ \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+}
+
+     The auxiliary particle filter modifies the bootstrap filter (\code{\link{buildBootF}})
+     by adding a lookahead step to
+     the algorithm: before propagating particles from one time point to the next via the transition equation,
+     the auxiliary filter calculates a weight for each pre-propogated particle by predicting how well
+     the particle will agree with the next data point.  These pre-weights are used to conduct an initial
+     resampling step before propagation.
+
+ The resulting specialized particle filter algorthm will accept a
  single integer argument (m, default 10,000), which specifies the number
  of random \'particles\' to use for estimating the log-likelihood.  The algorithm
  returns the estimated log-likelihood value, and saves
@@ -36,17 +44,21 @@ The resulting specialized particle filter algorthm will accept a
 }
 \examples{
 model <- nimbleModel(code = ...)
-my_AuxF <- buildAuxF(model, 'x[1:100]', filterControl = list(thresh = 0.9))
+my_AuxF <- buildAuxF(model, 'x[1:100]', control = list(thresh = 0.9))
 Cmodel <- compileNimble(model)
 Cmy_AuxF <- compileNimble(my_AuxF, project = model)
 logLike <- Cmy_AuxF(m = 100000)
 hist(as.matrix(Cmy_Auxf$mvEWSamp, 'x'))
 }
 \author{
-Nick Michaud
+Nicholas Michaud
+}
+\references{
+Pitt, Michael K., and Neil Shephard. "Filtering via simulation: Auxiliary particle filters."
+   Journal of the American statistical association 94.446 (1999): 590-599.
 }
 \seealso{
-Other filtering.methods: \code{\link{buildBootF}};
+Other particle filtering methods: \code{\link{buildBootF}};
   \code{\link{buildENKF}}; \code{\link{buildLWF}}
 }
 

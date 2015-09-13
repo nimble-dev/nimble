@@ -23,11 +23,11 @@ buildAscentMCEM(model, latentNodes, burnIn = 100,
 
 \item{buffer}{A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount.}
 
-\item{alpha}{probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood}
+\item{alpha}{probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.05.}
 
-\item{beta}{probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood}
+\item{beta}{probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.05.}
 
-\item{gamma}{probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.}
+\item{gamma}{probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.}
 
 \item{C}{determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged.}
 
@@ -35,9 +35,6 @@ buildAscentMCEM(model, latentNodes, burnIn = 100,
 }
 \value{
 an R function that when called runs the MCEM algorithm. The function returned takes the arguments listed in Runtime Arguments.
-
-
-See user manual for more
 }
 \description{
 Takes a nimble model and builds an MCEM algorithm for it. The user must specify which latent nodes are to be integrated out in the E-Step.
@@ -47,7 +44,7 @@ The M-step is done by a nimble MCMC sampler. The E-step is done by a call to R's
 }
 \details{
 buildAscent_MCEM calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
-Uses the ascent-based MCEM algorithm of Caffo '05, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached,
+Uses an ascent-based MCEM algorithm, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached.
 }
 \section{Runtime Arguments}{
 
@@ -89,6 +86,10 @@ pumpMCEM(initM = 1000)
 # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
 }
 \author{
-Clifford Anderson-Bergman and Nick Michaud
+Clifford Anderson-Bergman and Nicholas Michaud
+}
+\references{
+Caffo, Brian S., Wolfgang Jank, and Galin L. Jones. "Ascent-based Monte Carlo expectation-maximization."
+ Journal of the Royal Statistical Society: Series B (Statistical Methodology) 67.2 (2005): 235-251.
 }
 
