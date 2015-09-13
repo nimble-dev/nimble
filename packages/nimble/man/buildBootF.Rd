@@ -4,16 +4,22 @@
 \alias{buildBootF}
 \title{Creates a bootstrap particle filter algorithm to estimate log-likelihood.}
 \usage{
-buildBootF(model, nodes, thresh = 0.5, silent = FALSE, saveAll = FALSE)
+buildBootF(model, nodes, control = structure(list(thresh = 0.5, silent =
+  FALSE, saveAll = FALSE, smoothing = FALSE), .Names = c("thresh", "silent",
+  "saveAll", "smoothing")))
 }
 \arguments{
 \item{model}{A nimble model object, typically representing a state space model or a hidden Markov model}
 
 \item{nodes}{A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function}
 
+\item{control}{A list specifying different control options for the particle filter, described below.}
+
 \item{thresh}{A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)}
 
 \item{saveAll}{Whether to save state samples for all time points (T), or only for the most recent time points (F)}
+
+\item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),  or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T}
 }
 \description{
 Creates a bootstrap particle filter algorithm to estimate log-likelihood.
@@ -24,8 +30,8 @@ The resulting specialized particle filter algorthm will accept a
  of random \'particles\' to use for estimating the log-likelihood.  The algorithm
  returns the estimated log-likelihood value, and saves
  unequally weighted samples from the posterior distribution of the latent
- states in mv['x',], with corresponding unlogged weights in mv['wts',].
- An equally weighted sample from the posterior can be found in mv['xs',].
+ states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
+ An equally weighted sample from the posterior can be found in mvEWsamp.
 }
 \examples{
 model <- nimbleModel(code = ...)
@@ -33,13 +39,13 @@ my_BootF <- buildBootF(model, 'x[1:100]')
 Cmodel <- compileNimble(model)
 Cmy_BootF <- compileNimble(my_BootF, project = model)
 logLike <- Cmy_BootF(m = 100000)
-boot_X <- Cmy_BootF$mv['xs',]
+boot_X <- as.matrix(Cmy_BootF$mvEWSamp)
 }
 \author{
-Daniel Turek
+Daniel Turek and Nick Michaud
 }
 \seealso{
 Other filtering.methods: \code{\link{buildAuxF}};
-  \code{\link{buildLWF}}
+  \code{\link{buildENKF}}; \code{\link{buildLWF}}
 }
 

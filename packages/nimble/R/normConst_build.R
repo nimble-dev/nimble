@@ -173,23 +173,24 @@ normImpSamp = nimbleFunction(
 #' @param model 			A nimble model 
 #' @param burnIn			burn-in used for MCMC sampler
 #' @param mcmcControl		list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details
-#' @author Nick Michaud
+#' @author Nicholas Michaud
 #' @export
-#' @details getNormConst returns an importance sampling approximation to the log of the normalizing constant of a model (f(data|model)), using a method
-#' detailed in Gelman and Meng, Statitsical Science Vol. 13, No. 2, 163-185, 1998.  The posterior distribution of all stochastic nodes is approximated 
-#' by a multivariate normal distribution.  In cases where this approximation is not appropriate, the estimate of the normalizing constant will not be reliable.
-#' An idea of the Monte Carlo errror in the approximation can be gotten by the getVar() function, which will return the  variance of the log of the 
-#' importance sampling weights.  
+#' @details getNormConst returns an importance sampling approximation to the log of the normalizing constant of a model (f(data|model)).  The posterior distribution of all stochastic nodes is approximated 
+#' by a multivariate normal distribution.  In cases where this approximation is not appropriate, the estimate of the normalizing constant will not be reliable.  
+#' For this reason, it is important to ensure that the MCMC used to obtain posterior samples has converged.
+#' An idea of the Monte Carlo error in the approximation can be gotten by the getVar() method, which will return the variance of the log of the 
+#' importance sampling weights used for the approximation.  
 #'
-#' See user manual for more 
 #' @section Runtime Arguments:
-#'	\itemize{
+#'	\describe{
 #'	\item{\code{mcmcSamps}}	{
 #'    number of iterations to run the MCMC algorithm for.
 #'	}
 #'  \item{\code{importanceSamps}}	{
 #'    number of importance samples to use.
 #'	}
+#' }
+#' @references Gelman and Meng, Statistical Science Vol. 13, No. 2, 163-185, 1998.
 #'
 #' @examples
 #' 
@@ -256,6 +257,7 @@ getNormConst <-nimbleFunction(
         getValsFuncList[[var]] <- getValsFunc_Scalar(intVars[var], mcmc_Latent)
       }
       else{
+        if(is.null(varDims[[var]][1])) varDims[[var]][1] <- 1
         if(is.na(varDims[[var]][1])) varDims[[var]][1] <- 1
         if(length(varDims[[var]])==1){
           getValsFuncList[[var]] <- getValsFunc_Vector(intVars[var], varLengths[var], mcmc_Latent)

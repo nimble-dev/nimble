@@ -2,21 +2,24 @@
 % Please edit documentation in R/auxF_build.R
 \name{buildAuxF}
 \alias{buildAuxF}
-\title{Creates an auxiliary particle filter}
+\title{Creates an auxiliary particle filter algorithm to estimate log-likelihood.}
 \usage{
-buildAuxF(model, nodes, thresh = 0.5, silent = FALSE, saveAll = FALSE)
+buildAuxF(model, nodes, filterControl = structure(list(thresh = 0.5, silent =
+  FALSE, saveAll = FALSE), .Names = c("thresh", "silent", "saveAll")))
 }
 \arguments{
 \item{model}{A nimble model object, typically representing a state space model or a hidden Markov model}
 
-\item{nodes}{A character vector specifying the latent model nodes over which the Auxiliary particle filter will stochastically integrate over to estimate the log-likelihood function}
+\item{nodes}{A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function}
+
+\item{filterControl}{A list specifying different control options for the particle filter, described below.}
 
 \item{thresh}{A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)}
 
 \item{saveAll}{Whether to save state samples for all time points (T), or only for the most recent time points (F)}
 }
 \description{
-Creates an auxiliary particle filter
+Creates an auxiliary particle filter algorithm to estimate log-likelihood.
 }
 \details{
 The resulting specialized particle filter algorthm will accept a
@@ -24,22 +27,26 @@ The resulting specialized particle filter algorthm will accept a
  of random \'particles\' to use for estimating the log-likelihood.  The algorithm
  returns the estimated log-likelihood value, and saves
  unequally weighted samples from the posterior distribution of the latent
- states in mv['x',], with corresponding unlogged weights in mv['wts',].
- An equally weighted sample from the posterior can be found in mv['xs',].
+ states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
+ An equally weighted sample from the posterior can be found in mvEWsamp.
+
+  The auxiliary particle filter uses a lookeahead function to select promising particles before propogation.  Currently, the lookahead
+  funciton uses the expected valu of the latent state at the next time point given the current particle, e E(x[t+1]|x[t]).
+  The auxiliary particle filter currently only works for models with univariate normal transition densities.
 }
 \examples{
 model <- nimbleModel(code = ...)
-my_AuxF <- buildAuxF(model, 'x[1:100]', .9)
+my_AuxF <- buildAuxF(model, 'x[1:100]', filterControl = list(thresh = 0.9))
 Cmodel <- compileNimble(model)
 Cmy_AuxF <- compileNimble(my_AuxF, project = model)
 logLike <- Cmy_AuxF(m = 100000)
-hist(as.matrix(Cmy_Auxf$mv, 'xs'))
+hist(as.matrix(Cmy_Auxf$mvEWSamp, 'x'))
 }
 \author{
 Nick Michaud
 }
 \seealso{
 Other filtering.methods: \code{\link{buildBootF}};
-  \code{\link{buildLWF}}
+  \code{\link{buildENKF}}; \code{\link{buildLWF}}
 }
 

@@ -4,7 +4,9 @@
 \alias{buildLWF}
 \title{Creates a Liu and West filter.}
 \usage{
-buildLWF(model, nodes, params = NA, d = 0.99, silent = FALSE)
+buildLWF(model, nodes, filterControl = structure(list(params = NA, d = 0.99,
+  thresh = 0.5, silent = FALSE, saveAll = FALSE), .Names = c("params", "d",
+  "thresh", "silent", "saveAll")))
 }
 \arguments{
 \item{model}{A nimble model object, typically representing a state
@@ -14,11 +16,17 @@ space model or a hidden Markov model}
 over which the particle filter will stochastically integrate over to
 estimate the log-likelihood function}
 
-\item{params}{A character vector sepcifying the parameters you would
-like to estimate.}
+\item{filterControl}{A list specifying different control options for the particle filter, described below.}
 
-\item{d}{A discount factor for the LW filter.  Should be close to,
+\item{params}{A character vector sepcifying the parameters you would
+like to estimate the posterior distribution of.  If unspecified, parameter nodes are specified as all stochastic top level nodes which}
+
+\item{d}{A discount factor for the Liu-West filter.  Should be close to,
 but not above, 1.}
+
+\item{thresh}{A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)}
+
+\item{saveAll}{Whether to save state samples for all time points (T), or only for the most recent time points (F)}
 }
 \description{
 Creates a Liu and West filter.
@@ -29,10 +37,8 @@ The resulting specialized particle filter algorthm will accept a
  of random \'particles\' to use for estimating the log-likelihood.  The algorithm
  returns the estimated log-likelihood value, and saves
  unequally weighted samples from the posterior distribution of the latent
- states in mv['x',], with corresponding unlogged weights in mv['wts',].
- An equally weighted sample from the posterior can be found in mv['xs',].
- Samples from the posterior distribution of the specified parameters are in
- mv['params',].
+ states and top-level parameters in mvWSamp, with corresponding logged weights in mvWSamp['wts',].
+ An equally weighted sample from the posterior can be found in mvEWSamp.
 }
 \examples{
 model <- nimbleModel(code = ...)
@@ -40,14 +46,14 @@ my_LWF <- buildPF(model, 'x[1:100]')
 Cmodel <- compileNimble(model)
 Cmy_LWF <- compileNimble(my_LWF, project = model)
 logLike <- Cmy_LWF(m = 100000)
-lw_X <- Cmy_LWF$mv['xs',]
-lw_pars <- Cmy_LWF$mv['pars',]
+lw_X <- Cmy_LWF$mvEWSamp['x',]
+lw_sigma <- Cmy_LWF$mvEWSamp['sigma',]
 }
 \author{
 Nick Michaud
 }
 \seealso{
 Other filtering.methods: \code{\link{buildAuxF}};
-  \code{\link{buildBootF}}
+  \code{\link{buildBootF}}; \code{\link{buildENKF}}
 }
 

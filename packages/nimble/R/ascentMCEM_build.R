@@ -2,8 +2,7 @@
 # bootstrap method of "Markov Chain Monte Carlo in Statistical Mechanics"
 # by Mignani & Rosa, 2001 (p. 350)
 calc_asympVar = nimbleFunction(
-  setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0, numReps){
-    mvBlock <- modelValues(Rmodel)
+  setup = function(model, fixedNodes, sampledNodes, mvBlock, mvSample, burnIn = 0, numReps){
     calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = burnIn, mvSample = mvBlock)
   },
   run = function(nsamps = integer(0), theta = double(1), oldTheta = double(1)){
@@ -88,28 +87,29 @@ calc_E_llk_gen = nimbleFunction(
 #' @param mcmcControl		list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details
 #' @param boxConstraints	A list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.
 #' @param buffer			A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount. 
-#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood
-#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood
-#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.
+#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.05. 
+#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.05.
+#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.
 #' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged.
 #' @param numReps number of bootstrap samples to use for asymptotic variance calculation
 
 
-#'  @author Clifford Anderson-Bergman and Nick Michaud
+#'  @author Clifford Anderson-Bergman and Nicholas Michaud
 #' @export
-#' @details buildMCEM calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
-#' Uses the ascent-based mcem algorithm of Caffo '05, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached,
+#' @details buildAscent_MCEM calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
+#' Uses an ascent-based MCEM algorithm, which includes rules for automatically increasing the number of MC samples as iterations increase, and for determining when convergence has been reached.
 #' @return
 #' an R function that when called runs the MCEM algorithm. The function returned takes the arguments listed in Runtime Arguments.
 #'
 #'
-#' See user manual for more 
 #' @section Runtime Arguments:
 #'	\itemize{
 #'	\item{\code{initM}}	{
 #'    starting number of iterations for the algorithm.
 #'	}
-#'
+#'  }
+#' @references Caffo, Brian S., Wolfgang Jank, and Galin L. Jones. "Ascent-based Monte Carlo expectation-maximization."
+#'  Journal of the Royal Statistical Society: Series B (Statistical Methodology) 67.2 (2005): 235-251.
 #' @examples
 #' 
 #' pumpCode <- nimbleCode({ 
@@ -203,8 +203,9 @@ buildAscentMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = lis
     mcmc_Latent_Spec <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
     Rmcmc_Latent <- buildMCMC(mcmc_Latent_Spec)
     sampledMV = Rmcmc_Latent$mvSamples
+    mvBlock <- modelValues(Rmodel)
     Rcalc_E_llk <- calc_E_llk_gen(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
-    RvarCalc <- calc_asympVar(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV, numReps = numReps)
+    RvarCalc <- calc_asympVar(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvBlock, mvSample = sampledMV, numReps = numReps)
     
     cvarCalc <- compileNimble(RvarCalc, project = Rmodel)
     cmcmc_Latent = compileNimble(Rmcmc_Latent, project = Rmodel)

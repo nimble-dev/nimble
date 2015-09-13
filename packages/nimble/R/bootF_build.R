@@ -53,9 +53,7 @@ bootFStep <- nimbleFunction(
         copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
       }
-      ## below line is used to get around the R version of this funciton shrinking mv[wts, i] to a one dimensional object when saveAll ==F,
-      ## when it must remain two dimensional.  We add an unnecessary second column, which we fill with 0's
-      #if(!notFirst & !saveAll) mv['wts', i][1,2]  <<- 0
+
       simulate(model, thisNode)
       copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row = i)
       calculate(model, thisDeterm)
@@ -97,21 +95,45 @@ bootFStep <- nimbleFunction(
 
 #' Creates a bootstrap particle filter algorithm to estimate log-likelihood.
 #'
-#' @param model A nimble model object, typically representing a state space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
-#' @param filterControl  A list specifying different control options for the particle filter, described below.
-#' @param thresh A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)
-#' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
-#' @param smoothing Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),  or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T
-#' @author Daniel Turek and Nick Michaud
-#' @details The resulting specialized particle filter algorthm will accept a
+#' @param model A nimble model object, typically representing a state 
+#'  space model or a hidden Markov model
+#' @param nodes A character vector specifying the latent model nodes 
+#'  over which the particle filter will stochastically integrate over to
+#'  estimate the log-likelihood function
+#' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
+#' @author Daniel Turek and Nicholas Michaud
+#' @details 
+#' 
+#' Each of the control() list options are described in detail below:
+#' \describe{
+#'  \item{"thresh"}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
+#'   effective sample size is less than thresh*(number of particles).  Defaults to 0.5.}
+#'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+#'  \item{"smoothing"}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),  
+#'  or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T}
+#' }
+#' 
+#'  The bootstrap filter starts by generating a sample of estimates from the 
+#'  prior distribution of the latent states of a state space model.  At each time point, these particles are propagated forward 
+#'  by the model's transition equation.  Each particle is then given a weight 
+#'  proportional to the value of the observation equation given that particle. 
+#'  The weights are used to draw an equally-weighted sample of the particles at this time point.
+#'  The algorithm then proceeds
+#'  to the next time point.  Neither the transition nor the observation equations are required to 
+#'  be normal for the bootstrap filter to work.   
+
+#' The resulting specialized particle filter algorthm will accept a
 #'  single integer argument (m, default 10,000), which specifies the number
 #'  of random \'particles\' to use for estimating the log-likelihood.  The algorithm 
 #'  returns the estimated log-likelihood value, and saves
 #'  unequally weighted samples from the posterior distribution of the latent
 #'  states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
 #'  An equally weighted sample from the posterior can be found in mvEWsamp.
-#' @family filtering methods
+#'  
+#' @family particle filtering methods
+#' @references Gordon, Neil J., David J. Salmond, and Adrian FM Smith. 
+#' "Novel approach to nonlinear/non-Gaussian Bayesian state estimation." 
+#' IEE Proceedings F (Radar and Signal Processing). Vol. 140. No. 2. IET Digital Library, 1993.
 #' @examples
 #' model <- nimbleModel(code = ...)
 #' my_BootF <- buildBootF(model, 'x[1:100]')
@@ -121,7 +143,7 @@ bootFStep <- nimbleFunction(
 #' boot_X <- as.matrix(Cmy_BootF$mvEWSamp)
 #' @export
 buildBootF <- nimbleFunction(
-  setup = function(model, nodes, filterControl = list(thresh = 0.5,  silent = FALSE, saveAll = FALSE, smoothing = FALSE)) {
+  setup = function(model, nodes, control = list()) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
@@ -129,10 +151,10 @@ buildBootF <- nimbleFunction(
     vars <- model$getVarNames(nodes =  nodes)  # need var names too
     
     
-    thresh <- filterControl[['thresh']]
-    saveAll <- filterControl[['saveAll']]
-    smoothing <- filterControl[['smoothing']]
-    silent <- filterControl[['silent']]
+    thresh <- control[['thresh']]
+    saveAll <- control[['saveAll']]
+    smoothing <- control[['smoothing']]
+    silent <- control[['silent']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE

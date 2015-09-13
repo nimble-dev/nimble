@@ -183,16 +183,29 @@ ENKFStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes which the ENKF will estimate.
-#' @param filterControl  A list specifying different control options for the particle filter, described below.
-#' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
-#' @author Nick Michaud
-#' @details Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  
+#' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
+#' @author Nicholas Michaud
+#' @family particle filtering methods
+
+#' @details 
+#' The control() list option is described in detail below:
+#' \describe{
+#'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+#' }
+#' 
+#' Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  The ensemble Kalman filter
+#' is a monte-carlo approximation to a Kalman filter that can be used when the model's transition euqations do not follow a normal distribution.  
 #' Latent states (x[t]) and observations (y[t]) can be scalars or vectors at each time point, 
 #' and sizes of observations can vary from time point to time point.
 #' In the BUGS model, the observations (y[t]) must be equal to some (possibly nonlinear) deterministic function
-#' of the latent state (x[t]) plus an additive error term.  Currently only normal/mvn error terms are supported.
-#' The transition from x[t] to x[t+1] does not have to be normal or linear.  Output is stored in mvSamps
+#' of the latent state (x[t]) plus an additive error term.  Currently only normal and multivariate normal
+#' error terms are supported.
+#' The transition from x[t] to x[t+1] does not have to be normal or linear.  Output from the posterior distribution of the latent
+#' states is stored in mvSamps.
 #' @family filtering methods
+#' @references Houtekamer, Peter L., and Herschel L. Mitchell.
+#'  "Data assimilation using an ensemble Kalman filter technique."
+#'  Monthly Weather Review 126.3 (1998): 796-811.
 #' @examples
 #' model <- nimbleModel(code = ...)
 #' my_ENKFF <- buildENKF(model, 'x')
@@ -203,15 +216,15 @@ ENKFStep <- nimbleFunction(
 #' hist(ENKF_X)
 #' @export
 buildENKF <- nimbleFunction(
-  setup = function(model, nodes, filterControl = list( silent = FALSE, saveAll = FALSE)) {
+  setup = function(model, nodes, control = list()) {
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     xDim <- dims[[1]]
     
-    saveAll <- filterControl[['saveAll']]
-    silent <- filterControl[['silent']]
+    saveAll <- control[['saveAll']]
+    silent <- control[['silent']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     

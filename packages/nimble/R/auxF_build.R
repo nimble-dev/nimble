@@ -126,12 +126,25 @@ auxFStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
-#' @param filterControl  A list specifying different control options for the particle filter, described below.
-#' @param thresh A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)
-#' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
-#' @author  Nick Michaud
-#' @family filtering methods
-#' @details The resulting specialized particle filter algorthm will accept a
+#' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
+#' @author  Nicholas Michaud
+#' @family particle filtering methods
+#' @details 
+#' 
+#' \describe{
+#'  \item{"thresh"}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
+#'   effective sample size is less than thresh*(number of particles).  Defaults to 0.5.}
+#'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+#' }
+#' 
+#'      The auxiliary particle filter modifies the bootstrap filter (\code{\link{buildBootF}})
+#'      by adding a lookahead step to 
+#'      the algorithm: before propagating particles from one time point to the next via the transition equation, 
+#'      the auxiliary filter calculates a weight for each pre-propogated particle by predicting how well
+#'      the particle will agree with the next data point.  These pre-weights are used to conduct an initial 
+#'      resampling step before propagation. 
+#' 
+#'  The resulting specialized particle filter algorthm will accept a
 #'  single integer argument (m, default 10,000), which specifies the number
 #'  of random \'particles\' to use for estimating the log-likelihood.  The algorithm 
 #'  returns the estimated log-likelihood value, and saves
@@ -142,16 +155,18 @@ auxFStep <- nimbleFunction(
 #'   The auxiliary particle filter uses a lookeahead function to select promising particles before propogation.  Currently, the lookahead
 #'   funciton uses the expected valu of the latent state at the next time point given the current particle, e E(x[t+1]|x[t]).
 #'   The auxiliary particle filter currently only works for models with univariate normal transition densities. 
+#'   @references Pitt, Michael K., and Neil Shephard. "Filtering via simulation: Auxiliary particle filters."
+#'    Journal of the American statistical association 94.446 (1999): 590-599.
 #' @examples
 #' model <- nimbleModel(code = ...)
-#' my_AuxF <- buildAuxF(model, 'x[1:100]', filterControl = list(thresh = 0.9))
+#' my_AuxF <- buildAuxF(model, 'x[1:100]', control = list(thresh = 0.9))
 #' Cmodel <- compileNimble(model)
 #' Cmy_AuxF <- compileNimble(my_AuxF, project = model)
 #' logLike <- Cmy_AuxF(m = 100000)
 #' hist(as.matrix(Cmy_Auxf$mvEWSamp, 'x'))
 #' @export
 buildAuxF <- nimbleFunction(
-  setup = function(model, nodes, filterControl = list(thresh = 0.5,  silent = FALSE, saveAll = FALSE)) {
+  setup = function(model, nodes, control = list()) {
     
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
@@ -162,9 +177,9 @@ buildAuxF <- nimbleFunction(
       stop('sizes or dimension of latent states varies')
     
     
-    thresh <- filterControl[['thresh']]
-    saveAll <- filterControl[['saveAll']]
-    silent <- filterControl[['silent']]
+    thresh <- control[['thresh']]
+    saveAll <- control[['saveAll']]
+    silent <- control[['silent']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(thresh)) thresh <- .5

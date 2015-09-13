@@ -1104,7 +1104,7 @@ sampler_RW_PFilter <- nimbleFunction(
 #' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 #' \item resamp.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011. 
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
 #' }
 #' \cr
 #' @name samplers

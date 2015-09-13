@@ -204,7 +204,7 @@ LWStep <- nimbleFunction(
       }
       calculate(model, parDeterm) 
       simulate(model, thisNode)
-      copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, rowTo = i) #copy to x instead of xs so that we don't overwrite values in xs
+      copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, rowTo = i)
       calculate(model, thisDeterm)
       l[i]  <- exp(calculate(model, thisData))
       if(is.nan(l[i])) l[i] <- 0
@@ -287,55 +287,74 @@ LWparFunc <- nimbleFunction(
   ), where = getLoadingNamespace() 
 )
 
-#' Creates a Liu and West filter.
+#' Creates a Liu and West filter.  
 #'
 #' @param model A nimble model object, typically representing a state 
 #'  space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes 
 #'  over which the particle filter will stochastically integrate over to
 #'  estimate the log-likelihood function
-#' @param filterControl  A list specifying different control options for the particle filter, described below.
-#' @param params A character vector sepcifying the parameters you would 
+#' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
+
+#' @author Nicholas Michaud
+#' @family particle filtering methods
+#' @details 
+#' 
+#' Each of the control() list options are described in detail below:
+#' \describe{
+#'  \item{"params"}{A character vector sepcifying the parameters you would 
 #'  like to estimate the posterior distribution of.  If unspecified, parameter nodes are specified as all stochastic top level nodes which
-# are not in the set of latent nodes specified in 'nodes'.
-#' @param d  A discount factor for the Liu-West filter.  Should be close to,
-#'  but not above, 1.
-#' @param thresh A number between 0 and 1 specifying when to resample: the resampling step will occur when the effective sample size is less than thresh*(number of particles)
-#' @param saveAll  Whether to save state samples for all time points (T), or only for the most recent time points (F)
-#' @author Nick Michaud
-#' @family filtering methods
-#' @details The resulting specialized particle filter algorthm will accept a
+#'  are not in the set of latent nodes specified in 'nodes'.}
+#'  \item{"d"}{A discount factor for the Liu-West filter.  Should be close to,
+#'  but not above, 1.}
+#'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+#' }
+#' 
+#'  The Liu and West filter samples from the posterior 
+#'  distribution of both the latent states and top-level parameters for a state space model.  
+#'  Each particle in the Liu and West filter contains values not only for latent states, 
+#'  but also for top level parameters.  Latent states are propogated via an auxiliary step, 
+#'  as in the auxiliary particle filter (\code{\link{buildAuxF}}).
+#'  Top-level parameters are propagated from one 
+#'  time point to the next through a smoothed kernel density based on previous particle values.  
+#'        
+#'  The resulting specialized particle filter algorthm will accept a
 #'  single integer argument (m, default 10,000), which specifies the number
-#'  of random \'particles\' to use for estimating the log-likelihood.  The algorithm 
-#'  returns the estimated log-likelihood value, and saves
+#'  of random \'particles\' to use for sampling from the posterior distributions.  The algorithm  saves
 #'  unequally weighted samples from the posterior distribution of the latent
 #'  states and top-level parameters in mvWSamp, with corresponding logged weights in mvWSamp['wts',].
 #'  An equally weighted sample from the posterior can be found in mvEWSamp. 
+#'  
+#' @references Liu, Jane, and Mike West. "Combined parameter and state estimation in simulation-based filtering." 
+#' Sequential Monte Carlo methods in practice. Springer New York, 2001. 197-223.
+#' 
 #' @examples
 #' model <- nimbleModel(code = ...)
 #' my_LWF <- buildPF(model, 'x[1:100]')
 #' Cmodel <- compileNimble(model)
 #' Cmy_LWF <- compileNimble(my_LWF, project = model)
 #' logLike <- Cmy_LWF(m = 100000)
-#' lw_X <- Cmy_LWF$mv['xs',]
-#' lw_pars <- Cmy_LWF$mv['pars',]
+#' lw_X <- as.matrix(Cmy_LWF$mvEWSamp, 'x')
+#' 
+#' #samples from posterior of a top level parameter named sigma:
+#' lw_sigma <- as.matrix(Cmy_LWF$mvEWSamp, 'sigma')
+#' 
+#' 
 #' @export
 buildLWF <- nimbleFunction(
-  setup = function(model, nodes, filterControl = list(params = NA, d = .99, thresh = 0.5,  silent = FALSE, saveAll = FALSE)){
+  setup = function(model, nodes, control = list()){
     my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     
     
     
     
-    thresh <- filterControl[['thresh']]
-    saveAll <- filterControl[['saveAll']]
-    silent <- filterControl[['silent']]
-    params <- filterControl[['params']]
-    d <- filterControl[['d']]
+    saveAll <- control[['saveAll']]
+    silent <- control[['silent']]
+    params <- control[['params']]
+    d <- control[['d']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
-    if(is.null(thresh)) thresh <- .5
     if(is.null(d)) d <- .99
     # if unspecified, parameter nodes are specified as all stochastic top level nodes which
     # are not in the set of latent nodes above
@@ -356,7 +375,6 @@ buildLWF <- nimbleFunction(
     paramVars <-  model$getVarNames(nodes =  params)  # need var names too
     
     
-    if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll) smoothing <- FALSE
     
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
