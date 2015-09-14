@@ -153,7 +153,6 @@ normImpSamp = nimbleFunction(
       normCEst[k] <- impSimFunc$run(normMean, normCov)
     }
     
-    print(dim(normCEst)[1])
     L <- mean(normCEst)
     varLL <- var(normCEst) / nImpSamps / L^2
     if(is.nan(varLL)) { varLL <- Inf

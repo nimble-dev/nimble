@@ -114,7 +114,7 @@ LWStep <- nimbleFunction(
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
-    getmean <- normMeanA(model, thisNode)
+    getmean <- normMean(model, thisNode)
     isLast <- (iNode == length(nodes))
     
     t <- iNode  # current time point
@@ -358,7 +358,7 @@ buildLWF <- nimbleFunction(
     if(is.null(d)) d <- .99
     # if unspecified, parameter nodes are specified as all stochastic top level nodes which
     # are not in the set of latent nodes above
-    if(is.null(params)|is.na(params)){
+    if(all(is.null(params))|all(is.na(params))){
       params <- setdiff(model$getNodeNames(stochOnly=T, includeData=F,
                                            topOnly=T),nodes)
     }
