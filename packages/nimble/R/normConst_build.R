@@ -152,13 +152,16 @@ normImpSamp = nimbleFunction(
     for(k in 1:nImpSamps){
       normCEst[k] <- impSimFunc$run(normMean, normCov)
     }
+    
+    print(dim(normCEst)[1])
     L <- mean(normCEst)
     varLL <- var(normCEst) / nImpSamps / L^2
     if(is.nan(varLL)) { varLL <- Inf
-                        return(-Inf)  }
-    return(log(L))
+                        return(-Inf)
+    }
+    
     out[1] <- log(L)
-    out[2] <- sd(varLL)  # also return var. of log importance weights
+    out[2] <- sqrt(varLL)  # also return var. of log importance weights
     returnType(double(1))
     return(out)
   }, where = getLoadingNamespace()
@@ -183,10 +186,10 @@ normImpSamp = nimbleFunction(
 #'
 #' @section Runtime Arguments:
 #'	\describe{
-#'	\item{\code{mcmcSamps}}	{
+#'	\item{\code{mcmcSamps}}{
 #'    number of iterations to run the MCMC algorithm for.
 #'	}
-#'  \item{\code{importanceSamps}}	{
+#'  \item{\code{importanceSamps}}{
 #'    number of importance samples to use.
 #'	}
 #' }
@@ -296,7 +299,7 @@ getNormConst <-nimbleFunction(
     ## use importance sampling to estimate normalizing constant and variance of importance weights
     impFuncOutput <- impSampFunc$run(vars, numSamps, importanceSamps)
     normConst <- impFuncOutput[1]
-    variance <<- impFuncOutput[2]/exp(normConst)
+    variance <<- impFuncOutput[2]
     
     values(model, intNodes) <<- stVals 
     

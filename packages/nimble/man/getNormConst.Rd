@@ -29,10 +29,10 @@ importance sampling weights used for the approximation.
 \section{Runtime Arguments}{
 
 	\describe{
-	\item{\code{mcmcSamps}}	{
+	\item{\code{mcmcSamps}}{
    number of iterations to run the MCMC algorithm for.
 	}
- \item{\code{importanceSamps}}	{
+ \item{\code{importanceSamps}}{
    number of importance samples to use.
 	}
 }
