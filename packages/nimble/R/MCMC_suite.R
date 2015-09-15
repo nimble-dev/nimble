@@ -387,11 +387,18 @@ MCMCsuiteClass <- setRefClass(
             if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
 ##            dataFile <- gsub('stan$', 'data.R', stan_model)
 ##            initFile <- gsub('stan$', 'init.R', stan_model)
-            constantsAndDataStan <- fileToList(dataFile)
-            if(file.exists(initFile))
-                initsStan <- fileToList(initFile)
+            if(!is.list(dataFile)) 
+                constantsAndDataStan <- fileToList(dataFile)
             else
-                initsStan <- NULL
+                constantsAndDataStan <- dataFile
+
+            if(!is.list(initFile)) {
+                if(file.exists(initFile))
+                    initsStan <- fileToList(initFile)
+                else
+                    initsStan <- NULL
+            } else
+                initsStan <- initFile
             
             timeResult <- system.time(stan_mod <- stan_model(file = stan_model))
             addTimeResult('stan_compile', timeResult)
@@ -470,8 +477,8 @@ MCMCsuiteClass <- setRefClass(
             }
             output$summary[MCMCtag, , ] <<- summaryArray
             if(calculateEfficiency) {
-                output$efficiency$min  <<- apply(output$summary[, 'efficiency', ], 1, min)
-                output$efficiency$mean <<- apply(output$summary[, 'efficiency', ], 1, mean)
+                output$efficiency$min  <<- apply(output$summary[, 'efficiency', , drop = FALSE], 1, min)
+                output$efficiency$mean <<- apply(output$summary[, 'efficiency', , drop = FALSE], 1, mean)
             }
         },
         
