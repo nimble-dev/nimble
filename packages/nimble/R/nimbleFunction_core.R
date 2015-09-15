@@ -70,8 +70,7 @@ nimbleFunction <- function(setup         = NULL,
                            globalSetup   = NULL,
                            contains      = NULL,
                            name          = NA,
-                           ##where       = globalenv()
-                           where         = topenv(parent.frame(3))
+                           where         = getNimbleFunctionEnvironment()
                            ) {
 
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
