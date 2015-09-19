@@ -42,6 +42,7 @@ individualExportNames = c(
  'nimbleFunctionVirtual',
  'nimCopy',
   'nimPrint',
+  'nimStop',
  '`nfVar<-`',
  'OptimReadyFunction',
  'getValues', 

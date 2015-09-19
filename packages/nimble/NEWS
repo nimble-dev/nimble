@@ -1,3 +1,11 @@
+                        CHANGES IN VERSION 0.4-1 (Sep. 30, 2015)
+
+USER LEVEL CHANGES
+
+-- fixed bug preventing use of nimbleFunctions in packages depending on NIMBLE.
+
+-- fixed bug preventing use of nimStop in R version of nimbleFunctions.
+
                         CHANGES IN VERSION 0.4 (Aug. 2, 2015)
 
 USER LEVEL CHANGES
