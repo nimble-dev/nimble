@@ -82,7 +82,8 @@ nimbleFunction <- function(setup         = NULL,
     }
    
     virtual <- FALSE
-    if(is.na(name)) name <- nf_refClassLabelMaker()
+    force(where) # topenv(parent.frame())
+    if(is.na(name)) name <- nf_refClassLabelMaker(envName = environmentName(where))
     className <- name
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
