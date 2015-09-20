@@ -25,8 +25,8 @@ install:
 script:
 ##  - Rscript packages/nimble/tests/test-all.R    2>&1 | tee out
 ##                                                                ## initial travis setup:   12 mins
-  - Rscript packages/nimble/tests/test-mcmc.R   2>&1 | tee out  ## ???? on devel, 7/29/15, ?? mins
-##  - Rscript packages/nimble/tests/test-models.R 2>&1 | tee out  ## PASS on devel, 7/29/15, 32 mins
+##  - Rscript packages/nimble/tests/test-mcmc.R   2>&1 | tee out  ## ???? on devel, 7/29/15, ?? mins
+  - Rscript packages/nimble/tests/test-models.R 2>&1 | tee out  ## PASS on devel, 7/29/15, 32 mins
 ##  - Rscript packages/nimble/tests/test-trunc.R  2>&1 | tee out  ## PASS on devel, 7/29/15, 36 mins
 ##  - Rscript packages/nimble/tests/test-others.R 2>&1 | tee out  ## PASS on devel, 7/29/15, 29 mins
 

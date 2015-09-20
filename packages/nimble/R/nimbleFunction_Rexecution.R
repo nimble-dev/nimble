@@ -9,7 +9,9 @@
 #' @export
 #' @details
 #' The NIMBLE stop is similar to the native R stop, but it takes only one argument, the error message to be output.  During uncompiled NIMBLE execution, nimStop simply calls R's stop funtion. During compiled execution it calls the error function from the R headers.  stop is an alias for nimStop in the NIMBLE language  
-nimStop <- function(msg) stop(msg)
+nimStop <- function(msg) stop(msg, call. = FALSE)
+# we use call.=FALSE because otherwise the error msg indicates the
+# error itself occurs in nimStop() and not in the calling frame
 
 #' Check for interrupt (e.g. Ctrl-C) during nimbleFunction execution. Part of the NIMBLE language.
 #'

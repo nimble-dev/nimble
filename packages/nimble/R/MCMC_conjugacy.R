@@ -74,8 +74,8 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dmnorm',
          link = 'linear',
          dependents = list(
-             dmnorm = list(param = 'mean', contribution_mean = 't(coeff) %*% prec %*% asCol(value-offset)', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-         posterior = 'dmnorm_chol(mean       = (inverse( (prior_prec + contribution_prec) ) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean))[,1],
+             dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
+         posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + contribution_mean))[,1],
                                   cholesky   = chol(prior_prec + contribution_prec),
                                   prec_param = 1)'),
 
@@ -592,6 +592,12 @@ conjugacyClass <- setRefClass(
             ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
             for(contributionName in posteriorObject$neededContributionNames) {
                 contribNdim <- posteriorObject$neededContributionDims[[contributionName]]
+                ## still also need declare() statements?? new addition August 2015, for multivarate case
+                ##if(contribNdim > 0)
+                ##    functionBody$addCode(declare(CONTRIB_NAME, double(DIM, SIZES)),
+                ##                         list(CONTRIB_NAME = as.name(contributionName),
+                ##                              DIM          = contribNdim,
+                ##                              SIZES        = if(contribNdim==1) quote(d) else if(contribNdim==2) quote(c(d,d)) else stop()))
                 functionBody$addCode(CONTRIB_NAME <- CONTRIB_INITIAL_DECLARATION,
                                      list(CONTRIB_NAME                = as.name(contributionName),
                                           CONTRIB_INITIAL_DECLARATION = switch(as.character(contribNdim),

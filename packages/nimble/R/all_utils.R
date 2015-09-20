@@ -54,6 +54,19 @@ getLoadingNamespace <- function() {
     if(environmentIsLocked(nimbleenv)) globalenv() else nimbleenv
 }
 
+getNimbleFunctionEnvironment <- function() {
+    ## This is how we determine which environment will contain the reference class definition underlying a NIMBLE function.
+    ## This implementation allows for:
+    ## (1) nimbleFunctions to be defined in the namespace of another package (in a R/ source file), and
+    ## (2) nimbleFunctions to be defined inside other package member functions <---- with warnings!
+    ## This current implementation is entirely dependent upon the use of reference classes.
+    ## setRefClass( ........  catch a grep for setRefClass
+    ## -DT Sept. 2015
+    env <- topenv(parent.frame(4))
+    if(!environmentIsLocked(env)) return(env)
+    return(globalenv())
+}
+
 
 #' Resizes a modelValues object
 #'

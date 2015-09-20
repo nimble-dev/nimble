@@ -267,6 +267,7 @@ print: A logical argument, default value TRUE, specifying whether to print the c
 '      
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            if(length(ind) > 0 && max(ind) > length(samplerSpecs)) stop('MCMC specification doesn\'t have that many samplers')
             samplerSpecs[ind] <<- NULL
             if(print) getSamplers()
             return(invisible(NULL))
@@ -303,6 +304,7 @@ Invisibly returns a list of the current sampler specifications for the specified
 '
             if(missing(ind))        ind <- seq_along(samplerSpecs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            if(length(ind) > 0 && max(ind) > length(samplerSpecs)) stop('MCMC specification doesn\'t have that many samplers')
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             for(i in ind)
                 cat(paste0('[', i, '] ', makeSpaces(i), samplerSpecs[[i]]$toStr(), '\n'))

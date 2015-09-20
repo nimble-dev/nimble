@@ -109,10 +109,11 @@
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
 #'
-#' @return Returns a named list containing three elements:
+#' @return Returns a named list containing elements:
 #' samples: A 3-dimensional array containing samples from each MCMC algorithm.
 #' summary: A 3-dimensional array containing summary statistics for each variable and algorithm.
 #' timing: A numeric vector containing timing information.
+#' efficiency: Minimum and mean sampling efficiencies for each algorithm (only provided if option calculateEfficiency = TRUE).
 #' See the NIMBLE User Manual for more information about the organization of the return object.
 #'  
 #' @examples
@@ -231,6 +232,8 @@ MCMCsuiteClass <- setRefClass(
             openbugs_directory  = 'C:/OpenBUGS323',
             openbugs_program    = 'OpenBUGS',
             stan_model          = '',
+            stan_inits          = NULL,
+            stan_data           = NULL,
             stanNameMaps        = list(),
             makePlot            = TRUE,
             savePlot            = TRUE,
@@ -238,6 +241,7 @@ MCMCsuiteClass <- setRefClass(
             setSeed             = TRUE,
             debug               = FALSE) {
             
+            if(debug) browser()
             code <<- code
             constants <<- constants
             data <<- data
@@ -264,6 +268,9 @@ MCMCsuiteClass <- setRefClass(
             debug <<- debug
             modelFileName <<- 'model.txt'
 
+            if(is.null(stan_inits)) stan_inits <- gsub('stan$', 'init.R', stan_model)
+            if(is.null(stan_data)) stan_data <- gsub('stan$', 'data.R', stan_model)
+            
             ## run
             checkMCMCdefNames()
             init_output()
@@ -273,7 +280,7 @@ MCMCsuiteClass <- setRefClass(
             if(winbugsMCMCflag)    run_winbugs()
             if(openbugsMCMCflag)   run_openbugs()
             if(jagsMCMCflag)       run_jags()
-            if(stanMCMCflag)       run_stan()
+            if(stanMCMCflag)       run_stan(stan_data, stan_inits)
             if(nimbleMCMCflag)     run_nimble()
             unlink(modelFileName)
             if(makePlot)           generate_plots()
@@ -281,7 +288,7 @@ MCMCsuiteClass <- setRefClass(
         
         setMonitors = function(newMonitors) {
             if(length(newMonitors) == 0) newMonitors <- Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
-            newMonitors <- Rmodel$expandNodeNames(newMonitors)
+            newMonitors <- Rmodel$expandNodeNames(newMonitors, returnScalarComponents = TRUE)
             dataFlags <- unlist(lapply(newMonitors, function(mon) eval(parse(text=mon, keep.source=FALSE)[[1]], envir=Rmodel$isDataEnv)))
             newMonitors <- newMonitors[!dataFlags]
             monitors <<- newMonitors
@@ -375,14 +382,17 @@ MCMCsuiteClass <- setRefClass(
             addToOutput('jags', samplesArray, timeResult)
         },
 
-        run_stan = function() {
+        run_stan = function(dataFile, initFile) {
             require(rstan)
             if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
-            dataFile <- gsub('stan$', 'data.R', stan_model)
-            initFile <- gsub('stan$', 'init.R', stan_model)
+##            dataFile <- gsub('stan$', 'data.R', stan_model)
+##            initFile <- gsub('stan$', 'init.R', stan_model)
             constantsAndDataStan <- fileToList(dataFile)
-            initsStan <- fileToList(initFile)
-
+            if(file.exists(initFile))
+                initsStan <- fileToList(initFile)
+            else
+                initsStan <- NULL
+            
             timeResult <- system.time(stan_mod <- stan_model(file = stan_model))
             addTimeResult('stan_compile', timeResult)
             
