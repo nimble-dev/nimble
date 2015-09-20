@@ -823,10 +823,6 @@ sampler_RW_PFilter <- nimbleFunction(
     resamp         <- control$resamp
     optimizeM      <- control$optimizeM
     
-    if(is.na(m)){
-      m <- 1000
-    }
-    
     if(optimizeM){
       m <- 3000  
     }
