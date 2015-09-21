@@ -2,6 +2,12 @@
 
 USER LEVEL CHANGES
 
+-- added support for OpenBUGS to MCMC Suite.
+
+-- additional option for MCMC Suite: 'calculateEfficiency' to calculate ESS and ESS/time.
+
+-- addition of elliptical slice sampler 'ess' to MCMC engine.
+
 -- fixed bug preventing use of nimbleFunctions in packages depending on NIMBLE.
 
 -- fixed bug preventing use of nimStop in R version of nimbleFunctions.
