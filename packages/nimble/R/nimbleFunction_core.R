@@ -82,7 +82,8 @@ nimbleFunction <- function(setup         = NULL,
     }
    
     virtual <- FALSE
-    force(where) # topenv(parent.frame())
+    force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
+    # we now include the namespace in the name of the RefClass to avoid two nfs having RefClass of same name but existing in different namespaces
     if(is.na(name)) name <- nf_refClassLabelMaker(envName = environmentName(where))
     className <- name
 
