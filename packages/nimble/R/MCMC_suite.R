@@ -329,10 +329,11 @@ MCMCsuiteClass <- setRefClass(
         },
         
         setMCMCdefs = function(newMCMCdefs) {
-            MCMCdefs <<- list(nimble       = quote(configureMCMC(Rmodel)),
-                              nimble_RW    = quote(configureMCMC(Rmodel, onlyRW    = TRUE)),
-                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)),
-                              autoBlock    = quote(configureMCMC(Rmodel, autoBlock = TRUE)))
+            MCMCdefs <<- list(nimble        = quote(configureMCMC(Rmodel)),
+                              nimble_noConj = quote(configureMCMC(Rmodel, useConjugacy = FALSE)),
+                              nimble_RW     = quote(configureMCMC(Rmodel, onlyRW       = TRUE)),
+                              nimble_slice  = quote(configureMCMC(Rmodel, onlySlice    = TRUE)),
+                              autoBlock     = quote(configureMCMC(Rmodel, autoBlock    = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
         },
