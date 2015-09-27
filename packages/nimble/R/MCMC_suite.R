@@ -470,8 +470,8 @@ MCMCsuiteClass <- setRefClass(
             }
             output$summary[MCMCtag, , ] <<- summaryArray
             if(calculateEfficiency) {
-                output$efficiency$min  <<- apply(output$summary[, 'efficiency', ], 1, min)
-                output$efficiency$mean <<- apply(output$summary[, 'efficiency', ], 1, mean)
+                output$efficiency$min  <<- apply(output$summary[, 'efficiency', , drop=FALSE], 1, min)
+                output$efficiency$mean <<- apply(output$summary[, 'efficiency', , drop=FALSE], 1, mean)
             }
         },
         
