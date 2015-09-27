@@ -3,11 +3,12 @@
 labelFunctionCreator <- function(lead, start = 1) {
   nextIndex <- start
   force(lead)
-  labelGenerator <- function(reset = FALSE, count = 1) {
+  labelGenerator <- function(reset = FALSE, count = 1, envName = "") {
     if(reset) {
       nextIndex <<- 1
       return(invisible(NULL))
     }
+    lead <- paste(lead, envName , sep = '_')
     ans <- paste0(lead, nextIndex - 1 + (1:count))
     nextIndex <<- nextIndex + count
     ans
@@ -58,11 +59,8 @@ getNimbleFunctionEnvironment <- function() {
     ## This is how we determine which environment will contain the reference class definition underlying a NIMBLE function.
     ## This implementation allows for:
     ## (1) nimbleFunctions to be defined in the namespace of another package (in a R/ source file), and
-    ## (2) nimbleFunctions to be defined inside other package member functions <---- with warnings!
-    ## This current implementation is entirely dependent upon the use of reference classes.
-    ## setRefClass( ........  catch a grep for setRefClass
-    ## -DT Sept. 2015
-    env <- topenv(parent.frame(4))
+    ## (2) nimbleFunctions to be defined inside other package member functions
+    env <- topenv(parent.frame(2))  # 2 gets out of nimble namespace and into frame where topenv gives the namespace in which the nf is being defined
     if(!environmentIsLocked(env)) return(env)
     return(globalenv())
 }
