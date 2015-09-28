@@ -2,6 +2,8 @@
 
 USER LEVEL CHANGES
 
+-- new MCMC option for MCMCsuite: 'nimble_noConj'
+
 -- added support for OpenBUGS to MCMC Suite.
 
 -- additional option for MCMC Suite: 'calculateEfficiency' to calculate ESS and ESS/time.
