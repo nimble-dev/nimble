@@ -58,6 +58,7 @@
 #' \'jags\' specifies JAGS;
 #' \'stan\' specifies Stan; in this case, must also provide the \'stan_model\' argument;
 #' \'nimble\' specifies NIMBLE\'s default MCMC algorithm;
+#' \'nimble_noConj\' specifies NIMBLE\'s default MCMC algorithm without the use of any conjugate Gibbs sampling;
 #' \'nimble_RW\' specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\'RW\') samplers;
 #' \'nimble_slice\' specifies NIMBLE MCMC algorithm using only slice (\'slice\') samplers;
 #' \'autoBlock\' specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
