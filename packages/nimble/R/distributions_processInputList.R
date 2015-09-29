@@ -196,7 +196,7 @@ distClass <- setRefClass(
 #####################################################################################################
 
 checkDistributionsInput <- function(distributionsInput) {
-    allowedFields <- unique(unlist(sapply(nimble:::distributionsInputList, names)))
+    allowedFields <- unique(unlist(sapply(distributionsInputList, names)))
     if(sum(!names(distributionsInput) %in% allowedFields)) 
         stop(paste0(names(distributionsInput), " has unknown field."))
     if(!sum(is.character(distributionsInput$BUGSdist))) stop(paste0(distributionsInput$BUGSdist, ": field 'BUGSdist' is not of type character."))
@@ -244,7 +244,7 @@ getValueDim <- function(distObject)
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInputList a list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. See Details for more information. If only one distribution is supplied it may be a list rather than a list containing a list.
+#' @param distributionsInputList a list of lists in the form of that shown in \code{distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. See Details for more information. If only one distribution is supplied it may be a list rather than a list containing a list.
 #' @author Christopher Paciorek
 #' @export
 #' @details
