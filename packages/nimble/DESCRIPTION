@@ -1,13 +1,13 @@
 Package: nimble
-Title: Flexible BUGS-compatible system for hierarchical statistical modeling
-    and algorithm development
-Description: A package for flexibly applying algorithms to models specified in the BUGS language. Algorithms can be written in the NIMBLE language and made available to any model.
+Title: Flexible BUGS-Compatible System for Hierarchical Statistical Modeling
+    and Algorithm Development
+Description: Flexible application of algorithms to models specified in the BUGS language. Algorithms can be written in the NIMBLE language and made available to any model.
 Version: 0.5
 Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
 Depends:  R (>= 3.0.1)
 Imports: methods,igraph
-Suggests: testthat, coda, R2WinBUGS, rjags, rstan
+Suggests: testthat,coda,R2WinBUGS,rjags,rstan
 License: BSD_3_clause + file LICENSE
 Note: For convenience, the package includes the necessary header files for the Eigen distribution.
    (This is all that is needed to use that functionality.) You can use an alternative installation

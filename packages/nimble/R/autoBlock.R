@@ -178,7 +178,6 @@ autoBlockClass <- setRefClass(
     methods = list(
 
         initialize = function(Rmodel, control=list()) {
-            require(lattice)
             abModel <<- autoBlockModel(Rmodel)
             defaultsList <- autoBlockParamDefaults()
             for(i in seq_along(defaultsList)) if(is.null(control[[names(defaultsList)[i]]])) control[[names(defaultsList)[i]]] <- defaultsList[[i]]
