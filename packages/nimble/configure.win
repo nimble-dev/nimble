@@ -2,7 +2,7 @@
 
 cp inst/CppCode/*.cpp src
 
-cp -r inst/Eigen_local inst/include/Eigen
+mv inst/Eigen_local inst/include/Eigen
 
 
 echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"

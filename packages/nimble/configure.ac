@@ -57,12 +57,14 @@ fi
 AC_LANG([C++])
 dnl  AC_LANG_PUSH([C++]);
 
-AC_CHECK_HEADERS([Eigen/Dense], [echo "Found Eigen/Dense"], 
+AC_CHECK_HEADERS([Eigen/Dense], 
+                 [echo "Found Eigen/Dense";
+                  rm -rf inst/Eigen_local], 
                  [echo "Cannot find Eigen/Dense include file.";
                   echo "Using the version of Eigen provided locally with the R package";
                   echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
-                  echo "   --with-eigen or set the environment variable EIGEN_DIR"; 
-                  cp -r inst/Eigen_local inst/include/Eigen ;
+                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR"; 
+                  mv inst/Eigen_local inst/include/Eigen ;
                   EIGEN_DIR=""
                   ])
 
