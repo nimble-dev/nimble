@@ -1016,7 +1016,8 @@ buildConjugateSamplerFunctions <- function(writeToFile = NULL) {
 }
 
 
-buildConjugateSamplerFunctions(writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
+# buildConjugateSamplerFunctions(writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
+buildConjugateSamplerFunctions()
 
 
 

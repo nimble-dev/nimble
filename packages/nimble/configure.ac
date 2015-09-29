@@ -62,7 +62,7 @@ AC_CHECK_HEADERS([Eigen/Dense], [echo "Found Eigen/Dense"],
                   echo "Using the version of Eigen provided locally with the R package";
                   echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
                   echo "   --with-eigen or set the environment variable EIGEN_DIR"; 
-                  cp -r Eigen_local inst/include/Eigen ;
+                  cp -r inst/Eigen_local inst/include/Eigen ;
                   EIGEN_DIR=""
                   ])
 
