@@ -163,6 +163,7 @@ autoBlockParamDefaults <- function() {
 
 autoBlockClass <- setRefClass(
 
+<<<<<<< HEAD:packages/nimble/R/MCMC_autoBlock.R
 		Class = 'autoBlockClass',
 
 		fields = list(

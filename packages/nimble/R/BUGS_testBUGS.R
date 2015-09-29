@@ -21,8 +21,7 @@
 #' @examples
 #' testBUGSmodel('pump')
 testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE) {
-  if(require(testthat)) { # should this be imported in NAMESPACE even if its only a suggests?
-
+  # if(requireNamespace(testthat, quietly = TRUE)) { 
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
     context(paste0("testing for BUGS example: ", example))
@@ -119,39 +118,39 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     }
                                         # test that vals are maintained at their initial values
     if(!is.null(inits)) {
-      test_that(paste0(example, ": test of the test: are initial values maintained?"), {
+      testthat::test_that(paste0(example, ": test of the test: are initial values maintained?"), {
         varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
         for(varName in varNames) {
           Rvals <- Rmodel[[varName]][!Rmodel$isData(varName)]
           Cvals <- Cmodel[[varName]][!Rmodel$isData(varName)]
           initsVals <- inits[[varName]][!Rmodel$isData(varName)]
           attributes(Rvals) <- attributes(Cvals) <- attributes(initsVals) <- NULL
-          expect_that(Rvals, equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
-          expect_that(Cvals, equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))
+          testthat::expect_that(Rvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
+          testthat::expect_that(Cvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))
         }
       })
     }
                                         # test that vals and logprobs are equal
-    test_that(paste0(example, ": test of variable values"), {
+    testthat::test_that(paste0(example, ": test of variable values"), {
       for(nodeName in nodeNames) {
           Rvals <- Rmodel[[nodeName]]
           Cvals <- Cmodel[[nodeName]]
           attributes(Rvals) <- attributes(Cvals) <- NULL        
-        expect_that(Rvals, equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
       }
     })
-    test_that(paste0(example, ": test of logProbs"), {
+    testthat::test_that(paste0(example, ": test of logProbs"), {
       for(nodeName in nodeNames)  {
         Rvals <- getLogProb(Rmodel, nodeName)
         Cvals <- getLogProb(Cmodel, nodeName)
         attributes(Rvals) <- attributes(Cvals) <- NULL        
-        expect_that(Rvals, equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
       }
     })
 
     dyn.unload(project$cppProjects[[1]]$getSOName())
     # this works to avoid having too many DLLs, but gives segfault when one quits R afterwards
     if(debug) browser()
-  } else warning("testBUGSmodel: testthat package is required")
+  # } else warning("testBUGSmodel: testthat package is required")
 }
 
