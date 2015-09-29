@@ -108,9 +108,9 @@ getsize <- function(container) {
 # simply adds width.cutoff = 500 as the default to deal with creation of long variable names from expressions
 deparse <- function(...) {
     if("width.cutoff" %in% names(list(...))) {
-        base:::deparse(...)
+        base::deparse(...)
     } else {
-          base:::deparse(..., width.cutoff = 500L)
+          base::deparse(..., width.cutoff = 500L)
       }
 }
 
