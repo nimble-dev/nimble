@@ -190,8 +190,13 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'parseTreeSubstitute',
 'projectNameCreator',
 'UseLibraryMakevars',
-'replaceDistributionAliasesNameOnly'
-)
+'replaceDistributionAliasesNameOnly',
+
+'as.matrix.CmodelValues',
+'as.matrix.modelValuesBaseClass'
+
+'deparse'
+                              )
 
 maskFileVector = c(
 					'options.R',

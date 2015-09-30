@@ -351,78 +351,85 @@ MCMCsuiteClass <- setRefClass(
         },
         
         run_winbugs = function() {
-            timeResult <- system.time({
-                winbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
-                                 n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=winbugs_directory, program=winbugs_program)
-            })
-            tempArray <- winbugs_out$sims.array[, 1, ]        ## must use sims.array
-            samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
-            addToOutput('winbugs', samplesArray, timeResult)
+            if(requireNamespace('R2WinBUGS', quietly = TRUE)) {
+                timeResult <- system.time({
+                                              winbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
+                                                                             n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=winbugs_directory, program=winbugs_program)
+                                          })
+                tempArray <- winbugs_out$sims.array[, 1, ]        ## must use sims.array
+                samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
+                addToOutput('winbugs', samplesArray, timeResult)
+            } else warning("run_winbugs: R2WinBUGS package is required for 'winbugs' option.")
         },
         
         run_openbugs = function() {
-            timeResult <- system.time({
-                openbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
-                                 n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=openbugs_directory, program=openbugs_program)
-            })
-            tempArray <- openbugs_out$sims.array[, 1, ]        ## must use sims.array
-            samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
-            addToOutput('openbugs', samplesArray, timeResult)
+            if(requireNamespace('R2WinBUGS', quietly = TRUE)) {
+                timeResult <- system.time({
+                                              openbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
+                                                                              n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=openbugs_directory, program=openbugs_program)
+                                          })
+                tempArray <- openbugs_out$sims.array[, 1, ]        ## must use sims.array
+                samplesArray <- tempArray[(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
+                addToOutput('openbugs', samplesArray, timeResult)
+            } else warning("run_openbugs: R2WinBUGS package is required for 'openbugs' option.")
         },
         
         run_jags = function() {
-            require(rjags)
-            jags_mod <- rjags::jags.model(file=modelFileName, data=constantsAndData, inits=inits, n.chains=1, quiet=FALSE)
-            timeResult <- system.time({
-                jags_out <- rjags::coda.samples(model=jags_mod, variable.names=monitorVars, n.iter=niter, thin=thin)
-            })
-            samplesArray <- jags_out[[1]][(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
-            addToOutput('jags', samplesArray, timeResult)
+            if(requireNamespace('rjags', quietly = TRUE)) {
+                jags_mod <- rjags::jags.model(file=modelFileName, data=constantsAndData, inits=inits, n.chains=1, quiet=FALSE)
+                timeResult <- system.time({
+                                              jags_out <- rjags::coda.samples(model=jags_mod, variable.names=monitorVars, n.iter=niter, thin=thin)
+                                          })
+                samplesArray <- jags_out[[1]][(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
+                addToOutput('jags', samplesArray, timeResult)
+            } else warning("run_jags: rjags package is required for 'jags' option.")
         },
 
         run_stan = function(dataFile, initFile) {
-            if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
-##            dataFile <- gsub('stan$', 'data.R', stan_model)
-##            initFile <- gsub('stan$', 'init.R', stan_model)
-            constantsAndDataStan <- fileToList(dataFile)
-            if(file.exists(initFile))
-                initsStan <- fileToList(initFile)
-            else
-                initsStan <- NULL
+            if(requireNamespace('rstan', quietly = TRUE)) {
+                if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
+                ##            dataFile <- gsub('stan$', 'data.R', stan_model)
+                ##            initFile <- gsub('stan$', 'init.R', stan_model)
+                constantsAndDataStan <- fileToList(dataFile)
+                if(file.exists(initFile))
+                    initsStan <- fileToList(initFile)
+                else
+                    initsStan <- NULL
+                
+                timeResult <- system.time(stan_mod <- rstan::stan_model(file = stan_model))
+                addTimeResult('stan_compile', timeResult)
             
-            timeResult <- system.time(stan_mod <- stan_model(file = stan_model))
-            addTimeResult('stan_compile', timeResult)
-            
-            if(is.null(initsStan)) {
-                ## missing model.init.R file (stan inits file)
-                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
-            } else {
-                ## we have the model.init.R file
-                ## this one includes inits = ...
-                timeResult <- system.time(stan_out <- sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))
-            }
-            
-            tempArray <- extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
-            for(BUGSname in names(StanNameMaps)) {
-                iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
-                if(length(iCol)==1) {
-                    if(!is.null(StanNameMaps[[BUGSname]]$transform))
-                        tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
-                    colnames(tempArray)[iCol] <- BUGSname
+                if(is.null(initsStan)) {
+                    ## missing model.init.R file (stan inits file)
+                    timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
+                } else {
+                      ## we have the model.init.R file
+                      ## this one includes inits = ...
+                      timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))
+                  }
+                
+                tempArray <- rstan::extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
+                for(BUGSname in names(StanNameMaps)) {
+                    iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
+                    if(length(iCol)==1) {
+                        if(!is.null(StanNameMaps[[BUGSname]]$transform))
+                            tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
+                        colnames(tempArray)[iCol] <- BUGSname
+                    }
                 }
-            }
-            dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
-            if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
-                missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])
-                warning(paste0('Stan output is missing values for: ', paste0(missingNames,collapse=', ')))
-            }
-            samplesArray <- array(0, dim = c(nkeep, length(monitorNodesBUGS)))
-            dimnames(samplesArray)[[2]] <- monitorNodesBUGS
-            monitorsWeHave <- intersect(monitorNodesBUGS, dimnames(tempArray)[[2]])
-            samplesArray[, monitorsWeHave] <- tempArray[(burnin+1):floor(niter/thin), monitorsWeHave, drop=FALSE]
-            addToOutput('stan', samplesArray, timeResult)
+                dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
+                if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
+                    missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])
+                    warning(paste0('Stan output is missing values for: ', paste0(missingNames,collapse=', ')))
+                }
+                samplesArray <- array(0, dim = c(nkeep, length(monitorNodesBUGS)))
+                dimnames(samplesArray)[[2]] <- monitorNodesBUGS
+                monitorsWeHave <- intersect(monitorNodesBUGS, dimnames(tempArray)[[2]])
+                samplesArray[, monitorsWeHave] <- tempArray[(burnin+1):floor(niter/thin), monitorsWeHave, drop=FALSE]
+                addToOutput('stan', samplesArray, timeResult)
+            } else warning("run_stan: rstan package is required for 'stan' option.")
         },
-        
+            
         run_nimble = function() {
             for(iMCMC in seq_along(nimbleMCMCs)) {
                 mcmcTag <- nimbleMCMCs[iMCMC]
