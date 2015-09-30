@@ -21,7 +21,7 @@
 #' @examples
 #' testBUGSmodel('pump')
 testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE) {
-  # if(requireNamespace(testthat, quietly = TRUE)) { 
+  if(requireNamespace(testthat, quietly = TRUE)) { 
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
     context(paste0("testing for BUGS example: ", example))
@@ -151,6 +151,6 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     dyn.unload(project$cppProjects[[1]]$getSOName())
     # this works to avoid having too many DLLs, but gives segfault when one quits R afterwards
     if(debug) browser()
-  # } else warning("testBUGSmodel: testthat package is required")
+  } else warning("testBUGSmodel: testthat package is required.")
 }
 

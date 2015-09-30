@@ -38,9 +38,14 @@ importFroms <- ""
 dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 exportAllLine <- "exportPattern('.')"
 
+S3methods <- c("as.matrix, CmodelValues",
+               "as.matrix, modelValuesBaseClass")
+
+S3methods <- paste("S3method(", S3methods, ")", sep = "", collapase = "\n")
+
 # need everything exported for roxygenization to work...
 #cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", sep = "", collapse = ''),
-cat(paste(imports, importFroms, dynLibLine, exportAllLine, sep = "\n", collapse = '\n'),
+cat(paste(imports, importFroms, dynLibLine, S3methods, exportAllLine, sep = "\n", collapse = '\n'),
     file = file.path("nimble", "NAMESPACE"))
 
 system("R CMD build nimble")
@@ -112,5 +117,5 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 # now create real NAMESPACE file
 
 #cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
-cat(paste(imports, importFroms, dynLibLine, exportText, collapse = '\n', sep = '\n'),
+cat(paste(imports, importFroms, dynLibLine, S3methods, exportText, collapse = '\n', sep = '\n'),
     file = file.path("nimble", "NAMESPACE"))
