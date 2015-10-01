@@ -2,13 +2,15 @@
 
 USER LEVEL CHANGES
 
--- new MCMC option for MCMCsuite: 'nimble_noConj'
+-- added support for OpenBUGS to MCMCsuite.
 
--- added support for OpenBUGS to MCMC Suite.
+-- added additional option for MCMCsuite: 'calculateEfficiency' to calculate ESS and ESS/time.
 
--- additional option for MCMC Suite: 'calculateEfficiency' to calculate ESS and ESS/time.
+-- added elliptical slice sampler 'ess' to MCMC engine.
 
--- addition of elliptical slice sampler 'ess' to MCMC engine.
+-- added new MCMC option for MCMCsuite that omits conjugate samplers: 'nimble_noConj'
+
+BUG FIXES
 
 -- fixed bug preventing use of nimbleFunctions in packages depending on NIMBLE.
 
