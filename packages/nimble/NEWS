@@ -16,6 +16,8 @@ BUG FIXES
 
 -- fixed bug preventing use of nimStop in R version of nimbleFunctions.
 
+-- reduced generation of C++ compiler warnings on Windows during compileNimble.
+
                         CHANGES IN VERSION 0.4 (Aug. 2, 2015)
 
 USER LEVEL CHANGES
