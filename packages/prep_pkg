@@ -24,16 +24,15 @@ imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
 importFroms <- c("importFrom(coda, effectiveSize)")
 
-importFroms <- ""
 
-#importFroms <- c("coda, effectiveSize",
+importFroms <- c("coda, effectiveSize")
 #                 "R2WinBUGS, bugs",
 #                 "rjags, jags.model",
 #                 "rjags, coda.samples",
 #                 "rstan, stan_model",
 #                 "rstan, sampling")
 
-#importFroms <- paste("importFrom(", importFroms, ")", sep = "", collapse = "\n") 
+importFroms <- paste("importFrom(", importFroms, ")", sep = "", collapse = "\n") 
 
 dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 exportAllLine <- "exportPattern('.')"
