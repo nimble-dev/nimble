@@ -2,22 +2,6 @@
 
 
 
-#' Automated parameter blocking for efficient MCMC sampling
-#'
-#' Automated blocking description
-#'
-#' @details		
-#' Automated blocking details
-#' 
-#' @param Rmodel
-#'
-#' @return info
-#'  
-#' @examples
-#' ab <- autoBlock(Rmodel)
-#' 
-#' @author Daniel Turek
-#' @export
 autoBlock <- function(Rmodel,
                       autoIt = 20000,
                       run = list('all', 'default'),
