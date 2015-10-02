@@ -18,11 +18,8 @@ require(methods)
 source("CreatingExportList.R")
 # (I tried to do the sourcing into a new.env() but had weird errors when sourcing some of the files)
 
-
 imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
-
-importFroms <- c("importFrom(coda, effectiveSize)")
 
 
 importFroms <- c("coda, effectiveSize")
@@ -38,9 +35,10 @@ dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 exportAllLine <- "exportPattern('.')"
 
 S3methods <- c("as.matrix, CmodelValues",
-               "as.matrix, modelValuesBaseClass")
+               "as.matrix, modelValuesBaseClass",
+               "length, nimPointerList")
 
-S3methods <- paste("S3method(", S3methods, ")", sep = "", collapase = "\n")
+S3methods <- paste("S3method(", S3methods, ")", sep = "", collapse = "\n")
 
 # need everything exported for roxygenization to work...
 #cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", sep = "", collapse = ''),
