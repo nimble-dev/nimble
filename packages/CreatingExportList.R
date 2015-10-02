@@ -193,8 +193,8 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'replaceDistributionAliasesNameOnly',
 
 'as.matrix.CmodelValues',
-'as.matrix.modelValuesBaseClass'
-
+'as.matrix.modelValuesBaseClass',
+'length.nimPointerList',
 'deparse'
                               )
 

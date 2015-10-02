@@ -60,6 +60,6 @@ checkNimbleFunctionListCpp <- function(nfl) {
     return(FALSE)
 }
 
-length.nimPointerList <- function(pointerList) {
-	return(length(pointerList$contentsList))
+length.nimPointerList <- function(x, ...) {
+	return(length(x$contentsList))
 }
