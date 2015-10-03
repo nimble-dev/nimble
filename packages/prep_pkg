@@ -3,6 +3,11 @@
 # this script creates the Rd files from the roxygen info in the R files
 # and creates the NAMESPACE file
 
+# as of R3.2.2 get lots of messages like
+# "Found more than one class "nfMethodRC" in cache; using the first, from namespace 'nimble'"
+# seems to be because we are loading in nimble and we are sourcing code files in global,
+# so class definitions are in two places
+
 require(roxygen2)
 require(methods)
 
@@ -13,20 +18,17 @@ require(methods)
 source("CreatingExportList.R")
 # (I tried to do the sourcing into a new.env() but had weird errors when sourcing some of the files)
 
-DESC <- readLines(file.path('nimble','DESCRIPTION'))
 
-imports <- DESC[grep("^Imports:", DESC)]
-imports <- gsub("Imports: ", "", imports)
-imports <- gsub("\\s+", "", imports)
-imports <- strsplit(imports, ",")[[1]]
-imports <- paste("import(", imports, ")", sep = '')
-imports <- paste(imports, collapse = '\n')
+imports <- c("methods", "igraph")
+imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
+
+importFroms <- c("importFrom(coda, effectiveSize)")
 
 dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 exportAllLine <- "exportPattern('.')"
 
 # need everything exported for roxygenization to work...
-cat(paste(imports, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
+cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
     file = file.path("nimble", "NAMESPACE"))
 
 system("R CMD build nimble")
@@ -97,5 +99,5 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 
 # now create real NAMESPACE file
 
-cat(paste(imports, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
+cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
     file = file.path("nimble", "NAMESPACE"))

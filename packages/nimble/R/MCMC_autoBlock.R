@@ -59,7 +59,6 @@ autoBlockModel <- setRefClass(
         ),
     methods = list(
         initialize = function(Rmodel_orig) {
-            require(nimble)
             Rmodel_orig <<- Rmodel_orig
             md <<- Rmodel_orig$modelDef
             Rmodel <<- Rmodel_orig$newModel(replicate = TRUE)
@@ -165,7 +164,6 @@ autoBlockClass <- setRefClass(
         initialize = function(Rmodel, control=list()) {
             require(lattice)
             require(coda)
-            require(nimble)
             abModel <<- autoBlockModel(Rmodel)
             defaultsList <- autoBlockParamDefaults()
             for(i in seq_along(defaultsList)) if(is.null(control[[names(defaultsList)[i]]])) control[[names(defaultsList)[i]]] <- defaultsList[[i]]

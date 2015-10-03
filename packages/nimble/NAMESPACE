@@ -1,5 +1,6 @@
 import(methods)
 import(igraph) 
+ importFrom(coda, effectiveSize) 
  useDynLib(nimble, .registration = TRUE) 
  export(accessorVectorLength_setupCodeTemplate)
 export(addArg)
