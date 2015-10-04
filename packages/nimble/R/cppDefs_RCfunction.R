@@ -82,7 +82,12 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          warning("creating a .Call() expression with no DLL information")
                                          browser()                                     
                                      }
-                                     dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
+
+                                     # avoid R CMD check problem with registration
+                                     txt <- ".Call(SEXPname)"
+                                     eval(substitute(substitute(txt1, list(SEXPname = SEXPinterfaceCname)), list(txt1 = parse(text = txt))))[[1]]                                     
+                                     # dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
+
                                      for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                      if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
                                      if(returnArgsAsList) {
