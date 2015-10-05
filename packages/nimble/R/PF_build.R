@@ -66,8 +66,8 @@ buildPF <- nimbleFunction(
         dims <- lapply(nodes, function(n) nimDim(model[[n]]))
         if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
         mv <- modelValues(modelValuesSpec(vars = c('x', 'xs'),
-                                          type = c('double', 'double'),
-                                          size = list(x = dims[[1]], xs = dims[[1]])))
+                                          types = c('double', 'double'),
+                                          sizes = list(x = dims[[1]], xs = dims[[1]])))
         pfStepFunctions <- nimbleFunctionList(pfStepVirtual)
         for(iNode in seq_along(nodes))
             pfStepFunctions[[iNode]] <- pfStep(model, mv, nodes, iNode, silent)
