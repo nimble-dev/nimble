@@ -10,7 +10,7 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
 This also should work:
 for file in `ls nimble/man`; do
-     cp -i nimble/man/$file /tmp/tmp.Rd 
+     /bin/cp -f nimble/man/$file /tmp/tmp.Rd 
      sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
 done
 
@@ -32,6 +32,8 @@ make a posting about the release on the webpage: click New Post (or maybe Posts 
 update NEWS info on webpage as high-level summary of NEWS in package
 
 update version numbering on license and citation page
+
+rebuild and post manual
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
