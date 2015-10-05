@@ -806,15 +806,16 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
     defaults$basePtrCall <- basePtrCall
 
     # substitute on parsed text string to avoid CRAN issues with .Call registration
-    fun <- substitute(parse(text = '
-      function(nfObject, defaults, dll = NULL, project = NULL, ...){		#cModel removed from here
+    fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, ...){		#cModel removed from here
         defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE) ## in case this instance was not used during nfProc$process
         callSuper(dll = dll, project = project, test = FALSE, ...)
         basePtrCall <- if(is.character(defaults$basePtrCall)) {
             if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
             lookupSymbol(defaults$basePtrCall)
         } else defaults$basePtrCall
-        .basePtr <<- .Call(basePtrCall)
+        # avoid R CMD check problem with registration
+        .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+        # .basePtr <<- .Call(basePtrCall)
         cppNames <<- .Call("getAvailableNames", .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
@@ -829,7 +830,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
             ##copyFromRobject()
             copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self)
         }
-    }'), list())
+    }, list())
 
       # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization
       # function is called.  So change the .Call('name') to .Call(lookupSymbol('name')) which will use this objects
@@ -906,7 +907,11 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  }
                                                  compiledNodeFun$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
                                                  ##      nfObjectList <<- c(nfObjectList, nfObject)
+                                                 
+                                                 # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
+                                                 # newBasePtr <- .Call(basePtrCall)
+                                                 
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)
                                                  else newRobject <- nfObject

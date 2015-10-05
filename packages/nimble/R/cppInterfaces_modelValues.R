@@ -63,7 +63,10 @@ CmodelValues <- setRefClass(
                     warning("a call to getNativeSymbolInfo with only a name and no DLL")
                 }
                                         # Are we actually calling this here
-                extptr <<- .Call(buildCall) 
+
+                # avoid R CMD check problem with registration
+                extptr <<- eval(parse(text = ".Call(buildCall)"))
+#                extptr <<- .Call(buildCall) 
             }
             else{
                 extptr <<- existingPtr

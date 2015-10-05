@@ -28,8 +28,7 @@
 #' 
 dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE, inp) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
-#  .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
-    .Call(inp, as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
+  .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
 }
 
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
