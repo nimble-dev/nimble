@@ -496,9 +496,9 @@ plotABS <- function(df, xlimToMin=FALSE, together) {
     nVertPlots <- if(together) nModels*2 else nModels
     xVarNames <- c('ess', 'essPT')
     parCmd <- quote(par(mfrow=c(nVertPlots,1),mar=c(1,0,1,0),tcl=-.1,mgp=c(3,0,0),cex.axis=.7))
-    if(together) { quartz(); eval(parCmd) }
+    if(together) { eval(parCmd) }
     for(xVarName in xVarNames) {
-        if(!together) { quartz(); eval(parCmd) }
+        if(!together) { eval(parCmd) }
         maxMinXVar<-0; for(mod in models) {dfMod<-df[df$model==mod,]; blks<-unique(dfMod$blocking); for(blk in blks) {maxMinXVar<-max(maxMinXVar,min(dfMod[dfMod$blocking==blk,xVarName]))}}
         maxXVar <- if(xlimToMin) maxMinXVar else max(df[, xVarName])
         xlim <- c(maxXVar*-0.05, maxXVar)

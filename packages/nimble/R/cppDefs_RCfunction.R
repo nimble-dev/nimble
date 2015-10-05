@@ -85,7 +85,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
 
                                      # avoid R CMD check problem with registration
                                      txt <- ".Call(SEXPname)"
-                                     eval(substitute(substitute(txt1, list(SEXPname = SEXPinterfaceCname)), list(txt1 = parse(text = txt))))[[1]]                                     
+                                     dotCall <- eval(substitute(substitute(txt1, list(SEXPname = SEXPinterfaceCname)), list(txt1 = parse(text = txt)[[1]])))
                                      # dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
 
                                      for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
