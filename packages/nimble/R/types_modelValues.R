@@ -179,15 +179,6 @@ setMethod('[<-', 'modelValuesBaseClass',
 #'				sizes = list(x = 3, y = c(2,2)))
 #' custom_mv <- modelValues(mvSpec, m = 2)
 #' custom_mv['y',]
-#' [[1]]
-#'      [,1] [,2]
-#' [1,]   NA   NA
-#' [2,]   NA   NA
-#'
-#' [[2]]
-#'      [,1] [,2]
-#' [1,]   NA   NA
-#' [2,]   NA   NA
 modelValuesSpec <- function( symTab, className, vars, types, sizes, modelDef = NA, where = globalenv() ) {
     if(missing(className)) className <- 'modelValuesSpec' ## uniqueID will be appended
     makeCustomModelValuesClass(symTab, className, vars, types, sizes, modelDef = modelDef, where)

@@ -21,7 +21,7 @@
 #' @examples
 #' testBUGSmodel('pump')
 testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE) {
-  if(requireNamespace(testthat, quietly = TRUE)) { 
+  if(requireNamespace('testthat', quietly = TRUE)) { 
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
     testthat::context(paste0("testing for BUGS example: ", example))

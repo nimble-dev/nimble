@@ -63,8 +63,10 @@ samplerSpec <- setRefClass(
 #' spec <- configureMCMC(Rmodel)
 #' spec$setSamplers(1)
 #' spec$addSampler(target = 'x', type = 'slice', control = list(adaptInterval = 100))
-#' spec$addMonitors('mu', thin = 1)
-#' spec$addMonitors2('x', thin2 = 10)
+#' spec$addMonitors('mu')
+#' spec$addMonitors2('x')
+#' spec$setThin(5)
+#' spec$setThin2(10)
 #' spec$getMonitors()
 #' spec$getSamplers()
 MCMCspec <- setRefClass(
