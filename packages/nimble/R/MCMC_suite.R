@@ -88,8 +88,18 @@
 #' 
 #' @param stan_model A character string specifying the location and name of the model file (\'modelName.stan\') for use with the Stan MCMC program.
 #' This argument must include the \'.stan\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
-#' In addition, the Stan data file (\'modelName.data.R\') must also reside in the same directory as the Stan model file.
-#' Optionally, the Stan initial values file (\'modelName.init.R\') may also be in this same directory; it will be used if present.
+#'
+#' @param stan_inits A character string specifying the location and name of the inits file (\'modelName.init.R\') for use with the Stan MCMC program.
+#' This argument must include the \'.init.R\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
+#' If omitted, it will attempt to locate an inits file in the same directory as the Stan model file.
+#'
+#' @param stan_data A character string specifying the location and name of the data file (\'modelName.data.R\') for use with the Stan MCMC program.
+#' This argument must include the \'.data.R\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
+#' If omitted, it will attempt to locate a data file in the same directory as the Stan model file.
+#'
+#' @param stanNameMaps A list specifying name mappings between Stan and WinBUGS/OpenBUGS.
+#' The syntax for list elements is list(BUGS_PARAM_NAME = list(StanSourceName = 'STAN_PARAM_NAME', transform = function(x) TRANSFORMATION_FUNCTION(x))).
+#' The transformation is optional.
 #' 
 #' @param makePlot Logical argument, specifying whether to generate the trace plots and posterior density plots, for each monitored node.
 #' Default value is TRUE.
@@ -262,6 +272,8 @@ MCMCsuiteClass <- setRefClass(
             openbugs_directory <<- openbugs_directory
             openbugs_program <<- openbugs_program
             stan_model <<- stan_model
+            if(is.null(stan_inits)) stan_inits <- gsub('stan$', 'init.R', stan_model)
+            if(is.null(stan_data))  stan_data  <- gsub('stan$', 'data.R', stan_model)
             StanNameMaps <<- stanNameMaps
             makePlot <<- makePlot
             savePlot <<- savePlot
@@ -269,9 +281,6 @@ MCMCsuiteClass <- setRefClass(
             debug <<- debug
             modelFileName <<- 'model.txt'
 
-            if(is.null(stan_inits)) stan_inits <- gsub('stan$', 'init.R', stan_model)
-            if(is.null(stan_data)) stan_data <- gsub('stan$', 'data.R', stan_model)
-            
             ## run
             checkMCMCdefNames()
             init_output()
@@ -387,8 +396,6 @@ MCMCsuiteClass <- setRefClass(
         run_stan = function(dataFile, initFile) {
             require(rstan)
             if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
-##            dataFile <- gsub('stan$', 'data.R', stan_model)
-##            initFile <- gsub('stan$', 'init.R', stan_model)
             constantsAndDataStan <- fileToList(dataFile)
             if(file.exists(initFile))
                 initsStan <- fileToList(initFile)
