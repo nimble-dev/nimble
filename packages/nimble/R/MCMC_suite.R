@@ -1,3 +1,13 @@
+#' Executes multiple MCMC algorithms and organizes results.
+#'
+#' Creates, runs, and organizes output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
+#' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
+#' Trace plots and density plots for the MCMC samples may also be generated and saved.
+#' 
+#' @param ... Arguments that will be passed to \code{MCMCsuiteClass()}
+#'
+#' @details Please see \code{help(MCMCsuiteClass)} for details on how to use this function.
+#' @export
 MCMCsuite <- function(...) {
     suite <- MCMCsuiteClass(...)
     return(suite$output)
@@ -9,8 +19,6 @@ MCMCsuite <- function(...) {
 #' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
-#' @name MCMCsuiteClass
-#' @aliases MCMCsuite MCMCsuiteClass
 #' @details
 #' Creates and runs an MCMC Suite.
 #' By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
@@ -18,8 +26,6 @@ MCMCsuite <- function(...) {
 #' Following execution of the MCMC algorithms, returns a named list containing \code{samples}, \code{summary}, and \code{timing} elements.
 #' See the NIMBLE User Manual for more information about the organization of the return object.
 #'
-#' @usage   MCMCsuite(code, constants = list(), data = list(), inits = list(), monitors = character(), niter = 10000, burnin = 2000, thin = 1, summaryStats = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'), calculateEfficiency = FALSE, MCMCs = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'), MCMCdefs = list(), winbugs_directory = 'C:/WinBUGS14', winbugs_program = 'WinBUGS', openbugs_directory = 'C:/OpenBUGS323', openbugs_program = 'OpenBUGS', stan_model = '', stan_inits = NULL, stan_data = NULL, stanNameMaps = list(), makePlot = TRUE, savePlot = TRUE, plotName = 'MCMCsuite', setSeed = TRUE, debug = FALSE)
-#' 
 #' @param code The quoted code expression representing the model, such as the return value from a call to nimbleCode({...}).
 #' No default value, this is a required argument.
 #' 
@@ -38,9 +44,7 @@ MCMCsuite <- function(...) {
 #' @param monitors A character vector giving the node names or variable names to monitor.
 #' The samples corresponding to these nodes will be stored in the output samples, will have summary statistics calculated, and density and trace plots generated. Default value is all top-level stochastic nodes of the model.
 #' 
-#' @param niter Number of MCMC iterations to run.
-#' This applies to all MCMC algorithms in the suite.
-#' Default value is 10,000.
+#' @param niter Number of MCMC iterations to run. This applies to all MCMC algorithms in the suite. Default value is 10,000.
 #'
 #' @param burnin Number of initial, post-thinning, MCMC iterations to discard.
 #' Default value is 2,000.
@@ -54,7 +58,7 @@ MCMCsuite <- function(...) {
 #' or a character string which when parsed and evaluted will define such a function (e.g., \code{function(x) mean(sqrt(x))}).
 #' Default value is \code{c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp')}, where the final two elements are functions that calculate the limits of a 95 percent Bayesian credible interval.
 #' 
-#' @param calculateEfficiency A logical, specifying whether to calculate the efficiency for each MCMC algorithm.  Efficiency is defined as the effective sample size (ESS) of each model parameter divided by the algorithm runtime (in seconds).  Default is FALSE.
+#' @param calculateEfficiency A logical, specifying whether to calculate the efficiency for each MCMC algorithm.  Efficiency is defined as the effective sample size (ESS) of each model parameter divided by the algorithm runtime (in seconds). Default is FALSE.
 #'
 #' @param MCMCs A character vector specifying the MCMC algorithms to run.
 #' \code{winbugs} specifies WinBUGS;
@@ -136,9 +140,6 @@ MCMCsuite <- function(...) {
 #' 
 #' @author Daniel Turek
 #' @export
-NULL
-
-
 MCMCsuiteClass <- setRefClass(
 
     Class = 'MCMCsuiteClass',
