@@ -9,8 +9,6 @@
 #' @details		
 #' Automated blocking details
 #' 
-#' @param Rmodel
-#'
 #' @return info
 #'  
 #' @examples

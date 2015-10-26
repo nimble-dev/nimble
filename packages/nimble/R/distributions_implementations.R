@@ -5,7 +5,7 @@
 #'
 #' Density and random generation for the Wishart distribution, using the Cholesky factor of either the scale matrix or the rate matrix.
 #'
-#' @aliases rwish_chol
+#' @name Wishart
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -25,12 +25,18 @@
 #' ch <- chol(matrix(c(1, .7, .7, 1), 2))
 #' x <- rwish_chol(1, ch, df = df)
 #' dwish_chol(x, ch, df = df)
-#' 
-dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE, inp) {
+#'
+NULL
+
+#' @rdname Wishart
+#' @export
+dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
   .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
 }
 
+#' @rdname Wishart
+#' @export
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
     matrix(.Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param)), nrow = sqrt(length(cholesky)))
@@ -71,7 +77,7 @@ rdirch <- function(n = 1, alpha) {
 #'
 #' Density and random generation for the multinomial distribution
 #'
-#' @aliases rdirch
+#' @aliases rmulti
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -103,7 +109,7 @@ rmulti <- function(n = 1, size, prob) {
 #'
 #' Density and random generation for the categorical distribution
 #'
-#' @aliases rdirch
+#' @name Categorical
 #' 
 #' @param x non-negative integer-value numeric value.
 #' @param n number of observations.
@@ -119,11 +125,17 @@ rmulti <- function(n = 1, size, prob) {
 #' probs <- c(1/4, 1/10, 1 - 1/4 - 1/10)
 #' x <- rcat(n = 30, probs)
 #' dcat(x, probs)
-#' 
+#'
+NULL
+
+#' @rdname Categorical
+#' @export
 dcat <- function(x, prob, log = FALSE) {
   .Call('C_dcat', as.double(x), as.double(prob), as.logical(log))
 }
 
+#' @rdname Categorical
+#' @export
 rcat <- function(n = 1, prob) {
   .Call('C_rcat', as.integer(n), as.double(prob))
 }

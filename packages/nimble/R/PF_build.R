@@ -50,6 +50,7 @@ pfStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
+#' @param silent logical indicating whether to suppress logging information
 #' 
 #' @author Daniel Turek
 #' @details The resulting specialized particle filter algorthm will accept a single integer argument (m, default 10,000), which specifies the number of random \'particles\' to use for estimating the log-likelihood.  The algorithm returns the estimated log-likelihood value.

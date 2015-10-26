@@ -9,7 +9,7 @@ RCfunctionCompileClass <- setRefClass('RCfunctionCompileClass',
                                           newRcode = 'ANY',
                                           typeEnv = 'ANY'	#environment
                                           ),
-                                          methods = list(initialize <- function(...){typeEnv <<- new.env(); callSuper(...)}
+                                          methods = list(initialize = function(...){typeEnv <<- new.env(); callSuper(...)}
                                           ))
 
 RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',

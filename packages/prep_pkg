@@ -6,12 +6,16 @@
 require(roxygen2)
 require(methods)
 
+
 ## NAMESPACE 
 
 
 # do this first as it empties the global env
 source("CreatingExportList.R")
 # (I tried to do the sourcing into a new.env() but had weird errors when sourcing some of the files)
+
+# need to document all S4 methods
+explicitUndocFuns <- c("[,numberedModelValuesAccessors-method", "[<-,numberedModelValuesAccessors-method", "[,numberedObjects-method", "[<-,numberedObjects-method", "[[,CNumericList-method", "[[<-,CNumericList-method", "[[,RNumericList-method", "[[<-,RNumericList-method", "[[,nimPointerList-method", "[[<-,nimPointerList-method", "[[<-,nimbleFunctionList-method", "[[,distributionsClass-method", "[[,conjugacyRelationshipsClass-method")
 
 imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
@@ -92,6 +96,8 @@ setwd(cur)
 documentedFuns <- unique(c(documentedFuns, aliases))
 
 undocFuns <- funs[!funs %in% documentedFuns]
+
+undocFuns <- c(undocFuns, explicitUndocFuns)
 
 # write out nimble-internals.Rd
 

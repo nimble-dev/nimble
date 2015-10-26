@@ -1006,9 +1006,6 @@ conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshi
 conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()
 
 
-#' Rebuild conjugate sampler functions
-#'
-#' @export
 buildConjugateSamplerFunctions <- function(writeToFile = NULL) {
     conjugacyRelationshipsObject <- conjugacyRelationshipsClass(conjugacyRelationshipsInputList)
     conjugateSamplerDefinitions <- conjugacyRelationshipsObject$generateConjugateSamplerDefinitions()

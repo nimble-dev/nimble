@@ -23,6 +23,7 @@
 ###						Need to discuss what to do if built around existingptr
 
 
+
 CmodelValues <- setRefClass(
     Class = 'CmodelValues',
     fields = list(
@@ -127,7 +128,8 @@ setMethod('[', 'CmodelValues',
              for(cmp in i)
              	output[[cmp]] <- x[cmp, j]
           return(output)
-          })
+          }
+          )
 
 setMethod('[<-', 'CmodelValues',
 			function(x, i, j, value){

@@ -334,6 +334,6 @@ nfWriteCompileAndLoadSO <- function(RFun, dirName, name = deparse(substitute(RFu
     return(cppProj)
 }
 
-nfBuildCInterface <- function(cppProj, instance, name = deparse(subsitute(RFun) ))
+nfBuildCInterface <- function(cppProj, instance, name = deparse(substitute(RFun) ))
 	return( cppProj$cppDefs[[name]]$buildCallable(instance, cppProj$dll ) )
 

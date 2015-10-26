@@ -16,16 +16,18 @@ nodeFunctionVector <- setRefClass(
             if(length(nodeNames) == 0)
             	gids <<- numeric(0)
             else{
-                if(is.numeric(nodeNames))		#In case we start with graph ids instead of names
-                    temp_gids <- .Internal(unique(.Internal(sort(nodeNames, FALSE)),
+                if(is.numeric(nodeNames)) 		#In case we start with graph ids instead of names
+                    temp_gids <- unique(sort(nodeNames, FALSE),
                                                   FALSE,
                                                   FALSE,
-                                                  NA)) ##unique( sort(nodeNames) )
-    	        else
-                    temp_gids <- .Internal(unique(.Internal(sort(model$modelDef$nodeName2GraphIDs(nodeNames), FALSE)),
+                                                  NA) ##unique( sort(nodeNames) )
+                                    # temp_gids <- .Internal(unique(.Internal(sort(nodeNames, FALSE)), F,F,NA))
+    	        else 
+                    temp_gids <- unique(sort(model$modelDef$nodeName2GraphIDs(nodeNames), FALSE),
                                                   FALSE,
                                                   FALSE,
-                                                  NA)) ##unique( sort(model$modelDef$nodeName2GraphIDs(nodeNames)))
+                                                  NA) ##unique( sort(model$modelDef$nodeName2GraphIDs(nodeNames)))
+            # temp_gids <- .Internal(unique(.Internal(sort(model$modelDef$nodeName2GraphIDs(nodeNames), FALSE)), F,F,NA))))
     	        if(excludeData == TRUE)
                     temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
     	        gids <<- temp_gids
