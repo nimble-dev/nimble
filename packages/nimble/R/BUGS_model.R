@@ -1,5 +1,5 @@
 #' Class \code{modelBaseClass}
-#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData getDependencies setInits checkConjugacy newModel
+#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData getDependencies setInits checkConjugacy newModel [[,modelBaseClass-method [[<-,modelBaseClass-method
 #' @export
 #' @description
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
@@ -381,10 +381,11 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(inherits(nodes, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
                                           if(returnScalarComponents)
-                                              nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                             # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                              nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                                                                    FALSE,
                                                                    FALSE,
-                                                                   NA))
+                                                                   NA)
                                           else
                                               nodeIDs <- elementIDs
                                       }
@@ -400,10 +401,11 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(inherits(omit, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
                                           if(returnScalarComponents)
-                                              omitIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+#                                              omitIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+                                              omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
                                                                    FALSE,
                                                                    FALSE,
-                                                                   NA))
+                                                                   NA)
                                           else
                                               omitIDs <- elementIDs
                                       }
@@ -426,7 +428,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
-                                          depIDs = .Internal(unique(depIDs, FALSE, FALSE, NA))
+                                          depIDs = unique(depIDs, FALSE, FALSE, NA)
                                       if(returnType == 'ids'){
                                           if(returnScalarComponents) print("nimble development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
                                           return(depIDs)

@@ -24,7 +24,7 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
   if(requireNamespace(testthat, quietly = TRUE)) { 
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
-    context(paste0("testing for BUGS example: ", example))
+    testthat::context(paste0("testing for BUGS example: ", example))
     
     if(is.null(dir)) {
 

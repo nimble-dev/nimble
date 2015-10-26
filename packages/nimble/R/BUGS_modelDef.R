@@ -969,7 +969,7 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
     numContexts <- length(context$singleContexts)
     if(numContexts == 0) { ## it has no indices or known indices
         if(length(allReplacements)==0) {
-            replacementsEnv <<- NULL
+            context$replacementsEnv <<- NULL
             return(NULL)
         }
     }

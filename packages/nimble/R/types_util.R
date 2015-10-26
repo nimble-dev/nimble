@@ -198,7 +198,7 @@ as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 		#ans[1:nrows, colIndex + 1:prod(x$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(x, varNames[i])
 		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
 		#This method is faster than the commented out method, especially if there are a lot of variables (as apposed to nodes)
-		colIndex = colIndex + prod(mv$sizes[[varNames[i] ]])
+		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
 	return(ans)

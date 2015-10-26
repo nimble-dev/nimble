@@ -230,8 +230,8 @@ getSetNimPtrList <- function(name, value, basePtr) {
         warning('getSetNimPtrList does not work for getting but was called without value.', call. = FALSE)
         return(NULL)
     } else {
-        if(!inherits(value, 'nimPointerList')) stop(paste('Nimble compilation error initializing nimPointerList (nimbleFunctionList) ', NFLNAMECHAR, '.'), call. = FALSE)
-        if(!checkNimbleFunctionListCpp(value)) stop(paste('Nimble compilation error initializing nimbleFunctionList ', NFLNAMECHAR, '.  Something is not valid in this list.  It may be the contains (base class) value of one or more functions in the list.'), call. = FALSE)
+        if(!inherits(value, 'nimPointerList')) stop(paste('Nimble compilation error initializing nimPointerList (nimbleFunctionList) ', name, '.'), call. = FALSE)
+        if(!checkNimbleFunctionListCpp(value)) stop(paste('Nimble compilation error initializing nimbleFunctionList ', name, '.  Something is not valid in this list.  It may be the contains (base class) value of one or more functions in the list.'), call. = FALSE)
         vptr <- newObjElementPtr(basePtr, name)
         accessptr <- newObjElementPtr(basePtr, paste0(name, '_setter'))
         setPtrVectorOfPtrs(accessptr, vptr, length(value$contentsList))

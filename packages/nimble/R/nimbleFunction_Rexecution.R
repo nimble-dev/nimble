@@ -74,11 +74,11 @@ rCalcDiffNodes <- function(model, nodes){
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
 #'
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
-#'
-#' @aliases calculateDiff simulate getLogProb
+#' @name nodeFunctions
 #' 
 #' @param model        A NIMBLE model, either the compiled or uncompiled version
 #' @param nodes        A character vector of node names, with index blocks allowed, such as 'x', 'y[2]', or 'z[1:3, 2:4]'
+#' @param nodeFxnVector An optional vector of nodeFunctions on which to operate, in lieu of \code{model} and \code{nodes}
 #' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \link{simulate}
 #' @author NIMBLE development team
 #' @export
@@ -104,7 +104,11 @@ rCalcDiffNodes <- function(model, nodes){
 #' 
 #' @examples
 #' calculate(model, c('x', 'y[2:4]', 'z[2:5, 1:10]'))
-#' 
+#'
+NULL
+
+#' @rdname nodeFunctions
+#' @export
 calculate <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
@@ -121,6 +125,8 @@ calculate <- function(model, nodes, nodeFxnVector)
     }	
 }
 
+#' @rdname nodeFunctions
+#' @export
 calculateDiff <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
@@ -149,6 +155,8 @@ rGetLogProbsNodes <- function(model, nodes){
     return(l_Prob)
 }
 
+#' @rdname nodeFunctions
+#' @export
 getLogProb <- function(model, nodes, nodeFxnVector)		
 {
 	if(!missing(nodeFxnVector)){
@@ -177,6 +185,8 @@ rSimNodes <- function(model, nodes){
             model$nodes[[nName]]$simulate()
 }
 
+#' @rdname nodeFunctions
+#' @export
 simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
 {
 	if(!missing(nodeFxnVector)){

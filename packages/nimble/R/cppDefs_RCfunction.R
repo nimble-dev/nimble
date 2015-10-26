@@ -1,4 +1,3 @@
-
 RCfunctionDef <- setRefClass('RCfunctionDef',
                              contains = 'cppFunctionDef',
                              fields = list(
@@ -83,9 +82,16 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          browser()                                     
                                      }
 
+                                     # attempt to mimic cxxfunction in inline pkg
+                                     # dotCall <- quote( .Call( EXTERNALNAME ))
+                                     # dotCall[[1L]] <- .Call
+                                     # dotCall[[2L]] <- getNativeSymbolInfo(SEXPinterfaceCname, dll )$address
+                                     
+                                     
                                      # avoid R CMD check problem with registration
                                      txt <- ".Call(SEXPname)"
                                      dotCall <- eval(substitute(substitute(txt1, list(SEXPname = SEXPinterfaceCname)), list(txt1 = parse(text = txt)[[1]])))
+                                     
                                      # dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
 
                                      for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])

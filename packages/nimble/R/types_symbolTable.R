@@ -40,7 +40,7 @@ argType2symbol <- function(AT, name = character()) {
         if(nDim > 1) {
             warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
             nDim <- 1
-            size <- if(any(is.na(size))) as.numeric(NA) else product(size)
+            size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
         }
         symbolString(name = name, type = "character", nDim = nDim, size = size) 
     } else {
