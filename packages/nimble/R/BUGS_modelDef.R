@@ -2029,6 +2029,14 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$setGraph(graph)
     model$buildNodeFunctions(where = where, debug = debug)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
+
+    ## handling for JAGS style inits (a list of lists)
+    ## added Oct 2015, DT
+    if(length(inits) > 0 && is.list(inits[[1]])) {
+        message('detected JAGS style initial values, provided as a list of lists...  using the first set of initial values')
+        inits <- inits[[1]]
+    }
+    
     if(length(data) + length(inits) > 0)
         if(nimbleOptions('verbose')) message("setting data and initial values...")
     model$setData(data)
