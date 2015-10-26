@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3c7d894b
 =======
 % Please edit documentation in RtmpLwENQY/file6161313dcb78
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b015ffe346
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d6267e0090
+>>>>>>> fixed error in MCMCspec roxygen example
 \docType{class}
 \name{modelDefClass-class}
 \alias{modelDefClass}

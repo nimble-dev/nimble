@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79eeb11e58b
 =======
 % Please edit documentation in RtmpLwENQY/file616168dd5c38
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b04f887170
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d671cdd5c4
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{nimbleModel}
 \alias{nimbleModel}
 \title{Create a NIMBLE mode from BUGS code}

@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee271010c4
 =======
 % Please edit documentation in RtmpLwENQY/file61616e0059ca
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b0388ad768
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d65b1482a5
+>>>>>>> fixed error in MCMCspec roxygen example
 \docType{class}
 \name{modelBaseClass-class}
 \alias{[[,modelBaseClass-method}

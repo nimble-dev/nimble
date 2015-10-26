@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3611dea8
 =======
 % Please edit documentation in RtmpLwENQY/file616123912e44
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b019e7748d
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d674f8c175
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{testBUGSmodel}
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}

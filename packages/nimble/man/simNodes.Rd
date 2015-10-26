@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
 =======
 % Please edit documentation in RtmpLwENQY/file616164fcbb22
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b0756b60b8
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d62b26d013
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{simNodes}
 \alias{calcNodes}
 \alias{getLogProbNodes}

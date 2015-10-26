@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3048d1a7
 =======
 % Please edit documentation in RtmpLwENQY/file6161341da6ca
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b06807e4a
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d641d1a21a
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{nimbleFunctionVirtual}
 \alias{nimbleFunctionVirtual}
 \title{create a virtual nimbleFunction, a base class for other nimbleFunctions}

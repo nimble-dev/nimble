@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in RtmpLwENQY/file616156fdd32a
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b016902b0f
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d691dbf28
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{setAndCalculateOne}
 \alias{setAndCalculateOne}
 \title{Creates a nimbleFunction for setting the value of a scalar model node,

@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 =======
 % Please edit documentation in RtmpLwENQY/file61612b823b49
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b079b14439
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d6518728f4
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{getNimbleOption}
 \alias{getNimbleOption}
 \title{Get NIMBLE Option}

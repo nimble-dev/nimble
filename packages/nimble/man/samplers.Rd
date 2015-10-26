@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee19918d33
 =======
 % Please edit documentation in RtmpLwENQY/file616154d07337
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b04910135f
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d65bf06244
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{samplers}
 \alias{RW}
 \alias{RW_block}

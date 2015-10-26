@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b04f515226
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d64b7a1f83
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{nimPrint}
 \alias{nimPrint}
 \title{print function for use in nimbleFunctions, where it is identical to \code{print}, but not R's \code{print}.}

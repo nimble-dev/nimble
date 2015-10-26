@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b0b253e8a
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d6320f3e98
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{resize}
 \alias{resize}
 \title{Resizes a modelValues object}

@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in RtmpLwENQY/file61612f4fe2c0
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b048d0d3dc
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d69a87d69
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{dexp_nimble}
 \alias{dexp_nimble}
 \alias{pexp_nimble}

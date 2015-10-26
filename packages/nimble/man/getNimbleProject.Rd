@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee38fefa33
 =======
 % Please edit documentation in RtmpLwENQY/file61611adbe820
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b070e06ec3
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d611be8f
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{getNimbleProject}
 \alias{getNimbleProject}
 \title{return the nimble project, if any, associated with a model or nimbleFunction object.}

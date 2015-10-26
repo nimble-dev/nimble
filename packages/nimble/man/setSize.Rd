@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee55370303
 =======
 % Please edit documentation in RtmpLwENQY/file61611b30a085
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b0439b7288
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d66c1c0846
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{setSize}
 \alias{setSize}
 \title{set the size of a numeric variable in NIMBLE}

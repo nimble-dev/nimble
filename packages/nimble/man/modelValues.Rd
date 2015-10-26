@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b03a3987b5
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d6101e3716
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{modelValues}
 \alias{modelValues}
 \title{Create a NIMBLE modelValues Object}

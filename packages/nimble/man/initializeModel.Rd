@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1610658e
 =======
 % Please edit documentation in RtmpLwENQY/file61611f16009b
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpnG0e98/file11b062832203
 >>>>>>> took Makefiles out of
+=======
+% Please edit documentation in RtmpAPakJJ/file50d62d5c93da
+>>>>>>> fixed error in MCMCspec roxygen example
 \name{initializeModel}
 \alias{initializeModel}
 \title{Performs initialization nimble model node values and log probabilities}
