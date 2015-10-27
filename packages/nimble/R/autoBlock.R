@@ -1,20 +1,36 @@
-
-
-
-
-#' Automated parameter blocking for efficient MCMC sampling
-#'
-#' Automated blocking description
-#'
-#' @details		
-#' Automated blocking details
+#' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
-#' @return info
-#'  
-#' @examples
-#' ab <- autoBlock(Rmodel)
+#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC specification, and custom-specified blockings of parameters.
+#'
+#' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intendend to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
 #' 
 #' @author Daniel Turek
+#'
+#' @seealso configureMCMC buildMCMC
+#'
+#' @param Rmodel A NIMBLE model object, created from \link{nimbleModel}.
+#'
+#' @param autoIt The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.
+#'
+#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC specification; a named list element consisting of a quoted code block, which when executed returns an MCMC specification object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
+#'
+#' @param verbose Logical specifying whether to output considerable details of the automated block procedure, through the course of execution.  Default FALSE.
+#' 
+#' @param setSeed Logical specificying whether to call set.seed(0) prior to beginning the blocking procedure.  Default TRUE.
+#'
+#' @param makePlots Logical specifying whether to plot the hierarchical clustering dendrograms, through the course of execution.  Default FALSE.
+#'
+#' @param round Logical specifying whether to round the final output results to two decimal places.  Default TRUE.
+#' 
+#' @return Returns a named list containing elements:
+#' summary: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
+#' autoGroups: A list specifying the parameter blockings converged on by the automated blocking procedure
+#' spec: A NIMBLE MCMC specification object corresponding to the results of the automated blocking procedure
+#' 
+#' @references
+#'
+#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. \cr
+#'
 #' @export
 autoBlock <- function(Rmodel,
                       autoIt = 20000,

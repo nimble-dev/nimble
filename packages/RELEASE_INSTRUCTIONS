@@ -8,6 +8,14 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 ./prep_pkg # this creates man pages and updates NAMESPACE
 
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
+This also should work:
+for file in `ls nimble/man`; do
+    if [ -e /tmp/tmp.Rd ]; then
+       rm -rf /tmp/tmp.Rd
+    fi
+     /bin/cp -i nimble/man/$file /tmp/tmp.Rd 
+     sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
+done
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
@@ -21,6 +29,8 @@ chmod go+w nimble_${VERSION}.tar.gz
 go to website: R-nimble.org/login and login 
 
 change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
+
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page
 
 update NEWS info on webpage as high-level summary of NEWS in package
 
