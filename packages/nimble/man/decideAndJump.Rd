@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in Rtmps9T35v/file3fb3144ee279
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file497627b49973
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file78717c9fa53a
+>>>>>>> added line to remove .o files after create
 \name{decideAndJump}
 \alias{decideAndJump}
 \title{Creates a nimbleFunction for executing the Metropolis-Hastings jumping decision,

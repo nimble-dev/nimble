@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file49766a5ef088
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file78716b707fe9
+>>>>>>> added line to remove .o files after create
 \docType{class}
 \name{modelValuesBaseClass-class}
 \alias{[,CmodelValues-method}

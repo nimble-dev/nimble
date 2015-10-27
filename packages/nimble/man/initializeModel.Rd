@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1610658e
 =======
 % Please edit documentation in RtmpLwENQY/file61611f16009b
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file49767cc7a9df
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file787166b62fe6
+>>>>>>> added line to remove .o files after create
 \name{initializeModel}
 \alias{initializeModel}
 \title{Performs initialization nimble model node values and log probabilities}

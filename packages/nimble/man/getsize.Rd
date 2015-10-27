@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file497656247499
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file78712a8c67
+>>>>>>> added line to remove .o files after create
 \name{getsize}
 \alias{getsize}
 \title{Returns number of rows of modelValues}

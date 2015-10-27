@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in Rtmps9T35v/file3fb367cbd951
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file497657d3b1a5
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file7871776a8110
+>>>>>>> added line to remove .o files after create
 \name{checkInterrupt}
 \alias{checkInterrupt}
 \title{Check for interrupt (e.g. Ctrl-C) during nimbleFunction execution. Part of the NIMBLE language.}

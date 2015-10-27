@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
 =======
 % Please edit documentation in Rtmps9T35v/file3fb34509a7e4
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file49763b5799b
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file787173630367
+>>>>>>> added line to remove .o files after create
 \name{configureMCMC}
 \alias{autoBlock}
 \alias{configureMCMC}

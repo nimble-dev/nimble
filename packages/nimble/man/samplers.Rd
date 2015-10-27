@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee19918d33
 =======
 % Please edit documentation in RtmpLwENQY/file616154d07337
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file4976358030e5
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file78713903cf8b
+>>>>>>> added line to remove .o files after create
 \name{samplers}
 \alias{RW}
 \alias{RW_block}

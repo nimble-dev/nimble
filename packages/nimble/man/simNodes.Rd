@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
 =======
 % Please edit documentation in RtmpLwENQY/file616164fcbb22
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file49764c80fa7e
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file7871488d9cf1
+>>>>>>> added line to remove .o files after create
 \name{simNodes}
 \alias{calcNodes}
 \alias{getLogProbNodes}

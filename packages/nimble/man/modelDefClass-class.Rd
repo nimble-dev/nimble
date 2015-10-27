@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3c7d894b
 =======
 % Please edit documentation in RtmpLwENQY/file6161313dcb78
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file49767285222b
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file7871445dfafa
+>>>>>>> added line to remove .o files after create
 \docType{class}
 \name{modelDefClass-class}
 \alias{modelDefClass}

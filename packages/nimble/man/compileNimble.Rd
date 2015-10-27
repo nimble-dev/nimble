@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee38fefa33
 =======
 % Please edit documentation in Rtmps9T35v/file3fb319d6ed7e
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file49766c690e7
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file78717f47405e
+>>>>>>> added line to remove .o files after create
 \name{compileNimble}
 \alias{compileNimble}
 \title{compile NIMBLE models and nimbleFunctions}

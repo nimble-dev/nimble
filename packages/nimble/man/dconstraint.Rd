@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in Rtmps9T35v/file3fb31bd37e83
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file4976666923e
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file787133664cae
+>>>>>>> added line to remove .o files after create
 \name{dconstraint}
 \alias{dconstraint}
 \alias{rconstraint}

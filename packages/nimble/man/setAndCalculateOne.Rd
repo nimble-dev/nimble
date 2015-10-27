@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in RtmpLwENQY/file616156fdd32a
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in RtmpmO7lLg/file497627b49973
 >>>>>>> updated suite and autoblock roxygen
+=======
+% Please edit documentation in Rtmp60KOwh/file78717c9fa53a
+>>>>>>> added line to remove .o files after create
 \name{setAndCalculateOne}
 \alias{setAndCalculateOne}
 \title{Creates a nimbleFunction for setting the value of a scalar model node,
