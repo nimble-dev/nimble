@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee5c502c8e
 =======
 % Please edit documentation in Rtmps9T35v/file3fb31ca07ca1
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d63c45a1fc
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file497617734049
+>>>>>>> updated suite and autoblock roxygen
 \name{buildMCEM}
 \alias{buildMCEM}
 \title{Builds an MCEM algorithm from a given NIMBLE model}
@@ -20,8 +24,7 @@ buildMCEM(model, latentNodes, burnIn = 100, mcmcControl = list(adaptInterval
   = 20), boxConstraints = list(), buffer = 10^-6)
 }
 \arguments{
-  \item{model}{A nimble model} \item{latentNodes}
-  {A character vector of the names of the stochastic
+  \item{model}{A nimble model} \item{latentNodes}{A character vector of the names of the stochastic
   nodes to integrated out. Names can be expanded, but
   don't need to be. For example, if the model contains
   \code{x[1], x[2] and x[3]} then one could provide

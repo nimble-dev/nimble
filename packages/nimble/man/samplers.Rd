@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee19918d33
 =======
 % Please edit documentation in RtmpLwENQY/file616154d07337
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d65bf06244
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976358030e5
+>>>>>>> updated suite and autoblock roxygen
 \name{samplers}
 \alias{RW}
 \alias{RW_block}

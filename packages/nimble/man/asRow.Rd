@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in Rtmps9T35v/file3fb367cbd951
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d64b7a1f83
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file497657d3b1a5
+>>>>>>> updated suite and autoblock roxygen
 \name{asRow}
 \alias{asCol}
 \alias{asRow}

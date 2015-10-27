@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee54189a31
 =======
 % Please edit documentation in Rtmps9T35v/file3fb37b8a48b5
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d66c820264
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file497670584ce9
+>>>>>>> updated suite and autoblock roxygen
 \name{buildPF}
 \alias{buildPF}
 \title{Creates a particle filter (sequential monte carlo) algorithm to estimate the log-likelihood for a model sub-graph}
@@ -20,8 +24,7 @@ buildPF(model, nodes, silent = FALSE)
 }
 \arguments{
   \item{model}{A nimble model object, typically representing
-  a state space model or a hidden Markov model} \item{nodes}
-  {A character vector specifying the latent model nodes
+  a state space model or a hidden Markov model} \item{nodes}{A character vector specifying the latent model nodes
   over which the particle filter will stochastically
   integrate over to estimate the log-likelihood function}
   \item{silent}{logical indicating whether to suppress

@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
 =======
 % Please edit documentation in RtmpLwENQY/file616164fcbb22
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d62b26d013
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49764c80fa7e
+>>>>>>> updated suite and autoblock roxygen
 \name{simNodesMV}
 \alias{calcNodesMV}
 \alias{getLogProbNodesMV}
@@ -28,12 +32,9 @@ simNodesMV(model, mv, nodes)
   \item{model}{A nimble model.} \item{mv}{A modelValues
   object in which multiple sets of model variables and
   their corresponding logProb values are or will be saved.
-  \code{mv} must include the nodes provided} \item{nodes}
-  {A set of nodes. If none are provided, default is
-  all \code{model$getNodeNames()}} \item{expandNames}
-  {\code{TRUE} or \code{FALSE}: whether to expand node
-  names provided. defaults to \code{TRUE}.} \item{sortNodes}
-  {\code{TRUE} or \code{FALSE}: whether to sort node
+  \code{mv} must include the nodes provided} \item{nodes}{A set of nodes. If none are provided, default is
+  all \code{model$getNodeNames()}} \item{expandNames}{\code{TRUE} or \code{FALSE}: whether to expand node
+  names provided. defaults to \code{TRUE}.} \item{sortNodes}{\code{TRUE} or \code{FALSE}: whether to sort node
   names provided (after expansion) according to the
   order of the model. defaults to \code{TRUE}. by
   \code{node} argument, along with each corresponding

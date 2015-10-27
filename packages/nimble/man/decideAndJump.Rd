@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in Rtmps9T35v/file3fb3144ee279
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d691dbf28
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file497627b49973
+>>>>>>> updated suite and autoblock roxygen
 \name{decideAndJump}
 \alias{decideAndJump}
 \title{Creates a nimbleFunction for executing the Metropolis-Hastings jumping decision,

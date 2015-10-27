@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee271010c4
 =======
 % Please edit documentation in RtmpLwENQY/file61616e0059ca
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d65b1482a5
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49764da5724b
+>>>>>>> updated suite and autoblock roxygen
 \docType{class}
 \name{modelBaseClass-class}
 \alias{[[,modelBaseClass-method}

@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee55370303
 =======
 % Please edit documentation in RtmpLwENQY/file61611b30a085
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d66c1c0846
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976b57e192
+>>>>>>> updated suite and autoblock roxygen
 \name{setSize}
 \alias{setSize}
 \title{set the size of a numeric variable in NIMBLE}
@@ -23,8 +27,7 @@
 setSize(numObj, ..., row)
 }
 \arguments{
-  \item{numObj}{This is the object to be resized} \item{...}
-  {sizes, provided as scalars, in order, with exactly
+  \item{numObj}{This is the object to be resized} \item{...}{sizes, provided as scalars, in order, with exactly
   as many as needed for the object} \item{row}{Optional
   argument that is not currently used}
 }

@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee38fefa33
 =======
 % Please edit documentation in Rtmps9T35v/file3fb319d6ed7e
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d611be8f
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49766c690e7
+>>>>>>> updated suite and autoblock roxygen
 \name{compileNimble}
 \alias{compileNimble}
 \title{compile NIMBLE models and nimbleFunctions}
@@ -30,8 +34,7 @@ compileNimble(..., project, dirName = NULL, projectName = "",
   units will be associated with it.} \item{dirName}{Optional
   directory name in which to generate the C++ code. If
   not provided, a temporary directory will be generated
-  using R's \code{tempdir} function.} \item{projectName}
-  {Optional character name for labeling the project if it
+  using R's \code{tempdir} function.} \item{projectName}{Optional character name for labeling the project if it
   is new} \item{control}{A list mostly for internal use.
   See details.} \item{resetFunctions}{Logical value stating
   whether nimbleFunctions associated with an existing

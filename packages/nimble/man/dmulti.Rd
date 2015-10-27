@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in RtmpLwENQY/file61612f4fe2c0
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d69a87d69
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976666923e
+>>>>>>> updated suite and autoblock roxygen
 \name{dmulti}
 \alias{dmulti}
 \alias{rmulti}

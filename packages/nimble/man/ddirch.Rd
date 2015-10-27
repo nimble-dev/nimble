@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in Rtmps9T35v/file3fb31bd37e83
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d69a87d69
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976666923e
+>>>>>>> updated suite and autoblock roxygen
 \name{ddirch}
 \alias{ddirch}
 \alias{rdirch}

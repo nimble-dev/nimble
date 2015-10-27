@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79eeb11e58b
 =======
 % Please edit documentation in RtmpLwENQY/file616168dd5c38
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d671cdd5c4
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976be42076
+>>>>>>> updated suite and autoblock roxygen
 \name{readBUGSmodel}
 \alias{readBUGSmodel}
 \title{Create a NIMBLE BUGS model from a variety of input formats, including BUGS model files}
@@ -40,8 +44,7 @@ readBUGSmodel(model, data = NULL, inits = NULL, dir = NULL,
   relative or absolute path, or (2) a named list providing
   the input constants and data. If neither is provided,
   the function will look for a file named 'name_of_model-
-  data' including extensions .R, .r, or .txt.} \item{inits}
-  {(optional) (1) character string giving the file name
+  data' including extensions .R, .r, or .txt.} \item{inits}{(optional) (1) character string giving the file name
   for an R file providing starting values as R code
   [assigning individual objects or as a named list], with
   relative or absolute path, or (2) a named list providing

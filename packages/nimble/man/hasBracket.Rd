@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3ffd4de0
 =======
 % Please edit documentation in RtmpLwENQY/file616175a67bec
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d6684b9ceb
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file497618a8b3d9
+>>>>>>> updated suite and autoblock roxygen
 \name{hasBracket}
 \alias{hasBracket}
 \title{Determine if a piece of code contains a '['}

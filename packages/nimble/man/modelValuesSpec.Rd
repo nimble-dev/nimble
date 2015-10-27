@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d6101e3716
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49766a5ef088
+>>>>>>> updated suite and autoblock roxygen
 \name{modelValuesSpec}
 \alias{modelValuesSpec}
 \title{Create the specs for a custom NIMBLE modelValues Object}
@@ -24,8 +28,7 @@ modelValuesSpec(symTab, className, vars, types, sizes, modelDef = NA,
   where = globalenv())
 }
 \arguments{
-  \item{symTab}{For internal use only} \item{className}
-  {For internal use only} \item{vars}{A vector of character
+  \item{symTab}{For internal use only} \item{className}{For internal use only} \item{vars}{A vector of character
   strings naming each variable in the modelValues object}
   \item{types}{A vector of character strings describing
   the type of data for the modelValues object. Options

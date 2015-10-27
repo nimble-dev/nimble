@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3048d1a7
 =======
 % Please edit documentation in RtmpLwENQY/file6161341da6ca
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d641d1a21a
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976516d1f67
+>>>>>>> updated suite and autoblock roxygen
 \name{nimbleFunction}
 \alias{nimbleFunction}
 \title{create a nimbleFunction}

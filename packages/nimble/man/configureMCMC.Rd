@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
 =======
 % Please edit documentation in Rtmps9T35v/file3fb34509a7e4
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d6b411e9d
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49763b5799b
+>>>>>>> updated suite and autoblock roxygen
 \name{configureMCMC}
 \alias{autoBlock}
 \alias{configureMCMC}
@@ -44,8 +48,7 @@ configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   list element). The default values for control list
   arguments for samplers (if not otherwise provided as an
   argument to configureMCMC() ) are in the NIMBLE system
-  option \code{MCMCcontrolDefaultList}.} \item{monitors}
-  {A character vector of node names or variable names, to
+  option \code{MCMCcontrolDefaultList}.} \item{monitors}{A character vector of node names or variable names, to
   record during MCMC sampling. This set of monitors will
   be recorded with thinning interval \code{thin}, and the
   samples will be stored into the \code{mvSamples} object.
@@ -63,8 +66,7 @@ configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   \item{useConjugacy}{A logical argument, with default
   value TRUE. If specified as FALSE, then no conjugate
   samplers will be used, even when a node is determined
-  to be in a conjugate relationship.} \item{onlyRW}
-  {A logical argument, with default value FALSE. If
+  to be in a conjugate relationship.} \item{onlyRW}{A logical argument, with default value FALSE. If
   specified as TRUE, then Metropolis-Hastings random
   walk samplers (\link{sampler_RW}) will be assigned
   for all non-terminal continuous-valued nodes nodes.
@@ -84,8 +86,7 @@ configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   multivariate node. Note, multivariate nodes appearing in
   conjugate relationships will be assigned the corresponding
   conjugate sampler (provided \code{useConjugacy == TRUE}),
-  regardless of the value of this argument.} \item{print}
-  {A logical argument, specifying whether to print the
+  regardless of the value of this argument.} \item{print}{A logical argument, specifying whether to print the
   ordered list of default samplers.} \item{autoBlock}{A
   logical argument specifying whether to use an automated
   blocking procedure to determine blocks of model nodes

@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in RtmpLwENQY/file61612f4fe2c0
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d69a87d69
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976666923e
+>>>>>>> updated suite and autoblock roxygen
 \name{dmnorm_chol}
 \alias{dmnorm_chol}
 \alias{rmnorm_chol}
@@ -25,8 +29,7 @@ dmnorm_chol(x, mean, cholesky, prec_param = TRUE, log = FALSE)
 }
 \arguments{
   \item{x}{vector of values.} \item{mean}{vector of values
-  giving the mean of the distribution.} \item{cholesky}
-  {upper-triangular Cholesky factor of either the precision
+  giving the mean of the distribution.} \item{cholesky}{upper-triangular Cholesky factor of either the precision
   matrix (when \code{prec_param} is TRUE) or covariance
   matrix (otherwise).} \item{prec_param}{logical; if TRUE
   the Cholesky factor is that of the precision matrix;

@@ -1,7 +1,3 @@
-
-
-
-
 #' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
 #' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC specification, and custom-specified blockings of parameters.

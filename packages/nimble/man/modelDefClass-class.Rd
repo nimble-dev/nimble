@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3c7d894b
 =======
 % Please edit documentation in RtmpLwENQY/file6161313dcb78
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d6267e0090
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49767285222b
+>>>>>>> updated suite and autoblock roxygen
 \docType{class}
 \name{modelDefClass-class}
 \alias{modelDefClass}

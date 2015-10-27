@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d64b7a1f83
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file497657d3b1a5
+>>>>>>> updated suite and autoblock roxygen
 \name{nfMethod}
 \alias{nfMethod}
 \title{Internal function for accessing a member function (method) of a nimbleFunction.  Normally a user will write \code{nf$method(x)} instead of \code{nfMethod(nf, method)(x)}.}
@@ -24,8 +28,7 @@ nfMethod(nf, methodName)
 }
 \arguments{
   \item{nf}{a specialized nimbleFunction, i.e. one that has
-  already had setup parameters processed} \item{methodName}
-  {a character string giving the name of the member function
+  already had setup parameters processed} \item{methodName}{a character string giving the name of the member function
   to call}
 }
 \value{

@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 =======
 % Please edit documentation in RtmpLwENQY/file61612b823b49
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d6518728f4
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49762eb6cc9
+>>>>>>> updated suite and autoblock roxygen
 \name{getNimbleOption}
 \alias{getNimbleOption}
 \title{Get NIMBLE Option}

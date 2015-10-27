@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee64c02f75
 =======
 % Please edit documentation in Rtmps9T35v/file3fb345ab1f8b
@@ -12,6 +13,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d66393cc7a
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file4976532a376f
+>>>>>>> updated suite and autoblock roxygen
 \name{buildMCMC}
 \alias{buildMCMC}
 \title{Create an MCMC function, from an MCMCspec object}
@@ -25,11 +29,7 @@ buildMCMC(mcmcspec, ...)
   for details of creating MCMCspec objects. Alternatively,
   \code{mcmcspec} may a NIMBLE model object, in which
   case an MCMC function corresponding to the defult MCMC
-  specification for this model is returned.} \item{...}
-  {Additional arguments to be passed to \code{configureMCMC}
-  if \code{mcmcspec} is a NIMBLE model object}
-}
-\description{
+  specification for this model is returned.} \item{...}{Additional arguments to be passed to \code{configureMCMC}if \code{mcmcspec} is a NIMBLE model object}}\description{
 Accepts a single required argument, which may be of class
 MCMCspec, or inherit from class modelBaseClass (a NIMBLE
 model obejct). Returns an MCMC function; see details

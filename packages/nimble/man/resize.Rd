@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d6320f3e98
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file497656247499
+>>>>>>> updated suite and autoblock roxygen
 \name{resize}
 \alias{resize}
 \title{Resizes a modelValues object}

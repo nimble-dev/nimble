@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee38fefa33
 =======
 % Please edit documentation in RtmpLwENQY/file61611adbe820
@@ -16,6 +17,9 @@
 =======
 % Please edit documentation in RtmpAPakJJ/file50d611be8f
 >>>>>>> fixed error in MCMCspec roxygen example
+=======
+% Please edit documentation in RtmpmO7lLg/file49766c690e7
+>>>>>>> updated suite and autoblock roxygen
 \name{getNimbleProject}
 \alias{getNimbleProject}
 \title{return the nimble project, if any, associated with a model or nimbleFunction object.}

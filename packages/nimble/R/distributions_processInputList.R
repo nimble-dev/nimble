@@ -282,7 +282,6 @@ getValueDim <- function(distObject)
 #'            return(exp(logProb))
 #'        }
 #'    })
-
 #' rmyexp <- nimbleFunction(
 #'    run = function(n = integer(0), rate = double(0)) {
 #'        returnType(double(0))
@@ -296,7 +295,7 @@ getValueDim <- function(distObject)
 #'               BUGSdist = "dmyexp(rate, scale)",
 #'               Rdist = "dmyexp(rate = 1/scale)",
 #'               altParams = "scale = 1/rate",
-#'               pqAvail = FALSE),
+#'               pqAvail = FALSE)))
 #' code <- BUGScode({
 #'     y ~ dmyexp(rate = r)
 #'     r ~ dunif(0, 100)
