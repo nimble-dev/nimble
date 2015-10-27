@@ -139,7 +139,7 @@
 #'                     monitors = 'mu',
 #'                     MCMCs = c('nimble', 'nimble_RW'),
 #'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
-#'                     plotName = 'example')
+#'                     makePlot = FALSE)
 #' 
 #' @author Daniel Turek
 #' @export
