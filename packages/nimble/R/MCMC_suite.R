@@ -137,7 +137,7 @@
 #'                     inits = list(mu=0),
 #'                     niter = 10000,
 #'                     monitors = 'mu',
-#'                     MCMCs = c('winbugs', 'jags', 'nimble'),
+#'                     MCMCs = c('nimble', 'nimble_RW'),
 #'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
 #'                     plotName = 'example')
 #' 
