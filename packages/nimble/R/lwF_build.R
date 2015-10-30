@@ -161,7 +161,7 @@ LWStep <- nimbleFunction(
          }
        }
       for(i in 1:m){
-        wts[i] <- mvWSamp['wts',i][prevInd]
+        wts[i] <- exp(mvWSamp['wts',i][prevInd])
        }
        meanVec <- parCalc$shrinkMean(m, wts, tmpPars )  # shrink parameter particles towards mean  
        for(i in 1:m) {
@@ -173,13 +173,13 @@ LWStep <- nimbleFunction(
          calculate(model, thisDeterm)
          auxWts[i] <- exp(calculate(model, thisData))
          if(is.nan(auxWts[i])) auxWts[i] <- 0 #check for ok param values
-         preWts[i] <- exp(log(auxWts[i])+wts[i]) #first resample weights
+         preWts[i] <- exp(log(auxWts[i]))*wts[i] #first resample weights
        }
        rankSample(preWts, m, ids, silent)
        # Reassign weights and pars so that cov matrix is calculated correctly
        for(i in 1:m){
          copy(mvWSamp, mvEWSamp, nodes = prevXName, nodesTo = prevXName, row = ids[i], rowTo = i)
-         wts[i] <- mvWSamp['wts',ids[i]][prevInd] 
+         wts[i] <- exp(mvWSamp['wts',ids[i]][prevInd] )
        }
        for(j in 1:numParamVars){
          tmpSize <- paramInds[j+1]-paramInds[j]
@@ -219,7 +219,6 @@ LWStep <- nimbleFunction(
     }
     #     #normalizing weights and calculating effective sample size 
 #     ess <- 1/(ess/(sum(l)^2))
-     
      for(j in 1:numParamVars){
        tmpSize <- paramInds[j+1]-paramInds[j]
        if(tmpSize == 1){
@@ -229,7 +228,6 @@ LWStep <- nimbleFunction(
          doVarList[[j]]$vectorSet(tmpPars[(paramInds[j]+1):paramInds[j+1], ], 1 ,m, ids)
        }
      }   
-     
      if(isLast){
        for(i in 1:m){
          wts[i] <-  exp(mvWSamp['wts',i][currInd])
