@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1610658e
 =======
 % Please edit documentation in RtmpLwENQY/file61611f16009b
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c345de9299b
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b1431fe0d
+>>>>>>> removed top level tests dir
 \name{initializeModel}
 \alias{initializeModel}
 \title{Performs initialization nimble model node values and log probabilities}
@@ -37,6 +41,8 @@ initializeModel(model, silent = FALSE)
 \arguments{
   \item{model}{A setup argument, which specializes an
   instance of this nimble function to a particular model.}
+  \item{silent}{logical indicating whether to suppress
+  logging information}
 }
 \description{
 Performs initialization nimble model node values and log

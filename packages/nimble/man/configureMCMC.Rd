@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
 =======
 % Please edit documentation in Rtmps9T35v/file3fb34509a7e4
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c345ac178ee
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b641f2ee4
+>>>>>>> removed top level tests dir
 \name{configureMCMC}
 \alias{autoBlock}
 \alias{configureMCMC}

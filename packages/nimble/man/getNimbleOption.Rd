@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 =======
 % Please edit documentation in RtmpLwENQY/file61612b823b49
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c344ed94e0b
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b6904a114
+>>>>>>> removed top level tests dir
 \name{getNimbleOption}
 \alias{getNimbleOption}
 \title{Get NIMBLE Option}

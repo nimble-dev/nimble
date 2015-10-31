@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79eeb11e58b
 =======
 % Please edit documentation in RtmpLwENQY/file616168dd5c38
@@ -28,13 +29,16 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c34461772
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b7e7b65d5
+>>>>>>> removed top level tests dir
 \name{readBUGSmodel}
 \alias{readBUGSmodel}
 \title{Create a NIMBLE BUGS model from a variety of input formats, including BUGS model files}
 \usage{
 readBUGSmodel(model, data = NULL, inits = NULL, dir = NULL,
-  useInits = TRUE, useData = TRUE, debug = FALSE,
-  returnModelComponentsOnly = FALSE, check = TRUE)
+  useData = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE,
+  check = TRUE)
 }
 \arguments{
   \item{model}{one of (1) a character string giving the
@@ -61,11 +65,18 @@ readBUGSmodel(model, data = NULL, inits = NULL, dir = NULL,
   as a list should be a simple list and not a list of
   lists.} \item{dir}{(optional) character string giving
   the directory where the (optional) files are located}
-  \item{useInits}{boolean indicating whether to set the
-  initial values, either based on \code{inits} or by finding
-  the '-inits' file corresponding to the input model file}
-  \item{check}{logical indicating whether to check the model
-  object for missing or invalid values. Default is TRUE.}
+  \item{debug}{logical indicating whether to put the user
+  in a browser for debugging when \code{readBUGSmodel}
+  calls \code{nimbleModel}. Intended for developer use.}
+  \item{returnModelComponentsOnly}{logical intended
+  primarily for use with \code{MCMCsuite} to return pieces
+  of the model object without building the model. Default is
+  FALSE.} \item{check}{logical indicating whether to check
+  the model object for missing or invalid values. Default
+  is TRUE.} \item{useInits}{boolean indicating whether to
+  set the initial values, either based on \code{inits} or by
+  finding the '-inits' file corresponding to the input model
+  file}
 }
 \value{
 returns a NIMBLE BUGS R model

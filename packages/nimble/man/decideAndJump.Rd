@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in Rtmps9T35v/file3fb3144ee279
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c343148fe6d
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0bd18b92
+>>>>>>> removed top level tests dir
 \name{decideAndJump}
 \alias{decideAndJump}
 \title{Creates a nimbleFunction for executing the Metropolis-Hastings jumping decision,

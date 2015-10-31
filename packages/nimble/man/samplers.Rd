@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee19918d33
 =======
 % Please edit documentation in RtmpLwENQY/file616154d07337
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c342db9bdd9
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b72166ca5
+>>>>>>> removed top level tests dir
 \name{samplers}
 \alias{RW}
 \alias{RW_block}

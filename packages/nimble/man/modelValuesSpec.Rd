@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -28,9 +29,12 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c346355020d
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b718db894
+>>>>>>> removed top level tests dir
 \name{modelValuesSpec}
 \alias{modelValuesSpec}
-\title{Create the specs for a custom NIMBLE modelValues Object}
+\title{Create the specs for a custom NIMBLE modelValues object}
 \usage{
 modelValuesSpec(symTab, className, vars, types, sizes, modelDef = NA,
   where = globalenv())
@@ -43,10 +47,8 @@ modelValuesSpec(symTab, className, vars, types, sizes, modelDef = NA,
   include `double' (for real-valued variables) and `int'.}
   \item{sizes}{A list in which the named items of the list
   match the \code{var} arguments and each item is a numeric
-  vector of the dimensions} \item{where}{For internal use
-  only}
-}
-\description{
+  vector of the dimensions} \item{modelDef}{For internal use
+  only} \item{where}{For internal use only}}\description{
 Builds an R-based modelValues spec object
 }
 \details{

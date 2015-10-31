@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3048d1a7
 =======
 % Please edit documentation in RtmpLwENQY/file6161341da6ca
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c34231b7291
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b70a6902d
+>>>>>>> removed top level tests dir
 \name{nimbleFunction}
 \alias{nimbleFunction}
 \title{create a nimbleFunction}
@@ -42,8 +46,8 @@ nimbleFunction(setup = NULL, run = function() { }, methods = list(),
   function definition the executes the primary job of
   the nimbleFunction} \item{methods}{An optional named
   list of NIMBLE function definitions for other class
-  methods.} \item{contains}{An optional object returned
-  from \link{nimbleFunctionVirtual} that defines arguments
+  methods.} \item{globalSetup}{For internal use only}\item{contains}{An optional object returned from
+  \link{nimbleFunctionVirtual} that defines arguments
   and returnTypes for \code{run} and/or methods, to which
   the current nimbleFunction must conform} \item{name}{An
   optional name used internally, for example in generated C

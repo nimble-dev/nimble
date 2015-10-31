@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
 =======
 % Please edit documentation in RtmpLwENQY/file616164fcbb22
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c34690474e5
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b660083de
+>>>>>>> removed top level tests dir
 \name{simNodes}
 \alias{calcNodes}
 \alias{getLogProbNodes}

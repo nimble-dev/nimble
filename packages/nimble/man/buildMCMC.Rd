@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee64c02f75
 =======
 % Please edit documentation in Rtmps9T35v/file3fb345ab1f8b
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c34555dcbc4
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b611a5549
+>>>>>>> removed top level tests dir
 \name{buildMCMC}
 \alias{buildMCMC}
 \title{Create an MCMC function, from an MCMCspec object}

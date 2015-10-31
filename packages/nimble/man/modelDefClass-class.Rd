@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3c7d894b
 =======
 % Please edit documentation in RtmpLwENQY/file6161313dcb78
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c3456f7ce94
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b39cf2b72
+>>>>>>> removed top level tests dir
 \docType{class}
 \name{modelDefClass-class}
 \alias{modelDefClass}

@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c347686f848
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b7dc6e865
+>>>>>>> removed top level tests dir
 \name{rankSample}
 \alias{rankSample}
 \title{Generates a weighted sample (with replacement) of ranks}
@@ -35,10 +39,11 @@
 rankSample(weights, size, output, silent = FALSE)
 }
 \arguments{
-  \item{weights}{A vector of numeric weights. Does not need
-  to sum to 1, but must be non-negative} \item{size}{size
-  of sample} \item{output}{an R object into which the values
-  will be placed. See example below for proper use}
+  \item{weights}{A vector of numeric weights. Does not
+  need to sum to 1, but must be non-negative} \item{size}{Size of sample} \item{output}{An R object into which
+  the values will be placed. See example below for proper
+  use} \item{silent}{Logical indicating whether to suppress
+  logging information}
 }
 \description{
 Takes a set of non-negative \code{weights} (do not need to

@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee54189a31
 =======
 % Please edit documentation in Rtmps9T35v/file3fb37b8a48b5
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c346eda7283
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b5a1ff3be
+>>>>>>> removed top level tests dir
 \name{buildPF}
 \alias{buildPF}
 \title{Creates a particle filter (sequential monte carlo) algorithm to estimate the log-likelihood for a model sub-graph}
@@ -48,13 +52,6 @@ accept a single integer argument (m, default 10,000), which
 specifies the number of random \'particles\' to use for
 estimating the log-likelihood. The algorithm returns the
 estimated log-likelihood value.
-}
-\examples{
-model <- nimbleModel(code = ...)
-my_PF <- buildPF(model, 'x[1:100]')
-Cmodel <- compileNimble(model)
-Cmy_PF <- compileNimble(my_PF, project = model)
-logLike <- Cmy_PF$run(m = 100000)
 }
 \author{
 Daniel Turek

@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee271010c4
 =======
 % Please edit documentation in RtmpLwENQY/file61616e0059ca
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c3410405fbe
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b44bd90be
+>>>>>>> removed top level tests dir
 \docType{class}
 \name{modelBaseClass-class}
 \alias{[[,modelBaseClass-method}

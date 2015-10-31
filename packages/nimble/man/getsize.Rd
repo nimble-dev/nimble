@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c3443f77500
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b48daab2c
+>>>>>>> removed top level tests dir
 \name{getsize}
 \alias{getsize}
 \title{Returns number of rows of modelValues}

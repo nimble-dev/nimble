@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3611dea8
 =======
 % Please edit documentation in RtmpLwENQY/file616123912e44
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c341230f118
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0bf6172ab
+>>>>>>> removed top level tests dir
 \name{testBUGSmodel}
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}
@@ -62,9 +66,12 @@ testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
   or (2) a named list providing the values. If neither
   is provided, the function will look for a file named
   \code{example}-init or \code{example}-inits including
-  extensions .R, .r, or .txt.} \item{withInits}{boolean
+  extensions .R, .r, or .txt.} \item{useInits}{boolean
   indicating whether to test model with initial values
-  provided via \code{inits}}
+  provided via \code{inits}} \item{debug}{logical indicating
+  whether to put the user in a browser for debugging when
+  \code{testBUGSmodel} calls \code{readBUGSmodel}. Intended
+  for developer use.}
 }
 \description{
 \code{testBUGSmodel} builds a BUGS model in the NIMBLE

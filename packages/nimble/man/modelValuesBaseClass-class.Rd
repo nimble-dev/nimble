@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c346355020d
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in RtmpkxJCni/file2c0b718db894
+>>>>>>> removed top level tests dir
 \docType{class}
 \name{modelValuesBaseClass-class}
 \alias{[,CmodelValues-method}
