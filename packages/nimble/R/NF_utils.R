@@ -68,9 +68,6 @@ getLogProbNodes <- nimbleFunction(
 #' @param model		A nimble model. 
 #' @param nodes		A set of nodes. If none are provided, default is all \code{model$getNodeNames()}
 #' @param mv		A modelValues object in which multiple sets of model variables and their corresponding logProb values are or will be saved. \code{mv} must include the nodes provided
-#' @param expandNames   \code{TRUE} or \code{FALSE}: whether to expand node names provided. defaults to \code{TRUE}.
-#' @param sortNodes     \code{TRUE} or \code{FALSE}: whether to sort node names provided (after expansion) according to the order of the model. defaults to \code{TRUE}.
-#' by \code{node} argument, along with each corresponding \code{'logProb_(nodeName)'}. 
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details

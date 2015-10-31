@@ -46,7 +46,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #'
 #' Density and random generation for the Dirichlet distribution
 #'
-#' @aliases rdirch
+#' @name Dirichlet
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -63,11 +63,16 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' alpha <- c(1, 10, 30)
 #' x <- rdirch(1, alpha)
 #' ddirch(x, alpha)
-#' 
+NULL
+
+#' @rdname Dirichlet
+#' @export
 ddirch <- function(x, alpha, log = FALSE) {
     .Call('C_ddirch', as.double(x), as.double(alpha), as.logical(log))
 }
 
+#' @rdname Dirichlet
+#' @export
 rdirch <- function(n = 1, alpha) {
     if(n != 1) warning('rdirch only handles n = 1 at the moment')
   .Call('C_rdirch', as.double(alpha))
@@ -77,10 +82,11 @@ rdirch <- function(n = 1, alpha) {
 #'
 #' Density and random generation for the multinomial distribution
 #'
-#' @aliases rmulti
+#' @name Multinomial
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
+#' @param size number of trials.
 #' @param prob vector of probabilities, summing to one, of same length as \code{x}
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
@@ -95,11 +101,16 @@ rdirch <- function(n = 1, alpha) {
 #' probs <- c(1/4, 1/10, 1 - 1/4 - 1/10)
 #' x <- rmulti(1, size, probs)
 #' dmulti(x, size, probs)
-#' 
+NULL
+
+#' @rdname Multinomial
+#' @export
 dmulti <- function(x, size = sum(x), prob, log = FALSE) {
   .Call('C_dmulti', as.double(x), as.double(size), as.double(prob), as.logical(log))
 }
 
+#' @rdname Multinomial
+#' @export
 rmulti <- function(n = 1, size, prob) {
   if(n != 1) warning('rmulti only handles n = 1 at the moment')
   .Call('C_rmulti', as.double(size), as.double(prob))
@@ -148,11 +159,13 @@ rcat <- function(n = 1, prob) {
 #' allowing non-zero location, \code{mu},
 #' and non-unit scale, \code{sigma} 
 #'
-#' @aliases rt_nonstandard, qt_nonstandard, pt_nonstandard
+#' @name t
 #' 
 #' @param x vector of values.
 #' @param n number of observations.
 #' @param df vector of degrees of freedom values.
+#' @param p vector of probabilities.
+#' @param q vector of quantiles.
 #' @param mu vector of location values.
 #' @param sigma vector of scale values.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
@@ -170,19 +183,28 @@ rcat <- function(n = 1, prob) {
 #' @examples
 #' x <- rt_nonstandard(50, df = 1, mu = 5, sigma = 1)
 #' dt_nonstandard(x, 3, 5, 1)
-#' 
+NULL
+
+#' @rdname t
+#' @export
 dt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, log = FALSE) {
   .Call('C_dt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(log))
 }
 
+#' @rdname t
+#' @export
 rt_nonstandard <- function(n, df = 1, mu = 0, sigma = 1) {
   .Call('C_rt_nonstandard', as.integer(n), as.double(df), as.double(mu), as.double(sigma))
 }
 
-pt_nonstandard <- function(x, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
-  .Call('C_pt_nonstandard', as.double(x), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
+#' @rdname t
+#' @export
+pt_nonstandard <- function(q, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
+  .Call('C_pt_nonstandard', as.double(q), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
 
+#' @rdname t
+#' @export
 qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
   .Call('C_qt_nonstandard', as.double(p), as.double(df), as.double(mu), as.double(sigma), as.logical(lower.tail), as.logical(log.p))
 }
@@ -191,7 +213,7 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
 #'
 #' Density and random generation for the multivariate normal distribution, using the Cholesky factor of either the precision matrix or the covariance matrix.
 #'
-#' @aliases rmnorm_chol
+#' @name MultivariateNormal
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -212,13 +234,18 @@ qt_nonstandard <- function(p, df = 1, mu = 0, sigma = 1, lower.tail = TRUE, log.
 #' ch <- chol(covmat)
 #' x <- rmnorm_chol(1, mean, ch, prec_param = FALSE)
 #' dmnorm_chol(x, mean, ch, prec_param = FALSE)
-#' 
+NULL
+
+#' @rdname MultivariateNormal
+#' @export
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
   .Call('C_dmnorm_chol', as.double(x), as.double(mean), as.double(cholesky), as.double(prec_param), as.logical(log))
 }
 
+#' @rdname MultivariateNormal
+#' @export
 rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
  ## cholesky should be upper triangular
  ## FIXME: allow cholesky to be lower tri
@@ -230,7 +257,7 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #'
 #' Calculations to handle censoring
 #'
-#' @aliases rinterval
+#' @name Interval
 #' 
 #' @param x vector of interval indices.
 #' @param n number of observations.
@@ -252,11 +279,17 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #' x <- rinterval(4, vals, endpoints)
 #' dinterval(x, vals, endpoints)
 #' dinterval(c(1, 5, 2, 3), vals, endpoints)
-#' 
+NULL
+
+ 
+#' @rdname Interval
+#' @export
 dinterval <- function(x, t, c, log = FALSE) {
     .Call('C_dinterval', as.double(x), as.double(t), as.double(c), as.logical(log))
 }
 
+#' @rdname Interval
+#' @export
 rinterval <- function(n = 1, t, c) {
     .Call('C_rinterval', as.integer(n), as.double(t), as.double(c))
 }
@@ -265,7 +298,7 @@ rinterval <- function(n = 1, t, c) {
 #'
 #' Calculations to handle censoring
 #'
-#' @aliases rconstraint
+#' @name Constraint
 #'
 #' @param x value indicating whether \code{cond} is TRUE or FALSE
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -287,7 +320,10 @@ rinterval <- function(n = 1, t, c) {
 #' dconstraint(0, 3 > 4)
 #' dconstraint(1, 3 > 4)
 #' rconstraint(1, 3 > 4)
-#' 
+NULL
+
+#' @rdname Constraint
+#' @export
 dconstraint <- function(x, cond, log = FALSE) {
     if(length(x) > 1 || length(cond) > 1) stop('dconstraint is not vectorized')
     if(is.na(x) || is.na(cond)) return(x + cond) # mimic how R's C functions handle NA and NaN inputs
@@ -295,6 +331,8 @@ dconstraint <- function(x, cond, log = FALSE) {
     if(log) return(log(result)) else return(result)
 }
 
+#' @rdname Constraint
+#' @export
 rconstraint <- function(n = 1, cond) {
     if(n != 1 || length(cond) > 1) stop('rconstraint only handles n = 1 at the moment')
     if(is.na(cond)) {
@@ -312,9 +350,12 @@ rconstraint <- function(n = 1, cond) {
 #'   generation for the exponential distribution with rate
 #'     (i.e., mean of \code{1/rate}) or scale parameterizations.
 #' 
-#' @aliases rexp_nimble, qexp_nimble, pexp_nimble
+#' @name Exponential
+#' 
 #' @param x vector of values.
 #' @param n number of observations.
+#' @param p vector of probabilities.
+#' @param q vector of quantiles.
 #' @param rate vector of rate values.
 #' @param scale vector of scale values.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
@@ -336,7 +377,11 @@ rconstraint <- function(n = 1, cond) {
 #' @examples
 #' x <- rexp_nimble(50, scale = 3)
 #' dexp_nimble(x, scale = 3)
-#' 
+NULL
+
+
+#' @rdname Exponential
+#' @export
 dexp_nimble <- function(x, rate = 1/scale, scale = 1, log = FALSE) {
     if (!missing(rate) && !missing(scale)) {
         if (abs(rate * scale - 1) < 1e-15) 
@@ -346,6 +391,8 @@ dexp_nimble <- function(x, rate = 1/scale, scale = 1, log = FALSE) {
     .Call('C_dexp_nimble', as.double(x), as.double(rate), as.logical(log))
 }
 
+#' @rdname Exponential
+#' @export
 rexp_nimble <- function(n = 1, rate = 1/scale, scale = 1) {
     if (!missing(rate) && !missing(scale)) {
         if (abs(rate * scale - 1) < 1e-15) 
@@ -355,6 +402,8 @@ rexp_nimble <- function(n = 1, rate = 1/scale, scale = 1) {
     .Call('C_rexp_nimble', as.integer(n), as.double(rate))
 }
 
+#' @rdname Exponential
+#' @export
 pexp_nimble <- function(q, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
     if (!missing(rate) && !missing(scale)) {
         if (abs(rate * scale - 1) < 1e-15) 
@@ -364,6 +413,8 @@ pexp_nimble <- function(q, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
   .Call('C_pexp_nimble', as.double(q), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
+#' @rdname Exponential
+#' @export
 qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
     if (!missing(rate) && !missing(scale)) {
         if (abs(rate * scale - 1) < 1e-15) 

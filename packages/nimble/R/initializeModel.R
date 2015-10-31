@@ -3,6 +3,7 @@
 #' Performs initialization nimble model node values and log probabilities
 #'
 #' @param model A setup argument, which specializes an instance of this nimble function to a particular model.
+#' @param silent logical indicating whether to suppress logging information
 #' @author Daniel Turek
 #' @details This nimbleFunction may be used at the beginning of nimble algorithms to perform model initialization.
 #' The intended usage is to specialize an instance of this nimbleFunction in the setup function of an algorithm,

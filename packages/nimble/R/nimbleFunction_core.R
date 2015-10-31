@@ -44,6 +44,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @param setup An optional R function definition for setup processing.
 #' @param run An optional NIMBLE function definition the executes the primary job of the nimbleFunction
 #' @param methods An optional named list of NIMBLE function definitions for other class methods.
+#' @param globalSetup For internal use only
 #' @param contains An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
 #' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.

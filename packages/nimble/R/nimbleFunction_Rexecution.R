@@ -545,12 +545,12 @@ nfMethod <- function(nf, methodName) {
 #' \code{rankSample} can be used inside nimble functions.
 #'
 #' @param weights		A vector of numeric weights. Does not need to sum to 1, but must be non-negative
-#' @param size			size of sample
-#' @param output		an R object into which the values will be placed. See example below for proper use
+#' @param size			Size of sample
+#' @param output		An R object into which the values will be placed. See example below for proper use
+#' @param silent Logical indicating whether to suppress logging information
 #' @author	Clifford Anderson-Bergman
 #' @export
 #' @details		
-
 #' \code{rankSample} first samples from the joint distribution \code{size} uniform(0,1) distributions by conditionally sampling from the rank statistics. This leads to 
 #' a sorted sample of uniform(0,1)'s. Then, a cdf vector is constructed from weights. Because the sample of uniforms is sorted, \code{rankSample} walks
 #' down the cdf in linear time and fills out the sample.
