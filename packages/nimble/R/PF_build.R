@@ -54,12 +54,6 @@ pfStep <- nimbleFunction(
 #' 
 #' @author Daniel Turek
 #' @details The resulting specialized particle filter algorthm will accept a single integer argument (m, default 10,000), which specifies the number of random \'particles\' to use for estimating the log-likelihood.  The algorithm returns the estimated log-likelihood value.
-#' @examples
-#' model <- nimbleModel(code = ...)
-#' my_PF <- buildPF(model, 'x[1:100]')
-#' Cmodel <- compileNimble(model)
-#' Cmy_PF <- compileNimble(my_PF, project = model)
-#' logLike <- Cmy_PF$run(m = 100000)
 buildPF <- nimbleFunction(
     setup = function(model, nodes, silent = FALSE) {
         my_initializeModel <- initializeModel(model, silent = silent)

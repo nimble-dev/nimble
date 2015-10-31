@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3c7d894b
 =======
 % Please edit documentation in RtmpLwENQY/file6161313dcb78
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file7871445dfafa
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c3456f7ce94
+>>>>>>> various cleanups of roxygen stuff
 \docType{class}
 \name{modelDefClass-class}
 \alias{modelDefClass}

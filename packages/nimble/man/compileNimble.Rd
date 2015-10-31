@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee38fefa33
 =======
 % Please edit documentation in Rtmps9T35v/file3fb319d6ed7e
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78717f47405e
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c344f811986
+>>>>>>> various cleanups of roxygen stuff
 \name{compileNimble}
 \alias{compileNimble}
 \title{compile NIMBLE models and nimbleFunctions}

@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee55370303
 =======
 % Please edit documentation in RtmpLwENQY/file61611b30a085
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78714dde7fd3
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c343c3f05
+>>>>>>> various cleanups of roxygen stuff
 \name{setSize}
 \alias{setSize}
 \title{set the size of a numeric variable in NIMBLE}

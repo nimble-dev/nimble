@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee64c02f75
 =======
 % Please edit documentation in Rtmps9T35v/file3fb345ab1f8b
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78715f802dd1
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c34555dcbc4
+>>>>>>> various cleanups of roxygen stuff
 \name{buildMCMC}
 \alias{buildMCMC}
 \title{Create an MCMC function, from an MCMCspec object}

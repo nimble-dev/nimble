@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3ffd4de0
 =======
 % Please edit documentation in RtmpLwENQY/file616175a67bec
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78714c7589f0
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c3418628a38
+>>>>>>> various cleanups of roxygen stuff
 \name{hasBracket}
 \alias{hasBracket}
 \title{Determine if a piece of code contains a '['}

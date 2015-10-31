@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee38fefa33
 =======
 % Please edit documentation in RtmpLwENQY/file61611adbe820
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78717f47405e
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c344f811986
+>>>>>>> various cleanups of roxygen stuff
 \name{getNimbleProject}
 \alias{getNimbleProject}
 \title{return the nimble project, if any, associated with a model or nimbleFunction object.}

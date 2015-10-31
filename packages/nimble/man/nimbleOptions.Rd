@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 =======
 % Please edit documentation in RtmpLwENQY/file61612b823b49
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78717038320b
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c344ed94e0b
+>>>>>>> various cleanups of roxygen stuff
 \name{nimbleOptions}
 \alias{nimbleOptions}
 \title{NIMBLE Options Settings}

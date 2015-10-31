@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3611dea8
 =======
 % Please edit documentation in RtmpLwENQY/file616123912e44
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78713efc87b5
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c341230f118
+>>>>>>> various cleanups of roxygen stuff
 \name{testBUGSmodel}
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}

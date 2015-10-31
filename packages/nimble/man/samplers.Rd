@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee19918d33
 =======
 % Please edit documentation in RtmpLwENQY/file616154d07337
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78713903cf8b
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c342db9bdd9
+>>>>>>> various cleanups of roxygen stuff
 \name{samplers}
 \alias{RW}
 \alias{RW_block}

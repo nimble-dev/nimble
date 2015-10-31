@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee5c502c8e
 =======
 % Please edit documentation in Rtmps9T35v/file3fb31ca07ca1
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file7871d58f431
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c3463cf05fc
+>>>>>>> various cleanups of roxygen stuff
 \name{buildMCEM}
 \alias{buildMCEM}
 \title{Builds an MCEM algorithm from a given NIMBLE model}

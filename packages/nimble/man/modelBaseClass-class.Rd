@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee271010c4
 =======
 % Please edit documentation in RtmpLwENQY/file61616e0059ca
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78715cf59f7
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c3410405fbe
+>>>>>>> various cleanups of roxygen stuff
 \docType{class}
 \name{modelBaseClass-class}
 \alias{[[,modelBaseClass-method}

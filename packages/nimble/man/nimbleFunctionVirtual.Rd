@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3048d1a7
 =======
 % Please edit documentation in RtmpLwENQY/file6161341da6ca
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file787144043461
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c34231b7291
+>>>>>>> various cleanups of roxygen stuff
 \name{nimbleFunctionVirtual}
 \alias{nimbleFunctionVirtual}
 \title{create a virtual nimbleFunction, a base class for other nimbleFunctions}

@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79eeb11e58b
 =======
 % Please edit documentation in RtmpLwENQY/file616168dd5c38
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78717189d576
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c34461772
+>>>>>>> various cleanups of roxygen stuff
 \name{nimbleModel}
 \alias{nimbleModel}
 \title{Create a NIMBLE mode from BUGS code}

@@ -156,7 +156,7 @@ setMethod('[<-', 'modelValuesBaseClass',
 			})
 
 
-#' Create the specs for a custom NIMBLE modelValues Object
+#' Create the specs for a custom NIMBLE modelValues object
 #' 
 #' Builds an R-based modelValues spec object
 #' 
@@ -167,6 +167,7 @@ setMethod('[<-', 'modelValuesBaseClass',
 #' @param symTab For internal use only
 #' @param className For internal use only
 #' @param where For internal use only
+#' @param modelDef For internal use only
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details

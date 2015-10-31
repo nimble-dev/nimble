@@ -13,7 +13,8 @@
 #' @param model (optional) one of (1) a character string giving the file name containing the BUGS model code, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
 #' @param data (optional) one of (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list] or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named \code{example}-data including extensions .R, .r, or .txt.
 #' @param inits (optional) (1) character string giving the file name for an R file providing the initial values for parameters as R code [assigning individual objects or as a named list] or (2) a named list providing the values. If neither is provided, the function will look for a file named \code{example}-init or \code{example}-inits including extensions .R, .r, or .txt. 
-#' @param withInits boolean indicating whether to test model with initial values provided via \code{inits}
+#' @param useInits boolean indicating whether to test model with initial values provided via \code{inits}
+#' @param debug logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.
 #' @author Christopher Paciorek
 #' @details
 #' Note that testing without initial values may cause warnings when parameters are sampled from improper or fat-tailed distributions

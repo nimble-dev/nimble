@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file7871776a8110
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c347686f848
+>>>>>>> various cleanups of roxygen stuff
 \name{values}
 \alias{values}
 \alias{values<-}

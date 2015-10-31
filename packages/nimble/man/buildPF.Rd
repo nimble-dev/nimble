@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee54189a31
 =======
 % Please edit documentation in Rtmps9T35v/file3fb37b8a48b5
@@ -20,6 +21,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file78711902112a
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpgi4ISD/file4c346eda7283
+>>>>>>> various cleanups of roxygen stuff
 \name{buildPF}
 \alias{buildPF}
 \title{Creates a particle filter (sequential monte carlo) algorithm to estimate the log-likelihood for a model sub-graph}
