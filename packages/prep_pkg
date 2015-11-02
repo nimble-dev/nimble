@@ -75,7 +75,7 @@ for(file in files) {
   print(file)
   test <- try(a <- roxygen2:::roc_proc_text(roclet, paste(readLines(file.path(Rpath, file)), sep="\n")))
   if(!is(test, 'try-error'))
-    roxygen2:::roc_output(roclet, a, "nimble", options = list(wrap=TRUE, roclets = "rd"), check = FALSE)
+    roxygen2:::roc_output(roclet, a, "nimble", options = list(wrap=FALSE, roclets = "rd"), check = FALSE)
 }
   
 funs <- ls('package:nimble')

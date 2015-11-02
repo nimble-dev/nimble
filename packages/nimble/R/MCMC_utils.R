@@ -9,8 +9,6 @@
 #' 
 #' @author Daniel Turek
 #' @export
-#' @examples
-#' jump <- decide(lMHr)
 decide <- function(logMetropolisRatio) {
   if(is.na(logMetropolisRatio))	return(FALSE)
   if(logMetropolisRatio > 0) return(TRUE)
@@ -49,10 +47,6 @@ decide <- function(logMetropolisRatio) {
 #' -- If the proposal is accepted, the values and associated logProbs of all calcNodes are copied from the model object into the mvSaved object
 #' -- If the proposal is rejected, the values and associated logProbs of all calcNodes are copied from the mvSaved object into the model object
 #' -- Return a logical value, indicating whether the proposal was accepted
-#' 
-#' @examples
-#' my_decideAndJump <- decideAndJump(Rmodel, mvSaved, calcNodes)
-#' jump <- my_decideAndJump(modelLP1, modelLP0, propLP1, propLP0)
 decideAndJump <- nimbleFunction(
     setup = function(model, mvSaved, calcNodes) { },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {

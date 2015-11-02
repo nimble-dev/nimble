@@ -224,7 +224,7 @@ processNonParseableCode <- function(text) {
 #' Rmodel$setData(data['x'])
 #' Rmodel[['mu']]
 #' Rmodel$nodes[['x']]$calculate()
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useData = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = TRUE) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = TRUE) {
 
   # helper function
   doEval <- function(vec, env) {

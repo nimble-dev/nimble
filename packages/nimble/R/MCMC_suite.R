@@ -23,23 +23,23 @@ MCMCsuite <- function(...) {
 #' Creates and runs an MCMC Suite.
 #' By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
 #' This default behavior can ben altered via a variety of arguments.
-#' Following execution of the MCMC algorithms, returns a named list containing \'samples\', \'summary\', and \'timing\' elements.
+#' Following execution of the MCMC algorithms, returns a named list containing \code{samples}, \code{summary}, and \code{timing} elements.
 #' See the NIMBLE User Manual for more information about the organization of the return object.
 #' 
-#' @param code The quoted code expression representing the model, such as the return value from a call to nimbleCode({...}).
+#' @param code The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}).
 #' No default value, this is a required argument.
 #' 
 #' @param constants A named list giving values of constants for the model.
-#' This is the same as the \'constants\' argument which would be passed to nimbleModel(...).
+#' This is the same as the \code{constants} argument which would be passed to \code{nimbleModel}.
 #' Default value is list().
 #'
 #' @param data A named list giving the data values for the model.
-#' This is the same as the \'data\' argument which would be passed to nimbleModel(...) or model$setData(...).
-#' Default value is list().
+#' This is the same as the \code{data} argument which would be passed to \code{nimbleModel} or \code{model$setData}.
+#' Default value is \code{list()}.
 #' 
 #' @param inits A named list giving the initial values for the model.
-#' This is the same as the \'inits\' argument which would be passed to nimbleModel(...) or model$setInits(...).
-#' Default value is list().
+#' This is the same as the \code{inits} argument which would be passed to \code{nimbleModel} or \code{model$setInits}.
+#' Default value is \code{list()}.
 #' 
 #' @param monitors A character vector giving the node names or variable names to monitor.
 #' The samples corresponding to these nodes will be stored in the output samples, will have summary statistics calculated, and density and trace plots generated.
@@ -57,55 +57,55 @@ MCMCsuite <- function(...) {
 #' Default value is 1.
 #' 
 #' @param summaryStats A character vector, specifying the summary statistics to calculate on the MCMC samples.
-#' Each element may be the character name of an exisiting R function (possibly user-defined) which acts on a numeric vector and returns a scalar (e.g., \'mean\' or \'sd\'),
-#' or a character string which when parsed and evaluted will define such a function (e.g., \'function(x) mean(sqrt(x))\').
-#' Default value is c(\'mean\', \'median\', \'sd\', \'CI95_low\', \'CI95_upp\'), where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
+#' Each element may be the character name of an exisiting R function (possibly user-defined) which acts on a numeric vector and returns a scalar (e.g., \code{mean} or \code{sd},
+#' or a character string which when parsed and evaluted will define such a function (e.g., \code{function(x) mean(sqrt(x))}).
+#' Default value is \code{c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp')}, where the final two elements are functions which calculate the limits of a 95 percent Bayesian credible interval.
 #' 
 #' @param calculateEfficiency A logical, specifying whether to calculate the efficiency for each MCMC algorithm.  Efficiency is defined as the effective sample size (ESS) of each model parameter divided by the algorithm runtime (in seconds).  Default is FALSE.
 #'
 #' @param MCMCs A character vector specifying the MCMC algorithms to run.
-#' \'winbugs\' specifies WinBUGS;
-#' \'openbugs\' specifies OpenBUGS;
-#' \'jags\' specifies JAGS;
-#' \'stan\' specifies Stan; in this case, must also provide the \'stan_model\' argument;
-#' \'nimble\' specifies NIMBLE\'s default MCMC algorithm;
-#' \'nimble_noConj\' specifies NIMBLE\'s default MCMC algorithm without the use of any conjugate Gibbs sampling;
-#' \'nimble_RW\' specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\'RW\') samplers;
-#' \'nimble_slice\' specifies NIMBLE MCMC algorithm using only slice (\'slice\') samplers;
-#' \'autoBlock\' specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
+#' \code{'winbugs'} specifies WinBUGS;
+#' \code{'openbugs'} specifies OpenBUGS;
+#' \code{'jags'} specifies JAGS;
+#' \code{'stan'} specifies Stan; in this case, must also provide the \code{'stan_model'} argument;
+#' \code{'nimble'} specifies NIMBLE's default MCMC algorithm;
+#' \code{'nimble_noConj'} specifies NIMBLE's default MCMC algorithm without the use of any conjugate Gibbs sampling;
+#' \code{'nimble_RW'} specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\code{'RW'}) samplers;
+#' \code{'nimble_slice'} specifies NIMBLE MCMC algorithm using only slice (\code{'slice'}) samplers;
+#' \code{'autoBlock'} specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
 #' Anything else will be interpreted as NIMBLE MCMC algorithms, and must have associated entries in the MCMCdefs argument.
-#' Default value is c(\'jags\', \'nimble\', \'nimble_RW\', \'nimble_slice\', \'autoBlock\').
+#' Default value is \code{c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock')}.
 #' 
-#' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \'MCMCs\' argument.
+#' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \code{MCMCs} argument.
 #' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
-#' specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \'Rmodel\',
-#' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalone \'mcmcspec\', to return this object.
+#' specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \code{Rmodel},
+#' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalone \code{mcmcspec}, to return this object.
 #' 
 #' @param winbugs_directory A character string giving the directory of the executable WinBUGS program for the WinBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
-#' Default value is \'C:/WinBUGS14\'.
+#' Default value is \code{'C:/WinBUGS14'}.
 #' 
 #' @param winbugs_program A character string giving the name of the WinBUGS program, for the WinBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
-#' Default value is \'WinBUGS\'.
+#' Default value is \code{'WinBUGS'}.
 #'
 #' @param openbugs_directory A character string giving the directory of the executable OpenBUGS program for the OpenBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
-#' Default value is \'C:/OpenBUGS323\'.
+#' Default value is \code{'C:/OpenBUGS323'}.
 #' 
 #' @param openbugs_program A character string giving the name of the OpenBUGS program, for the OpenBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
-#' Default value is \'OpenBUGS\'.
+#' Default value is \code{'OpenBUGS'}.
 #' 
-#' @param stan_model A character string specifying the location and name of the model file (\'modelName.stan\') for use with the Stan MCMC program.
-#' This argument must include the \'.stan\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
-#'
-#' @param stan_inits A character string specifying the location and name of the inits file (\'modelName.init.R\') for use with the Stan MCMC program.
-#' This argument must include the \'.init.R\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
+#' @param stan_model A character string specifying the location and name of the model file (\code{'modelName.stan'}) for use with the Stan MCMC program.
+#' This argument must include the \code{'.stan'} extension, and must be provided whenever the \code{MCMCs} argument includes \code{'stan'}.
+#' 
+#' @param stan_inits A character string specifying the location and name of the inits file (\code{'modelName.init.R'}) for use with the Stan MCMC program.
+#' This argument must include the \code{'.init.R'} extension, and must be provided whenever the \code{MCMCs} argument includes \code{'stan'}.
 #' If omitted, it will attempt to locate an inits file in the same directory as the Stan model file.
 #'
-#' @param stan_data A character string specifying the location and name of the data file (\'modelName.data.R\') for use with the Stan MCMC program.
-#' This argument must include the \'.data.R\' extension, and must be provided whenever the \'MCMCs\' argument includes \'stan\'.
+#' @param stan_data A character string specifying the location and name of the data file (in the form \code{'modelName.data.R'}) for use with the Stan MCMC program.
+#' This argument must include the \code{'.data.R'} extension, and must be provided whenever the \code{MCMCs} argument includes \code{'stan'}.
 #' If omitted, it will attempt to locate a data file in the same directory as the Stan model file.
 #'
 #' @param stanNameMaps A list specifying name mappings between Stan and WinBUGS/OpenBUGS.
@@ -113,21 +113,21 @@ MCMCsuite <- function(...) {
 #' The transformation is optional.
 #' 
 #' @param makePlot Logical argument, specifying whether to generate the trace plots and posterior density plots, for each monitored node.
-#' Default value is TRUE.
+#' Default value is \code{TRUE}.
 #' 
 #' @param savePlot Logical argument, specifying whether to save the trace plots and density plots.
 #' Plots will be saved into the current working directory.
-#' Only used when makePlot == TRUE.
-#' Default value is TRUE.
+#' Only used when \code{makePlot == TRUE}.
+#' Default value is \code{TRUE}.
 #' 
 #' @param plotName Character string, giving the file name for saving the trace plots and density plots.
-#' Only used when makePlot == TRUE and savePlot == TRUE.
-#' Default value is \'MCMCsuite\'.
+#' Only used when \code{makePlot == TRUE} and \code{savePlot == TRUE}.
+#' Default value is \code{'MCMCsuite'}.
 #'
 #' @param setSeed Logical argument, specifying whether to set.seed(0) prior to MCMC sampling.
-#' Default value is TRUE.
+#' Default value is \code{TRUE}.
 #' 
-#' @param debug Logical argument, specifying whether to enter a browser() at the onset of executing each MCMC algrithm.
+#' @param debug Logical argument, specifying whether to enter a \code{browser()} at the onset of executing each MCMC algrithm.
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
 #'
