@@ -1,7 +1,7 @@
 #' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
 #' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC specification, and custom-specified blockings of parameters.
-#'
+#' 
 #' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intendend to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
 #' 
 #' @author Daniel Turek
@@ -23,13 +23,15 @@
 #' @param round Logical specifying whether to round the final output results to two decimal places.  Default TRUE.
 #' 
 #' @return Returns a named list containing elements:
-#' summary: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
-#' autoGroups: A list specifying the parameter blockings converged on by the automated blocking procedure
-#' spec: A NIMBLE MCMC specification object corresponding to the results of the automated blocking procedure
+#' \itemize{
+#' \item \code{summary}: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
+#' \item \code{autoGroups}: A list specifying the parameter blockings converged on by the automated blocking procedure
+#' \item \code{spec}: A NIMBLE MCMC specification object corresponding to the results of the automated blocking procedure
+#' }
 #' 
 #' @references
 #'
-#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. \cr
+#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. 
 #'
 #' @export
 autoBlock <- function(Rmodel,

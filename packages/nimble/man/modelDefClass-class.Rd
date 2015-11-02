@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3c7d894b
 =======
 % Please edit documentation in RtmpLwENQY/file6161313dcb78
@@ -32,17 +33,18 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b39cf2b72
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba640ade43
+>>>>>>> fixed up some roxygen stuff and
 \docType{class}
 \name{modelDefClass-class}
 \alias{modelDefClass}
 \alias{modelDefClass-class}
 \title{Class for NIMBLE model definition}
 \description{
-Class for NIMBLE model definition that is not usually needed
-directly by a user.
+Class for NIMBLE model definition that is not usually needed directly by a user.
 }
 \details{
-See \code{?modelBaseClass} for information about creating
-NIMBLE BUGS models.
+See \code{?modelBaseClass} for information about creating NIMBLE BUGS models.
 }
 

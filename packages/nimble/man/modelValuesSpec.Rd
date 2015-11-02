@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b718db894
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba2f0d1e9a
+>>>>>>> fixed up some roxygen stuff and
 \name{modelValuesSpec}
 \alias{modelValuesSpec}
 \title{Create the specs for a custom NIMBLE modelValues object}
@@ -40,20 +44,14 @@ modelValuesSpec(symTab, className, vars, types, sizes, modelDef = NA,
   where = globalenv())
 }
 \arguments{
-  \item{symTab}{For internal use only} \item{className}{For internal use only} \item{vars}{A vector of character
-  strings naming each variable in the modelValues object}
-  \item{types}{A vector of character strings describing
-  the type of data for the modelValues object. Options
-  include `double' (for real-valued variables) and `int'.}
-  \item{sizes}{A list in which the named items of the list
-  match the \code{var} arguments and each item is a numeric
-  vector of the dimensions} \item{modelDef}{For internal use
-  only} \item{where}{For internal use only}}\description{
+\item{symTab}{For internal use only}\item{className}{For internal use only}\item{vars}{A vector of character strings naming each variable in the modelValues object}\item{types}{A vector of character strings describing the type of data for the modelValues object.
+Options include `double' (for real-valued variables) and `int'.}
+
+\item{sizes}{A list in which the named items of the list match the \code{var} arguments and each item is a numeric vector of the dimensions}\item{modelDef}{For internal use only}\item{where}{For internal use only}}\description{
 Builds an R-based modelValues spec object
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)} and
-\code{help(modelValues)} for information
+See the User Manual or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
 }
 \examples{
 #Custom modelValues object:

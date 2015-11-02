@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3048d1a7
 =======
 % Please edit documentation in RtmpLwENQY/file6161341da6ca
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b70a6902d
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba2d9e88a6
+>>>>>>> fixed up some roxygen stuff and
 \name{nimbleFunction}
 \alias{nimbleFunction}
 \title{create a nimbleFunction}
@@ -41,47 +45,21 @@ nimbleFunction(setup = NULL, run = function() { }, methods = list(),
   where = getNimbleFunctionEnvironment())
 }
 \arguments{
-  \item{setup}{An optional R function definition for
-  setup processing.} \item{run}{An optional NIMBLE
-  function definition the executes the primary job of
-  the nimbleFunction} \item{methods}{An optional named
-  list of NIMBLE function definitions for other class
-  methods.} \item{globalSetup}{For internal use only}\item{contains}{An optional object returned from
-  \link{nimbleFunctionVirtual} that defines arguments
-  and returnTypes for \code{run} and/or methods, to which
-  the current nimbleFunction must conform} \item{name}{An
-  optional name used internally, for example in generated C
-  ++ code. Usually this is left blank and NIMBLE provides
-  a name.} \item{where}{An optional \code{where} argument
-  passed to \code{setRefClass} for where the reference
-  class definition generated for this nimbleFunction will be
-  stored. This is needed due to R package namespace issues
-  but should never need to be provided by a user.}
-}
-\description{
-create a nimbleFunction from a setup function, run function,
-possibly other methods, and possibly inheritance via
-\code{contains}
+\item{setup}{An optional R function definition for setup processing.}\item{run}{An optional NIMBLE function definition the executes the primary job of the nimbleFunction}\item{methods}{An optional named list of NIMBLE function definitions for other class methods.}\item{globalSetup}{For internal use only}\item{contains}{An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform}\item{name}{An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.}\item{where}{An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.}}\description{
+create a nimbleFunction from a setup function, run function, possibly other methods, and possibly inheritance via \code{contains}
 }
 \details{
-This is the main function for defining nimbleFunctions. A
-lot of information is provided in the NIMBLE User Manual, so
-only a brief summary will be given here. If a \code{setup}
-function is provided, then \code{nimbleFunction} returns
-a generator: a function that when called with arguments
-for the setup function will execute that function and
-return a specialized nimbleFunction. The \code{run} and
-other methods can be called using \code{$} like in other
-R classes, e.g. \code{nf$run()}. The methods can use
-objects that were created in or passed to the \code{setup}
-function. If no \code{setup} function is provided, then
-\code{nimbleFunction} returns a function that executes the
-\code{run} function. It is not a generator in this case,
-and no other \code{methods} can be provided. If one wants
-a generator but does not need any setup arguments or code,
-\code{setup = TRUE} can be used. See the NIMBLE User Manual
-for examples. For more information about the \code{contains}
-argument, see the section on nimbleFunctionLists.
+This is the main function for defining nimbleFunctions.  A lot of information is provided in the NIMBLE User Manual, so only a brief summary will be given here.
+
+If a \code{setup} function is provided, then \code{nimbleFunction} returns a generator: a function that when called with arguments for the setup function will execute that function and return a specialized nimbleFunction.   The \code{run} and other methods can be called using \code{$} like in other R classes, e.g. \code{nf$run()}. The methods can use objects that were created in or passed to the \code{setup} function.
+
+If no \code{setup} function is provided, then \code{nimbleFunction} returns a function that executes the \code{run} function.  It is not a generator in this case, and no other \code{methods} can be provided.
+
+If one wants a generator but does not need any setup arguments or code, \code{setup = TRUE} can be used.
+
+See the NIMBLE User Manual for examples.
+
+For more information about the \code{contains} argument, see the section on nimbleFunctionLists.
 }
 \author{
 NIMBLE development team

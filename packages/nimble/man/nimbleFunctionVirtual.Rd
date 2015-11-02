@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3048d1a7
 =======
 % Please edit documentation in RtmpLwENQY/file6161341da6ca
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b70a6902d
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba2d9e88a6
+>>>>>>> fixed up some roxygen stuff and
 \name{nimbleFunctionVirtual}
 \alias{nimbleFunctionVirtual}
 \title{create a virtual nimbleFunction, a base class for other nimbleFunctions}
@@ -40,27 +44,14 @@ nimbleFunctionVirtual(contains = NULL, run = function() { },
   methods = list(), name = NA)
 }
 \arguments{
-  \item{contains}{Not yet functional} \item{run}{A NIMBLE
-  function that will only be used to inspect its argument
-  types and returnType.} \item{methods}{An optional named
-  list of NIMBLE functions that will also only be used for
-  inspecting argument types and returnTypes.} \item{name}{An
-  optional name used internally by the NIMBLE compiled. This
-  is usually omitted and NIMBLE provides one.}
-}
-\value{
-An object that can be passed as the \code{contains}
-argument to \code{nimbleFunction} or as the argument to
-\code{nimbleFunctionList}
+\item{contains}{Not yet functional}\item{run}{A NIMBLE function that will only be used to inspect its argument types and returnType.}\item{methods}{An optional named list of NIMBLE functions that will also only be used for inspecting argument types and returnTypes.}\item{name}{An optional name used internally by the NIMBLE compiled.  This is usually omitted and NIMBLE provides one.}}\value{
+An object that can be passed as the \code{contains} argument to \code{nimbleFunction} or as the argument to \code{nimbleFunctionList}
 }
 \description{
-define argument types and returnType for the \code{run}
-function and any \code{methods}, to be used in the
-\code{contains} argument of \code{nimbleFunction}
+define argument types and returnType for the \code{run} function and any \code{methods}, to be used in the \code{contains} argument of \code{nimbleFunction}
 }
 \details{
-See the NIMBLE User Manual section on nimbleFunctionLists
-for explanation of how to use a virtual nimbleFunction.
+See the NIMBLE User Manual section on nimbleFunctionLists for explanation of how to use a virtual nimbleFunction.
 }
 \author{
 NIMBLE development team

@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b7dc6e865
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba69801dd5
+>>>>>>> fixed up some roxygen stuff and
 \name{rankSample}
 \alias{rankSample}
 \title{Generates a weighted sample (with replacement) of ranks}
@@ -39,33 +43,19 @@
 rankSample(weights, size, output, silent = FALSE)
 }
 \arguments{
-  \item{weights}{A vector of numeric weights. Does not
-  need to sum to 1, but must be non-negative} \item{size}{Size of sample} \item{output}{An R object into which
-  the values will be placed. See example below for proper
-  use} \item{silent}{Logical indicating whether to suppress
-  logging information}
-}
-\description{
-Takes a set of non-negative \code{weights} (do not need to
-sum to 1) and returns a sample with \code{size} elements
-of the integers \code{1:length(weights)}, where the
-probability of being sampled is proportional to the value of
-\code{weights}. An important note is that the output vector
-will be sorted in ascending order. Also, right now it works
-slightly odd syntax (see example below). Later releases of
-NIMBLE will contain more natural syntax.
+\item{weights}{A vector of numeric weights. Does not need to sum to 1, but must be non-negative}\item{size}{Size of sample}\item{output}{An R object into which the values will be placed. See example below for proper use}\item{silent}{Logical indicating whether to suppress logging information}}\description{
+Takes a set of non-negative \code{weights} (do not need to sum to 1) and
+returns a sample with \code{size} elements of the integers \code{1:length(weights)}, where the probability of being sampled is proportional
+to the value of \code{weights}. An important note is that the output vector
+will be sorted in ascending order. Also, right now it works slightly odd syntax (see example below). Later releases of NIMBLE will contain more natural syntax.
 }
 \details{
-If invalid weights provided (i.e. negative weights or
-weights sum to 1), sets output = rep(1, size) and prints
-warning. \code{rankSample} can be used inside nimble
-functions. \code{rankSample} first samples from the joint
-distribution \code{size} uniform(0,1) distributions by
-conditionally sampling from the rank statistics. This leads
-to a sorted sample of uniform(0,1)'s. Then, a cdf vector is
-constructed from weights. Because the sample of uniforms is
-sorted, \code{rankSample} walks down the cdf in linear time
-and fills out the sample.
+If invalid weights provided (i.e. negative weights or weights sum to 1), sets output = rep(1, size) and prints warning.
+\code{rankSample} can be used inside nimble functions.
+
+\code{rankSample} first samples from the joint distribution \code{size} uniform(0,1) distributions by conditionally sampling from the rank statistics. This leads to
+a sorted sample of uniform(0,1)'s. Then, a cdf vector is constructed from weights. Because the sample of uniforms is sorted, \code{rankSample} walks
+down the cdf in linear time and fills out the sample.
 }
 \examples{
 set.seed(1)
@@ -90,7 +80,7 @@ run = function(weights = double(1), k = integer() ){
 })
 rSamp <- sampGen()
 cSamp <- compileNimble(rSamp)
-cSamp(1:4, 5)
+cSamp$run(1:4, 5)
 #[1] 1 1 4 4 4
 }
 \author{

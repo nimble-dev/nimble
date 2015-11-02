@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b7dc6e865
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba69801dd5
+>>>>>>> fixed up some roxygen stuff and
 \name{declare}
 \alias{declare}
 \title{Explicitly declare a variable in run-time code of a nimbleFunction}
@@ -39,43 +43,16 @@
 declare(name, def)
 }
 \arguments{
-  \item{name}{Name of a variable to declare, without
-  quotes} \item{def}{NIMBLE type declaration, of the
-  form \code{TYPE(nDim, sizes)}, where \code{TYPE} is
-  \code{integer}, \code{double}, or \code{logical},
-  \code{nDim} is the number of dimensions, and \code{sizes}
-  is an optional vector of sizes concatenated with \code{c}.
-  If \code{nDim} is omitted, it defaults to 0, indicating
-  a scalar. If sizes are provided, they should not be
-  changed subsequently in the function, including by
-  assignment. Omitting \code{nDim} results in a scalar. For
-  \code{logical}, only scalar is currently supported.}
-}
-\description{
-Explicitly declare a variable in run-time code of a
-nimbleFunction, for cases when its dimensions cannot be
-inferred before it is used. Works in R and NIMBLE.
+\item{name}{Name of a variable to declare, without quotes}\item{def}{NIMBLE type declaration, of the form \code{TYPE(nDim, sizes)}, where \code{TYPE} is \code{integer}, \code{double}, or \code{logical}, \code{nDim} is the number of dimensions, and \code{sizes} is an optional vector of sizes concatenated with \code{c}.  If \code{nDim} is omitted, it defaults to 0, indicating a scalar.  If sizes are provided, they should not be changed subsequently in the function, including by assignment.  Omitting \code{nDim} results in a scalar.  For \code{logical}, only scalar is currently supported.}}\description{
+Explicitly declare a variable in run-time code of a nimbleFunction, for cases when its dimensions cannot be inferred before it is used.  Works in R and NIMBLE.
 }
 \details{
-In a run-time function of a nimbleFunction (either the
-\code{run} function or a function provided in \code{methods}
-when calling \code{nimbleFunction}), the dimensionality
-and numeric type of a variable is inferred when possible
-from the statement first assigning into it. E.g. \code{A
-<- B + C} infers that \code{A} has numeric types,
-dimensions and sizes taken from \code{B + C}. However,
-if the first appearance of \code{A} is e.g. \code{A[i] <-
-5}, \code{A} must have been explicitly declared. In this
-case, \code{declare(A, double(1))} would make \code{A} a 1-
-dimensional (i.e. vector) double. When sizes are not set,
-they can be set by a call to \code{setSize} or by assignment
-to the whole object. Sizes are not automatically extended
-if assignment is made to elements beyond the current sizes.
-In compiled nimbleFunctions doing so can cause a segfault
-and crash the R session. This part of the NIMBLE language
-is needed for compilation, but it also runs in R. When run
-in R, is works by the side effect of creating or modifying
-\code{name} in the calling environment.
+In a run-time function of a nimbleFunction (either the \code{run} function or a function provided in \code{methods} when calling \code{nimbleFunction}), the dimensionality and numeric type of a variable is inferred when possible from the statement first assigning into it.  E.g. \code{A <- B + C} infers that \code{A} has numeric types, dimensions and sizes taken from \code{B + C}.  However, if the first appearance of \code{A} is e.g. \code{A[i] <- 5}, \code{A} must have been explicitly declared.  In this case, \code{declare(A, double(1))} would make \code{A} a 1-dimensional (i.e. vector) double.
+
+When sizes are not set, they can be set by a call to \code{setSize} or by assignment to the whole object.  Sizes are not automatically extended if assignment is made to elements beyond the current sizes.  In compiled nimbleFunctions doing so can cause a segfault and crash the R session.
+
+
+This part of the NIMBLE language is needed for compilation, but it also runs in R.  When run in R, is works by the side effect of creating or modifying \code{name} in the calling environment.
 }
 \examples{
 declare(A, logical())             ## scalar logical, the only kind allowed

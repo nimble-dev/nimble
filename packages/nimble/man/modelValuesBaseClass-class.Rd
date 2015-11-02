@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b718db894
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba2f0d1e9a
+>>>>>>> fixed up some roxygen stuff and
 \docType{class}
 \name{modelValuesBaseClass-class}
 \alias{[,CmodelValues-method}
@@ -47,13 +51,12 @@
 \alias{modelValuesBaseClass-class}
 \title{Class \code{modelValuesBaseClass}}
 \description{
-modelValues are NIMBLE containers built to store values from
-models. They can either be built directly from a model or be
-custom built via the \code{modelValuesSpec} function. They
-consist of rows, where each row can be thought of as a set
-of values from a model. Like most nimble objects, and unlike
-most R objects, they are passed by reference instead of by
-value. See user manual for more details.
+modelValues are NIMBLE containers built to store values from models. They can either be built directly from
+a model or be custom built via the \code{modelValuesSpec} function. They consist of rows, where each
+row can be thought of as a set of values from a model. Like most nimble objects, and unlike most
+R objects, they are passed by reference instead of by value.
+
+See user manual for more details.
 }
 \examples{
 mvSpec <- modelValuesSpec(vars = c('a', 'b'),

@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee5c502c8e
 =======
 % Please edit documentation in Rtmps9T35v/file3fb31ca07ca1
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b2daf70ae
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba66d68535
+>>>>>>> fixed up some roxygen stuff and
 \name{buildMCEM}
 \alias{buildMCEM}
 \title{Builds an MCEM algorithm from a given NIMBLE model}
@@ -36,57 +40,39 @@ buildMCEM(model, latentNodes, burnIn = 100, mcmcControl = list(adaptInterval
   = 20), boxConstraints = list(), buffer = 10^-6)
 }
 \arguments{
-  \item{model}{A nimble model} \item{latentNodes}{A character vector of the names of the stochastic
-  nodes to integrated out. Names can be expanded, but
-  don't need to be. For example, if the model contains
-  \code{x[1], x[2] and x[3]} then one could provide
-  either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or
-  \code{latentNodes = 'x'}.} \item{burnIn}{burn-in used for
-  MCMC sampler in E step} \item{mcmcControl}{list passed
-  to \code{MCMCSpec}, a nimble function that builds the
-  MCMC sampler. See \code{help(MCMCSpec)} for more details}
-  \item{boxConstraints}{A list of box constraints for
-  the nodes that will be maximized over. Each constraint
-  is a list in which the first element is a character
-  vector of node names to which the constraint applies
-  and the second element is a vector giving the lower and
-  upper limits. Limits of \code{-Inf} or \code{Inf} are
-  allowed.} \item{buffer}{A buffer amount for extending the
-  boxConstraints. Many functions with boundary constraints
-  will produce \code{NaN} or -Inf when parameters are on the
-  boundary. This problem can be prevented by shrinking the
-  boundary a small amount.}
-}
-\value{
-an R function that when called runs the MCEM algorithm.
-The function returned takes the arguments listed in Runtime
-Arguments. See user manual for more
+\item{model}{A nimble model}\item{latentNodes}{A character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
+\code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}.}
+
+\item{burnIn}{burn-in used for MCMC sampler in E step}\item{mcmcControl}{list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details}\item{boxConstraints}{A list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.}\item{buffer}{A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount.}}\value{
+an R function that when called runs the MCEM algorithm. The function returned takes the arguments listed in Runtime Arguments.
+
+
+See user manual for more
 }
 \description{
-Takes a nimble model and builds an MCEM algorithm for
-it. The user must specify which latent nodes are to be
-integrated out in the E-Step. All other stochastic non-
-data nodes will be maximized over. If the nodes do not
-have positive density on the entire real line, then box
-constraints can be used to enforce this. The M-step is done
-by a nimble MCMC sampler. The E-step is done by a call to
-R's \code{optim} with \code{method = 'L-BFGS-B'}.
+Takes a nimble model and builds an MCEM algorithm for it. The user must specify which latent nodes are to be integrated out in the E-Step.
+All other stochastic non-data nodes will be maximized over. If the nodes do not have positive density on the entire real line, then box constraints can be used
+to enforce this.
+The M-step is done by a nimble MCMC sampler. The E-step is done by a call to R's \code{optim} with \code{method = 'L-BFGS-B'}.
 }
 \details{
-buildMCEM calls the NIMBLE compiler to create the MCMC and
-objective function as nimbleFunctions. If the given model
-has already been used in compiling other nimbleFunctions, it
-is possible you will need to create a new copy of the model
-for buildMCEM to use.
+buildMCEM calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
 }
 \section{Runtime Arguments}{
-  \itemize{ \item{\code{maxit}} { Maximum iterations of the
-  algorithm. Right now, the MCEM runs until \code{maxit},
-  rather than evaluating a more complex stopping criteria}
-  \item{\code{m1}} { number of MCMC samples taken in each
-  iteration before \code{maxit/2}} \item{\code{m2}} { number
-  of MCMC samples taken in each iteration after \code{maxit/
-  2} } }
+
+	\itemize{
+	\item{\code{maxit}}	{
+
+	 Maximum iterations of the algorithm. Right now, the MCEM runs until \code{maxit}, rather than evaluating a more complex stopping criteria}
+
+	\item{\code{m1}} 	{
+
+	 number of MCMC samples taken in each iteration before \code{maxit/2}}
+
+	\item{\code{m2}}	{
+
+	number of MCMC samples taken in each iteration after \code{maxit/2} }
+	}
 }
 \examples{
 pumpCode <- nimbleCode({

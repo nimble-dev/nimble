@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b7dc6e865
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba69801dd5
+>>>>>>> fixed up some roxygen stuff and
 \name{nimPrint}
 \alias{nimPrint}
 \title{print function for use in nimbleFunctions, where it is identical to \code{print}, but not R's \code{print}.}
@@ -39,23 +43,12 @@
 nimPrint(...)
 }
 \arguments{
-  \item{...}{an abitrary set of arguments that will be
-  printed in sequence}
-}
-\description{
-print function for use in nimbleFunctions, where it is
-identical to \code{print}. Works in R or NIMBLE, not quite
-identically.
+\item{...}{an abitrary set of arguments that will be printed in sequence}}\description{
+print function for use in nimbleFunctions, where it is identical to \code{print}.  Works in R or NIMBLE, not quite identically.
 }
 \details{
-The keyword \code{print} in nimbleFunction run-time code
-will be automatically turned into \code{nimPrint}. This
-is a function that prints its arguments int order using
-\code{cat} in R, or using \code{std::cout} in C++ code
-generated from compiling nimbleFunctions. Non-scalar numeric
-objects can be included, although their output will be
-formatted slightly different in uncompiled and compiled
-nimbleFunctions.
+The keyword \code{print} in nimbleFunction run-time code will be automatically turned into \code{nimPrint}.  This is a function that prints its arguments int order using \code{cat} in R, or using \code{std::cout} in C++ code generated from compiling nimbleFunctions.
+Non-scalar numeric objects can be included, although their output will be formatted slightly different in uncompiled and compiled nimbleFunctions.
 }
 \examples{
 ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code

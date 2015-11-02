@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b718db894
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba2f0d1e9a
+>>>>>>> fixed up some roxygen stuff and
 \name{modelValues}
 \alias{modelValues}
 \title{Create a NIMBLE modelValues Object}
@@ -39,21 +43,14 @@
 modelValues(spec, m = 1)
 }
 \arguments{
-  \item{spec}{An object which includes information for
-  building modelValues. Can either be a NIMBLE model (see
-  \code{help(modelBaseClass)}) or the object returned from
-  \code{modelValuesSpec}} \item{m}{The number of rows to
-  create in the modelValues object. Can later be changed
-  with \code{resize}}
-}
-\description{
-Builds modelValues object from a model values specification
-object, which can include a NIMBLE model
+\item{spec}{An object which includes information for building modelValues. Can either be a NIMBLE model (see \code{help(modelBaseClass)})
+or the object returned from \code{modelValuesSpec}}
+
+\item{m}{The number of rows to create in the modelValues object.  Can later be changed with \code{resize}}}\description{
+Builds modelValues object from a model values specification object, which can include a NIMBLE model
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)}
-for information about manipulating NIMBLE modelValues object
-returned by this function
+See the User Manual or \code{help(modelValuesBaseClass)} for information about manipulating NIMBLE modelValues object returned by this function
 }
 \examples{
 #From model object:

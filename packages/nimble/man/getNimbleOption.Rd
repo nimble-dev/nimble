@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 =======
 % Please edit documentation in RtmpLwENQY/file61612b823b49
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b6904a114
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba166dca49
+>>>>>>> fixed up some roxygen stuff and
 \name{getNimbleOption}
 \alias{getNimbleOption}
 \title{Get NIMBLE Option}
@@ -39,12 +43,12 @@
 getNimbleOption(x)
 }
 \arguments{
-  \item{x}{a character string holding an option name}}\value{
+\item{x}{a character string holding an option name}}\value{
 The value of the option.
 }
 \description{
-Allow the user to get the value of a global _option_ that
-affects the way in which NIMBLE operates
+Allow the user to get the value of a global _option_
+that affects the way in which NIMBLE operates
 }
 \examples{
 getNimbleOption('verifyConjugatePosteriors')

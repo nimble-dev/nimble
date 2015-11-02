@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b7dc6e865
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba69801dd5
+>>>>>>> fixed up some roxygen stuff and
 \name{nimStop}
 \alias{nimStop}
 \title{Halt execution of a nimbleFunction function method.  Part of the NIMBLE language}
@@ -39,20 +43,11 @@
 nimStop(msg)
 }
 \arguments{
-  \item{msg}{Character object to be output as an error
-  message}
-}
-\description{
-Halt execution of a nimbleFunction function method. Part of
-the NIMBLE language
+\item{msg}{Character object to be output as an error message}}\description{
+Halt execution of a nimbleFunction function method.  Part of the NIMBLE language
 }
 \details{
-The NIMBLE stop is similar to the native R stop, but it
-takes only one argument, the error message to be output.
-During uncompiled NIMBLE execution, nimStop simply calls R's
-stop funtion. During compiled execution it calls the error
-function from the R headers. stop is an alias for nimStop in
-the NIMBLE language
+The NIMBLE stop is similar to the native R stop, but it takes only one argument, the error message to be output.  During uncompiled NIMBLE execution, nimStop simply calls R's stop funtion. During compiled execution it calls the error function from the R headers.  stop is an alias for nimStop in the NIMBLE language
 }
 \author{
 Perry de Valpine

@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b48daab2c
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba30b2868d
+>>>>>>> fixed up some roxygen stuff and
 \name{resize}
 \alias{resize}
 \title{Resizes a modelValues object}
@@ -39,17 +43,11 @@
 resize(container, k)
 }
 \arguments{
-  \item{container}{modelValues object} \item{k}{number of
-  rows that modelValues is set to}
-}
-\description{
-Adds or removes rows to a modelValues object. If rows
-are added to a modelValues object, the default values are
-\code{NA}. Works in both R and NIMBLE.
+\item{container}{modelValues object}\item{k}{number of rows that modelValues is set to}}\description{
+Adds or removes rows to a modelValues object. If rows are added to a modelValues object, the default values are \code{NA}. Works in both R and NIMBLE.
 }
 \details{
-See the User Manual or \code{help(modelValuesBaseClass)} for
-infomation about modelValues objects
+See the User Manual or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
 }
 \examples{
 mvSpec <- modelValuesSpec(vars = c('a', 'b'),

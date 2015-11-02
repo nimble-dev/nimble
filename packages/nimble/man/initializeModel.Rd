@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1610658e
 =======
 % Please edit documentation in RtmpLwENQY/file61611f16009b
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0b1431fe0d
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba557fe561
+>>>>>>> fixed up some roxygen stuff and
 \name{initializeModel}
 \alias{initializeModel}
 \title{Performs initialization nimble model node values and log probabilities}
@@ -39,31 +43,21 @@
 initializeModel(model, silent = FALSE)
 }
 \arguments{
-  \item{model}{A setup argument, which specializes an
-  instance of this nimble function to a particular model.}
-  \item{silent}{logical indicating whether to suppress
-  logging information}
-}
-\description{
-Performs initialization nimble model node values and log
-probabilities
+\item{model}{A setup argument, which specializes an instance of this nimble function to a particular model.}\item{silent}{logical indicating whether to suppress logging information}}\description{
+Performs initialization nimble model node values and log probabilities
 }
 \details{
-This nimbleFunction may be used at the beginning of nimble
-algorithms to perform model initialization. The intended
-usage is to specialize an instance of this nimbleFunction
-in the setup function of an algorithm, then execute that
-specialied function at the beginning of the algorithm run
-function. The specialized function takes no arguments.
-Executing this function ensures that all right-hand-
-side only nodes have been assigned real values, that all
-stochastic nodes have a real value, or otherwise have their
-simulate() method called, that all deterministic nodes
-have their simulate() method called, and that all log-
-probabilities have been calculated with the current model
-values. An error results if model initialization encounters
-a problem, for example a missing right-hand-side only node
-value.
+This nimbleFunction may be used at the beginning of nimble algorithms to perform model initialization.
+The intended usage is to specialize an instance of this nimbleFunction in the setup function of an algorithm,
+then execute that specialied function at the beginning of the algorithm run function.
+The specialized function takes no arguments.
+
+Executing this function ensures that all right-hand-side only nodes have been assigned real values,
+that all stochastic nodes have a real value, or otherwise have their simulate() method called,
+that all deterministic nodes have their simulate() method called,
+and that all log-probabilities have been calculated with the current model values.
+An error results if model initialization encounters a problem, for example a missing right-hand-side only
+node value.
 }
 \examples{
 myNewAlgorithm <- nimbleFunction(

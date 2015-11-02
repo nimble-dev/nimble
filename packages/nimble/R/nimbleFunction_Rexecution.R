@@ -102,9 +102,6 @@ rCalcDiffNodes <- function(model, nodes){
 #'
 #' simulate returns NULL.
 #' 
-#' @examples
-#' calculate(model, c('x', 'y[2:4]', 'z[2:5, 1:10]'))
-#'
 NULL
 
 #' @rdname nodeFunctions
@@ -398,7 +395,7 @@ values <- function(model, nodes){
 #' cCopy <- compileNimble(rCopy, project = rModel)
 #' cModel[['x']] <- rnorm(100)
 #' 
-#' cCopy() ## execute the copy with the compiled function
+#' cCopy$run() ## execute the copy with the compiled function
 nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
     if(is.null(nodes) )
         nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
@@ -498,9 +495,9 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #'    })
 #'        
 #' nf2 <- nfGen2()
-#' nf2()
+#' nf2$run()
 #' Cnf2 <- compileNimble(nf2)
-#' Cnf2()
+#' Cnf2$run()
 nfVar <- function(nf, varName) {
     refClassObj <- nf_getRefClassObject(nf)
     v <- refClassObj[[varName]]
@@ -578,7 +575,7 @@ nfMethod <- function(nf, methodName) {
 #' })
 #' rSamp <- sampGen()
 #' cSamp <- compileNimble(rSamp)
-#' cSamp(1:4, 5)
+#' cSamp$run(1:4, 5)
 #' #[1] 1 1 4 4 4
 rankSample <- function(weights, size, output, silent = FALSE) {
     ##cat('in R version rankSample\n')

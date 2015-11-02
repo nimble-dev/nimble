@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in RtmpLwENQY/file616156fdd32a
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpkxJCni/file2c0bd18b92
 >>>>>>> removed top level tests dir
+=======
+% Please edit documentation in RtmpaEoKPd/file20ba21c84593
+>>>>>>> fixed up some roxygen stuff and
 \name{setAndCalculateOne}
 \alias{setAndCalculateOne}
 \title{Creates a nimbleFunction for setting the value of a scalar model node,
@@ -41,26 +45,17 @@ and returning the total sum log-probability.}
 setAndCalculateOne(model, targetNode)
 }
 \arguments{
-  \item{model}{An uncompiled or compiled NIMBLE model. This
-  argument is required.} \item{targetNode}{The character
-  name of any scalar node in the model object. This argument
-  is required.}
-}
-\description{
-This nimbleFunction generator must be specialized to any
-model object and any scalar model node. A specialized
-instance of this nimbleFunction will set the value of the
-target node in the specified model, calculate the associated
-logProb, calculate the values of any deterministic
-dependents, calculate the logProbs of any stochastic
-dependents, and return the sum log-probability associated
-with the target node and all stochastic dependent nodes.
+\item{model}{An uncompiled or compiled NIMBLE model.  This argument is required.}\item{targetNode}{The character name of any scalar node in the model object.  This argument is required.}}\description{
+This nimbleFunction generator must be specialized to any model object and any scalar model node.
+A specialized instance of this nimbleFunction will set the value of the target node in the specified model,
+calculate the associated logProb, calculate the values of any deterministic dependents,
+calculate the logProbs of any stochastic dependents,
+and return the sum log-probability associated with the target node and all stochastic dependent nodes.
 }
 \details{
-Calling setAndCalculateOne(model, targetNode) will return a
-function with a single, required argument: targetValue: The
-numeric value which will be put into the target node, in the
-specified model object.
+Calling setAndCalculateOne(model, targetNode) will return a function with a single, required argument:
+
+targetValue: The numeric value which will be put into the target node, in the specified model object.
 }
 \examples{
 my_setAndCalc <- setAndCalculateOne(Rmodel, 'x[1]')
