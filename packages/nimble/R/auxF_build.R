@@ -1,12 +1,12 @@
 ##  Contains code to run auxiliary particle filters.
 ##  We have a build function (buildAuxF),
 ##  and step function (auxFStep)
-##  The details of the specific APF algorithm are in
-##  "A Tutorial on Particle Filtering and Smoothing:
-##   Fifteen years later" by Doucet and Johansen
+##
+##  This version of the APF is based on 
+##  Pitt et al., 2012
 
 auxStepVirtual <- nimbleFunctionVirtual(
-  run = function(m = integer(), thresh_num=double()) 
+  run = function(m = integer()) 
     returnType(double())
 )
 
@@ -43,42 +43,32 @@ auxFStep <- nimbleFunction(
     meanFuncList <- nimbleFunctionList(node_stoch_dnorm)
     meanFuncList[[1]] <- model$nodeFunctions[[thisNode]]
   },
-  run = function(m = integer(), thresh_num = double()) {
+  run = function(m = integer()) {
     returnType(double())
-    declare(auxl, double(1,m))
+    declare(auxll, double(1,m))
     declare(auxWts, double(1,m))
+    declare(normAuxWts, double(1,m))
     declare(wts, double(1,m))
+    declare(normWts, double(1,m))
     declare(ids, integer(1, m))
-    declare(l, double(1,m))
+    declare(ll, double(1,m))
     declare(LL, double(1,m))
-    ess <- 0
-    resamp <- 0
+    
+    ## This is the look-ahead step, not conducted for first time-point
     if(notFirst){ 
       for(i in 1:m) {
         copy(mvWSamp, model, prevXName, prevNode, row=i)        
         calculate(model, prevDeterm) 
         model[[thisNode]] <<-meanFuncList[[1]]$get_mean() # returns E(x_t+1 | x_t)
         calculate(model, thisDeterm)
-        auxl[i] <- calculate(model, thisData)
-        auxWts[i] <- auxl[i] + mvWSamp['wts',i][prevInd]        
+        auxll[i] <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
+        auxll[i] <- auxll[i]+calculate(model, thisNode) # multiply by p(x_t+1 | x_t)
+        auxWts[i] <- auxll[i] + mvWSamp['wts',i][prevInd] # multiply by weight from time t
       }
-      auxWts <- exp(auxWts)/sum(exp(auxWts))
-      ess <- 1/sum(auxWts^2)
-      
-      if(ess<thresh_num){
-        resamp <- 1
-        rankSample(auxWts, m, ids, silent)
-        for(i in 1:m){
-          if(saveAll == 1)
-            copy(mvWSamp, mvEWSamp, prevXName, prevXName, ids[i],i)
-          mvWSamp['wts',i][prevInd]   <<- log(1/m)
-        }
-      }
-      else{
-        for(i in 1:m){
-          copy(mvWSamp, mvEWSamp, prevXName, prevXName, i,i)
-          mvWSamp['wts',i][prevInd]   <<- log(auxWts[i] )     
-        }
+      normAuxWts <- exp(auxWts)/sum(exp(auxWts))  # normalize weights and resample
+      rankSample(normAuxWts, m, ids, silent)
+      for(i in 1:m){
+        copy(mvWSamp, mvEWSamp, prevXName, prevXName, ids[i],i)  # copy resampled particles
       }
     }   
     for(i in 1:m) {
@@ -86,38 +76,42 @@ auxFStep <- nimbleFunction(
         copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
       }
-      simulate(model, thisNode)
+      simulate(model, thisNode)  # simulate from x_t+1 | x_t
       copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row=i)
       calculate(model, thisDeterm)
-      l[i]  <- calculate(model, thisData)
+      ll[i]  <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
       if(notFirst){
-        if(resamp == 1){
-          mvWSamp['wts',i][currInd] <<- l[i]-auxl[ids[i]]
-          LL[i] <- l[i]-auxl[ids[i]]
-        }
-        else{
-          mvWSamp['wts',i][currInd] <<- l[i] - auxl[i]
-          LL[i] <- l[i] - auxl[i]
-        }
+        wts[i] <- ll[i]-auxll[ids[i]]  # construct weight following step 4 of paper    
       }
-      
       else{
-        mvWSamp['wts',i][currInd] <<- l[i]
-        LL[i] <- l[i]
+        wts[i] <- ll[i]  # First step has no auxiliary weights
       }
     }
     
+    normWts <- exp(wts)/sum(exp(wts))
+    for(i in 1:m){
+      ##  save weights for use in next timepoint's look-ahead step
+      mvWSamp['wts', i][currInd] <<- log(normWts[i])   
+    }
+
+    
+    ##  For last timepoint, do a final resampling step - does not affect likelihood calculation
     if(isLast){
-      for(i in 1:m){
-        wts[i] <-  exp(mvWSamp['wts',i][currInd] )
-      }
-      rankSample(wts, m, ids, silent)
+      rankSample(normWts, m, ids, silent)
       for(i in 1:m){
         copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
       }
     }
     
-    return(log(mean(exp(LL))))
+    ##  Calculate likelihood p(y_t+1 | y_1:t) as in equation (3) of paper
+    if(notFirst){
+      outLL <- sum(exp(wts))/m
+      outLL <- outLL*sum(exp(auxWts))
+    }
+    else{
+      outLL <- sum(exp(wts))/m
+    }
+    return(log(outLL))
   }, where = getLoadingNamespace()
 )
 
@@ -132,8 +126,6 @@ auxFStep <- nimbleFunction(
 #' @details 
 #' 
 #' \describe{
-#'  \item{"thresh"}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
-#'   effective sample size is less than thresh*(number of particles).  Defaults to 0.5.}
 #'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
 #' }
 #' 
@@ -152,14 +144,16 @@ auxFStep <- nimbleFunction(
 #'  states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
 #'  An equally weighted sample from the posterior can be found in mvEWsamp.  
 #'  
-#'   The auxiliary particle filter uses a lookeahead function to select promising particles before propogation.  Currently, the lookahead
-#'   funciton uses the expected valu of the latent state at the next time point given the current particle, e E(x[t+1]|x[t]).
+#'   The auxiliary particle filter uses a lookahead function to select promising particles before propogation.  Currently, the lookahead
+#'   funciton uses the expected value of the latent state at the next time point given the current particle, e E(x[t+1]|x[t]).
 #'   The auxiliary particle filter currently only works for models with univariate normal transition densities. 
 #'   @references Pitt, Michael K., and Neil Shephard. "Filtering via simulation: Auxiliary particle filters."
 #'    Journal of the American statistical association 94.446 (1999): 590-599.
+#'   @references Pitt, Michael K., et al. "On some properties of Markov chain Monte Carlo simulation methods based on the particle filter." 
+#'   Journal of Econometrics 171.2 (2012): 134-151.
 #' @examples
 #' model <- nimbleModel(code = ...)
-#' my_AuxF <- buildAuxF(model, 'x[1:100]', control = list(thresh = 0.9))
+#' my_AuxF <- buildAuxF(model, 'x[1:100]', control = list(saveAll = T))
 #' Cmodel <- compileNimble(model)
 #' Cmy_AuxF <- compileNimble(my_AuxF, project = model)
 #' logLike <- Cmy_AuxF(m = 100000)
@@ -176,16 +170,11 @@ buildAuxF <- nimbleFunction(
     if(length(unique(dims)) > 1) 
       stop('sizes or dimension of latent states varies')
     
-    
-    thresh <- control[['thresh']]
     saveAll <- control[['saveAll']]
     silent <- control[['silent']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
-    if(is.null(thresh)) thresh <- .5
     
-    if(thresh<0 || thresh>1 || !is.numeric(thresh)) 
-      stop('thresh must be between 0 and 1')
     
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
     # the sampled x states will be recorded at each time point. 
@@ -238,10 +227,9 @@ buildAuxF <- nimbleFunction(
     my_initializeModel$run()
     resize(mvEWSamp, m) 
     resize(mvWSamp, m)  
-    thresh_num <- ceiling(thresh*m)
     logL <- 0
     for(iNode in seq_along(auxStepFunctions)) {
-      logL <- logL + auxStepFunctions[[iNode]]$run(m, thresh_num)      
+      logL <- logL + auxStepFunctions[[iNode]]$run(m)      
       if(logL == -Inf) return(logL) }
     return(logL)
   },  where = getLoadingNamespace()
