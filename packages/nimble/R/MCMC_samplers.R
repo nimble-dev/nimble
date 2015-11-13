@@ -346,9 +346,7 @@ sampler_RW_block_NEW <- nimbleFunction(
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
                     gamma1 <- my_calcAdaptationFactor$gamma1
-                    declare(colMeans, double(1, d))
-                    for(i in 1:d)     colMeans[i] <- mean(empirSamp[1:adaptInterval, i])
-                    for(i in 1:adaptInterval)     empirSamp[i, 1:d] <<- empirSamp[i, 1:d] - colMeans[1:d]  ## center the samples
+                    for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
                     empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
                     propCov <<- propCov + gamma1 * (empirCov - propCov)
                     chol_propCov <<- chol(propCov)
