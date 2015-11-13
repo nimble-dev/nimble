@@ -37,6 +37,7 @@ sampler_end <- nimbleFunction(
 ####################################################################
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
+
 sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -181,6 +182,7 @@ sampler_RW_log <- nimbleFunction(
 ########################################################################
 ### block RW sampler with multi-variate normal proposal distribution ###
 ########################################################################
+
 sampler_RW_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -236,7 +238,6 @@ sampler_RW_block <- nimbleFunction(
             if(jump)     timesAccepted <<- timesAccepted + 1
             if(!adaptScaleOnly) {
                 declare(newValues, double(1, d))
-
                 newValues <- values(model, target)
                 statSums  <<- statSums + asRow(newValues)
                 statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
@@ -275,6 +276,97 @@ sampler_RW_block <- nimbleFunction(
             acceptanceRateHistory <<- acceptanceRateHistory * 0
             statSums  <<- statSums  * 0
             statProds <<- statProds * 0
+            my_calcAdaptationFactor$reset()
+        }
+    ),  where = getLoadingNamespace()
+)
+
+sampler_RW_block_NEW <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ###  control list extraction  ###
+        adaptive       <- control$adaptive
+        adaptScaleOnly <- control$adaptScaleOnly
+        adaptInterval  <- control$adaptInterval
+        scale          <- control$scale
+        propCov        <- control$propCov
+        ###  node list generation  ###
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ###  numeric value generation  ###
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        scaleHistory          <- c(0, 0)
+        acceptanceRateHistory <- c(0, 0)
+        d <- length(targetAsScalar)
+        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
+        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
+        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
+        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+        propCovOriginal <- propCov
+        chol_propCov <- chol(propCov)
+        empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
+        ###  nested function and function list definitions  ###
+        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        my_calcAdaptationFactor <- calcAdaptationFactor(d)
+    },
+    
+    run = function() {
+        propValueVector <- generateProposalVector()
+        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
+        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    
+    methods = list(
+        
+        generateProposalVector = function() {
+            propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
+            returnType(double(1))
+            return(propValueVector)
+        },
+        
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted <<- timesAdapted + 1
+                setSize(scaleHistory,          timesAdapted)
+                setSize(acceptanceRateHistory, timesAdapted)
+                scaleHistory[timesAdapted] <<- scale
+                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+                adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
+                scale <<- scale * adaptFactor
+                ## calculate empirical covariance, and adapt proposal covariance
+                if(!adaptScaleOnly) {
+                    gamma1 <- my_calcAdaptationFactor$gamma1
+                    declare(colMeans, double(1, d))
+                    for(i in 1:d)     colMeans[i] <- mean(empirSamp[1:adaptInterval, i])
+                    for(i in 1:adaptInterval)     empirSamp[i, 1:d] <<- empirSamp[i, 1:d] - colMeans[1:d]  ## center the samples
+                    empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
+                    propCov <<- propCov + gamma1 * (empirCov - propCov)
+                    chol_propCov <<- chol(propCov)
+                }
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        
+        reset = function() {
+            scale   <<- scaleOriginal
+            propCov <<- propCovOriginal
+            chol_propCov <<- chol(propCov)
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            scaleHistory          <<- scaleHistory          * 0
+            acceptanceRateHistory <<- acceptanceRateHistory * 0
             my_calcAdaptationFactor$reset()
         }
     ),  where = getLoadingNamespace()
