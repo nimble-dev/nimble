@@ -1,3 +1,23 @@
+                        CHANGES IN VERSION 0.4-1 (Sep. 30, 2015)
+
+USER LEVEL CHANGES
+
+-- added support for OpenBUGS to MCMCsuite.
+
+-- added additional option for MCMCsuite: 'calculateEfficiency' to calculate ESS and ESS/time.
+
+-- added elliptical slice sampler 'ess' to MCMC engine.
+
+-- added new MCMC option for MCMCsuite that omits conjugate samplers: 'nimble_noConj'
+
+BUG FIXES
+
+-- fixed bug preventing use of nimbleFunctions in packages depending on NIMBLE.
+
+-- fixed bug preventing use of nimStop in R version of nimbleFunctions.
+
+-- reduced generation of C++ compiler warnings on Windows during compileNimble.
+
                         CHANGES IN VERSION 0.4 (Aug. 2, 2015)
 
 USER LEVEL CHANGES

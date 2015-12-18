@@ -70,7 +70,8 @@ nimbleFunction <- function(setup         = NULL,
                            globalSetup   = NULL,
                            contains      = NULL,
                            name          = NA,
-                           where         = globalenv()) {
+                           where         = getNimbleFunctionEnvironment()
+                           ) {
 
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
@@ -81,7 +82,9 @@ nimbleFunction <- function(setup         = NULL,
     }
    
     virtual <- FALSE
-    if(is.na(name)) name <- nf_refClassLabelMaker()
+    force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
+    # we now include the namespace in the name of the RefClass to avoid two nfs having RefClass of same name but existing in different namespaces
+    if(is.na(name)) name <- nf_refClassLabelMaker(envName = environmentName(where))
     className <- name
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods

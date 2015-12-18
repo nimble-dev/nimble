@@ -50,7 +50,6 @@
 \alias{BUGSdistToRdist}
 \alias{BUGSmodel}
 \alias{BUGSsingleContextClass}
-\alias{buildConjugateSamplerFunctions}
 \alias{buildCopyLineFromSEXP}
 \alias{buildCopyLineToSEXP}
 \alias{buildIntermCalls}
@@ -347,6 +346,7 @@
 \alias{getMVName}
 \alias{getMVptr}
 \alias{getNamedObjected}
+\alias{getNimbleFunctionEnvironment}
 \alias{getNimbleTypes}
 \alias{getNimValues}
 \alias{getNodeFxnPtrs}
@@ -742,9 +742,8 @@
 \alias{sampler_conjugate_dmnorm}
 \alias{sampler_conjugate_dnorm}
 \alias{sampler_conjugate_dwish}
-\alias{sampler_RW_block_noDiff}
+\alias{sampler_ess}
 \alias{sampler_RW_log}
-\alias{sampler_RW_nonDiff}
 \alias{samplerSpec}
 \alias{scalarOutputTypes}
 \alias{seqAlongHandler}

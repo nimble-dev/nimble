@@ -92,6 +92,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
         inds <- which(unlist(var$target) %in% currentTargets)
         spec$removeSamplers(inds, print = FALSE)
                                         # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
+        currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
         inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
                                         #      inds <- which(sapply(spec$samplerSpecs, function(x)
                                         #          gsub("\\[[0-9]+\\]", "", x$target))

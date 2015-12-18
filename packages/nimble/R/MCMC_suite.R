@@ -58,6 +58,7 @@
 #' \'jags\' specifies JAGS;
 #' \'stan\' specifies Stan; in this case, must also provide the \'stan_model\' argument;
 #' \'nimble\' specifies NIMBLE\'s default MCMC algorithm;
+#' \'nimble_noConj\' specifies NIMBLE\'s default MCMC algorithm without the use of any conjugate Gibbs sampling;
 #' \'nimble_RW\' specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\'RW\') samplers;
 #' \'nimble_slice\' specifies NIMBLE MCMC algorithm using only slice (\'slice\') samplers;
 #' \'autoBlock\' specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
@@ -329,10 +330,11 @@ MCMCsuiteClass <- setRefClass(
         },
         
         setMCMCdefs = function(newMCMCdefs) {
-            MCMCdefs <<- list(nimble       = quote(configureMCMC(Rmodel)),
-                              nimble_RW    = quote(configureMCMC(Rmodel, onlyRW    = TRUE)),
-                              nimble_slice = quote(configureMCMC(Rmodel, onlySlice = TRUE)),
-                              autoBlock    = quote(configureMCMC(Rmodel, autoBlock = TRUE)))
+            MCMCdefs <<- list(nimble        = quote(configureMCMC(Rmodel)),
+                              nimble_noConj = quote(configureMCMC(Rmodel, useConjugacy = FALSE)),
+                              nimble_RW     = quote(configureMCMC(Rmodel, onlyRW       = TRUE)),
+                              nimble_slice  = quote(configureMCMC(Rmodel, onlySlice    = TRUE)),
+                              autoBlock     = quote(configureMCMC(Rmodel, autoBlock    = TRUE)))
             MCMCdefs[names(newMCMCdefs)] <<- newMCMCdefs
             MCMCdefNames <<- names(MCMCdefs)
         },
@@ -477,8 +479,8 @@ MCMCsuiteClass <- setRefClass(
             }
             output$summary[MCMCtag, , ] <<- summaryArray
             if(calculateEfficiency) {
-                output$efficiency$min  <<- apply(output$summary[, 'efficiency', , drop = FALSE], 1, min)
-                output$efficiency$mean <<- apply(output$summary[, 'efficiency', , drop = FALSE], 1, mean)
+                output$efficiency$min  <<- apply(output$summary[, 'efficiency', , drop=FALSE], 1, min)
+                output$efficiency$mean <<- apply(output$summary[, 'efficiency', , drop=FALSE], 1, mean)
             }
         },
         
