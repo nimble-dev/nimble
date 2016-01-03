@@ -3,6 +3,8 @@
 ##  and step function.
 
 
+##Note: currently, using smoothing = T means that mvWSamp will no longer have correctly weighted samples
+
 bootStepVirtual <- nimbleFunctionVirtual(
   run = function(m = integer(), threshNum=double(), prevSamp = logical()) 
     returnType(double(1))
@@ -18,6 +20,7 @@ bootFStep <- nimbleFunction(
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
+    allPrevNodes <- nodes[1:(iNode-1)]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
@@ -28,6 +31,10 @@ bootFStep <- nimbleFunction(
       thisXName <- thisNode
       currInd <- t
       prevInd <- t-1
+      if(smoothing == T){
+        currInd <- 1
+        prevInd <- 1
+      }
     }
     else{
       prevXName <- names    
@@ -48,7 +55,7 @@ bootFStep <- nimbleFunction(
     for(i in 1:m) {
       if(notFirst) {  
         if(smoothing == 1){
-          copy(mvEWSamp, mvWSamp, nodes = thisXName, nodesTo = thisXName, row = i)
+          copy(mvEWSamp, mvWSamp, nodes = allPrevNodes, nodesTo = allPrevNodes, row = i, rowTo=i)
         }
         copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
@@ -79,6 +86,9 @@ bootFStep <- nimbleFunction(
       out[2] <- 1
       for(i in 1:m){
         copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = ids[i], rowTo = i)
+        if(smoothing == 1){
+          copy(mvWSamp, mvEWSamp, nodes = allPrevNodes, nodesTo = allPrevNodes, row = ids[i], rowTo=i)
+        }
         mvWSamp['wts',i][currInd] <<- log(wts[i])
       }
     }
@@ -86,6 +96,9 @@ bootFStep <- nimbleFunction(
       out[2] <- 0
       for(i in 1:m){
         copy(mvWSamp, mvEWSamp, nodes = thisXName, nodesTo = thisXName, row = i, rowTo = i)
+        if(smoothing == 1){
+          copy(mvWSamp, mvEWSamp, nodes = allPrevNodes, nodesTo = allPrevNodes, row = i, rowTo=i)
+        }
         mvWSamp['wts',i][currInd] <<- log(wts[i])
       }
     }
@@ -162,9 +175,9 @@ buildBootF <- nimbleFunction(
     
     
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
-    if(!saveAll) smoothing <- FALSE
+    if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
-    # the sampled x states will be recorded at each time point. 
+    # the sampled x states will be recorded at each time point.
     modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
     if(saveAll){
       
@@ -176,9 +189,13 @@ buildBootF <- nimbleFunction(
                                               type = type,
                                               size = size))
       
+
+      
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- length(dims)
+      if(smoothing == T)
+        size$wts <- 1  ##  only need one weight per particle (at time T) if smoothing == T
       mvWSamp  <- modelValues(modelValuesSpec(vars = names,
                                               type = type,
                                               size = size))
@@ -201,9 +218,9 @@ buildBootF <- nimbleFunction(
       mvWSamp  <- modelValues(modelValuesSpec(vars = names,
                                               type = type,
                                               size = size))
+      names <- names[1]
     }
     
-    names <- names[1]
     bootStepFunctions <- nimbleFunctionList(bootStepVirtual)
     for(iNode in seq_along(nodes)){
       bootStepFunctions[[iNode]] <- bootFStep(model, mvEWSamp, mvWSamp, nodes,

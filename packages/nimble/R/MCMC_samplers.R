@@ -701,9 +701,21 @@ sampler_RW_PFilter <- nimbleFunction(
                                               size = list(LLVar = 1)
     ))
     
+    latentSamp <- 0
+    latentDep <- ""
     if(!all(target%in%model$getNodeNames(stochOnly=T, includeData=F,
                                          topOnly=T))){
-      stop("PMCMC target can only consist of top level parameters")
+      if(!(target[!(target%in%model$getNodeNames(stochOnly=T, includeData=F,
+                                               topOnly=T))] %in% model$expandNodeNames(latents))){
+      stop("PMCMC target can only consist of top level parameters and/or latent states")
+      }
+      else{
+        latentTarget <- target[!(target%in%model$getNodeNames(stochOnly=T, includeData=F,
+                                                topOnly=T))]
+        latentSamp <- 1
+        latentDep <- model$getDependencies(latentTarget)
+        target <- target[!(target%in% latentTarget)]
+      }
     }
     
     ###  node list generation  ###
@@ -760,10 +772,19 @@ sampler_RW_PFilter <- nimbleFunction(
       modelLP0 <- storeLP['LP0',1][1]
     }
     propValueVector <- generateProposalVector()
+    print(propValueVector)
     my_setAndCalculate$run(propValueVector)
     modelLP1 <- my_particleFilter$run(m)
     modelLP1 <- modelLP1 + getLogProb(model, target)
     jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
+    if(jump & latentSamp){ 
+      ## if we jump, randomly sample latent states from pf output and put 
+      ## into model so that they can be saved
+      index <- ceiling(runif(1, 0, m))
+      copy(my_particleFilter$mvEWSamp, model, latents, latents, index)
+      calculate(model, latentDep)
+      copy(from = model, to = mvSaved, nodes = latentDep, row = 1, logProb = TRUE)
+    }
     if(jump & resamp)  storeLP['LP0',1][1] <<- modelLP1
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
