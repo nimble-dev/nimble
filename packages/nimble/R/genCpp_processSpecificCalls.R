@@ -40,9 +40,10 @@ specificCallHandlers = c(
          max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
-    makeCallList(c('dmnorm_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
+    makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
+specificCallHandlers[['rmvt_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rwish_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rmulti']] <- 'rmFunHandler'
 specificCallHandlers[['rcat']] <- 'rmFunHandler' ## not really multivar, but same processing

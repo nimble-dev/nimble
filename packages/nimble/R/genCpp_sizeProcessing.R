@@ -1,5 +1,6 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
+
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
                makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
@@ -48,8 +49,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(paste0(c('d','r','q','p'), 't'), 'sizeScalarRecurse'),
                makeCallList(paste0(c('d','r','q','p'), 'exp'), 'sizeScalarRecurse'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
+               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
+               makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
                makeCallList(c('calculate', 'calculateDiff', 'getLogProb', 'decide', 'size', 'getsize'), 'sizeScalar'),
                makeCallList(c('simulate', 'blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
                )
@@ -1458,6 +1459,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
 
 mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), prec_param(scalar)
                                  1, 'double'), ## 1 = argument from which to take answer size, double = answer type
+                             nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
+                                                       1, 'double'), ## 1 = argument from which to take answer size, double = answer type
                              nimArr_rwish_chol = list(c(2, 0, 0), ## chol, df, prec_param
                                  1, 'double'),
                              nimArr_rmulti = list(c(0, 1), ## size, probs
