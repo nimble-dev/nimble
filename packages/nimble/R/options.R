@@ -40,7 +40,9 @@ nimbleUserNamespace <- as.environment(list())
             sliceMaxSteps = 100,
             m = 1000,
             resamp = F,
-            optimizeM = F
+            optimizeM = F,
+            filterType = "bootstrap",
+            lookahead = "simulate"
         )
     )
 )

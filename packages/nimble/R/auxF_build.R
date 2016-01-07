@@ -16,7 +16,7 @@ auxFuncVirtual <- nimbleFunctionVirtual(
   )
 )
 
-auxMNormFunc = nimbleFunction(
+auxMLookFunc = nimbleFunction(
   contains = auxFuncVirtual,
   setup = function(model, node){
     nodeFuncList <- nimbleFunctionList(node_stoch_dmnorm)
@@ -29,7 +29,7 @@ auxMNormFunc = nimbleFunction(
   ), where = getLoadingNamespace()
 )
 
-auxNormFunc = nimbleFunction(
+auxLookFunc = nimbleFunction(
   contains = auxFuncVirtual,
   setup = function(model, node){
     nodeFuncList <- nimbleFunctionList(node_stoch_dnorm) 
@@ -42,10 +42,19 @@ auxNormFunc = nimbleFunction(
   ), where = getLoadingNamespace()
 )
 
+auxSimFunc = nimbleFunction(
+  contains = auxFuncVirtual,
+  setup = function(model, node){},
+  methods = list(
+    lookahead = function(){
+      simulate(model, node)
+    }), where = getLoadingNamespace()
+)
+
 auxFStep <- nimbleFunction(
   contains = auxStepVirtual,
   setup = function(model, mvEWSamp, mvWSamp, nodes, iNode, names, saveAll, smoothing,
-                   lookAhead, silent = FALSE) {
+                   lookahead, silent = TRUE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     allPrevNodes <- nodes[1:(iNode-1)]
@@ -76,15 +85,19 @@ auxFStep <- nimbleFunction(
     }
     isLast <- (iNode == length(nodes))
     xDim <- nimDim(model[[thisXName]])
-    mean <- (lookAhead == "mean")
     
     auxFuncList <- nimbleFunctionList(auxFuncVirtual) 
+    if(lookahead == "mean"){
     if(xDim > 1){
-      auxFuncList[[1]] <- auxMNormFunc(model, thisNode)
+      auxFuncList[[1]] <- auxMLookFunc(model, thisNode)
     }
     else{
-      auxFuncList[[1]] <- auxNormFunc(model, thisNode)
+      auxFuncList[[1]] <- auxLookFunc(model, thisNode)
     } 
+    }
+    else{
+      auxFuncList[[1]] <- auxSimFunc(model, thisNode)
+    }
   },
   run = function(m = integer()) {
     returnType(double())
@@ -105,14 +118,12 @@ auxFStep <- nimbleFunction(
         }
         copy(mvWSamp, model, prevXName, prevNode, row=i)        
         calculate(model, prevDeterm)
-         if(mean == 1){
-           auxFuncList[[1]]$lookahead()
-         }
-        else{
-          simulate(model, thisNode)
-        }
+        auxFuncList[[1]]$lookahead()
         calculate(model, thisDeterm)
         auxll[i] <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
+        if(is.nan(auxll[i])){
+          return(-Inf)
+        }
         auxll[i] <- auxll[i]+calculate(model, thisNode) # multiply by p(x_t+1 | x_t)
         auxWts[i] <- auxll[i] + mvWSamp['wts',i][prevInd] # multiply by weight from time t
 
@@ -129,6 +140,9 @@ auxFStep <- nimbleFunction(
       copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row=i)
       calculate(model, thisDeterm)
       ll[i]  <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
+      if(is.nan(ll[i])){
+        return(-Inf)
+      }
       if(notFirst){
         wts[i] <- ll[i]-auxll[ids[i]]  # construct weight following step 4 of paper    
       }
@@ -138,17 +152,18 @@ auxFStep <- nimbleFunction(
     }
     
     normWts <- exp(wts)/sum(exp(wts))
+    
     for(i in 1:m){
       ##  save weights for use in next timepoint's look-ahead step
       mvWSamp['wts', i][currInd] <<- log(normWts[i])   
     }
-      rankSample(normWts, m, ids, silent)
-      for(i in 1:m){
-        if(smoothing == 1){
-          copy(mvWSamp, mvEWSamp, nodes = allPrevNodes, nodesTo = allPrevNodes, row = ids[i], rowTo=i)
-        }
-        copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
+    rankSample(normWts, m, ids, silent)
+    for(i in 1:m){
+      if(smoothing == 1){
+        copy(mvWSamp, mvEWSamp, nodes = allPrevNodes, nodesTo = allPrevNodes, row = ids[i], rowTo=i)
       }
+      copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
+    }
     
     
     ##  Calculate likelihood p(y_t+1 | y_1:t) as in equation (3) of paper
@@ -208,9 +223,8 @@ auxFStep <- nimbleFunction(
 #' hist(as.matrix(Cmy_Auxf$mvEWSamp, 'x'))
 #' @export
 buildAuxF <- nimbleFunction(
-  setup = function(model, nodes, control = list(slient = T)) {
+  setup = function(model, nodes, control = list()) {
     
-    my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     vars <- model$getVarNames(nodes =  nodes)  # need var names too
@@ -221,16 +235,22 @@ buildAuxF <- nimbleFunction(
     saveAll <- control[['saveAll']]
     silent <- control[['silent']]
     smoothing <- control[['smoothing']]
-    lookAhead <- control[['lookAhead']]
+    lookahead <- control[['lookahead']]
     
-    if(is.null(silent)) silent <- FALSE
+    if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
-    if(is.null(lookAhead)) lookAhead <- "sample"
+    if(is.null(lookahead)) lookahead <- "simulate"
     
-    if(lookAhead == "mean"){
-      errors <- sapply(nodes, function(node){tryCatch(model$nodes[[node]]$get_mean(), error=function(a){return("error")})})
-      if(any(errors == "error")) stop("transition equation must be normal to use mean as lookahead function")
+    my_initializeModel <- initializeModel(model, silent = silent)
+    
+    
+    if(lookahead == "mean"){
+      errors <- sapply(model$expandNodeNames(nodes), function(node){tryCatch(model$nodes[[node]]$get_mean(), error=function(a){return("error")})})
+      if(any(errors == "error", na.rm=T)) stop("transition equation must be normal to use mean as lookahead function")
+    } 
+    else if(lookahead != "simulate"){
+      stop("lookahead must be either simulate or mean")
     }
     
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
@@ -279,7 +299,7 @@ buildAuxF <- nimbleFunction(
     auxStepFunctions <- nimbleFunctionList(auxStepVirtual)
     for(iNode in seq_along(nodes))
       auxStepFunctions[[iNode]] <- auxFStep(model, mvEWSamp, mvWSamp, nodes,
-                                            iNode, names, saveAll, smoothing, lookAhead, silent)
+                                            iNode, names, saveAll, smoothing, lookahead, silent)
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
@@ -289,8 +309,16 @@ buildAuxF <- nimbleFunction(
     resize(mvWSamp, m)  
     logL <- 0
     for(iNode in seq_along(auxStepFunctions)) {
-      logL <- logL + auxStepFunctions[[iNode]]$run(m)      
-      if(logL == -Inf) return(logL) }
+      logL <- logL + auxStepFunctions[[iNode]]$run(m)
+
+      # when all particles have 0 weight, likelihood becomes NAN
+      # this happens if top-level params have bad values - possible
+      # during pmcmc for example
+      if(is.nan(logL)) return(-Inf)
+      if(logL == -Inf) return(logL) 
+      if(logL == Inf) return(-Inf) 
+    }
+  
     return(logL)
   },  where = getLoadingNamespace()
 )

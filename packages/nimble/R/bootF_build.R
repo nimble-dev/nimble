@@ -60,23 +60,43 @@ bootFStep <- nimbleFunction(
         copy(mvEWSamp, model, nodes = prevXName, nodesTo = prevNode, row = i)
         calculate(model, prevDeterm) 
       }
-
       simulate(model, thisNode)
       copy(model, mvWSamp, nodes = thisNode, nodesTo = thisXName, row = i)
       calculate(model, thisDeterm)
       wts[i]  <- calculate(model, thisData)
+      if(is.nan(wts[i])){
+        out[1] <- -Inf
+        out[2] <- 0
+        return(out)
+      }
       if(prevSamp == 0){
         llEst[i] <- wts[i] + mvWSamp['wts',i][prevInd]
       }
       else{
-        llEst[i] <- wts[i] - log(m)
+          llEst[i] <- wts[i] - log(m)
       }
     }
     
-    out[1] <- log(sum(exp(llEst)))
+    
+    stepllEst <- log(sum(exp(llEst)))
+    if(is.nan(stepllEst)){
+      out[1] <- -Inf
+      out[2] <- 0
+      return(out)
+    }
+    if(stepllEst == Inf | stepllEst == -Inf){
+      out[1] <- -Inf
+      out[2] <- 0
+      return(out)
+    }
+    
+    out[1] <- stepllEst
     # Normalize weights and calculate effective sample size 
+
+    
     wts <- exp(wts)/sum(exp(wts))
     ess <- 1/sum(wts^2) 
+    
     
     # Determine whether to resample by weights or not
     if(ess < threshNum){
@@ -157,7 +177,6 @@ bootFStep <- nimbleFunction(
 #' @export
 buildBootF <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
-    my_initializeModel <- initializeModel(model)
     nodes <- model$expandNodeNames(nodes, sort = TRUE)
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
@@ -168,10 +187,12 @@ buildBootF <- nimbleFunction(
     saveAll <- control[['saveAll']]
     smoothing <- control[['smoothing']]
     silent <- control[['silent']]
-    if(is.null(silent)) silent <- FALSE
+    if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
     if(is.null(thresh)) thresh <- .5
+    my_initializeModel <- initializeModel(model, silent = silent)
+    
     
     
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
@@ -243,6 +264,8 @@ buildBootF <- nimbleFunction(
       logL <- logL + out[1]
       prevSamp <- out[2]
       if(logL == -Inf) return(logL)
+      if(is.nan(logL)) return(-Inf)
+      if(logL == Inf) return(-Inf) 
     }
     return(logL)
   }, where = getLoadingNamespace()

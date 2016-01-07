@@ -688,11 +688,14 @@ sampler_RW_PFilter <- nimbleFunction(
     m              <- control$m
     latents        <- control$latents
     resamp         <- control$resamp
-    optimizeM      <- control$optimizeM
+    filterType     <- control$filterType
+    lookahead      <- control$lookahead
+    optimizeM      <- as.integer(control$optimizeM)
     
     if(optimizeM){
       m <- 3000  
     }
+
     
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
     mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
@@ -702,21 +705,21 @@ sampler_RW_PFilter <- nimbleFunction(
     ))
     
     latentSamp <- 0
-    latentDep <- ""
-    if(!all(target%in%model$getNodeNames(stochOnly=T, includeData=F,
-                                         topOnly=T))){
-      if(!(target[!(target%in%model$getNodeNames(stochOnly=T, includeData=F,
-                                               topOnly=T))] %in% model$expandNodeNames(latents))){
+    latentDep <- model$getDependencies(latents)
+    topParams <- model$getNodeNames(stochOnly=T, includeData=F,
+                                    topOnly=T)
+    if(!all(target%in%topParams)){
+      if(!all(model$expandNodeNames(target[!(target%in%topParams)]) %in% model$expandNodeNames(latents))){
       stop("PMCMC target can only consist of top level parameters and/or latent states")
       }
       else{
         latentTarget <- target[!(target%in%model$getNodeNames(stochOnly=T, includeData=F,
                                                 topOnly=T))]
         latentSamp <- 1
-        latentDep <- model$getDependencies(latentTarget)
         target <- target[!(target%in% latentTarget)]
       }
     }
+
     
     ###  node list generation  ###
     
@@ -756,7 +759,17 @@ sampler_RW_PFilter <- nimbleFunction(
     my_setAndCalculate <- setAndCalculate(model, target)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     my_calcAdaptationFactor <- calcAdaptationFactor(d)
-    my_particleFilter <- buildBootF(model, latents)
+    if(filterType == "auxiliary"){
+      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = T, smoothing = T,
+                                                                    lookahead = lookahead))
+    }
+    else if(filterType == "bootstrap"){
+      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = T, smoothing = T))
+    }
+    else{
+      stop("filter type must be either bootstrap or auxiliary")
+    }
+    particleMV <- my_particleFilter$mvEWSamp
   },
   
   run = function() {
@@ -772,18 +785,21 @@ sampler_RW_PFilter <- nimbleFunction(
       modelLP0 <- storeLP['LP0',1][1]
     }
     propValueVector <- generateProposalVector()
-    print(propValueVector)
     my_setAndCalculate$run(propValueVector)
     modelLP1 <- my_particleFilter$run(m)
     modelLP1 <- modelLP1 + getLogProb(model, target)
     jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
     if(jump & latentSamp){ 
-      ## if we jump, randomly sample latent states from pf output and put 
-      ## into model so that they can be saved
+      ## if we jump, randomly sample latent nodes from pf output and put 
+      ## into model so that they can be monitored
       index <- ceiling(runif(1, 0, m))
-      copy(my_particleFilter$mvEWSamp, model, latents, latents, index)
+      copy(particleMV, model, latents, latents, index)
       calculate(model, latentDep)
       copy(from = model, to = mvSaved, nodes = latentDep, row = 1, logProb = TRUE)
+    }
+    else if(!jump & latentSamp){
+      ## if we don't jump, replace model latent nodes with saved latent nodes
+      copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
     }
     if(jump & resamp)  storeLP['LP0',1][1] <<- modelLP1
     if(jump & optimizeM) optimM()
