@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 =======
 % Please edit documentation in RtmpLwENQY/file61612b823b49
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba166dca49
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
+>>>>>>> added man files from devel to ease rebase
 \name{nimbleOptions}
 \alias{nimbleOptions}
 \title{NIMBLE Options Settings}
@@ -43,6 +47,7 @@
 nimbleOptions(...)
 }
 \arguments{
+<<<<<<< HEAD
 \item{...}{any options to be defined as one or more 'name = value' pairs.
 Options can also be passed by giving a single unnamed argument that is a named list.}
 }
@@ -58,6 +63,25 @@ that affect the way in which NIMBLE operates
 \code{nimbleOptions()} with no arguments returns a list with the
   current values of the options.  To access the value of a single option,
    one should use \code{getNimbleOption()}.
+=======
+  \item{...}{any options to be defined as one or more 'name
+  = value' pairs. Options can also be passed by giving a
+  single unnamed argument that is a named list.}
+}
+\value{
+When invoked with no arguments, a list with the current
+values of all options.
+}
+\description{
+Allow the user to set and examine a variety of global
+_options_ that affect the way in which NIMBLE operates
+}
+\details{
+\code{nimbleOptions} mimics \code{options}. Invoking
+\code{nimbleOptions()} with no arguments returns a list with
+the current values of the options. To access the value of a
+single option, one should use \code{getNimbleOption()}.
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 nimbleOptions(verifyConjugatePosteriors = FALSE)

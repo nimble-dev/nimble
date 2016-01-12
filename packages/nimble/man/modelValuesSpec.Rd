@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -39,11 +40,18 @@
 \name{modelValuesSpec}
 \alias{modelValuesSpec}
 \title{Create the specs for a custom NIMBLE modelValues object}
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
+\name{modelValuesSpec}
+\alias{modelValuesSpec}
+\title{Create the specs for a custom NIMBLE modelValues Object}
+>>>>>>> added man files from devel to ease rebase
 \usage{
 modelValuesSpec(symTab, className, vars, types, sizes, modelDef = NA,
   where = globalenv())
 }
 \arguments{
+<<<<<<< HEAD
 \item{symTab}{For internal use only}\item{className}{For internal use only}\item{vars}{A vector of character strings naming each variable in the modelValues object}\item{types}{A vector of character strings describing the type of data for the modelValues object.
 Options include `double' (for real-valued variables) and `int'.}
 
@@ -52,6 +60,24 @@ Builds an R-based modelValues spec object
 }
 \details{
 See the User Manual or \code{help(modelValuesBaseClass)} and \code{help(modelValues)} for information
+=======
+  \item{symTab}{For internal use only} \item{className}{For internal use only} \item{vars}{A vector of character
+  strings naming each variable in the modelValues object}
+  \item{types}{A vector of character strings describing
+  the type of data for the modelValues object. Options
+  include `double' (for real-valued variables) and `int'.}
+  \item{sizes}{A list in which the named items of the list
+  match the \code{var} arguments and each item is a numeric
+  vector of the dimensions} \item{where}{For internal use
+  only}
+}
+\description{
+Builds an R-based modelValues spec object
+}
+\details{
+See the User Manual or \code{help(modelValuesBaseClass)} and
+\code{help(modelValues)} for information
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 #Custom modelValues object:
@@ -60,6 +86,18 @@ mvSpec <- modelValuesSpec(vars = c('x', 'y'),
 				sizes = list(x = 3, y = c(2,2)))
 custom_mv <- modelValues(mvSpec, m = 2)
 custom_mv['y',]
+<<<<<<< HEAD
+=======
+[[1]]
+     [,1] [,2]
+[1,]   NA   NA
+[2,]   NA   NA
+
+[[2]]
+     [,1] [,2]
+[1,]   NA   NA
+[2,]   NA   NA
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Clifford Anderson-Bergman

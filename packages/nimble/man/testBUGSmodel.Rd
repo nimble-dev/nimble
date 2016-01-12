@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3611dea8
 =======
 % Please edit documentation in RtmpLwENQY/file616123912e44
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba55641328
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee3611dea8
+>>>>>>> added man files from devel to ease rebase
 \name{testBUGSmodel}
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}
@@ -44,11 +48,54 @@ testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
   inits = NULL, useInits = TRUE, debug = FALSE)
 }
 \arguments{
+<<<<<<< HEAD
 \item{example}{(optional) example character vector indicating name of BUGS example to test; can be null if \code{model} is provided}\item{dir}{(optional) character vector indicating directory in which files are contained, by default the classic-bugs directory if the installed package is used; to use the current working directory, set this to ""}\item{model}{(optional) one of (1) a character string giving the file name containing the BUGS model code, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.}\item{data}{(optional) one of (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list] or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named \code{example}-data including extensions .R, .r, or .txt.}\item{inits}{(optional) (1) character string giving the file name for an R file providing the initial values for parameters as R code [assigning individual objects or as a named list] or (2) a named list providing the values. If neither is provided, the function will look for a file named \code{example}-init or \code{example}-inits including extensions .R, .r, or .txt.}\item{useInits}{boolean indicating whether to test model with initial values provided via \code{inits}}\item{debug}{logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.}}\description{
 \code{testBUGSmodel} builds a BUGS model in the NIMBLE system and simulates from the model, comparing the values of the nodes and their log probabilities in the uncompiled and compiled versions of the model
 }
 \details{
 Note that testing without initial values may cause warnings when parameters are sampled from improper or fat-tailed distributions
+=======
+  \item{example}{(optional) example character vector
+  indicating name of BUGS example to test; can be null if
+  \code{model} is provided} \item{dir}{(optional) character
+  vector indicating directory in which files are contained,
+  by default the classic-bugs directory if the installed
+  package is used; to use the current working directory, set
+  this to ""} \item{model}{(optional) one of (1) a character
+  string giving the file name containing the BUGS model
+  code, (2) an R function whose body is the BUGS model code,
+  or (3) the output of \code{nimbleCode}. If a file name,
+  the file can contain a 'var' block and 'data' block in
+  the manner of the JAGS versions of the BUGS examples but
+  should not contain references to other input data files
+  nor a const block. The '.bug' or '.txt' extension can be
+  excluded.} \item{data}{(optional) one of (1) character
+  string giving the file name for an R file providing the
+  input constants and data as R code [assigning individual
+  objects or as a named list] or (2) a named list providing
+  the input constants and data. If neither is provided,
+  the function will look for a file named \code{example}-
+  data including extensions .R, .r, or .txt.} \item{inits}{(optional) (1) character string giving the file name for
+  an R file providing the initial values for parameters as
+  R code [assigning individual objects or as a named list]
+  or (2) a named list providing the values. If neither
+  is provided, the function will look for a file named
+  \code{example}-init or \code{example}-inits including
+  extensions .R, .r, or .txt.} \item{withInits}{boolean
+  indicating whether to test model with initial values
+  provided via \code{inits}}
+}
+\description{
+\code{testBUGSmodel} builds a BUGS model in the NIMBLE
+system and simulates from the model, comparing the values of
+the nodes and their log probabilities in the uncompiled and
+compiled versions of the model
+}
+\details{
+Note that testing without initial values may cause warnings
+when parameters are sampled from improper or fat-tailed
+distributions
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 testBUGSmodel('pump')

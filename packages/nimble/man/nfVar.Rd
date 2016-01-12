@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba69801dd5
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
+>>>>>>> added man files from devel to ease rebase
 \name{nfVar}
 \alias{nfVar}
 \alias{nfVar<-}
@@ -44,6 +48,7 @@
 nfVar(nf, varName)
 }
 \arguments{
+<<<<<<< HEAD
 \item{nf}{A specialized nimbleFunction, i.e. a function returned by executing a function returned from \code{nimbleFunction} with \code{setup} arguments}\item{varName}{A character string naming a variable in the \code{setup} function.}}\value{
 whatever varName is in  the nimbleFunction nf.
 }
@@ -57,6 +62,39 @@ When \code{nimbleFunction} is called and a \code{setup} function is provided, th
 For internal access to methods of \code{nf}, see \link{nfMethod}.
 
 For more information, see \code{?nimbleFunction} and the NIMBLE User Manual.
+=======
+  \item{nf}{A specialized nimbleFunction, i.e. a
+  function returned by executing a function returned
+  from \code{nimbleFunction} with \code{setup} arguments}
+  \item{varName}{A character string naming a variable in the
+  \code{setup} function.}
+}
+\value{
+whatever varName is in the nimbleFunction nf.
+}
+\description{
+Access or set a member variable of a specialized
+nimbleFunction, i.e. a variable passed to or created
+during the \code{setup} function that is used in run code
+or preserved by \code{setupOutputs}. Works in R for any
+variable and in NIMBLE for numeric variables.
+}
+\details{
+When \code{nimbleFunction} is called and a \code{setup}
+function is provided, then \code{nimbleFunction} returns a
+function. That function is a generator that should be called
+with arguments to the \code{setup} function and returns
+another function with \code{run} and possibly other member
+functions. The member functions can use objects created
+or passed to \code{setup}. During internal processing,
+the NIMBLE compiler turns some cases of \code{nf$var} into
+\code{nfVar(nf, var)}. These provide direct access to setup
+variables (member data). \code{nfVar} is not typically
+called by a NIMBLE user or programmer. For internal access
+to methods of \code{nf}, see \link{nfMethod}. For more
+information, see \code{?nimbleFunction} and the NIMBLE User
+Manual.
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 nfGen1 <- nimbleFunction(
@@ -79,9 +117,15 @@ nfGen2 <- nimbleFunction(
    })
 
 nf2 <- nfGen2()
+<<<<<<< HEAD
 nf2$run()
 Cnf2 <- compileNimble(nf2)
 Cnf2$run()
+=======
+nf2()
+Cnf2 <- compileNimble(nf2)
+Cnf2()
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 NIMBLE development team

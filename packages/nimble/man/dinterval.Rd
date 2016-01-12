@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in RtmpLwENQY/file61612f4fe2c0
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmp60KOwh/file787133664cae
 >>>>>>> added line to remove .o files after create
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
+>>>>>>> added man files from devel to ease rebase
 \name{dinterval}
 \alias{dinterval}
 \alias{rinterval}

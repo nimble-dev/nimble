@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba2f0d1e9a
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
+>>>>>>> added man files from devel to ease rebase
 \name{modelValues}
 \alias{modelValues}
 \title{Create a NIMBLE modelValues Object}
@@ -43,6 +47,7 @@
 modelValues(spec, m = 1)
 }
 \arguments{
+<<<<<<< HEAD
 \item{spec}{An object which includes information for building modelValues. Can either be a NIMBLE model (see \code{help(modelBaseClass)})
 or the object returned from \code{modelValuesSpec}}
 
@@ -51,6 +56,23 @@ Builds modelValues object from a model values specification object, which can in
 }
 \details{
 See the User Manual or \code{help(modelValuesBaseClass)} for information about manipulating NIMBLE modelValues object returned by this function
+=======
+  \item{spec}{An object which includes information for
+  building modelValues. Can either be a NIMBLE model (see
+  \code{help(modelBaseClass)}) or the object returned from
+  \code{modelValuesSpec}} \item{m}{The number of rows to
+  create in the modelValues object. Can later be changed
+  with \code{resize}}
+}
+\description{
+Builds modelValues object from a model values specification
+object, which can include a NIMBLE model
+}
+\details{
+See the User Manual or \code{help(modelValuesBaseClass)}
+for information about manipulating NIMBLE modelValues object
+returned by this function
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 #From model object:
@@ -64,9 +86,13 @@ code <- nimbleCode({
 Rmodel <- nimbleModel(code)
 Rmodel_mv <- modelValues(Rmodel, m = 2)
 	#Custom modelValues object:
+<<<<<<< HEAD
 mvSpec <- modelValuesSpec(vars = c('x', 'y'),
              types = c('double', 'int'),
              sizes = list(x = 3, y = c(2,2)))
+=======
+mvSpec <- modelValuesSpec(vars = c('x', 'y'), types = c('double', 'int'), sizes = list(x = 3, y = c(2,2)))
+>>>>>>> added man files from devel to ease rebase
 custom_mv <- modelValues(mvSpec, m = 2)
 custom_mv['y',]
 }

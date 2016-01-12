@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
 =======
 % Please edit documentation in RtmpLwENQY/file616164fcbb22
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba387211cb
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
+>>>>>>> added man files from devel to ease rebase
 \name{simNodesMV}
 \alias{calcNodesMV}
 \alias{getLogProbNodesMV}
@@ -45,6 +49,7 @@
 simNodesMV(model, mv, nodes)
 }
 \arguments{
+<<<<<<< HEAD
 \item{model}{A nimble model.}\item{mv}{A modelValues object in which multiple sets of model variables and their corresponding logProb values are or will be saved. \code{mv} must include the nodes provided}\item{nodes}{A set of nodes. If none are provided, default is all \code{model$getNodeNames()}}}\value{
 from \code{simNodesMV}: NULL.  from \code{calcNodesMV} and \code{getLogProbMV}: a vector of the sum of log probabilities (densities) from any stochastic nodes in \code{nodes}.
 }
@@ -70,6 +75,51 @@ Each of these will expand variables or index blocks and topologically sort them 
      (\code{calcNodesMV}only). Whether to save the logProb values in \code{mv}.  Should be given as \code{TRUE} unless there is a good reason not to.}
 
 }
+=======
+  \item{model}{A nimble model.} \item{mv}{A modelValues
+  object in which multiple sets of model variables and
+  their corresponding logProb values are or will be saved.
+  \code{mv} must include the nodes provided} \item{nodes}{A set of nodes. If none are provided, default is
+  all \code{model$getNodeNames()}} \item{expandNames}{\code{TRUE} or \code{FALSE}: whether to expand node
+  names provided. defaults to \code{TRUE}.} \item{sortNodes}{\code{TRUE} or \code{FALSE}: whether to sort node
+  names provided (after expansion) according to the
+  order of the model. defaults to \code{TRUE}. by
+  \code{node} argument, along with each corresponding
+  \code{'logProb_(nodeName)'}.}
+}
+\value{
+from \code{simNodesMV}: NULL. from \code{calcNodesMV}
+and \code{getLogProbMV}: a vector of the sum of log
+probabilities (densities) from any stochastic nodes in
+\code{nodes}.
+}
+\description{
+simulate, calculate, or get the existing log probabilities
+for values in a modelValues object using a NIMBLE model
+}
+\details{
+\code{simNodesMV} simulates values in the given nodes and
+saves them in \code{mv}. \code{calcNodesMV} calculates
+these nodes for each row of \code{mv} and returns a vector
+of the total log probabilities (densities) for each row.
+\code{getLogProbNodesMV} is like \code{calcNodesMV} without
+actually doing the calculations. Each of these will expand
+variables or index blocks and topologically sort them
+so that each node's parent nodes are processed before
+itself. \code{getLogProbMV} should be used carefully. It
+is generally for situations where the logProb values are
+guaranteed to have already been calculated, and all that
+is needed is to query them. The risk is that a program
+may have changed the values in the nodes, in which case
+\code{getLogProbMV} would collect logProb values that are
+out of date with the node values.
+}
+\section{Run time arguments}{
+  \itemize{ \item{\code{m} }{ (\code{simNodesMV} only).
+  Number of simulations requested.} \item{\code{saveLP}}{ (\code{calcNodesMV}only). Whether to save the logProb
+  values in \code{mv}. Should be given as \code{TRUE} unless
+  there is a good reason not to.} }
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 code <- nimbleCode({

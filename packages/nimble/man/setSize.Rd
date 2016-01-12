@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee55370303
 =======
 % Please edit documentation in RtmpLwENQY/file61611b30a085
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba28384453
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee55370303
+>>>>>>> added man files from devel to ease rebase
 \name{setSize}
 \alias{setSize}
 \title{set the size of a numeric variable in NIMBLE}
@@ -43,6 +47,7 @@
 setSize(numObj, ..., row)
 }
 \arguments{
+<<<<<<< HEAD
 \item{numObj}{This is the object to be resized}\item{...}{sizes, provided as scalars, in order, with exactly as many as needed for the object}\item{row}{Optional argument that is not currently used}}\description{
 set the size of a numeric variable in NIMBLE.  This works in R and NIMBLE, but in R it usually has no effect.
 }
@@ -50,6 +55,31 @@ set the size of a numeric variable in NIMBLE.  This works in R and NIMBLE, but i
 This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 4 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, if the object is not already an appropriate size for the assignment.
 
 This does work in uncompiled (R) and well as compiled execution, but it is really only necessary for compiled execution. During uncompiled execution, it may not catch bugs due to resizing because R objects will be dynamically resized during assignments anyway.
+=======
+  \item{numObj}{This is the object to be resized} \item{...}{sizes, provided as scalars, in order, with exactly
+  as many as needed for the object} \item{row}{Optional
+  argument that is not currently used}
+}
+\description{
+set the size of a numeric variable in NIMBLE. This works in
+R and NIMBLE, but in R it usually has no effect.
+}
+\details{
+This function is part of the NIMBLE language. Its purpose
+is to explicitly resize a multivariate object (vector,
+matrix or array), currently up to 4 dimensions. Explicit
+resizing is not needed when an entire object is assigned
+to. For example, in \code{Y <- A \%*\% B}, where A and
+B are matrices, \code{Y} will be resized automatically.
+Explicit resizing is necessary when assignment will be by
+indexed elements or blocks, if the object is not already
+an appropriate size for the assignment. This does work
+in uncompiled (R) and well as compiled execution, but it
+is really only necessary for compiled execution. During
+uncompiled execution, it may not catch bugs due to resizing
+because R objects will be dynamically resized during
+assignments anyway.
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 NIMBLE development team

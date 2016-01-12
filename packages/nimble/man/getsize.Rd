@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba30b2868d
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee404fec36
+>>>>>>> added man files from devel to ease rebase
 \name{getsize}
 \alias{getsize}
 \title{Returns number of rows of modelValues}
@@ -43,11 +47,21 @@
 getsize(container)
 }
 \arguments{
+<<<<<<< HEAD
 \item{container}{modelValues object}}\description{
 Returns the number of rows of NIMBLE modelValues object. Works in R and NIMBLE.
 }
 \details{
 See the User Manual or \code{help(modelValuesBaseClass)} for information about modelValues objects
+=======
+  \item{container}{modelValues object}}\description{
+Returns the number of rows of NIMBLE modelValues object.
+Works in R and NIMBLE.
+}
+\details{
+See the User Manual or \code{help(modelValuesBaseClass)} for
+information about modelValues objects
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 mvSpec <- modelValuesSpec(vars = 'a', types = 'double', sizes = list(a = 1) )

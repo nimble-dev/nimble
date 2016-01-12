@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba30b2868d
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee404fec36
+>>>>>>> added man files from devel to ease rebase
 \name{resize}
 \alias{resize}
 \title{Resizes a modelValues object}
@@ -43,6 +47,7 @@
 resize(container, k)
 }
 \arguments{
+<<<<<<< HEAD
 \item{container}{modelValues object}\item{k}{number of rows that modelValues is set to}}\description{
 Adds or removes rows to a modelValues object. If rows are added to a modelValues object, the default values are \code{NA}. Works in both R and NIMBLE.
 }
@@ -53,6 +58,22 @@ See the User Manual or \code{help(modelValuesBaseClass)} for infomation about mo
 mvSpec <- modelValuesSpec(vars = c('a', 'b'),
              types = c('double', 'double'),
              sizes = list(a = 1, b = c(2,2) ) )
+=======
+  \item{container}{modelValues object} \item{k}{number of
+  rows that modelValues is set to}
+}
+\description{
+Adds or removes rows to a modelValues object. If rows
+are added to a modelValues object, the default values are
+\code{NA}. Works in both R and NIMBLE.
+}
+\details{
+See the User Manual or \code{help(modelValuesBaseClass)} for
+infomation about modelValues objects
+}
+\examples{
+mvSpec <- modelValuesSpec(vars = c('a', 'b'), types = c('double', 'double'), sizes = list(a = 1, b = c(2,2) ) )
+>>>>>>> added man files from devel to ease rebase
 mv <- modelValues(mvSpec)
 as.matrix(mv)
 resize(mv, 3)

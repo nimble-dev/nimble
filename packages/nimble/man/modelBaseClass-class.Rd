@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee271010c4
 =======
 % Please edit documentation in RtmpLwENQY/file61616e0059ca
@@ -40,6 +41,11 @@
 \name{modelBaseClass-class}
 \alias{[[,modelBaseClass-method}
 \alias{[[<-,modelBaseClass-method}
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee271010c4
+\docType{class}
+\name{modelBaseClass-class}
+>>>>>>> added man files from devel to ease rebase
 \alias{checkConjugacy}
 \alias{getDependencies}
 \alias{getNodeNames}
@@ -54,10 +60,25 @@
 \alias{topologicallySortNodes}
 \title{Class \code{modelBaseClass}}
 \description{
+<<<<<<< HEAD
 This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
 The model object contains a variety of member functions, for providing information about the model structure, setting or querying properties of the model, or accessing various internal components of the model.
 These member functions of the modelBaseClass are commonly used in the body of the \code{setup} function argument to nimbleFunction(), to aid in preparation of node vectors, nimbleFunctionLists, and other runtime inputs.
 See documentation for \code{nimbleModel} for details of creating an R model object.
+=======
+This class underlies all NIMBLE model objects: both R model
+objects created from the return value of nimbleModel(),
+and compiled model objects. The model object contains a
+variety of member functions, for providing information
+about the model structure, setting or querying properties
+of the model, or accessing various internal components of
+the model. These member functions of the modelBaseClass
+are commonly used in the body of the \code{setup} function
+argument to nimbleFunction(), to aid in preparation of node
+vectors, nimbleFunctionLists, and other runtime inputs. See
+documentation for \code{nimbleModel} for details of creating
+an R model object.
+>>>>>>> added man files from devel to ease rebase
 }
 \section{Methods}{
 

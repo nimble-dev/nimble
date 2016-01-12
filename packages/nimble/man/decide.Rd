@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in Rtmps9T35v/file3fb3144ee279
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba21c84593
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee6563fece
+>>>>>>> added man files from devel to ease rebase
 \name{decide}
 \alias{decide}
 \title{Makes the Metropolis-Hastings acceptance decision, based upon the input (log) Metropolis-Hastings ratio}
@@ -39,11 +43,39 @@
 decide(logMetropolisRatio)
 }
 \arguments{
+<<<<<<< HEAD
 \item{logMetropolisRatio}{The log of the Metropolis-Hastings ratio, which is calculated from model probabilities and forward/reverse transition probabilities. Calculated as the ratio of the model probability under the proposal to that under the current values multiplied by the ratio of the reverse transition probability to the forward transition probability.}}\description{
 This function returns a logical TRUE/FALSE value, indicating whether the proposed transition should be accepted (TRUE) or rejected (FALSE).
 }
 \details{
 The Metropolis-Hastings accept/reject decisions is made as follows.  If \code{logMetropolisRatio} is greater than 0, accept (return \code{TRUE}).  Otherwise draw a uniform random number between 0 and 1 and accept if it is less that \code{exp(logMetropolisRatio}.  The proposed transition will be rejected (return \code{FALSE}). If \code{logMetropolisRatio} is NA, NaN, or -Inf, a reject (\code{FALSE}) decision will be returned.
+=======
+  \item{logMetropolisRatio}{The log of the Metropolis-
+  Hastings ratio, which is calculated from model
+  probabilities and forward/reverse transition
+  probabilities. Calculated as the ratio of the model
+  probability under the proposal to that under the current
+  values multiplied by the ratio of the reverse transition
+  probability to the forward transition probability.}
+}
+\description{
+This function returns a logical TRUE/FALSE value, indicating
+whether the proposed transition should be accepted (TRUE) or
+rejected (FALSE).
+}
+\details{
+The Metropolis-Hastings accept/reject decisions is made
+as follows. If \code{logMetropolisRatio} is greater
+than 0, accept (return \code{TRUE}). Otherwise draw a
+uniform random number between 0 and 1 and accept if it
+is less that \code{exp(logMetropolisRatio}. The proposed
+transition will be rejected (return \code{FALSE}). If
+\code{logMetropolisRatio} is NA, NaN, or -Inf, a reject
+(\code{FALSE}) decision will be returned.
+}
+\examples{
+jump <- decide(lMHr)
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Daniel Turek

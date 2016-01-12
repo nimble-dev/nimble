@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba69801dd5
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
+>>>>>>> added man files from devel to ease rebase
 \name{nimCopy}
 \alias{nimCopy}
 \title{Copying function for NIMBLE}
@@ -44,8 +48,28 @@ nimCopy(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA,
   logProb = FALSE)
 }
 \arguments{
+<<<<<<< HEAD
 \item{from}{Either a NIMBLE model or modelValues object}\item{to}{Either a NIMBLE model or modelValues object}\item{nodes}{The nodes of object \code{from} which will be copied from}\item{nodesTo}{The nodes of object \code{to} which will be copied to. If \code{nodesTo == NA}, will automatically be set to \code{nodes}}\item{row}{If \code{from} is a modelValues, the row which will be copied from}\item{rowTo}{If \code{to} is a modelValues, the row which will be copied to. If \code{rowTo == NA}, will automatically be set to \code{row}}\item{logProb}{A logical value indicating whether the log probabilities of the given nodes should also be copied (i.e. if \code{nodes = 'x'}and \code{logProb = TRUE}, then both \code{'x'} and \code{'logProb_x'} will be copied)}}\description{
 Copies values from a NIMBLE model or modelValues object to another NIMBLE model or modelValues. Work in R and NIMBLE.  The NIMBLE keyword \code{copy} is identical to \code{nimCopy}
+=======
+  \item{from}{Either a NIMBLE model or modelValues object}\item{to}{Either a NIMBLE model or modelValues object}\item{nodes}{The nodes of object \code{from} which
+  will be copied from} \item{nodesTo}{The nodes of object
+  \code{to} which will be copied to. If \code{nodesTo ==
+  NA}, will automatically be set to \code{nodes}} \item{row}{If \code{from} is a modelValues, the row which will be
+  copied from} \item{rowTo}{If \code{to} is a modelValues,
+  the row which will be copied to. If \code{rowTo == NA},
+  will automatically be set to \code{row}} \item{logProb}{A
+  logical value indicating whether the log probabilities of
+  the given nodes should also be copied (i.e. if \code{nodes
+  = 'x'} and \code{logProb = TRUE}, then both \code{'x'} and
+  \code{'logProb_x'} will be copied)}
+}
+\description{
+Copies values from a NIMBLE model or modelValues object
+to another NIMBLE model or modelValues. Work in R and
+NIMBLE. The NIMBLE keyword \code{copy} is identical to
+\code{nimCopy}
+>>>>>>> added man files from devel to ease rebase
 }
 \details{
 See the User Manual for more details
@@ -77,7 +101,11 @@ cModel <- compileNimble(rModel)
 cCopy <- compileNimble(rCopy, project = rModel)
 cModel[['x']] <- rnorm(100)
 
+<<<<<<< HEAD
 cCopy$run() ## execute the copy with the compiled function
+=======
+cCopy() ## execute the copy with the compiled function
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Clifford Anderson-Bergman

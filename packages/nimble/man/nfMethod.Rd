@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba69801dd5
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
+>>>>>>> added man files from devel to ease rebase
 \name{nfMethod}
 \alias{nfMethod}
 \title{Internal function for accessing a member function (method) of a nimbleFunction.  Normally a user will write \code{nf$method(x)} instead of \code{nfMethod(nf, method)(x)}.}
@@ -43,6 +47,7 @@
 nfMethod(nf, methodName)
 }
 \arguments{
+<<<<<<< HEAD
 \item{nf}{a specialized nimbleFunction, i.e. one that has already had setup parameters processed}\item{methodName}{a character string giving the name of the member function to call}}\value{
 a function that can be called.
 }
@@ -52,6 +57,27 @@ access (call) a member function of a nimbleFunction, including \code{run}.
 \details{
 nimbleFunctions have a default member function called \code{run}, and may have other member functions provided via the \code{methods} argument to \code{nimbleFunction}.
 As an internal step, the NIMBLE compiler turns \code{nf$method(x)} into \code{nfMethod(nf, method)(x)}, but a NIMBLE user or programmer would not normally need to use \code{nfMethod} directly.
+=======
+  \item{nf}{a specialized nimbleFunction, i.e. one that has
+  already had setup parameters processed} \item{methodName}{a character string giving the name of the member function
+  to call}
+}
+\value{
+a function that can be called.
+}
+\description{
+access (call) a member function of a nimbleFunction,
+including \code{run}.
+}
+\details{
+nimbleFunctions have a default member function called
+\code{run}, and may have other member functions provided via
+the \code{methods} argument to \code{nimbleFunction}. As an
+internal step, the NIMBLE compiler turns \code{nf$method(x)}
+into \code{nfMethod(nf, method)(x)}, but a NIMBLE user or
+programmer would not normally need to use \code{nfMethod}
+directly.
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 NIMBLE development team

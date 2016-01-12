@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in Rtmps9T35v/file3fb3144ee279
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba21c84593
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee6563fece
+>>>>>>> added man files from devel to ease rebase
 \name{decideAndJump}
 \alias{decideAndJump}
 \title{Creates a nimbleFunction for executing the Metropolis-Hastings jumping decision,
@@ -40,6 +44,7 @@ and updating values in the model, or in a carbon copy modelValues object, accord
 decideAndJump(model, mvSaved, calcNodes)
 }
 \arguments{
+<<<<<<< HEAD
 \item{model}{An uncompiled or compiled NIMBLE model object.}\item{mvSaved}{A modelValues object containing identical variables and logProb variables as the model. Can be created by \code{modelValues(model)}.}\item{calcNodes}{A character vector representing a set of nodes in the model (and hence also the modelValues) object.}}\description{
 This nimbleFunction generator must be specialized to three required arguments: a model, a modelValues, and a character vector of node names.
 }
@@ -60,6 +65,44 @@ Executing this function has the following effects:
 -- If the proposal is accepted, the values and associated logProbs of all calcNodes are copied from the model object into the mvSaved object
 -- If the proposal is rejected, the values and associated logProbs of all calcNodes are copied from the mvSaved object into the model object
 -- Return a logical value, indicating whether the proposal was accepted
+=======
+  \item{model}{An uncompiled or compiled NIMBLE model
+  object.} \item{mvSaved}{A modelValues object containing
+  identical variables and logProb variables as the
+  model. Can be created by \code{modelValues(model)}.}
+  \item{calcNodes}{A character vector representing a set
+  of nodes in the model (and hence also the modelValues)
+  object.}
+}
+\description{
+This nimbleFunction generator must be specialized to three
+required arguments: a model, a modelValues, and a character
+vector of node names.
+}
+\details{
+Calling decideAndJump(model, mvSaved, calcNodes) will
+generate a specialized nimbleFunction with four required
+numeric arguments: modelLP1: The model log-probability
+associated with the newly proposed value(s) modelLP0: The
+model log-probability associated with the original value(s)
+propLP1: The log-probability associated with the proposal
+forward-transition propLP0: The log-probability associated
+with the proposal reverse-tranisiton Executing this
+function has the following effects: -- Calculate the (log)
+Metropolis-Hastings ratio, as logMHR = modelLP1 - modelLP0
+- propLP1 + propLP0 -- Make the proposal acceptance decision
+based upon the (log) Metropolis-Hastings ratio -- If the
+proposal is accepted, the values and associated logProbs
+of all calcNodes are copied from the model object into the
+mvSaved object -- If the proposal is rejected, the values
+and associated logProbs of all calcNodes are copied from
+the mvSaved object into the model object -- Return a logical
+value, indicating whether the proposal was accepted
+}
+\examples{
+my_decideAndJump <- decideAndJump(Rmodel, mvSaved, calcNodes)
+jump <- my_decideAndJump(modelLP1, modelLP0, propLP1, propLP0)
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Daniel Turek

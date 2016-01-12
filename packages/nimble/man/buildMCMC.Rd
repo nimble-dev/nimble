@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee64c02f75
 =======
 % Please edit documentation in Rtmps9T35v/file3fb345ab1f8b
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba7f2c57c3
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee64c02f75
+>>>>>>> added man files from devel to ease rebase
 \name{buildMCMC}
 \alias{buildMCMC}
 \title{Create an MCMC function, from an MCMCspec object}
@@ -39,6 +43,7 @@
 buildMCMC(mcmcspec, ...)
 }
 \arguments{
+<<<<<<< HEAD
 \item{mcmcspec}{An object of class MCMCspec that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCspec objects.  Alternatively, \code{mcmcspec} may a NIMBLE model object, in which case an MCMC function corresponding to the defult MCMC specification for this model is returned.}\item{...}{Additional arguments to be passed to \code{configureMCMC} if \code{mcmcspec} is a NIMBLE model object}}\description{
 Accepts a single required argument, which may be of class MCMCspec, or inherit from class modelBaseClass (a NIMBLE model obejct).  Returns an MCMC function; see details section.
 }
@@ -66,6 +71,45 @@ The Rmcmc function may be compiled to a C MCMC object, taking care to compile in
 \code{Cmcmc <- compileNimble(Rmcmc, project=Rmodel)}
 
 The Cmcmc function will function identically to the Rmcmc object, except acting on the C model object.
+=======
+  \item{obj}{An object of class MCMCspec, which specifys
+  the model, samplers, monitors, and thinning intervals
+  for the resulting MCMC function. See \code{configureMCMC}
+  for details of creating MCMCspec objects. Alternatively,
+  \code{obj} may a NIMBLE model object, in which case
+  an MCMC function corresponding to the defult MCMC
+  specification for this model is returned.}
+}
+\description{
+Accepts a single required argument, which may be of class
+MCMCspec, or inherit from class modelBaseClass (a NIMBLE
+model obejct). Returns an MCMC function; see details
+section.
+}
+\details{
+Calling buildMCMC(obj) will produce an R mcmc function
+object, say 'Rmcmc'. The Rmcmc function will have arguments:
+niter: The number of iterations to run the MCMC. reset:
+Boolean specifying whether to reset the model and stored
+samples. This will simulate into any stochastic nodes
+with value NA, propagate values through any deterministic
+nodes, and calculate all model probabilities. This will
+also reset the internal stored MCMC samples. Specifying
+reset=FALSE allows the MCMC algorithm to continue running
+from where it left off. Generally, reset=FALSE should only
+be used when the MCMC has already been run. See examples.
+simulateAll: Boolean specifying whether to simulate into
+all stochastic nodes. This will overwrite the current
+values in all stochastic nodes. Samples corresponding to
+the 'monitors' and 'monitors2' from the MCMCspec are stored
+into the interval variables 'mvSamples' and 'mvSamples2',
+respectively. These may be accessed via: Rmcmc$mvSamples
+Rmcmc$mvSamples2 The Rmcmc function may be compiled to a C
+MCMC object, taking care to compile in the same project as
+the R model object, using: Cmcmc <- compileNimble(Rmcmc,
+project=Rmodel) The Cmcmc function will function identically
+to the Rmcmc object, except acting on the C model object.
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 code <- nimbleCode({

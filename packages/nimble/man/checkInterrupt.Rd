@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in Rtmps9T35v/file3fb367cbd951
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba69801dd5
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
+>>>>>>> added man files from devel to ease rebase
 \name{checkInterrupt}
 \alias{checkInterrupt}
 \title{Check for interrupt (e.g. Ctrl-C) during nimbleFunction execution. Part of the NIMBLE language.}
@@ -39,10 +43,23 @@
 checkInterrupt()
 }
 \description{
+<<<<<<< HEAD
 Check for interrupt (e.g. Ctrl-C) during nimbleFunction execution. Part of the NIMBLE language.
 }
 \details{
 During execution of nimbleFunctions that take a long time, it is nice to occassionally check if the user has entered an interrupt and bail out of execution if so.  This function does that.  During uncompiled nimbleFunction execution, it does nothing.  During compiled execution, it calls R_checkUserInterrupt() of the R headers.
+=======
+Check for interrupt (e.g. Ctrl-C) during nimbleFunction
+execution. Part of the NIMBLE language.
+}
+\details{
+During execution of nimbleFunctions that take a long time,
+it is nice to occassionally check if the user has entered
+an interrupt and bail out of execution if so. This function
+does that. During uncompiled nimbleFunction execution,
+it does nothing. During compiled execution, it calls
+R_checkUserInterrupt() of the R headers.
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Perry de Valpine

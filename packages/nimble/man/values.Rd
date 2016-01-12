@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in RtmpLwENQY/file6161636d898a
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba69801dd5
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
+>>>>>>> added man files from devel to ease rebase
 \name{values}
 \alias{values}
 \alias{values<-}
@@ -44,13 +48,24 @@
 values(model, nodes)
 }
 \arguments{
+<<<<<<< HEAD
 \item{model}{a NIMBLE model object, either compiled or uncompiled}\item{nodes}{a vector of node names, allowing index blocks that will be expanded}}\value{
 A vector of values concatenated from the provided nodes in the model
+=======
+  \item{model}{a NIMBLE model object, either compiled or
+  uncompiled} \item{nodes}{a vector of node names, allowing
+  index blocks that will be expanded}
+}
+\value{
+A vector of values concatenated from the provided nodes in
+the model
+>>>>>>> added man files from devel to ease rebase
 }
 \description{
 Get or set values for a set of nodes in a model
 }
 \details{
+<<<<<<< HEAD
 Calling \code{values(model, nodes)} returns a vector of the concatenation of values from the nodes requested
 \code{P <- values(model, nodes)} is a newer syntax for \code{getValues(P, model, values)}, which still works and modifies P in the calling environment.
 
@@ -62,6 +77,23 @@ The older function \code{getValues(P, model, nodes)} is equivalent to \code{P <-
 
 
 These functions work in R and in NIMBLE run-time code that can be compiled.
+=======
+Calling \code{values(model, nodes)} returns a vector
+of the concatenation of values from the nodes requested
+\code{P <- values(model, nodes)} is a newer syntax for
+\code{getValues(P, model, values)}, which still works
+and modifies P in the calling environment. Calling
+\code{values(model, nodes) <- P} sets the value of the
+nodes in the model, in sequential order from the vector
+P. In both uses, when requested nodes are from matrices
+or arrays, the values will be handled following column-
+wise order. The older function \code{getValues(P, model,
+nodes)} is equivalent to \code{P <- values(model, nodes)},
+and the older function \code{setValues(P, model, nodes)}
+is equivalent to \code{values(model, nodes) <- P} These
+functions work in R and in NIMBLE run-time code that can be
+compiled.
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 NIMBLE development team

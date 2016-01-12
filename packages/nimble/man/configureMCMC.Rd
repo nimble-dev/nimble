@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
 =======
 % Please edit documentation in Rtmps9T35v/file3fb34509a7e4
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba60da4ed7
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
+>>>>>>> added man files from devel to ease rebase
 \name{configureMCMC}
 \alias{autoBlock}
 \alias{configureMCMC}
@@ -40,6 +44,7 @@
 configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   monitors2 = character(), thin2 = 1, useConjugacy = TRUE,
   onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+<<<<<<< HEAD
   print = FALSE, autoBlock = FALSE, oldSpec, ...)
 }
 \arguments{
@@ -72,6 +77,88 @@ Creates a defaut MCMC specification for a given model.  The resulting object is 
 }
 \details{
 See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
+=======
+  print = FALSE, oldSpec, autoBlock = FALSE, ...)
+}
+\arguments{
+  \item{model}{A NIMBLE model object, created from
+  \link{nimbleModel}} \item{nodes}{An optional character
+  vector, specifying the nodes and/or variables for which
+  samplers should be created. Nodes may be specified
+  in their indexed form, \code{y[1, 3]}. Alternatively,
+  nodes specified without indexing will be expanded
+  fully, e.g., \code{x} will be expanded to \code{x[1]},
+  \code{x[2]}, etc. If missing, the default value is all
+  non-data stochastic nodes. If NULL, then no samplers
+  are added.} \item{control}{An optional list of control
+  arguments to sampler functions. If a control list is
+  provided, the elements will be provided to all sampler
+  functions which utilize the named elements given. For
+  example, the standard Metropolis-Hastings random walk
+  sampler (\link{sampler_RW}) utilizes control list
+  elements \code{adaptive}, \code{adaptInterval}, and
+  \code{scale}. (Internally it also uses \code{targetNode},
+  but this should not generally be provided as a control
+  list element). The default values for control list
+  arguments for samplers (if not otherwise provided as an
+  argument to configureMCMC() ) are in the NIMBLE system
+  option \code{MCMCcontrolDefaultList}.} \item{monitors}{A character vector of node names or variable names, to
+  record during MCMC sampling. This set of monitors will
+  be recorded with thinning interval \code{thin}, and the
+  samples will be stored into the \code{mvSamples} object.
+  The default value is all top-level stochastic nodes of
+  the model -- those having no stochastic parent nodes.}
+  \item{thin}{The thinning interval for \code{monitors}.
+  Default value is one.} \item{monitors2}{A character
+  vector of node names or variable names, to record during
+  MCMC sampling. This set of monitors will be recorded
+  with thinning interval \code{thin2}, and the samples
+  will be stored into the \code{mvSamples2} object. The
+  default value is an empty character vector, i.e. no
+  values will be recorded.} \item{thin2}{The thinning
+  interval for \code{monitors2}. Default value is one.}
+  \item{useConjugacy}{A logical argument, with default
+  value TRUE. If specified as FALSE, then no conjugate
+  samplers will be used, even when a node is determined
+  to be in a conjugate relationship.} \item{onlyRW}{A
+  logical argument, with default value FALSE. If specified
+  as TRUE, then Metropolis-Hastings random walk samplers
+  (\link{sampler_RW}) will be assigned for all non-terminal
+  continuous-valued nodes nodes. Discrete-valued nodes
+  are assigned a slice sampler (\link{sampler_slice}),
+  and terminal (predictive) nodes are assigned an end
+  sampler (\link{sampler_end}).} \item{onlySlice}{A logical
+  argument, with default value FALSE. If specified as
+  TRUE, then a slice sampler is assigned for all non-
+  terminal nodes. Terminal (predIctive) nodes are still
+  assigned an end sampler (sampler_end).} \item{print}{A
+  logical argument, specifying whether to print the ordered
+  list of default samplers.} \item{autoBlock}{A logical
+  argument specifying whether to use an automated blocking
+  provedure to determine blocks of model nodes for joint
+  sampling. If TRUE, an MCMC specification object will be
+  created and returned corresponding to the results of the
+  automated paramter blocking. Default value is FALSE.}
+  \item{multivariateNodesAsScalars:}{A logical argument,
+  with default value FALSE. If specified as TRUE, then non-
+  terminal multivariate stochastic nodes will have scalar
+  samplers assigned to each of the scalar components of the
+  multivariate node. The default value of FALSE results in
+  a single block sampler assigned to the entire multivariate
+  node. Note, multivariate nodes appearing in conjugate
+  relationships will be assigned the corresponding conjugate
+  sampler (provided \code{useConjugacy == TRUE}), regardless
+  of the value of this argument.}
+}
+\description{
+Creates a defaut MCMC specification for a given model.
+The resulting object is suitable as an argument to
+\link{buildMCMC}.
+}
+\details{
+See \code{MCMCspec} for details on how to manipulate the
+\code{MCMCspec} object
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Daniel Turek

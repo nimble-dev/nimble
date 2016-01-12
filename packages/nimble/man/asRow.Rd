@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
 =======
 % Please edit documentation in Rtmps9T35v/file3fb367cbd951
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba69801dd5
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4d5b9a12
+>>>>>>> added man files from devel to ease rebase
 \name{asRow}
 \alias{asCol}
 \alias{asRow}
@@ -40,6 +44,7 @@
 asRow(x)
 }
 \arguments{
+<<<<<<< HEAD
 \item{x}{Numeric to be turned into a single row or column matrix}}\description{
 Turns a numeric vector into a matrix that has 1 row or 1 column.  Part of NIMBLE language.
 }
@@ -49,6 +54,26 @@ For example, in \code{A \%*\% x}, where A is a matrix and x a vector, x will be 
 it is known at compile time that A is a single column, in which case x will be turned into a single-row matrix.
 However, if it is desired that x be turned into a single row but A cannot be determined at compile time to be a single column,
 then one can use \code{A \%*\% asRow(x)} to force this conversion.
+=======
+  \item{x}{Numeric to be turned into a single row or column
+  matrix}
+}
+\description{
+Turns a numeric vector into a matrix that has 1 row or 1
+column. Part of NIMBLE language.
+}
+\details{
+In the NIMBLE language, some automatic determination of how
+to turn vectors into single-row or single-column matrices
+is done. For example, in \code{A \%*\% x}, where A is a
+matrix and x a vector, x will be turned into a single-column
+matrix unless it is known at compile time that A is a single
+column, in which case x will be turned into a single-row
+matrix. However, if it is desired that x be turned into a
+single row but A cannot be determined at compile time to be
+a single column, then one can use \code{A \%*\% asRow(x)} to
+force this conversion.
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Perry de Valpine

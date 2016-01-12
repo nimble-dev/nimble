@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee38fefa33
 =======
 % Please edit documentation in RtmpLwENQY/file61611adbe820
@@ -28,6 +29,9 @@
 =======
 % Please edit documentation in Rtmpgi4ISD/file4c344f811986
 >>>>>>> various cleanups of roxygen stuff
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee38fefa33
+>>>>>>> added man files from devel to ease rebase
 \name{getNimbleProject}
 \alias{getNimbleProject}
 \title{return the nimble project, if any, associated with a model or nimbleFunction object.}

@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba30b2868d
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee404fec36
+>>>>>>> added man files from devel to ease rebase
 \name{nimDim}
 \alias{nimDim}
 \title{return sizes of an object whether it is a vector, matrix or array}
@@ -43,11 +47,23 @@
 nimDim(obj)
 }
 \arguments{
+<<<<<<< HEAD
 \item{obj}{objects for which the sizes are requested}}\value{
 a vector of sizes in each dimension
 }
 \description{
 R's regular \code{dim} function returns NULL for a vector.  It is useful to have this function that treats a vector similarly to a matrix or array.  Works in R and NIMBLE.  In NIMBLE \code{dim} is identical to \code{nimDim}, not to R's \code{dim}
+=======
+  \item{obj}{objects for which the sizes are requested}}\value{
+a vector of sizes in each dimension
+}
+\description{
+R's regular \code{dim} function returns NULL for a vector.
+It is useful to have this function that treats a vector
+similarly to a matrix or array. Works in R and NIMBLE. In
+NIMBLE \code{dim} is identical to \code{nimDim}, not to R's
+\code{dim}
+>>>>>>> added man files from devel to ease rebase
 }
 \examples{
 x <- rnorm(4)

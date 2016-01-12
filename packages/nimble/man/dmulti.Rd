@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in RtmpLwENQY/file61612f4fe2c0
@@ -27,6 +28,12 @@
 \name{dmulti}
 \alias{dmulti}
 \alias{rmulti}
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
+\name{dmulti}
+\alias{dmulti}
+\alias{rdirch}
+>>>>>>> added man files from devel to ease rebase
 \title{The Multinomial Distribution}
 \usage{
 dmulti(x, size = sum(x), prob, log = FALSE)

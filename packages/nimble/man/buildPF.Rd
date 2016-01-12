@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee54189a31
 =======
 % Please edit documentation in Rtmps9T35v/file3fb37b8a48b5
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20ba5ed4752a
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee54189a31
+>>>>>>> added man files from devel to ease rebase
 \name{buildPF}
 \alias{buildPF}
 \title{Creates a particle filter (sequential monte carlo) algorithm to estimate the log-likelihood for a model sub-graph}
@@ -39,11 +43,36 @@
 buildPF(model, nodes, silent = FALSE)
 }
 \arguments{
+<<<<<<< HEAD
 \item{model}{A nimble model object, typically representing a state space model or a hidden Markov model}\item{nodes}{A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function}\item{silent}{logical indicating whether to suppress logging information}}\description{
 Creates a particle filter (sequential monte carlo) algorithm to estimate the log-likelihood for a model sub-graph
 }
 \details{
 The resulting specialized particle filter algorthm will accept a single integer argument (m, default 10,000), which specifies the number of random \'particles\' to use for estimating the log-likelihood.  The algorithm returns the estimated log-likelihood value.
+=======
+  \item{model}{A nimble model object, typically representing
+  a state space model or a hidden Markov model} \item{nodes}{A character vector specifying the latent model nodes over
+  which the particle filter will stochastically integrate
+  over to estimate the log-likelihood function}
+}
+\description{
+Creates a particle filter (sequential monte carlo) algorithm
+to estimate the log-likelihood for a model sub-graph
+}
+\details{
+The resulting specialized particle filter algorthm will
+accept a single integer argument (m, default 10,000), which
+specifies the number of random \'particles\' to use for
+estimating the log-likelihood. The algorithm returns the
+estimated log-likelihood value.
+}
+\examples{
+model <- nimbleModel(code = ...)
+my_PF <- buildPF(model, 'x[1:100]')
+Cmodel <- compileNimble(model)
+Cmy_PF <- compileNimble(my_PF, project = model)
+logLike <- Cmy_PF$run(m = 100000)
+>>>>>>> added man files from devel to ease rebase
 }
 \author{
 Daniel Turek
