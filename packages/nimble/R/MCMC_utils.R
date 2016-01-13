@@ -86,7 +86,7 @@ decideAndJump <- nimbleFunction(
 #' code <- nimbleCode({ for(i in 1:3) x[i] ~ dnorm(0, 1) })
 #' Rmodel <- nimbleModel(code)
 #' my_setAndCalc <- setAndCalculateOne(Rmodel, 'x[1]')
-#' lp <- my_setAndCalc(2)
+#' lp <- my_setAndCalc$run(2)
 setAndCalculateOne <- nimbleFunction(
     setup = function(model, targetNode) {
         targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
@@ -126,7 +126,7 @@ setAndCalculateOne <- nimbleFunction(
 #' code <- nimbleCode({ for(i in 1:3) { x[i] ~ dnorm(0,1); y[i] ~ dnorm(0, 1)}})
 #' Rmodel <- nimbleModel(code)
 #' my_setAndCalc <- setAndCalculate(Rmodel, c('x[1]', 'x[2]', 'y[1]', 'y[2]'))
-#' lp <- my_setAndCalc(c(1.2, 1.4, 7.6, 8.9))
+#' lp <- my_setAndCalc$run(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
     setup = function(model, targetNodes) {
         targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
