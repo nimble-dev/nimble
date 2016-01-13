@@ -83,6 +83,8 @@ decideAndJump <- nimbleFunction(
 #' targetValue: The numeric value which will be put into the target node, in the specified model object.
 #'
 #' @examples
+#' code <- nimbleCode({ for(i in 1:3) x[i] ~ dnorm(0, 1) })
+#' Rmodel <- nimbleModel(code)
 #' my_setAndCalc <- setAndCalculateOne(Rmodel, 'x[1]')
 #' lp <- my_setAndCalc(2)
 setAndCalculateOne <- nimbleFunction(
@@ -121,6 +123,8 @@ setAndCalculateOne <- nimbleFunction(
 #' targetValues: A vector of numeric values which will be put into the target nodes in the specified model object.  The length of this numeric vector much exactly match the number of target nodes.
 #'
 #' @examples
+#' code <- nimbleCode({ for(i in 1:3) { x[i] ~ dnorm(0,1); y[i] ~ dnorm(0, 1)}})
+#' Rmodel <- nimbleModel(code)
 #' my_setAndCalc <- setAndCalculate(Rmodel, c('x[1]', 'x[2]', 'y[1]', 'y[2]'))
 #' lp <- my_setAndCalc(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
