@@ -68,7 +68,18 @@ individualExportNames = c(
     'buildConjugateSamplerFunctions'
 )
 
-individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
+individualMaskedFunctions = c(
+'mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
+# trying for now not to put these as exported as they should presumably not be exported as functions
+ 'RModelBaseClass',
+ 'singleModelValuesAccessClass',
+ 'singleVarAccessClass', 
+ 'CmodelBaseClass',
+ 'CnimbleFunctionBase', 
+ 'modelBaseClass',
+ 'modelValuesBaseClass', 
+ 'codeBlockClass',
+ 'nimbleFunctionBase',
 
 'C_dcat', 
 'C_ddirch', 
@@ -313,7 +324,7 @@ exportClasses = sort(exportClasses)
 
 exportText = paste('export(', exportNames, ')', sep = '')
 if(!is.null(exportClasses))
-             exportText <- c(exportText, paste('exportClass(', exportClasses, ')', sep = ''))
+             exportText <- c(exportText, paste0('exportClasses(', paste(exportClasses, collapse = ','), ')', sep = ''))
 
 exportText = paste(exportText, collapse = '\n')
 # cat(exportText, sep = '\n')

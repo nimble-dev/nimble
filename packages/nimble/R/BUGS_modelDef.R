@@ -2078,14 +2078,12 @@ modelDefClass$methods(fixRStudioHanging = function(model) {
     classNames <- c(as.character(class(model)),
                     as.character(class(model$defaultModelValues)),
                     unique(sapply(model$nodeFunctions, function(nf) as.character(class(nf)))))
-    for(name in classNames) {
+    for(name in c(classNames, "modelDefClass", "igraph")) {
         eval(substitute(NAME <- METHOD,
                         list(NAME   = as.name(paste0('str.', name)),
                              METHOD = nullStrMethod)),
              envir = globalenv())
     }
-    assign('str.modelDefClass', nullStrMethod, globalenv())
-    assign('str.igraph',        nullStrMethod, globalenv())
 })
 
 modelDefClass$methods(show = function() {
