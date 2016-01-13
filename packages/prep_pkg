@@ -8,6 +8,9 @@
 # seems to be because we are loading in nimble and we are sourcing code files in global,
 # so class definitions are in two places
 
+# when run this check that package loading occurs midway through and dont get issue with 00LOCK file
+# also check that don't get issues with nimble objects (e.g. distributionFuns, cppInt) not being found when .Rd files are being created (rerunning or running code in prep_pkg manually within R seems to work)
+
 require(roxygen2)
 require(methods)
 
