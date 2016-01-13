@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 =======
 % Please edit documentation in RtmpLwENQY/file616162260d5d
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee404fec36
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee404fec36
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{getsize}
 \alias{getsize}
 \title{Returns number of rows of modelValues}
@@ -48,12 +52,15 @@ getsize(container)
 }
 \arguments{
 <<<<<<< HEAD
+<<<<<<< HEAD
 \item{container}{modelValues object}}\description{
 Returns the number of rows of NIMBLE modelValues object. Works in R and NIMBLE.
 }
 \details{
 See the User Manual or \code{help(modelValuesBaseClass)} for information about modelValues objects
 =======
+=======
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
   \item{container}{modelValues object}}\description{
 Returns the number of rows of NIMBLE modelValues object.
 Works in R and NIMBLE.

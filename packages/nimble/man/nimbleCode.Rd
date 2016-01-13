@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79eeb11e58b
 =======
 % Please edit documentation in RtmpLwENQY/file616168dd5c38
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79eeb11e58b
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79eeb11e58b
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{nimbleCode}
 \alias{nimbleCode}
 \title{Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}}
@@ -48,12 +52,15 @@ nimbleCode(code)
 }
 \arguments{
 <<<<<<< HEAD
+<<<<<<< HEAD
 \item{code}{expression providing the code for the model}}\description{
 Simply keeps model code as an R call object, the form needed by \link{nimbleModel} and optionally usable by \link{readBUGSmodel}
 }
 \details{
 It is equivalent to use the R function \code{quote}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
 =======
+=======
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
   \item{code}{expression providing the code for the model}}\description{
 Simply keeps model code as an R call object, the form
 needed by \link{nimbleModel} and optionally usable by

@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
 =======
 % Please edit documentation in Rtmps9T35v/file3fb34509a7e4
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee2a9e4f3d
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{configureMCMC}
 \alias{autoBlock}
 \alias{configureMCMC}

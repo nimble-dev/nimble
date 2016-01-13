@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee5c502c8e
 =======
 % Please edit documentation in Rtmps9T35v/file3fb31ca07ca1
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee5c502c8e
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee5c502c8e
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{buildMCEM}
 \alias{buildMCEM}
 \title{Builds an MCEM algorithm from a given NIMBLE model}

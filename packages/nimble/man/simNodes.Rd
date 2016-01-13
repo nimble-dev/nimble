@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
 =======
 % Please edit documentation in RtmpLwENQY/file616164fcbb22
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee4b6a6ad4
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{simNodes}
 \alias{calcNodes}
 \alias{getLogProbNodes}

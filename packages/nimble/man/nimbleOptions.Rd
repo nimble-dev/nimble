@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 =======
 % Please edit documentation in RtmpLwENQY/file61612b823b49
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee1e8d0966
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{nimbleOptions}
 \alias{nimbleOptions}
 \title{NIMBLE Options Settings}

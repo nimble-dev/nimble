@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3ffd4de0
 =======
 % Please edit documentation in RtmpLwENQY/file616175a67bec
@@ -32,6 +33,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee3ffd4de0
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee3ffd4de0
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{hasBracket}
 \alias{hasBracket}
 \title{Determine if a piece of code contains a '['}

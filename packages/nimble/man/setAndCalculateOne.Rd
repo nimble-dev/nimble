@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in RtmpLwENQY/file616156fdd32a
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee6563fece
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{setAndCalculateOne}
 \alias{setAndCalculateOne}
 \title{Creates a nimbleFunction for setting the value of a scalar model node,

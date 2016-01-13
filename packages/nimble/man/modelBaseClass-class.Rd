@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee271010c4
 =======
 % Please edit documentation in RtmpLwENQY/file61616e0059ca
@@ -37,6 +38,9 @@
 =======
 % Please edit documentation in RtmpaEoKPd/file20bae6df709
 >>>>>>> fixed up some roxygen stuff and
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee271010c4
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \docType{class}
 \name{modelBaseClass-class}
 \alias{[[,modelBaseClass-method}

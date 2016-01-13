@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 =======
 % Please edit documentation in Rtmps9T35v/file3fb3144ee279
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee6563fece
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee6563fece
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{decide}
 \alias{decide}
 \title{Makes the Metropolis-Hastings acceptance decision, based upon the input (log) Metropolis-Hastings ratio}

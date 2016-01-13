@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 =======
 % Please edit documentation in Rtmps9T35v/file3fb31bd37e83
@@ -24,6 +25,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee45ff4b22
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{dconstraint}
 \alias{dconstraint}
 \alias{rconstraint}

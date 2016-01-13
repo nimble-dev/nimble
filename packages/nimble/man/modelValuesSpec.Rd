@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 =======
 % Please edit documentation in RtmpLwENQY/file61613d8c344d
@@ -41,6 +42,8 @@
 \alias{modelValuesSpec}
 \title{Create the specs for a custom NIMBLE modelValues object}
 =======
+=======
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 % Please edit documentation in Rtmpzdod9z/file79ee18dea6c8
 \name{modelValuesSpec}
 \alias{modelValuesSpec}

@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee54189a31
 =======
 % Please edit documentation in Rtmps9T35v/file3fb37b8a48b5
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee54189a31
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee54189a31
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{buildPF}
 \alias{buildPF}
 \title{Creates a particle filter (sequential monte carlo) algorithm to estimate the log-likelihood for a model sub-graph}

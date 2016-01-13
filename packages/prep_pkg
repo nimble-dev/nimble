@@ -25,7 +25,6 @@ explicitUndocFuns <- c("[,numberedModelValuesAccessors-method", "[<-,numberedMod
 imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
-
 importFroms <- c("coda, effectiveSize")
 #                 "R2WinBUGS, bugs",
 #                 "rjags, jags.model",

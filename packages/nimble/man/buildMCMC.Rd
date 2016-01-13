@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee64c02f75
 =======
 % Please edit documentation in Rtmps9T35v/file3fb345ab1f8b
@@ -36,6 +37,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee64c02f75
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee64c02f75
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{buildMCMC}
 \alias{buildMCMC}
 \title{Create an MCMC function, from an MCMCspec object}

@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee19918d33
 =======
 % Please edit documentation in RtmpLwENQY/file616154d07337
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee19918d33
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee19918d33
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{samplers}
 \alias{RW}
 \alias{RW_block}
@@ -397,7 +401,10 @@ Statistical Society: Series B (Statistical Methodology)},
 59(2), 291-317. \cr \cr Shaby, B. and M. Wells (2011).
 \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14.
 Department of Statistics, Duke University. \cr
+<<<<<<< HEAD
 >>>>>>> added man files from devel to ease rebase
+=======
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 }
 \seealso{
 configureMCMC addSampler buildMCMC

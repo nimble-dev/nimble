@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee3611dea8
 =======
 % Please edit documentation in RtmpLwENQY/file616123912e44
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee3611dea8
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee3611dea8
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{testBUGSmodel}
 \alias{testBUGSmodel}
 \title{Tests BUGS examples in the NIMBLE system}

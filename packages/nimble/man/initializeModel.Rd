@@ -9,6 +9,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 % Please edit documentation in Rtmpzdod9z/file79ee1610658e
 =======
 % Please edit documentation in RtmpLwENQY/file61611f16009b
@@ -40,6 +41,9 @@
 =======
 % Please edit documentation in Rtmpzdod9z/file79ee1610658e
 >>>>>>> added man files from devel to ease rebase
+=======
+% Please edit documentation in Rtmpzdod9z/file79ee1610658e
+>>>>>>> 6f0bc2e7a0885e03527d78f21be97fad5c54074a
 \name{initializeModel}
 \alias{initializeModel}
 \title{Performs initialization nimble model node values and log probabilities}
