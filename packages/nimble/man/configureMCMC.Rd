@@ -32,7 +32,8 @@ configureMCMC(model, nodes, control = list(), monitors, thin = 1,
   list element). The default values for control list
   arguments for samplers (if not otherwise provided as an
   argument to configureMCMC() ) are in the NIMBLE system
-  option \code{MCMCcontrolDefaultList}.} \item{monitors}{A character vector of node names or variable names, to
+  option \code{MCMCcontrolDefaultList}.} \item{monitors}
+  {A character vector of node names or variable names, to
   record during MCMC sampling. This set of monitors will
   be recorded with thinning interval \code{thin}, and the
   samples will be stored into the \code{mvSamples} object.

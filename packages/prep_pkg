@@ -24,11 +24,21 @@ imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
 importFroms <- c("importFrom(coda, effectiveSize)")
 
+importFroms <- c("coda, effectiveSize",
+                 "R2WinBUGS, bugs",
+                 "rjags, jags.model",
+                 "rjags, coda.samples",
+                 "rstan, stan_model",
+                 "rstan, sampling")
+
+importFroms <- paste("importFrom(", importFroms, ")", sep = "", collapse = "\n") 
+
 dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 exportAllLine <- "exportPattern('.')"
 
 # need everything exported for roxygenization to work...
-cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
+#cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", sep = "", collapse = ''),
+cat(paste(imports, importFroms, dynLibLine, exportAllLine, sep = "\n", collapse = '\n'),
     file = file.path("nimble", "NAMESPACE"))
 
 system("R CMD build nimble")
@@ -99,5 +109,6 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 
 # now create real NAMESPACE file
 
-cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
+#cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
+cat(paste(imports, importFroms, dynLibLine, exportText, collapse = '\n', sep = '\n'),
     file = file.path("nimble", "NAMESPACE"))

@@ -21,7 +21,8 @@ nimbleModel(code, constants = list(), data = list(), inits = list(),
   Data values can be subsequently modified. Providing this
   argument also flags nodes as having data for purposes
   of algorithms that inspect model structure. Values
-  that are NA will not be flagged as data.} \item{inits}{named list of starting values for model variables.
+  that are NA will not be flagged as data.} \item{inits}
+  {named list of starting values for model variables.
   Unlike JAGS, should only be a single list, not a list
   of lists.} \item{dimensions}{named list of dimensions
   for variables. Only needed for variables used with empty

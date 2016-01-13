@@ -37,167 +37,165 @@
 #'
 #' @export
 autoBlock <- function(Rmodel,
-                      autoIt = 20000,
-                      run = list('all', 'default'),
-                      setSeed = TRUE,
-                      verbose = FALSE,
-                      makePlots = FALSE,
-                      round = TRUE ) {
-    if(autoIt < 10000) stop('Minimum auto-blocking iterations is 10,000')
-    control <- list(niter=autoIt, setSeed=setSeed, verbose=verbose, makePlots=makePlots)
-    ab <- autoBlockClass(Rmodel, control)
-    if(!'auto' %in% run) run <- c(run, 'auto')  ## always use 'autoBlock' routine
-    ab$run(run)
-    abList <- list(ab)
-    names(abList)[1] <- 'model'
-    df <- createDFfromABlist(abList, autoIt)
-    dfmin <- reduceDF(df, round = round)
-    cat('\nAuto-Blocking summary:\n')
-    print(dfmin)
-    lastAutoInd <- max(grep('^auto', ab$naming))   ## index of final 'auto' iteration
-    lastAutoGrouping <- ab$grouping[[lastAutoInd]]  ## grouping of final 'auto' iteration
-    nonTrivialGroups <- lastAutoGrouping[unlist(lapply(lastAutoGrouping, function(x) length(x)>1))]
-    if(length(nonTrivialGroups) > 0) {
-        cat('\nAuto-Blocking converged on the node groupings:\n')
-        for(i in seq_along(nonTrivialGroups)) {
-            group <- nonTrivialGroups[[i]]
-            cat(paste0('[', i, '] '))
-            cat(paste0(group, collapse = ', '))
-            cat('\n')
-        }
-    } else cat('\nAuto-Blocking converged on all scalar (univariate) sampling\n')
-    cat('\n')
-    ## create a new MCMC spec with the autoBlock groupings:
-    spec <- configureMCMC(Rmodel, nodes = NULL)
-    for(nodeGroup in lastAutoGrouping) addSamplerToSpec(Rmodel, spec, nodeGroup)
-    retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, spec=spec)
-    return(invisible(retList))
+		autoIt = 20000,
+		run = list('all', 'default'),
+		setSeed = TRUE,
+		verbose = FALSE,
+		makePlots = FALSE,
+		round = TRUE ) {
+	if(autoIt < 10000) stop('Minimum auto-blocking iterations is 10,000')
+		control <- list(niter=autoIt, setSeed=setSeed, verbose=verbose, makePlots=makePlots)
+			ab <- autoBlockClass(Rmodel, control)
+			if(!'auto' %in% run) run <- c(run, 'auto')  ## always use 'autoBlock' routine
+				ab$run(run)
+					abList <- list(ab)
+					names(abList)[1] <- 'model'
+					df <- createDFfromABlist(abList, autoIt)
+					dfmin <- reduceDF(df, round = round)
+					cat('\nAuto-Blocking summary:\n')
+					print(dfmin)
+					lastAutoInd <- max(grep('^auto', ab$naming))   ## index of final 'auto' iteration
+					lastAutoGrouping <- ab$grouping[[lastAutoInd]]  ## grouping of final 'auto' iteration
+					nonTrivialGroups <- lastAutoGrouping[unlist(lapply(lastAutoGrouping, function(x) length(x)>1))]
+					if(length(nonTrivialGroups) > 0) {
+						cat('\nAuto-Blocking converged on the node groupings:\n')
+							for(i in seq_along(nonTrivialGroups)) {
+								group <- nonTrivialGroups[[i]]
+									cat(paste0('[', i, '] '))
+									cat(paste0(group, collapse = ', '))
+									cat('\n')
+							}
+					} else cat('\nAuto-Blocking converged on all scalar (univariate) sampling\n')
+						cat('\n')
+## create a new MCMC spec with the autoBlock groupings:
+							spec <- configureMCMC(Rmodel, nodes = NULL)
+							for(nodeGroup in lastAutoGrouping) addSamplerToSpec(Rmodel, spec, nodeGroup)
+								retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, spec=spec)
+									return(invisible(retList))
 }
 
 
 
 autoBlockModel <- setRefClass(
-    Class = 'autoBlockModel',
-    fields = list(
-        Rmodel_orig = 'ANY',
-        Rmodel = 'ANY',
-        Cmodel = 'ANY',
-        md = 'ANY',
-        scalarNodeVector = 'character',
-        scalarNodeVectorCont = 'character',
-        scalarNodeVectorDisc = 'character',
-        nodeGroupScalars = 'list',
-        nodeGroupAllBlocked = 'list',
-        monitorsVector = 'character',
-        initialMCMCspec = 'ANY'
-        ),
-    methods = list(
-        initialize = function(Rmodel_orig) {
-            Rmodel_orig <<- Rmodel_orig
-            md <<- Rmodel_orig$modelDef
-            Rmodel <<- Rmodel_orig$newModel(replicate = TRUE)
-            ##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
-            ##for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
-            scalarNodeVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=TRUE)
-            discreteInd <- sapply(scalarNodeVector, function(n) Rmodel$isDiscrete(n), USE.NAMES=FALSE)
-            scalarNodeVectorCont <<- scalarNodeVector[!discreteInd]   ## making work with discrete nodes
-            scalarNodeVectorDisc <<- scalarNodeVector[ discreteInd]   ## making work with discrete nodes
-            if(length(scalarNodeVectorCont) == 0) stop('autoBlocking only works with one or more continuous-valued model nodes')   ## making work with discrete nodes
-            nodeGroupScalars <<- lapply(scalarNodeVector, function(x) x)
-            ##nodeGroupAllBlocked <<- list(scalarNodeVector)   ## making work with discrete nodes
-            nodeGroupAllBlocked <<- c(lapply(scalarNodeVectorDisc, function(x) x), list(scalarNodeVectorCont))   ## making work with discrete nodes
-            monitorsVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE)
-        },
-        ## here is where the initial MCMC spec is created, for re-use -- for new version
-        createInitialMCMCspec = function(runList) {
-            initialMCMCspec <<- configureMCMC(Rmodel)
-            nInitialSamplers <- length(initialMCMCspec$samplerSpecs)
-            initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
-            initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
-            addCustomizedSamplersToInitialMCMCspec(runList)
-            initialMCMCspec$addMonitors(monitorsVector, print=FALSE)
-            RinitialMCMC <- buildMCMC(initialMCMCspec)
-            Cmodel <<- compileNimble(Rmodel)
-            CinitialMCMC <- compileNimble(RinitialMCMC, project = Rmodel)   ## (new version) yes, we need this compileNimble call -- this is the whole point!
-            initialMCMCspec$setSamplers(1:nInitialSamplers, print=FALSE)  ## important for new version: removes all news samplers added to initial MCMC spec
-        },
-        addCustomizedSamplersToInitialMCMCspec = function(runListCode) {
-            if(is.list(runListCode)) { lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCspec(el)); return() }
-            if(is.call(runListCode)) {
-                if(is.call(runListCode[[1]]) && length(runListCode[[1]])==3 && runListCode[[1]][[3]]=='addSampler') {
-                    runListCode[[1]][[2]] <- as.name('initialMCMCspec')
-                    eval(substitute(RUNLISTCODE, list(RUNLISTCODE=runListCode)))
-                    return()
-                }
-                lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCspec(el))
-                return()
-            }
-        },
-        createGroups = function(listOfBlocks = list()) {
-            listOfBlocks <- lapply(listOfBlocks, function(blk) Rmodel$expandNodeNames(blk, returnScalarComponents=TRUE))
-            if(any(unlist(listOfBlocks) %in% scalarNodeVectorDisc)) stop('cannot put block sampler on discrete-valued model nodes')
-            nodes <- scalarNodeVector
-            nodes <- setdiff(nodes, unlist(listOfBlocks))
-            nodeList <- lapply(nodes, function(x) x)
-            for(ng in listOfBlocks) nodeList[[length(nodeList)+1]] <- ng
-            return(nodeList)
-        },
-        resetCmodelInitialValues = function() {
-            nimCopy(from = Rmodel_orig, to = Cmodel, logProb = TRUE)
-            calculate(Cmodel)
-        }
-    )
+		Class = 'autoBlockModel',
+		fields = list(
+			Rmodel_orig = 'ANY',
+			Rmodel = 'ANY',
+			Cmodel = 'ANY',
+			md = 'ANY',
+			scalarNodeVector = 'character',
+			scalarNodeVectorCont = 'character',
+			scalarNodeVectorDisc = 'character',
+			nodeGroupScalars = 'list',
+			nodeGroupAllBlocked = 'list',
+			monitorsVector = 'character',
+			initialMCMCspec = 'ANY'
+			),
+		methods = list(
+			initialize = function(Rmodel_orig) {
+			Rmodel_orig <<- Rmodel_orig
+			md <<- Rmodel_orig$modelDef
+			Rmodel <<- Rmodel_orig$newModel(replicate = TRUE)
+##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
+##for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
+			scalarNodeVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=TRUE)
+			discreteInd <- sapply(scalarNodeVector, function(n) Rmodel$isDiscrete(n), USE.NAMES=FALSE)
+			scalarNodeVectorCont <<- scalarNodeVector[!discreteInd]   ## making work with discrete nodes
+			scalarNodeVectorDisc <<- scalarNodeVector[ discreteInd]   ## making work with discrete nodes
+			if(length(scalarNodeVectorCont) == 0) stop('autoBlocking only works with one or more continuous-valued model nodes')   ## making work with discrete nodes
+			nodeGroupScalars <<- lapply(scalarNodeVector, function(x) x)
+##nodeGroupAllBlocked <<- list(scalarNodeVector)   ## making work with discrete nodes
+			nodeGroupAllBlocked <<- c(lapply(scalarNodeVectorDisc, function(x) x), list(scalarNodeVectorCont))   ## making work with discrete nodes
+			monitorsVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE)
+			},
+## here is where the initial MCMC spec is created, for re-use -- for new version
+			createInitialMCMCspec = function(runList) {
+			initialMCMCspec <<- configureMCMC(Rmodel)
+			nInitialSamplers <- length(initialMCMCspec$samplerSpecs)
+			initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
+			initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
+			addCustomizedSamplersToInitialMCMCspec(runList)
+			initialMCMCspec$addMonitors(monitorsVector, print=FALSE)
+			RinitialMCMC <- buildMCMC(initialMCMCspec)
+			Cmodel <<- compileNimble(Rmodel)
+			CinitialMCMC <- compileNimble(RinitialMCMC, project = Rmodel)   ## (new version) yes, we need this compileNimble call -- this is the whole point!
+			initialMCMCspec$setSamplers(1:nInitialSamplers, print=FALSE)  ## important for new version: removes all news samplers added to initial MCMC spec
+			},
+			addCustomizedSamplersToInitialMCMCspec = function(runListCode) {
+				if(is.list(runListCode)) { lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCspec(el)); return() }
+				if(is.call(runListCode)) {
+					if(is.call(runListCode[[1]]) && length(runListCode[[1]])==3 && runListCode[[1]][[3]]=='addSampler') {
+						runListCode[[1]][[2]] <- as.name('initialMCMCspec')
+							eval(substitute(RUNLISTCODE, list(RUNLISTCODE=runListCode)))
+							return()
+					}
+					lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCspec(el))
+						return()
+				}
+			},
+			createGroups = function(listOfBlocks = list()) {
+				listOfBlocks <- lapply(listOfBlocks, function(blk) Rmodel$expandNodeNames(blk, returnScalarComponents=TRUE))
+					if(any(unlist(listOfBlocks) %in% scalarNodeVectorDisc)) stop('cannot put block sampler on discrete-valued model nodes')
+						nodes <- scalarNodeVector
+							nodes <- setdiff(nodes, unlist(listOfBlocks))
+							nodeList <- lapply(nodes, function(x) x)
+							for(ng in listOfBlocks) nodeList[[length(nodeList)+1]] <- ng
+								return(nodeList)
+			},
+			resetCmodelInitialValues = function() {
+				nimCopy(from = Rmodel_orig, to = Cmodel, logProb = TRUE)
+					calculate(Cmodel)
+			}
+)
 )
 
 
 
 autoBlockParamDefaults <- function() {
-    list(
-        makePlots = FALSE,
-        niter = 20000,
-        setSeed = TRUE,
-        verbose = FALSE
-        )
+	list(
+			makePlots = FALSE,
+			niter = 20000,
+			setSeed = TRUE,
+			verbose = FALSE
+	    )
 }
 
 
 autoBlockClass <- setRefClass(
 
-    Class = 'autoBlockClass',
+		Class = 'autoBlockClass',
 
-    fields = list(
-        
-        ## special
-        abModel = 'ANY',
-        it = 'numeric',
+		fields = list(
 
-        ## overall control
-        makePlots = 'logical',
-        niter = 'numeric',
-        setSeed = 'logical',
-        verbose = 'logical',
+## special
+			abModel = 'ANY',
+			it = 'numeric',
 
-        ## persistant lists of historical data
-        naming = 'list',
-        candidateGroups = 'list',
-        grouping = 'list',
-        groupSizes = 'list',
-        groupIDs = 'list',
-        samplers = 'list',
-        timing = 'list',
-        ess = 'list',
-        essPT = 'list',
-        empCov = 'list',
-        empCor = 'list',
-        distMatrix = 'list',
-        hTree = 'list'
-        ),
+## overall control
+			makePlots = 'logical',
+			niter = 'numeric',
+			setSeed = 'logical',
+			verbose = 'logical',
 
-    methods = list(
+## persistant lists of historical data
+			naming = 'list',
+			candidateGroups = 'list',
+			grouping = 'list',
+			groupSizes = 'list',
+			groupIDs = 'list',
+			samplers = 'list',
+			timing = 'list',
+			ess = 'list',
+			essPT = 'list',
+			empCov = 'list',
+			empCor = 'list',
+			distMatrix = 'list',
+			hTree = 'list'
+			),
 
-        initialize = function(Rmodel, control=list()) {
-            require(lattice)
-            require(coda)
+			methods = list(
+
+	initialize = function(Rmodel, control=list()) {
             abModel <<- autoBlockModel(Rmodel)
             defaultsList <- autoBlockParamDefaults()
             for(i in seq_along(defaultsList)) if(is.null(control[[names(defaultsList)[i]]])) control[[names(defaultsList)[i]]] <- defaultsList[[i]]
@@ -295,7 +293,7 @@ autoBlockClass <- setRefClass(
                 abModel$resetCmodelInitialValues()
                 timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter))[3])
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[i]])
-                essList[[i]] <- apply(burnedSamples, 2, effectiveSize)
+                essList[[i]] <- apply(burnedSamples, 2, coda::effectiveSize)
                 essList[[i]] <- essList[[i]][essList[[i]] > 0]  ## exclude nodes with ESS=0 -- for discrete nodes which are fixed to a certain value; making work with discrete nodes
                 essPTList[[i]] <- essList[[i]] / timingList[[i]]
                 essPTminList[[i]] <- sort(essPTList[[i]])[1]

@@ -8,7 +8,8 @@ nfMethod(nf, methodName)
 }
 \arguments{
   \item{nf}{a specialized nimbleFunction, i.e. one that has
-  already had setup parameters processed} \item{methodName}{a character string giving the name of the member function
+  already had setup parameters processed} \item{methodName}
+  {a character string giving the name of the member function
   to call}
 }
 \value{

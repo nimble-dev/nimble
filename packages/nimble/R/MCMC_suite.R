@@ -311,7 +311,6 @@ MCMCsuiteClass <- setRefClass(
         setSummaryStats = function(summaryStats_arg, calculateEfficiency) {
             calculateEfficiency <<- calculateEfficiency
             if(calculateEfficiency) {
-                require(coda)
                 n <- length
                 ess <- coda::effectiveSize
                 efficiency <- function(x) return(0)   ## placeholder; calculation done in addToOutput()
@@ -362,9 +361,8 @@ MCMCsuiteClass <- setRefClass(
         },
         
         run_winbugs = function() {
-            require(R2WinBUGS)
             timeResult <- system.time({
-                winbugs_out <- bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
+                winbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
                                  n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=winbugs_directory, program=winbugs_program)
             })
             tempArray <- winbugs_out$sims.array[, 1, ]        ## must use sims.array
@@ -373,9 +371,8 @@ MCMCsuiteClass <- setRefClass(
         },
         
         run_openbugs = function() {
-            require(R2WinBUGS)
             timeResult <- system.time({
-                openbugs_out <- bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
+                openbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
                                  n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=openbugs_directory, program=openbugs_program)
             })
             tempArray <- openbugs_out$sims.array[, 1, ]        ## must use sims.array
@@ -385,16 +382,15 @@ MCMCsuiteClass <- setRefClass(
         
         run_jags = function() {
             require(rjags)
-            jags_mod <- jags.model(file=modelFileName, data=constantsAndData, inits=inits, n.chains=1, quiet=FALSE)
+            jags_mod <- rjags::jags.model(file=modelFileName, data=constantsAndData, inits=inits, n.chains=1, quiet=FALSE)
             timeResult <- system.time({
-                jags_out <- coda.samples(model=jags_mod, variable.names=monitorVars, n.iter=niter, thin=thin)
+                jags_out <- rjags::coda.samples(model=jags_mod, variable.names=monitorVars, n.iter=niter, thin=thin)
             })
             samplesArray <- jags_out[[1]][(burnin+1):floor(niter/thin), monitorNodesBUGS, drop=FALSE]
             addToOutput('jags', samplesArray, timeResult)
         },
 
         run_stan = function(dataFile, initFile) {
-            require(rstan)
             if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
             constantsAndDataStan <- fileToList(dataFile)
             if(file.exists(initFile))

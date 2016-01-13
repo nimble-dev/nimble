@@ -8,7 +8,8 @@ buildMCEM(model, latentNodes, burnIn = 100, mcmcControl = list(adaptInterval
   = 20), boxConstraints = list(), buffer = 10^-6)
 }
 \arguments{
-  \item{model}{A nimble model} \item{latentNodes}{A character vector of the names of the stochastic
+  \item{model}{A nimble model} \item{latentNodes}
+  {A character vector of the names of the stochastic
   nodes to integrated out. Names can be expanded, but
   don't need to be. For example, if the model contains
   \code{x[1], x[2] and x[3]} then one could provide

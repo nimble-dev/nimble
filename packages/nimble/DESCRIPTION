@@ -6,8 +6,8 @@ Version: 0.5
 Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
 Depends:  R (>= 3.0.1)
-Imports: methods,igraph,coda
-Suggests: testthat
+Imports: methods,igraph
+Suggests: testthat, coda, R2WinBUGS, rjags, rstan
 License: BSD_3_clause + file LICENSE
 Note: For convenience, the package includes the necessary header files for the Eigen distribution.
    (This is all that is needed to use that functionality.) You can use an alternative installation

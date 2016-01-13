@@ -8,7 +8,8 @@ buildPF(model, nodes, silent = FALSE)
 }
 \arguments{
   \item{model}{A nimble model object, typically representing
-  a state space model or a hidden Markov model} \item{nodes}{A character vector specifying the latent model nodes over
+  a state space model or a hidden Markov model} \item{nodes}
+  {A character vector specifying the latent model nodes over
   which the particle filter will stochastically integrate
   over to estimate the log-likelihood function}
 }

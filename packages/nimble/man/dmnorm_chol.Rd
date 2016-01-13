@@ -9,7 +9,8 @@ dmnorm_chol(x, mean, cholesky, prec_param = TRUE, log = FALSE)
 }
 \arguments{
   \item{x}{vector of values.} \item{mean}{vector of values
-  giving the mean of the distribution.} \item{cholesky}{upper-triangular Cholesky factor of either the precision
+  giving the mean of the distribution.} \item{cholesky}
+  {upper-triangular Cholesky factor of either the precision
   matrix (when \code{prec_param} is TRUE) or covariance
   matrix (otherwise).} \item{prec_param}{logical; if TRUE
   the Cholesky factor is that of the precision matrix;

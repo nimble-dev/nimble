@@ -18,7 +18,8 @@ compileNimble(..., project, dirName = NULL, projectName = "",
   units will be associated with it.} \item{dirName}{Optional
   directory name in which to generate the C++ code. If
   not provided, a temporary directory will be generated
-  using R's \code{tempdir} function.} \item{projectName}{Optional character name for labeling the project if it
+  using R's \code{tempdir} function.} \item{projectName}
+  {Optional character name for labeling the project if it
   is new} \item{control}{A list mostly for internal use.
   See details.} \item{resetFunctions}{Logical value stating
   whether nimbleFunctions associated with an existing

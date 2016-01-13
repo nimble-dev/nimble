@@ -7,7 +7,8 @@
 setSize(numObj, ..., row)
 }
 \arguments{
-  \item{numObj}{This is the object to be resized} \item{...}{sizes, provided as scalars, in order, with exactly
+  \item{numObj}{This is the object to be resized} \item{...}
+  {sizes, provided as scalars, in order, with exactly
   as many as needed for the object} \item{row}{Optional
   argument that is not currently used}
 }

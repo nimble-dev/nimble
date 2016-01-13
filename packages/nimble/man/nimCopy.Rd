@@ -11,7 +11,8 @@ nimCopy(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA,
   \item{from}{Either a NIMBLE model or modelValues object}\item{to}{Either a NIMBLE model or modelValues object}\item{nodes}{The nodes of object \code{from} which
   will be copied from} \item{nodesTo}{The nodes of object
   \code{to} which will be copied to. If \code{nodesTo ==
-  NA}, will automatically be set to \code{nodes}} \item{row}{If \code{from} is a modelValues, the row which will be
+  NA}, will automatically be set to \code{nodes}} \item{row}
+  {If \code{from} is a modelValues, the row which will be
   copied from} \item{rowTo}{If \code{to} is a modelValues,
   the row which will be copied to. If \code{rowTo == NA},
   will automatically be set to \code{row}} \item{logProb}{A

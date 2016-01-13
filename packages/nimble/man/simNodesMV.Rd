@@ -12,9 +12,12 @@ simNodesMV(model, mv, nodes)
   \item{model}{A nimble model.} \item{mv}{A modelValues
   object in which multiple sets of model variables and
   their corresponding logProb values are or will be saved.
-  \code{mv} must include the nodes provided} \item{nodes}{A set of nodes. If none are provided, default is
-  all \code{model$getNodeNames()}} \item{expandNames}{\code{TRUE} or \code{FALSE}: whether to expand node
-  names provided. defaults to \code{TRUE}.} \item{sortNodes}{\code{TRUE} or \code{FALSE}: whether to sort node
+  \code{mv} must include the nodes provided} \item{nodes}
+  {A set of nodes. If none are provided, default is
+  all \code{model$getNodeNames()}} \item{expandNames}
+  {\code{TRUE} or \code{FALSE}: whether to expand node
+  names provided. defaults to \code{TRUE}.} \item{sortNodes}
+  {\code{TRUE} or \code{FALSE}: whether to sort node
   names provided (after expansion) according to the
   order of the model. defaults to \code{TRUE}. by
   \code{node} argument, along with each corresponding

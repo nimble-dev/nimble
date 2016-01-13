@@ -28,7 +28,8 @@ testBUGSmodel(example = NULL, dir = NULL, model = NULL, data = NULL,
   objects or as a named list] or (2) a named list providing
   the input constants and data. If neither is provided,
   the function will look for a file named \code{example}-
-  data including extensions .R, .r, or .txt.} \item{inits}{(optional) (1) character string giving the file name for
+  data including extensions .R, .r, or .txt.} \item{inits}
+  {(optional) (1) character string giving the file name for
   an R file providing the initial values for parameters as
   R code [assigning individual objects or as a named list]
   or (2) a named list providing the values. If neither

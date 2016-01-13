@@ -8,7 +8,8 @@ modelValuesSpec(symTab, className, vars, types, sizes, modelDef = NA,
   where = globalenv())
 }
 \arguments{
-  \item{symTab}{For internal use only} \item{className}{For internal use only} \item{vars}{A vector of character
+  \item{symTab}{For internal use only} \item{className}
+  {For internal use only} \item{vars}{A vector of character
   strings naming each variable in the modelValues object}
   \item{types}{A vector of character strings describing
   the type of data for the modelValues object. Options
