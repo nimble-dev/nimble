@@ -50,6 +50,7 @@
 \alias{BUGSdistToRdist}
 \alias{BUGSmodel}
 \alias{BUGSsingleContextClass}
+\alias{buildConjugateSamplerFunctions}
 \alias{buildCopyLineFromSEXP}
 \alias{buildCopyLineToSEXP}
 \alias{buildIntermCalls}

@@ -95,12 +95,13 @@ modelDefClass <- setRefClass('modelDefClass',
                                  buildSymbolTable               = function() {},
                                  genGraphNodesList              = function() {},
                                                                   
-                                 newModel   = function() {},
-                                 printDI    = function() {},
+                                 newModel                       = function() {},
+                                 fixRStudioHanging              = function() {},
+                                 printDI                        = function() {},
                                  
-                                 genNodeInfo3                    = function() {},
-                                 genVarInfo3                     = function() {},
-                                 genExpandedNodeAndParentNames3  = function() {},
+                                 genNodeInfo3                   = function() {},
+                                 genVarInfo3                    = function() {},
+                                 genExpandedNodeAndParentNames3 = function() {},
                                  
                                  #These functions are NOT run inside of setupModel
                                  nodeName2GraphIDs = function(){},
@@ -2029,6 +2030,14 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$setGraph(graph)
     model$buildNodeFunctions(where = where, debug = debug)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
+
+    ## handling for JAGS style inits (a list of lists)
+    ## added Oct 2015, DT
+    if(length(inits) > 0 && is.list(inits[[1]])) {
+        message('detected JAGS style initial values, provided as a list of lists...  using the first set of initial values')
+        inits <- inits[[1]]
+    }
+    
     if(length(data) + length(inits) > 0)
         if(nimbleOptions('verbose')) message("setting data and initial values...")
     model$setData(data)
@@ -2058,11 +2067,25 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
         if(nimbleOptions('verbose')) message("checking model...   (use nimbleModel(..., check = FALSE) to skip model check)")
         model$check()
     }
-    ## fixing the problem with RStudio hanging: over-writing the str() method for this model class
-    ## added by DT, April 2015
-    thisClassName <- as.character(class(model))
-    eval(substitute(METHOD <- function(object, ...) str(NULL), list(METHOD = as.name(paste0('str.', thisClassName)))), envir = globalenv())
+    fixRStudioHanging(model)
     return(model)
+})
+
+modelDefClass$methods(fixRStudioHanging = function(model) {
+    ## hopefully the *final* work needed towards fixing the RStudio "hanging" problem. . . .
+    ## added by DT, Nov 2015
+    nullStrMethod <- function(object, ...) str(NULL)
+    classNames <- c(as.character(class(model)),
+                    as.character(class(model$defaultModelValues)),
+                    unique(sapply(model$nodeFunctions, function(nf) as.character(class(nf)))))
+    for(name in classNames) {
+        eval(substitute(NAME <- METHOD,
+                        list(NAME   = as.name(paste0('str.', name)),
+                             METHOD = nullStrMethod)),
+             envir = globalenv())
+    }
+    assign('str.modelDefClass', nullStrMethod, globalenv())
+    assign('str.igraph',        nullStrMethod, globalenv())
 })
 
 modelDefClass$methods(show = function() {

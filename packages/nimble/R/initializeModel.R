@@ -39,7 +39,7 @@ initializeModel <- nimbleFunction(
         
         stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         for(i in seq_along(stochNonDataNodes))
-            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent, stochSimulate)
+            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent)
 
         allDetermNodes <- model$getNodeNames(determOnly = TRUE)
         determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
@@ -68,7 +68,7 @@ checkRSHonlyInit <- nimbleFunction(
 
 stochNodeInit <- nimbleFunction(
     contains = nodeInit_virtual,
-    setup = function(model, node, silent, stochSimulate) {},
+    setup = function(model, node, silent) {},
     run = function() {
         theseVals <- values(model, node)
         if(is.na.vec(theseVals)) simulate(model, node)

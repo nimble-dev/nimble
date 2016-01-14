@@ -6,7 +6,7 @@ Version: 0.4-1
 Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
 Depends:  R (>= 3.0.1)
-Imports: methods,igraph
+Imports: methods,igraph,coda
 Suggests: testthat
 License: BSD_3_clause + file LICENSE
 Note: For convenience, the package includes the necessary header files for the Eigen distribution.
@@ -83,7 +83,7 @@ Collate: config.R
  MCMC_samplers.R
  MCMC_conjugacy.R
  MCMC_suite.R
- autoBlock.R
+ MCMC_autoBlock.R
  MCEM_build.R
  PF_build.R
  optimTools.R

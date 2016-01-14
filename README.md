@@ -12,7 +12,7 @@ For more information:
 
 ## Citation
 
-NIMBLE Development Team. 2014. NIMBLE: An R Package for Programming with BUGS models, Version 0.1.   http://r-nimble.org.
+NIMBLE Development Team. 2014. NIMBLE: An R Package for Programming with BUGS models, Version 0.4.   http://r-nimble.org.
 
 ## Installation
 
