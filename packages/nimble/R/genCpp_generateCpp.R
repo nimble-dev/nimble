@@ -304,7 +304,7 @@ cppOutputParen <- function(code, symTab) {
 }
 
 cppOutputCall <- function(code, symTab) {
-    paste0(cppCalls[[code$name]], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab ), collapse = ', '), ')' ))
+    paste0(cppOutputCalls[[code$name]], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab ) ), collapse = ', '), ')' )
 }
 
 cppOutputPow <- function(code, symTab) {

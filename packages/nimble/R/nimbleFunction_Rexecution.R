@@ -74,11 +74,11 @@ rCalcDiffNodes <- function(model, nodes){
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) a set of nodes in a NIMBLE model
 #'
 #' calculate, calculateDiff, simulate, or get the current log probabilities (densities) of one or more nodes of a NIMBLE model and (for calculate and getLogProb) return the sum of their log probabilities (or densities).  Part of R and NIMBLE.
-#'
-#' @aliases calculateDiff simulate getLogProb
+#' @name nodeFunctions
 #' 
 #' @param model        A NIMBLE model, either the compiled or uncompiled version
 #' @param nodes        A character vector of node names, with index blocks allowed, such as 'x', 'y[2]', or 'z[1:3, 2:4]'
+#' @param nodeFxnVector An optional vector of nodeFunctions on which to operate, in lieu of \code{model} and \code{nodes}
 #' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \link{simulate}
 #' @author NIMBLE development team
 #' @export
@@ -102,9 +102,10 @@ rCalcDiffNodes <- function(model, nodes){
 #'
 #' simulate returns NULL.
 #' 
-#' @examples
-#' calculate(model, c('x', 'y[2:4]', 'z[2:5, 1:10]'))
-#' 
+NULL
+
+#' @rdname nodeFunctions
+#' @export
 calculate <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
@@ -121,6 +122,8 @@ calculate <- function(model, nodes, nodeFxnVector)
     }	
 }
 
+#' @rdname nodeFunctions
+#' @export
 calculateDiff <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
@@ -149,6 +152,8 @@ rGetLogProbsNodes <- function(model, nodes){
     return(l_Prob)
 }
 
+#' @rdname nodeFunctions
+#' @export
 getLogProb <- function(model, nodes, nodeFxnVector)		
 {
 	if(!missing(nodeFxnVector)){
@@ -177,6 +182,8 @@ rSimNodes <- function(model, nodes){
             model$nodes[[nName]]$simulate()
 }
 
+#' @rdname nodeFunctions
+#' @export
 simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
 {
 	if(!missing(nodeFxnVector)){
@@ -388,7 +395,7 @@ values <- function(model, nodes){
 #' cCopy <- compileNimble(rCopy, project = rModel)
 #' cModel[['x']] <- rnorm(100)
 #' 
-#' cCopy() ## execute the copy with the compiled function
+#' cCopy$run() ## execute the copy with the compiled function
 nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
     if(is.null(nodes) )
         nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
@@ -488,9 +495,9 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #'    })
 #'        
 #' nf2 <- nfGen2()
-#' nf2()
+#' nf2$run()
 #' Cnf2 <- compileNimble(nf2)
-#' Cnf2()
+#' Cnf2$run()
 nfVar <- function(nf, varName) {
     refClassObj <- nf_getRefClassObject(nf)
     v <- refClassObj[[varName]]
@@ -535,12 +542,12 @@ nfMethod <- function(nf, methodName) {
 #' \code{rankSample} can be used inside nimble functions.
 #'
 #' @param weights		A vector of numeric weights. Does not need to sum to 1, but must be non-negative
-#' @param size			size of sample
-#' @param output		an R object into which the values will be placed. See example below for proper use
+#' @param size			Size of sample
+#' @param output		An R object into which the values will be placed. See example below for proper use
+#' @param silent Logical indicating whether to suppress logging information
 #' @author	Clifford Anderson-Bergman
 #' @export
 #' @details		
-
 #' \code{rankSample} first samples from the joint distribution \code{size} uniform(0,1) distributions by conditionally sampling from the rank statistics. This leads to 
 #' a sorted sample of uniform(0,1)'s. Then, a cdf vector is constructed from weights. Because the sample of uniforms is sorted, \code{rankSample} walks
 #' down the cdf in linear time and fills out the sample.
@@ -568,7 +575,7 @@ nfMethod <- function(nf, methodName) {
 #' })
 #' rSamp <- sampGen()
 #' cSamp <- compileNimble(rSamp)
-#' cSamp(1:4, 5)
+#' cSamp$run(1:4, 5)
 #' #[1] 1 1 4 4 4
 rankSample <- function(weights, size, output, silent = FALSE) {
     ##cat('in R version rankSample\n')

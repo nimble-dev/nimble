@@ -5,12 +5,15 @@ update DESCRIPTION and INSTALL with current version number
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
 # before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions
-./prep_pkg # this creates man pages and updates NAMESPACE
+./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
 
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
 This also should work:
 for file in `ls nimble/man`; do
-     /bin/cp -f nimble/man/$file /tmp/tmp.Rd 
+    if [ -e /tmp/tmp.Rd ]; then
+       rm -rf /tmp/tmp.Rd
+    fi
+     /bin/cp -i nimble/man/$file /tmp/tmp.Rd 
      sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
 done
 

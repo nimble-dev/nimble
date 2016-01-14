@@ -187,36 +187,36 @@ expandMVNames <- function(mv, varNames){
 	return(nodeNames)
 }
 
-as.matrix.modelValuesBaseClass <- function(mv, varNames){
+as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- mv$varNames
-	nrows = getsize(mv)
-	flatNames = expandMVNames(mv, varNames)
+			varNames <- x$varNames
+	nrows = getsize(x)
+	flatNames = expandMVNames(x, varNames)
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		#ans[1:nrows, colIndex + 1:prod(mv$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(mv, varNames[i])
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(mv, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		#ans[1:nrows, colIndex + 1:prod(x$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(x, varNames[i])
+		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
 		#This method is faster than the commented out method, especially if there are a lot of variables (as apposed to nodes)
-		colIndex = colIndex + prod(mv$sizes[[varNames[i] ]])
+		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
 	return(ans)
 
 }
 
-as.matrix.CmodelValues <- function(mv, varNames){
+as.matrix.CmodelValues <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- mv$varNames
-	nrows = getsize(mv)
-	flatNames = expandMVNames(mv, varNames)
+			varNames <- x$varNames
+	nrows = getsize(x)
+	flatNames = expandMVNames(x, varNames)
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		#ans[1:nrows, colIndex + 1:prod(mv$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(mv, varNames[i])
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(mv, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		#ans[1:nrows, colIndex + 1:prod(x$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(x, varNames[i])
+		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
 		#This method is faster than the commented out method, especially if there are a lot of variables (as apposed to nodes)
-		colIndex = colIndex + prod(mv$sizes[[varNames[i] ]])
+		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
 	return(ans)

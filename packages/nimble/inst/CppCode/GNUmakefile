@@ -16,6 +16,7 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 	@echo "linking libnimble$(DYLIB_EXT)"
 	@echo "$(OS)   $(INSTALL_NAME)"
 	$(CXX) $(SHLIB_CXXLDFLAGS) -o $@  $(OBJECTS) $(INSTALL_NAME)
+	-rm *.o
 
 %.o: %.cpp
 	$(R_HOME)/bin/R CMD COMPILE $<

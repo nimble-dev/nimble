@@ -164,7 +164,7 @@ double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<
   xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
   int n = x.size();
   meanptr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
-  if(mean.size() != n) {std::cout<<"Error in nimArr_dmnorm_chol: mean and x and different sizes.\n";}
+  if(mean.size() != n) {std::cout<<"Error in nimArr_dmnorm_chol: mean and x are different sizes.\n";}
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
   if((chol.dim()[0] != n) | (chol.dim()[1] != n)) {std::cout<<"Error in nimArr_dmnorm_chol: chol does not match size size of x.\n";}
 

@@ -154,16 +154,20 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
   else
      warning("creating an initialization method that calls a C routine without any DLL information")
 
-  eval(substitute( newClass <-  setRefClass(refName,
+    # add basePtrCall as arg for initialize and substitute on parsed text string to avoid CRAN issues with .Call registration
+  eval(substitute(      newClass <-  setRefClass(refName,
                                             fields = FIELDS,
-                                            contains = 'CmodelBaseClass',
-                                            methods = list(initialize = function(model, defaults, ..., dll = NULL) { ## model is an optional R model
+                                            contains = "CmodelBaseClass",
+                                            methods = list(initialize = function(model, defaults, basePtrCall, ..., dll = NULL) { ## model is an optional R model
                                                 nodes <<- list()
                                                 isDataEnv <<- new.env()
                                                 classEnvironment <<- new.env()
                                                 
                                                 callSuper()
-                                                .basePtr <<- .Call(BPTRCALL)
+
+                                                # avoid R CMD check problem with registration
+                                                .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+                                                # .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- getMVptr(.basePtr)
                                                 defaultModelValues <<- CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = getMVName(.modelValues_Ptr), initialized = TRUE )
                                                 modelDef <<- model$modelDef
@@ -191,10 +195,10 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                     writeLines(paste0("Derived CmodelBaseClass created by buildModelInterface for model ", modelDef$name))
                                                 }),
                                             where = where
-  ), list(BPTRCALL = basePtrCall, FIELDS = makeModelBindingFields(symTab), where = where ) ) )
+  ), list(FIELDS = makeModelBindingFields(symTab), where = where ) ) )
 
     ans <- function(model, where = globalenv(), dll = NULL, ...) {
-        newClass$new(model, defaults, classEnvironment = where, dll = dll, ...) ## this means defaults will be in the closure of this function and hence found
+        newClass$new(model, defaults, basePtrCall, classEnvironment = where, dll = dll, ...) ## this means defaults will be in the closure of this function and hence found
     } 
     formals(ans)$where = where
     formals(ans)$dll = dll

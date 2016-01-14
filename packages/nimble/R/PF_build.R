@@ -50,15 +50,10 @@ pfStep <- nimbleFunction(
 #'
 #' @param model A nimble model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function
+#' @param silent logical indicating whether to suppress logging information
 #' 
 #' @author Daniel Turek
 #' @details The resulting specialized particle filter algorthm will accept a single integer argument (m, default 10,000), which specifies the number of random \'particles\' to use for estimating the log-likelihood.  The algorithm returns the estimated log-likelihood value.
-#' @examples
-#' model <- nimbleModel(code = ...)
-#' my_PF <- buildPF(model, 'x[1:100]')
-#' Cmodel <- compileNimble(model)
-#' Cmy_PF <- compileNimble(my_PF, project = model)
-#' logLike <- Cmy_PF$run(m = 100000)
 buildPF <- nimbleFunction(
     setup = function(model, nodes, silent = FALSE) {
         my_initializeModel <- initializeModel(model, silent = silent)
@@ -66,8 +61,8 @@ buildPF <- nimbleFunction(
         dims <- lapply(nodes, function(n) nimDim(model[[n]]))
         if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
         mv <- modelValues(modelValuesSpec(vars = c('x', 'xs'),
-                                          type = c('double', 'double'),
-                                          size = list(x = dims[[1]], xs = dims[[1]])))
+                                          types = c('double', 'double'),
+                                          sizes = list(x = dims[[1]], xs = dims[[1]])))
         pfStepFunctions <- nimbleFunctionList(pfStepVirtual)
         for(iNode in seq_along(nodes))
             pfStepFunctions[[iNode]] <- pfStep(model, mv, nodes, iNode, silent)

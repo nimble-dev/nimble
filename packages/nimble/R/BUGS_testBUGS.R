@@ -13,7 +13,8 @@
 #' @param model (optional) one of (1) a character string giving the file name containing the BUGS model code, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
 #' @param data (optional) one of (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list] or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named \code{example}-data including extensions .R, .r, or .txt.
 #' @param inits (optional) (1) character string giving the file name for an R file providing the initial values for parameters as R code [assigning individual objects or as a named list] or (2) a named list providing the values. If neither is provided, the function will look for a file named \code{example}-init or \code{example}-inits including extensions .R, .r, or .txt. 
-#' @param withInits boolean indicating whether to test model with initial values provided via \code{inits}
+#' @param useInits boolean indicating whether to test model with initial values provided via \code{inits}
+#' @param debug logical indicating whether to put the user in a browser for debugging when \code{testBUGSmodel} calls \code{readBUGSmodel}.  Intended for developer use.
 #' @author Christopher Paciorek
 #' @details
 #' Note that testing without initial values may cause warnings when parameters are sampled from improper or fat-tailed distributions
@@ -21,11 +22,10 @@
 #' @examples
 #' testBUGSmodel('pump')
 testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE) {
-  if(require(testthat)) { # should this be imported in NAMESPACE even if its only a suggests?
-
+  if(requireNamespace('testthat', quietly = TRUE)) { 
     if(!is.null(example) && !is.character(example))
       stop("testBUGSmodel: 'example' argument should be a character vector referring to an existing BUGS example or NULL if provided via the 'model' argument")
-    context(paste0("testing for BUGS example: ", example))
+    testthat::context(paste0("testing for BUGS example: ", example))
     
     if(is.null(dir)) {
 
@@ -119,39 +119,39 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     }
                                         # test that vals are maintained at their initial values
     if(!is.null(inits)) {
-      test_that(paste0(example, ": test of the test: are initial values maintained?"), {
+      testthat::test_that(paste0(example, ": test of the test: are initial values maintained?"), {
         varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
         for(varName in varNames) {
           Rvals <- Rmodel[[varName]][!Rmodel$isData(varName)]
           Cvals <- Cmodel[[varName]][!Rmodel$isData(varName)]
           initsVals <- inits[[varName]][!Rmodel$isData(varName)]
           attributes(Rvals) <- attributes(Cvals) <- attributes(initsVals) <- NULL
-          expect_that(Rvals, equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
-          expect_that(Cvals, equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))
+          testthat::expect_that(Rvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in R model for variable ', varName))
+          testthat::expect_that(Cvals, testthat::equals(initsVals), info = paste0('Initial value not maintained in C model for variable ', varName))
         }
       })
     }
                                         # test that vals and logprobs are equal
-    test_that(paste0(example, ": test of variable values"), {
+    testthat::test_that(paste0(example, ": test of variable values"), {
       for(nodeName in nodeNames) {
           Rvals <- Rmodel[[nodeName]]
           Cvals <- Cmodel[[nodeName]]
           attributes(Rvals) <- attributes(Cvals) <- NULL        
-        expect_that(Rvals, equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
       }
     })
-    test_that(paste0(example, ": test of logProbs"), {
+    testthat::test_that(paste0(example, ": test of logProbs"), {
       for(nodeName in nodeNames)  {
         Rvals <- getLogProb(Rmodel, nodeName)
         Cvals <- getLogProb(Cmodel, nodeName)
         attributes(Rvals) <- attributes(Cvals) <- NULL        
-        expect_that(Rvals, equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
+        testthat::expect_that(Rvals, testthat::equals(Cvals), info = paste0('Unexpected result for variable ', nodeName))
       }
     })
 
     dyn.unload(project$cppProjects[[1]]$getSOName())
     # this works to avoid having too many DLLs, but gives segfault when one quits R afterwards
     if(debug) browser()
-  } else warning("testBUGSmodel: testthat package is required")
+  } else warning("testBUGSmodel: testthat package is required.")
 }
 

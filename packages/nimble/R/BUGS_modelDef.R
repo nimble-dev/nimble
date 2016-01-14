@@ -969,7 +969,7 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
     numContexts <- length(context$singleContexts)
     if(numContexts == 0) { ## it has no indices or known indices
         if(length(allReplacements)==0) {
-            replacementsEnv <<- NULL
+            context$replacementsEnv <<- NULL
             return(NULL)
         }
     }
@@ -2078,14 +2078,12 @@ modelDefClass$methods(fixRStudioHanging = function(model) {
     classNames <- c(as.character(class(model)),
                     as.character(class(model$defaultModelValues)),
                     unique(sapply(model$nodeFunctions, function(nf) as.character(class(nf)))))
-    for(name in classNames) {
+    for(name in c(classNames, "modelDefClass", "igraph")) {
         eval(substitute(NAME <- METHOD,
                         list(NAME   = as.name(paste0('str.', name)),
                              METHOD = nullStrMethod)),
              envir = globalenv())
     }
-    assign('str.modelDefClass', nullStrMethod, globalenv())
-    assign('str.igraph',        nullStrMethod, globalenv())
 })
 
 modelDefClass$methods(show = function() {

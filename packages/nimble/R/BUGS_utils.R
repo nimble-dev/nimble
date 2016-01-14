@@ -66,7 +66,7 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     return(expr)
 }
 
-#' Determine if a piece of code contains a '['
+# Determine if a piece of code contains a '['
 hasBracket <- function(code) {
     if(length(code) < 2) return(FALSE)
     if(code[[1]] == '[') return(TRUE)

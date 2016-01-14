@@ -8,8 +8,12 @@
 # seems to be because we are loading in nimble and we are sourcing code files in global,
 # so class definitions are in two places
 
+# when run this check that package loading occurs midway through and dont get issue with 00LOCK file
+# also check that don't get issues with nimble objects (e.g. distributionFuns, cppInt) not being found when .Rd files are being created (rerunning or running code in prep_pkg manually within R seems to work)
+
 require(roxygen2)
 require(methods)
+
 
 ## NAMESPACE 
 
@@ -18,17 +22,33 @@ require(methods)
 source("CreatingExportList.R")
 # (I tried to do the sourcing into a new.env() but had weird errors when sourcing some of the files)
 
+# need to document all S4 methods
+explicitUndocFuns <- c("[,numberedModelValuesAccessors-method", "[<-,numberedModelValuesAccessors-method", "[,numberedObjects-method", "[<-,numberedObjects-method", "[[,CNumericList-method", "[[<-,CNumericList-method", "[[,RNumericList-method", "[[<-,RNumericList-method", "[[,nimPointerList-method", "[[<-,nimPointerList-method", "[[<-,nimbleFunctionList-method", "[[,distributionsClass-method", "[[,conjugacyRelationshipsClass-method")
 
 imports <- c("methods", "igraph")
 imports <- paste("import(", imports, ")", sep = '', collapse = "\n")
 
-importFroms <- c("importFrom(coda, effectiveSize)")
+importFroms <- c("coda, effectiveSize")
+#                 "R2WinBUGS, bugs",
+#                 "rjags, jags.model",
+#                 "rjags, coda.samples",
+#                 "rstan, stan_model",
+#                 "rstan, sampling")
+
+importFroms <- paste("importFrom(", importFroms, ")", sep = "", collapse = "\n") 
 
 dynLibLine <- "useDynLib(nimble, .registration = TRUE)"
 exportAllLine <- "exportPattern('.')"
 
+S3methods <- c("as.matrix, CmodelValues",
+               "as.matrix, modelValuesBaseClass",
+               "length, nimPointerList")
+
+S3methods <- paste("S3method(", S3methods, ")", sep = "", collapse = "\n")
+
 # need everything exported for roxygenization to work...
-cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", collapse = ''),
+#cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportAllLine, "\n", sep = "", collapse = ''),
+cat(paste(imports, importFroms, dynLibLine, S3methods, exportAllLine, sep = "\n", collapse = '\n'),
     file = file.path("nimble", "NAMESPACE"))
 
 system("R CMD build nimble")
@@ -62,7 +82,7 @@ for(file in files) {
   print(file)
   test <- try(a <- roxygen2:::roc_proc_text(roclet, paste(readLines(file.path(Rpath, file)), sep="\n")))
   if(!is(test, 'try-error'))
-    roxygen2:::roc_output(roclet, a, "nimble", options = list(wrap=TRUE, roclets = "rd"), check = FALSE)
+    roxygen2:::roc_output(roclet, a, "nimble", options = list(wrap=FALSE, roclets = "rd"), check = FALSE)
 }
   
 funs <- ls('package:nimble')
@@ -84,6 +104,8 @@ documentedFuns <- unique(c(documentedFuns, aliases))
 
 undocFuns <- funs[!funs %in% documentedFuns]
 
+undocFuns <- c(undocFuns, explicitUndocFuns)
+
 # write out nimble-internals.Rd
 
 text <- rep("", length(undocFuns))
@@ -99,5 +121,6 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 
 # now create real NAMESPACE file
 
-cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
+#cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
+cat(paste(imports, importFroms, dynLibLine, S3methods, exportText, collapse = '\n', sep = '\n'),
     file = file.path("nimble", "NAMESPACE"))

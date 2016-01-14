@@ -1,5 +1,6 @@
 rm(list = ls())
 
+if(FALSE) { # this is preventing alias in nimble-internal.Rd to be created
 individualExportClassNames = c( 
  'RModelBaseClass',
  'singleModelValuesAccessClass',
@@ -10,6 +11,7 @@ individualExportClassNames = c(
  'modelValuesBaseClass', 
  'codeBlockClass',
  'nimbleFunctionBase')
+} else individualExportClassNames = NULL
 
 individualExportNames = c(
  'checkInterrupt',
@@ -66,7 +68,18 @@ individualExportNames = c(
     'buildConjugateSamplerFunctions'
 )
 
-individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
+individualMaskedFunctions = c(
+'mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
+# trying for now not to put these as exported as they should presumably not be exported as functions
+ 'RModelBaseClass',
+ 'singleModelValuesAccessClass',
+ 'singleVarAccessClass', 
+ 'CmodelBaseClass',
+ 'CnimbleFunctionBase', 
+ 'modelBaseClass',
+ 'modelValuesBaseClass', 
+ 'codeBlockClass',
+ 'nimbleFunctionBase',
 
 'C_dcat', 
 'C_ddirch', 
@@ -191,8 +204,14 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'parseTreeSubstitute',
 'projectNameCreator',
 'UseLibraryMakevars',
-'replaceDistributionAliasesNameOnly'
-)
+'replaceDistributionAliasesNameOnly',
+
+'as.matrix.CmodelValues',
+'as.matrix.modelValuesBaseClass',
+'length.nimPointerList',
+'deparse',
+'double'
+                              )
 
 maskFileVector = c(
 					'options.R',
@@ -298,12 +317,14 @@ exportNames = setdiff(allNames,  removedFuns )
 exportNames = setdiff(exportNames, individualExportClassNames)
 exportNames = union(exportNames, individualExportNames)
 
- exportClasses = individualExportClassNames
+exportClasses = individualExportClassNames
 
 exportNames = sort(exportNames)
 exportClasses = sort(exportClasses)
 
-exportText = c(paste('export(', exportNames, ')', sep = ''), paste('exportClass(', exportClasses, ')', sep = ''))
+exportText = paste('export(', exportNames, ')', sep = '')
+if(!is.null(exportClasses))
+             exportText <- c(exportText, paste0('exportClasses(', paste(exportClasses, collapse = ','), ')', sep = ''))
 
 exportText = paste(exportText, collapse = '\n')
 # cat(exportText, sep = '\n')

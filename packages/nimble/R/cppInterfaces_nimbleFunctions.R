@@ -230,8 +230,8 @@ getSetNimPtrList <- function(name, value, basePtr) {
         warning('getSetNimPtrList does not work for getting but was called without value.', call. = FALSE)
         return(NULL)
     } else {
-        if(!inherits(value, 'nimPointerList')) stop(paste('Nimble compilation error initializing nimPointerList (nimbleFunctionList) ', NFLNAMECHAR, '.'), call. = FALSE)
-        if(!checkNimbleFunctionListCpp(value)) stop(paste('Nimble compilation error initializing nimbleFunctionList ', NFLNAMECHAR, '.  Something is not valid in this list.  It may be the contains (base class) value of one or more functions in the list.'), call. = FALSE)
+        if(!inherits(value, 'nimPointerList')) stop(paste('Nimble compilation error initializing nimPointerList (nimbleFunctionList) ', name, '.'), call. = FALSE)
+        if(!checkNimbleFunctionListCpp(value)) stop(paste('Nimble compilation error initializing nimbleFunctionList ', name, '.  Something is not valid in this list.  It may be the contains (base class) value of one or more functions in the list.'), call. = FALSE)
         vptr <- newObjElementPtr(basePtr, name)
         accessptr <- newObjElementPtr(basePtr, paste0(name, '_setter'))
         setPtrVectorOfPtrs(accessptr, vptr, length(value$contentsList))
@@ -804,19 +804,22 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
     methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun) ##, compiledNodeFun$nfProc)
     defaults$basePtrCall <- basePtrCall
-    
+
+    # substitute on parsed text string to avoid CRAN issues with .Call registration
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, ...){		#cModel removed from here
         defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE) ## in case this instance was not used during nfProc$process
         callSuper(dll = dll, project = project, test = FALSE, ...)
         basePtrCall <- if(is.character(defaults$basePtrCall)) {
-            if(inherits(dll, 'uninitializedField') | is.null(dll)) stop('Error making a nimbleFxnInterface object: no dll provided')
+            if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
             lookupSymbol(defaults$basePtrCall)
         } else defaults$basePtrCall
-        .basePtr <<- .Call(basePtrCall)
+        # avoid R CMD check problem with registration
+        .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+        # .basePtr <<- .Call(basePtrCall)
         cppNames <<- .Call("getAvailableNames", .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
-        vPtrNames <- 	paste0('.', cppNames, '_Ptr')	
+        vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
         for(vn in seq_along(cppNames) ){
             .self[[vPtrNames[vn]]] <- newObjElementPtr(.basePtr, cppNames[vn])
         }
@@ -904,7 +907,11 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  }
                                                  compiledNodeFun$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
                                                  ##      nfObjectList <<- c(nfObjectList, nfObject)
-                                                 newBasePtr <- .Call(basePtrCall)
+                                                 
+                                                 # avoid R CMD check problem with registration:
+                                                 newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
+                                                 # newBasePtr <- .Call(basePtrCall)
+                                                 
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)
                                                  else newRobject <- nfObject

@@ -241,6 +241,7 @@
 \alias{distributionsInputList}
 \alias{dmFunHandler}
 \alias{dollarSign_keywordInfo}
+\alias{double}
 \alias{doubleBracket_keywordInfo}
 \alias{dropSingleSizes}
 \alias{eigCalls}
@@ -348,6 +349,7 @@
 \alias{getMVptr}
 \alias{getNamedObjected}
 \alias{getNimbleFunctionEnvironment}
+\alias{getNimbleProject}
 \alias{getNimbleTypes}
 \alias{getNimValues}
 \alias{getNodeFxnPtrs}
@@ -376,12 +378,12 @@
 \alias{graphNode}
 \alias{handleScaleAndRateForExpNimble}
 \alias{handleScaleAndRateForGamma}
+\alias{hasBracket}
 \alias{icloglog}
 \alias{identityAssert}
 \alias{ifOrWhile}
 \alias{ilogit}
 \alias{IncludeCodeDir}
-\alias{initialize}
 \alias{inner_populateNodeFxnVec}
 \alias{inprod}
 \alias{insertExprClassLayer}
@@ -486,7 +488,6 @@
 \alias{matrixSquareReductionOperators}
 \alias{mcmc_findControlListNamesInCode}
 \alias{mcmc_listContentsToStr}
-\alias{MCMCsuiteClass}
 \alias{mergeMultiLineStatements}
 \alias{midOperators}
 \alias{minMaxHandler}
@@ -676,12 +677,9 @@
 \alias{processVarBlock}
 \alias{projectNameCreator}
 \alias{putCodeLinesInBrackets}
-\alias{qexp_nimble}
 \alias{qp_dist_keywordInfo}
-\alias{qt_nonstandard}
 \alias{rCalcDiffNodes}
 \alias{rCalcNodes}
-\alias{rcat}
 \alias{RCfunction}
 \alias{RCfunctionCompileClass}
 \alias{RCfunctionDef}
@@ -717,7 +715,6 @@
 \alias{resizeManyModelVarAccessor}
 \alias{resizeNodeFxnVec}
 \alias{resize_NumberedObjects}
-\alias{rexp_nimble}
 \alias{rexp_nimble_keywordInfo}
 \alias{rFunHandler}
 \alias{rgamma_keywordInfo}
@@ -726,7 +723,6 @@
 \alias{Rmatrix2mvOneVar}
 \alias{rmFunHandler}
 \alias{RModelBaseClass}
-\alias{rmulti}
 \alias{Rname2CppName}
 \alias{RNumericList}
 \alias{rop}
@@ -735,7 +731,6 @@
 \alias{R_setOnePtrVectorOfPtrs}
 \alias{R_setPtrVectorOfPtrs}
 \alias{rSimNodes}
-\alias{rt_nonstandard}
 \alias{sampler_BASE}
 \alias{sampler_conjugate_dbeta}
 \alias{sampler_conjugate_ddirch}
@@ -744,6 +739,7 @@
 \alias{sampler_conjugate_dnorm}
 \alias{sampler_conjugate_dwish}
 \alias{sampler_ess}
+\alias{sampler_RW_block_NEW}
 \alias{sampler_RW_log}
 \alias{samplerSpec}
 \alias{scalarOutputTypes}
@@ -868,6 +864,19 @@
 \alias{whyInvalid}
 \alias{wrapAsNumeric}
 \alias{writeCode}
+\alias{[,numberedModelValuesAccessors-method}
+\alias{[<-,numberedModelValuesAccessors-method}
+\alias{[,numberedObjects-method}
+\alias{[<-,numberedObjects-method}
+\alias{[[,CNumericList-method}
+\alias{[[<-,CNumericList-method}
+\alias{[[,RNumericList-method}
+\alias{[[<-,RNumericList-method}
+\alias{[[,nimPointerList-method}
+\alias{[[<-,nimPointerList-method}
+\alias{[[<-,nimbleFunctionList-method}
+\alias{[[,distributionsClass-method}
+\alias{[[,conjugacyRelationshipsClass-method}
 \description{
 Functions and classes used internally in NIMBLE and not expected to be called directly by users. For the moment all functions and classes are exported while we are sorting out questions about the use of non-exported functions in Reference Class methods.
 }

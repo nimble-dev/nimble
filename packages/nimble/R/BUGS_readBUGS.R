@@ -200,7 +200,11 @@ processNonParseableCode <- function(text) {
 #' 
 #' @param useInits boolean indicating whether to set the initial values, either based on \code{inits} or by finding the '-inits' file corresponding to the input model file  
 #'
+#' @param debug logical indicating whether to put the user in a browser for debugging when \code{readBUGSmodel} calls \code{nimbleModel}.  Intended for developer use.
+#' 
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+#'
+#' @param returnModelComponentsOnly logical intended primarily for use with \code{MCMCsuite} to return pieces of the model object without building the model. Default is FALSE.
 #'
 #' @author Christopher Paciorek
 #'
@@ -220,7 +224,7 @@ processNonParseableCode <- function(text) {
 #' Rmodel$setData(data['x'])
 #' Rmodel[['mu']]
 #' Rmodel$nodes[['x']]$calculate()
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, useData = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = TRUE) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = TRUE) {
 
   # helper function
   doEval <- function(vec, env) {

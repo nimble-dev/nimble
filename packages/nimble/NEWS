@@ -1,3 +1,13 @@
+                        CHANGES IN VERSION 0.5 (Feb. 2016)
+
+USER LEVEL CHANGES
+
+-- enhanced checking of model to check for size and dimension mismatch in BUGS code
+
+DEVELOPER LEVEL CHANGES
+
+-- various modifications to conform to CRAN rules 
+
                         CHANGES IN VERSION 0.4-1 (Oct. 3, 2015)
 
 USER LEVEL CHANGES

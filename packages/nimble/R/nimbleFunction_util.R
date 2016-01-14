@@ -39,7 +39,7 @@ nf_getGeneratorFunction <- function(f) {
     if(is.nfGenerator(f))    return(f)
     if(is.nf(f))             return(nf_getRefClassObject(f)$.generatorFunction)
     
- 	if(is.refObject(f))		return(f$.generatorFunction)
+    #if(is.refObject(f))		return(f$.generatorFunction)
     
     stop('invalid nimbleFunction argument\n')
 }
