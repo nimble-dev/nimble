@@ -179,6 +179,7 @@ MCMCsuiteClass <- setRefClass(
         burnin = 'numeric',   ## burn-in period, the number of initial samples to discard, prior to thinning    --- ORIGINAL ARGUMENT
         thin = 'numeric',   ## thinning interval    --- ORIGINAL ARGUMENT
         nkeep = 'numeric',   ## number of samples we'll keep. equal to (niter/thin - burnin)
+        burninFraction = 'numeric',  ## fraction of total sampling effort spent on burnin (burnin / (nkeep + burnin))
         
         ## setSummaryStats()
         summaryStats = 'character',    ## character vector of parseable summary statistic functions    --- ORIGINAL ARGUMENT
@@ -265,6 +266,7 @@ MCMCsuiteClass <- setRefClass(
             burnin <<- burnin
             thin <<- thin
             nkeep <<- floor(niter/thin) - burnin
+            burninFraction <<- burnin / (nkeep + burnin)
             setMonitors(monitors)
             setSummaryStats(summaryStats, calculateEfficiency)
             setMCMCs(MCMCs)
@@ -357,7 +359,8 @@ MCMCsuiteClass <- setRefClass(
             timing <- rep(NA, nMCMCs+1)
             names(timing) <- c(MCMCs, 'nimble_compile')
             if(stanMCMCflag) timing['stan_compile'] <- NA
-            initialOutput <- list(samples=samples, summary=summary, timing=timing)
+            runParams <- c(niter = niter, burnin = burnin, thin = thin, nkeep = nkeep, burninFraction = burninFraction) 
+            initialOutput <- list(samples=samples, summary=summary, timing=timing, runParams = runParams)
             if(calculateEfficiency) initialOutput$efficiency <- list(min=NA, mean=NA)
             output <<- initialOutput
         },
@@ -398,7 +401,7 @@ MCMCsuiteClass <- setRefClass(
         },
 
         run_stan = function(dataFile, initFile) {
-            if(requireNamespace('rstan', quietly = TRUE)) {
+            if(require(rstan)) { ##requireNamespace('rstan', quietly = TRUE)) {
                 if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
                 ##            dataFile <- gsub('stan$', 'data.R', stan_model)
                 ##            initFile <- gsub('stan$', 'init.R', stan_model)
