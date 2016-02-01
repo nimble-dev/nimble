@@ -55,13 +55,14 @@ testsScalar <- list(
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = matrix(0, 1,1), sig = 1) ),
     # ERRORS when mu is constant (inconsistent dimensionality in addMissingIndexRecurse), gives warning when mu is RHS variable
+    # checking with Perry
 
     list(name = 'scalar stochastic, scalar within multivar variable 3', expectPass = TRUE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = mat2, sig = 1) )
-    # gives warning when mu is constant
+    # gives warning when mu is RHS-only, same as previous case
 )
 
 testsMultivarParam <- list(
@@ -89,7 +90,7 @@ testsMultivarParam <- list(
          inits = list(p1 = matrix(rep(1, 9)/9, 3), p2 = rep(1,3))),
     # parameter is one-column matrix so fails check (and fails in compileNimble)
 
-    ## list(name = 'mv param stochastic, parameter expression, matrices subindexing', expectPass = FALSE,
+    ##list(name = 'mv param stochastic, parameter expression, matrices subindexing', expectPass = FALSE,
     ##     expr = quote({y ~ dcat((p1[1:3,1:3] %*% p2[1:3])[1:3,1])}), 
     ##     inits = list(p1 = matrix(rep(1, 9)/9, 3), p2 = rep(1,3))),
     # ERRORS OUT in genVarInfo3() - Error in BUGSdecl$symbolicParentNodes[[iV]] : subscript out of bounds
