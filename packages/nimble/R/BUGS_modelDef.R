@@ -496,7 +496,7 @@ modelDefClass$methods(checkMultivarExpr = function() {
         ## if(distDim < 1) next
         for(k in 2:length(BUGSdecl$valueExpr))
             if(checkForExpr(BUGSdecl$valueExpr[[k]]))
-                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate distributions cannot have expressions as parameters")  
+                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
     }
 })
 

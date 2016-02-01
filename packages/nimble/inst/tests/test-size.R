@@ -54,7 +54,7 @@ testsScalar <- list(
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = matrix(0, 1,1), sig = 1) ),
-    # ERRORS when mu is constant (inconsistent dimensionality in addMissingIndexRecurse), gives warning when mu is RHS variable
+    # ERRORS when mu is constant (inconsistent dimensionality in addMissingIndexRecurse), gives warning when mu is RHS variable: "In cbind(edgesFrom, edgesTo)"
     # checking with Perry
 
     list(name = 'scalar stochastic, scalar within multivar variable 3', expectPass = TRUE,
@@ -62,7 +62,7 @@ testsScalar <- list(
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = mat2, sig = 1) )
-    # gives warning when mu is RHS-only, same as previous case
+    # gives warning when mu is RHS-only, same as previous case: "In cbind(edgesFrom, edgesTo)"
 )
 
 testsMultivarParam <- list(
@@ -82,7 +82,7 @@ testsMultivarParam <- list(
     list(name = 'mv param stochastic, scalar param, no indices', expectPass = FALSE,
          expr = quote({y ~ dcat(p)}), 
          inits = list(p = 1) ),
-    list(name = 'mv param stochastic, parameter expression', expectPass = TRUE,
+    list(name = 'mv param stochastic, parameter expression', expectPass = FALSE,
          expr = quote({y ~ dcat(p1[1:3] + p2[1:3])}), 
          inits = list(p1 = p3/2, p2 = p3/2)),
     list(name = 'mv param stochastic, parameter expression, matrices', expectPass = FALSE,
@@ -90,10 +90,10 @@ testsMultivarParam <- list(
          inits = list(p1 = matrix(rep(1, 9)/9, 3), p2 = rep(1,3))),
     # parameter is one-column matrix so fails check (and fails in compileNimble)
 
-    ##list(name = 'mv param stochastic, parameter expression, matrices subindexing', expectPass = FALSE,
-    ##     expr = quote({y ~ dcat((p1[1:3,1:3] %*% p2[1:3])[1:3,1])}), 
-    ##     inits = list(p1 = matrix(rep(1, 9)/9, 3), p2 = rep(1,3))),
-    # ERRORS OUT in genVarInfo3() - Error in BUGSdecl$symbolicParentNodes[[iV]] : subscript out of bounds
+    list(name = 'mv param stochastic, parameter expression, matrices subindexing', expectPass = FALSE,
+         expr = quote({y ~ dcat((p1[1:3,1:3] %*% p2[1:3])[1:3,1])}), 
+         inits = list(p1 = matrix(rep(1, 9)/9, 3), p2 = rep(1,3))),
+    # note that if one does not check for multivariate param expressions, this errors out in genVarInfo3() - Error in BUGSdecl$symbolicParentNodes[[iV]] : subscript out of bounds
 
     list(name = 'mv param stochastic, non-scalar value', expectPass = FALSE,
          expr = quote({y[1:2] ~ dcat(p[1:3])}), 
@@ -125,7 +125,7 @@ testsDeterm <- list(
                            for(j in 1:1)
                                y[i,j] <- a[i,j] + b}),
          inits = list(a = matrix(3, 1, 1), b = 3 )),
-    # ERRORS when a is constant
+    # ERRORS when a is constant "In cbind(edgesFrom, edgesTo)"
 
     list(name = 'deterministic, basic with node in variable', expectPass = TRUE,
          expr = quote({for(i in 1:2)
@@ -153,7 +153,6 @@ testsDeterm <- list(
          expr = quote({y <- a[1:2,1:2] %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
 
-    # LHS vec
     list(name = 'deterministic, vector value, dimension mismatch', expectPass = FALSE,
          expr = quote({y[1:2] <- a + b}),
          inits = list(a = 3, b = 3)),
