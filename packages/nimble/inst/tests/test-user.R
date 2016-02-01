@@ -46,7 +46,9 @@ assign('mypow', mypow, envir = .GlobalEnv)
 code <- nimbleCode({
     x ~ dnorm(0, 1)
     dx ~ dnorm(dbl(x), sd = .01)
-    y[1:K] ~ dmnorm(vecdbl(mu[1:K]), cov = .0001*I[1:K, 1:K])
+    liftedmu[1:K] <- vecdbl(mu[1:K])
+    liftedcov[1:K,1:K] <- .0001*I[1:K, 1:K]
+    y[1:K] ~ dmnorm(liftedmu[1:K], cov = liftedcov[1:K,1:K])
     mu[1:K] ~ dmnorm(zeros[1:K], cov = I[1:K, 1:K])
     z ~ dnorm(0, 1)
     dz ~ dnorm(dblSum(x, z), sd = .01)
@@ -58,7 +60,8 @@ code <- nimbleCode({
     for(i in 1:K) {
         theta[i] ~ dnorm(0, 1)
     }
-    w[1:K] ~ dmnorm(vecdbl(theta[1:K]), cov = .0001*I[1:K, 1:K])
+    liftedmu2[1:K] <- vecdbl(theta[1:K])
+    w[1:K] ~ dmnorm(liftedmu2[1:K], cov = liftedcov[1:K, 1:K])
 })
 
 K <- 3
