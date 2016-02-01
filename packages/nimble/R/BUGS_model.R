@@ -555,7 +555,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                       
                                                       if(!is(e, "try-error")) {
                                                           sizes[[nms[k]]] <- dimOrLength(e)
-                                                      } else warning(paste0("Unable to calculate parameter '", nms[k] "'; this may simply reflect that there are missing values in model variables."))
+                                                      } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
                                                   }
                                         # check dimensions based on varInfo
                                                   if(length(declInfo$targetExprReplaced) > 1) {
