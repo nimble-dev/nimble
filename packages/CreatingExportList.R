@@ -1,6 +1,9 @@
 rm(list = ls())
 
-if(TRUE) { # if TRUE this is preventing alias in nimble-internal.Rd to be created
+if(TRUE) { # if TRUE this was preventing alias in nimble-internal.Rd to be created, but seems ok now
+    # keep as TRUE for R 3.1.0 to avoid Ref Class related warnings such as:
+#    1: class "RModelBaseClass" is defined (with package slot ‘nimble’) but no metadata object found to revise subclass information---not exported?  Making a copy in package ‘.GlobalEnv’ 
+    # eventually we may not export these classes as those warnings don't appear in R 3.2
 individualExportClassNames = c( 
  'RModelBaseClass',
  'singleModelValuesAccessClass',
