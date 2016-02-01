@@ -438,7 +438,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
                 warning(paste0('Problem: some but not all instances have ', name,' as a model.  Types must be consistent.'))
                 return(invisible(NULL))
             }
-            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RModelBaseClass'))))) {
+            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RmodelBaseClass'))))) {
                 warning(paste0('Problem: models should be provided as R model objects, not C model objects'))
                 return(invisible(NULL))
             }

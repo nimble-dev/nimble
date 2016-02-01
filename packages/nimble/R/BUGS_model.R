@@ -701,7 +701,7 @@ setMethod('[[<-', 'modelBaseClass',
 
 
 
-RModelBaseClass <- setRefClass("RModelBaseClass",
+RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(
                                    nodeFunctions = 'ANY',	#list
@@ -804,7 +804,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
     
     eval(substitute(newClass <- setRefClass(
         Class = className,
-        contains = 'RModelBaseClass',
+        contains = 'RmodelBaseClass',
         fields = FIELDS,
         methods = list(
             initialize = function(inputList, ...) {
