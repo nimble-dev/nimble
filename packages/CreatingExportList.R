@@ -1,6 +1,6 @@
 rm(list = ls())
 
-if(FALSE) { # this is preventing alias in nimble-internal.Rd to be created
+if(TRUE) { # if TRUE this is preventing alias in nimble-internal.Rd to be created
 individualExportClassNames = c( 
  'RModelBaseClass',
  'singleModelValuesAccessClass',
