@@ -41,12 +41,13 @@ testsScalar <- list(
          expr = quote({y[1:2] ~ dnorm(mu1[1:2, 1:2]%*%mu2[1:2], sd = sig)}), 
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
 
-    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = FALSE,
+    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = TRUE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = 0, sig = 1) ),
-    # ERRORS in R but not C nodeFunction operation, passes 
+    # ERRORS in R but not C nodeFunction operation, passes
+    # set expectPass=TRUE because issue is with form of inits, not BUGS code
 
     list(name = 'scalar stochastic, scalar within multivar variable 2', expectPass = TRUE,
          expr = quote({for(i in 1:1)

@@ -68,7 +68,9 @@ individualExportNames = c(
     'getDistribution',
     'calc_dmnormAltParams',
     'getDependencyPaths',
-    'buildConjugateSamplerFunctions'
+    'buildConjugateSamplerFunctions',
+    'codeSubstitute', # not clear why this is not found in model$check if not exported
+    'distributionsInputList' # not clear why this is not found in model$check if not exported
 )
 
 individualMaskedFunctions = c(
