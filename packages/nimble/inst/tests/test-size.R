@@ -17,6 +17,9 @@ fit_model <- function(input, check = TRUE, useConst = FALSE) {
    
 ### basic tests of scalar distribution
 
+# use knownProblem = TRUE to indicate case where we know the test does not pass because of shortcomings in Nimble's size checking
+
+# set expectPass based on whether the syntax is allowed in Nimble or not and therefore whether we hope the test passes or not
 
 testsScalar <- list(
     list(name = 'scalar stochastic, basic', expectPass = TRUE,
@@ -69,7 +72,7 @@ testsMultivarParam <- list(
     list(name = 'mv param stochastic, basic', expectPass = TRUE,
          expr = quote({y ~ dcat(p[1:3])}), 
          inits = list(p = p3) ),
-    list(name = 'mv param stochastic, no indices', expectPass = FALSE,
+    list(name = 'mv param stochastic, no indices', expectPass = FALSE, knownProblem = TRUE,
          expr = quote({y ~ dcat(p)}), 
          inits = list(p = p3) ),
     # with p as constant ERRORS in compileNimble(); not caught in size check, but replaceConstantsRecurse warning regarding dimensionality is given
@@ -141,9 +144,10 @@ testsDeterm <- list(
     # gives warning when a is constant "In cbind(edgesFrom, edgesTo)"
     
     list(name = 'deterministic, non-scalar expression, no indices', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({y <- a %*% b}),
          inits = list(a = vec2, b = vec2 )),
-    # doesn't catch that this will ERROR at compileNimble()
+    # doesn't catch that this will ERROR at compileNimble(), but compileNimble does give useful error msg
     
     list(name = 'deterministic, non-scalar expression', expectPass = TRUE,
          expr = quote({y <- a[1:2] %*% b[1:2]}),
@@ -158,18 +162,20 @@ testsDeterm <- list(
          inits = list(a = 3, b = 3)),
     
     list(name = 'deterministic, vector value, missing indices', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({y[1:2] <- a + b}),
          inits = list(a = vec2, b = vec2)),
-    # test_size doesn't catch error
+    # doesn't catch this will error
 
     list(name = 'deterministic, basic vector', expectPass = TRUE,
          expr = quote({y[1:2] <- a[1:2,1:2] %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
     
     list(name = 'deterministic, basic vector, missing indices', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({y[1:2] <- a %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
-    # test_size doesn't catch error for RHS variable case
+    # test_size doesn't catch error for RHS variable case, but compileNimble does give useful error msg
     
     list(name = 'deterministic, basic vector, dimension mismatch', expectPass = FALSE,
          expr = quote({y[1:2] <- a %*% b}),
@@ -236,6 +242,7 @@ testsMultivar <- list(
          }),
          inits = list(mu = vec2, prec = mat2)),
     list(name = 'multivar, param missing index', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({
                  y[1:2] ~ dmnorm(mu, prec[1:2, 1:2])
          }),
