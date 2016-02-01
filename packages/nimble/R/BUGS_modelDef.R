@@ -78,6 +78,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  addMissingIndexing             = function() {},
                                  removeTruncationWrapping       = function() {},
                                  expandDistributions            = function() {},
+                                 checkMultivarDistExpr          = function() {},
                                  processLinks                   = function() {},
                                  reparameterizeDists            = function() {},
                                  addRemainingDotParams          = function() {},
@@ -101,6 +102,9 @@ modelDefClass <- setRefClass('modelDefClass',
                                  
                                  genNodeInfo3                   = function() {},
                                  genVarInfo3                    = function() {},
+
+                                 # put check of var dims here?
+
                                  genExpandedNodeAndParentNames3 = function() {},
                                  
                                  #These functions are NOT run inside of setupModel
@@ -135,6 +139,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     removeTruncationWrapping()        ## transforms T(ddist(),lower,upper) to put bounds into declInfo
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
+    checkMultivarDistExpr()           ## checks that input params of multivariate distributions are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName
     addRemainingDotParams()           ## overwrites declInfo, adds any additional .paramNames which aren't there  (uses distributions)
@@ -466,6 +471,34 @@ modelDefClass$methods(expandDistributions = function() {
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
+
+modelDefClass$methods(checkMultivarDistExpr = function() {
+    checkForExpr <- function(expr) {
+        output <- FALSE
+        if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
+        if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
+        for(i in 2:length(expr)) 
+            if(checkForExpr(expr[[i]])) output <- TRUE
+        return(output)
+    }
+
+    for(i in seq_along(declInfo)) {
+        BUGSdecl <- declInfo[[i]]
+        if(BUGSdecl$type != 'stoch') next
+        dist <- deparse(BUGSdecl$valueExpr[[1]])
+        types <- distributionsInputList[[dist]]$types
+        if(is.null(types)) next
+        tmp <- strsplit(types, " = ")
+        nms <- sapply(tmp, `[[`, 1)
+        if(!'value' %in% nms) next
+        distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
+        if(distDim < 1) next
+        for(k in 2:length(BUGSdecl$valueExpr))
+            if(checkForExpr(BUGSdecl$valueExpr[[k]]))
+                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate distributions cannot have expressions as parameters")  
+    }
+})
+
 modelDefClass$methods(processLinks = function() {
     ## overwrites declInfo (*and adds*) for nodes with link functions (uses linkInverses)
     newDeclInfo <- list()
