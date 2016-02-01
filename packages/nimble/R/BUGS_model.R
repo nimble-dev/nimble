@@ -509,16 +509,19 @@ Checks for common errors in model specification, including missing values, inabi
                                               if(declInfo$type == 'determ') {
                                                   # check LHS and RHS are same size/dim
                                                   # need to eval within nf; constants not present otherwise
-                                                  RHSsize = dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf))))
-                                                  LHSsize = dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf))))
+                                                  RHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))))
+
+                                                  LHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))))
                                                   # apparently implicit dropping of size 1 dimensions is ok in determ node calcs
-                                                  if(length(RHSsize) > 1 && any(RHSsize == 1))
-                                                      RHSsize <- RHSsize[RHSsize != 1]
-                                                  if(length(LHSsize) > 1 && any(LHSsize == 1))
-                                                      LHSsize <- LHSsize[LHSsize != 1]
-                                                   
-                                                  if(!identical(LHSsize, RHSsize))
-                                                      stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code))
+                                                  if(!is(RHSsize, 'try-error') && !is(LHSsize, 'try-error')) {
+                                                      if(length(RHSsize) > 1 && any(RHSsize == 1))
+                                                          RHSsize <- RHSsize[RHSsize != 1]
+                                                      if(length(LHSsize) > 1 && any(LHSsize == 1))
+                                                          LHSsize <- LHSsize[LHSsize != 1]
+                                                      
+                                                      if(!identical(LHSsize, RHSsize))
+                                                          stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code))
+                                                  }
                                               } else {
                                                   # check:
                                                   #   1) dims of param args match those in distInputList based on calculation
@@ -552,7 +555,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                       
                                                       if(!is(e, "try-error")) {
                                                           sizes[[nms[k]]] <- dimOrLength(e)
-                                                      } else stop("Error while checking code for ", nms[k], "; please check dimensionality.")
+                                                      } else warning(paste0("Unable to calculate parameter '", nms[k] "'; this may simply reflect that there are missing values in model variables."))
                                                   }
                                         # check dimensions based on varInfo
                                                   if(length(declInfo$targetExprReplaced) > 1) {
@@ -575,7 +578,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                   
                                         # actual dimensions
                                                   dims <- sapply(sizes, length)
-                                                  toCheck <- names(dims[!is.na(sizes)])
+                                                  toCheck <- names(dims[!is.na(sizes) & sapply(sizes, function(x) !is.null(x))])
                                                   if(dist == 'dinterval') toCheck <- toCheck[toCheck != 'c']
                                         # check dimensions based on empirical size of variables
                                                   if(!identical(dims[toCheck], distDims[toCheck])) {
