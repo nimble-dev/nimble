@@ -292,12 +292,12 @@ testsTrunc <- list(
          expr = quote({
                  y ~ T(dnorm(mu, sd = sd), -1, 1)
          }),
-         inits = list(mu = 0, sd = 1)),
+         inits = list(mu = 0, sd = 1), data = list(y = 0)),
         list(name = 'multivar, trunc, extra index', expectPass = FALSE,
          expr = quote({
                  y ~ T(dnorm(mu[1:2], sd = sd), 0, 1)
          }),
-         inits = list(mu = 1, sd = 1))
+         inits = list(mu = 1, sd = 1), data = list(y = 0))
 )
 
 sapply(testsScalar, test_size)
