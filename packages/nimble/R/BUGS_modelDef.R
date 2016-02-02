@@ -428,13 +428,17 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         tmp <- as.character(newCode[[3]][[1]])
         distRange <- getDistribution(tmp)$range
 
-        if(BUGSdecl$valueExpr[[3]] != "") {
+        if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") {
             BUGSdecl$range$lower <- BUGSdecl$valueExpr[[3]]
         } else   BUGSdecl$range$lower <- distRange[1]
-        if(BUGSdecl$valueExpr[[4]] != "") {
+        if(length(BUGSdecl$valueExpr) >= 4 && BUGSdecl$valueExpr[[4]] != "") {
             BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]
         } else   BUGSdecl$range$upper <- distRange[2]
-    
+        if(length(BUGSdecl$valueExpr != 4))
+            warning(paste0("Lower and upper bounds not supplied for T(); proceeding with bounds: (",
+                           paste(BUGSdecl$range, collapse = ','), ")."))
+     
+        
         if(BUGSdecl$range$lower == distRange[1] && BUGSdecl$range$upper == distRange[2])  # user specified bounds that are the same as the range
             BUGSdecl$truncated <- FALSE
         
