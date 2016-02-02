@@ -528,23 +528,10 @@ Checks for common errors in model specification, including missing values, inabi
                                                   #   2) dims of param args match those in distInputList based on varInfo
                                                   #   3) sizes of vecs and row/column sizes all match for non-scalar quantities
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
-                                                  types <- distributionsInputList[[dist]]$types
 
-                                                  # default is scalar
-                                                  tmp <- parse(text = distributionsInputList[[dist]]$BUGSdist)
-                                                  len <- length(tmp[[1]]) 
-                                                  nms <- c('value', sapply(tmp[[1]][2:len], deparse))
-                                                  distDims <- rep(0L, len)
+                                                  distDims <- as.integer(sapply(getDistribution(dist)$types, function(x) x$nDim))
+                                                  nms <- names(getDistribution(dist)$types)
                                                   names(distDims) <- nms
-
-                                                  # non-scalar dimensions
-                                                  if(!is.null(types)) {
-                                                      tmp <- strsplit(types, " = ")
-                                                      tmpNms <- sapply(tmp, `[[`, 1)
-
-                                                      # theoretical dimensions 
-                                                      distDims[tmpNms] <- as.integer(sapply(tmp, function(x) parse(text = x[[2]])[[1]][[2]]))
-                                                  }
 
                                                   sizes <- list(); length(sizes) <- length(nms); names(sizes) <- nms
 
@@ -583,7 +570,7 @@ Checks for common errors in model specification, including missing values, inabi
                                         # check dimensions based on empirical size of variables
                                                   if(!identical(dims[toCheck], distDims[toCheck])) {
                                                       mismatches <- which(dims[toCheck] != distDims[toCheck])
-                                                      stop("Dimension of distribution argument(s) '", names(mismatches), "' does not match required dimension(s) for the distribution '", dist, "'. Necessary dimension(s) are ", distDims[toCheck][mismatches], ".", ifelse(any(distDims[toCheck][mismatches] == 1), " You may need to ensure that you have explicit vectors and not one-row or one-column matrices.", ""))                                                          
+                                                      stop("Dimension of distribution argument(s) '", paste(names(mismatches), collapse = ","), "' does not match required dimension(s) for the distribution '", dist, "'. Necessary dimension(s) are ", paste(distDims[toCheck][mismatches], collapse = ","), ".", ifelse(any(distDims[toCheck][mismatches] == 1), " You may need to ensure that you have explicit vectors and not one-row or one-column matrices.", ""))                                                          
                                                   }
                                                   
                                         # check sizes
