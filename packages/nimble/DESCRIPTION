@@ -5,7 +5,7 @@ Description: Flexible application of algorithms to models specified in the BUGS 
 Version: 0.5
 Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
-Depends:  R (>= 3.0.1)
+Depends:  R (>= 3.1.2)
 Imports: methods,igraph,coda
 Suggests: testthat,R2WinBUGS,rjags,rstan
 License: BSD_3_clause + file LICENSE

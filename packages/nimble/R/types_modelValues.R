@@ -33,7 +33,7 @@
 #' custom_mv <- modelValues(mvSpec, m = 2)
 #' custom_mv['y',]
 modelValues <- function(spec, m = 1) {
-    if(inherits(spec, 'RModelBaseClass')) return(spec$modelDef$modelValuesClass(m))
+    if(inherits(spec, 'RmodelBaseClass')) return(spec$modelDef$modelValuesClass(m))
     if(isModelValuesSpec(spec)) return(spec(m))
     if(inherits(spec, 'symbolTable')) {
         mvClass <- modelValuesSpec(spec) 
