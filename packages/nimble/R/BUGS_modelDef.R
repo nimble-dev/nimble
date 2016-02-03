@@ -1418,12 +1418,17 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             iRowRange <- 1
             maxNewEdges <- prod(dim(var2vertexID))
         }
-       accessExpr[[2]] <- quote(var2vertexID)
+        accessExpr[[2]] <- quote(var2vertexID)
 
-       iNextNewEdge <- 1
-       edgesFrom <- integer(maxNewEdges)
-       edgesTo <- integer(maxNewEdges)
-       
+        uniqueCurrentVertexIDsList <- lapply(iRowRange, function(iRow) unique(as.numeric(eval(accessExpr))))
+        edgesFromTest <- do.call('c', uniqueCurrentVertexIDsList)
+        edgesToList <- lapply(iRowRange, function(iRow) rep(targetIDs[iRow], length(unique(as.numeric(eval(accessExpr))))))
+        edgesToTest <- do.call('c', edgesToList)
+
+        iNextNewEdge <- 1
+        edgesFrom <- integer(maxNewEdges)
+        edgesTo <- integer(maxNewEdges)
+        
         for(iRow in iRowRange) {
             currentVertexIDblock <- eval(accessExpr)
             uniqueCurrentVertexIDs <- unique(as.numeric(currentVertexIDblock))
@@ -1432,9 +1437,15 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             edgesTo[iNextNewEdge - 1 + 1:numNewEdges] <- targetIDs[iRow]
             iNextNewEdge <- iNextNewEdge + numNewEdges
         }
-       edgesFrom <- edgesFrom[1:(iNextNewEdge-1)]
-       edgesTo <- edgesTo[1:(iNextNewEdge-1)]
-   }
+        edgesFrom <- edgesFrom[1:(iNextNewEdge-1)]
+        edgesTo <- edgesTo[1:(iNextNewEdge-1)]
+
+        if(length(edgesFrom) != length(edgesFromTest) | length(edgesTo) != length(edgesToTest) | max(abs(edgesFrom - edgesFromTest)) > 0 | max(abs(edgesTo - edgesToTest)) > 0) {
+            print('caught discrepancy')
+            browser()
+        }
+
+    }
     list(edgesFrom = edgesFrom, edgesTo = edgesTo)    
 }
 
