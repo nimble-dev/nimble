@@ -428,13 +428,17 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         tmp <- as.character(newCode[[3]][[1]])
         distRange <- getDistribution(tmp)$range
 
-        if(BUGSdecl$valueExpr[[3]] != "") {
+        if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") {
             BUGSdecl$range$lower <- BUGSdecl$valueExpr[[3]]
         } else   BUGSdecl$range$lower <- distRange[1]
-        if(BUGSdecl$valueExpr[[4]] != "") {
+        if(length(BUGSdecl$valueExpr) >= 4 && BUGSdecl$valueExpr[[4]] != "") {
             BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]
         } else   BUGSdecl$range$upper <- distRange[2]
-    
+        if(length(BUGSdecl$valueExpr != 4))
+            warning(paste0("Lower and upper bounds not supplied for T(); proceeding with bounds: (",
+                           paste(BUGSdecl$range, collapse = ','), ")."))
+     
+        
         if(BUGSdecl$range$lower == distRange[1] && BUGSdecl$range$upper == distRange[2])  # user specified bounds that are the same as the range
             BUGSdecl$truncated <- FALSE
         
@@ -578,9 +582,16 @@ modelDefClass$methods(reparameterizeDists = function() {
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
                 stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
-            for(nm in c(nonReqdArgs, distRule$reqdArgs))
-                # loop thru possible non-canonical parameters in the expression for the canonical parameter
+            ## fixing issue of pathological-case model variable names, e.g.,
+            ## y ~ dnorm(0, tau = sd)
+            ## DT, Feb 2016.
+            ##for(nm in c(nonReqdArgs, distRule$reqdArgs))
+            namesToSubstitute <- intersect(c(nonReqdArgs, distRule$reqdArgs), all.vars(transformedParameterPT))
+            for(nm in namesToSubstitute) {
+                ## loop thru possible non-canonical parameters in the expression for the canonical parameter
+                if(is.null(params[[nm]])) stop('this shouldn\'t happen -- something wrong with my understanding of parameter transformations')
                 transformedParameterPT <- parseTreeSubstitute(pt = transformedParameterPT, pattern = as.name(nm), replacement = params[[nm]])
+            }
             newValueExpr[[iArg + 1]] <- transformedParameterPT
         }
         

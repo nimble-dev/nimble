@@ -75,16 +75,16 @@ individualExportNames = c(
 
 individualMaskedFunctions = c(
 'mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
-# trying for now not to put these as exported as they should presumably not be exported as functions
- 'RModelBaseClass',
- 'singleModelValuesAccessClass',
- 'singleVarAccessClass', 
- 'CmodelBaseClass',
- 'CnimbleFunctionBase', 
- 'modelBaseClass',
- 'modelValuesBaseClass', 
- 'codeBlockClass',
- 'nimbleFunctionBase',
+# if mask these classes later, uncomment this
+## 'RmodelBaseClass',
+##  'singleModelValuesAccessClass',
+##  'singleVarAccessClass', 
+##  'CmodelBaseClass',
+##  'CnimbleFunctionBase', 
+##  'modelBaseClass',
+##  'modelValuesBaseClass', 
+##  'codeBlockClass',
+##  'nimbleFunctionBase',
 
 'C_dcat', 
 'C_ddirch', 

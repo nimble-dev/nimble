@@ -45,6 +45,7 @@ testsScalar <- list(
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
 
     list(name = 'scalar stochastic, scalar within multivar variable', expectPass = TRUE,
+         knownProblem = TRUE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
@@ -289,14 +290,14 @@ testsMultivar <- list(
 testsTrunc <- list(
     list(name = 'multivar, trunc', expectPass = TRUE,
          expr = quote({
-                 y ~ T(dnorm(mu, sd))
+                 y ~ T(dnorm(mu, sd = sd), -1, 1)
          }),
-         inits = list(mu = 1, sd = 1)),
+         inits = list(mu = 0, sd = 1), data = list(y = 0)),
         list(name = 'multivar, trunc, extra index', expectPass = FALSE,
          expr = quote({
-                 y ~ T(dnorm(mu[1:2], sd))
+                 y ~ T(dnorm(mu[1:2], sd = sd), 0, 1)
          }),
-         inits = list(mu = 1, sd = 1))
+         inits = list(mu = 1, sd = 1), data = list(y = 0))
 )
 
 sapply(testsScalar, test_size)
