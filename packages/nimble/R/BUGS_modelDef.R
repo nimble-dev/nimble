@@ -1384,11 +1384,11 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             if(anyContext) {
                 boolIndexNamePiecesExprs <- !unlist(lapply(parentIndexNamePieces, is.numeric)) ##!is.numeric(parentIndexNamePieces)
                 if(all(boolIndexNamePiecesExprs)) {
-                    test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces) ])
+                    test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces), drop = FALSE])
                     if(inherits(test, 'try-error')) browser()
                 } else {
                     varIndicesToUse <- matrix(nrow = nrow(unrolledBUGSindices), ncol = length(parentIndexNamePieces))
-                    varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs]]
+                    varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs], drop = FALSE]
                     indexPieceNumericInds <- which(!boolIndexNamePiecesExprs)
                     for(iii in seq_along(indexPieceNumericInds)) varIndicesToUse[, indexPieceNumericInds[iii] ] <- parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
                 }
