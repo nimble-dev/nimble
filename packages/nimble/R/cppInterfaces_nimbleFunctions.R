@@ -619,19 +619,19 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
             next
         }
         else if(cppCopyTypes[[v]] == 'numericList'){
-            warning('numericList is not working\n')
-            rawPtr = .Call('getModelObjectPtr', .self$.basePtr, v)
-            .self[[v]] <- numericList(buildType = 'C', extPtr = rawPtr)
-            nRows = Robj[[v]]$nRow
-            resize(.self[[v]], nRows)
-            for(i in 1:nRows){
-                copyDims = max(c(1, dimOrLength[[v]][[i]]) )
-                d1 = copyDims[1]
-                d2 = copyDims[2]
-                d3 = copyDims[3]
-                setSize(.self[[v]], row = i, d1, d2, d3)
-                .self[[v]][[i]] <- Robj[[v]][[i]]
-            }
+            stop('numericList is not working\n')
+            ## rawPtr = .Call('getModelObjectPtr', .self$.basePtr, v)
+            ## .self[[v]] <- numericList(buildType = 'C', extPtr = rawPtr)
+            ## nRows = Robj[[v]]$nRow
+            ## resize(.self[[v]], nRows)
+            ## for(i in 1:nRows){
+            ##     copyDims = max(c(1, dimOrLength[[v]][[i]]) )
+            ##     d1 = copyDims[1]
+            ##     d2 = copyDims[2]
+            ##     d3 = copyDims[3]
+            ##     setSize(.self[[v]], row = i, d1, d2, d3)
+            ##     .self[[v]][[i]] <- Robj[[v]][[i]]
+            ## }
             next
         }
         else if(cppCopyTypes[[v]] == 'characterVector' || cppCopyTypes[[v]] == 'characterScalar') {

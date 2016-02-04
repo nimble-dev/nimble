@@ -857,6 +857,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
     }
 })
+
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
     
@@ -1394,11 +1395,11 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             if(anyContext) {
                 boolIndexNamePiecesExprs <- !unlist(lapply(parentIndexNamePieces, is.numeric)) ##!is.numeric(parentIndexNamePieces)
                 if(all(boolIndexNamePiecesExprs)) {
-                    test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces) ])
+                    test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces), drop = FALSE])
                     if(inherits(test, 'try-error')) browser()
                 } else {
                     varIndicesToUse <- matrix(nrow = nrow(unrolledBUGSindices), ncol = length(parentIndexNamePieces))
-                    varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs]]
+                    varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs], drop = FALSE]
                     indexPieceNumericInds <- which(!boolIndexNamePiecesExprs)
                     for(iii in seq_along(indexPieceNumericInds)) varIndicesToUse[, indexPieceNumericInds[iii] ] <- parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
                 }
@@ -1423,29 +1424,39 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             newIndexExprs <- lapply(replacementNameExprs, function(x) substitute(unrolledBUGSindices[iRow, iCol], list(X = x, iCol = colNums[as.character(x)])))
             accessExpr <- eval( substitute( substitute(AE, newIndexExprs), list(AE = parentExprReplaced) ) )
             iRowRange <- (1:nrow(unrolledBUGSindices))
-            maxNewEdges <- nrow(unrolledBUGSindices) * prod(dim(var2vertexID))
+      ##      maxNewEdges <- nrow(unrolledBUGSindices) * prod(dim(var2vertexID))
         } else {
             accessExpr <- parentExprReplaced
             iRowRange <- 1
-            maxNewEdges <- prod(dim(var2vertexID))
+      ##      maxNewEdges <- prod(dim(var2vertexID))
         }
-       accessExpr[[2]] <- quote(var2vertexID)
+        accessExpr[[2]] <- quote(var2vertexID)
 
-       iNextNewEdge <- 1
-       edgesFrom <- integer(maxNewEdges)
-       edgesTo <- integer(maxNewEdges)
-       
-        for(iRow in iRowRange) {
-            currentVertexIDblock <- eval(accessExpr)
-            uniqueCurrentVertexIDs <- unique(as.numeric(currentVertexIDblock))
-            numNewEdges <- length(uniqueCurrentVertexIDs)
-            edgesFrom[iNextNewEdge - 1 + 1:numNewEdges] <- uniqueCurrentVertexIDs
-            edgesTo[iNextNewEdge - 1 + 1:numNewEdges] <- targetIDs[iRow]
-            iNextNewEdge <- iNextNewEdge + numNewEdges
-        }
-       edgesFrom <- edgesFrom[1:(iNextNewEdge-1)]
-       edgesTo <- edgesTo[1:(iNextNewEdge-1)]
-   }
+        uniqueCurrentVertexIDsList <- lapply(iRowRange, function(iRow) unique(as.numeric(eval(accessExpr))))
+        edgesFrom <- do.call('c', uniqueCurrentVertexIDsList)
+        edgesToList <- lapply(iRowRange, function(iRow) rep(targetIDs[iRow], length(unique(as.numeric(eval(accessExpr))))))
+        edgesTo <- do.call('c', edgesToList)
+
+        ## iNextNewEdge <- 1
+        ## edgesFromOld <- integer(maxNewEdges)
+        ## edgesToOld <- integer(maxNewEdges)
+        
+        ## for(iRow in iRowRange) {
+        ##     currentVertexIDblock <- eval(accessExpr)
+        ##     uniqueCurrentVertexIDs <- unique(as.numeric(currentVertexIDblock))
+        ##     numNewEdges <- length(uniqueCurrentVertexIDs)
+        ##     edgesFromOld[iNextNewEdge - 1 + 1:numNewEdges] <- uniqueCurrentVertexIDs
+        ##     edgesToOld[iNextNewEdge - 1 + 1:numNewEdges] <- targetIDs[iRow]
+        ##     iNextNewEdge <- iNextNewEdge + numNewEdges
+        ## }
+        ## edgesFromOld <- edgesFromOld[1:(iNextNewEdge-1)]
+        ## edgesToOld <- edgesToOld[1:(iNextNewEdge-1)]
+
+        ## if(length(edgesFrom) != length(edgesFromOld) | length(edgesTo) != length(edgesToOld) | max(abs(edgesFrom - edgesFromOld)) > 0 | max(abs(edgesTo - edgesToOld)) > 0) {
+        ##     print('caught discrepancy')
+        ##     browser()
+        ## }
+    }
     list(edgesFrom = edgesFrom, edgesTo = edgesTo)    
 }
 

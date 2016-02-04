@@ -758,7 +758,6 @@ getNimbleTypes <- function(units) {
 getNimbleProject <- function(project, stopOnNull = FALSE) {
     if(inherits(project, 'nimbleProjectClass')) return(project)
     if(is.nf(project)) return(nfVar(project, 'nimbleProject'))
-    if(inherits(project, 'RmodelBaseClass')) stop('need to handle RmodelBaseClass in getNimbleProject')
     ans <- try(project$nimbleProject)
     if(inherits(ans, 'try-error') | is.null(ans)) {
         if(stopOnNull) stop(paste0('cannot determine nimbleProject from provided project argument'))
