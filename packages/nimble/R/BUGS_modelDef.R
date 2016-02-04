@@ -846,6 +846,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
     }
 })
+
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
     

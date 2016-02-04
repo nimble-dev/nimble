@@ -701,7 +701,34 @@ setMethod('[[<-', 'modelBaseClass',
           }
 )
 
-
+insertSingleIndexBrackets <- function(code, varInfo) {
+    cLength <- length(code)
+    if(cLength == 1) {
+        if(is.name(code)) {
+            varName <- as.character(code)
+            thisVarInfo <- varInfo[[varName]]
+            if(!is.null(thisVarInfo)) {
+                if(thisVarInfo$nDim == 0) 
+                    return(substitute(VAR[1], list(VAR = code)))
+            }
+        }
+        return(code)
+    }
+    if(is.call(code)) {
+        recurseIndices <- 2:cLength
+        if(code[[1]] == '[') {
+            if(length(code[[2]]) == 1) {
+                if(is.name(code[[2]])) recurseIndices <- 3:cLength
+            }
+        }
+        for(i in recurseIndices) {
+            code[[i]] <- insertSingleIndexBrackets(code[[i]], varInfo)
+        }
+        return(code)
+    }
+    if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', deparse(code)))
+    return(code)
+}
 
 
 RmodelBaseClass <- setRefClass("RmodelBaseClass",
@@ -723,7 +750,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                    },
                                    
                                    buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
-                                       ## This creates the nodeFunctions, which are basically nimbleFunctions, for the model
+                                       ## This xoocreates the nodeFunctions, which are basically nimbleFunctions, for the model
                                        if(debug) browser()
                                        iNextNodeFunction <- 1
                                        nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
@@ -735,10 +762,13 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## extract needed pieces
                                            type <- BUGSdecl$type
                                            code <- BUGSdecl$codeReplaced
+                                           code <- insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
                                            altParams <- BUGSdecl$altParamExprs
+                                           altParams <- lapply(altParams, insertSingleIndexBrackets, modelDef$varInfo)
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
+                                           logProbNodeExpr <- insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
 
                                            ## make a unique name
