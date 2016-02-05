@@ -805,7 +805,9 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
    if(length(code$sizeExprs)==0) {
        code$sizeExprs <- list() ## it was a named, list.  this creates consistency. maybe unnecessary
        ##needMap will be FALSE if we are in this clause
-       if(!code$args[[1]]$isName) if(code$args[[1]]$name != 'map') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+       if(!code$args[[1]]$isName)
+           if(code$args[[1]]$name != 'map')
+                if(code$args[[1]]$name != 'dim') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
    }
     
     code$toEigenize <- 'maybe'
