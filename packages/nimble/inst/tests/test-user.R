@@ -53,7 +53,7 @@ code <- nimbleCode({
     dz ~ dnorm(dblSum(x, z), sd = .01)
 
     # use of args out of order
-    out <- mypow(y = 3, x = 2)
+    out <- mypow(y = yin, x = xin)
     
     # vectorized fun applied to scalar nodes-based variable
     for(i in 1:K) {
@@ -64,7 +64,7 @@ code <- nimbleCode({
 })
 
 K <- 3
-m <- nimbleModel(code, inits = list(x = 0.25, y = 1:K, mu = 1:K,
+m <- nimbleModel(code, inits = list(yin = 3, xin = 2, x = 0.25, y = 1:K, mu = 1:K,
                            z = 0.5, theta = rep(.5, K), w = rep(1, K)),
                  constants = list(K = K, zeros = rep(0, K), I = diag(K),
                                   eps = diag(rep(.0001, K))))
