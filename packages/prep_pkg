@@ -106,6 +106,10 @@ undocFuns <- funs[!funs %in% documentedFuns]
 
 undocFuns <- c(undocFuns, explicitUndocFuns)
 
+# make sure to have fooClass-Class documented in nimble-internal to pass R CMD check
+undocFunsClasses <- undocFuns[grep("Class$", undocFuns)]
+undocFuns <- c(undocFuns, paste0(undocFunsClasses, "-Class", sep = ''))
+
 # write out nimble-internals.Rd
 
 text <- rep("", length(undocFuns))

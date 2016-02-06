@@ -1,6 +1,7 @@
 \name{nimble-internal}
 \title{Functions and Classes Internal to NIMBLE}
 \alias{accessorVectorLength_setupCodeTemplate}
+\alias{CmodelBaseClass-class}
 \alias{activeBindingTemplate}
 \alias{addArg}
 \alias{addBlankModelValueRows}
