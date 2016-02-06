@@ -522,6 +522,10 @@ Checks for common errors in model specification, including missing values, inabi
                                                       if(!identical(LHSsize, RHSsize))
                                                           stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code))
                                                   }
+                                                  if(is(RHSsize, 'try-error'))
+                                                      stop("Problem evaluating: ", deparse(declInfo$valueExprReplaced))
+                                                  if(is(LHSsize, 'try-error'))
+                                                      stop("Problem evaluating: ", deparse(declInfo$targetExprReplaced))
                                               } else {
                                                   # check:
                                                   #   1) dims of param args match those in distInputList based on calculation
