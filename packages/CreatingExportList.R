@@ -215,7 +215,8 @@ individualMaskedFunctions = c(
 'as.matrix.modelValuesBaseClass',
 'length.nimPointerList',
 'deparse',
-'double'
+'double',
+'insertSingleIndexBrackets'
                               )
 
 maskFileVector = c(
