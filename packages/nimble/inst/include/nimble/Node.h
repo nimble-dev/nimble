@@ -12,6 +12,7 @@ public:
   virtual double calculate()=0;
   virtual double getLogProb()=0;
   virtual double calculateDiff()=0;
+  virtual double get_param_0D_double(int paramID) {return(0./0.);}
 };
 
 class DetermNode : public Node{

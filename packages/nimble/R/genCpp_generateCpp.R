@@ -17,6 +17,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          'while' = 'cppOutputIfWhile',
                          '[' = 'cppOutputBracket',
                          mvAccessRow = 'cppOutputBracket',
+                         nimSwitch = 'cppOutputNimSwitch',
+                         get_param = 'cppOutputGetParam',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -52,7 +54,7 @@ cppMidOperators[['|']] <- ' || '
 for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
       
-nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile)
+nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch')
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
 ## and the elements are the name of the function to use to generate output for that name
@@ -179,6 +181,31 @@ cppOutputIfWhile <- function(code, symTab) {
         return(part2)
     }
     stop('Error in cppOutputIf')
+}
+
+cppOutputNimSwitch <- function(code, symTab) {
+    message('Time to work on cppOutputNimSwitch')
+    browser()
+    numChoices <- length(code$args)-2
+    if(numChoices <= 0) return('')
+    choicesCode <- vector('list', numChoices)
+    choiceValues <- code$args[[2]]
+    if(length(choiceValues) != numChoices) stop(paste0('number of switch choices does not match number of indices for ',nimDeparse(code)))
+    for(i in numChoices) {
+        if(code$args[[i+2]]$name != '{')
+            bracketedCode <- insertExprClassLayer(code, i+2, '{')
+        choicesCode[[i]] <- list(paste0('case ',choiceValues[i],':'), nimGenerateCpp(code$args[[i+2]], symTab), 'break;') 
+    }
+    ans <- list(paste('switch(',code$args[[1]]$name,') {'), choicesCode, '}')
+    ans
+}
+
+cppOutputGetParam <- function(code, symTab) {
+    message('Time to work on cppOutputGetParam')
+    browser()
+    NULL
+    return('get_param()')
+
 }
 
 cppOutputEigenMapAssign <- function(code, symTab) {

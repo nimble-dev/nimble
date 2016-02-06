@@ -17,6 +17,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                list('return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
+                    get_param = 'sizeGetParam',
+                    nimSwitch = 'sizeSwitch',
                     asDoublePtr = 'sizeasDoublePtr',
                    '[' = 'sizeIndexingBracket',
                  ## '[[' for nimbleFunctionList goes through chainedCall
@@ -177,6 +179,31 @@ sizemap <- function(code, symTab, typeEnv) {
     code$sizeExprs <- code$args[[4]]
     code$toEigenize <- 'maybe'
     invisible(NULL)
+}
+
+sizeGetParam <- function(code, symTab, typeEnv) {
+    paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
+    code$type <- paramInfoSym$paramInfo$type
+    code$nDim <- paramInfoSym$paramInfo$nDim
+    code$sizeExprs <- vector(mode = 'list', length = code$nDim)
+    code$toEigenize <- 'no'
+    asserts <- list()
+    if(!(code$caller$name %in% assignmentOperators)) {
+        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        code$toEigenize <- 'maybe'
+    }
+    return(asserts)
+}
+
+sizeSwitch <- function(code, symTab, typeEnv) {
+    if(length(code$args) <= 2) return(invisible(NULL))
+    for(i in 3:length(code$args)) { ## just like the '{' clause of exprClasses_setSizes.  This treats each of the outcomes as if it was a new line or block of code
+        if(inherits(code$args[[i]], 'exprClass')) {
+            newAsserts <- exprClasses_setSizes(code$args[[i]], symTab, typeEnv)
+            code$args[[i]]$assertions <- if(is.null(newAsserts)) list() else newAsserts
+        }
+    }
+    return(invisible(NULL))
 }
 
 sizeAsRowOrCol <- function(code, symTab, typeEnv) {
