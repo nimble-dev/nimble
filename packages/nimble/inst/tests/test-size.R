@@ -44,14 +44,13 @@ testsScalar <- list(
          expr = quote({y[1:2] ~ dnorm(mu1[1:2, 1:2]%*%mu2[1:2], sd = sig)}), 
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
 
-    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = TRUE,
+    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = FALSE,
          knownProblem = TRUE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = 0, sig = 1) ),
-    # ERRORS in R but not C nodeFunction operation, passes
-    # set expectPass=TRUE because issue is with form of inits, not BUGS code
+    # ERRORS in R but not C nodeFunction operation
 
     list(name = 'scalar stochastic, scalar within multivar variable 2', expectPass = TRUE,
          expr = quote({for(i in 1:1)
@@ -66,7 +65,6 @@ testsScalar <- list(
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = mat2, sig = 1) )
-    # gives warning when mu is RHS-only, same as previous case: "In cbind(edgesFrom, edgesTo)"
 )
 
 testsMultivarParam <- list(
@@ -81,7 +79,6 @@ testsMultivarParam <- list(
     list(name = 'mv param stochastic, scalar param', expectPass = FALSE,
          expr = quote({y ~ dcat(p[1])}), 
          inits = list(p = 1) ),
-    # with p as constant ERRORS while defining model with message regarding inconsistent dimensionality, caught in size check
     
     list(name = 'mv param stochastic, scalar param, no indices', expectPass = FALSE,
          expr = quote({y ~ dcat(p)}), 
@@ -118,6 +115,7 @@ testsDeterm <- list(
     list(name = 'deterministic, basic', expectPass = TRUE,
          expr = quote({y <- a + b}),
          inits = list(a = 3, b = 3 )),
+    
     list(name = 'deterministic, basic with node in variable, incorrect init size', expectPass = FALSE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
@@ -131,18 +129,17 @@ testsDeterm <- list(
          inits = list(a = matrix(3, 1, 1), b = 3 )),
     # ERRORS when a is constant "In cbind(edgesFrom, edgesTo)"
 
-    list(name = 'deterministic, basic with node in variable', expectPass = TRUE,
+    list(name = 'deterministic, basic with node in variable 2', expectPass = TRUE,
          expr = quote({for(i in 1:2)
                            for(j in 1:2)
                                y[i,j] <- a[i,j] + b}),
          inits = list(a = mat2, b = 3 )),
 
-    list(name = 'deterministic, basic with node in variable', expectPass = TRUE,
+    list(name = 'deterministic, basic with node in variable  3', expectPass = TRUE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] <- a[i,j] + b}),
          inits = list(a = mat2, b = 3 )),
-    # gives warning when a is constant "In cbind(edgesFrom, edgesTo)"
     
     list(name = 'deterministic, non-scalar expression, no indices', expectPass = FALSE,
          knownProblem = TRUE,
@@ -203,17 +200,21 @@ testsDeterm <- list(
              for(i in 1:1)
                  y[1:2, i] <- a[1:2,1:2] %*% b[1:2, i]}),
          inits = list(a = mat2, b = mat2 )),
+    
     list(name = 'deterministic, nodes within multivar variables, size mismatch', expectPass = FALSE,
          expr = quote({
              for(i in 1:1)
                  y[1:3] <- a[1:2,1:2] %*% b[1:2, i]}),
-         inits = list(a = mat2, b = vec2 )),
+         inits = list(a = mat2, b = mat2 )),
+    
     list(name = 'deterministic, nodes within multivar variables, dim mismatch', expectPass = FALSE,
          expr = quote({
              for(i in 1:1)
                  y[1:2, i] <- a[1:2,1:2] %*% b[1:2, 1:2]}),
          inits = list(a = mat2, b = mat2 )),
+    
     list(name = 'deterministic, nodes within multivar variables, input wrong dimension', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({
              for(i in 1:1)
                  y[1:2, i] <- a[1:2,1:2] %*% b[1:2, 1:2]}),

@@ -434,7 +434,7 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         if(length(BUGSdecl$valueExpr) >= 4 && BUGSdecl$valueExpr[[4]] != "") {
             BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]
         } else   BUGSdecl$range$upper <- distRange[2]
-        if(length(BUGSdecl$valueExpr != 4))
+        if(length(BUGSdecl$valueExpr) != 4)
             warning(paste0("Lower and upper bounds not supplied for T(); proceeding with bounds: (",
                            paste(BUGSdecl$range, collapse = ','), ")."))
      
