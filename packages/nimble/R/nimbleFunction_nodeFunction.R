@@ -98,7 +98,7 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
                 paramNamesToUse <- names(typesListAllParams)[boolThisCase]
                 caseName <- paste0("get_param_",nDimSupported,"D_double")
                 if(length(paramNamesToUse) > 0) 
-                    methodList[[caseName]] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = 0) 
+                    methodList[[caseName]] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
             }
         }
     }
