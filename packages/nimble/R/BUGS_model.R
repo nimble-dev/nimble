@@ -295,8 +295,8 @@ Details: If a list element contains some number of NA values, then the model nod
                                                       stop('variable name not suitable for setData(): ', varName)
                                                   } else next
                                               }
-                                          if(length(dimOrLength(varValue)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          if(!(all(dimOrLength(varValue) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(length(dimOrLength(varValue, scalarize = TRUE)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(!(all(dimOrLength(varValue, scalarize = TRUE) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           assign(varName, varValue, inherits = TRUE)
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
