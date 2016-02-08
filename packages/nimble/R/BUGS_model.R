@@ -546,6 +546,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                       
                                                       if(!is(e, "try-error")) {
                                                           sizes[[nms[k]]] <- dimOrLength(e)
+                                                          if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
                                                       } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
                                                   }
                                         # check dimensions based on varInfo
