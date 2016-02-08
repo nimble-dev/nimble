@@ -184,28 +184,22 @@ cppOutputIfWhile <- function(code, symTab) {
 }
 
 cppOutputNimSwitch <- function(code, symTab) {
-    message('Time to work on cppOutputNimSwitch')
-    browser()
     numChoices <- length(code$args)-2
     if(numChoices <= 0) return('')
     choicesCode <- vector('list', numChoices)
     choiceValues <- code$args[[2]]
     if(length(choiceValues) != numChoices) stop(paste0('number of switch choices does not match number of indices for ',nimDeparse(code)))
-    for(i in numChoices) {
+    for(i in 1:numChoices) {
         if(code$args[[i+2]]$name != '{')
             bracketedCode <- insertExprClassLayer(code, i+2, '{')
-        choicesCode[[i]] <- list(paste0('case ',choiceValues[i],':'), nimGenerateCpp(code$args[[i+2]], symTab), 'break;') 
+        choicesCode[[i]] <- list(paste0('case ',choiceValues[i],':'), nimGenerateCpp(code$args[[i+2]], symTab, showBracket = FALSE), 'break;') 
     }
     ans <- list(paste('switch(',code$args[[1]]$name,') {'), choicesCode, '}')
     ans
 }
 
 cppOutputGetParam <- function(code, symTab) {
-    message('Time to work on cppOutputGetParam')
-    browser()
-    NULL
-    return('get_param()')
-
+    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->get_param_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
 }
 
 cppOutputEigenMapAssign <- function(code, symTab) {

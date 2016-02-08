@@ -93,9 +93,13 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
             typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
             paramIDs <- getDistribution(distName)$paramIDs
             ## rely on only double for now
-            boolScalarDouble <- typesNDims == 0 & typesTypes == 'double'
-            paramNamesToUse <- names(typesListAllParams)[boolScalarDouble]
-            methodList[['get_param_0D_double']] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = 0) 
+            for(nDimSupported in c(0, 1, 2)) {
+                boolThisCase <- typesNDims == nDimSupported & typesTypes == 'double'
+                paramNamesToUse <- names(typesListAllParams)[boolThisCase]
+                caseName <- paste0("get_param_",nDimSupported,"D_double")
+                if(length(paramNamesToUse) > 0) 
+                    methodList[[caseName]] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = 0) 
+            }
         }
     }
     ## add model$ in front of all names, except the setupOutputs
