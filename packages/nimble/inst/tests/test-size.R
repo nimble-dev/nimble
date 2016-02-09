@@ -37,16 +37,33 @@ testsScalar <- list(
     list(name = 'scalar stochastic, parameter expression non-scalar, RHS index',
          expectPass = FALSE,
          knownProblem = TRUE,
-         expr = quote({y ~ dnorm((mu1%*%mu2)[1], sd = sig)}), 
+         expr = quote({y ~ dnorm((mu1%*%mu2)[1,1], sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
     # passes for RHS init, though compileNimble does give helpful error message
+    # passes for RHS const but fails in compilation because of lack of indexing
     
-    list(name = 'scalar stochastic, parameter expression non-scalar', expectPass = TRUE,
+    list(name = 'scalar stochastic, parameter expression non-scalar', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({y ~ dnorm(mu1[1:2]%*%mu2[1:2], sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
-    list(name = 'scalar stochastic, non-scalar parameter', expectPass = FALSE,
-         expr = quote({y ~ dnorm(mu1[1:2, 1:2]%*%mu2[1:2], sd = sig)}), 
+    # passes test when it shouldn't
+    
+    list(name = 'scalar stochastic, parameter expression non-scalar', expectPass = TRUE,
+         expr = quote({y ~ dnorm((mu1[1:2]%*%mu2[1:2])[1,1], sd = sig)}), 
+         inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
+    # gives warning with RHS const
+
+    list(name = 'scalar stochastic, non-scalar parameter', expectPass = TRUE,
+         expr = quote({y ~ dnorm((mu1[1:2, 1:2]%*%mu2[1:2])[1,1], sd = sig)}), 
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
+    # gives warning with RHS const
+    
+    list(name = 'scalar stochastic, non-scalar parameter', expectPass = FALSE,
+         knownProblem = TRUE,
+         expr = quote({y ~ dnorm((mu1[1:2, 1:2]%*%mu2[1:2])[1], sd = sig)}), 
+         inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
+    # passes test when it shouldn't
+
     list(name = 'scalar stochastic, non-scalar value', expectPass = FALSE,
          expr = quote({y[1:2] ~ dnorm(mu, sd = sig)}), 
          inits = list(mu = 1, sig = 1) ),
