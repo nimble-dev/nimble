@@ -343,6 +343,18 @@ Details: The variable or node names specified is expanded into a vector of model
                                     return(ret)
                                   },
 
+                                  getDependenciesList = function(returnNames = TRUE, sort = TRUE) {
+                                      if(!returnNames)
+                                          if(!sort) return(modelDef$maps$edgesFrom2To)
+                                          else return(lapply(modelDef$maps$edgesFrom2To, sort))
+                                      else {
+                                          if(!sort) ans <- lapply(modelDef$maps$edgesFrom2To, function(x) modelDef$maps$graphID_2_nodeName[x])
+                                          else ans <- lapply(modelDef$maps$edgesFrom2To, function(x) modelDef$maps$graphID_2_nodeName[sort(x)])
+                                          names(ans) <- modelDef$maps$graphID_2_nodeName[as.numeric(names(ans))]
+                                          return(ans)
+                                      }
+                                  },
+                                  
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
