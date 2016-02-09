@@ -14,7 +14,7 @@ double eigenInprod(const ArrayBase<Derived1>& v1, const ArrayBase<Derived2>& v2)
 }
 
 template <typename Derived1, typename Derived2>
-double eigenInprod(const MatrixBase<Derived1>& v1, const MatrixBase<Derived1>& v2) {
+double eigenInprod(const MatrixBase<Derived1>& v1, const MatrixBase<Derived2>& v2) {
   double ans = (v1.cwiseProduct(v2)).sum();
   return(ans);
 }
