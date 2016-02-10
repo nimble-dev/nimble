@@ -37,6 +37,12 @@ exprClasses_labelForEigenization <- function(code) {
             if(length(code$args) == 3) exprClasses_labelForEigenization(code$args[[3]])
             return(invisible(NULL))
         }
+        if(code$name == 'nimSwitch') {
+            if(length(code$args) > 2)
+                for(iSwitch in 3:length(code$args))
+                    exprClasses_labelForEigenization(code$args[[iSwitch]])
+            return(invisible(NULL))
+        }
                 
         if(code$name %in% callToSkipInEigenization) return(invisible(NULL))
 
@@ -189,7 +195,7 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
                     removeExprClassLayer(code$args[[i]]) ## strip the eigenize()
                     recurse <- TRUE
                 }
-                if(code$args[[i]]$name %in% c('for', ifOrWhile, '{')) recurse <- TRUE
+                if(code$args[[i]]$name %in% c('for', ifOrWhile, '{', 'nimSwitch')) recurse <- TRUE
                 if(recurse) {
                     setupCalls <- unlist(exprClasses_eigenize(code$args[[i]], symTab, typeEnv, workEnv = new.env())) ## a new line
                     if(length(setupCalls) > 0) {
@@ -204,7 +210,13 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
         if(code$name %in% ifOrWhile) {
             exprClasses_eigenize(code$args[[2]], symTab, typeEnv)
             if(length(code$args)==3) exprClasses_eigenize(code$args[[3]], symTab, typeEnv)
-            return(NULL)
+            return(invisible(NULL))
+        }
+        if(code$name == 'nimSwitch') {
+            if(length(code$args) > 2) 
+                for(iSwitch in 3:length(code$args)) 
+                    exprClasses_eigenize(code$args[[iSwitch]], symTab, typeEnv)
+            return(invisible(NULL))
         }
         if(code$name == 'map') {
             ## Generate EigenMap and new assignment with strides

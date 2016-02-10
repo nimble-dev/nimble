@@ -46,6 +46,37 @@ asCol <- function(x) {
     matrix(x, ncol = 1)
 }
 
+makeParamInfo <- function(model, node, param) {
+    distInfo <- getDistribution(model$getNodeDistribution(node))
+    ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
+    class(ans) <- 'getParam_info'
+    ans
+}
+
+getParam <- function(model, node, param) {
+    if(missing(param)) { ## already converted by keyword conversion
+        nodeFunction <- model
+        paramInfo <- node
+    } else {
+        ## not already converted
+        nodeFunction <- model$nodes[[node]]
+        paramInfo <- makeParamInfo(model, node, param)
+    }
+    paramID <- paramInfo$paramID
+    nDim <- paramInfo$nDim
+    type <- paramInfo$type
+    funName <- paste0('getParam_',nDim,'D_',type)
+    ans <- eval(substitute(nodeFunction$FUNNAME(paramID), list(FUNNAME = as.name(funName))))
+    return(ans)
+}
+
+nimSwitch <- function(paramID, IDoptions, ...) {
+    dotsList <- eval(substitute(alist(...)))
+    iUse <- which(IDoptions == paramID)
+    eval(dotsList[[iUse]], envir = parent.frame())
+    invisible(NULL)
+}
+
 rCalcNodes <- function(model, nodes){
     l_Prob = 0
     

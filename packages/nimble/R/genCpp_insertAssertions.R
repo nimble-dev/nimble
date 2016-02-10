@@ -25,6 +25,12 @@ exprClasses_insertAssertions <- function(code) {
             if(code$args[[i]]$name == '{') {
                 exprClasses_insertAssertions(code$args[[i]])
             }
+            if(code$args[[i]]$name == 'nimSwitch') {
+                if(length(code$args[[i]]$args) > 2)
+                    for(j in 3:length(code$args[[i]]$args)) {
+                        exprClasses_insertAssertions(code$args[[i]]$args[[j]])
+                    }
+            }
             if(length(code$args[[i]]$assertions) > 0) {
                 toInsert <- lapply(code$args[[i]]$assertions, function(x) if(inherits(x, 'exprClass')) x else RparseTree2ExprClasses(x))
                 before <- unlist(lapply(toInsert, function(x) {if(x$name == 'after') FALSE else TRUE}))

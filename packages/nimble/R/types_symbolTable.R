@@ -315,6 +315,20 @@ symbolModelValuesAccessorVector <-
                     )
                 )
 
+symbolGetParamInfo <-
+    setRefClass(Class = 'symbolGetParamInfo',
+                contains = 'symbolBase',
+                fields = list(paramInfo = 'ANY'), ## getParam_info, i.e. simple list
+                methods = list(
+                    initialize = function(paramInfo, ...) {
+                        callSuper(...)
+                        paramInfo <<- paramInfo
+                        type <<- 'Ronly'
+                    },
+                    show = function() writeLines(paste('symbolGetParamInfo', name)),
+                    genCppVar = function(...) {
+                        stop(paste('Error, you should not be generating a cppVar for symbolGetParamInfo', name))
+                    } ))
 
 symbolNumericList <- 
     setRefClass(Class = 'symbolNumericList',
