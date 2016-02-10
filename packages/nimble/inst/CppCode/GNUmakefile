@@ -1,4 +1,4 @@
-SRC=RcppUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp Node.cpp NFxnUtils.cpp Values.cpp nimDists.cpp
+SRC=RcppUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp NFxnUtils.cpp Values.cpp nimDists.cpp
 OBJECTS=$(SRC:%.cpp=%.o)
 
 ifndef R_SHARE_DIR

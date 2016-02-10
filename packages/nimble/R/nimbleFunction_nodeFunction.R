@@ -82,7 +82,7 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
                 typeList <- getDistribution(distName)$types[[altParamName]]
                 methodList[[paste0('get_',altParamName)]] <- ndf_generateGetParamFunction(altParams[[altParamName]], typeList$type, typeList$nDim)
             }
-            ## new for get_param, eventually to replace get_XXX where XXX is each param name
+            ## new for getParam, eventually to replace get_XXX where XXX is each param name
             ## TO-DO: unfold types and nDims more thoroughly (but all types are implemented as doubles anyway)
             ## understand use of altParams vs. all entries in typesListAllParams
             ## need a value Entry
@@ -96,7 +96,7 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
             for(nDimSupported in c(0, 1, 2)) {
                 boolThisCase <- typesNDims == nDimSupported & typesTypes == 'double'
                 paramNamesToUse <- names(typesListAllParams)[boolThisCase]
-                caseName <- paste0("get_param_",nDimSupported,"D_double")
+                caseName <- paste0("getParam_",nDimSupported,"D_double")
                 if(length(paramNamesToUse) > 0) 
                     methodList[[caseName]] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
             }
@@ -315,7 +315,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 
 
 ndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nDim) {
-    if(any(unlist(lapply(typesListAll, is.null)))) stop(paste('problem creating switch function for get_param from ', paste(paste(names(typesListAll), as.character(typesListAll), sep='='), collapse=',')))
+    if(any(unlist(lapply(typesListAll, is.null)))) stop(paste('problem creating switch function for getParam from ', paste(paste(names(typesListAll), as.character(typesListAll), sep='='), collapse=',')))
     paramIDs <- as.integer(paramIDs)
     answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
     switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))

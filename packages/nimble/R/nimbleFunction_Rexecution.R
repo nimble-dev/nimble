@@ -49,11 +49,11 @@ asCol <- function(x) {
 makeParamInfo <- function(model, node, param) {
     distInfo <- getDistribution(model$getNodeDistribution(node))
     ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
-    class(ans) <- 'get_param_info'
+    class(ans) <- 'getParam_info'
     ans
 }
 
-get_param <- function(model, node, param) {
+getParam <- function(model, node, param) {
     if(missing(param)) { ## already converted by keyword conversion
         nodeFunction <- model
         paramInfo <- node
@@ -65,7 +65,7 @@ get_param <- function(model, node, param) {
     paramID <- paramInfo$paramID
     nDim <- paramInfo$nDim
     type <- paramInfo$type
-    funName <- paste0('get_param_',nDim,'D_',type)
+    funName <- paste0('getParam_',nDim,'D_',type)
     ans <- eval(substitute(nodeFunction$FUNNAME(paramID), list(FUNNAME = as.name(funName))))
     return(ans)
 }

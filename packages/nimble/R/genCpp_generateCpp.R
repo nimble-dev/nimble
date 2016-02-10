@@ -18,7 +18,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          '[' = 'cppOutputBracket',
                          mvAccessRow = 'cppOutputBracket',
                          nimSwitch = 'cppOutputNimSwitch',
-                         get_param = 'cppOutputGetParam',
+                         getParam = 'cppOutputGetParam',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -199,7 +199,7 @@ cppOutputNimSwitch <- function(code, symTab) {
 }
 
 cppOutputGetParam <- function(code, symTab) {
-    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->get_param_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
+    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
 }
 
 cppOutputEigenMapAssign <- function(code, symTab) {

@@ -318,7 +318,7 @@ symbolModelValuesAccessorVector <-
 symbolGetParamInfo <-
     setRefClass(Class = 'symbolGetParamInfo',
                 contains = 'symbolBase',
-                fields = list(paramInfo = 'ANY'), ## get_param_info, i.e. simple list
+                fields = list(paramInfo = 'ANY'), ## getParam_info, i.e. simple list
                 methods = list(
                     initialize = function(paramInfo, ...) {
                         callSuper(...)

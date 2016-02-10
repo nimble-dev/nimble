@@ -210,21 +210,21 @@ values_keywordInfo <- keywordInfoClass(
       return(newRunCode)
     })                                    
 
-get_param_keywordInfo <- keywordInfoClass(
-    keyword = 'get_param',
+getParam_keywordInfo <- keywordInfoClass(
+    keyword = 'getParam',
     processor = function(code, nfProc) {
 
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
         if(isCodeArgBlank(code, 'model'))
-            stop('model argument missing from get_param, with no accessor argument supplied')
+            stop('model argument missing from getParam, with no accessor argument supplied')
         if(isCodeArgBlank(code, 'node'))
-            stop('node argument missing from get_param, with no accessor argument supplied')
+            stop('node argument missing from getParam, with no accessor argument supplied')
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = FALSE)
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
 
         if(isCodeArgBlank(code, 'param'))
-            stop('param argument missing from get_param, with no accessor argument supplied')
+            stop('param argument missing from getParam, with no accessor argument supplied')
         paramInfo_ArgList <- list(model = code$model, node = code$node, param = code$param)
         paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
         paramIDname <- paramInfo_SetupTemplate$makeOtherNames(paramInfoName, paramInfo_ArgList)
@@ -232,7 +232,7 @@ get_param_keywordInfo <- keywordInfoClass(
         addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         addNecessarySetupCode(paramInfoName, paramInfo_ArgList, paramInfo_SetupTemplate, nfProc)
         
-        newRunCode <- substitute(get_param(nodeFunction = NODEFUNVEC_NAME, paramID = PARAMID_NAME, paramInfo = PARAMINFO_NAME),
+        newRunCode <- substitute(getParam(nodeFunction = NODEFUNVEC_NAME, paramID = PARAMID_NAME, paramInfo = PARAMINFO_NAME),
                                  list(NODEFUNVEC_NAME = as.name(nodeFunName), PARAMID_NAME = as.name(paramIDname), PARAMINFO_NAME = as.name(paramInfoName)))
         return(newRunCode)
     }
@@ -572,7 +572,7 @@ singleBracket_keywordInfo <- keywordInfoClass(
 
 #	KeywordList
 keywordList <- new.env()
-keywordList[['get_param']] <- get_param_keywordInfo
+keywordList[['getParam']] <- getParam_keywordInfo
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo
 keywordList[['calculateDiff']] <- calculateDiff_keywordInfo
@@ -618,7 +618,7 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 matchFunctions <- new.env()
 matchFunctions[['values']] <- function(model, nodes, accessor){}
-matchFunctions[['get_param']] <- get_param
+matchFunctions[['getParam']] <- getParam
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['calculateDiff']] <- calculateDiff		#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
