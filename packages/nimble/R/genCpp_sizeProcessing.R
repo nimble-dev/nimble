@@ -771,8 +771,8 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         msg <- paste0('Error, wrong number of indices provided for ', nimDeparse(code),'.')
         wrongIndices <- TRUE
         if(nDimVar == length(code$args) - 2) {
-            dropBool <- code$args[[length(code$args)]]
-            if(dropBool %in% c(0,1)) {wrongIndices <- FALSE; dropBool <- dropBool == 1}
+            dropBool <- code$args[[length(code$args)]] ## This is the only situation where RparseTree2ExprClasses will not convert logical to numeric
+            if(is.logical(dropBool)) wrongIndices <- FALSE
             else msg <- paste0(msg, "(A drop argument must be hard-coded as TRUE or FALSE, not given as a variable.)")
         }
         if(wrongIndices) stop(msg, call. = FALSE)
