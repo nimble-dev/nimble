@@ -380,7 +380,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   }
 
   # determine dimensions from data list and varInfo
-  dims <- lapply(data, dimOrLength)
+  dims <- lapply(data, dimOrLength, scalarize = TRUE)
   if(!is.null(varInfo)) {
     env <- data
     sizeInfo <- lapply(varInfo$size, doEval, env)

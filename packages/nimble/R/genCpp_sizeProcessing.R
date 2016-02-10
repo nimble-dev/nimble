@@ -792,9 +792,18 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
   
     nDimVar <- code$args[[1]]$nDim
-    
+
+    dropBool <- TRUE
     if(nDimVar != length(code$args) - 1) {
-        stop(paste('Error, wrong number of indices provided for ', nimDeparse(code)), call. = FALSE)
+        msg <- paste0('Error, wrong number of indices provided for ', nimDeparse(code),'.')
+        wrongIndices <- TRUE
+        if(nDimVar == length(code$args) - 2) {
+            dropBool <- code$args[[length(code$args)]] ## This is the only situation where RparseTree2ExprClasses will not convert logical to numeric
+            if(is.logical(dropBool)) wrongIndices <- FALSE
+            else msg <- paste0(msg, "(A drop argument must be hard-coded as TRUE or FALSE, not given as a variable.)")
+        }
+        if(wrongIndices) stop(msg, call. = FALSE)
+        code$args[[length(code$args)]] <- NULL
     }
     code$nDim <- nDimVar
     code$type <- code$args[[1]]$type
@@ -804,10 +813,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     iSizes <- 1
     for(i in 1:nDimVar) {
         dropThisDim <- FALSE
+
         if(is.numeric(code$args[[i+1]])) dropThisDim <- TRUE
         else if((code$args[[i+1]]$name != "") & (length(dropSingleSizes(code$args[[i+1]]$sizeExprs)$sizeExprs) == 0)) dropThisDim <- TRUE
+
         if(dropThisDim) {
-            if(nimbleOptions()$indexDrop) {
+            if(nimbleOptions()$indexDrop & dropBool) {
                 code$sizeExprs[[iSizes]] <- NULL
                 code$nDim <- code$nDim - 1
             } else { 
@@ -843,7 +854,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         ## e.g. (A + B)[1:4] must become (Interm <- A + B; Interm[1:4])
         if(!code$args[[1]]$isName) if(code$args[[1]]$name != 'map') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
         ## Replace with a map expression if needed
-        newExpr <- makeMapExprFromBrackets(code)
+        newExpr <- makeMapExprFromBrackets(code, dropBool)
         newExpr$sizeExprs <- code$sizeExprs
         newExpr$type <- code$type
         newExpr$nDim <- code$nDim

@@ -58,8 +58,12 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
         ## populate args with recursive calls
         if(length(code) > 1) {
             for(i in 2:length(code)) ## Note for NULL this removes the list entry.  Not very general, but handles return(invisible(NULL))
-                if(is.logical(code[[i]])) ans$args[[i-1]] <- as.numeric(code[[i]])
-                else {
+                if(is.logical(code[[i]])) {
+                    if(name == '[' & i == length(code))
+                        ans$args[[i-1]] <- code[[i]]
+                    else ## cast logical to numeric unless it is last arg of a [, in which case it could be for drop.  This is not a very logical place for this step, but it works.
+                        ans$args[[i-1]] <- as.numeric(code[[i]])
+                } else {
                     ans$args[[i-1]] <- if(is.numeric(code[[i]]) | is.character(code[[i]]) | is.null(code[[i]])) code[[i]] else RparseTree2ExprClasses(code[[i]], caller = ans, callerArgID = i-1)
                 }
         }
