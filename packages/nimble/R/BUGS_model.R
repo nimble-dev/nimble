@@ -859,7 +859,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 # removed given new handling of lumped data and constants
             }
         ), where = where),
-                    list(FIELDS = makeBUGSclassFields(varnames)
+                    list(FIELDS = makeBUGSclassFields(varnames, vars)
                          )))
     ans <- function(name = character()) {
         newClass(inputList = inputList, name = name)
@@ -872,7 +872,7 @@ MakeCustomModelClass <- function(vars, className, where = globalenv())
 
 ## This builds the list of all fields needed for a reference class definition.
 ## It is built as an unevaluated list parse tree so that when the class if created the function definitions are evaluated then.
-makeBUGSclassFields <- function(vars) {
+makeBUGSclassFields <- function(vars, varDims) {
     activeBindingDefs <- list()
     envDefs <- as.list(rep('ANY', length(vars)))
     names(envDefs) <- makeEnvName(vars)    
@@ -881,18 +881,34 @@ makeBUGSclassFields <- function(vars) {
     names(rowDefs) <- makeRowName(vars)
     names(nameDefs) <- makeNameName(vars)
     for(var in vars) {
-        activeBindingDefs[[var]] <- makeBUGSactiveBindingDef(makeEnvName(var), makeNameName(var), makeRowName(var))
+        activeBindingDefs[[var]] <- makeBUGSactiveBindingDef(makeEnvName(var), makeNameName(var), makeRowName(var), varDims[[var]])
     }
     as.call(c(as.name("list"), activeBindingDefs, envDefs, nameDefs, rowDefs))
 }
 
 ## This uses the activeBindingTemplate and plugs in the 3 needed names
-makeBUGSactiveBindingDef <- function(envVarName, varVarName, rowVarName) {
-    eval( substitute( substitute(aBT, list(ENVNAME = as.name(envVarName), VARNAME = as.name(varVarName), ROWNAME = as.name(rowVarName))), list(aBT = activeBindingTemplate) ) )
+makeBUGSactiveBindingDef <- function(envVarName, varVarName, rowVarName, dims) {
+    if(length(dims) == 0) dims <- 1
+    if(prod(dims) == 1)
+        template <- activeBindingTemplateLength1NonScalar
+    else
+        template <- activeBindingTemplate
+
+    eval( substitute( substitute(aBT, list(ENVNAME = as.name(envVarName), VARNAME = as.name(varVarName), ROWNAME = as.name(rowVarName), DIMNAME = dims)), list(aBT = template) ) )
 }
 ##e.g.  makeBUGSactiveBindingDef('.env_x','.name_x','.row_x')
 
 ## Parse tree template for the active binding functions
+activeBindingTemplateLength1NonScalar <- quote( function(value) {
+    if(missing(value)) return(if(is.na(ROWNAME)) ENVNAME[[VARNAME]] else ENVNAME[[VARNAME]][[ROWNAME]]) ## commas will get inserted after ROWNAME
+    else {
+        value <- array(value, dim = DIMNAME)
+        if(is.na(ROWNAME)) ENVNAME[[VARNAME]] <- value
+        else ENVNAME[[VARNAME]][[ROWNAME]] <- value
+        return(invisible(value))
+    }
+})
+
 activeBindingTemplate <- quote( function(value) {
     if(missing(value)) return(if(is.na(ROWNAME)) ENVNAME[[VARNAME]] else ENVNAME[[VARNAME]][[ROWNAME]]) ## commas will get inserted after ROWNAME
     else {
@@ -901,6 +917,7 @@ activeBindingTemplate <- quote( function(value) {
         return(invisible(value))
     }
 })
+
 
 createDefault_isDataObj <- function(obj) {
     if(length(obj) == 0) return(FALSE)
