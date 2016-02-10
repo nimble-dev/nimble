@@ -1,0 +1,617 @@
+#' Run multiple MCMCs (packages or NIMBLE cases) for multiple models and return summary results
+#'
+#' Manages the input and processes the output for multiple calls to MCMCsuite to generate comparisons among MCMCs
+#'
+#' @param models A set of models for which one or more MCMCs should be run.  Can take one of several formats: (1) a character vector of names of classic WinBUGS examples.  (2) for one model, a list with elements \code{model} (containing the model code as returned by \code{\link{nimbleCode}}), \code{data} (containing a list of data that can be provided to \code{\link{nimbleModel}}, \code{inits} (containing a list of initial values that can be provided to \code{\link{nimbleModel}}; this is optional unless it is needed to match names in some of the other arguments, as described below), and \code{name} (a character name; this is optional).  (3) for multiple models, a list of lists formatted as per option (2).
+#' 
+#' @param MCMCs An object acceptable as the \code{MCMCs} argument to \code{\link{MCMCsuite}}.  This specifies the set of MCMCs to be run.  Valid entries include 'jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock', 'stan', 'winbugs', 'openbugs', or a name provided in the \code{MCMCdefs} list.
+#'
+#' @param MCMCdefs, An optional object acceptable as the \code{MCMCdefs} argument to \code{\link{MCMCsuite}}.
+#'
+#' @param BUGSdir If \code{models} is a character vector of WinBUGS example names, \code{BUGSdir} can optionally provide the directory (as a character string) where to find them.  If missing, they will be looked up in the installed \code{nimble} package using \code{\link{getBUGSexampleDir}}.
+#'
+#' @param stanDir
+#' 
+#' @param stanInfo A list of information for finding and using the Stan specification of each model.  If names of list elements are provided, they will be used to match either the character vector of names provided for \code{models} (option (1)) or the list names of \code{models} (options (2) or (3)).  If names are not provided, the models will be used in order.  Each element must be a list that can or must include (i) \code{stanSubDir} (required: the subdirectory to use, under stanDir; often the subdirectory is the model name). (ii) \code{stanCodeFile} (optional: the name of the stan code file, to which ".stan" will be appended; if omitted, this will be set to the value of \code{stanCodeFile}. (iii) \code{stanDataFile} (optional: the name of a the stan data file; if omitted, this will be set to the value of stanCodeFile with "data.R" appended). (iv) \code{stanInitsFile} (optional: the name of a the stan inits file; if omitted, this will be set to the value of stanCodeFile with "init.R" appended). (v) \code{stanDir} (optional: the directory in which \code{stanSubDir} is located; if omitted, the value of the \code{stanDir} argument will be used).
+#'
+#' @param doSuitePlot
+#'
+#' @param doSuitePlot
+compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary=TRUE, ...) {
+
+    ## stanInfo = list(codeFile = required, dir = optional,  stanParameterRules = optional, modelName = optional, data = optional, inits = optional)
+    ## or simply a character codeFile
+    
+    ## set up list of models from 3 possible input formats
+    if(is.character(models)) {
+        modelContents <- list()
+        for (i in seq_along(models)) {
+            thisBUGSdir <- if(missing(BUGSdir)) getBUGSexampleDir(models[i]) else BUGSdir 
+            modelContents[[i]] <- readBUGSmodel(model=models[i],
+                                    dir=thisBUGSdir,
+                                    returnModelComponentsOnly=TRUE)
+        }
+    } else {
+        if(!is.list(models)) stop('models must be a list if it is not a vector of BUGS example names')
+        if(!is.list(models[[1]])) modelContents <- list(models)
+        else modelContents <- models
+
+        inputNames <- names(modelContents)
+        if(is.null(inputNames)) models <- paste0('model', seq_along(modelContents))
+        else {
+            iNamesNeeded <- which(inputNames == "")
+            models <- inputNames
+            models[iNamesNeeded] <- paste0('model', iNamesNeeded)
+        }
+    }
+
+    ## At this point models is a character vector of model names and modelContents is a list with information about each model
+    
+    results <- list()
+
+    useStan <- 'stan' %in% MCMCs
+    if(useStan) {
+        useStanInfo <- !is.null(stanInfo)
+        if(useStanInfo) {
+            if(is.list(stanInfo)) if(!is.list(stanInfo[[1]])) stanInfo <- list(stanInfo)
+            if(is.character(stanInfo)) stanInfo <- as.list(stanInfo)
+            if(is.null(names(stanInfo))) names(stanInfo) <- models
+        }
+    } else {
+        stanNameMaps <- stanDataFile <- stanInitFile <- NULL
+    }
+    
+    noConjDef <- list(noConj = quote({ configureMCMC(Rmodel, useConjugacy=FALSE) }))
+    if(missing(MCMCdefs)) MCMCdefs <- noConjDef
+    else MCMCdefs <- c(MCMCdefs, noConjDef)
+  
+    for (i in 1:length(models)){
+        if(verbose) cat(paste('Working on', models[i]))
+
+        if(useStan) {
+            if(!useStanInfo) {
+                ## no stanInfo so use the model name for the stanModelName and stanCodefile
+                stanModelName <- stanCodeFile <- models[i]
+            } else {
+                ## yes stanInfo so look at it
+                thisStanInfo <- stanInfo[[models[i]]]
+                if(is.null(thisStanInfo))
+                    ## no stanInfo for this 
+                    stanModelName <- stanCodeFile <- models[i]
+                else {
+                    if(is.character(thisStanInfo)) {
+                        stanModelName <- stanCodeFile <- thisStanInfo
+                    } else {
+                        stanModelName <- thisStanInfo[[ 'modelName' ]]
+                        if(is.null(stanModelName)) stanModelName <- models[i]
+                        
+                        stanNameMaps <- thisStanInfo[[ 'stanParameterRules' ]]
+                        if(is.null(stanNameMaps)) stanNameMaps <- list()
+
+                        usingStanDir <- thisStanInfo[[ 'dir']]
+                        if(is.null(usingStanDir)) usingStanDir <- stanDir
+                        
+                        stanCodeFile <- if(is.null(names(thisStanInfo))) thisStanInfo[[ 1 ]] else thisStanInfo[['codeFile']]
+                        if(is.null(stanCodeFile)) stanCodeFile <- stanModelName
+                        stanCodeFile <- file.path(usingStanDir, stanCodeFile)
+
+                        if(!grepl('\\.stan', stanCodeFile)) stanCodeFile <- paste0(stanCodeFile, '.stan')
+                                               
+
+                        if(is.list(thisStanInfo[[ 'data' ]])) stanDataFile <- thisStanInfo[[ 'data' ]]
+                        else if(is.null( thisStanInfo[[ 'data' ]])) stanDataFile <- NULL
+                        else stanDataFile <- file.path(usingStanDir, thisStanInfo[[ 'data' ]]) ## it's ok if this is NULL
+
+                        if(!is.null(stanDataFile) & !is.list(stanDataFile))
+                            if(!grepl('\\.data\\.R', stanDataFile)) stanDataFile <- paste0(stanCodeFile, '.data.R')
+
+                        if(is.list(thisStanInfo[[ 'inits' ]])) stanInitFile <- thisStanInfo[[ 'inits' ]]
+                        else if(is.null( thisStanInfo[[ 'inits' ]])) stanInitFile <- NULL
+                        else stanInitFile <- file.path(usingStanDir, thisStanInfo[[ 'inits' ]]) ## it's ok if this is NULL
+
+                        if(!is.null(stanInitFile) & !is.list(stanInitFile))
+                            if(!grepl('\\.init\\.R', stanInitFile)) stanInitFile <- paste0(stanInitFile, '.init.R')
+                    }
+                }
+            }
+        }
+        suite_output <- MCMCsuite(modelContents[[i]]$model, constants = modelContents[[i]]$data, inits = modelContents[[i]]$inits
+                                  ,setSeed = FALSE
+                                  ,MCMCs = MCMCs, makePlot = doSamplePlots, savePlot = doSamplePlots
+                                 ,summaryStats=c('mean','median','sd','CI95_low','CI95_upp')
+                                  ,calculateEfficiency=TRUE
+                                        #change
+                                 ,MCMCdefs = MCMCdefs 
+                                 ,stan_model=if(useStan) stanCodeFile else ""
+                                 ,stanNameMaps = stanNameMaps
+                                  ,stan_data = stanDataFile
+                                 ,stan_inits = stanInitFile
+                                 ,  ...
+                                  )
+        if(summary) 
+            results[models[i]][[1]] <- list(summary = suite_output$summary,
+                                            timing = suite_output$timing, ##create_time_df(suite_output$timing, length(MCMCs)),
+                                            efficiency = suite_output$efficiency)
+        else
+            results[models[i]][[1]] <- suite_output
+    }
+    return(results)
+}
+
+make_example_html <- function(modelName, pageComponents, madePageComponents, control) { ##time, height, controls){
+    numComponents <- length(pageComponents)
+    if(numComponents == 0) return()
+    tags <- paste0('p', 1:numComponents)
+    linkTexts <- unlist(lapply(pageComponents, `[[`, 'linkText'))
+    headerLinkEntries <- paste(paste0("<a href='#", tags, "'>", linkTexts, "</a><br>"),sep="\n")
+
+    pageComponentEntries <- character(numComponents)
+    for(i in 1:numComponents) {
+        fileSuffix <- pageComponents[[i]]$fileSuffix
+        jpgName <- if(is.null(fileSuffix)) NULL else paste0(modelName, fileSuffix, '.jpg')
+        if(is.null(jpgName)) {
+            ## text or table
+            if(inherits(madePageComponents[[i]][['printable']], 'xtable')) element <- paste0("<h2 id='",tags[i],"'>", linkTexts[[i]],"</h2>\n", print(madePageComponents[[i]][['printable']], type = 'html', print.results = FALSE))
+            else element <- paste0("<h2 id='",tags[i],"'>", linkTexts[[i]],"</h2>\n", madePageComponents[[i]][['printable']])
+        } else {
+            element <- paste0("<br><h2 id='", pageComponents[[i]][['fileSuffix']],"'>", linkTexts[[i]],"</h2>
+    <img id='",tags[i],"' src=\"",jpgName,"\"", madePageComponents[[i]][['html_img_args']],"</img>")
+        }
+        pageComponentEntries[i] <- element
+    }
+    
+    html=paste0("<!DOCTYPE html PUBLIC>
+    <html>
+    <head>
+    <link rel='stylesheet' type='text/css' href='style.css'/>
+    </head>
+    <body>
+
+    <h1>", modelName,"</h1>\n",
+        paste(headerLinkEntries, collapse="\n"),
+        paste(pageComponentEntries, collapse="\n"),
+    "
+    </body>
+    </html>")
+    cat(html,file=paste(modelName,".html",sep=""))
+}
+
+
+make_main <- function(models, mainPageName = 'main'){
+    html="<!DOCTYPE html PUBLIC>
+  <html>
+  <head>
+  <body>
+  <h1>Examples</h1>"
+    for (i in 1:length(models)){
+        html=paste(html,"<a href=\"",models[i],".html\">",models[i],"</a>\n <br>\n",sep="")
+    }
+    html=paste(html,"</body>
+  </head>
+  </html>",sep="")
+    cat(html,file=paste0(mainPageName,'.html'))
+}
+
+rename_MCMC_comparison_method <- function(oldname, newname, comparison) {
+    if(is.data.frame(comparison$timing))
+        methodNames <- as.character(comparison$timing$method)
+    else {
+        methodNames <- names(comparison$timing)
+    }
+    if(length(oldname)!=length(newname)) stop("length of oldname and new name don't match")
+    for(i in seq_along(oldname))
+        methodNames[methodNames == oldname[i]] <- newname[i]
+    if(is.data.frame(comparison$timing)) {
+        fmethodNames <- factor(methodNames)
+        comparison$timing$method <- fmethodNames
+    } else {
+        names(comparison$timing) <- methodNames
+        methodNames <- methodNames[!grepl("\\_compile", methodNames)]
+    }
+
+    names(comparison$efficiency$min) <- methodNames
+    names(comparison$efficiency$mean) <- methodNames
+    rownames(comparison$summary) <- methodNames
+    comparison
+}
+
+## rename_models_in_MCMC_comparison <- function(res, newNames) {
+##     oldNames <- names(newNames)
+##     local_rename <- function(inputNames) {
+##         for(i in oldNames) inputNames[ inputNames == i ] <- newNames[[i]]
+##         inputNames
+##     }
+##     if(!is.null(res$samples)) rownames(res$samples) <- local_rename(rownames(res$samples))
+##     if(!is.null(res$summary)) rownames(res$summary) <- local_rename(rownames(res$summary))
+##     if(!is.null(res$timing)) names(res$timing) <- local_rename(names(res$timing))
+##     if(!is.null(res$efficiency)) res$efficiency <- lapply(res$efficiency, function(x) {names(x) <- local_rename(names(x)); x})
+##     res
+## }
+
+combine_MCMC_comparison_results <- function(..., name = "MCMCresults") {
+    requireNamespace('abind', quietly = TRUE)
+    dotsArgs <- list(...)
+    summaries <- lapply(dotsArgs, `[[`, 'summary')
+    abind1 <- function(...) abind(..., along = 1)
+    summary <- do.call(abind1, summaries)
+
+    ## We've had some trouble combining timings but think it's ok now.
+    timings <- lapply(dotsArgs, `[[`, 'timing')
+    timings <- lapply(timings, function(x) x[!grepl('_compile', names(x))])
+    timing <- try(do.call(c, timings))
+    if(inherits(timing, 'try-error')) {
+        timing <- NULL
+        message("Can't combine timings in this case.  This needs fixing.  For now, you must set timing=FALSE in controls argument of make_MCMC_comparison_pages.")
+    }
+    efficiencies <- lapply(dotsArgs, `[[`, 'efficiency')
+    efficiency <- list(min = unlist( lapply(efficiencies, `[[`, 'min') ),
+                         mean = unlist( lapply(efficiencies, `[[`, 'mean') ))
+    ans <- list(list(summary = summary, timing = timing, efficiency = efficiency))
+    names(ans) <- name
+    ans
+}
+
+reshape_comparison_results <- function(oneComparisonResult, includeVars = TRUE, includeEfficiency = TRUE, includeTiming = TRUE) {
+    ## one entry that may have been in a list returned from MCMCsuite or compareMCMCs
+    vars <- oneComparisonResult[['summary']]
+    time <- oneComparisonResult[['timing']]
+    efficiencyResults <- oneComparisonResult[['efficiency']]
+        
+    if(includeEfficiency) {
+        dfEfficiency <- do.call(cbind, efficiencyResults)
+        dfEfficiency <- do.call(rbind,  ## would be slicker with reshape2 but we'll skip it for this simple case
+                                list(data.frame(method = rownames(dfEfficiency),
+                                                Efficiency = as.numeric(dfEfficiency[,1]),
+                                                type = rep(colnames(dfEfficiency)[1], nrow(dfEfficiency))),
+                                     data.frame(method = rownames(dfEfficiency),
+                                                Efficiency = as.numeric(dfEfficiency[,2]),
+                                                type = rep(colnames(dfEfficiency)[2], nrow(dfEfficiency)))))
+    } else {
+        dfEfficiency <- NULL 
+    }
+
+    if(includeVars) {
+        dfVars <- data.frame()
+        methodNames <- dimnames(vars)[[1]]
+        numRows <- dim(vars)[1]
+        for(j in 1:length(dimnames(vars)[[3]])){
+            temp=as.data.frame(vars[,,j], row.names = 1:numRows)
+            temp$method=methodNames
+            temp$var=rep(dimnames(vars)[[3]][j],length(rownames(temp))) 
+            dfVars=rbind(dfVars,temp)
+        }
+        dfVars$var=factor(dfVars$var,levels=unique(as.vector(factor(dfVars$var))))
+    }
+
+    timing <- NULL
+    if(includeTiming) {
+        timing <- as.data.frame(time)
+        boolCompile <- grepl("_compile", rownames(timing))
+        timing <- timing[!boolCompile,,drop=FALSE]
+        timing[,'method'] <- rownames(timing)
+        rownames(timing) <- NULL    
+    }
+    
+    list(Efficiency = dfEfficiency, varSummaries = dfVars, Timing = timing)
+}
+
+minMeanAllComparisonComponent <- function(comparisonResults, modelName, control) {
+    part1 <- minMeanComparisonComponent(comparisonResults, modelName, control)
+    part2 <- allParamEfficiencyComparisonComponent(comparisonResults, modelName, control)
+    list(plottable = list(minMean = part1$plottable, allParams = part2$plottable), height = 6, width = 15, html_img_args = "height = \"600\" width = \"1500\"")
+}
+
+plotMinMeanAll <- function(plottable) {
+    requireNamespace('grid', quietly = TRUE)
+    print(plottable[['minMean']], vp = grid::viewport(x = .25, y = 0.5, width = 0.5, height = 1.0))
+    print(plottable[['allParams']], vp = grid::viewport(x = .75, y = 0.5, width = 0.5, height = 1.0))
+}
+
+allParamEfficiencyComparisonComponent <- function(comparisonResults, modelName, control) {
+    requireNamespace('ggplot2', quietly = TRUE)
+    vars <- comparisonResults$varSummaries
+    if(missing(control)) control <- list()
+    invert <- control[['invert']]  ## do seconds/ESS instead of ESS/second
+    if(is.null(invert)) invert <- FALSE
+
+    if(invert) vars$efficiency <- 1/vars$efficiency
+    
+    ylabel <- if(!invert) 'Effective sample size\n per second'
+              else 'Seconds per\n effective sample'
+    
+    title <- if(!invert) "MCMC efficiency for\n each parameter"
+             else "MCMC pace for\n each parameter"
+
+    replicatedRuns <- !(length(unique(vars$method)) * length(unique(vars$var)) == length(vars$efficiency))
+
+    if(replicatedRuns) {
+        vars <- aggregate(vars$efficiency, list(vars$method, vars$var), mean)
+        colnames(vars) <- c('method','var', "efficiency")
+        title <- paste("Mean", title)
+    }
+    
+    p <- ggplot(vars, aes(x = method, y = efficiency, color = var, group = var)) +
+        geom_point() + geom_line() + ylab(ylabel) +
+            ##     guides(colour = guide_legend(title = "Parameter", override.aes = list(shape = NULL, size = 0.5))) +
+            guides(colour = guide_legend(title = "Parameter")) +
+                ggtitle(title) + 
+                    stat_summary(mapping = aes(x = method, y = efficiency), data = vars, inherit.aes = FALSE, fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 2)
+    list(plottable = p, height = 6, width = 5, html_img_args = "height = \"600\" width = \"500\"")
+}
+
+minMeanComparisonComponent <- function(comparisonResults, modelName, control) {
+    requireNamespace('ggplot2', quietly = TRUE)
+
+    if(missing(control)) control <- list()
+    invert <- control[['invert']]  ## do seconds/ESS instead of ESS/second
+    if(is.null(invert)) invert = FALSE
+    
+    Efficiency <- comparisonResults$Efficiency
+    if(invert) Efficiency$Efficiency <- 1/Efficiency$Efficiency
+    if(invert) levels(Efficiency$type)[ levels(Efficiency$type) == 'min' ] <- 'max' 
+    ylabel <- if(!invert) 'Effective sample size\n per second'
+              else 'Seconds per\n effective sample'
+    title <- if(!invert) "MCMC efficiency summary\n (Minimum and mean effective sample size per second)"
+             else "MCMC pace summary\n (Maximum and mean seconds per effective sample)"
+    if(length(unique(Efficiency$method)) * length(unique(Efficiency$type)) == length(Efficiency$method)) {
+        p=ggplot(Efficiency, aes(x=method, y=Efficiency, fill=method)) +
+            geom_bar(position=position_dodge(),stat='identity')+
+                ggtitle(title)+
+                    facet_wrap(~ type,ncol=2,scales='free') +
+                        ylab(ylabel) +
+                            theme(legend.position = "top") 
+    } else {
+        ## there are multiple runs
+        title <- paste0(title, "\n \"-\" shows mean.")
+        p=ggplot(Efficiency, aes(x=method, y=Efficiency, fill=method, color = method)) +
+            geom_point(stat='identity')+
+                stat_summary(fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 4) +
+                    ggtitle(title)+
+                                facet_wrap(~ type,ncol=2,scales='free') +
+                                    ylab(ylabel) +
+                                        theme(legend.position = "top")
+    }
+    list(plottable = p, height = 6, width = 10, html_img_args = "height = \"600\" width = \"1000\"")
+}
+
+efficiencyDetailsComparisonComponent <- function(comparisonResults, modelName, control = list(ncol = 4)) {
+    requireNamespace('ggplot2', quietly = TRUE)
+    df <- comparisonResults$varSummaries
+    ncol <- control$ncol
+    if(length(unique(df$var)) * length(unique(df$method)) == nrow(df)) {
+        p=ggplot(df,aes(x=method,y=efficiency,fill=method))+ ##y = size_time
+            geom_bar(position=position_dodge(),stat='identity')+
+                ggtitle("MCMC efficiency details\n (Effective sample size per second for each parameter)")+
+                    ylab('Effective sample size per second') +
+                        facet_wrap(~ var,ncol=ncol,scales='free') +
+                            theme(legend.position = "top") ## +
+        ## saving to jpg is now done externally
+ ##                               ggsave(paste(modelNames[i],'_efficiencyDetails.jpg',sep=''), height = img_h, width = 12,limitsize=F)
+    } else {
+        ## multiple points for each method
+        p=ggplot(df,aes(x=method,y=efficiency,fill=method, color = method))+ ##y = size_time
+            geom_point(stat='identity')+
+                stat_summary(fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 4) +
+                    ggtitle("MCMC efficiency details\n (Effective sample size per second for each parameter)\n \"-\" shows mean.")+
+                        ylab('Effective sample size per second') +
+                            facet_wrap(~ var,ncol=ncol,scales='free') +
+                                theme(legend.position = "top") ## +
+##                                    ggsave(paste(modelNames[i],'_efficiencyDetails.jpg',sep=''), height = img_h, width = 12,limitsize=F)
+        
+    }
+    numVars <- length(unique(df[,'var']))
+    height <- floor(numVars*4.5/3)
+    list(plottable = p, height = height, width = 12, html_img_args = paste0("height=\"",height*100,"\" width=\"1200\""))
+}
+
+posteriorSummaryComparisonComponent <- function(comparisonResults, modelName, control = list(ncol = 4)) {
+    requireNamespace('ggplot2', quietly = TRUE)
+    df <- comparisonResults$varSummaries
+    ncol <- control$ncol
+    p<-ggplot(df,aes(x=method,y=mean))+
+        geom_point(aes(colour=method,size=1))+
+            ggtitle("Posterior mean, median, and 95% CIs")+
+                guides(size=F,colour=F)+
+                    geom_point(aes(x=method,y=median,size=1),shape=4)+
+                        facet_wrap(~ var,ncol=ncol,scales='free')+
+                            geom_errorbar(aes(ymax=CI95_upp,ymin=CI95_low),width=.25) ##+
+    ##                                   ggsave(paste(modelNames[i],'_posteriorSummary.jpg',sep=""),height=img_h,width=12,limitsize=F)
+
+    numVars <- length(unique(df[,'var']))
+    height <- floor(numVars*4.5/3)
+    list(plottable = p, height = height, width = 12, html_img_args = paste0("height=\"",height*100,"\" width=\"1200\""))
+}
+
+timeComparisonComponent <- function(comparisonResults, modelName, control) {
+    browser()
+    requireNamespace('xtable', quietly = TRUE)
+    time <- comparisonResults[['Timing']]
+    list(printable = print(xtable(time[,c('method','time')]), include.rownames = FALSE, type='html', print.results = FALSE))
+}
+
+make_MCMC_comparison_pages <- function(comparisonResults, dir = '.', pageComponents, modelNames = names(comparisonResults), control, plot = TRUE) {
+    ## pageComponents can have standard names with TRUE or FALSE or it can a list with elements
+    ## control options include makeTopPage and mainPageName
+    curDir <- getwd()
+    outputDir <- dir 
+    if(!file.exists(outputDir)) dir.create(outputDir, recursive = TRUE)
+    setwd(outputDir)
+    on.exit(setwd(curDir))
+
+    controlDefaults <- list(makeTopPage = "if_needed", mainPageName = 'main')
+    if(missing(control)) control <- controlDefaults
+    else for(i in names(controlDefaults)) {
+        if(is.null(control[[i]])) control[[i]] <- controlDefaults[[i]]
+    }
+
+    if(missing(pageComponents)) {
+        pageComponents <- list(timing = FALSE, efficiencySummary = FALSE, efficiencySummaryAllParams = TRUE, paceSummaryAllParams = TRUE, efficiencyDetails = TRUE, posteriorSummary = TRUE)
+    }
+
+    if(!is.list(pageComponents)) stop('pageComponents must be a list')
+    if(is.null(names(pageComponents))) stop('pageComponents elements must be named')
+    if(any(names(pageComponents)=="")) stop('pageComponents elements must be named')
+
+    pageComponentsLibrary <- list(timing = list(make = 'timeComparisonComponent', linkText = "MCMC run time"),
+                                  efficiencySummary = list(make = 'minMeanComparisonComponent', fileSuffix = "_efficiencySummary",
+                                      linkText = "MCMC efficiency summary"),
+                                  efficiencySummaryAllParams = list(make = 'minMeanAllComparisonComponent', fileSuffix = "_efficiencySummaryAll",
+                                      linkText = "MCMC efficiency summary (with all parameters)", plot = 'plotMinMeanAll'),
+                                  paceSummaryAllParams = list(make = 'minMeanAllComparisonComponent', fileSuffix = "_paceSummaryAll",
+                                      linkText = "MCMC pace summary (with all parameters)", plot = 'plotMinMeanAll', control = list(invert = TRUE)),
+                                  efficiencyDetails = list(make = 'efficiencyDetailsComparisonComponent', fileSuffix = "_efficiencyDetails",
+                                      linkText = "MCMC efficiency details", control = list(ncol = 4)),
+                                  posteriorSummary = list(make = 'posteriorSummaryComparisonComponent', fileSuffix = "_posteriorSummary",
+                                      linkText = "Posterior summaries", control = list(ncol = 4)))
+    
+    for(j in names(pageComponents)) {
+        if(is.logical(pageComponents[[j]])) {
+            if(pageComponents[[j]]) {
+                if(j %in% names(pageComponentsLibrary)) {
+                    pageComponents[[j]] <- pageComponentsLibrary[[j]]
+                } else {
+                    stop(paste0('no pageComponentsLibrary definition for ', j))
+                }
+            } else {
+                pageComponents[[j]] <- NULL
+            }
+        }
+    }
+
+    makeTopPage <- switch(control$makeTopPage,
+                          yes = TRUE,
+                          no = FALSE,
+                          if_needed = length(modelNames) > 1,
+                          stop('Invalid control entry for makeTopPage'))
+    if(makeTopPage) make_main(modelNames, control$mainPageName)
+    
+    for(i in seq_along(comparisonResults)){
+        reshapedResults <- reshape_comparison_results(comparisonResults[[i]])
+
+        madePageComponents <- list()
+        for(j in names(pageComponents)) {
+            madePageComponents[[j]] <- eval(call(pageComponents[[j]][['make']], reshapedResults, modelNames[i], pageComponents[[j]][['control']]))
+        }
+
+        for(j in names(pageComponents)) {
+            if(!is.null(madePageComponents[[j]][['plottable']])) {
+                filename <- paste0(modelNames[i], pageComponents[[j]]$fileSuffix, '.jpg')
+                jpeg(filename = filename, height = madePageComponents[[j]]$height, width = madePageComponents[[j]]$width, units = 'in', res = 300)
+                eval(call(if(is.null(pageComponents[[j]][['plot']])) 'plot' else pageComponents[[j]][['plot']], madePageComponents[[j]]$plottable))
+                dev.off()
+            }
+        }
+        if(plot)
+            make_example_html(modelNames[i], pageComponents, madePageComponents)
+    }
+    invisible(madePageComponents)
+}
+
+effectiveSizeStan <- function(x) {
+    if(!requireNamespace('rstan', quietly = TRUE)) stop('Problem loading rstan')
+    x <- array(x, dim = c(length(x), 1, 1))
+    ans <- monitor(x, warmup = 0, probs = numeric(), print = FALSE)
+    ans
+}
+
+effectiveSizeHO <- function (x, order.max = 2000) {
+    requireNamespace('coda', quietly = TRUE)
+    if (is.mcmc.list(x)) {
+        ess <- do.call("rbind", lapply(x, effectiveSize))
+        ans <- apply(ess, 2, sum)
+    }
+    else {
+        x <- as.mcmc(x)
+        x <- as.matrix(x)
+        spec <- spectrum0.ar.big(x, order.max = order.max)$spec
+        ans <- ifelse(spec == 0, 0, nrow(x) * apply(x, 2, var)/spec)
+    }
+    return(ans)
+}
+
+spectrum0.ar.big <- function (x, order.max = 2000) {
+    x <- as.matrix(x)
+    v0 <- order <- numeric(ncol(x))
+    names(v0) <- names(order) <- colnames(x)
+    z <- 1:nrow(x)
+    for (i in 1:ncol(x)) {
+        lm.out <- lm(x[, i] ~ z)
+        if (identical(all.equal(sd(residuals(lm.out)), 0), TRUE)) {
+            v0[i] <- 0
+            order[i] <- 0
+        }
+        else {
+            ar.out <- ar(x[, i], aic = TRUE, order.max = order.max)
+            v0[i] <- ar.out$var.pred/(1 - sum(ar.out$ar))^2
+            order[i] <- ar.out$order
+        }
+    }
+    return(list(spec = v0, order = order))
+}
+
+updateMCMCcomparisonWithHighOrderESS <- function(mcmcResults, logVars = "", includeBurninTime = TRUE, StanESS = FALSE) {
+    for(case in names(mcmcResults)) {
+        bigSummary <- MCMCefficiencyHOlist(mcmcResults[[case]], logVars, includeBurninTime = includeBurninTime, StanESS = StanESS)
+        if(!identical(dimnames(bigSummary$summary)[[1]], dimnames( mcmcResults[[case]]$summary )[[1]]) ) stop('ERROR with name alignment')
+        mcmcResults[[case]]$efficiency <- bigSummary$efficiency
+        if(StanESS) {
+            oldSummary <- mcmcResults[[case]]$summary
+            nSummaries <- dim(oldSummary)[2]
+            mcmcResults[[case]]$summary <- array(0, dim = dim(oldSummary) + c(0, 1, 0))
+            mcmcResults[[case]]$summary[ , 1:nSummaries, ] <- oldSummary
+            dimnames(mcmcResults[[case]]$summary) <- list(dimnames(oldSummary)[[1]], c(dimnames(oldSummary)[[2]], 'Rhat'), dimnames(oldSummary)[[3]])
+        }
+        mcmcResults[[case]]$summary[,'ess',] <- bigSummary$summary[,'ess',,drop=FALSE]
+        mcmcResults[[case]]$summary[,'efficiency',] <- bigSummary$summary[,'efficiency',,drop=FALSE]
+        if(StanESS) mcmcResults[[case]]$summary[,'Rhat',] <- bigSummary$summary[,'Rhat',,drop=FALSE]
+    }
+    mcmcResults
+}
+
+MCMCefficiencyHOlist <- function(x, logVars = "", includeBurninTime = FALSE, StanESS = FALSE) {
+    requireNamespace('abind', quietly = TRUE)
+    caseNames <- dimnames(x$samples)[[1]]
+    ansList <- list()
+    for(case in caseNames) {
+        ansList[[case]] <- MCMCefficiencyHO(x, label = case, logVars = logVars, includeBurninTime = includeBurninTime, StanESS = StanESS)
+    }
+
+    summaries <- lapply(ansList, `[[`, 'summary')
+    summary <- abind(summaries, along = 1)
+
+    efficiencies <- lapply(ansList, `[[`, 'efficiency')
+    mins <- unlist(lapply(efficiencies, `[[`, 'min'))
+    means <- unlist(lapply(efficiencies, `[[`, 'mean'))
+    list(efficiency = list(min = mins, mean = means), summary = summary)
+}
+
+MCMCefficiencyHO <- function(x, label, logVars = "", includeBurninTime = FALSE, StanESS = FALSE) {
+    if(missing(label)) label <- dimnames(x$samples)[[1]][1]
+    timing <- x$timing[label]
+    if(!includeBurninTime) timing <- timing * (1-x$runParams['burninFraction'])
+    varNames <- dimnames(x$samples)[[2]]
+    numVars <- length(varNames)
+    summary <- if(StanESS) array(0, dim = c(1, 4, numVars), dimnames = list(label, c('n','ess','efficiency', 'Rhat'), varNames))
+               else array(0, dim = c(1, 3, numVars), dimnames = list(label, c('n','ess','efficiency'), varNames))
+    ESSfunction <- if(StanESS) 'effectiveSizeStan' else 'effectiveSizeHO'
+    for(i in 1:numVars) {
+        if(varNames[i] %in% logVars)
+            thisESS <- eval(call(ESSfunction, log(x$samples[label,i,])))
+        else
+            thisESS <- eval(call(ESSfunction, x$samples[label,i,]))
+        if(StanESS) {
+            summary[label,'n',i] <- length(x$samples[label,i,])
+            n_eff <- thisESS[1, 'n_eff']
+            summary[label,'ess',i] <- n_eff
+            summary[label,'efficiency',i] <- n_eff/timing
+            summary[label,'Rhat',i] <- thisESS[1, 'Rhat']
+        } else {
+            summary[label,'n',i] <- length(x$samples[label,i,])
+            summary[label,'ess',i] <- thisESS
+            summary[label,'efficiency',i] <- thisESS/timing
+        }
+    }
+    efficiency <- list(min = min(as.numeric(summary[label,'efficiency',])),
+                       mean = mean(as.numeric(summary[label,'efficiency',])))
+    list(efficiency = efficiency, summary = summary)
+}
