@@ -264,7 +264,7 @@ conjugacyClass <- setRefClass(
             linearityCheckExpr <- model$getNodeParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
             linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
             if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
-            if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure non of it's components appear in expr
+            if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
             linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
             if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
             if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression

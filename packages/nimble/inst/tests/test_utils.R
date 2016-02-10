@@ -334,3 +334,37 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   return(returnVal)
 
 }
+
+test_size <- function(input, verbose = TRUE) {
+    errorMsg <- paste0(ifelse(input$knownProblem, "KNOWN ISSUE: ", ""), "Result does not match ", input$expectPass)
+    if(verbose) cat("### Testing", input$name, " with RHS variable ###\n")
+    result <- try(
+        m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
+    )    
+    try(test_that(paste0("Test of size/dimension check: ", input$name),
+                  expect_that(!is(result, "try-error"), equals(input$expectPass),
+                              errorMsg)))
+    if(!is(result, "try-error")) {
+        result <- try(
+            { calculate(m); out <- calculate(m)} )          
+        try(test_that(paste0("Test of size/dimension check: ", input$name),
+                      expect_that(!is(result, "try-error"), equals(input$expectPass),
+                                  errorMsg)))
+    }
+    if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
+    if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
+    result <- try(
+        m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
+    )
+    try(test_that(paste0("Test of size/dimension check: ", input$name),
+                  expect_that(!is(result, "try-error"), equals(input$expectPass),
+                              errorMsg)))
+    if(!is(result, "try-error")) {
+        result <- try(
+            { calculate(m); out <- calculate(m)} )          
+        try(test_that(paste0("Test of size/dimension check: ", input$name),
+                      expect_that(!is(result, "try-error"), equals(input$expectPass),
+                                  errorMsg)))
+    }
+    invisible(NULL)
+}

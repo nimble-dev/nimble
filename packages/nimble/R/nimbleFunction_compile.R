@@ -338,7 +338,7 @@ nfProcessing$methods(doSetupTypeInference_processNF = function(symTab, setupOutp
         symbolRCobject <- makeTypeObject(name, instances, firstOnly)
         if(is.null(symbolRCobject)) next
         if(is.logical(symbolRCobject)) {
-            warning(paste0('There is an error involving the type of ', name,'.  Going into browser(). Press Q to exit.'), call. = FALSE)
+            message(paste0('There is an error involving the type of ', name,'.  Going into browser(). Press Q to exit.'), call. = FALSE)
             browser()
         }
         if(add) symTab$addSymbol(symbolRCobject)
@@ -438,7 +438,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
                 warning(paste0('Problem: some but not all instances have ', name,' as a model.  Types must be consistent.'))
                 return(invisible(NULL))
             }
-            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RModelBaseClass'))))) {
+            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RmodelBaseClass'))))) {
                 warning(paste0('Problem: models should be provided as R model objects, not C model objects'))
                 return(invisible(NULL))
             }
@@ -498,6 +498,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     }
     if(inherits(instances[[1]][[name]], 'modelValuesAccessorVector')){
     	return(symbolModelValuesAccessorVector(name = name) )     	
+    }
+    if(inherits(instances[[1]][[name]], 'getParam_info')) {
+        return(symbolGetParamInfo(name = name, paramInfo = instances[[1]][[name]]))
     }
     ## if(is.character(instances[[1]][[name]])) {
     ##     return(symbolBase(name = name, type = 'Ronly'))

@@ -82,8 +82,9 @@ distClass <- setRefClass(
         discrete = 'ANY',	#'logical',   ## logical, if the distribution is discrete
         pqAvail = 'ANY',        #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available
         range = 'ANY',          #'numeric',  ## lower and upper limits of distribution domain
-        types = 'ANY'		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
-        ### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
+        types = 'ANY',		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
+        paramIDs = 'ANY'        #'integer'   ## named vector of unique integer ID for each parameter
+### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
     ),
     
     methods = list(
@@ -106,6 +107,7 @@ distClass <- setRefClass(
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
             range <<- if(is.null(distInputList$range))    c(-Inf, Inf)    else    distInputList$range
             init_types(distInputList)
+            init_paramIDs()
         },
         
         init_altsExprsReqdArgs = function() {
@@ -164,7 +166,12 @@ distClass <- setRefClass(
                 if(!(typeList$type %in% c('double', 'integer', 'logical')))     stop(paste0('unknown type specified in distribution: ', typeList$type))
                 if(!(typeList$nDim %in% 0:1000))     stop(paste0('unknown nDim specified in distribution: ', typeList$nDim))  ## yes, specificying maximum dimension of 1000
                 types[[typeName]] <<- typeList
-            }
+            }            
+        },
+
+        init_paramIDs = function() {
+            paramIDs <<- seq_along(types)
+            names(paramIDs) <<- names(types)
         },
         
         init_types_makeArgList = function(typeArgCharVector) {

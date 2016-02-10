@@ -151,7 +151,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ans
                                  },
                                  addModel = function(model) {
-                                     if(!inherits(model, 'RModelBaseClass')) stop('model provided to project is not an RModelBaseClass', call. = FALSE)
+                                     if(!inherits(model, 'RmodelBaseClass')) stop('model provided to project is not an RmodelBaseClass', call. = FALSE)
                                      modelDefName <- model$modelDef$name
                                      if(is.null(modelDefInfos[[modelDefName]])) {
                                          modelDefInfos[[modelDefName]] <<- modelDefInfoClass(
@@ -745,7 +745,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
 getNimbleTypes <- function(units) {
     ans <- character(length(units))
     for(i in seq_along(units)) {
-        if(inherits(units[[i]], 'RModelBaseClass')) ans[i] <- 'model'
+        if(inherits(units[[i]], 'RmodelBaseClass')) ans[i] <- 'model'
         else if(is.nf(units[[i]])) ans[i] <- 'nf'   ## a nimbleFunction
         else if(is.rcf(units[[i]])) ans[i] <- 'rcf' ## an RCfunction = a nimbleFunction with no setup
         else if(is.nfGenerator(units[[i]])) ans[i] <- 'unknown(nf generator)'
@@ -758,7 +758,6 @@ getNimbleTypes <- function(units) {
 getNimbleProject <- function(project, stopOnNull = FALSE) {
     if(inherits(project, 'nimbleProjectClass')) return(project)
     if(is.nf(project)) return(nfVar(project, 'nimbleProject'))
-    if(inherits(project, 'RmodelBaseClass')) stop('need to handle RmodelBaseClass in getNimbleProject')
     ans <- try(project$nimbleProject)
     if(inherits(ans, 'try-error') | is.null(ans)) {
         if(stopOnNull) stop(paste0('cannot determine nimbleProject from provided project argument'))

@@ -1,8 +1,11 @@
 rm(list = ls())
 
-if(FALSE) { # this is preventing alias in nimble-internal.Rd to be created
+if(TRUE) { # if TRUE this was preventing alias in nimble-internal.Rd to be created, but seems ok now
+    # keep as TRUE for R 3.1.0 to avoid Ref Class related warnings such as:
+#    1: class "RmodelBaseClass" is defined (with package slot ‘nimble’) but no metadata object found to revise subclass information---not exported?  Making a copy in package ‘.GlobalEnv’ 
+    # eventually we may not export these classes as those warnings don't appear in R 3.2
 individualExportClassNames = c( 
- 'RModelBaseClass',
+ 'RmodelBaseClass',
  'singleModelValuesAccessClass',
  'singleVarAccessClass', 
  'CmodelBaseClass',
@@ -65,21 +68,23 @@ individualExportNames = c(
     'getDistribution',
     'calc_dmnormAltParams',
     'getDependencyPaths',
-    'buildConjugateSamplerFunctions'
+    'buildConjugateSamplerFunctions',
+    'codeSubstitute', # not clear why this is not found in model$check if not exported
+    'distributionsInputList' # not clear why this is not found in model$check if not exported
 )
 
 individualMaskedFunctions = c(
 'mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
-# trying for now not to put these as exported as they should presumably not be exported as functions
- 'RModelBaseClass',
- 'singleModelValuesAccessClass',
- 'singleVarAccessClass', 
- 'CmodelBaseClass',
- 'CnimbleFunctionBase', 
- 'modelBaseClass',
- 'modelValuesBaseClass', 
- 'codeBlockClass',
- 'nimbleFunctionBase',
+# if mask these classes later, uncomment this
+## 'RmodelBaseClass',
+##  'singleModelValuesAccessClass',
+##  'singleVarAccessClass', 
+##  'CmodelBaseClass',
+##  'CnimbleFunctionBase', 
+##  'modelBaseClass',
+##  'modelValuesBaseClass', 
+##  'codeBlockClass',
+##  'nimbleFunctionBase',
 
 'C_dcat', 
 'C_ddirch', 
@@ -210,7 +215,8 @@ individualMaskedFunctions = c(
 'as.matrix.modelValuesBaseClass',
 'length.nimPointerList',
 'deparse',
-'double'
+'double',
+'insertSingleIndexBrackets'
                               )
 
 maskFileVector = c(

@@ -82,10 +82,28 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
                 typeList <- getDistribution(distName)$types[[altParamName]]
                 methodList[[paste0('get_',altParamName)]] <- ndf_generateGetParamFunction(altParams[[altParamName]], typeList$type, typeList$nDim)
             }
+            ## new for getParam, eventually to replace get_XXX where XXX is each param name
+            ## TO-DO: unfold types and nDims more thoroughly (but all types are implemented as doubles anyway)
+            ## understand use of altParams vs. all entries in typesListAllParams
+            ## need a value Entry
+            allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
+            typesListAllParams <- getDistribution(distName)$types
+            ##numParams <- length(typesListAllParams)
+            typesNDims <- unlist(lapply(typesListAllParams, `[[`, 'nDim'))
+            typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
+            paramIDs <- getDistribution(distName)$paramIDs
+            ## rely on only double for now
+            for(nDimSupported in c(0, 1, 2)) {
+                boolThisCase <- typesNDims == nDimSupported & typesTypes == 'double'
+                paramNamesToUse <- names(typesListAllParams)[boolThisCase]
+                caseName <- paste0("getParam_",nDimSupported,"D_double")
+                if(length(paramNamesToUse) > 0) 
+                    methodList[[caseName]] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
+            }
         }
     }
     ## add model$ in front of all names, except the setupOutputs
-    methodList <- ndf_addModelDollarSignsToMethods(methodList, setupOutputExprs, exceptionNames = c("LocalAns", "LocalNewLogProb"))
+    methodList <- ndf_addModelDollarSignsToMethods(methodList, setupOutputExprs, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_"))
     return(methodList)
 }
 
@@ -296,7 +314,23 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
 }
 
 
-
+ndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nDim) {
+    if(any(unlist(lapply(typesListAll, is.null)))) stop(paste('problem creating switch function for getParam from ', paste(paste(names(typesListAll), as.character(typesListAll), sep='='), collapse=',')))
+    paramIDs <- as.integer(paramIDs)
+    answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
+    switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))
+    ans <- try(eval(substitute(
+        function(PARAMID_ = integer()) {
+            returnType(TYPE(NDIM))
+            SWITCHCODE
+            return(PARAMANSWER_)
+        },
+        list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
+    )))
+    if(inherits(ans, 'try-error')) browser()
+    attr(ans, 'srcref') <- NULL
+    ans
+}
 
 ## creates the accessor method to return value 'expr'
 ndf_generateGetParamFunction <- function(expr, type, nDim) {

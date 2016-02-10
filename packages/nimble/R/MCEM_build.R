@@ -146,7 +146,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         stop('no nodes to be maximized over')
     
 
-    if(is(model, "RModelBaseClass") ){
+    if(is(model, "RmodelBaseClass") ){
     	Rmodel = model
         if(is(model$CobjectInterface, "uninitializedField")){
             cModel <- compileNimble(model)
