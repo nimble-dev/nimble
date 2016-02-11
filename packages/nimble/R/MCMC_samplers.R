@@ -654,14 +654,6 @@ sampler_crossLevel <- nimbleFunction(
 #' 
 #' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below. 
 #' 
-#' @section end sampler:
-#' 
-#' The end sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE. 
-#' 
-#' The end sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of an end sampler to any non-terminal node will result in invalid posterior inferences.  The end sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler. \cr
-#' 
-#' The end sampler accepts no control list arguments. 
-#' 
 #' @section RW sampler:
 #' 
 #' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node. 
@@ -672,6 +664,10 @@ sampler_crossLevel <- nimbleFunction(
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
+#'
+#' @section RW_log sampler:
+#'
+#' This is like the RW sampler but operates on the log of the parameter being sampled.
 #' 
 #' @section RW_block sampler:
 #' 
@@ -730,6 +726,14 @@ sampler_crossLevel <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for propCov. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity' or any positive definite matrix of the appropriate dimensions. (default = 'identity')
 #' }
+#'
+#' @section end sampler:
+#' 
+#' The end sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE. 
+#' 
+#' The end sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of an end sampler to any non-terminal node will result in invalid posterior inferences.  The end sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler. \cr
+#' 
+#' The end sampler accepts no control list arguments. 
 #' 
 #' @name samplers
 #' 

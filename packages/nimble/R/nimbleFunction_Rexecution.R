@@ -53,6 +53,25 @@ makeParamInfo <- function(model, node, param) {
     ans
 }
 
+#' Get value of a parameter of a stochastic node in a model
+#'
+#' Part of the NIMBLE language
+#'
+#' @param model A NIMBLE model object
+#'
+#' @param node  The name of a stochastic node in the model
+#'
+#' @param parameter The name of a parameter for the node
+#' @export
+#' @details For example, suppose node 'x[1:5]' follows a multivariate
+#' normal distribution (dmnorm) in a model declared by BUGS code.
+#' getParam(model, 'x[1:5]', 'mean') would return the current value of
+#' the mean parameter (which may be determined from other nodse).  The
+#' parameter requested does not have to be part of the
+#' parameterization used to declare the node.  Rather, it can be any
+#' parameter known to the distribution.  For example, one can request
+#' the scale or rate parameter of a gamma distribution, regardless of
+#' which one was used to declare the node.
 getParam <- function(model, node, param) {
     if(missing(param)) { ## already converted by keyword conversion
         nodeFunction <- model
