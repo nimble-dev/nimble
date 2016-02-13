@@ -70,7 +70,13 @@ individualExportNames = c(
     'getDependencyPaths',
     'buildConjugateSamplerFunctions',
     'codeSubstitute', # not clear why this is not found in model$check if not exported
-    'distributionsInputList' # not clear why this is not found in model$check if not exported
+    'distributionsInputList', # not clear why this is not found in model$check if not exported
+ 'compareMCMCs',
+ 'rename_MCMC_comparison_method',
+ 'combine_MCMC_comparison_results',
+ 'reshape_comparison_results',
+ 'make_MCMC_comparison_pages',
+ 'updateMCMCcomparisonWithHighOrderESS'
 )
 
 individualMaskedFunctions = c(
