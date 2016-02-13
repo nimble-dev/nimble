@@ -1,6 +1,6 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-context("Testing of size/dimension checks in NIMBLE code")
+context("Testing of size/dimension checks in NIMBLE code.\nNote that numerous error messages are expected here; check for test failures not denoted with 'KNOWN PROBLEM'.")
 
 vec2 <- c(1,1)
 mat2 <- diag(rep(1, 2))
@@ -28,11 +28,10 @@ testsScalar <- list(
     list(name = 'scalar stochastic, parameter expression', expectPass = TRUE,
          expr = quote({y ~ dnorm(mu1 + mu2, sd = sig)}), 
          inits = list(mu1 = 0, mu2 = 0, sig = 1) ),
-    list(name = 'scalar stochastic, parameter expression non-scalar, no indices', expectPass = FALSE,
+    list(name = 'scalar stochastic, parameter expression non-scalar, no indices', expectPass = FALSE, expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y ~ dnorm(mu1%*%mu2, sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
-    # passes for RHS constant, which makes sense; testing not set up for RHS init and RHS constant to have different expected results
     
     list(name = 'scalar stochastic, parameter expression non-scalar, RHS index',
          expectPass = FALSE,
@@ -42,13 +41,13 @@ testsScalar <- list(
     # passes for RHS init, though compileNimble does give helpful error message
     # passes for RHS const but fails in compilation because of lack of indexing
     
-    list(name = 'scalar stochastic, parameter expression non-scalar', expectPass = FALSE,
+    list(name = 'scalar stochastic, parameter expression non-scalar', expectPass = FALSE, expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y ~ dnorm(mu1[1:2]%*%mu2[1:2], sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
-    # passes test when it shouldn't
+    # passes when shouldn't for RHS init (compileNimble puts one into a browser)
     
-    list(name = 'scalar stochastic, parameter expression non-scalar', expectPass = TRUE,
+    list(name = 'scalar stochastic, parameter expression non-scalar, demotion', expectPass = TRUE,
          expr = quote({y ~ dnorm((mu1[1:2]%*%mu2[1:2])[1,1], sd = sig)}), 
          inits = list(mu1 = vec2, mu2 = vec2, sig = 1) ),
     # gives warning with RHS const
@@ -58,11 +57,11 @@ testsScalar <- list(
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
     # gives warning with RHS const
     
-    list(name = 'scalar stochastic, non-scalar parameter', expectPass = FALSE,
+    list(name = 'scalar stochastic, non-scalar parameter, demotion', expectPass = FALSE, expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y ~ dnorm((mu1[1:2, 1:2]%*%mu2[1:2])[1], sd = sig)}), 
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
-    # passes test when it shouldn't
+    # passes test with RHS inits when it shouldn't, though compileNimble does give helpful error msg; warning with RHS const
 
     list(name = 'scalar stochastic, non-scalar value', expectPass = FALSE,
          expr = quote({y[1:2] ~ dnorm(mu, sd = sig)}), 
@@ -71,19 +70,20 @@ testsScalar <- list(
          expr = quote({y[1:2] ~ dnorm(mu1[1:2, 1:2]%*%mu2[1:2], sd = sig)}), 
          inits = list(mu1 = mat2, mu2 = vec2, sig = 1) ),
 
-    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = FALSE,
-         knownProblem = TRUE,
+    list(name = 'scalar stochastic, scalar within multivar variable', expectPass = TRUE, expectPassWithConst = FALSE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = 0, sig = 1) ),
-    # with RHS init, get an error but it's in a try() and doesn't stop model building
+    # test passes with RHS init and model building is fine, though not clear if we want it to be ok to instantiate a 1x1 matrix with a scalar
 
     list(name = 'scalar stochastic, scalar within multivar variable 2', expectPass = TRUE,
+         knownProblem = TRUE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] ~ dnorm(mu[i,j], sd = sig)}), 
          inits = list(mu = matrix(0, 1,1), sig = 1) ),
+    # for RHS const, addMissingIndexRecurse does not like this for some reason, so error thrown, but size check passes
 
     list(name = 'scalar stochastic, scalar within multivar variable 3', expectPass = TRUE,
          expr = quote({for(i in 1:1)
@@ -96,7 +96,8 @@ testsMultivarParam <- list(
     list(name = 'mv param stochastic, basic', expectPass = TRUE,
          expr = quote({y ~ dcat(p[1:3])}), 
          inits = list(p = p3) ),
-    list(name = 'mv param stochastic, no indices', expectPass = FALSE, knownProblem = TRUE,
+    list(name = 'mv param stochastic, no indices', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({y ~ dcat(p)}), 
          inits = list(p = p3) ),
     # with p as constant ERRORS in compileNimble(); not caught in size check, but replaceConstantsRecurse warning regarding dimensionality is given
@@ -141,13 +142,14 @@ testsDeterm <- list(
          expr = quote({y <- a + b}),
          inits = list(a = 3, b = 3 )),
     
-    list(name = 'deterministic, basic with node in variable, incorrect init size', expectPass = FALSE,
+    list(name = 'deterministic, basic with node in variable, incorrect init size', expectPass = TRUE, expectPassWithConst = FALSE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] <- a[i,j] + b}),
          inits = list(a = 3, b = 3 )),
     
     list(name = 'deterministic, basic with node in variable', expectPass = TRUE,
+         expectPassWithConst = FALSE,
          expr = quote({for(i in 1:1)
                            for(j in 1:1)
                                y[i,j] <- a[i,j] + b}),
@@ -166,23 +168,22 @@ testsDeterm <- list(
          inits = list(a = mat2, b = 3 )),
     
     list(name = 'deterministic, non-scalar expression, no indices', expectPass = FALSE,
+         expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y <- a %*% b}),
          inits = list(a = vec2, b = vec2 )),
-    # doesn't catch error when RHS constant, though does give warning
+    # this compiles fine with RHS const, though warning is given during model building
     
     list(name = 'deterministic, non-scalar expression', expectPass = FALSE,
+         expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y <- a[1:2] %*% b[1:2]}),
          inits = list(a = vec2, b = vec2 )),
-    # passes when RHS constant, which makes sense, but testing not set up for RHS init and RHS constant to have different results
     
-    list(name = 'deterministic, non-scalar expression with LHS indexing', expectPass = FALSE,
+    list(name = 'deterministic, non-scalar expression with LHS indexing', expectPass = FALSE, expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y[1] <- a[1:2] %*% b[1:2]}),
          inits = list(a = vec2, b = vec2 )),
-    # passes when RHS constant, which makes sense, but testing not set up for RHS init and RHS constant to have different results
-
     
     list(name = 'deterministic, non-scalar expression with RHS indexing', expectPass = TRUE,
          expr = quote({y <- (a[1:2] %*% b[1:2])[1]}),
@@ -197,10 +198,11 @@ testsDeterm <- list(
          inits = list(a = 3, b = 3)),
     
     list(name = 'deterministic, vector value, missing indices', expectPass = FALSE,
+         expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y[1:2] <- a + b}),
          inits = list(a = vec2, b = vec2)),
-    # doesn't catch this will error and compileNimble fails w/o useful error msg
+    # this compiles fine with RHS const, though warning is given during model building
 
     list(name = 'deterministic, basic vector', expectPass = TRUE,
          expr = quote({y[1:2] <- a[1:2,1:2] %*% b[1:2]}),
@@ -210,7 +212,8 @@ testsDeterm <- list(
          knownProblem = TRUE,
          expr = quote({y[1:2] <- a %*% b[1:2]}),
          inits = list(a = mat2, b = vec2 )),
-    # test_size doesn't catch error for RHS variable case, but compileNimble does give useful error msg
+    # passes for RHS inits case, but compileNimble does give useful error msg; 
+    # errors for RHS const but not in model_check()
     
     list(name = 'deterministic, basic vector, dimension mismatch', expectPass = FALSE,
          expr = quote({y[1:2] <- a %*% b}),
@@ -285,7 +288,7 @@ testsMultivar <- list(
                  y[1:2] ~ dmnorm(mu, prec[1:2, 1:2])
          }),
          inits = list(mu = vec2, prec = mat2)),
-    # test_size does not detect problem when RHS provided as constants, though warning is given
+    # passes when RHS provided as constants, though warning is given
     
     list(name = 'multivar, param wrong dimension', expectPass = FALSE,
          expr = quote({
