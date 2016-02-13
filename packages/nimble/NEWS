@@ -24,6 +24,12 @@ DEVELOPER LEVEL CHANGES
 
 -- various modifications to conform to CRAN rules 
 
+BUG FIXES
+
+-- added warning when 'size' in multinomial is not sum of values
+
+-- added missing terms (involving only the data values) in 'ddirchmulti' in test-user.R and in manual
+
                         CHANGES IN VERSION 0.4-1 (Oct. 3, 2015)
 
 USER LEVEL CHANGES

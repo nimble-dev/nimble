@@ -409,6 +409,12 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
   if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
     RBREAK("Error (C_dmulti): sum of probabilities is not equal to 1.\n");
 
+  sum = 0.0;
+  for(i = 0; i < K; i++) 
+    sum += c_x[i];
+  if(c_size > sum + 10*DBL_EPSILON || c_size < sum - 10*DBL_EPSILON)
+    RBREAK("Error (C_dmulti): sum of values is not equal to size.\n");
+
   PROTECT(ans = allocVector(REALSXP, 1));  
   REAL(ans)[0] = dmulti(c_x, c_size, c_prob, K, give_log);
 

@@ -166,7 +166,7 @@ assign('qmyexp', qmyexp, envir = .GlobalEnv)
 ddirchmulti <- nimbleFunction(
     run = function(x = double(1), alpha = double(1), size = double(0), log = integer(0)) {
         returnType(double(0))
-        logProb <- lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
+        logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
         if(log) {
             return(logProb)
         } else {
