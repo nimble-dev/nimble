@@ -284,7 +284,8 @@ maskFileVector = c(
  					'cppDefs_nimbleFunction.R',
  					'cppDefs_modelValues.R',
  					'cppDefs_cppProject.R',
- 					'cppDefs_outputCppFromRparseTree.R'
+ 					'cppDefs_outputCppFromRparseTree.R',
+    'MCMC_comparisons.R'
 )
 
 

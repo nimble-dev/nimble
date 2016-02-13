@@ -32,6 +32,8 @@ change Downloads page on R-nimble.org to reflect new version; creating link for 
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page
 
+(make sure post is set up as a blog entry)
+
 update NEWS info on webpage as high-level summary of NEWS in package
 
 update version numbering on license and citation page
