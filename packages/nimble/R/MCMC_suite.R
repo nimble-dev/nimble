@@ -1,13 +1,4 @@
-#' Executes multiple MCMC algorithms and organizes results.
-#'
-#' Creates, runs, and organizes output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
-#' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
-#' Trace plots and density plots for the MCMC samples may also be generated and saved.
-#' 
-#' @param ... Arguments that will be passed to \code{MCMCsuiteClass()}
-#'
-#' @details Please see \code{help(MCMCsuiteClass)} for details on how to use this function.
-#' @export
+# aliased in MCMCsuiteClass
 MCMCsuite <- function(...) {
     suite <- MCMCsuiteClass(...)
     return(suite$output)
@@ -19,6 +10,8 @@ MCMCsuite <- function(...) {
 #' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
+#' @aliases MCMCsuite
+#' 
 #' @details
 #' Creates and runs an MCMC Suite.
 #' By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
