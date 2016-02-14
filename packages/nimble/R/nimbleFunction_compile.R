@@ -641,6 +641,13 @@ nfProcessing$methods(matchKeywords_all = function(){
 ##     singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
 ## }
 
+# for now export this as R<3.1.2 give warnings if don't
+
+#' Class \code{singleVarAccessClass}
+#' @aliases singleVarAccessClass
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 singleVarAccessClass <- setRefClass('singleVarAccessClass',
                                        methods = list(
                                            initialize = function() cat('Oops: building a singleVarAccessClass refClass -- should be defunct\n')
@@ -663,6 +670,13 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
 ##     singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
 ## }
 
+# for now export this as R<3.1.2 give warnings if don't
+
+#' Class \code{singleModelValuesAccessClass}
+#' @aliases singleModelValuesAccessClass
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
                                      methods = list(
                                            initialize = function() cat('Oops: building a singleModelValuesAccessClass refClass -- should be defunct\n')

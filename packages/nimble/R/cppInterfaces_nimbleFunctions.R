@@ -296,6 +296,11 @@ getSetLogicalScalar <- function(name, value, basePtr) {
 }
 
 
+#' Class \code{CnimbleFunctionBase}
+#' @aliases CnimbleFunctionBase
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                    fields = list(
                                        dll = "ANY",

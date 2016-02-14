@@ -76,7 +76,8 @@ individualExportNames = c(
  'combine_MCMC_comparison_results',
  'reshape_comparison_results',
  'make_MCMC_comparison_pages',
- 'updateMCMCcomparisonWithHighOrderESS'
+ 'updateMCMCcomparisonWithHighOrderESS',
+ 'insertSingleIndexBrackets'
 )
 
 individualMaskedFunctions = c(

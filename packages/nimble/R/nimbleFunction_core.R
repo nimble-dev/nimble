@@ -119,6 +119,13 @@ nimbleFunction <- function(setup         = NULL,
     return(generatorFunction)
 }
 
+# for now export this as R<3.1.2 give warnings if don't
+
+#' Class \code{nimbleFunctionBase}
+#' @aliases nimbleFunctionBase
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase', 
                                   fields = list(
                                       .generatorFunction = 'ANY',

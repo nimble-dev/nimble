@@ -61,7 +61,8 @@ makeParamInfo <- function(model, node, param) {
 #'
 #' @param node  The name of a stochastic node in the model
 #'
-#' @param parameter The name of a parameter for the node
+#' @param param The name of a parameter for the node
+#' 
 #' @export
 #' @details For example, suppose node 'x[1:5]' follows a multivariate
 #' normal distribution (dmnorm) in a model declared by BUGS code.

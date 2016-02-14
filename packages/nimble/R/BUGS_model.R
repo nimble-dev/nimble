@@ -746,6 +746,13 @@ insertSingleIndexBrackets <- function(code, varInfo) {
 }
 
 
+# for now export this as R<3.1.2 give warnings if don't
+
+#' Class \code{RmodelBaseClass}
+#' @aliases RmodelBaseClass 
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(
