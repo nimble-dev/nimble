@@ -105,7 +105,9 @@ calc_E_llk_gen = nimbleFunction(
 #'
 #' pumpMCEM <- buildMCEM(model = pumpModel, latentNodes = 'theta[1:10]',
 #'                        boxConstraints = box)
-#' pumpMCEM(maxit = 40, m1 = 1000, m2 = 5000)
+#' pumpMCEM(maxit = 3, m1 = 100, m2 = 300)
+#' # full run (above is for quick illustration only)
+#' # pumpMCEM(maxit = 40, m1 = 1000, m2 = 5000)
 #'
 #' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
 buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20), boxConstraints = list(), buffer = 10^-6) {

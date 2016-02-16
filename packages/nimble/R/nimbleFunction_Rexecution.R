@@ -442,11 +442,13 @@ values <- function(model, nodes){
 #' )
 #' 
 #' rCopy <- cCopyGen(rModel, rModelValues, 'x')
+#' \dontrun{
 #' cModel <- compileNimble(rModel)
 #' cCopy <- compileNimble(rCopy, project = rModel)
 #' cModel[['x']] <- rnorm(100)
 #' 
 #' cCopy$run() ## execute the copy with the compiled function
+#' }
 nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA, logProb = FALSE){
     if(is.null(nodes) )
         nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)

@@ -27,7 +27,7 @@
 #'
 #' @return If \code{summary} is FALSE, \code{compareMCMCs} returns the object returned by \code{MCMCsuite}, which comes from \code{\link{MCMCsuiteClass}}.  If \code{summary} is TRUE, it returns a list with elements timing, efficiency, and summary.
 #' 
-#' @seealso \code{\link{MCMCsuiteClass}}, \code{\link{updateMCMCcomparisonWithHighOrderESS}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results }}, \code{\link{combine_MCMC_comparison_results}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{reshape_comparison_results}}.
+#' @seealso \code{\link{MCMCsuiteClass}}, \code{\link{updateMCMCcomparisonWithHighOrderESS}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}, \code{\link{combine_MCMC_comparison_results}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{reshape_comparison_results}}.
 compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary=TRUE, ...) {
 
     ## stanInfo = list(codeFile = required, dir = optional,  stanParameterRules = optional, modelName = optional, data = optional, inits = optional)
@@ -288,6 +288,14 @@ combine_MCMC_comparison_results <- function(..., name = "MCMCresults") {
     ans <- list(list(summary = summary, timing = timing, efficiency = efficiency))
     names(ans) <- name
     ans
+}
+
+
+testfun <- function() {
+    # testing of R CMD check vis-a-vis NSE
+    df = data.frame(x = 1:10, y = c(1,2,1,2,1,2,1,2,1,2))
+    ggplot2::ggplot(df, ggplot2::aes(x = x, y = y))
+    tmp = subset(df, x > 3)
 }
 
 #' Convert comparison results to a more general format

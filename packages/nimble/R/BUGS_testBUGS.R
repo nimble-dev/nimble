@@ -20,7 +20,9 @@
 #' Note that testing without initial values may cause warnings when parameters are sampled from improper or fat-tailed distributions
 #' @export
 #' @examples
+#' \dontrun{
 #' testBUGSmodel('pump')
+#' }
 testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL, inits = NULL, useInits = TRUE, debug = FALSE) {
   if(requireNamespace('testthat', quietly = TRUE)) { 
     if(!is.null(example) && !is.character(example))

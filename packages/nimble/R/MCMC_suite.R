@@ -132,6 +132,7 @@ MCMCsuite <- function(...) {
 #' See the NIMBLE User Manual for more information about the organization of the return object.
 #'  
 #' @examples
+#' \dontrun{
 #' code <- nimbleCode({
 #'     mu ~ dnorm(0, 1)
 #'     x ~ dnorm(mu, 1)
@@ -144,6 +145,7 @@ MCMCsuite <- function(...) {
 #'                     MCMCs = c('nimble', 'nimble_RW'),
 #'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
 #'                     makePlot = FALSE)
+#' }
 #' 
 #' @author Daniel Turek
 #' @export

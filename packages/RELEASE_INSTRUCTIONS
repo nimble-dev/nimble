@@ -1,3 +1,7 @@
+no visible binding issues:
+http://stackoverflow.com/questions/8096313/no-visible-binding-for-global-variable-note-in-r-cmd-check
+http://stackoverflow.com/questions/9439256/how-can-i-handle-r-cmd-check-no-visible-binding-for-global-variable-notes-when
+
 make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
