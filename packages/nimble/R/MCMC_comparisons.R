@@ -386,12 +386,12 @@ allParamEfficiencyComparisonComponent <- function(comparisonResults, modelName, 
         title <- paste("Mean", title)
     }
     
-    p <- ggplot2::ggplot(vars, ggplot2::aes(x = method, y = efficiency, color = var, group = var)) +
+    p <- ggplot2::ggplot(vars, ggplot2::aes_string(x = "method", y = "efficiency", color = "var", group = "var")) +
         ggplot2::geom_point() + ggplot2::geom_line() + ggplot2::ylab(ylabel) +
             ##     guides(colour = ggplot2::guide_legend(title = "Parameter", override.aes = list(shape = NULL, size = 0.5))) +
             ggplot2::guides(colour = ggplot2::guide_legend(title = "Parameter")) +
                 ggplot2::ggtitle(title) + 
-                    ggplot2::stat_summary(mapping = ggplot2::aes(x = method, y = efficiency), data = vars, inherit.aes = FALSE, fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 2)
+                    ggplot2::stat_summary(mapping = ggplot2::aes(x = "method", y = "efficiency"), data = vars, inherit.aes = FALSE, fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 2)
     list(plottable = p, height = 6, width = 5, html_img_args = "height = \"600\" width = \"500\"")
 }
 
@@ -410,7 +410,7 @@ minMeanComparisonComponent <- function(comparisonResults, modelName, control) {
     title <- if(!invert) "MCMC efficiency summary\n (Minimum and mean effective sample size per second)"
              else "MCMC pace summary\n (Maximum and mean seconds per effective sample)"
     if(length(unique(Efficiency$method)) * length(unique(Efficiency$type)) == length(Efficiency$method)) {
-        p=ggplot2::ggplot(Efficiency, ggplot2::aes(x=method, y=Efficiency, fill=method)) +
+        p=ggplot2::ggplot(Efficiency, ggplot2::aes_string(x = "method", y= "Efficiency", fill = "method")) +
             ggplot2::geom_bar(position=ggplot2::position_dodge(),stat='identity') +
                 ggplot2::ggtitle(title)+
                     ggplot2::facet_wrap(~ type,ncol=2,scales='free') +
@@ -419,7 +419,7 @@ minMeanComparisonComponent <- function(comparisonResults, modelName, control) {
     } else {
         ## there are multiple runs
         title <- paste0(title, "\n \"-\" shows mean.")
-        p=ggplot2::ggplot(Efficiency, ggplot2::aes(x=method, y=Efficiency, fill=method, color = method)) +
+        p=ggplot2::ggplot(Efficiency, ggplot2::aes_string(x = "method", y = "Efficiency", fill = "method", color = "method")) +
             ggplot2::geom_point(stat='identity')+
                 ggplot2::stat_summary(fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 4) +
                     ggplot2::ggtitle(title)+
@@ -435,7 +435,7 @@ efficiencyDetailsComparisonComponent <- function(comparisonResults, modelName, c
     df <- comparisonResults$varSummaries
     ncol <- control$ncol
     if(length(unique(df$var)) * length(unique(df$method)) == nrow(df)) {
-        p=ggplot2::ggplot(df,ggplot2::aes(x=method,y=efficiency,fill=method))+ ##y = size_time
+        p=ggplot2::ggplot(df,ggplot2::aes_string(x = "method", y= "efficiency", fill = "method"))+ ##y = size_time
             ggplot2::geom_bar(position=ggplot2::position_dodge(),stat='identity')+
                 ggplot2::ggtitle("MCMC efficiency details\n (Effective sample size per second for each parameter)")+
                     ggplot2::ylab('Effective sample size per second') +
@@ -445,7 +445,7 @@ efficiencyDetailsComparisonComponent <- function(comparisonResults, modelName, c
  ##                               ggsave(paste(modelNames[i],'_efficiencyDetails.jpg',sep=''), height = img_h, width = 12,limitsize=F)
     } else {
         ## multiple points for each method
-        p=ggplot2::ggplot(df,ggplot2::aes(x=method,y=efficiency,fill=method, color = method)) + ##y = size_time
+        p=ggplot2::ggplot(df,ggplot2::aes_string(x = "method" ,y = "efficiency", fill = "method", color = "method")) + ##y = size_time
             ggplot2::geom_point(stat='identity') +
                 ggplot2::stat_summary(fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 4) +
                     ggplot2::ggtitle("MCMC efficiency details\n (Effective sample size per second for each parameter)\n \"-\" shows mean.")+
@@ -464,13 +464,13 @@ posteriorSummaryComparisonComponent <- function(comparisonResults, modelName, co
     requireNamespace('ggplot2', quietly = TRUE)
     df <- comparisonResults$varSummaries
     ncol <- control$ncol
-    p<-ggplot2::ggplot(df,ggplot2::aes(x=method,y=mean)) +
-        ggplot2::geom_point(ggplot2::aes(colour=method,size=1)) +
+    p<-ggplot2::ggplot(df,ggplot2::aes_string(x = "method", y = "mean")) +
+        ggplot2::geom_point(ggplot2::aes_string(color= "method" ,size=1)) +
             ggplot2::ggtitle("Posterior mean, median, and 95% CIs") +
-                ggplot2::guides(size=F,colour=F) +
-                    ggplot2::geom_point(ggplot2::aes(x=method,y=median,size=1),shape=4) +
+                ggplot2::guides(size=FALSE,colour=FALSE) +
+                    ggplot2::geom_point(ggplot2::aes_string(x = "method", y = "median", size=1), shape=4) +
                         ggplot2::facet_wrap(~ var,ncol=ncol,scales='free') +
-                            ggplot2::geom_errorbar(ggplot2::aes(ymax=CI95_upp,ymin=CI95_low),width=.25) ##+
+                            ggplot2::geom_errorbar(ggplot2::aes_string(ymax = "CI95_upp", ymin = "CI95_low"),width=.25) ##+
     ##                                   ggsave(paste(modelNames[i],'_posteriorSummary.jpg',sep=""),height=img_h,width=12,limitsize=F)
 
     numVars <- length(unique(df[,'var']))
