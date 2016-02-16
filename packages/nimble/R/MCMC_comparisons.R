@@ -291,12 +291,6 @@ combine_MCMC_comparison_results <- function(..., name = "MCMCresults") {
 }
 
 
-testfun <- function() {
-    # testing of R CMD check vis-a-vis NSE
-    df = data.frame(x = 1:10, y = c(1,2,1,2,1,2,1,2,1,2))
-    ggplot2::ggplot(df, ggplot2::aes(x = x, y = y))
-    tmp = subset(df, x > 3)
-}
 
 #' Convert comparison results to a more general format
 #'
