@@ -1,6 +1,6 @@
 import(methods)
 import(igraph)
-importFrom(coda, effectiveSize)
+importFrom(coda, effectiveSize, as.mcmc, is.mcmc.list)
 useDynLib(nimble, .registration = TRUE)
 S3method(as.matrix, CmodelValues)
 S3method(as.matrix, modelValuesBaseClass)
