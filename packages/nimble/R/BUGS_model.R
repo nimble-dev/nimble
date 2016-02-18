@@ -770,13 +770,45 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                        defaultModelValues <<- modelDef$modelValuesClass(1)
                                        pointAt(.self, defaultModelValues, index = 1)
                                    },
-                                   
+
                                    buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
+                                       if(debug) browser()
+                                       iNextNodeFunction <- 1
+                                       numDecls <- length(modelDef$declInfo)
+                                       nodeFunctions <<- vector('list', length = numDecls)  ## for the specialized instances
+                                       nodeFunctionGeneratorNames <<- character(numDecls)
+                                       nodeGenerators <<- vector('list', length = numDecls) ## for the nimbleFunctions
+                                       for(i in seq_along(modelDef$declInfo)) {
+                                           BUGSdecl <- modelDef$declInfo[[i]]
+                                           if(BUGSdecl$numUnrolledNodes == 0) next
+                                           ## extract needed pieces
+                                           type <- BUGSdecl$type
+                                           code <- BUGSdecl$codeReplaced
+                                           code <- insertSingleIndexBrackets(code, modelDef$varInfo)
+                                           LHS <- code[[2]]
+                                           RHS <- code[[3]]
+                                           altParams <- BUGSdecl$altParamExprs
+                                           altParams <- lapply(altParams, insertSingleIndexBrackets, modelDef$varInfo)
+                                           logProbNodeExpr <- BUGSdecl$logProbNodeExpr
+                                           logProbNodeExpr <- insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
+                                           setupOutputExprs <- BUGSdecl$replacementNameExprs
+                                           
+                                           ## make a unique name
+                                           thisNodeGeneratorName <- paste0(Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimbleUniqueID())
+                                           ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
+                                           nfGenerator <- nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
+                                           nodeGenerators[[i]] <<- nfGenerator
+                                           names(nodeGenerators)[i] <<- thisNodeGeneratorName
+                                           browser()
+                                           ## need to instantiate an object and get all the index information into it.
+                                   },
+                                   
+                                   buildNodeFunctions_old = function(where = globalenv(), debug = FALSE) {
                                        ## This xoocreates the nodeFunctions, which are basically nimbleFunctions, for the model
                                        if(debug) browser()
                                        iNextNodeFunction <- 1
                                        nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
-                                       nodeFunctionGeneratorNames <<- character(modelDef$numNodeFunctions)
+                                       nodeFunctionGeneratorNames <<- character(modelDef$numNodeFunctions) ## possible error: should this be length(modelDef$declInfo)?
                                        nodeGenerators <<- vector('list', length = length(modelDef$declInfo)) ## for the nimbleFunctions
                                        for(i in seq_along(modelDef$declInfo)) {
                                            BUGSdecl <- modelDef$declInfo[[i]]

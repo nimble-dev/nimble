@@ -2,7 +2,22 @@
 #define __NODEFUN
 #include "NimArr.h"
 
-class nodeFun : public NamedObjects { 
+// this contains the indexed information -- often indices themselves but also any partially evaluated values -- to calculate/simulate/getLogProb for one node withina new node function
+// typically we'll have a vector of these in a node function or some such way of packaging information 
+class indexedNodeInfo {
+ public:
+  vector<double> info;
+};
+
+// this will be the information for a block of indexedNodeInfo to use within one call to a new node function to trigger operations for one or more nodes 
+// first simple version will be a vector of integers that index a vector<indexedNodeInfo> in the node function
+// but future modes of operation can be added.
+class useInfoForIndexedNodeInfo {
+ public:
+  vector<int> indicesForIndexedNodeInfo;
+};
+
+class nodeFun_old : public NamedObjects { 
   public: 
    virtual double calculate()=0; 
    virtual double calculateDiff()=0;
@@ -11,6 +26,24 @@ class nodeFun : public NamedObjects {
    virtual double getParam_0D_double(int paramID) {return(0./0.);}
    virtual NimArr<1, double> getParam_1D_double(int paramID) {NimArr<1, double> ans; return(ans);}
    virtual NimArr<2, double> getParam_2D_double(int paramID) {NimArr<2, double> ans; return(ans);}
+
+   virtual double calculate_indexedNodeInfo(const indexedNodeInfo &iNI)=0;
+   // same for calculateDiff, simulate and getLogProb
+   double calculateBlock(const blockIndexedNodeInfo &biNI); // same implementation should work for all derived classes
 };
- 
+
+// derived classes can set up indexedNodeInfo needs in different ways
+// a default will be to have a vector<indexedNodeInfo> and then pass along index vectors
+class nodeFun : public NamedObjects { 
+ public:  // etc. put iNI into all cases
+  virtual double getParam_0D_double(int paramID, const indexedNodeInfo &iNI) {return(0./0.);}
+  virtual NimArr<1, double> getParam_1D_double(int paramID) {NimArr<1, double> ans; return(ans);}
+  virtual NimArr<2, double> getParam_2D_double(int paramID) {NimArr<2, double> ans; return(ans);}
+  
+  virtual double calculate_indexedNodeInfo(const indexedNodeInfo &iNI)=0;
+   // same for calculateDiff, simulate and getLogProb
+  double calculateBlock(const blockIndexedNodeInfo &biNI); // same implementation should work for all derived classes
+};
+
+
 #endif
