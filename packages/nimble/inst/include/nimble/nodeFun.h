@@ -6,7 +6,7 @@
 // typically we'll have a vector of these in a node function or some such way of packaging information 
 class indexedNodeInfo {
  public:
-  vector<double> info;
+  vector<int> info;
 };
 
 // this will be the information for a block of indexedNodeInfo to use within one call to a new node function to trigger operations for one or more nodes 

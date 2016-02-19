@@ -24,6 +24,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          nfMethod = 'cppOutputNFmethod',
                          nfVar = 'cppOutputNFvar',
                          getsize = 'cppOutputMemberFunctionDeref',
+                         getNodeFunctionIndexedInfo = 'cppOutputGetNodeFunctionIndexedInfo',
                          resizeNoPtr = 'cppOutputMemberFunction',
                          cppMemberFunction = 'cppOutputMemberFunctionGeneric',
                          AssignEigenMap = 'cppOutputEigenMapAssign',
@@ -124,9 +125,12 @@ cppOutputEigBlank <- function(code, symTab) {
 
 
 cppOutputNumList <- function(code, symTab) {	
-	paste0( nimGenerateCpp(code$args[[1]], symTab))
+    paste0( nimGenerateCpp(code$args[[1]], symTab))
 }
 
+cppOutputGetNodeFunctionIndexedInfo <- function(code, symTab) {
+    paste0(code$args[[1]]$name,'.info[', code$args[[2]] - 1, ']')
+}
 
 cppOutputReturn <- function(code, symTab) {
     if(length(code$args) == 0) {

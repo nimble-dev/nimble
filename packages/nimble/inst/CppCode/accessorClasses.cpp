@@ -3,6 +3,15 @@
 #include<sstream>
 using std::istringstream;
 
+double calculate(NodeVectorClassNew &nodes) {
+  double ans(0);
+  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
+  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
+  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
+    ans += (*iNodeFun)->calculate();
+}
+
 // 1. NodeVectors
 double calculateOld(NodeVectorClass &nodes) {
   double ans(0);

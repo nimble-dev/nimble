@@ -29,6 +29,9 @@ argType2symbol <- function(AT, name = character()) {
 	
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
+    if(type == "internal") {
+        return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
+    }
     nDim <- if(length(AT)==1) 0 else AT[[2]]
     size <- if(nDim == 0) 1 else {
         if(length(AT) < 3)
@@ -419,7 +422,18 @@ symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               )
                               )
 
-                                     
+symbolInternalType <-
+    setRefClass(Class = "symbolInternalType",
+                contains = "symbolBase",
+                fields = list(argList = 'ANY'),
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolInternalType', name))
+                    genCppVar = function(...) {
+                        if(length(argList) == 0) stop(paste('No information for outputting C++ type of', name))
+                        if(argList[[1]] == 'indexedNodeInfoClass') return(cppVarFull(name = name, baseType = "indexedNodeInfoClass", const = TRUE, ref = TRUE))
+                    })
+                )
 
 ## nDim is set to length(size) unless provided, which is how scalar (nDim = 0) must be set
 symbolDouble <- function(name, size = numeric(), nDim = length(size)) {
