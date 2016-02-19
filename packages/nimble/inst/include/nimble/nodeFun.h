@@ -17,8 +17,23 @@ class useInfoForIndexedNodeInfo {
   vector<int> indicesForIndexedNodeInfo;
 };
 
-class nodeFun_old : public NamedObjects { 
-  public: 
+/* class nodeFun_old : public NamedObjects {  */
+/*   public:  */
+/*    virtual double calculate()=0;  */
+/*    virtual double calculateDiff()=0; */
+/*    virtual void simulate()=0; */
+/*    virtual double getLogProb()=0;  */
+/*    virtual double getParam_0D_double(int paramID) {return(0./0.);} */
+/*    virtual NimArr<1, double> getParam_1D_double(int paramID) {NimArr<1, double> ans; return(ans);} */
+/*    virtual NimArr<2, double> getParam_2D_double(int paramID) {NimArr<2, double> ans; return(ans);} */
+/* }; */
+
+// derived classes can set up indexedNodeInfo needs in different ways
+// a default will be to have a vector<indexedNodeInfo> and then pass along index vectors
+class nodeFun : public NamedObjects { 
+ public:  // etc. put iNI into all cases
+
+  // carry these here to allow compilation for now -- can the old and new systems coexist?
    virtual double calculate()=0; 
    virtual double calculateDiff()=0;
    virtual void simulate()=0;
@@ -26,23 +41,14 @@ class nodeFun_old : public NamedObjects {
    virtual double getParam_0D_double(int paramID) {return(0./0.);}
    virtual NimArr<1, double> getParam_1D_double(int paramID) {NimArr<1, double> ans; return(ans);}
    virtual NimArr<2, double> getParam_2D_double(int paramID) {NimArr<2, double> ans; return(ans);}
-
-   virtual double calculate_indexedNodeInfo(const indexedNodeInfo &iNI)=0;
-   // same for calculateDiff, simulate and getLogProb
-   double calculateBlock(const blockIndexedNodeInfo &biNI); // same implementation should work for all derived classes
-};
-
-// derived classes can set up indexedNodeInfo needs in different ways
-// a default will be to have a vector<indexedNodeInfo> and then pass along index vectors
-class nodeFun : public NamedObjects { 
- public:  // etc. put iNI into all cases
-  virtual double getParam_0D_double(int paramID, const indexedNodeInfo &iNI) {return(0./0.);}
-  virtual NimArr<1, double> getParam_1D_double(int paramID) {NimArr<1, double> ans; return(ans);}
-  virtual NimArr<2, double> getParam_2D_double(int paramID) {NimArr<2, double> ans; return(ans);}
+  
+  /* virtual double getParam_0D_double(int paramID, const indexedNodeInfo &iNI) {return(0./0.);} */
+  /* virtual NimArr<1, double> getParam_1D_double(int paramID) {NimArr<1, double> ans; return(ans);} */
+  /* virtual NimArr<2, double> getParam_2D_double(int paramID) {NimArr<2, double> ans; return(ans);} */
   
   virtual double calculate_indexedNodeInfo(const indexedNodeInfo &iNI)=0;
    // same for calculateDiff, simulate and getLogProb
-  double calculateBlock(const blockIndexedNodeInfo &biNI); // same implementation should work for all derived classes
+  double calculateBlock(const useInfoForIndexedNodeInfo &biNI); // same implementation should work for all derived classes
 };
 
 

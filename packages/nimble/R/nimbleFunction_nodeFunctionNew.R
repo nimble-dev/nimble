@@ -1,10 +1,10 @@
 nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, logProbNodeExpr, type, setupOutputExprs, evaluate = TRUE, where = globalenv()) {
     if(!(type %in% c('stoch', 'determ')))       stop(paste0('invalid argument to nodeFunction(): type = ', type))
-    browser()
-    LHSrep <- replaceSetupOutputsWithIndexedNodeInfo(LHS, setupOutputExprs)
-    RHSrep <- replaceSetupOutputsWithIndexedNodeInfo(RHS, setupOutputExprs)
-    altParamsRep <- lapply(altParams, replaceSetupOutputsWithIndexedNodeInfo, RHS, setupOutputExprs)
-    logProbNodeExprRep <- replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputExprs)
+    setupOutputLabels <- nndf_makeNodeFunctionIndexLabels(setupOutputExprs) ## should perhaps move to the declInfo for preservation
+    LHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(LHS, setupOutputLabels)
+    RHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(RHS, setupOutputLabels)
+    altParamsRep <- lapply(altParams, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
+    logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
     nodeFunctionTemplate <-
         substitute(
             nimbleFunction(##contains      = CONTAINS,
@@ -20,19 +20,49 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, logProbNodeExpr, typ
     if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
 }
 
-replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputExprs) {
-    browser()
+nndf_makeNodeFunctionIndexLabels <- function(setupOutputExprs) {
+    setupOutputLabels <- 1:length(setupOutputExprs)
+    names(setupOutputLabels) <- names(setupOutputExprs)
+    setupOutputLabels
+}
+
+nndf_makeNodeFunctionIndexAccessCall <- function(index) {
     ## use name INDEXEDNODEINFO_
-    invisible(NULL)
+    substitute(getNodeFunctionIndexedInfo(INDEXEDNODEINFO_, INDEX), list(INDEX = index)) ## still needs unity decrement for c++
+}
+
+nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels) {
+    cLength <- length(code)
+    if(cLength == 1) {
+        if(is.name(code)) {
+            varName <- as.character(code)
+            if(varName %in% names(setupOutputLabels))
+                return(nndf_makeNodeFunctionIndexAccessCall(setupOutputLabels[[varName]]))
+        }
+        return(code)
+    }
+    if(is.call(code)) {
+        for(i in 2:cLength)
+            code[[i]] <- nndf_replaceSetupOutputsWithIndexedNodeInfo(code[[i]], setupOutputLabels)
+        return(code)
+    }
+    return(code)
 }
 
 ## creates a function object for use as setup argument to nimbleFunction()
 nndf_createSetupFunction <- function() {
-    setup <- function(indexedNodeInfoEnv) {
-        indexedNodeInfoTable <- indexedNodeInfoTableClass(indexedNodeInfoEnv, setupOutputExprs)
+    setup <- function(model, BUGSdecl) {
+        indexedNodeInfoTable <- indexedNodeInfoTableClass(BUGSdecl)
         invisible(NULL)
     }
     return(setup)
+}
+
+indexedNodeInfoTableClass <- function(BUGSdecl) {
+    structure(
+        list(unrolledIndicesMatrix = BUGSdecl$unrolledIndicesMatrix,
+             class = 'indexedNodeInfoTableClass')
+        )
 }
 
 ## creates a list of the methods calculate, simulate, and getLogProb, corresponding to LHS, RHS, and type arguments
@@ -40,10 +70,10 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
     if(type == 'determ') {
         methodList <- eval(substitute(
             list(
-                simulate   = function(indexedNodeInfo = indexedNodeInfoClass()) { LHS <<- RHS                                                 },
-                calculate  = function(indexedNodeInfo = indexedNodeInfoClass()) { simulate(indexedNodeInfo);    returnType(double());   return(invisible(0)) },
-                calculateDiff = function(indexedNodeInfo = indexedNodeInfoClass()) {simulate(indexedNodeInfo);  returnType(double());   return(invisible(0)) },
-                getLogProb = function(indexedNodeInfo = indexedNodeInfoClass()) {                returnType(double());   return(0)            }
+                simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- RHS                                                 },
+                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { simulate(indexedNodeInfo);    returnType(double());   return(invisible(0)) },
+                calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {simulate(indexedNodeInfo);  returnType(double());   return(invisible(0)) },
+                getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                returnType(double());   return(0)            }
             ),
             list(LHS=LHS, 
                  RHS=RHS)))
@@ -51,11 +81,11 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
     if(type == 'stoch') {
         methodList <- eval(substitute(
             list(
-                simulate   = function(indexedNodeInfo = indexedNodeInfoClass()) { LHS <<- STOCHSIM                                                         },
-                calculate  = function(indexedNodeInfo = indexedNodeInfoClass()) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
-                calculateDiff = function(indexedNodeInfo = indexedNodeInfoClass()) {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
+                simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- STOCHSIM                                                         },
+                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
+                calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
                                             returnType(double());   return(invisible(LocalAns))},
-                getLogProb = function(indexedNodeInfo = indexedNodeInfoClass()) {                       returnType(double());   return(LOGPROB)            }
+                getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                       returnType(double());   return(LOGPROB)            }
             ),
             list(LHS       = LHS,
                  LOGPROB   = logProbNodeExpr,
@@ -85,7 +115,9 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
             ## new for getParam, eventually to replace get_XXX where XXX is each param name
             ## TO-DO: unfold types and nDims more thoroughly (but all types are implemented as doubles anyway)
             ## understand use of altParams vs. all entries in typesListAllParams
-            ## need a value Entry
+        ## need a value Entry
+        distName <- as.character(RHS[[1]])
+
             allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
             typesListAllParams <- getDistribution(distName)$types
             ##numParams <- length(typesListAllParams)
@@ -98,7 +130,7 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
                 paramNamesToUse <- names(typesListAllParams)[boolThisCase]
                 caseName <- paste0("getParam_",nDimSupported,"D_double")
                 if(length(paramNamesToUse) > 0) 
-                    methodList[[caseName]] <- ndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
+                    methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
             }
         
     }
@@ -113,3 +145,22 @@ nndf_addModelDollarSignsToMethods <- function(methodList, exceptionNames = chara
     }
     return(methodList)
 }
+
+nndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nDim) {
+    if(any(unlist(lapply(typesListAll, is.null)))) stop(paste('problem creating switch function for getParam from ', paste(paste(names(typesListAll), as.character(typesListAll), sep='='), collapse=',')))
+    paramIDs <- as.integer(paramIDs)
+    answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
+    switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))
+    ans <- try(eval(substitute(
+        function(PARAMID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
+            returnType(TYPE(NDIM))
+            SWITCHCODE
+            return(PARAMANSWER_)
+        },
+        list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
+    )))
+    if(inherits(ans, 'try-error')) browser()
+    attr(ans, 'srcref') <- NULL
+    ans
+}
+

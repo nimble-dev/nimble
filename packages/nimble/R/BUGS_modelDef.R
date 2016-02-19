@@ -109,6 +109,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  
                                  #These functions are NOT run inside of setupModel
                                  nodeName2GraphIDs = function(){},
+                                 graphIDs2indexedNodeInfo = function(){},
                                  nodeName2LogProbName = function(){}
                              ))
 
@@ -1921,7 +1922,24 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     
 ##    maps$nodeName_2_graphID <<- list2env( nodeName2GraphIDs(maps$nodeNames) )
 ##    maps$nodeName_2_logProbName <<- list2env( nodeName2LogProbName(maps$nodeNames) )
-    
+
+    ## A new need for new node function system:
+    graphID_2_unrolledIndicesMatrixRow <- rep(-1L, (length(maps$graphIDs)))
+    for(iDI in seq_along(declInfo)) {
+        BUGSdecl <- declInfo[[iDI]]
+        unrolledRows <- nrow(BUGSdecl$unrolledIndicesMatrix)
+        if(unrolledRows == 0) {
+            if(BUGSdecl$numUnrolledNodes == 1) ## a singleton declaration
+                graphID_2_unrolledIndicesMatrixRow[BUGSdecl$graphIDs] <- 0
+            else
+                stop(paste('confused assigning unrolledIndicesMatrixRow in case with no unrolledRows by numUnrolledNodes != 1 for code', deparse(BUGSdecl$code)))
+        } else {
+            theseGraphIDs <- BUGSdecl$graphIDs
+            graphID_2_unrolledIndicesMatrixRow[theseGraphIDs] <- 1:length(theseGraphIDs)
+        }
+    }
+    graphID_2_unrolledIndicesMatrixRow[graphID_2_unrolledIndicesMatrixRow==-1] <- NA
+    maps$graphID_2_unrolledIndicesMatrixRow <<- graphID_2_unrolledIndicesMatrixRow
     NULL
 })
 
@@ -2158,7 +2176,11 @@ modelDefClass$methods(printDI = function() {
     }
 })
 
-
+modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
+    declIDs <- maps$graphID_2_declID[graphIDs]
+    rowIndices <- maps$graphID_2_unrolledIndicesMatrixRow[graphIDs]
+    list(declIDs = declIDs, unrolledIndicesMatrixRows = rowIndices)
+})
 
 modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
     if(length(nodeName) == 0)

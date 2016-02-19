@@ -799,8 +799,10 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            nfGenerator <- nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
-                                           browser()
-                                           ## need to instantiate an object and get all the index information into it.
+                                           nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName
+                                           nodeFunctions[[i]] <<- nfGenerator(.self, BUGSdecl)
+                                           names(nodeFunctions)[i] <<- thisNodeGeneratorName ## not sure what we need here
+                                       }
                                    },
                                    
                                    buildNodeFunctions_old = function(where = globalenv(), debug = FALSE) {
