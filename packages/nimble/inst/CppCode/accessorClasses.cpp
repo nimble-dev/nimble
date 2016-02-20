@@ -8,6 +8,7 @@ double calculate(NodeVectorClassNew &nodes) {
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  std::cout<<"length of useInfoVec = "<<useInfoVec.size()<<"\n";
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
   return(ans);
@@ -1079,7 +1080,9 @@ SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedOb
 }
 
 SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS){
+  std::cout<<"in populateNodeFxnVectorNew_byDeclID\n";
   int len = LENGTH(S_ROWINDS);
+  std::cout<<"len = "<<len<<"\n";
   int* gids = INTEGER(S_GIDs);
   int* rowinds = INTEGER(S_ROWINDS);
   int index;
@@ -1089,17 +1092,45 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
   int previousIndex = -1;
   for(int i = 0; i < len; i++){
     index = gids[i] - 1;
+    std::cout<<"index "<<index<<" i "<<i<<" rowinds[i]-1 "<<rowinds[i]-1<<"\n";
     if(index != previousIndex) {
-      (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), rowinds[i]-1));
+      (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), rowinds[i]-1)); 
       previousIndex = index;
     } else {
-      (*nfv).useInfoVec.back().useInfo.info.push_back(rowinds[i]-1]);
+      (*nfv).useInfoVec.back().useInfo.indicesForIndexedNodeInfo.push_back(rowinds[i]-1);
     }
   }
+  std::cout<<"done with "<<(*nfv).useInfoVec.size()<<"\n";
   return(R_NilValue);
 }
 
-
+SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
+  SEXP Sdim;
+  std::cout<<"in populateIndexedNodeInfoTable\n";
+  PROTECT(Sdim = getAttrib(StableContents, R_DimSymbol));
+  if(LENGTH(Sdim) != 2) {PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2"); return(R_NilValue);}
+  int nrow = INTEGER(Sdim)[0];
+  int ncol = INTEGER(Sdim)[1];
+  std::cout<<"nrow "<<nrow<<" ncol "<<ncol<<"\n";
+  vector<indexedNodeInfo> *tablePtr = static_cast<vector<indexedNodeInfo> *>(R_ExternalPtrAddr(StablePtr));
+  if(!isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
+  if(isInteger(StableContents)) {
+    int *contentsPtr = INTEGER(StableContents);
+    tablePtr->reserve(nrow);
+    for(int i = 0; i < nrow; i++) {
+      tablePtr->push_back(indexedNodeInfo(contentsPtr + i, ncol, nrow));
+    }
+  } else {
+    double *contentsPtrd = REAL(StableContents);
+    tablePtr->reserve(nrow);
+    for(int i = 0; i < nrow; i++) {
+      tablePtr->push_back(indexedNodeInfo(contentsPtrd + i, ncol, nrow));
+    }
+  }
+  std::cout<<"done with size "<<tablePtr->size()<<"\n";
+  UNPROTECT(1);
+  return(R_NilValue);
+}
 
 SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj){
 	int len = LENGTH(S_GIDs);

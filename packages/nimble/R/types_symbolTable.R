@@ -431,7 +431,8 @@ symbolIndexedNodeInfoTable <-
                     ## We need this to be copied, but it must be copied to a variable already declared in the nodeFun base class,
                     ## so we don't want any genCppVar.
                     genCppVar = function(...)  {
-                       stop(paste('Error, you should not be generating a cppVar for symbolIndexedNodeInfoTable', name))
+                        cppVarFull(name = name, silent = TRUE) ## this symbol exists to get a base class member data copied, so it shouldn't be declared
+                        ##stop(paste('Error, you should not be generating a cppVar for symbolIndexedNodeInfoTable', name))
                         ## looks like if a copy type is created in makeNimbleFxnCppCopyTypes (based on the symbolXXXclass then it will be copied
                         ## and if the type is Ronly then it will not be turned into a cppVar.  So that bit of design worked out well
                        ## it's in the nodeFun base class as vector<indexedNodeInfo>
@@ -444,9 +445,12 @@ symbolInternalType <-
                 methods = list(
                     initialize = function(...) callSuper(...),
                     show = function() writeLines(paste('symbolInternalType', name)),
-                    genCppVar = function(...) {
+                    genCppVar = function(functionArg = FALSE) {
                         if(length(argList) == 0) stop(paste('No information for outputting C++ type of', name))
-                        if(argList[[1]] == 'indexedNodeInfoClass') return(cppVarFull(name = name, baseType = "indexedNodeInfoClass", const = TRUE, ref = TRUE))
+                        if(argList[[1]] == 'indexedNodeInfoClass'){
+                            if(functionArg) return(cppVarFull(name = name, baseType = "indexedNodeInfo", const = TRUE, ref = TRUE))
+                            return(cppVar(name = name, baseType = "indexedNodeInfo"))
+                        }
                     })
                 )
 

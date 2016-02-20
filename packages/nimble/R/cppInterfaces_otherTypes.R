@@ -119,16 +119,22 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName){
     fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
     indexingInfo <- Robject[[fxnVecName]]$indexingInfo
     declIDs <- indexingInfo$declIDs
-    rowIndices <- indexingInfo$rowIndices
+    rowIndices <- indexingInfo$unrolledIndicesMatrixRows
     numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byDeclID$.ptr
     
     ## This is not really the most efficient way to do things; eventually 
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
 	
-    .Call('populateNodeFxnVector_byDeclID', fxnVecPtr, as.integer(declIDs), numberedPtrs, rowIndices)
+    .Call('populateNodeFxnVectorNew_byDeclID', fxnVecPtr, as.integer(declIDs), numberedPtrs, rowIndices)
 }
 
+populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName) {
+    iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName)
+    iNITcontent <- Robject[[indexedNodeInfoTableName]]$unrolledIndicesMatrix
+    message('testing populateIndexedNodeInfoTable')
+    .Call('populateIndexedNodeInfoTable', iNITptr, iNITcontent)
+}
 
 # Currently requires: addSingleModelValuesAccess
 

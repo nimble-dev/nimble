@@ -38,7 +38,7 @@ class oneNodeUseInfo {
   useInfoForIndexedNodeInfo useInfo;
   oneNodeUseInfo(nodeFun *nFP, int firstIndex) {
     nodeFunPtr = nFP;
-    useInfo.info.push_back(firstIndex);
+    useInfo.indicesForIndexedNodeInfo.push_back(firstIndex);
   }
 };
 
@@ -575,6 +575,7 @@ extern "C" {
   //  SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
   SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj);
   SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS);
+  SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents);
   SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr );
   SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr );
   //	SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj);

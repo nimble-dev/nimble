@@ -92,10 +92,11 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ## }
 
                                        for(declID in seq_along(nodes)) {
-                                           basePtr <- if(is.list(nodes[[declID]])) ## it's a multiInterface
-                                                          nodes[[declID]][[1]]$basePtrList[[ nodes[[declID]][[2]] ]]
+                                           thisNodeFunctionName <- names(Rmodel$nodeFunctions)[declID]
+                                           basePtr <- if(is.list(nodes[[thisNodeFunctionName]])) ## it's a multiInterface
+                                                          nodes[[thisNodeFunctionName]][[1]]$basePtrList[[ nodes[[thisNodeFunctionName]][[2]] ]]
                                                       else ## it's a direct interface
-                                                          nodes[[declID]]$.basePtr
+                                                          nodes[[thisNodeFunctionName]]$.basePtr
                                            .self$.nodeFxnPointers_byDeclID[declID] <- basePtr ## nodes[[nodeName]]$.basePtr
                                        }
 

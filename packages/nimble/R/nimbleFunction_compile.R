@@ -362,7 +362,7 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## this is a function that could use a lot of polishing, but it's ok for now.
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
     if(inherits(instances[[1]][[name]], 'indexedNodeInfoTableClass')) {
-        return(symbolIndexedNodeInfoTable(name = name, type = 'Ronly') ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
+        return(symbolIndexedNodeInfoTable(name = name, type = 'symbolIndexedNodeInfoTable')) ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
     }
     if(inherits(instances[[1]][[name]], 'nimbleFunctionList')) {
         

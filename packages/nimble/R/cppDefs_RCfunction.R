@@ -259,6 +259,16 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
         }
         return(ans)
     }
+    if(inherits(toSym, 'symbolInternalType')) {
+        thisInternalType <- as.character(toSym[['argList']][[1]])
+        if(thisInternalType == 'indexedNodeInfoClass') {            
+            ans <- substitute(TO <- indexedNodeInfo(SEXP_2_vectorInt(FROM, 0)), list(TO = as.name(toSym$name),
+                                                                                     FROM = as.name(fromSym$name)))
+            return(ans)
+        } else{
+            stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
+        }
+    }
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 
@@ -279,6 +289,16 @@ buildCopyLineToSEXP <- function(fromSym, toSym) {
             }
         }
         return(ans)
+    }
+    if(inherits(fromSym, 'symbolInternalType')) {
+        thisInternalType <- as.character(fromSym[['argList']][[1]])
+        if(thisInternalType == 'indexedNodeInfoClass') {
+            ans <- substitute(PROTECT(TO <- (vectorInt_2_SEXP(FROM))), list(TO = as.name(toSym$name),
+                                                                            FROM = as.name(fromSym$name) ) )
+            return(ans)
+        } else {
+            stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
+        }
     }
     stop(paste("Error, don't know how to make a copy line to SEXP for something of class", class(fromSym)))
 }
