@@ -32,14 +32,32 @@ class NodeVectorClass {
   virtual ~NodeVectorClass() {};
 };
 
+class oneNodeUseInfo {
+ public:
+  nodeFun *nodeFunPtr;
+  useInfoForIndexedNodeInfo useInfo;
+  oneNodeUseInfo(nodeFun *nFP, int firstIndex) {
+    nodeFunPtr = nFP;
+    useInfo.info.push_back(firstIndex);
+  }
+};
+
+class NodeVectorClassNew {
+ public:
+  vector<oneNodeUseInfo> useInfoVec;
+  vector<oneNodeUseInfo> &getUseInfoVec() {return(useInfoVec);}
+};
+
 ///// Using NodeVectors:
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
-double calculate(NodeVectorClass &nodes);
-double calculateDiff(NodeVectorClass &nodes);
-double calculateFaster(NodeVectorClass &nodes);
-double getLogProb(NodeVectorClass &nodes);
-void simulate(NodeVectorClass &nodes);
+double calculate(NodeVectorClassNew &nodes);
+
+/* double calculate(NodeVectorClass &nodes); */
+/* double calculateDiff(NodeVectorClass &nodes); */
+/* //double calculateFaster(NodeVectorClass &nodes); */
+/* double getLogProb(NodeVectorClass &nodes); */
+/* void simulate(NodeVectorClass &nodes); */
 
 
 /////////////////////
@@ -530,11 +548,11 @@ extern "C" {
   SEXP getModelAccessorValues(SEXP accessor);
   SEXP getMVAccessorValues(SEXP accessor);
 
-  SEXP newNodeFxnVector(SEXP size);
+  //SEXP newNodeFxnVector(SEXP size);
   SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
-  SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size);
-  SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index);
-  SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll);
+  //SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size);
+  //  SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index);
+  //SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll);
 	
   SEXP newManyVariableAccessor(SEXP size);
   SEXP addSingleVariableAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
@@ -554,8 +572,9 @@ extern "C" {
   SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim);
   SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim);
   
-  SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
+  //  SEXP populateNodeFxnVector(SEXP nodeFxnVec, SEXP nodeNames, SEXP );
   SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj);
+  SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS);
   SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SEXP SsizesAndNdims, SEXP SModelOrModelValuesPtr );
   SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrModelValuesPtr );
   //	SEXP populateNumberedObject_withSingleModelValuesAccessors(SEXP mvPtr, SEXP varName, SEXP beginIndex, SEXP varLength, SEXP curRow, SEXP SnumbObj);

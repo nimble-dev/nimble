@@ -474,6 +474,7 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
         thisSymbol <- symTab$getSymbolObject(vn)
         if(is.null(thisSymbol)) next
         else if(thisSymbol$type == 'Ronly') next ## skip models
+        else if(inherits(thisSymbol, 'symbolIndexedNodeInfoTable')) {ans[[thisSymbol$name]] <- 'indexedNodeInfoTable'; next}
         else if(inherits(thisSymbol,'symbolNimArrDoublePtr')) {ans[[thisSymbol$name]] <- 'modelVar'; next}
         else if(inherits(thisSymbol, 'symbolNodeFunctionVector'))  { ans[[thisSymbol$name]] <- 'nodeFxnVec'; next}
         else if(inherits(thisSymbol, 'symbolModelVariableAccessorVector')) {ans[[thisSymbol$name]] <- 'modelVarAccess';next}
@@ -639,6 +640,9 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
             ## }
             next
         }
+        else if(cppCopyTypes[[v]] == 'indexedNodeInfoTable') {
+            stop('ready to set up copying for indexedNodeInfoTable')
+        }
         else if(cppCopyTypes[[v]] == 'characterVector' || cppCopyTypes[[v]] == 'characterScalar') {
             .self[[v]] <- Robj[[v]]
         }
@@ -752,6 +756,9 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
             ##     .self[[v]][[i]] <<- Robj[[v]][[i]]
             ## }
             next
+        }
+        else if(cppCopyTypes[[v]] == 'indexedNodeInfoTable') {
+            stop('ready to set up copying for indexedNodeInfoTable')
         }
         else if(cppCopyTypes[[v]] == 'characterVector') {
             getSetCharacterVector(v, Robj[[v]], basePtr)

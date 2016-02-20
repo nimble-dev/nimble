@@ -71,8 +71,8 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
         methodList <- eval(substitute(
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- RHS                                                 },
-                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { simulate(indexedNodeInfo);    returnType(double());   return(invisible(0)) },
-                calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {simulate(indexedNodeInfo);  returnType(double());   return(invisible(0)) },
+                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);    returnType(double());   return(invisible(0)) },
+                calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);  returnType(double());   return(invisible(0)) },
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                returnType(double());   return(0)            }
             ),
             list(LHS=LHS, 

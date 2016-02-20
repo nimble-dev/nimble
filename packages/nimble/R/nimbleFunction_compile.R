@@ -360,7 +360,10 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## firstOnly is supposed to indicate whether we look at only the first instance, or use all of them
 ## but actually, right now, we use it inconsistently.
 ## this is a function that could use a lot of polishing, but it's ok for now.
-nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) { 
+nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
+    if(inherits(instances[[1]][[name]], 'indexedNodeInfoTableClass')) {
+        return(symbolIndexedNodeInfoTable(name = name, type = 'Ronly') ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
+    }
     if(inherits(instances[[1]][[name]], 'nimbleFunctionList')) {
         
         neededObjectNames <<- c(neededObjectNames, name)

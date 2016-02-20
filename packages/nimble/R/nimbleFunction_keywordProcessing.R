@@ -264,7 +264,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
 	keyword = 'calculateDiff',
 	processor = function(code, nfProc){
 		if(!isCodeArgBlank(code, 'nodeFxnVector'))
-			return(code)
+                    return(code)
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
 		if(isCodeArgBlank(code, 'model'))
 			stop('model argument missing from calculateDiff, with no accessor argument supplied')
@@ -286,26 +286,29 @@ calculateDiff_keywordInfo <- keywordInfoClass(
 simulate_keywordInfo <- keywordInfoClass(
 	keyword = 'simulate',
 	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFxnVector')){
-			return(substitute(simulate(nodeFxnVector = NODEFXNVECTOR), list(NODEFXNVECTOR = code$nodeFxnVector) ) )
-			}
-		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
-		if(isCodeArgBlank(code, 'model'))
-			stop('model argument missing from simulate, with no accessor argument supplied')
-		if(isCodeArgBlank(code, 'nodes')){
-			LHSnodes_ArgList <- list(model = code$model)
-			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
-			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
-			}
-		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
-		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
-		newRunCode <- substitute(simulate(nodeFunctionVector = NODEFUNVEC_NAME),
-											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-											
-		return(newRunCode)	
-		}
-	)
+            if(!isCodeArgBlank(code, 'nodeFxnVector')){
+                return(substitute(simulate(nodeFxnVector = NODEFXNVECTOR), list(NODEFXNVECTOR = code$nodeFxnVector) ) )
+            }
+            if(!isCodeArgBlank(code, 'INDEXEDNODEINFO_'))
+                return(code)
+
+            nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
+            if(isCodeArgBlank(code, 'model'))
+                stop('model argument missing from simulate, with no accessor argument supplied')
+            if(isCodeArgBlank(code, 'nodes')){
+                LHSnodes_ArgList <- list(model = code$model)
+                LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
+                addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
+                nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
+            }
+            nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+            addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+            newRunCode <- substitute(simulate(nodeFunctionVector = NODEFUNVEC_NAME),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+            
+            return(newRunCode)	
+        }
+)
 
 getLogProb_keywordInfo <- keywordInfoClass(
 	keyword = 'getLogProb',

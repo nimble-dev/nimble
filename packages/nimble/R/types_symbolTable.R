@@ -29,7 +29,7 @@ argType2symbol <- function(AT, name = character()) {
 	
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
-    if(type == "internal") {
+    if(type == "internalType") {
         return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }
     nDim <- if(length(AT)==1) 0 else AT[[2]]
@@ -422,13 +422,28 @@ symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               )
                               )
 
+symbolIndexedNodeInfoTable <-
+    setRefClass(Class = "symbolIndexedNodeInfoTable",
+                contains = "symbolBase",
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolIndexedNodeInfoTable', name)),
+                    ## We need this to be copied, but it must be copied to a variable already declared in the nodeFun base class,
+                    ## so we don't want any genCppVar.
+                    genCppVar = function(...)  {
+                       stop(paste('Error, you should not be generating a cppVar for symbolIndexedNodeInfoTable', name))
+                        ## looks like if a copy type is created in makeNimbleFxnCppCopyTypes (based on the symbolXXXclass then it will be copied
+                        ## and if the type is Ronly then it will not be turned into a cppVar.  So that bit of design worked out well
+                       ## it's in the nodeFun base class as vector<indexedNodeInfo>
+                    }))
+
 symbolInternalType <-
     setRefClass(Class = "symbolInternalType",
                 contains = "symbolBase",
                 fields = list(argList = 'ANY'),
                 methods = list(
                     initialize = function(...) callSuper(...),
-                    show = function() writeLines(paste('symbolInternalType', name))
+                    show = function() writeLines(paste('symbolInternalType', name)),
                     genCppVar = function(...) {
                         if(length(argList) == 0) stop(paste('No information for outputting C++ type of', name))
                         if(argList[[1]] == 'indexedNodeInfoClass') return(cppVarFull(name = name, baseType = "indexedNodeInfoClass", const = TRUE, ref = TRUE))

@@ -5,64 +5,65 @@ using std::istringstream;
 
 double calculate(NodeVectorClassNew &nodes) {
   double ans(0);
-  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
-  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
-  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
-  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
-    ans += (*iNodeFun)->calculate();
-}
-
-// 1. NodeVectors
-double calculateOld(NodeVectorClass &nodes) {
-  double ans(0);
-  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
-  int vecSize = nodeFunPtrs.size();
-  for(int i = 0; i < vecSize; i++)
-  	 	ans +=	nodeFunPtrs[i]->calculate();
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
+  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  for(; iNode != iNodeEnd; iNode++)
+    ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
   return(ans);
 }
 
-double calculate(NodeVectorClass &nodes) {
-  double ans(0);
-  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
-  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
-  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
-  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
-    ans += (*iNodeFun)->calculate();
-  return(ans);
-}
+// // 1. NodeVectors
+// // double calculateOld(NodeVectorClass &nodes) {
+// //   double ans(0);
+// //   vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
+// //   int vecSize = nodeFunPtrs.size();
+// //   for(int i = 0; i < vecSize; i++)
+// //   	 	ans +=	nodeFunPtrs[i]->calculate();
+// //   return(ans);
+// // }
 
-double calculateDiff(NodeVectorClass &nodes) {
-  double ans(0);
-  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
-  vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
-  vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
-  for(; iNodeFun != iNodeFunEnd; iNodeFun++)
-    ans += (*iNodeFun)->calculateDiff();
-  return(ans);
-}
+// double calculate(NodeVectorClass &nodes) {
+//   double ans(0);
+//   vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+//   vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
+//   vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
+//   for(; iNodeFun != iNodeFunEnd; iNodeFun++)
+//     ans += (*iNodeFun)->calculate();
+//   return(ans);
+// }
 
-double getLogProb(NodeVectorClass &nodes) {
-  double ans(0);
-  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
-  vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
-  for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
-       iNodes != endNode;
-       ++iNodes) {
-    ans += (*iNodes)->getLogProb();
-  }
-  return(ans);
-}
+// double calculateDiff(NodeVectorClass &nodes) {
+//   double ans(0);
+//   vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+//   vector<nodeFun *>::iterator iNodeFun(nodeFunPtrs->begin());
+//   vector<nodeFun *>::iterator iNodeFunEnd(nodeFunPtrs->end());
+//   for(; iNodeFun != iNodeFunEnd; iNodeFun++)
+//     ans += (*iNodeFun)->calculateDiff();
+//   return(ans);
+// }
 
-void simulate(NodeVectorClass &nodes) {
-  vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
-  vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
-  for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
-       iNodes != endNode;
-       ++iNodes) {
-     (*iNodes)->simulate();
-  }
-}
+// double getLogProb(NodeVectorClass &nodes) {
+//   double ans(0);
+//   vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+//   vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
+//   for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
+//        iNodes != endNode;
+//        ++iNodes) {
+//     ans += (*iNodes)->getLogProb();
+//   }
+//   return(ans);
+// }
+
+// void simulate(NodeVectorClass &nodes) {
+//   vector<nodeFun *> *nodeFunPtrs = &(nodes.getNodeFunctionPtrs());
+//   vector<nodeFun *>::iterator endNode(nodeFunPtrs->end());
+//   for( vector<nodeFun *>::iterator iNodes(nodeFunPtrs->begin());
+//        iNodes != endNode;
+//        ++iNodes) {
+//      (*iNodes)->simulate();
+//   }
+// }
 
 
 
@@ -950,23 +951,23 @@ SEXP getModelAccessorValues(SEXP accessor){
 	return(R_NilValue);
 }
 
-SEXP newNodeFxnVector(SEXP size){
-	NodeVectorClass* nVPtr = new NodeVectorClass;
-	int cSize = INTEGER(size)[0];
-	(*nVPtr).nodeFunPtrs.resize(cSize);
-	SEXP rPtr = R_MakeExternalPtr(nVPtr, R_NilValue, R_NilValue);
-	PROTECT(rPtr);
-	R_RegisterCFinalizerEx(rPtr, &NodeVector_Finalizer, TRUE);
-	UNPROTECT(1);
-	return(rPtr);
-	}
+// SEXP newNodeFxnVector(SEXP size){
+// 	NodeVectorClass* nVPtr = new NodeVectorClass;
+// 	int cSize = INTEGER(size)[0];
+// 	(*nVPtr).nodeFunPtrs.resize(cSize);
+// 	SEXP rPtr = R_MakeExternalPtr(nVPtr, R_NilValue, R_NilValue);
+// 	PROTECT(rPtr);
+// 	R_RegisterCFinalizerEx(rPtr, &NodeVector_Finalizer, TRUE);
+// 	UNPROTECT(1);
+// 	return(rPtr);
+// 	}
 
-SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size){
-	int cSize = INTEGER(size)[0];
-	NodeVectorClass* nodeVec = static_cast<NodeVectorClass*>(R_ExternalPtrAddr(nodeFxnVecPtr) ) ;
-	(*nodeVec).nodeFunPtrs.resize(cSize);
-	return(R_NilValue);
-}
+// SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size){
+// 	int cSize = INTEGER(size)[0];
+// 	NodeVectorClass* nodeVec = static_cast<NodeVectorClass*>(R_ExternalPtrAddr(nodeFxnVecPtr) ) ;
+// 	(*nodeVec).nodeFunPtrs.resize(cSize);
+// 	return(R_NilValue);
+// }
 
 SEXP getListElement(SEXP list, const char *str){
 	SEXP ans = R_NilValue, names = getAttrib(list, R_NamesSymbol);
@@ -1076,6 +1077,29 @@ SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedOb
 		}
 	return(R_NilValue);
 }
+
+SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS){
+  int len = LENGTH(S_ROWINDS);
+  int* gids = INTEGER(S_GIDs);
+  int* rowinds = INTEGER(S_ROWINDS);
+  int index;
+  NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
+  NodeVectorClassNew* nfv = static_cast<NodeVectorClassNew*>(R_ExternalPtrAddr(SnodeFxnVec) ) ;
+  //  (*nfv).useInfoVec.resize(len);
+  int previousIndex = -1;
+  for(int i = 0; i < len; i++){
+    index = gids[i] - 1;
+    if(index != previousIndex) {
+      (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), rowinds[i]-1));
+      previousIndex = index;
+    } else {
+      (*nfv).useInfoVec.back().useInfo.info.push_back(rowinds[i]-1]);
+    }
+  }
+  return(R_NilValue);
+}
+
+
 
 SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj){
 	int len = LENGTH(S_GIDs);
@@ -1507,45 +1531,45 @@ SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SE
 }
 
 
-void cAddNodeFun(NodeVectorClass* nVPtr, nodeFun* nFPtr, bool addAtEnd, int index){
-	int size = (*nVPtr).nodeFunPtrs.size();
-	if(addAtEnd == TRUE) {	
-		(*nVPtr).nodeFunPtrs.push_back(nFPtr);
-		return;
-	}
-	if((index >= size) | (index < 0)){
-		PRINTF("Invalid index passed to addNodeFun\n");
-		return;
-	}
-	(*nVPtr).nodeFunPtrs[index] = nFPtr;
-	return;	
-}
+// void cAddNodeFun(NodeVectorClass* nVPtr, nodeFun* nFPtr, bool addAtEnd, int index){
+// 	int size = (*nVPtr).nodeFunPtrs.size();
+// 	if(addAtEnd == TRUE) {	
+// 		(*nVPtr).nodeFunPtrs.push_back(nFPtr);
+// 		return;
+// 	}
+// 	if((index >= size) | (index < 0)){
+// 		PRINTF("Invalid index passed to addNodeFun\n");
+// 		return;
+// 	}
+// 	(*nVPtr).nodeFunPtrs[index] = nFPtr;
+// 	return;	
+// }
 
-void cRemoveNodeFun(NodeVectorClass* nVPtr, int index, bool removeAll){
-	if(removeAll == TRUE){
-		(*nVPtr).nodeFunPtrs.erase( (*nVPtr).nodeFunPtrs.begin(), (*nVPtr).nodeFunPtrs.end() );
-		return;
-	}
-	if((index >= static_cast<signed int>((*nVPtr).nodeFunPtrs.size())) | (index < 0)){
-		PRINTF("Warning: attempted to delete nodeFunction from nodeFunctionVector with invalid index\n");
-		return;
-	}
-	(*nVPtr).nodeFunPtrs.erase( (*nVPtr).nodeFunPtrs.begin() + index);
-	return; 
-}
+// void cRemoveNodeFun(NodeVectorClass* nVPtr, int index, bool removeAll){
+// 	if(removeAll == TRUE){
+// 		(*nVPtr).nodeFunPtrs.erase( (*nVPtr).nodeFunPtrs.begin(), (*nVPtr).nodeFunPtrs.end() );
+// 		return;
+// 	}
+// 	if((index >= static_cast<signed int>((*nVPtr).nodeFunPtrs.size())) | (index < 0)){
+// 		PRINTF("Warning: attempted to delete nodeFunction from nodeFunctionVector with invalid index\n");
+// 		return;
+// 	}
+// 	(*nVPtr).nodeFunPtrs.erase( (*nVPtr).nodeFunPtrs.begin() + index);
+// 	return; 
+// }
 
-SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll){
-	int cIndex = INTEGER(index)[0] - 1;
-	bool cRemoveAll = LOGICAL(removeAll)[0];
-	void* vPtr = R_ExternalPtrAddr(rPtr);
-	if(vPtr == NULL){
-		PRINTF("Warning: pointer to null passed to removeNodeFun\n");
-		return(R_NilValue);
-	} 
-	NodeVectorClass* nVPtr = static_cast<NodeVectorClass*>(vPtr);
-	cRemoveNodeFun(nVPtr, cIndex, cRemoveAll);
-	return(R_NilValue);
-}
+// SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll){
+// 	int cIndex = INTEGER(index)[0] - 1;
+// 	bool cRemoveAll = LOGICAL(removeAll)[0];
+// 	void* vPtr = R_ExternalPtrAddr(rPtr);
+// 	if(vPtr == NULL){
+// 		PRINTF("Warning: pointer to null passed to removeNodeFun\n");
+// 		return(R_NilValue);
+// 	} 
+// 	NodeVectorClass* nVPtr = static_cast<NodeVectorClass*>(vPtr);
+// 	cRemoveNodeFun(nVPtr, cIndex, cRemoveAll);
+// 	return(R_NilValue);
+// }
 
 SEXP removeModelVariableAccessor(SEXP rPtr, SEXP index, SEXP removeAll){
 	int cIndex = INTEGER(index)[0] - 1;
@@ -1600,18 +1624,18 @@ SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName
 }
 */
 
-SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index){
-	void* vNVPtr = R_ExternalPtrAddr(nVPtr);
-	void* vNFPtr = R_ExternalPtrAddr(nFPtr);
-	int cIndex = - 1;
-	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
-	if(cAddAtEnd == FALSE)
-		cIndex = INTEGER(index)[0] - 1;
-	NodeVectorClass* cNVPtr = static_cast<NodeVectorClass*>(vNVPtr);
-	nodeFun* cNFPtr = static_cast<nodeFun*>(vNFPtr);
-	cAddNodeFun(cNVPtr, cNFPtr, cAddAtEnd, cIndex);
-	return(R_NilValue);
-}
+// SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index){
+// 	void* vNVPtr = R_ExternalPtrAddr(nVPtr);
+// 	void* vNFPtr = R_ExternalPtrAddr(nFPtr);
+// 	int cIndex = - 1;
+// 	bool cAddAtEnd = LOGICAL(addAtEnd)[0];
+// 	if(cAddAtEnd == FALSE)
+// 		cIndex = INTEGER(index)[0] - 1;
+// 	NodeVectorClass* cNVPtr = static_cast<NodeVectorClass*>(vNVPtr);
+// 	nodeFun* cNFPtr = static_cast<nodeFun*>(vNFPtr);
+// 	cAddNodeFun(cNVPtr, cNFPtr, cAddAtEnd, cIndex);
+// 	return(R_NilValue);
+// }
 
 
 SEXP newManyVariableAccessor(SEXP size){

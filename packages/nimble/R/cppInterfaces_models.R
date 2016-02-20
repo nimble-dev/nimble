@@ -43,7 +43,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
                                    ##CnodeFunClasses = 'list',
                                    compiledModel = 'ANY',
-                                   .nodeFxnPointers_byGID = 'ANY',
+                                   ##.nodeFxnPointers_byGID = 'ANY',
+                                   .nodeFxnPointers_byDeclID = 'ANY',
                                    .nodeValPointers_byGID = 'ANY',
                                    .nodeLogProbPointers_byGID = 'ANY'
                                    ),
@@ -78,15 +79,26 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        }
                                        nodes <<- nodesEnv
                                        
-                                       .nodeFxnPointers_byGID <<- new('numberedObjects') 
-                                       maxID = max(modelDef$maps$graphIDs)
-                                       .nodeFxnPointers_byGID$resize(maxID)
-                                       for(nodeName in ls(nodes)) {
-                                           gID <- modelDef$nodeName2GraphIDs(nodeName)
-                                           basePtr <- if(is.list(nodes[[nodeName]])) nodes[[nodeName]][[1]]$basePtrList[[ nodes[[nodeName]][[2]] ]] else nodes[[nodeName]]$.basePtr
-                                           .self$.nodeFxnPointers_byGID[gID] <- basePtr ## nodes[[nodeName]]$.basePtr
+                                       ##.nodeFxnPointers_byGID <<- new('numberedObjects')
+                                       .nodeFxnPointers_byDeclID <<- new('numberedObjects') 
+                                       ##maxID = length(modelDef$maps$graphIDs)
+                                       maxID = length(modelDef$declInfo)
+                                       ##.nodeFxnPointers_byGID$resize(maxID)
+                                       .nodeFxnPointers_byDeclID$resize(maxID)
+                                       ## for(nodeName in ls(nodes)) {
+                                       ##     gID <- modelDef$nodeName2GraphIDs(nodeName)
+                                       ##     basePtr <- if(is.list(nodes[[nodeName]])) nodes[[nodeName]][[1]]$basePtrList[[ nodes[[nodeName]][[2]] ]] else nodes[[nodeName]]$.basePtr
+                                       ##     .self$.nodeFxnPointers_byGID[gID] <- basePtr ## nodes[[nodeName]]$.basePtr
+                                       ## }
+
+                                       for(declID in seq_along(nodes)) {
+                                           basePtr <- if(is.list(nodes[[declID]])) ## it's a multiInterface
+                                                          nodes[[declID]][[1]]$basePtrList[[ nodes[[declID]][[2]] ]]
+                                                      else ## it's a direct interface
+                                                          nodes[[declID]]$.basePtr
+                                           .self$.nodeFxnPointers_byDeclID[declID] <- basePtr ## nodes[[nodeName]]$.basePtr
                                        }
-                                       		
+
                                        .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
                                        .nodeValPointers_byGID$resize(maxID)
                                        .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
