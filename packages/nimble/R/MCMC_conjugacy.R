@@ -1,20 +1,4 @@
 
-compareConjugacyLists <- function(C1, C2) {
-    if(identical(C1, C2)) return(TRUE)
-    if(!identical(names(C1), names(C2))) {cat('Names do not match\n'); return(FALSE)}
-    for(i in seq_along(C1)) {
-        if(!identical(C1[[i]]$type, C2[[i]]$type)) cat(paste0('type mismatch for i =',i))
-        if(!identical(C1[[i]]$target, C2[[i]]$target)) cat(paste0('target mismatch for i =',i))
-        if(!identical(C1[[i]]$target, C2[[i]]$target)) cat(paste0('target mismatch for i =',i))
-        if(!identical(names(C1[[i]]$control), names(C2[[i]]$control))) cat(paste0('control names mismatch for i =',i,'. Skipping node comparison'))
-        else {
-            for(j in seq_along(C1[[i]]$control)) {
-                if(!identical(sort(C1[[i]]$control[[j]]), sort(C2[[i]]$control[[j]]))) cat(paste0('target mismatch for i =',i, 'j =', j))
-            }
-        }
-    }
-}
-
 conjugacyRelationshipsInputList <- list(
     
     ## beta
@@ -985,9 +969,21 @@ cc_combineExprsDivision <- function(expr1, expr2) {
     return(substitute(EXPR1 / EXPR2, list(EXPR1=expr1, EXPR2=expr2)))
 }
 
-
-
-
+compareConjugacyLists <- function(C1, C2) {
+    if(identical(C1, C2)) return(TRUE)
+    if(!identical(names(C1), names(C2))) {cat('Names do not match\n'); return(FALSE)}
+    for(i in seq_along(C1)) {
+        if(!identical(C1[[i]]$type, C2[[i]]$type)) cat(paste0('type mismatch for i =',i))
+        if(!identical(C1[[i]]$target, C2[[i]]$target)) cat(paste0('target mismatch for i =',i))
+        if(!identical(C1[[i]]$target, C2[[i]]$target)) cat(paste0('target mismatch for i =',i))
+        if(!identical(names(C1[[i]]$control), names(C2[[i]]$control))) cat(paste0('control names mismatch for i =',i,'. Skipping node comparison'))
+        else {
+            for(j in seq_along(C1[[i]]$control)) {
+                if(!identical(sort(C1[[i]]$control[[j]]), sort(C2[[i]]$control[[j]]))) cat(paste0('target mismatch for i =',i, 'j =', j))
+            }
+        }
+    }
+}
 
 ##############################################################################################
 ##############################################################################################
