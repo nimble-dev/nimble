@@ -783,7 +783,7 @@ conjugacyClass <- setRefClass(
                 for(distName in dependentDistNames) {
                     if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                     depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
-                    subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim), indexExpr = quote(i))
+                    subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(i)))
                     names(subList) <- depParamsAvailable
 
                     subList$value  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(i))
@@ -1188,7 +1188,7 @@ makeDeclareSizeField <- function(firstSize, nDim) {
                            `2` = quote(c(FIRSTSIZE, d, d)),
                            stop()),
                     list(FIRSTSIZE = firstSize)))
-},
+}
 
 makeIndexedVariable <- function(varName, nDim, indexExpr) {
     eval(substitute(switch(as.character(nDim),

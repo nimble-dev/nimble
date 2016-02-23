@@ -96,7 +96,7 @@ MCMCspec <- setRefClass(
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = FALSE,
-            print = FALSE) {	
+            print = FALSE) {
             '
 Creates a MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC.
 
@@ -198,6 +198,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 ## default: 'RW' sampler
                 addSampler(target = node, type = 'RW', print = print);     next
             }
+            if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
         },
 
         addConjugateSampler = function(conjugacyResult, dynamicConjugacy, print) {
@@ -216,7 +217,6 @@ print: A logical argument, specifying whether to print the ordered list of defau
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
-            dynamicConjugateSamplerWrite()  ##### delete this later
         },
         
         addSampler = function(target, type = 'RW', control = list(), print = TRUE, name) {
