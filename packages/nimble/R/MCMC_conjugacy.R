@@ -451,7 +451,7 @@ conjugacyClass <- setRefClass(
                                               DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                              ## DECLARE() statement
                                               DECLARE_SIZE           = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), depNodeValueNdim)))
                     forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[i]], 'get_value')(),
-                                        list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), depNodeValueNdim),
+                                        list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), depNodeValueNdim, indexExpr = quote(i)),
                                              DEP_NODEFUNCTIONS     = as.name(paste0('dependents_', distName, '_nodeFunctions'))))
                     
                     neededParams <- dependents[[distName]]$neededParamsForPosterior
@@ -462,7 +462,7 @@ conjugacyClass <- setRefClass(
                                                   DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                              ## DECLARE() statement
                                                   DECLARE_SIZE       = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), depNodeParamNdim)))
                         forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)(),
-                                            list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), depNodeParamNdim),
+                                            list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(i)),
                                                  DEP_NODEFUNCTIONS     = as.name(paste0('dependents_', distName, '_nodeFunctions')),
                                                  GET_PARAM_NAME        =         paste0('get_', param)))
                     }
@@ -783,12 +783,12 @@ conjugacyClass <- setRefClass(
                 for(distName in dependentDistNames) {
                     if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                     depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
-                    subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim))
+                    subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim), indexExpr = quote(i))
                     names(subList) <- depParamsAvailable
 
-                    subList$value  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), getDistribution(distName)$types$value$nDim)
-                    subList$offset <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_offset')), targetNdim)
-                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_coeff')),  targetCoeffNdim)
+                    subList$value  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(i))
+                    subList$offset <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_offset')), targetNdim, indexExpr = quote(i))
+                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(i))
                     
                     forLoopBody <- codeBlockClass()
                     for(contributionName in posteriorObject$neededContributionNames) {
@@ -830,25 +830,6 @@ conjugacyClass <- setRefClass(
                     }
                 }
             }
-        },
-        
-        makeDeclareSizeField = function(firstSize, nDim) {
-            eval(substitute(switch(as.character(nDim),
-                                   `0` = quote(FIRSTSIZE),
-                                   `1` = quote(c(FIRSTSIZE, d)),
-                                   `2` = quote(c(FIRSTSIZE, d, d)),
-                                   stop()),
-                            list(FIRSTSIZE = firstSize)))
-        },
-        
-        makeIndexedVariable = function(varName, nDim, indexExpr = quote(i)) {
-            eval(substitute(switch(as.character(nDim),
-                                   `0` = quote(VARNAME[INDEXEXPR]),
-                                   `1` = quote(VARNAME[INDEXEXPR, 1:d]),
-                                   `2` = quote(VARNAME[INDEXEXPR, 1:d, 1:d]),
-                                   stop()),
-                            list(VARNAME   = varName,
-                                 INDEXEXPR = indexExpr)))
         }
     )
 )
@@ -1199,6 +1180,26 @@ createDynamicConjugateSamplerName <- function(prior, dependentCounts) {
     depString <- paste0(dependentCounts, names(dependentCounts), collapse='_')
     paste0('sampler_conjugate_', prior, '_', depString)
 }
+
+makeDeclareSizeField <- function(firstSize, nDim) {
+    eval(substitute(switch(as.character(nDim),
+                           `0` = quote(FIRSTSIZE),
+                           `1` = quote(c(FIRSTSIZE, d)),
+                           `2` = quote(c(FIRSTSIZE, d, d)),
+                           stop()),
+                    list(FIRSTSIZE = firstSize)))
+},
+
+makeIndexedVariable <- function(varName, nDim, indexExpr) {
+    eval(substitute(switch(as.character(nDim),
+                           `0` = quote(VARNAME[INDEXEXPR]),
+                           `1` = quote(VARNAME[INDEXEXPR, 1:d]),
+                           `2` = quote(VARNAME[INDEXEXPR, 1:d, 1:d]),
+                           stop()),
+                    list(VARNAME   = varName,
+                         INDEXEXPR = indexExpr)))
+}
+
 
 ##############################################################################################
 ##############################################################################################
