@@ -502,7 +502,11 @@ dollarSign_keywordInfo <- keywordInfoClass(
 		if(class == 'symbolNimPtrList'){
 			return(code)
 			}
-		if(class == 'symbolModel'){
+            if(class == 'symbolModel'){
+                memberName <- as.character(code[[3]])
+                if(memberName %in% c('calculate', 'simulate', 'getLogProb', 'calculateDiff')) {
+                    newRunCode <- as.name(memberName)
+                }
 			singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
 			accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
 			addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
@@ -640,6 +644,13 @@ matchFunctions[['rexp_nimble']] <- function(n, rate, scale = 1){}
 matchFunctions[['qexp_nimble']] <- function(p, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pexp_nimble']] <- function(q, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 
+matchModelMemberFunctions <- new.env()
+matchModelMemberFunctions[['calculate']] <- function(nodes) {}
+matchModelMemberFunctions[['calculateDiff']] <- function(nodes) {}
+matchModelMemberFunctions[['getLogProb']] <- function(nodes) {}
+matchModelMemberFunctions[['simulate']] <- function(nodes, includeData) {}
+matchModelMemberFunctions[['getParam']] <- function(node, param) {}
+
 # remove ncp from signatures
 stripArgs <- function(fname, argNames) {
     if(exists(fname)) {
@@ -706,7 +717,27 @@ processKeyword <- function(code, nfProc){
   return(code)
 }
 
+processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b(c) as one unit
+    ## this includes nf$method()
+    ## nfList[[i]]$method
+    ## model$calculate(nodes)
+    dollarSignPart <- code[[1]]
+    objectPart <- dollarSignPart[[2]]
 
+    isModel <- FALSE
+    if(length(objectPart) != 1) isModel <- FALSE ## a case like a[[i]]$b(), which can only be a nimbleFunction list
+    else {
+        symObj <- nfProc$setupSymTab$getSymbolObject(as.character(objectPart))
+        if(is.null(symObj)) stop(paste0("In processKeywordCodeMemberFun: not sure what to do with ", deparse(code)))
+        if(inherits(symObj, 'symbolModel')) {
+            browser()
+            
+        } else {
+            return(processKeywords_recurse(code, nfProc))
+        }
+    }
+
+}
 
 
 
@@ -1074,7 +1105,13 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
             if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
             thisFunctionMatch <- thisRCfunProc$RCfun$template
             return(matchAndFill.call(thisFunctionMatch, code ) )
-        } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
+        } else 
+            if(inherits(symObj, 'symbolModel')) {
+                browser()
+                thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
+                if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
+                return(matchAndFill.call(thisFunctionMatch, code) )
+            } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
     }
     ## then look in R
     if(exists(nfName)) {

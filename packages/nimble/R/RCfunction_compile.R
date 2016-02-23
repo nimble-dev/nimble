@@ -278,7 +278,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        cl = length(code)
     
                                        if(is.call(code)) {
-                                           if(length(code[[1]]) > 1) code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+                                           if(length(code[[1]]) > 1) {
+                                               if(deparse(code[[1]][[1]] == '$')) code <- processKeywordCodeMemberFun(code, nfProc) ## case like model$calculate(nodes)
+                                               code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+                                           }
                                            if(cl >= 2) {
                                                for(i in 2:cl) {
                                                    code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
