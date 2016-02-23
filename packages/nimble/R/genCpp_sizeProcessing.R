@@ -189,7 +189,9 @@ sizeGetParam <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'no'
     asserts <- list()
     if(!(code$caller$name %in% assignmentOperators)) {
-        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        if(!is.null(code$caller$name))
+            if(!(code$caller$name == '{')) ## could be on its own line -- useless but possible
+                asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
         code$toEigenize <- 'maybe'
     }
     return(asserts)

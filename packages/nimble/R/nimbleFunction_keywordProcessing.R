@@ -471,6 +471,19 @@ doubleBracket_keywordInfo <- keywordInfoClass(
         stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
     })
 
+modelMemberFun_keywordInfo <- keywordInfoClass(
+    keyword = 'multiple',
+    processor = function(code, nfProc) {
+        ## if we get here it must be model$member(args)
+        ## We will turn it into member(model, args)
+        newRunCode <- do.call("call",
+                              c(list(as.character(code[[1]][[3]]),
+                                     code[[1]][[2]]),
+                                as.list(code[-1])),
+                              quote = TRUE)
+        return(newRunCode)
+    })
+
 dollarSign_keywordInfo <- keywordInfoClass(
 	keyword = '$',
 	processor = function(code, nfProc){
@@ -501,17 +514,13 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				
 		if(class == 'symbolNimPtrList'){
 			return(code)
-			}
+                    }
             if(class == 'symbolModel'){
-                memberName <- as.character(code[[3]])
-                if(memberName %in% c('calculate', 'simulate', 'getLogProb', 'calculateDiff')) {
-                    newRunCode <- as.name(memberName)
-                }
-			singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
-			accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
-			addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
-			return(as.name(accessName))
-		}
+                singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
+                accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
+                addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
+                return(as.name(accessName))
+            }
 		if(class == 'symbolNimbleFunction'){
 			
 			#	Code is of the form myNimbleFunction$myMethod
@@ -602,6 +611,13 @@ keywordList[['pexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
+keywordListModelMemberFuns <- new.env()
+keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['simulate']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['calculateDiff']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['getLogProb']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
+
 # necessary keywords:
 #	calculate 	(done)
 #	simulate	(done)
@@ -648,7 +664,7 @@ matchModelMemberFunctions <- new.env()
 matchModelMemberFunctions[['calculate']] <- function(nodes) {}
 matchModelMemberFunctions[['calculateDiff']] <- function(nodes) {}
 matchModelMemberFunctions[['getLogProb']] <- function(nodes) {}
-matchModelMemberFunctions[['simulate']] <- function(nodes, includeData) {}
+matchModelMemberFunctions[['simulate']] <- function(nodes, includeData = FALSE) {}
 matchModelMemberFunctions[['getParam']] <- function(node, param) {}
 
 # remove ncp from signatures
@@ -730,18 +746,59 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
         symObj <- nfProc$setupSymTab$getSymbolObject(as.character(objectPart))
         if(is.null(symObj)) stop(paste0("In processKeywordCodeMemberFun: not sure what to do with ", deparse(code)))
         if(inherits(symObj, 'symbolModel')) {
-            browser()
-            
+            thisKeywordInfo <- keywordListModelMemberFuns[[ as.character(dollarSignPart[[3]]) ]]
+            if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code)))
+            rearrangedCode <- thisKeywordInfo$processor(code, nfProc)
+            rearrangedCode <- matchKeywordCode(rearrangedCode, nfProc)
+            return(processKeywords_recurse(rearrangedCode, nfProc))
         } else {
-            return(processKeywords_recurse(code, nfProc))
+            ## same as processKeywords_recurse
+            ## first line here creates something like nfMethod(model, method)(args)
+            ## which is handled as a chainedCall in later processing
+            code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+            cl <- length(code)
+            if(cl >= 2) {
+                for(i in 2:cl) {
+                    code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+                }
+            }
+            return(code)
         }
     }
 
 }
 
-
-
-
+processKeywords_recurse <- function(code, nfProc = NULL) {
+    cl = length(code)
+    if(cl == 1) {
+        if(is.call(code)) {
+            if(length(code[[1]]) > 1) code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        }
+        return(code)
+    }
+    
+    if(length(code[[1]]) == 1) {
+        code <- processKeyword(code, nfProc)
+    }
+    
+    cl = length(code)
+    
+    if(is.call(code)) {
+        if(length(code[[1]]) > 1) {
+            if(deparse(code[[1]][[1]] == '$')) {
+                code <- processKeywordCodeMemberFun(code, nfProc) ## case like model$calculate(nodes)
+                return(code) ## don't recurse on arguments of anything in this category
+            }
+            code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        }
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+    }
+    return(code)
+}
 
 #####	SETUPCODE TEMPLATES
 
@@ -1107,7 +1164,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
             return(matchAndFill.call(thisFunctionMatch, code ) )
         } else 
             if(inherits(symObj, 'symbolModel')) {
-                browser()
                 thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
                 if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
                 return(matchAndFill.call(thisFunctionMatch, code) )
@@ -1151,6 +1207,32 @@ matchKeywordCode <- function(code, nfProc){
         return(matchAndFill.call(thisFunctionMatch, code ) )
     return(code)
 }
+
+matchKeywords_recurse <- function(code, nfProc = NULL) {
+    cl = length(code)
+    if(cl == 1){ ## There are no arguments
+        if(is.call(code)){  
+            if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
+        }
+        return(code)
+    }
+    if(length(code[[1]]) == 1) ## a simple call like a(b,c), not a$b(c)
+        code <- matchKeywordCode(code, nfProc)
+    
+    if(is.call(code)) {
+        if(length(code[[1]]) > 1) {
+            if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc) ## handle a$b(c) as one unit
+            else code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## handle "a(b)" part of a(b)(c), which is probably *never* triggered
+        }
+        if(cl >= 2) { ## recurse through arguments
+            for(i in 2:cl) {
+                code[[i]] <- matchKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+    }
+    return(code)
+}
+
 
 makeSingleIndexAccessExpr <- function(newName, newNameExpr) {
     codeNames <- makeSingleIndexAccessCodeNames(newName)
