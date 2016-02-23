@@ -85,7 +85,7 @@ seqAlongHandler <- function(code, symTab) {
 declareHandler <- function(code, symTab) {
     if(code$args[[1]]$isName) {
         newNames <- code$args[[1]]$name
-    } else {
+    } else { ## case of declaring multiple names at once.  This is not documented in User Manual and not supported by R declare() 
         if(code$args[[1]]$name == 'c') {
             newNames <- unlist(lapply(code$args[[1]]$args, `[[`, 'name'))
             if(length(newNames) == 0) stop('Error: no names provided to declare')
