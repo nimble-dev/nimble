@@ -91,7 +91,11 @@ MCMCspec <- setRefClass(
         initialize = function(model, nodes, control = list(),
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
-            useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+            useConjugacy = TRUE,
+            dynamicConjugacy = TRUE,
+            onlyRW = FALSE,
+            onlySlice = FALSE,
+            multivariateNodesAsScalars = FALSE,
             print = FALSE) {	
             '
 Creates a MCMC specification for a given model.  The resulting object is suitable as an argument to buildMCMC.
@@ -170,7 +174,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
-                            addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control, print = print);     next }
+                            addConjugateSampler(conjugacyResult = conjugacyResult, dynamicConjugacy = dynamicConjugacy, print = print);     next }
                     }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
@@ -185,7 +189,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 if(useConjugacy) {
                     conjugacyResult <- conjugacyResultsAll[[node]]
                     if(!is.null(conjugacyResult)) {
-                        addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control, print = print);     next }
+                        addConjugateSampler(conjugacyResult = conjugacyResult, dynamicConjugacy = dynamicConjugacy, print = print);     next }
                 }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
@@ -194,6 +198,25 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 ## default: 'RW' sampler
                 addSampler(target = node, type = 'RW', print = print);     next
             }
+        },
+
+        addConjugateSampler = function(conjugacyResult, dynamicConjugacy, print) {
+            if(!dynamicConjugacy) {
+                addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control, print = print)
+                return(NULL)
+            }
+            prior <- conjugacyResult$prior
+            dependentCounts <- sapply(conjugacyResult$control, length)
+            names(dependentCounts) <- gsub('^dependents_', '', names(dependentCounts))
+            conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCount = dependentCounts)
+            if(!dynamicConjugateSamplerExists(conjSamplerName)) {
+                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCount = dependentCounts)
+                dynamicConjugateSamplerAdd(conjSamplerName, conjSamplerDef)
+            }
+            conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
+            nameToPrint <- gsub('^sampler_', '', conjSamplerName)
+            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
+            dynamicConjugateSamplerWrite()  ##### delete this later
         },
         
         addSampler = function(target, type = 'RW', control = list(), print = TRUE, name) {
@@ -520,7 +543,7 @@ Details: See the initialize() function
 #'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+                          useConjugacy = TRUE, dynamicConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
                           print = FALSE, autoBlock = FALSE, oldSpec, ...) {
     
     if(!missing(oldSpec)){
@@ -537,7 +560,8 @@ configureMCMC <- function(model, nodes, control = list(),
     
     thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
-                         useConjugacy = useConjugacy, onlyRW = onlyRW, onlySlice = onlySlice,
+                         useConjugacy = useConjugacy, dynamicConjugacy = dynamicConjugacy,
+                         onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars, print = print)
     return(thisSpec)	
 }
