@@ -207,6 +207,7 @@ MCMCsuiteClass <- setRefClass(
         makePlot = 'logical',    ## whether to generate plots    --- ORIGINAL ARGUMENT
         savePlot = 'logical',   ## whether or not to save plot PDFs    --- ORIGINAL ARGUMENT
         plotName = 'character',     ## name of the file where we save density and trace plots    --- ORIGINAL ARGUMENT
+        setSeed = 'logical',   ## whether to setSeed(0) prior to running each algorithm    --- ORIGINAL ARGUMENT
         debug = 'logical',   ## whether to enter browser() before running each algorithm    --- ORIGINAL ARGUMENT
         modelFileName = 'character',     ## name of the text file where we write the model code, set to a fixed value
 
@@ -277,6 +278,7 @@ MCMCsuiteClass <- setRefClass(
             makePlot <<- makePlot
             savePlot <<- savePlot
             plotName <<- plotName
+            setSeed <<- setSeed
             debug <<- debug
             modelFileName <<- 'model.txt'
 
@@ -285,7 +287,6 @@ MCMCsuiteClass <- setRefClass(
             init_output()
             writeModelFile()
             if(debug)              browser()
-            if(setSeed)            set.seed(0)
             if(winbugsMCMCflag)    run_winbugs()
             if(openbugsMCMCflag)   run_openbugs()
             if(jagsMCMCflag)       run_jags()
@@ -361,6 +362,7 @@ MCMCsuiteClass <- setRefClass(
         },
         
         run_winbugs = function() {
+            if(setSeed) set.seed(0)
             if(requireNamespace('R2WinBUGS', quietly = TRUE)) {
                 timeResult <- system.time({
                                               winbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
@@ -374,6 +376,7 @@ MCMCsuiteClass <- setRefClass(
         
         run_openbugs = function() {
             if(requireNamespace('R2WinBUGS', quietly = TRUE)) {
+                if(setSeed) set.seed(0)
                 timeResult <- system.time({
                                               openbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
                                                                               n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=openbugs_directory, program=openbugs_program)
@@ -385,6 +388,7 @@ MCMCsuiteClass <- setRefClass(
         },
         
         run_jags = function() {
+            if(setSeed) set.seed(0)
             if(requireNamespace('rjags', quietly = TRUE)) {
                 jags_mod <- rjags::jags.model(file=modelFileName, data=constantsAndData, inits=inits, n.chains=1, quiet=FALSE)
                 timeResult <- system.time({
@@ -396,6 +400,7 @@ MCMCsuiteClass <- setRefClass(
         },
 
         run_stan = function(dataFile, initFile) {
+            if(setSeed) set.seed(0)
             if(require('rstan', quietly = TRUE)) {
                 if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
                 ##            dataFile <- gsub('stan$', 'data.R', stan_model)
@@ -469,6 +474,7 @@ MCMCsuiteClass <- setRefClass(
                 Cmodel$setInits(inits);     calculate(Cmodel)
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 Cmcmc <- CmcmcFunctionList[[mcmcTag]]
+                if(setSeed) set.seed(0)
                 timeResult <- system.time({ Cmcmc$run(niter) })
                 CmvSamples <- Cmcmc$mvSamples
                 samplesArray <- as.matrix(CmvSamples, varNames = monitorVars)
