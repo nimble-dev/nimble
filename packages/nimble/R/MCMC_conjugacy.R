@@ -314,20 +314,21 @@ conjugacyClass <- setRefClass(
         
         genSetupFunction = function(dynamic, dependentCounts) {
             functionBody <- codeBlockClass()
-            ## preliminaries
+            
             functionBody$addCode({
                 calcNodes       <- model$getDependencies(target)
                 calcNodesDeterm <- model$getDependencies(target, determOnly = TRUE)
             })
-            
-            ## make a nodeFunctionList of length=1, to hold the target nodeFunction
-            functionBody$addCode({
-                target_nodeFunctionList <- nimbleFunctionList(NF_VIRTUAL)
-                target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
-            }, list(NF_VIRTUAL = as.name(paste0('node_stoch_', prior))))
-            
-            ## create lists of dependent node names, and nodeFunctions
+
+            ## make nodeFunction lists (target and dependents)
             if(!dynamic) {
+                ## make a nodeFunctionList of length=1, to hold the target nodeFunction
+                functionBody$addCode({
+                    target_nodeFunctionList <- nimbleFunctionList(NF_VIRTUAL)
+                    target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
+                }, list(NF_VIRTUAL = as.name(paste0('node_stoch_', prior))))
+                
+                ## create lists of dependent node names, and nodeFunctions
                 for(distName in dependentDistNames) {
                     functionBody$addCode({
                         DEP_NODENAMES <- control$DEP_CONTROL_NAME
@@ -344,25 +345,30 @@ conjugacyClass <- setRefClass(
                 }
             }
             if(dynamic) {
+                ## for(iDepCount in seq_along(dependentCounts)) {
+                ##     distName <- names(dependentCounts)[iDepCount]
+                ##     distCount <- dependentCounts[iDepCount]
+                ##     functionBody$addCode(DEP_NODEFUNCTIONS <- nimbleFunctionList(NF_VIRTUAL),
+                ##                          list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                ##                               NF_VIRTUAL        = as.name(paste0('node_stoch_', distName)))
+                ##                          )
+                ##     for(depIndex in 1:distCount) {
+                ##         functionBody$addCode(DEP_NODEFUNCTIONS[[DEP_INDEX]] <- model$nodeFunctions[[control$DEP_CONTROL_NAME[DEP_INDEX]]],
+                ##                              list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                ##                                   DEP_INDEX         = depIndex,
+                ##                                   DEP_CONTROL_NAME  = as.name(paste0('dependents_', distName)))
+                ##                              )
+                ##     }
+                ## }
                 for(iDepCount in seq_along(dependentCounts)) {
                     distName <- names(dependentCounts)[iDepCount]
-                    distCount <- dependentCounts[iDepCount]
-                    functionBody$addCode(DEP_NODEFUNCTIONS <- nimbleFunctionList(NF_VIRTUAL),
-                                         list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                              NF_VIRTUAL        = as.name(paste0('node_stoch_', distName)))
-                                         )
-                    for(depIndex in 1:distCount) {
-                        functionBody$addCode(DEP_NODEFUNCTIONS[[DEP_INDEX]] <- model$nodeFunctions[[control$DEP_CONTROL_NAME[DEP_INDEX]]],
-                                             list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                  DEP_INDEX         = depIndex,
-                                                  DEP_CONTROL_NAME  = as.name(paste0('dependents_', distName)))
-                                             )
-                    }
+                    functionBody$addCode(DEP_NODENAMES <- control$DEP_CONTROL_NAME,
+                                         list(DEP_NODENAMES     = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                              DEP_CONTROL_NAME  = as.name(paste0('dependents_', distName))))
                 }
             }
             
             ## if this conjugate sampler is for a multivariate node (i.e., nDim > 0), then we need to determine the size (d)
-
             if(distributions[[prior]]$types$value$nDim > 0) {
                 functionBody$addCode(d <- max(determineNodeIndexSizes(target)))
             }
@@ -381,7 +387,8 @@ conjugacyClass <- setRefClass(
             if(getNimbleOption('verifyConjugatePosteriors')) {
                 functionBody$addCode({
                     modelLogProb0 <- getLogProb(model, calcNodes)
-                    origValue <- model[[target]] })
+                    origValue <- model[[target]]
+                })
             }
                 
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dynamic = dynamic, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
@@ -396,13 +403,14 @@ conjugacyClass <- setRefClass(
             
             ## only if we're verifying conjugate posterior distributions: figure out if conjugate posterior distribution is correct
             if(nimbleOptions()$verifyConjugatePosteriors) {
-                functionBody$addCode({modelLogProb1 <- getLogProb(model, calcNodes)
-                                      posteriorLogDensity0 <- DPOSTERIORCALL_ORIG
-                                      posteriorLogDensity1 <- DPOSTERIORCALL_NEW
-                                      posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
-                                      if(abs(posteriorVerification) > 1e-8)     {
-                                      nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
-                                            }
+                functionBody$addCode({
+                    modelLogProb1 <- getLogProb(model, calcNodes)
+                    posteriorLogDensity0 <- DPOSTERIORCALL_ORIG
+                    posteriorLogDensity1 <- DPOSTERIORCALL_NEW
+                    posteriorVerification <- modelLogProb0 - posteriorLogDensity0 - modelLogProb1 + posteriorLogDensity1
+                    if(abs(posteriorVerification) > 1e-8)     {
+                        nimPrint('conjugate posterior density appears to be wrong, off by ', posteriorVerification)
+                    }
                 }, list(DPOSTERIORCALL_ORIG = eval(substitute(substitute(expr, list(VALUE=quote(origValue))), list(expr=posteriorObject$dCallExpr))),
                         DPOSTERIORCALL_NEW  = eval(substitute(substitute(expr, list(VALUE=quote(newValue))),  list(expr=posteriorObject$dCallExpr)))))
             }
@@ -435,9 +443,16 @@ conjugacyClass <- setRefClass(
             
             ## get current value of prior parameters which appear in the posterior expression
             for(priorParam in posteriorObject$neededPriorParams) {
-                functionBody$addCode(PRIOR_PARAM_VAR <- nfMethod(target_nodeFunctionList[[1]], GET_PARAM_NAME)(),
-                                     list(PRIOR_PARAM_VAR = as.name(paste0('prior_', priorParam)),
-                                          GET_PARAM_NAME  =         paste0('get_', priorParam)))
+                if(!dynamic) {
+                    functionBody$addCode(PRIOR_PARAM_VAR <- nfMethod(target_nodeFunctionList[[1]], GET_PARAM_NAME)(),
+                                         list(PRIOR_PARAM_VAR = as.name(paste0('prior_', priorParam)),
+                                              GET_PARAM_NAME  =         paste0('get_', priorParam)))
+                }
+                if(dynamic) {
+                    functionBody$addCode(PRIOR_PARAM_VAR <- getParam(model, target, PARAM_NAME),
+                                         list(PRIOR_PARAM_VAR = as.name(paste0('prior_', priorParam)),
+                                              PARAM_NAME      =                          priorParam))
+                }
             }
             
             ## get values of all dependent nodes, and values of dependent node parameters (those needed for posterior expression)
@@ -496,9 +511,11 @@ conjugacyClass <- setRefClass(
                     
                     ## get *value* of each dependent node
                     for(depIndex in 1:distCount) {
-                        functionBody$addCode(DEP_VALUES_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], 'get_value')(),
+                        functionBody$addCode(##DEP_VALUES_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], 'get_value')(),
+                                             DEP_VALUES_VAR_INDEXED <- model[[DEP_NODENAMES[DEP_INDEX]]],
                                              list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), depNodeValueNdim, indexExpr = depIndex),
-                                                  DEP_NODEFUNCTIONS      = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                  ##DEP_NODEFUNCTIONS    = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                  DEP_NODENAMES          = as.name(paste0('dependents_', distName, '_nodeNames')),
                                                   DEP_INDEX              = depIndex))
                     }
                     
@@ -506,11 +523,14 @@ conjugacyClass <- setRefClass(
                     for(param in neededParams) {
                         depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
                         for(depIndex in 1:distCount) {
-                            functionBody$addCode(DEP_PARAM_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),
+                            functionBody$addCode(##DEP_PARAM_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),
+                                                 DEP_PARAM_VAR_INDEXED <- getParam(model, DEP_NODENAMES[DEP_INDEX], PARAM_NAME),
                                                  list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), depNodeParamNdim, indexExpr = depIndex),
-                                                      DEP_NODEFUNCTIONS     = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                      DEP_NODENAMES         = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                                      ##DEP_NODEFUNCTIONS   = as.name(paste0('dependents_', distName, '_nodeFunctions')),
                                                       DEP_INDEX             = depIndex,
-                                                      GET_PARAM_NAME        = paste0('get_', param)))
+                                                      ##GET_PARAM_NAME      = paste0('get_', param)))
+                                                      PARAM_NAME            = param))
                         }
                     }
                 }
@@ -573,11 +593,14 @@ conjugacyClass <- setRefClass(
                                    distCount <- dependentCounts[iDepCount]
                                    for(depIndex in 1:distCount) {
                                        functionBody$addCode(
-                                           DEP_OFFSET_VAR[DEP_INDEX] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),
-                                           list(DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                                DEP_INDEX         = depIndex,
-                                                DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
+                                           ##DEP_OFFSET_VAR[DEP_INDEX] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),
+                                           DEP_OFFSET_VAR[DEP_INDEX] <- getParam(model, DEP_NODENAMES[DEP_INDEX], PARAM_NAME),
+                                           list(DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset')),
+                                                DEP_INDEX           = depIndex,
+                                                ##DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                DEP_NODENAMES       = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                                ##GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
+                                                PARAM_NAME          =                        dependents[[distName]]$param))
                                    }
                                }
                            }
@@ -602,12 +625,15 @@ conjugacyClass <- setRefClass(
                                    distCount <- dependentCounts[iDepCount]
                                    for(depIndex in 1:distCount) {
                                        functionBody$addCode(
-                                           DEP_COEFF_VAR[DEP_INDEX] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[DEP_INDEX],
-                                           list(DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
-                                                DEP_INDEX         = depIndex,
-                                                DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
-                                                DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                           ##DEP_COEFF_VAR[DEP_INDEX] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[DEP_INDEX],
+                                           DEP_COEFF_VAR[DEP_INDEX] <- getParam(model, DEP_NODENAMES[DEP_INDEX], PARAM_NAME) - DEP_OFFSET_VAR[DEP_INDEX],
+                                           list(DEP_COEFF_VAR       = as.name(paste0('dependents_', distName, '_coeff')),
+                                                DEP_INDEX           = depIndex,
+                                                ##DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                DEP_NODENAMES       = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                                ##GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
+                                                PARAM_NAME          =                        dependents[[distName]]$param,
+                                                DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset'))))
                                    }
                                }
                            }
@@ -633,11 +659,14 @@ conjugacyClass <- setRefClass(
                                    distCount <- dependentCounts[iDepCount]
                                    for(depIndex in 1:distCount) {
                                        functionBody$addCode(
-                                           DEP_OFFSET_VAR[DEP_INDEX, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),
-                                           list(DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                                DEP_INDEX         = depIndex,
-                                                DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
+                                           ##DEP_OFFSET_VAR[DEP_INDEX, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),
+                                           DEP_OFFSET_VAR[DEP_INDEX, 1:d] <- getParam(model, DEP_NODENAMES[DEP_INDEX], PARAM_NAME),
+                                           list(DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset')),
+                                                DEP_INDEX           = depIndex,
+                                                ##DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                DEP_NODENAMES       = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                                ##GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
+                                                PARAM_NAME          =                        dependents[[distName]]$param))
                                    }
                                }
                            }
@@ -665,12 +694,15 @@ conjugacyClass <- setRefClass(
                                    distCount <- dependentCounts[iDepCount]
                                    for(depIndex in 1:distCount) {
                                        forLoopBody$addCode(
-                                           DEP_COEFF_VAR[DEP_INDEX, 1:d, sizeIndex] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[DEP_INDEX, 1:d],
-                                           list(DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
-                                                DEP_INDEX         = depIndex,
-                                                DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
-                                                DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                           ##DEP_COEFF_VAR[DEP_INDEX, 1:d, sizeIndex] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[DEP_INDEX, 1:d],
+                                           DEP_COEFF_VAR[DEP_INDEX, 1:d, sizeIndex] <- getParam(model, DEP_NODENAMES[DEP_INDEX], PARAM_NAME) - DEP_OFFSET_VAR[DEP_INDEX, 1:d],
+                                           list(DEP_COEFF_VAR       = as.name(paste0('dependents_', distName, '_coeff')),
+                                                DEP_INDEX           = depIndex,
+                                                ##DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                DEP_NODENAMES       = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                                ##GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
+                                                PARAM_NAME          =                        dependents[[distName]]$param,
+                                                DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset'))))
                                    }
                                }
                            }
@@ -700,11 +732,14 @@ conjugacyClass <- setRefClass(
                                    distCount <- dependentCounts[iDepCount]
                                    for(depIndex in 1:distCount) {
                                        functionBody$addCode(
-                                           DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),   ## DEP_OFFSET_VAR = A+B(I) = A+B
-                                           list(DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                                DEP_INDEX         = depIndex,
-                                                DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
+                                           ##DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)(),   ## DEP_OFFSET_VAR = A+B(I) = A+B
+                                           DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d] <- getParam(model, DEP_NODENAMES[DEP_INDEX], PARAM_NAME),   ## DEP_OFFSET_VAR = A+B(I) = A+B
+                                           list(DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset')),
+                                                DEP_INDEX           = depIndex,
+                                                ##DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                DEP_NODENAMES       = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                                ##GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
+                                                PARAM_NAME          =                        dependents[[distName]]$param))
                                    }
                                }
                            }
@@ -739,21 +774,22 @@ conjugacyClass <- setRefClass(
                                    distCount <- dependentCounts[iDepCount]
                                    for(depIndex in 1:distCount) {
                                        functionBody$addCode(
-                                           DEP_COEFF_VAR[DEP_INDEX, 1:d, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d],   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
-                                           list(DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
-                                                DEP_INDEX         = depIndex,
-                                                DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
-                                                DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                           ##DEP_COEFF_VAR[DEP_INDEX, 1:d, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[DEP_INDEX]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d],   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
+                                           DEP_COEFF_VAR[DEP_INDEX, 1:d, 1:d] <- getParam(model, DEP_NODENAMES[DEP_INDEX], PARAM_NAME) - DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d],   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
+                                           list(DEP_COEFF_VAR       = as.name(paste0('dependents_', distName, '_coeff')),
+                                                DEP_INDEX           = depIndex,
+                                                ##DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                                DEP_NODENAMES       = as.name(paste0('dependents_', distName, '_nodeNames')),
+                                                ##GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
+                                                PARAM_NAME          =                        dependents[[distName]]$param,
+                                                DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset'))))
                                    }
                                    for(depIndex in 1:distCount) {
                                        functionBody$addCode(
                                            DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d] <- DEP_OFFSET_VAR[DEP_INDEX, 1:d, 1:d] - DEP_COEFF_VAR[DEP_INDEX, 1:d, 1:d],   ## now, DEP_OFFSET_VAR = (A+B)-(B) = A
-                                           list(DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
+                                           list(DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
                                                 DEP_INDEX         = depIndex,
-                                                DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
-                                                DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                                DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff'))))
                                    }
                                }
                            }
