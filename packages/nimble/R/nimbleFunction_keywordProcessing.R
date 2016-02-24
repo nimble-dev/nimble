@@ -772,7 +772,11 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
     cl = length(code)
     if(cl == 1) {
         if(is.call(code)) {
-            if(length(code[[1]]) > 1) code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+            if(length(code[[1]]) > 1)
+                if(deparse(code[[1]][[1]] == '$'))
+                    code <- processKeywordCodeMemberFun(code, nfProc)
+                else
+                    code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
         }
         return(code)
     }
@@ -1212,7 +1216,10 @@ matchKeywords_recurse <- function(code, nfProc = NULL) {
     cl = length(code)
     if(cl == 1){ ## There are no arguments
         if(is.call(code)){  
-            if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
+            if(length(code[[1]]) > 1)
+                if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc)
+                else
+                    code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
         }
         return(code)
     }

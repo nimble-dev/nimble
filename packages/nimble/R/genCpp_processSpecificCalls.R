@@ -102,11 +102,26 @@ declareHandler <- function(code, symTab) {
     } else {
         nDim <- typeDeclExpr$args[[1]]
         newSizes <- rep(as.numeric(NA), nDim)
-        if(length(typeDeclExpr$args) > 1) {
+        if(length(typeDeclExpr$args) > 1) { ## sizes were provided
             typeSizeExpr <- typeDeclExpr$args[[2]]
-            if(is.numeric(typeSizeExpr) & nDim == 1) sizeExprs <- list(typeSizeExpr)
-            else if(nDim ==1 & typeSizeExpr$name != 'c') sizeExprs <- list(typeSizeExpr)
-            else sizeExprs <- typeSizeExpr$args
+            if(inherits(typeSizeExpr, 'exprClass')) { ## first size are is an expression
+                if(typeSizeExpr$name == 'c')  ## it's a concatenation
+                    sizeExprs <- typeSizeExpr$args ## record the args
+                else { ## it's not a concatenation
+                    if(nDim != 1) stop('confused in declareHandler')
+                    sizeExprs <- list(typeSizeExpr) ## take single expression
+                }
+            } else { ## it better be numeric
+                if(!is.numeric(typeSizeExpr)) stop('confused 2 in declareHandler')
+                if(length(typeDeclExpr$args) != 1 + nDim) stop('confused 3 in declareHandler')
+                sizeExprs <- list()
+                for(i in 1:nDim)
+                    sizeExprs[[i]] <- typeDeclExpr[[i+1]]
+            }
+            
+            ## if(is.numeric(typeSizeExpr) & nDim == 1) sizeExprs <- list(typeSizeExpr)
+            ## else if(nDim ==1 & typeSizeExpr$name != 'c') sizeExprs <- list(typeSizeExpr)
+            ## else sizeExprs <- typeSizeExpr$args
             if(length(sizeExprs) != nDim) stop(paste('Error in declare for', paste(newNames, collapse = ','), ': wrong number of dimensions provided'))
             for(i in 1:nDim) {
                 if(is.numeric(sizeExprs[[i]])) newSizes[i] <- sizeExprs[[i]]
@@ -118,7 +133,7 @@ declareHandler <- function(code, symTab) {
         newSym <- symbolBasic(name = newNames[i], type = type, nDim = nDim, size = newSizes)
         symTab$addSymbol(newSym)
     }
-    ## If sizeExprs have been provided, then, we generate a sizeSize call.  This will then over-ride the typeEnv entry
+    ## If sizeExprs have been provided, then, we generate a setSize call.  This will then over-ride the typeEnv entry
     if(length(typeDeclExpr$args) > 1) {
         newExprs <- vector('list', length(newNames))
         for(i in seq_along(newNames)) {
