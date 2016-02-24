@@ -90,6 +90,7 @@ getParam <- function(model, node, param) {
     return(ans)
 }
 
+#' @export
 nimSwitch <- function(paramID, IDoptions, ...) {
     dotsList <- eval(substitute(alist(...)))
     iUse <- which(IDoptions == paramID)
