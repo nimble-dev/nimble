@@ -644,8 +644,8 @@ matchFunctions[['calculateDiff']] <- calculateDiff		#function(model, nodes, node
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
 matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
-matchFunctions[['double']] <- function(dim, default){}
-matchFunctions[['int']] <- function(dim, default){}
+matchFunctions[['double']] <- function(nDim, dim, default){}
+matchFunctions[['int']] <- function(nDim, dim, default){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}

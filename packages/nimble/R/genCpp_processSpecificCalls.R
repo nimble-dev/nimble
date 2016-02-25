@@ -105,8 +105,9 @@ declareHandler <- function(code, symTab) {
         if(length(typeDeclExpr$args) > 1) { ## sizes were provided
             typeSizeExpr <- typeDeclExpr$args[[2]]
             if(inherits(typeSizeExpr, 'exprClass')) { ## first size are is an expression
+                browser()
                 if(typeSizeExpr$name == 'c')  ## it's a concatenation
-                    sizeExprs <- typeSizeExpr$args ## record the args
+                    sizeExprs <- lapply(typeSizeExpr$args, function(x) parse(text = nimDeparse(x), keep.source=FALSE)[[1]]) ## record the args
                 else { ## it's not a concatenation
                     if(nDim != 1) stop('confused in declareHandler')
                     sizeExprs <- list(typeSizeExpr) ## take single expression
@@ -116,7 +117,7 @@ declareHandler <- function(code, symTab) {
                 if(length(typeDeclExpr$args) != 1 + nDim) stop('confused 3 in declareHandler')
                 sizeExprs <- list()
                 for(i in 1:nDim)
-                    sizeExprs[[i]] <- typeDeclExpr[[i+1]]
+                    sizeExprs[[i]] <-parse(text = nimDeparse(typeDeclExpr$args[[i+1]]), keep.source=FALSE)[[1]]
             }
             
             ## if(is.numeric(typeSizeExpr) & nDim == 1) sizeExprs <- list(typeSizeExpr)

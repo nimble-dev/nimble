@@ -682,18 +682,25 @@ declare <- function(name, def){
     name <- substitute(name)
     if(exists(as.character(name), parent.frame())) return(invisible(NULL))
     value <- if(defCode[[1]] == 'logical') FALSE else 0
-    if(length(defCode) == 1){
+    if(length(defCode) == 1){  ## no arg, like double()
         assign(as.character(name), value, envir = parent.frame() )
         return()
     }
     nDim = eval(defCode[[2]], envir = parent.frame() )
-    if(nDim == 0 ){
+    if(nDim == 0 ){ ## like double(0)
         assign(as.character(name), value, envir = parent.frame() )
         return()
     }
     dims = rep(1, nDim)
-    if(length(defCode) == 3)
+    if(length(defCode) == 3) ## notation like double(2, c(3, 5))
         dims = eval(defCode[[3]], envir = parent.frame() )
+    else {
+        if(length(defCode) == 2 + nDim) {
+            dims <- numeric(nDim)
+            for(i in 1:nDim)
+                dims[i] <- eval(defCode[[2 + i]], envir = parent.frame())
+        }
+    }
     if(length(dims) != nDim)
         stop('in declare, dimensions are not declared properly')
     assign(as.character(name), array(value, dim = dims), envir = parent.frame() )
