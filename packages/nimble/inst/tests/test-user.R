@@ -76,9 +76,10 @@ simulate(m)
 set.seed(0)
 simulate(cm)
 
+# need c() in here because R nodes are arrays
 for(var in c('dx', 'y', 'dz', 'w')) {
     try(test_that("Test that R and C models agree with user-supplied functions: ",
-                  expect_that(get(var, m), equals(get(var, cm)),
+                  expect_that(c(get(var, m)), equals(get(var, cm)),
                                              info = paste0(var, " values differ"))))
 }
 try(test_that("Test that values based on user-supplied functions are correct: ",
@@ -95,7 +96,7 @@ try(test_that("Test that values based on user-supplied functions are correct: ",
                           info = paste0("theta and w are not consistent"))))
 
 try(test_that("Test that arg matching by name is correct: ",
-              expect_that(m$out, is_identical_to(8),
+              expect_that(c(m$out), is_identical_to(8),
                           info = paste0("incorrect arg matching by name in R model"))))
 try(test_that("Test that arg matching by name is correct: ",
               expect_that(cm$out, is_identical_to(8),
@@ -166,7 +167,7 @@ assign('qmyexp', qmyexp, envir = .GlobalEnv)
 ddirchmulti <- nimbleFunction(
     run = function(x = double(1), alpha = double(1), size = double(0), log = integer(0)) {
         returnType(double(0))
-        logProb <- lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
+        logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
         if(log) {
             return(logProb)
         } else {

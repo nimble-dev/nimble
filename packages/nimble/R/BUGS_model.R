@@ -344,6 +344,17 @@ Details: The variable or node names specified is expanded into a vector of model
                                   },
 
                                   getDependenciesList = function(returnNames = TRUE, sort = TRUE) {
+'
+Returns a list of all neighbor relationships.  Each list element gives the one-step dependencies of one vertex, and the element name is the vertex label (integer ID or character node name)
+
+Arguments:
+
+returnNames: If TRUE (default), list names and element contents are returns as character node names, e.g. \'x[1]\'.  If FALSE, everything is returned using graph IDs, which are unique integer labels for each node.
+
+sort: If TRUE (default), each list element is returned in topologically sorted order.  If FALSE, they are returned in arbitrary order.
+
+Details: This provides a fairly raw representation of the graph (model) structure that may be useful for inspecting what NIMBLE has created from model code.
+'
                                       if(!returnNames)
                                           if(!sort) return(modelDef$maps$edgesFrom2To)
                                           else return(lapply(modelDef$maps$edgesFrom2To, sort))
@@ -735,6 +746,13 @@ insertSingleIndexBrackets <- function(code, varInfo) {
 }
 
 
+# for now export this as R<3.1.2 give warnings if don't
+
+#' Class \code{RmodelBaseClass}
+#' @aliases RmodelBaseClass 
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(

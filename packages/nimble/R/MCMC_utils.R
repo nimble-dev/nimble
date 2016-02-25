@@ -183,7 +183,13 @@ calcAdaptationFactor <- nimbleFunction(
 
 
 
+# for now export this as R<3.1.2 give warnings if don't
 
+#' Class \code{codeBlockClass}
+#' @aliases codeBlockClass
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 codeBlockClass <- setRefClass(
     Class   = 'codeBlockClass',
     fields  = list(codeBlock = 'ANY'),

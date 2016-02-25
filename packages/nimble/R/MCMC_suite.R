@@ -1,13 +1,4 @@
-#' Executes multiple MCMC algorithms and organizes results.
-#'
-#' Creates, runs, and organizes output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
-#' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
-#' Trace plots and density plots for the MCMC samples may also be generated and saved.
-#' 
-#' @param ... Arguments that will be passed to \code{MCMCsuiteClass()}
-#'
-#' @details Please see \code{help(MCMCsuiteClass)} for details on how to use this function.
-#' @export
+# aliased in MCMCsuiteClass
 MCMCsuite <- function(...) {
     suite <- MCMCsuiteClass(...)
     return(suite$output)
@@ -19,6 +10,8 @@ MCMCsuite <- function(...) {
 #' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
+#' @aliases MCMCsuite
+#' 
 #' @details
 #' Creates and runs an MCMC Suite.
 #' By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
@@ -139,6 +132,7 @@ MCMCsuite <- function(...) {
 #' See the NIMBLE User Manual for more information about the organization of the return object.
 #'  
 #' @examples
+#' \dontrun{
 #' code <- nimbleCode({
 #'     mu ~ dnorm(0, 1)
 #'     x ~ dnorm(mu, 1)
@@ -151,6 +145,7 @@ MCMCsuite <- function(...) {
 #'                     MCMCs = c('nimble', 'nimble_RW'),
 #'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
 #'                     makePlot = FALSE)
+#' }
 #' 
 #' @author Daniel Turek
 #' @export
@@ -179,6 +174,7 @@ MCMCsuiteClass <- setRefClass(
         burnin = 'numeric',   ## burn-in period, the number of initial samples to discard, prior to thinning    --- ORIGINAL ARGUMENT
         thin = 'numeric',   ## thinning interval    --- ORIGINAL ARGUMENT
         nkeep = 'numeric',   ## number of samples we'll keep. equal to (niter/thin - burnin)
+        burninFraction = 'numeric',  ## fraction of total sampling effort spent on burnin (burnin / (nkeep + burnin))
         
         ## setSummaryStats()
         summaryStats = 'character',    ## character vector of parseable summary statistic functions    --- ORIGINAL ARGUMENT
@@ -211,6 +207,7 @@ MCMCsuiteClass <- setRefClass(
         makePlot = 'logical',    ## whether to generate plots    --- ORIGINAL ARGUMENT
         savePlot = 'logical',   ## whether or not to save plot PDFs    --- ORIGINAL ARGUMENT
         plotName = 'character',     ## name of the file where we save density and trace plots    --- ORIGINAL ARGUMENT
+        setSeed = 'logical',   ## whether to setSeed(0) prior to running each algorithm    --- ORIGINAL ARGUMENT
         debug = 'logical',   ## whether to enter browser() before running each algorithm    --- ORIGINAL ARGUMENT
         modelFileName = 'character',     ## name of the text file where we write the model code, set to a fixed value
 
@@ -265,6 +262,7 @@ MCMCsuiteClass <- setRefClass(
             burnin <<- burnin
             thin <<- thin
             nkeep <<- floor(niter/thin) - burnin
+            burninFraction <<- burnin / (nkeep + burnin)
             setMonitors(monitors)
             setSummaryStats(summaryStats, calculateEfficiency)
             setMCMCs(MCMCs)
@@ -280,6 +278,7 @@ MCMCsuiteClass <- setRefClass(
             makePlot <<- makePlot
             savePlot <<- savePlot
             plotName <<- plotName
+            setSeed <<- setSeed
             debug <<- debug
             modelFileName <<- 'model.txt'
 
@@ -288,7 +287,6 @@ MCMCsuiteClass <- setRefClass(
             init_output()
             writeModelFile()
             if(debug)              browser()
-            if(setSeed)            set.seed(0)
             if(winbugsMCMCflag)    run_winbugs()
             if(openbugsMCMCflag)   run_openbugs()
             if(jagsMCMCflag)       run_jags()
@@ -357,12 +355,14 @@ MCMCsuiteClass <- setRefClass(
             timing <- rep(NA, nMCMCs+1)
             names(timing) <- c(MCMCs, 'nimble_compile')
             if(stanMCMCflag) timing['stan_compile'] <- NA
-            initialOutput <- list(samples=samples, summary=summary, timing=timing)
+            runParams <- c(niter = niter, burnin = burnin, thin = thin, nkeep = nkeep, burninFraction = burninFraction) 
+            initialOutput <- list(samples=samples, summary=summary, timing=timing, runParams = runParams)
             if(calculateEfficiency) initialOutput$efficiency <- list(min=NA, mean=NA)
             output <<- initialOutput
         },
         
         run_winbugs = function() {
+            if(setSeed) set.seed(0)
             if(requireNamespace('R2WinBUGS', quietly = TRUE)) {
                 timeResult <- system.time({
                                               winbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
@@ -376,6 +376,7 @@ MCMCsuiteClass <- setRefClass(
         
         run_openbugs = function() {
             if(requireNamespace('R2WinBUGS', quietly = TRUE)) {
+                if(setSeed) set.seed(0)
                 timeResult <- system.time({
                                               openbugs_out <- R2WinBUGS::bugs(data=constantsAndData, inits=list(inits), parameters.to.save=monitorVars, model.file=modelFileName,
                                                                               n.chains=1, n.iter=niter, n.burnin=0, n.thin=thin, bugs.directory=openbugs_directory, program=openbugs_program)
@@ -387,6 +388,7 @@ MCMCsuiteClass <- setRefClass(
         },
         
         run_jags = function() {
+            if(setSeed) set.seed(0)
             if(requireNamespace('rjags', quietly = TRUE)) {
                 jags_mod <- rjags::jags.model(file=modelFileName, data=constantsAndData, inits=inits, n.chains=1, quiet=FALSE)
                 timeResult <- system.time({
@@ -398,6 +400,7 @@ MCMCsuiteClass <- setRefClass(
         },
 
         run_stan = function(dataFile, initFile) {
+            if(setSeed) set.seed(0)
             if(require('rstan', quietly = TRUE)) {
                 if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
                 ##            dataFile <- gsub('stan$', 'data.R', stan_model)
@@ -471,6 +474,7 @@ MCMCsuiteClass <- setRefClass(
                 Cmodel$setInits(inits);     calculate(Cmodel)
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 Cmcmc <- CmcmcFunctionList[[mcmcTag]]
+                if(setSeed) set.seed(0)
                 timeResult <- system.time({ Cmcmc$run(niter) })
                 CmvSamples <- Cmcmc$mvSamples
                 samplesArray <- as.matrix(CmvSamples, varNames = monitorVars)

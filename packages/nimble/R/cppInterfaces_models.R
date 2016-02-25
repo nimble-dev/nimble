@@ -28,8 +28,13 @@ getMVptr <- function(rPtr)
 getMVName <- function(modelValuePtr)
   .Call("getMVBuildName", modelValuePtr)
 
+# for now export this as R<3.1.2 give warnings if don't
 
-
+#' Class \code{CmodelBaseClass}
+#' @aliases CmodelBaseClass 
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                contains = 'modelBaseClass',
                                fields = list(

@@ -1,8 +1,8 @@
 \name{nimble-internal}
 \title{Functions and Classes Internal to NIMBLE}
 \alias{accessorVectorLength_setupCodeTemplate}
-\alias{CmodelBaseClass-class}
 \alias{activeBindingTemplate}
+\alias{activeBindingTemplateLength1NonScalar}
 \alias{addArg}
 \alias{addBlankModelValueRows}
 \alias{addBlockFromCppName}
@@ -20,9 +20,11 @@
 \alias{addSetupCodeNames}
 \alias{addSingleModelValuesAccess}
 \alias{addSingleVarAccess}
+\alias{addToTypeEnv}
 \alias{allLHSNodes_SetupTemplate}
 \alias{allModelNodes_SetupTemplate}
 \alias{allModelValuesVars_SetupTemplate}
+\alias{allParamEfficiencyComparisonComponent}
 \alias{anyNonScalar}
 \alias{areMVSymTabsEqual}
 \alias{argInfo2PointerStaticCast}
@@ -107,13 +109,10 @@
 \alias{cleanWhite}
 \alias{cloglog}
 \alias{Cmatrix2mvOneVar}
-\alias{CmodelBaseClass}
 \alias{CmodelValues}
 \alias{CmultiNimbleFunctionClass}
-\alias{CnimbleFunctionBase}
 \alias{CNumericList}
 \alias{code2Name_fromArgList}
-\alias{codeBlockClass}
 \alias{codeProcessIfThenElse}
 \alias{codeSubstitute}
 \alias{collectEdges}
@@ -180,6 +179,7 @@
 \alias{cppOutputEigMemberFunction}
 \alias{cppOutputEigMemberFunctionNoTranslate}
 \alias{cppOutputFor}
+\alias{cppOutputGetParam}
 \alias{cppOutputIfWhile}
 \alias{cppOutputMemberFunction}
 \alias{cppOutputMemberFunctionDeref}
@@ -188,6 +188,7 @@
 \alias{cppOutputNFmethod}
 \alias{cppOutputNFvar}
 \alias{cppOutputNimFunListAccess}
+\alias{cppOutputNimSwitch}
 \alias{cppOutputNonNativeEigen}
 \alias{cppOutputNumList}
 \alias{cppOutputParen}
@@ -245,6 +246,9 @@
 \alias{double}
 \alias{doubleBracket_keywordInfo}
 \alias{dropSingleSizes}
+\alias{effectiveSizeHO}
+\alias{effectiveSizeStan}
+\alias{efficiencyDetailsComparisonComponent}
 \alias{eigCalls}
 \alias{eigenizeArrayize}
 \alias{eigenize_asRowOrCol}
@@ -356,6 +360,7 @@
 \alias{getNodeFxnPtrs}
 \alias{getNRow}
 \alias{getNumberedObject}
+\alias{getParam_keywordInfo}
 \alias{getPosteriorDensityFromConjSampler}
 \alias{getPosteriorDensityFromConjSampler_virtual}
 \alias{getSetCharacter}
@@ -389,6 +394,7 @@
 \alias{inprod}
 \alias{insertExprClassLayer}
 \alias{insertIndexingBracket}
+\alias{insertSingleIndexBrackets}
 \alias{insertSubIndexExpr}
 \alias{IntermLabelMaker}
 \alias{inverse}
@@ -437,12 +443,14 @@
 \alias{makeEigenName}
 \alias{makeEigenTypeLabel}
 \alias{makeEnvName}
+\alias{make_example_html}
 \alias{makeFixedParameterCallCodeForOptim}
 \alias{makefnScaleLine}
 \alias{makeGetCodeFromAccessorVector}
 \alias{makeIndexNamePieces}
 \alias{makeLogProbEnvName}
 \alias{makeLogProbName}
+\alias{make_main}
 \alias{makeMapAccessExpr}
 \alias{makeMapExprFromBrackets}
 \alias{makeMapInfoFromAccessorVector}
@@ -461,6 +469,7 @@
 \alias{makeNumericList}
 \alias{makeOffsetRexpr}
 \alias{makeOptimFunctionCallLine}
+\alias{makeParamInfo}
 \alias{makeRowName}
 \alias{makeSetCodeFromAccessorVector}
 \alias{makeSingleIndexAccessCodeNames}
@@ -487,11 +496,15 @@
 \alias{matrixSolveOperators}
 \alias{matrixSquareOperators}
 \alias{matrixSquareReductionOperators}
+\alias{MCMCefficiencyHO}
+\alias{MCMCefficiencyHOlist}
 \alias{mcmc_findControlListNamesInCode}
 \alias{mcmc_listContentsToStr}
 \alias{mergeMultiLineStatements}
 \alias{midOperators}
 \alias{minMaxHandler}
+\alias{minMeanAllComparisonComponent}
+\alias{minMeanComparisonComponent}
 \alias{modelDefInfoClass}
 \alias{modelValuesAccessorVector}
 \alias{modelValuesAccessorVector_setupCodeTemplate}
@@ -514,6 +527,7 @@
 \alias{ndf_createVirtualNodeFunctionDefinition}
 \alias{ndf_createVirtualNodeFunctionDefinitionsList}
 \alias{ndf_generateGetParamFunction}
+\alias{ndf_generateGetParamSwitchFunction}
 \alias{NeedMakevarsFile}
 \alias{neverReplaceable}
 \alias{newAssignmentExpression}
@@ -556,7 +570,6 @@
 \alias{nimArray}
 \alias{nimArrMapExpr}
 \alias{NimbleCodeDir}
-\alias{nimbleFunctionBase}
 \alias{nimbleFunctionList}
 \alias{nimbleIncludeFile}
 \alias{nimbleOrRfunctionNames}
@@ -574,6 +587,7 @@
 \alias{nimPointerList}
 \alias{nimRound}
 \alias{nimStep}
+\alias{nimSwitch}
 \alias{nimVector}
 \alias{nl_addIndicesToVariables}
 \alias{nl_aggregateConsecutiveBlocks}
@@ -647,6 +661,7 @@
 \alias{outputEigenOperation2}
 \alias{outputGeneralCppFunction2}
 \alias{outputTypeCast2}
+\alias{paramInfo_SetupTemplate}
 \alias{parseEvalCharacter}
 \alias{parseEvalNumeric}
 \alias{parseTreeSubstitute}
@@ -656,6 +671,7 @@
 \alias{pfStepVirtual}
 \alias{phi}
 \alias{plotABS}
+\alias{plotMinMeanAll}
 \alias{pointAt}
 \alias{populateCopierVector}
 \alias{populateManyModelValuesMapAccess}
@@ -663,6 +679,7 @@
 \alias{populateNodeFxnVec}
 \alias{populateNodeFxnVec_OLD}
 \alias{posteriorClass}
+\alias{posteriorSummaryComparisonComponent}
 \alias{pow}
 \alias{pqAvail}
 \alias{pqDists}
@@ -723,7 +740,6 @@
 \alias{RMakeCustomModelClass}
 \alias{Rmatrix2mvOneVar}
 \alias{rmFunHandler}
-\alias{RModelBaseClass}
 \alias{Rname2CppName}
 \alias{RNumericList}
 \alias{rop}
@@ -740,7 +756,6 @@
 \alias{sampler_conjugate_dnorm}
 \alias{sampler_conjugate_dwish}
 \alias{sampler_ess}
-\alias{sampler_RW_block_NEW}
 \alias{sampler_RW_log}
 \alias{samplerSpec}
 \alias{scalarOutputTypes}
@@ -769,10 +784,8 @@
 \alias{singleBracket_keywordInfo}
 \alias{singleModelIndexAccess_SetupTemplate}
 \alias{singleModelValuesAccess}
-\alias{singleModelValuesAccessClass}
 \alias{singleModelValuesAccessor_SetupTemplate}
 \alias{singleVarAccess}
-\alias{singleVarAccessClass}
 \alias{singleVarAccess_SetupTemplate}
 \alias{sizeasDoublePtr}
 \alias{sizeAsRowOrCol}
@@ -789,6 +802,7 @@
 \alias{sizeDimOperator}
 \alias{sizeFor}
 \alias{sizeforceEigenize}
+\alias{sizeGetParam}
 \alias{sizeIndexingBracket}
 \alias{sizeInsertIntermediate}
 \alias{sizemap}
@@ -807,6 +821,7 @@
 \alias{sizeScalarRecurse}
 \alias{sizeSetSize}
 \alias{sizeSolveOp}
+\alias{sizeSwitch}
 \alias{sizeTranspose}
 \alias{sizeUnaryCwise}
 \alias{sizeUnaryCwiseSquare}
@@ -817,6 +832,7 @@
 \alias{sizeVoidPtr}
 \alias{specificCallHandlers}
 \alias{specificCallReplacements}
+\alias{spectrum0.ar.big}
 \alias{splitCompletionForOrigNodes}
 \alias{splitVertexIDsToElementIDs}
 \alias{splitVertices}
@@ -828,6 +844,7 @@
 \alias{symbolCopierVector}
 \alias{symbolDouble}
 \alias{symbolEigenMap}
+\alias{symbolGetParamInfo}
 \alias{symbolInt}
 \alias{symbolMemberFunction}
 \alias{symbolModel}
@@ -848,6 +865,7 @@
 \alias{symbolVecNimArrPtr}
 \alias{symbolVoidPtr}
 \alias{symTypeFromSymTab}
+\alias{timeComparisonComponent}
 \alias{toSEXPscalarConvertFunctions}
 \alias{unaryOperators}
 \alias{unaryOrNonaryOperators}
@@ -878,7 +896,42 @@
 \alias{[[<-,nimbleFunctionList-method}
 \alias{[[,distributionsClass-method}
 \alias{[[,conjugacyRelationshipsClass-method}
+\alias{as.matrix.modelValuesBaseClass-Class}
+\alias{autoBlockClass-Class}
+\alias{BUGScontextClass-Class}
+\alias{BUGSsingleContextClass-Class}
+\alias{CmultiNimbleFunctionClass-Class}
+\alias{conjugacyClass-Class}
+\alias{conjugacyRelationshipsClass-Class}
+\alias{cppBUGSmodelClass-Class}
+\alias{cppCodeFileClass-Class}
+\alias{cppCPPfileClass-Class}
+\alias{cppHfileClass-Class}
+\alias{cppModelValuesClass-Class}
+\alias{cppNamedObjectsClass-Class}
+\alias{cppNimbleFunctionClass-Class}
+\alias{cppProjectClass-Class}
+\alias{cppVirtualNimbleFunctionClass-Class}
+\alias{dependentClass-Class}
+\alias{distClass-Class}
+\alias{distributionsClass-Class}
+\alias{exprClass-Class}
+\alias{exprTypeInfoClass-Class}
+\alias{keywordInfoClass-Class}
+\alias{MakeCustomModelClass-Class}
+\alias{makeCustomModelValuesClass-Class}
+\alias{mapsClass-Class}
+\alias{modelDefInfoClass-Class}
+\alias{mvInfoClass-Class}
+\alias{nfCompilationInfoClass-Class}
+\alias{nimbleProjectClass-Class}
+\alias{posteriorClass-Class}
+\alias{RCfunctionCompileClass-Class}
+\alias{RCfunInfoClass-Class}
+\alias{RMakeCustomModelClass-Class}
+\alias{setupCodeTemplateClass-Class}
+\alias{varInfoClass-Class}
 \description{
-Functions and classes used internally in NIMBLE and not expected to be called directly by users. For the moment all functions and classes are exported while we are sorting out questions about the use of non-exported functions in Reference Class methods.
+Functions and classes used internally in NIMBLE and not expected to be called directly by users. For the moment many functions and classes not intended for direct use are exported because they are used within Reference Class methods for classes programmatically generated by NIMBLE.
 }
 \author{NIMBLE Development Team}

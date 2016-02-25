@@ -2,11 +2,33 @@
 
 USER LEVEL CHANGES
 
+-- new system for automating the comparison of different MCMCs and generating html results pages. main function is compareMCMCs.
+
 -- enhanced checking of model to check for size and dimension mismatch in BUGS code
+
+-- some steps of building models and determining dependencies (e.g. getDependencies method for model classes) are faster and use less memory
+
+-- models have a new method, getDependenciesList, that provides a list of neighbor relationships in the model graph.
+
+-- The NIMBLE DSL (nimbleFunction run code) has a new function getParam(model, node, parameter) that returns the value of a parameter of a stochastic node.
+
+-- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
+
+-- Block sampler is a bit more efficient
 
 DEVELOPER LEVEL CHANGES
 
 -- various modifications to conform to CRAN rules 
+
+BUG FIXES
+
+-- Compilation of BUGS function inprod is fixed
+
+-- some cases of handling multivariate variables of length one (e.g. a 1x1 matrix) have been fixed.
+
+-- added warning when 'size' in multinomial is not sum of values
+
+-- added missing terms (involving only the data values) in 'ddirchmulti' in test-user.R and in manual
 
                         CHANGES IN VERSION 0.4-1 (Oct. 3, 2015)
 

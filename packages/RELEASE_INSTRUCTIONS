@@ -1,6 +1,13 @@
+no visible binding issues:
+http://stackoverflow.com/questions/8096313/no-visible-binding-for-global-variable-note-in-r-cmd-check
+http://stackoverflow.com/questions/9439256/how-can-i-handle-r-cmd-check-no-visible-binding-for-global-variable-notes-when
+
 make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
+
+for version on nimble website, remove FLIBS from Makevars.in
+for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
@@ -31,6 +38,8 @@ go to website: R-nimble.org/login and login
 change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page
+
+(make sure post is set up as a blog entry)
 
 update NEWS info on webpage as high-level summary of NEWS in package
 

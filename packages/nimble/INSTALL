@@ -1,3 +1,5 @@
+[When revise this, note that if install from source from CRAN .tar.gz, you need libgfortran installed from here: http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2; if install from our repo, we're leaving out FLIBS from Makevars.in so don't need that gfortran]
+
 You can install the package with
    R CMD INSTALL nimble_0.4-1.tar.gz
 or

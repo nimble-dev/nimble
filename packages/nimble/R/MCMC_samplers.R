@@ -183,6 +183,104 @@ sampler_RW_log <- nimbleFunction(
 ### block RW sampler with multi-variate normal proposal distribution ###
 ########################################################################
 
+## sampler_RW_block <- nimbleFunction(
+##     contains = sampler_BASE,
+##     setup = function(model, mvSaved, target, control) {
+##         ###  control list extraction  ###
+##         adaptive       <- control$adaptive
+##         adaptScaleOnly <- control$adaptScaleOnly
+##         adaptInterval  <- control$adaptInterval
+##         scale          <- control$scale
+##         propCov        <- control$propCov
+##         ###  node list generation  ###
+##         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+##         calcNodes <- model$getDependencies(target)
+##         ###  numeric value generation  ###
+##         scaleOriginal <- scale
+##         timesRan      <- 0
+##         timesAccepted <- 0
+##         timesAdapted  <- 0
+##         scaleHistory          <- c(0, 0)
+##         acceptanceRateHistory <- c(0, 0)
+##         d <- length(targetAsScalar)
+##         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
+##         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
+##         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+##         if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
+##         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+##         propCovOriginal <- propCov
+##         chol_propCov <- chol(propCov)
+##         statSums  <- matrix(0, nrow=1, ncol=d)   # sums of each node, stored as a row-matrix
+##         statProds <- matrix(0, nrow=d, ncol=d)   # sums of pairwise products of nodes
+##         ###  nested function and function list definitions  ###
+##         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+##         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+##         my_calcAdaptationFactor <- calcAdaptationFactor(d)
+##     },
+    
+##     run = function() {
+##         propValueVector <- generateProposalVector()
+##         lpMHR <- my_setAndCalculateDiff$run(propValueVector)
+##         jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+##         if(adaptive)     adaptiveProcedure(jump)
+##     },
+    
+##     methods = list(
+        
+##         generateProposalVector = function() {
+##             propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
+##             returnType(double(1))
+##             return(propValueVector)
+##         },
+        
+##         adaptiveProcedure = function(jump = logical()) {
+##             timesRan <<- timesRan + 1
+##             if(jump)     timesAccepted <<- timesAccepted + 1
+##             if(!adaptScaleOnly) {
+##                 declare(newValues, double(1, d))
+##                 newValues <- values(model, target)
+##                 statSums  <<- statSums + asRow(newValues)
+##                 statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
+##             }
+##             if(timesRan %% adaptInterval == 0) {
+##                 acceptanceRate <- timesAccepted / timesRan
+##                 timesAdapted <<- timesAdapted + 1
+##                 setSize(scaleHistory,          timesAdapted)
+##                 setSize(acceptanceRateHistory, timesAdapted)
+##                 scaleHistory[timesAdapted] <<- scale
+##                 acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+##                 adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
+##                 scale <<- scale * adaptFactor
+##                 ## calculate empirical covariance, and adapt proposal covariance
+##                 if(!adaptScaleOnly) {
+##                     gamma1 <- my_calcAdaptationFactor$gamma1
+##                     empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
+##                     propCov <<- propCov + gamma1 * (empirCov - propCov)
+##                     chol_propCov <<- chol(propCov)
+##                     statSums  <<- statSums  * 0
+##                     statProds <<- statProds * 0      ##  setAll(statProds, 0)    ## setAll() doesn't work in R, and doesn't work for vectors (only works for dim=2 objects)
+##                 }
+##                 timesRan <<- 0
+##                 timesAccepted <<- 0
+##             }
+##         },
+        
+##         reset = function() {
+##             scale   <<- scaleOriginal
+##             propCov <<- propCovOriginal
+##             chol_propCov <<- chol(propCov)
+##             timesRan      <<- 0
+##             timesAccepted <<- 0
+##             timesAdapted  <<- 0
+##             scaleHistory          <<- scaleHistory          * 0
+##             acceptanceRateHistory <<- acceptanceRateHistory * 0
+##             statSums  <<- statSums  * 0
+##             statProds <<- statProds * 0
+##             my_calcAdaptationFactor$reset()
+##         }
+##     ),  where = getLoadingNamespace()
+## )
+
 sampler_RW_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -210,104 +308,7 @@ sampler_RW_block <- nimbleFunction(
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
-        statSums  <- matrix(0, nrow=1, ncol=d)   # sums of each node, stored as a row-matrix
-        statProds <- matrix(0, nrow=d, ncol=d)   # sums of pairwise products of nodes
-        ###  nested function and function list definitions  ###
-        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor <- calcAdaptationFactor(d)
-    },
-    
-    run = function() {
-        propValueVector <- generateProposalVector()
-        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
-        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-        if(adaptive)     adaptiveProcedure(jump)
-    },
-    
-    methods = list(
-        
-        generateProposalVector = function() {
-            propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
-            returnType(double(1))
-            return(propValueVector)
-        },
-        
-        adaptiveProcedure = function(jump = logical()) {
-            timesRan <<- timesRan + 1
-            if(jump)     timesAccepted <<- timesAccepted + 1
-            if(!adaptScaleOnly) {
-                declare(newValues, double(1, d))
-                newValues <- values(model, target)
-                statSums  <<- statSums + asRow(newValues)
-                statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
-            }
-            if(timesRan %% adaptInterval == 0) {
-                acceptanceRate <- timesAccepted / timesRan
-                timesAdapted <<- timesAdapted + 1
-                setSize(scaleHistory,          timesAdapted)
-                setSize(acceptanceRateHistory, timesAdapted)
-                scaleHistory[timesAdapted] <<- scale
-                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
-                adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
-                scale <<- scale * adaptFactor
-                ## calculate empirical covariance, and adapt proposal covariance
-                if(!adaptScaleOnly) {
-                    gamma1 <- my_calcAdaptationFactor$gamma1
-                    empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
-                    propCov <<- propCov + gamma1 * (empirCov - propCov)
-                    chol_propCov <<- chol(propCov)
-                    statSums  <<- statSums  * 0
-                    statProds <<- statProds * 0      ##  setAll(statProds, 0)    ## setAll() doesn't work in R, and doesn't work for vectors (only works for dim=2 objects)
-                }
-                timesRan <<- 0
-                timesAccepted <<- 0
-            }
-        },
-        
-        reset = function() {
-            scale   <<- scaleOriginal
-            propCov <<- propCovOriginal
-            chol_propCov <<- chol(propCov)
-            timesRan      <<- 0
-            timesAccepted <<- 0
-            timesAdapted  <<- 0
-            scaleHistory          <<- scaleHistory          * 0
-            acceptanceRateHistory <<- acceptanceRateHistory * 0
-            statSums  <<- statSums  * 0
-            statProds <<- statProds * 0
-            my_calcAdaptationFactor$reset()
-        }
-    ),  where = getLoadingNamespace()
-)
-
-sampler_RW_block_NEW <- nimbleFunction(
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        ###  control list extraction  ###
-        adaptive       <- control$adaptive
-        adaptScaleOnly <- control$adaptScaleOnly
-        adaptInterval  <- control$adaptInterval
-        scale          <- control$scale
-        propCov        <- control$propCov
-        ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
-        ###  numeric value generation  ###
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
-        scaleHistory          <- c(0, 0)
-        acceptanceRateHistory <- c(0, 0)
-        d <- length(targetAsScalar)
-        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
-        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
-        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
-        if(!all(dim(propCov) == d))           stop('propCov matrix must have dimension ', d, 'x', d, '\n')
-        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
-        propCovOriginal <- propCov
-        chol_propCov <- chol(propCov)
+        chol_propCov_scale <- scale * chol_propCov
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
         ###  nested function and function list definitions  ###
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
@@ -325,7 +326,7 @@ sampler_RW_block_NEW <- nimbleFunction(
     methods = list(
         
         generateProposalVector = function() {
-            propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
+            propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
             returnType(double(1))
             return(propValueVector)
         },
@@ -351,6 +352,7 @@ sampler_RW_block_NEW <- nimbleFunction(
                     propCov <<- propCov + gamma1 * (empirCov - propCov)
                     chol_propCov <<- chol(propCov)
                 }
+                chol_propCov_scale <<- chol_propCov * scale
                 timesRan <<- 0
                 timesAccepted <<- 0
             }
@@ -652,14 +654,6 @@ sampler_crossLevel <- nimbleFunction(
 #' 
 #' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below. 
 #' 
-#' @section end sampler:
-#' 
-#' The end sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE. 
-#' 
-#' The end sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of an end sampler to any non-terminal node will result in invalid posterior inferences.  The end sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler. \cr
-#' 
-#' The end sampler accepts no control list arguments. 
-#' 
 #' @section RW sampler:
 #' 
 #' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node. 
@@ -670,6 +664,10 @@ sampler_crossLevel <- nimbleFunction(
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
+#'
+#' @section RW_log sampler:
+#'
+#' This is like the RW sampler but operates on the log of the parameter being sampled.
 #' 
 #' @section RW_block sampler:
 #' 
@@ -728,6 +726,14 @@ sampler_crossLevel <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for propCov. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity' or any positive definite matrix of the appropriate dimensions. (default = 'identity')
 #' }
+#'
+#' @section end sampler:
+#' 
+#' The end sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE. 
+#' 
+#' The end sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of an end sampler to any non-terminal node will result in invalid posterior inferences.  The end sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler. \cr
+#' 
+#' The end sampler accepts no control list arguments. 
 #' 
 #' @name samplers
 #' 

@@ -102,20 +102,22 @@ getLogProbNodes <- nimbleFunction(
 #'
 #' myModel <- nimbleModel(code)
 #' myMV <- modelValues(myModel)
-#' cModel <- compileNimble(myModel)
 #'
 #' Rsim <- simNodesMV(myModel, myMV)
 #' Rcalc <- calcNodesMV(myModel, myMV)
 #' Rglp <- getLogProbNodesMV(myModel, myMV)
-#' Csim <- compileNimble(Rsim, project = myModel)
-#' Ccalc <- compileNimble(Rcalc, project = myModel)
-#' Cglp <- compileNimble(Rglp, project = myModel)
-#' Csim$run(10)
-#' Ccalc$run(saveLP = TRUE)
-#' Cglp$run()	#Gives identical answers to Ccalc because logProbs were saved
-#' Csim$run(10)
-#' Ccalc$run(saveLP = FALSE)
-#' Cglp$run()	#Gives wrong answers because logProbs were not saved
+#' \dontrun{
+#'   cModel <- compileNimble(myModel)
+#'   Csim <- compileNimble(Rsim, project = myModel)
+#'   Ccalc <- compileNimble(Rcalc, project = myModel)
+#'   Cglp <- compileNimble(Rglp, project = myModel)
+#'   Csim$run(10)
+#'   Ccalc$run(saveLP = TRUE)
+#'   Cglp$run()	#Gives identical answers to Ccalc because logProbs were saved
+#'   Csim$run(10)
+#'   Ccalc$run(saveLP = FALSE)
+#'   Cglp$run()	  #Gives wrong answers because logProbs were not saved
+#' }
 simNodesMV <- nimbleFunction(
     setup = function(model, mv, nodes) {
         if(missing(nodes) )
