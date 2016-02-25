@@ -431,6 +431,14 @@ sizecallC <- function(code, symTab, typeEnv) {
 
 ## This is for when the programmer has directly written "resize(Z, 3, dim(A)[1])".
 ## When the resize is automatically generated, it skips size inference
+
+nimbleGeneralParseDeparse <- function(code) {
+    if(inherits(code,'exprClass'))
+        parse(text = nimDeparse(code), keep.source = FALSE)[[1]]
+    else
+        code
+}
+
 sizeSetSize <- function(code, symTab, typeEnv) {
     sym <- symTab$getSymbolObject(code$args[[1]]$name, inherits = TRUE)
     if(!inherits(sym, 'symbolNumericList')) {
@@ -438,26 +446,30 @@ sizeSetSize <- function(code, symTab, typeEnv) {
         firstSizeExpr <- code$args[[2]]
         if(inherits(firstSizeExpr, 'exprClass')) {
             if(firstSizeExpr$name == 'c') { ## handle syntax of resize(Z, c(3, dim(A)[1]))
-                message('checking sizeSetSize for c() syntax')
-                browser()
                 if(length(firstSizeExpr$args) != sym$nDim) stop(paste0('Error, number of dimensions provided in resize for ', nimDeparse(code$args[[1]]), ' is wrong'), call. = FALSE)
                 asserts <- recurseSetSizes(firstSizeExpr, symTab, typeEnv) ## may set intermediates if needed
-                assign(code$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(firstSizeExpr$args, function(x) parse(text = nimDeparse(x), keep.source=FALSE)[[1]]), type = sym$type), envir = typeEnv)
+                assign(code$args[[1]]$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(firstSizeExpr$args, nimbleGeneralParseDeparse), type = sym$type), envir = typeEnv)
+                for(i in 1:length(firstSizeExpr$args)) {
+                    code$args[[i+1]] <- firstSizeExpr$args[[i]]
+                    if(inherits(firstSizeExpr$args[[i]], 'exprClass')) {
+                        firstSizeExpr$args[[i]]$caller <- code
+                        firstSizeExpr$args[[i]]$callerArgID <- i+1
+                    }
+                }
+                return(if(length(asserts)==0) NULL else asserts)
             }
         }
         if(length(code$args) != 1 + sym$nDim) stop(paste0('Error, number of dimensions provided in resize for ', nimDeparse(code$args[[1]]), ' is wrong'), call. = FALSE)
         asserts <- recurseSetSizes(code, symTab, typeEnv, c(FALSE, rep(TRUE, sym$nDim) ) )
         ## May need intermediates if any size provided requires eigenization, although that's hard to imagine
-        message('is the code$name correct in the next line?')
-        browser()
 ##        assign(code$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(code$args[-1], nimDeparse), type = sym$type), envir = typeEnv)
         ## this can be redundant if the typeEnv was populated by declareHandler, but we do it here anyway because it may be necessary
-        assign(code$args[[1]]$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(code$args[-1], nimDeparse), type = sym$type), envir = typeEnv)
+        assign(code$args[[1]]$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(code$args[-1], nimbleGeneralParseDeparse), type = sym$type), envir = typeEnv)
         if(length(asserts)==0) NULL else asserts
     }
     if(inherits(sym, 'symbolNumericList') ) {
     	if(length(code$args) != 2 + sym$nDim) stop(paste0('Error, number of dimensions provided in resize for ', nimDeparse(code$args[[1]]), ' is wrong'), call. = FALSE )
-    	assign(code$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(code$args[-1], function(x) parse(text = nimDeparse(x), keep.source=FALSE)[[1]]), type = sym$type), envir = typeEnv)
+    	assign(code$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(code$args[-1], nimbleGeneralParseDeparse), type = sym$type), envir = typeEnv)
     	invisible(NULL)
     }
 }
