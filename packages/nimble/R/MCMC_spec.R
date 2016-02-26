@@ -209,9 +209,9 @@ print: A logical argument, specifying whether to print the ordered list of defau
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dependents_', '', names(dependentCounts))
-            conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCount = dependentCounts)
+            conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts)
             if(!dynamicConjugateSamplerExists(conjSamplerName)) {
-                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCount = dependentCounts)
+                conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts)
                 dynamicConjugateSamplerAdd(conjSamplerName, conjSamplerDef)
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
