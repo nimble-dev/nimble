@@ -120,6 +120,8 @@ MCMCsuite <- function(...) {
 #' @param setSeed Logical argument, specifying whether to set.seed(0) prior to MCMC sampling.
 #' Default value is \code{TRUE}.
 #' 
+#' @param check Logical argument, specifying whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
+#' 
 #' @param debug Logical argument, specifying whether to enter a \code{browser()} at the onset of executing each MCMC algrithm.
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
@@ -249,6 +251,7 @@ MCMCsuiteClass <- setRefClass(
             savePlot            = TRUE,
             plotName            = 'MCMCsuite',
             setSeed             = TRUE,
+            check               = getNimbleOption('checkModel'),
             debug               = FALSE) {
             
             if(debug) browser()
@@ -257,7 +260,7 @@ MCMCsuiteClass <- setRefClass(
             data <<- data
             inits <<- inits
             constantsAndData <<- c(constants, data)
-            Rmodel <<- nimbleModel(code=code, constants=constants, data=data, inits=inits)
+            Rmodel <<- nimbleModel(code=code, constants=constants, data=data, inits=inits, check=check)
             niter <<- niter
             burnin <<- burnin
             thin <<- thin
