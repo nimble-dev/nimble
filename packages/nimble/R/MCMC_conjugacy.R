@@ -51,7 +51,7 @@ conjugacyRelationshipsInputList <- list(
     #          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
     #          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
     #      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
-    #                        c     = max(prior_c, max(dependents_dunif_values/dependents_dunif_coeff)))'),
+    #                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
     #####
     
     ## multivariate-normal
@@ -256,7 +256,7 @@ conjugacyClass <- setRefClass(
             linearityCheck <- cc_checkLinearity(linearityCheckExpr, targetNode)   # determines whether paramExpr is linear in targetNode
             if(!cc_linkCheck(linearityCheck, link))                           return(NULL)
             if(!cc_otherParamsCheck(model, depNode, targetNode))              return(NULL)   # ensure targetNode appears in only *one* depNode parameter expression
-            return(paste0('dependents_', depNodeDist))
+            return(paste0('dep_', depNodeDist))
         },
         ## workhorse for checking conjugacy
         checkConjugacy = function(model, targetNode) {
@@ -290,7 +290,7 @@ conjugacyClass <- setRefClass(
         },
 
         addDependentNodeToControl = function(control, depNodeDist, depNode) {
-            listName <- paste0('dependents_', depNodeDist)
+            listName <- paste0('dep_', depNodeDist)
             control[[listName]] <- c(control[[listName]], depNode)
             control
         },
@@ -337,9 +337,9 @@ conjugacyClass <- setRefClass(
                             DEP_NODEFUNCTIONS[[i]] <- model$nodeFunctions[[DEP_NODENAMES[i]]]
                         }
                     },
-                                         list(DEP_CONTROL_NAME  = as.name(paste0('dependents_', distName)),
-                                              DEP_NODENAMES     = as.name(paste0('dependents_', distName, '_nodeNames')),
-                                              DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                         list(DEP_CONTROL_NAME  = as.name(paste0('dep_', distName)),
+                                              DEP_NODENAMES     = as.name(paste0('dep_', distName, '_nodeNames')),
+                                              DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                               NF_VIRTUAL        = as.name(paste0('node_stoch_', distName)))
                                          )
                 }
@@ -353,9 +353,9 @@ conjugacyClass <- setRefClass(
                         DEP_NODEFUNCTIONS <- nimbleFunctionList(NF_VIRTUAL)
                         for(iDep in 1:N_DEP)
                             DEP_NODEFUNCTIONS[[iDep]] <- model$nodes[[control$DEP_CONTROL_NAME[iDep]]]
-                    }, list(N_DEP             = as.name(paste0('N_dependents_', distName)),
-                            DEP_CONTROL_NAME  = as.name(paste0(  'dependents_', distName)),
-                            DEP_NODEFUNCTIONS = as.name(paste0(  'dependents_', distName, '_nodeFunctions')),
+                    }, list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                            DEP_CONTROL_NAME  = as.name(paste0(  'dep_', distName)),
+                            DEP_NODEFUNCTIONS = as.name(paste0(  'dep_', distName, '_nfs')),
                             NF_VIRTUAL        = as.name(paste0('node_stoch_', distName))))
                 }
             }
@@ -454,28 +454,28 @@ conjugacyClass <- setRefClass(
                     
                     depNodeValueNdim <- getDistribution(distName)$types$value$nDim
                     functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                              ## DECLARE() statement
-                                         list(DEP_VALUES_VAR         = as.name(paste0('dependents_', distName, '_values')),               ## DECLARE() statement
+                                         list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
                                               DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                              ## DECLARE() statement
-                                              DECLARE_SIZE           = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), depNodeValueNdim)))
+                                              DECLARE_SIZE           = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')))), depNodeValueNdim)))
                     forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[i]], 'get_value')(),
-                                        list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), depNodeValueNdim, indexExpr = quote(i)),
-                                             DEP_NODEFUNCTIONS     = as.name(paste0('dependents_', distName, '_nodeFunctions'))))
+                                        list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), depNodeValueNdim, indexExpr = quote(i)),
+                                             DEP_NODEFUNCTIONS     = as.name(paste0('dep_', distName, '_nfs'))))
                     
                     neededParams <- dependents[[distName]]$neededParamsForPosterior
                     for(param in neededParams) {
                         depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
                         functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                            ## DECLARE() statement
-                                             list(DEP_PARAM_VAR      = as.name(paste0('dependents_', distName, '_', param)),              ## DECLARE() statement
+                                             list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
                                                   DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                              ## DECLARE() statement
-                                                  DECLARE_SIZE       = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), depNodeParamNdim)))
+                                                  DECLARE_SIZE       = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')))), depNodeParamNdim)))
                         forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)(),
-                                            list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(i)),
-                                                 DEP_NODEFUNCTIONS     = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                            list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(i)),
+                                                 DEP_NODEFUNCTIONS     = as.name(paste0('dep_', distName, '_nfs')),
                                                  GET_PARAM_NAME        =         paste0('get_', param)))
                     }
                     
                     functionBody$addCode(for(i in seq_along(DEP_NODEFUNCTIONS)) FORLOOPBODY,
-                                         list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                         list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                               FORLOOPBODY       = forLoopBody$getCode()))
                 }
             }
@@ -489,32 +489,32 @@ conjugacyClass <- setRefClass(
                     
                     ## DECLARE() statement for dependent node values
                     functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                              ## DECLARE() statement
-                                         list(DEP_VALUES_VAR         = as.name(paste0('dependents_', distName, '_values')),               ## DECLARE() statement
+                                         list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
                                               DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                              ## DECLARE() statement
-                                              DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dependents_', distName)), depNodeValueNdim)))
+                                              DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeValueNdim)))
 
                     ## get *value* of each dependent node
                     forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- DEP_NODEFUNCTIONS[[iDep]]$get_value(),
-                                        list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), depNodeValueNdim, indexExpr = quote(iDep)),
-                                             DEP_NODEFUNCTIONS      = as.name(paste0('dependents_', distName, '_nodeFunctions'))))
+                                        list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), depNodeValueNdim, indexExpr = quote(iDep)),
+                                             DEP_NODEFUNCTIONS      = as.name(paste0('dep_', distName, '_nfs'))))
 
                     for(param in neededParams) {
                         depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
                         ## DECLARE() statement for each dependent node *parameter* value
                         functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                            ## DECLARE() statement
-                                             list(DEP_PARAM_VAR      = as.name(paste0('dependents_', distName, '_', param)),              ## DECLARE() statement
+                                             list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
                                                   DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                              ## DECLARE() statement
-                                                  DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('N_dependents_', distName)), depNodeParamNdim)))
+                                                  DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeParamNdim)))
 
                         ## get *parameter values* for each dependent node
                         forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME(),
-                                            list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep)),
-                                                 DEP_NODEFUNCTIONS     = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                            list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep)),
+                                                 DEP_NODEFUNCTIONS     = as.name(paste0('dep_', distName, '_nfs')),
                                                  GET_PARAM_NAME        = as.name(paste0('get_', param))))
                     }
 
                     functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
-                                         list(N_DEP       = as.name(paste0('N_dependents_', distName)),
+                                         list(N_DEP       = as.name(paste0('N_dep_', distName)),
                                               FORLOOPBODY = forLoopBody$getCode()))
                 }
             }
@@ -530,12 +530,12 @@ conjugacyClass <- setRefClass(
                         functionBody$addCode({                                                                      ## DECLARE() statement
                             declare(DEP_OFFSET_VAR, double(DEP_OFFSET_VAR_NDIM, DECLARE_SIZE_OFFSET))               ## DECLARE() statement
                             declare(DEP_COEFF_VAR,  double(DEP_COEFF_VAR_NDIM,  DECLARE_SIZE_COEFF))                ## DECLARE() statement
-                        }, list(DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset')),          ## DECLARE() statement
-                                DEP_COEFF_VAR       = as.name(paste0('dependents_', distName, '_coeff')),           ## DECLARE() statement
+                        }, list(DEP_OFFSET_VAR      = as.name(paste0('dep_', distName, '_offset')),          ## DECLARE() statement
+                                DEP_COEFF_VAR       = as.name(paste0('dep_', distName, '_coeff')),           ## DECLARE() statement
                                 DEP_OFFSET_VAR_NDIM = 1 + targetNdim,                                               ## DECLARE() statement
                                 DEP_COEFF_VAR_NDIM  = 1 + targetCoeffNdim,                                          ## DECLARE() statement
-                                DECLARE_SIZE_OFFSET = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), targetNdim),
-                                DECLARE_SIZE_COEFF  = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')))), targetCoeffNdim)))
+                                DECLARE_SIZE_OFFSET = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')))), targetNdim),
+                                DECLARE_SIZE_COEFF  = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')))), targetCoeffNdim)))
                     }
                 }
                 if(dynamic) {
@@ -544,12 +544,12 @@ conjugacyClass <- setRefClass(
                         functionBody$addCode({                                                                      ## DECLARE() statement
                             declare(DEP_OFFSET_VAR, double(DEP_OFFSET_VAR_NDIM, DECLARE_SIZE_OFFSET))               ## DECLARE() statement
                             declare(DEP_COEFF_VAR,  double(DEP_COEFF_VAR_NDIM,  DECLARE_SIZE_COEFF))                ## DECLARE() statement
-                        }, list(DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset')),          ## DECLARE() statement
-                                DEP_COEFF_VAR       = as.name(paste0('dependents_', distName, '_coeff')),           ## DECLARE() statement
+                        }, list(DEP_OFFSET_VAR      = as.name(paste0('dep_', distName, '_offset')),          ## DECLARE() statement
+                                DEP_COEFF_VAR       = as.name(paste0('dep_', distName, '_coeff')),           ## DECLARE() statement
                                 DEP_OFFSET_VAR_NDIM = 1 + targetNdim,                                               ## DECLARE() statement
                                 DEP_COEFF_VAR_NDIM  = 1 + targetCoeffNdim,                                          ## DECLARE() statement
-                                DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dependents_', distName)), targetNdim),
-                                DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dependents_', distName)), targetCoeffNdim)))
+                                DECLARE_SIZE_OFFSET = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), targetNdim),
+                                DECLARE_SIZE_COEFF  = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), targetCoeffNdim)))
                     }
                 }
                 
@@ -564,8 +564,8 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                            DEP_OFFSET_VAR[i] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)()
-                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                               DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
+                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
+                                               DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
                                }
                            }
@@ -575,9 +575,9 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_OFFSET_VAR[iDep] <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME(),
-                                       list(N_DEP             = as.name(paste0('N_dependents_', distName)),
-                                            DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                            DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                                            DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
+                                            DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                             GET_PARAM_NAME    = as.name(paste0('get_', dependents[[distName]]$param))))
                                }
                            }
@@ -590,10 +590,10 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                            DEP_COEFF_VAR[i] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[i]
-                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                               DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
+                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
+                                               DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
-                                               DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                               DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset'))))
                                }
                            }
                            if(dynamic) {
@@ -602,11 +602,11 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_COEFF_VAR[iDep] <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME() - DEP_OFFSET_VAR[iDep],
-                                       list(N_DEP             = as.name(paste0('N_dependents_', distName)),
-                                            DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
-                                            DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                                            DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
+                                            DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                             GET_PARAM_NAME    = as.name(paste0('get_', dependents[[distName]]$param)),
-                                            DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                            DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset'))))
                                }
                            }
                        },
@@ -620,8 +620,8 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                            DEP_OFFSET_VAR[i, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)()
-                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                               DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
+                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
+                                               DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
                                }
                            }
@@ -631,9 +631,9 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_OFFSET_VAR[iDep, 1:d] <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME(),
-                                       list(N_DEP             = as.name(paste0('N_dependents_', distName)),,
-                                            DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                            DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),,
+                                            DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
+                                            DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                             GET_PARAM_NAME    = as.name(paste0('get_', dependents[[distName]]$param))))
                                }
                            }
@@ -649,10 +649,10 @@ conjugacyClass <- setRefClass(
                                    forLoopBody$addCode(
                                        for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                            DEP_COEFF_VAR[i, 1:d, sizeIndex] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)() - DEP_OFFSET_VAR[i, 1:d]
-                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                               DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
+                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
+                                               DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param),
-                                               DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                               DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset'))))
                                }
                            }
                            if(dynamic) {
@@ -661,11 +661,11 @@ conjugacyClass <- setRefClass(
                                    forLoopBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_COEFF_VAR[iDep, 1:d, sizeIndex] <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME() - DEP_OFFSET_VAR[iDep, 1:d],
-                                       list(N_DEP             = as.name(paste0('N_dependents_', distName)),
-                                            DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
-                                            DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                                            DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
+                                            DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                             GET_PARAM_NAME    = as.name(paste0('get_', dependents[[distName]]$param)),
-                                            DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset'))))
+                                            DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset'))))
                                }
                            }
                            functionBody$addCode(for(sizeIndex in 1:d) FORLOOPBODY,
@@ -683,8 +683,8 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                            DEP_OFFSET_VAR[i, 1:d, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)()   ## DEP_OFFSET_VAR = A+B(I) = A+B
-                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                               DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
+                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
+                                               DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param)))
                                }
                            }
@@ -694,9 +694,9 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_OFFSET_VAR[iDep, 1:d, 1:d] <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME(),   ## DEP_OFFSET_VAR = A+B(I) = A+B
-                                       list(N_DEP             = as.name(paste0('N_dependents_', distName)),
-                                            DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                            DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                                            DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
+                                            DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                             GET_PARAM_NAME    = as.name(paste0('get_', dependents[[distName]]$param))))
                                }
                            }
@@ -709,8 +709,8 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                            DEP_COEFF_VAR[i, 1:d, 1:d] <- nfMethod(DEP_NODEFUNCTIONS[[i]], GET_PARAM_NAME)()   ## DEP_COEFF_VAR = A+B(2I) = A+2B
-                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                               DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
+                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
+                                               DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
                                                GET_PARAM_NAME    =         paste0('get_', dependents[[distName]]$param))
                                    )
                                }
@@ -719,9 +719,9 @@ conjugacyClass <- setRefClass(
                                        for(i in seq_along(DEP_NODEFUNCTIONS)) {
                                            DEP_COEFF_VAR[i, 1:d, 1:d] <- DEP_COEFF_VAR[i, 1:d, 1:d] - DEP_OFFSET_VAR[i, 1:d, 1:d]   ## now, DEP_COEFF_VAR = (A+2B)-(A+B) = B
                                            DEP_OFFSET_VAR[i, 1:d, 1:d] <- DEP_OFFSET_VAR[i, 1:d, 1:d] - DEP_COEFF_VAR[i, 1:d, 1:d]   ## now, DEP_OFFSET_VAR = (A+B)-(B) = A
-                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
-                                               DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
-                                               DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')))
+                                       }, list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
+                                               DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
+                                               DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')))
                                    )
                                }
                            }
@@ -731,17 +731,17 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_COEFF_VAR[iDep, 1:d, 1:d] <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME() - DEP_OFFSET_VAR[iDep, 1:d, 1:d],   ## DEP_COEFF_VAR = (A+2B)-(A+B) = B
-                                       list(N_DEP             = as.name(paste0('N_dependents_', distName)),
-                                            DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff')),
-                                            DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                                            DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff')),
+                                            DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                             GET_PARAM_NAME    = as.name(paste0('get_', dependents[[distName]]$param)),
-                                            DEP_OFFSET_VAR      = as.name(paste0('dependents_', distName, '_offset'))))
+                                            DEP_OFFSET_VAR      = as.name(paste0('dep_', distName, '_offset'))))
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_OFFSET_VAR[iDep, 1:d, 1:d] <- DEP_OFFSET_VAR[iDep, 1:d, 1:d] - DEP_COEFF_VAR[iDep, 1:d, 1:d],   ## now, DEP_OFFSET_VAR = (A+B)-(B) = A
-                                       list(N_DEP             = as.name(paste0('N_dependents_', distName)),
-                                            DEP_OFFSET_VAR    = as.name(paste0('dependents_', distName, '_offset')),
-                                            DEP_COEFF_VAR     = as.name(paste0('dependents_', distName, '_coeff'))))
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
+                                            DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
+                                            DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff'))))
                                }
                            }
                        },
@@ -770,12 +770,12 @@ conjugacyClass <- setRefClass(
                 for(distName in dependentDistNames) {
                     if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                     depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
-                    subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(i)))
+                    subList <- lapply(depParamsAvailable, function(param) makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(i)))
                     names(subList) <- depParamsAvailable
 
-                    subList$value  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(i))
-                    subList$offset <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_offset')), targetNdim, indexExpr = quote(i))
-                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(i))
+                    subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(i))
+                    subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(i))
+                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(i))
                     
                     forLoopBody <- codeBlockClass()
                     for(contributionName in posteriorObject$neededContributionNames) {
@@ -785,7 +785,7 @@ conjugacyClass <- setRefClass(
                                             list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                     }
                     functionBody$addCode(for(i in seq_along(DEP_NODEFUNCTIONS)) FORLOOPBODY,
-                                         list(DEP_NODEFUNCTIONS = as.name(paste0('dependents_', distName, '_nodeFunctions')),
+                                         list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                               FORLOOPBODY       = forLoopBody$getCode()))
                 }
             }
@@ -796,12 +796,12 @@ conjugacyClass <- setRefClass(
                     if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                     depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
                     subList <- lapply(depParamsAvailable, function(param)
-                        makeIndexedVariable(as.name(paste0('dependents_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep)))
+                        makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep)))
                     names(subList) <- depParamsAvailable
 
-                    subList$value  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep))
-                    subList$offset <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_offset')), targetNdim, indexExpr = quote(iDep))
-                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dependents_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep))
+                    subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep))
+                    subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep))
+                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep))
 
                     forLoopBody <- codeBlockClass()
                     
@@ -812,7 +812,7 @@ conjugacyClass <- setRefClass(
                                             list(CONTRIB_NAME = as.name(contributionName), CONTRIB_EXPR = contributionExpr))
                     }
                     functionBody$addCode(for(iDep in 1:N_DEP) FORLOOPBODY,
-                                         list(N_DEP             = as.name(paste0('N_dependents_', distName)),
+                                         list(N_DEP             = as.name(paste0('N_dep_', distName)),
                                               FORLOOPBODY       = forLoopBody$getCode()))
                 }
             }

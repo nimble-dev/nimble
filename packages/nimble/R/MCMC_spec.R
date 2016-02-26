@@ -208,7 +208,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             }
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
-            names(dependentCounts) <- gsub('^dependents_', '', names(dependentCounts))
+            names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
             conjSamplerName <- createDynamicConjugateSamplerName(prior = prior, dependentCounts = dependentCounts)
             if(!dynamicConjugateSamplerExists(conjSamplerName)) {
                 conjSamplerDef <- conjugacyRelationshipsObject$generateDynamicConjugateSamplerDefinition(prior = prior, dependentCounts = dependentCounts)
@@ -266,7 +266,7 @@ Invisibly returns a list of the current sampler specifications, which are sample
             thisControlList <- controlDefaults           ## start with all the defaults
             thisControlList[names(control)] <- control   ## add in any controls provided as an argument
             missingControlNames <- setdiff(controlListNames, names(thisControlList))
-            missingControlNames <- missingControlNames[!grepl('^dependents_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
+            missingControlNames <- missingControlNames[!grepl('^dep_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
             if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for ', thisSamplerName, ' sampler: ', paste0(missingControlNames, collapse=', ')))
             if(!all(names(control) %in% controlListNames))   warning(paste0('Superfluous control names were provided for ', thisSamplerName, ' sampler: ', paste0(setdiff(names(control), controlListNames), collapse=', ')))
             thisControlList <- thisControlList[controlListNames]
