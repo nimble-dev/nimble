@@ -1,7 +1,7 @@
 # code for creating BUGS model from a variety of input formats
 # pieces written by Daniel Turek and Christopher Paciorek
 
-BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=TRUE) {
+BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel')) {
     if(missing(name)) name <- deparse(substitute(code))
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
@@ -63,7 +63,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' constants = list(prior_sd = 1)
 #' data = list(x = 4)
 #' Rmodel <- nimbleModel(code, constants = constants, data = data)
-nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=TRUE, name)
+nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), name)
     BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check)
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
@@ -224,7 +224,7 @@ processNonParseableCode <- function(text) {
 #' Rmodel$setData(data['x'])
 #' Rmodel[['mu']]
 #' Rmodel$nodes[['x']]$calculate()
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = TRUE) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = getNimbleOption('checkModel')) {
 
   # helper function
   doEval <- function(vec, env) {

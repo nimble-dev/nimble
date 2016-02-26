@@ -249,6 +249,7 @@ MCMCsuiteClass <- setRefClass(
             savePlot            = TRUE,
             plotName            = 'MCMCsuite',
             setSeed             = TRUE,
+            check               = getNimbleOption('checkModel'),
             debug               = FALSE) {
             
             if(debug) browser()
@@ -257,7 +258,7 @@ MCMCsuiteClass <- setRefClass(
             data <<- data
             inits <<- inits
             constantsAndData <<- c(constants, data)
-            Rmodel <<- nimbleModel(code=code, constants=constants, data=data, inits=inits)
+            Rmodel <<- nimbleModel(code=code, constants=constants, data=data, inits=inits, check=check)
             niter <<- niter
             burnin <<- burnin
             thin <<- thin
