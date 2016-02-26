@@ -656,7 +656,7 @@ Checks for common errors in model specification, including missing values, inabi
 
                                   },
 
-                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = TRUE) {
+                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
