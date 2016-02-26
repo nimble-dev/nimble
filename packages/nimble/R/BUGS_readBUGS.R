@@ -41,7 +41,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).
-#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user. 
 #' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
@@ -202,7 +202,7 @@ processNonParseableCode <- function(text) {
 #'
 #' @param debug logical indicating whether to put the user in a browser for debugging when \code{readBUGSmodel} calls \code{nimbleModel}.  Intended for developer use.
 #' 
-#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #'
 #' @param returnModelComponentsOnly logical intended primarily for use with \code{MCMCsuite} to return pieces of the model object without building the model. Default is FALSE.
 #'
