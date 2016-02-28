@@ -77,7 +77,6 @@ bootFStep <- nimbleFunction(
       }
     }
     
-    
     stepllEst <- log(sum(exp(llEst)))
     if(is.nan(stepllEst)){
       out[1] <- -Inf
@@ -91,12 +90,10 @@ bootFStep <- nimbleFunction(
     }
     
     out[1] <- stepllEst
-    # Normalize weights and calculate effective sample size 
-
     
+    # Normalize weights and calculate effective sample size 
     wts <- exp(wts)/sum(exp(wts))
     ess <- 1/sum(wts^2) 
-    
     
     # Determine whether to resample by weights or not
     if(ess < threshNum){

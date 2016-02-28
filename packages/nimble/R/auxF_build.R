@@ -126,7 +126,6 @@ auxFStep <- nimbleFunction(
         }
         auxll[i] <- auxll[i]+calculate(model, thisNode) # multiply by p(x_t+1 | x_t)
         auxWts[i] <- auxll[i] + mvWSamp['wts',i][prevInd] # multiply by weight from time t
-
       }
       normAuxWts <- exp(auxWts)/sum(exp(auxWts))  # normalize weights and resample
       rankSample(normAuxWts, m, ids, silent)
