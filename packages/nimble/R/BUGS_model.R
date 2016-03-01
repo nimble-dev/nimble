@@ -553,7 +553,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                   # check:
                                                   #   1) dims of param args match those in distInputList based on calculation
                                                   #   2) dims of param args match those in distInputList based on varInfo
-                                                  #   3) sizes of vecs and row/column sizes all match for non-scalar quantities
+                                                  #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
                                                   distDims <- as.integer(sapply(getDistribution(dist)$types, function(x) x$nDim))
@@ -607,7 +607,11 @@ Checks for common errors in model specification, including missing values, inabi
                                                   matRows <- unlist(sapply(sizes[mats], `[`, 1))
                                                   matCols <- unlist(sapply(sizes[mats], `[`, 2))
                                                   if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
-                                                      stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                      if(dist %in% names(distributionsInputList)) {
+                                                          stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                      } else {
+                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes.")                                                                                                                                   }
+                                                  
                                               }
                                       }
 
