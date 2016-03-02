@@ -2063,7 +2063,7 @@ modelDefClass$methods(buildSymbolTable = function() {
 })
 
 
-modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = TRUE, debug = FALSE) {
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), debug = FALSE) {
     if(debug) browser()
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')

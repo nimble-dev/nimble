@@ -220,7 +220,7 @@ getParam_keywordInfo <- keywordInfoClass(
             stop('model argument missing from getParam, with no accessor argument supplied')
         if(isCodeArgBlank(code, 'node'))
             stop('node argument missing from getParam, with no accessor argument supplied')
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = FALSE)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE)
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
 
         if(isCodeArgBlank(code, 'param'))
