@@ -6,8 +6,8 @@ gpScalar <- nimbleFunction(
     setup = function(model, node, param) {},
     run = function() {
         ans1 <- getParam(model, node, param)
-        ans2 <- getParam(model, node, param) ## to become model$getParam(node, param)
-        if(ans1 != ans2) stop('oops, ans1 != ans2')
+##        ans2 <- getParam(model, node, param) ## to become model$getParam(node, param)
+##        if(ans1 != ans2) stop('oops, ans1 != ans2')
         return(ans1)
         returnType(double())
     })
