@@ -589,7 +589,8 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
 eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     targetSym <- symTab$getSymbolObject(code$name, TRUE)
     if(!exists('nDim', envir = targetSym, inherits = FALSE)) {
-        stop(paste0('Error in eigenizeName for ', nimDeparse(code), '. Symbol does not have an nDim.'))
+        contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
+        stop(paste0('in eigenizeName for ', nimDeparse(code), '. Symbol does not have an nDim.\n This occured within call\n', contextCode, collapse = ''), call. = FALSE)
     }
     if(targetSym$nDim == 0) return(NULL) ## it is a scalar
 
