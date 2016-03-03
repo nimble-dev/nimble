@@ -644,8 +644,8 @@ matchFunctions[['calculateDiff']] <- calculateDiff		#function(model, nodes, node
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
 matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
-matchFunctions[['double']] <- function(nDim, dim, default){}
-matchFunctions[['int']] <- function(nDim, dim, default){}
+matchFunctions[['double']] <- function(nDim, dim, default, ...){}
+matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
@@ -745,27 +745,28 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
     else {
         symObj <- nfProc$setupSymTab$getSymbolObject(as.character(objectPart))
         if(is.null(symObj)) stop(paste0("In processKeywordCodeMemberFun: not sure what to do with ", deparse(code)))
-        if(inherits(symObj, 'symbolModel')) {
-            thisKeywordInfo <- keywordListModelMemberFuns[[ as.character(dollarSignPart[[3]]) ]]
-            if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code)))
-            rearrangedCode <- thisKeywordInfo$processor(code, nfProc)
-            rearrangedCode <- matchKeywordCode(rearrangedCode, nfProc)
-            return(processKeywords_recurse(rearrangedCode, nfProc))
-        } else {
-            ## same as processKeywords_recurse
-            ## first line here creates something like nfMethod(model, method)(args)
-            ## which is handled as a chainedCall in later processing
-            code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
-            cl <- length(code)
-            if(cl >= 2) {
-                for(i in 2:cl) {
-                    code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
-                }
-            }
-            return(code)
-        }
+        if(inherits(symObj, 'symbolModel'))
+            isModel <- TRUE
     }
-
+    if(isModel) {
+        thisKeywordInfo <- keywordListModelMemberFuns[[ as.character(dollarSignPart[[3]]) ]]
+        if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code)))
+        rearrangedCode <- thisKeywordInfo$processor(code, nfProc)
+        rearrangedCode <- matchKeywordCode(rearrangedCode, nfProc)
+        return(processKeywords_recurse(rearrangedCode, nfProc))
+    } else {
+        ## same as processKeywords_recurse
+        ## first line here creates something like nfMethod(model, method)(args)
+        ## which is handled as a chainedCall in later processing
+        code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        cl <- length(code)
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+        return(code)
+    }
 }
 
 processKeywords_recurse <- function(code, nfProc = NULL) {
@@ -1093,29 +1094,43 @@ matchAndFill.call <- function(def, call){
   theseFormals <- formals(def)
   formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
   theseFormals <- theseFormals[nchar(theseFormals) > 0]
-  matchedCall <- match.call(def, call)
+  matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
   missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
-  for(ind in missingArgs){
+  for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
     name <- names(theseFormals)[ind]
     matchedCall[[name]] <- theseFormals[[name]]    
   }
     
   newCall <- matchedCall[1]
 
-  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly
+  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly, including anything omitted
   	thisArg <- matchedCall[[thisArgName]]
 	if(!is.null(thisArg))
 	  	newCall[[thisArgName]] <- thisArg
   }
   
-  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
+##  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
  		# i.e. are there any "..." args? if so, adds them on in the end
   		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
   		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
-  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
+##  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
 
-  for(thisArg in informalArgNames)
-  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+##  for(thisArg in informalArgNames)
+##  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+
+  ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
+  ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
+  ## tacked on even without a '...' in the def
+  indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+  for(thisIndex in indexAdditionalArgs) {
+      thisName <- names(matchedCall)[thisIndex+1]
+      if(thisName=="")
+          newCall[[thisIndex + 1]] <- matchedCall[[thisIndex + 1]]
+      else {
+          newCall[[thisName]] <- matchedCall[[thisName]]
+      }
+  }
+      
   return(newCall)
 }
 

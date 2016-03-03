@@ -682,7 +682,7 @@ nimPrint <- function(...) {
 declare <- function(name, def){
     defCode <- substitute(def)
     name <- substitute(name)
-    if(exists(as.character(name), parent.frame())) return(invisible(NULL))
+    if(exists(as.character(name), parent.frame(), inherits = FALSE)) return(invisible(NULL))
     value <- if(defCode[[1]] == 'logical') FALSE else 0
     if(length(defCode) == 1){  ## no arg, like double()
         assign(as.character(name), value, envir = parent.frame() )
