@@ -190,7 +190,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  
   
-                                       exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       tryResult <- try(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv))
+                                       if(inherits(tryResult, 'try-error')) {
+                                           stop(paste('There is some problem at the setSizes processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
+                                       }
                                        neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
                                        
                                        if(debug) {
@@ -202,7 +205,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
                                        
-                                       exprClasses_insertAssertions(compileInfo$nimExpr)
+                                       tryResult <- try(exprClasses_insertAssertions(compileInfo$nimExpr))
+                                       if(inherits(tryResult, 'try-error')) {
+                                           stop(paste('There is some problem at the insertAdditions processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
+                                       }
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE)')
                                            compileInfo$nimExpr$show(showAssertions = TRUE)
@@ -214,8 +220,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
                                        
-                                       exprClasses_labelForEigenization(compileInfo$nimExpr)
-                                       
+                                       tryResult <- try(exprClasses_labelForEigenization(compileInfo$nimExpr))
+                                       if(inherits(tryResult, 'try-error')) {
+                                           stop(paste('There is some problem at the Eigen labeling processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
+                                       }
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
