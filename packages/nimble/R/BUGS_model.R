@@ -553,7 +553,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                   # check:
                                                   #   1) dims of param args match those in distInputList based on calculation
                                                   #   2) dims of param args match those in distInputList based on varInfo
-                                                  #   3) sizes of vecs and row/column sizes all match for non-scalar quantities
+                                                  #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
                                                   distDims <- as.integer(sapply(getDistribution(dist)$types, function(x) x$nDim))
@@ -607,7 +607,11 @@ Checks for common errors in model specification, including missing values, inabi
                                                   matRows <- unlist(sapply(sizes[mats], `[`, 1))
                                                   matCols <- unlist(sapply(sizes[mats], `[`, 2))
                                                   if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
-                                                      stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                      if(dist %in% names(distributionsInputList)) {
+                                                          stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                      } else {
+                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes.")                                                                                                                                   }
+                                                  
                                               }
                                       }
 
@@ -656,7 +660,7 @@ Checks for common errors in model specification, including missing values, inabi
 
                                   },
 
-                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = TRUE) {
+                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
@@ -668,7 +672,7 @@ inits: A named list specifying initial values, for use in the newly returned mod
 
 replicate: Logical specifying whether to repliate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
 
-check: A logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+check: A logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option \'checkModel\', see help on \'nimbleOptions\' for details.
 
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
 

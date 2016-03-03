@@ -46,6 +46,7 @@ asCol <- function(x) {
     matrix(x, ncol = 1)
 }
 
+#' @export
 makeParamInfo <- function(model, node, param) {
     distInfo <- getDistribution(model$getNodeDistribution(node))
     ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
@@ -90,6 +91,7 @@ getParam <- function(model, node, param) {
     return(ans)
 }
 
+#' @export
 nimSwitch <- function(paramID, IDoptions, ...) {
     dotsList <- eval(substitute(alist(...)))
     iUse <- which(IDoptions == paramID)

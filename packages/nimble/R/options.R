@@ -20,6 +20,7 @@ nimbleUserNamespace <- as.environment(list())
         compileOnly = FALSE,
         useMultiInterfaceForNestedNimbleFunctions = TRUE,
         clearNimbleFunctionsAfterCompiling = FALSE,
+        checkModel = TRUE,
         verbose = TRUE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
