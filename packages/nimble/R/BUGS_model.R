@@ -36,6 +36,12 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   nimbleProject = 'ANY'
                                   ),
                               methods = list(
+                                  calculate = function(nodes) nimble:::calculate(.self, nodes),
+                                  calculateDiff = function(nodes) nimble:::calculateDiff(.self, nodes),
+                                  getLogProb = function(nodes) nimble:::getLogProb(.self, nodes),
+                                  simulate = function(nodes, includeData = FALSE) nimble:::simulate(.self, nodes, includeData),
+                                  getParam = function(node, param) nimble:::getParam(.self, node, param),
+                                  
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
                                   getModelDef = function() modelDef,
@@ -553,7 +559,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                   # check:
                                                   #   1) dims of param args match those in distInputList based on calculation
                                                   #   2) dims of param args match those in distInputList based on varInfo
-                                                  #   3) sizes of vecs and row/column sizes all match for non-scalar quantities
+                                                  #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
                                                   distDims <- as.integer(sapply(getDistribution(dist)$types, function(x) x$nDim))
@@ -607,16 +613,20 @@ Checks for common errors in model specification, including missing values, inabi
                                                   matRows <- unlist(sapply(sizes[mats], `[`, 1))
                                                   matCols <- unlist(sapply(sizes[mats], `[`, 2))
                                                   if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
-                                                      stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                      if(dist %in% names(distributionsInputList)) {
+                                                          stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                      } else {
+                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes.")                                                                                                                                   }
+                                                  
                                               }
                                       }
 
                                       # check for missing values and inability to calculate/simulate
-                                      lp <- try(calculate(.self))
+                                      lp <- try(nimble:::calculate(.self))
                                       if(!isValid(lp)) {
                                           varsToCheck <- character()
                                           for(v in .self$getVarNames())
-                                              if(!isValid(.self[[v]]) || !isValid(getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
+                                              if(!isValid(.self[[v]]) || !isValid(nimble:::getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
                                                   varsToCheck <- c(varsToCheck, v)
                                           badVars <- list(na=character(), nan=character(), inf=character())
                                       ##nns <- getNodeNames(includeRHSonly = TRUE)
@@ -629,14 +639,14 @@ Checks for common errors in model specification, including missing values, inabi
                                               if(type == 'RHSonly') {
                                                   if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                               } else if(type == 'determ') {
-                                                  test <- try(calculate(.self, nn))
+                                                  test <- try(nimble:::calculate(.self, nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   val <- .self[[nn]]
                                                   if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                               } else if(type == 'stoch') {
                                                   if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                                  test <- try(val <- calculate(.self, nn))
+                                                  test <- try(val <- nimble:::calculate(.self, nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   

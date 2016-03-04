@@ -21,7 +21,7 @@ MCMCsuite <- function(...) {
 #' 
 #' @param code The quoted code expression representing the model, such as the return value from a call to \code{nimbleCode}).
 #' No default value, this is a required argument.
-#' 
+#'
 #' @param constants A named list giving values of constants for the model.
 #' This is the same as the \code{constants} argument which would be passed to \code{nimbleModel}.
 #' Default value is list().
@@ -33,7 +33,7 @@ MCMCsuite <- function(...) {
 #' @param inits A named list giving the initial values for the model.
 #' This is the same as the \code{inits} argument which would be passed to \code{nimbleModel} or \code{model$setInits}.
 #' Default value is \code{list()}.
-#' 
+#'
 #' @param monitors A character vector giving the node names or variable names to monitor.
 #' The samples corresponding to these nodes will be stored in the output samples, will have summary statistics calculated, and density and trace plots generated.
 #' Default value is all top-level stochastic nodes of the model.
@@ -67,7 +67,7 @@ MCMCsuite <- function(...) {
 #' \code{'nimble_slice'} specifies NIMBLE MCMC algorithm using only slice (\code{'slice'}) samplers;
 #' \code{'autoBlock'} specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
 #' Anything else will be interpreted as NIMBLE MCMC algorithms, and must have associated entries in the MCMCdefs argument.
-#' Default value is \code{c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock')}.
+#' Default value is \code{'nimble'}, which specifies NIMBLE's default MCMC algorithm.
 #' 
 #' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \code{MCMCs} argument.
 #' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
@@ -237,7 +237,7 @@ MCMCsuiteClass <- setRefClass(
             thin                = 1,
             summaryStats        = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
             calculateEfficiency = FALSE,
-            MCMCs               = c('jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock'),
+            MCMCs               = 'nimble',
             MCMCdefs            = list(),
             winbugs_directory   = 'C:/WinBUGS14',
             winbugs_program     = 'WinBUGS',

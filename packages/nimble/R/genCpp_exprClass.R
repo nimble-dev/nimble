@@ -184,6 +184,14 @@ nimDeparse <- function(code, indent = '') {
     return( paste0(code$name, '(', paste0(unlist(lapply(code$args, nimDeparse) ), collapse = ', '), ')' ) )
 }
 
+## error trapping utilities to be used from the various processing steps
+exprClassProcessingErrorMsg <- function(code, msg) {
+    contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
+    ans <- paste0(msg, '\n This occurred for: ', nimDeparse(code),'\n', collapse = '')
+    if(!is.null(contextCode)) ans <- paste(ans, '\n This was part of the call: ', contextCode, collapse = '')
+    ans
+}
+
 ## some utilities
 
 ## return a list of size expressions with any "1"s dropped
