@@ -92,7 +92,6 @@ MCMCspec <- setRefClass(
             monitors,                thin  = 1,
             monitors2 = character(), thin2 = 1,
             useConjugacy = TRUE,
-            dynamicConjugacy = TRUE,
             onlyRW = FALSE,
             onlySlice = FALSE,
             multivariateNodesAsScalars = FALSE,
@@ -174,7 +173,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
-                            addConjugateSampler(conjugacyResult = conjugacyResult, dynamicConjugacy = dynamicConjugacy, print = print);     next }
+                            addConjugateSampler(conjugacyResult = conjugacyResult, print = print);     next }
                     }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
@@ -189,7 +188,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 if(useConjugacy) {
                     conjugacyResult <- conjugacyResultsAll[[node]]
                     if(!is.null(conjugacyResult)) {
-                        addConjugateSampler(conjugacyResult = conjugacyResult, dynamicConjugacy = dynamicConjugacy, print = print);     next }
+                        addConjugateSampler(conjugacyResult = conjugacyResult, print = print);     next }
                 }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
@@ -198,11 +197,11 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 ## default: 'RW' sampler
                 addSampler(target = node, type = 'RW', print = print);     next
             }
-            if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
+            ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
         },
 
-        addConjugateSampler = function(conjugacyResult, dynamicConjugacy, print) {
-            if(!dynamicConjugacy) {
+        addConjugateSampler = function(conjugacyResult, print) {
+            if(!getNimbleOption('useDynamicConjugacy')) {
                 addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control, print = print)
                 return(NULL)
             }
@@ -339,6 +338,27 @@ Invisibly returns a list of the current sampler specifications for the specified
             if(length(samplerSpecs) == 0) return(integer())
             nodes <- model$expandNodeNames(nodes, returnScalarComponents = TRUE)
             which(unlist(lapply(samplerSpecs, function(ss) any(nodes %in% ss$targetAsScalar))))
+        },
+
+        getSamplerDefinition = function(ind) {
+            '
+Returns the nimbleFunction definition of an MCMC sampler.
+
+Arguments:
+
+ind: A numeric vector or character vector.  A numeric vector may be used to specify the index of the sampler definition to return, or a character vector may be used to indicate a target node for which the sampler acting on this nodes will be printed. For example, getSamplerDefinition(\'x[2]\') will return the definition of the sampler whose target is model node \'x[2]\'.  If more than one sampler function is specified, only the first is returned.
+
+Returns a list object, containing the setup function, run function, and additional member methods for the specified nimbleFunction sampler.
+'
+            if(is.character(ind))   ind <- findSamplersOnNodes(ind)
+            if(length(ind) > 1) {
+                message('More than one sampler specified, only returning the first')
+                ind <- ind[1]
+            }
+            if((ind <= 0) || (ind > length(samplerSpecs))) stop('Invalid sampler specified')
+            getSamplers(ind)
+            def <- getDefinition(samplerSpecs[[ind]]$samplerFunction)
+            return(def)
         },
         
         addMonitors = function(vars, ind = 1, print = TRUE) {
@@ -543,7 +563,7 @@ Details: See the initialize() function
 #'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
-                          useConjugacy = TRUE, dynamicConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
+                          useConjugacy = TRUE, onlyRW = FALSE, onlySlice = FALSE, multivariateNodesAsScalars = FALSE,
                           print = FALSE, autoBlock = FALSE, oldSpec, ...) {
     
     if(!missing(oldSpec)){
@@ -560,7 +580,7 @@ configureMCMC <- function(model, nodes, control = list(),
     
     thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
-                         useConjugacy = useConjugacy, dynamicConjugacy = dynamicConjugacy,
+                         useConjugacy = useConjugacy,
                          onlyRW = onlyRW, onlySlice = onlySlice,
                          multivariateNodesAsScalars = multivariateNodesAsScalars, print = print)
     return(thisSpec)	

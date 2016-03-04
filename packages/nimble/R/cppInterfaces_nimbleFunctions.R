@@ -321,8 +321,10 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                }
                                                nimbleProject <<- project
                                            }
-                                           callSuper(...)
-                                       },
+                                                callSuper(...)
+                                            },
+                                       getDefinition = function()
+                                           nimble:::getDefinition(.self),
                                        setRobject = function(Robj) {
                                            if(is.nf(Robj)) Robject <<- nf_getRefClassObject(Robj)
                                            else Robject <<- Robj

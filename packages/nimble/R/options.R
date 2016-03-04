@@ -27,6 +27,10 @@ nimbleUserNamespace <- as.environment(list())
         ## if this option is changed, then congugate sampler functions can be rebuilt using:
         ## buildConjugateSamplerFunctions()
         verifyConjugatePosteriors = FALSE,
+
+        ## uses the 'new' system for dynamically generated conjugate samplers (DT, March 2016),
+        ## rather than the older 'static' system.
+        useDynamicConjugacy = TRUE,
         
         ## default settings for MCMC samplers
         ## (formerly controlDefaultList appearing in MCMCspec.R)

@@ -631,7 +631,7 @@ conjugacyClass <- setRefClass(
                                    functionBody$addCode(
                                        for(iDep in 1:N_DEP)
                                            DEP_OFFSET_VAR[iDep, 1:d] <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME(),
-                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),,
+                                       list(N_DEP             = as.name(paste0('N_dep_', distName)),
                                             DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
                                             DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')),
                                             GET_PARAM_NAME    = as.name(paste0('get_', dependents[[distName]]$param))))
@@ -1215,7 +1215,7 @@ buildConjugateSamplerFunctions <- function(writeToFile = NULL) {
 buildConjugateSamplerFunctions(writeToFile = 'TEMP_conjugateSamplerDefinitions.R')
 
 
-## here after is for handling of dynamic conjugate sampler functions
+## here after is for handling of dynamic conjugate sampler function
 
 dynamicConjugateSamplerDefinitionsEnv <- new.env()
 dynamicConjugateSamplerFunctionsEnv <- new.env()
