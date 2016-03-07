@@ -1,4 +1,4 @@
-                        CHANGES IN VERSION 0.5 (Feb. 2016)
+                        CHANGES IN VERSION 0.5 (March 2016)
 
 USER LEVEL CHANGES
 
@@ -10,11 +10,17 @@ USER LEVEL CHANGES
 
 -- models have a new method, getDependenciesList, that provides a list of neighbor relationships in the model graph.
 
--- The NIMBLE DSL (nimbleFunction run code) has a new function getParam(model, node, parameter) that returns the value of a parameter of a stochastic node.
+-- There is a new function, getParam(model, node, parameter), that returns the value of a parameter of a stochastic node.  It works in R and in the NIMBLE DSL (compilable run code).
+
+-- Models now have member functions for calculate, simulate, getLogProb, calculateDiff, and getParam.  model$calculate(nodes) is equivalent to calculate(model, nodes), etc.
 
 -- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
 
--- Block sampler is a bit more efficient
+-- There are more flexible ways to provide arguments to declare and setSize.
+
+-- The random walk block sampler is a bit more efficient.
+
+-- There is better error trapping during some compilation steps.
 
 DEVELOPER LEVEL CHANGES
 
