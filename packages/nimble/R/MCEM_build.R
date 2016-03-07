@@ -103,9 +103,11 @@ calc_E_llk_gen = nimbleFunction(
 #' # Want to maximize alpha and beta (both which must be positive) and integrate over theta
 #' box = list( list(c('alpha','beta'), c(0, Inf)))
 #'
+#' \dontrun{
 #' pumpMCEM <- buildMCEM(model = pumpModel, latentNodes = 'theta[1:10]',
 #'                        boxConstraints = box)
 #' pumpMCEM(maxit = 40, m1 = 1000, m2 = 5000)
+#' }
 #'
 #' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
 buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20), boxConstraints = list(), buffer = 10^-6) {
@@ -146,7 +148,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         stop('no nodes to be maximized over')
     
 
-    if(is(model, "RModelBaseClass") ){
+    if(is(model, "RmodelBaseClass") ){
     	Rmodel = model
         if(is(model$CobjectInterface, "uninitializedField")){
             cModel <- compileNimble(model)

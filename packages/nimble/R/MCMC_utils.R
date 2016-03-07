@@ -9,8 +9,6 @@
 #' 
 #' @author Daniel Turek
 #' @export
-#' @examples
-#' jump <- decide(lMHr)
 decide <- function(logMetropolisRatio) {
   if(is.na(logMetropolisRatio))	return(FALSE)
   if(logMetropolisRatio > 0) return(TRUE)
@@ -49,10 +47,6 @@ decide <- function(logMetropolisRatio) {
 #' -- If the proposal is accepted, the values and associated logProbs of all calcNodes are copied from the model object into the mvSaved object
 #' -- If the proposal is rejected, the values and associated logProbs of all calcNodes are copied from the mvSaved object into the model object
 #' -- Return a logical value, indicating whether the proposal was accepted
-#' 
-#' @examples
-#' my_decideAndJump <- decideAndJump(Rmodel, mvSaved, calcNodes)
-#' jump <- my_decideAndJump(modelLP1, modelLP0, propLP1, propLP0)
 decideAndJump <- nimbleFunction(
     setup = function(model, mvSaved, calcNodes) { },
     run = function(modelLP1 = double(), modelLP0 = double(), propLP1 = double(), propLP0 = double()) {
@@ -89,8 +83,10 @@ decideAndJump <- nimbleFunction(
 #' targetValue: The numeric value which will be put into the target node, in the specified model object.
 #'
 #' @examples
+#' code <- nimbleCode({ for(i in 1:3) x[i] ~ dnorm(0, 1) })
+#' Rmodel <- nimbleModel(code)
 #' my_setAndCalc <- setAndCalculateOne(Rmodel, 'x[1]')
-#' lp <- my_setAndCalc(2)
+#' lp <- my_setAndCalc$run(2)
 setAndCalculateOne <- nimbleFunction(
     setup = function(model, targetNode) {
         targetNodeAsScalar <- model$expandNodeNames(targetNode, returnScalarComponents = TRUE)
@@ -127,8 +123,10 @@ setAndCalculateOne <- nimbleFunction(
 #' targetValues: A vector of numeric values which will be put into the target nodes in the specified model object.  The length of this numeric vector much exactly match the number of target nodes.
 #'
 #' @examples
+#' code <- nimbleCode({ for(i in 1:3) { x[i] ~ dnorm(0,1); y[i] ~ dnorm(0, 1)}})
+#' Rmodel <- nimbleModel(code)
 #' my_setAndCalc <- setAndCalculate(Rmodel, c('x[1]', 'x[2]', 'y[1]', 'y[2]'))
-#' lp <- my_setAndCalc(c(1.2, 1.4, 7.6, 8.9))
+#' lp <- my_setAndCalc$run(c(1.2, 1.4, 7.6, 8.9))
 setAndCalculate <- nimbleFunction(
     setup = function(model, targetNodes) {
         targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)
@@ -185,7 +183,13 @@ calcAdaptationFactor <- nimbleFunction(
 
 
 
+# for now export this as R<3.1.2 give warnings if don't
 
+#' Class \code{codeBlockClass}
+#' @aliases codeBlockClass
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 codeBlockClass <- setRefClass(
     Class   = 'codeBlockClass',
     fields  = list(codeBlock = 'ANY'),

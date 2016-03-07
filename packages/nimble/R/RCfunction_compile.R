@@ -9,7 +9,7 @@ RCfunctionCompileClass <- setRefClass('RCfunctionCompileClass',
                                           newRcode = 'ANY',
                                           typeEnv = 'ANY'	#environment
                                           ),
-                                          methods = list(initialize <- function(...){typeEnv <<- new.env(); callSuper(...)}
+                                          methods = list(initialize = function(...){typeEnv <<- new.env(); callSuper(...)}
                                           ))
 
 RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
@@ -54,7 +54,7 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
-                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, "returnValues")
+                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, "return")
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
@@ -174,7 +174,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
                                        
-                                       compileInfo$typeEnv <<- exprClasses_initSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab)
+                                       compileInfo$typeEnv <<- exprClasses_initSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, returnSymbol = compileInfo$returnSymbol)
                                        if(debug) {
                                            print('ls(compileInfo$typeEnv)')
                                            print(ls(compileInfo$typeEnv))

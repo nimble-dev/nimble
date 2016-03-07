@@ -40,7 +40,7 @@ cppOptimObject <- function(name, nfSym){
 	returnLine <- cppLiteral('return(ans);')
 	deleteParsLine <- cppLiteral('delete newpars;')
 	newCodeLinesList <- c(list(castingExLine, castingNFLine, castingNewParLine, copyingNewParLine), castingArgsChunk, list(callLine, fnScaleLine, deleteParsLine,  returnLine))
-	codeBlock <- putCodeLinesInBrackets(code = newCodeLinesList)
+	codeBlock <- putCodeLinesInBrackets(codeLines = newCodeLinesList)
 	ans <- cppFunctionDef(name = name,
 											args = OptimFun_argDefs,
 											code = cppCodeBlock(code = codeBlock, skipBrackets = TRUE),

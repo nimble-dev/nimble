@@ -46,25 +46,28 @@ assign('mypow', mypow, envir = .GlobalEnv)
 code <- nimbleCode({
     x ~ dnorm(0, 1)
     dx ~ dnorm(dbl(x), sd = .01)
-    y[1:K] ~ dmnorm(vecdbl(mu[1:K]), cov = .0001*I[1:K, 1:K])
+    liftedmu[1:K] <- vecdbl(mu[1:K])
+    y[1:K] ~ dmnorm(liftedmu[1:K], cov = eps[1:K,1:K])
     mu[1:K] ~ dmnorm(zeros[1:K], cov = I[1:K, 1:K])
     z ~ dnorm(0, 1)
     dz ~ dnorm(dblSum(x, z), sd = .01)
 
     # use of args out of order
-    out <- mypow(y = 3, x = 2)
+    out <- mypow(y = yin, x = xin)
     
     # vectorized fun applied to scalar nodes-based variable
     for(i in 1:K) {
         theta[i] ~ dnorm(0, 1)
     }
-    w[1:K] ~ dmnorm(vecdbl(theta[1:K]), cov = .0001*I[1:K, 1:K])
+    liftedmu2[1:K] <- vecdbl(theta[1:K])
+    w[1:K] ~ dmnorm(liftedmu2[1:K], cov = eps[1:K, 1:K])
 })
 
 K <- 3
-m <- nimbleModel(code, inits = list(x = 0.25, y = 1:K, mu = 1:K,
+m <- nimbleModel(code, inits = list(yin = 3, xin = 2, x = 0.25, y = 1:K, mu = 1:K,
                            z = 0.5, theta = rep(.5, K), w = rep(1, K)),
-                 constants = list(K = K, zeros = rep(0, K), I = diag(K)))
+                 constants = list(K = K, zeros = rep(0, K), I = diag(K),
+                                  eps = diag(rep(.0001, K))))
 
 cm <- compileNimble(m)
 
@@ -73,9 +76,10 @@ simulate(m)
 set.seed(0)
 simulate(cm)
 
+# need c() in here because R nodes are arrays
 for(var in c('dx', 'y', 'dz', 'w')) {
     try(test_that("Test that R and C models agree with user-supplied functions: ",
-                  expect_that(get(var, m), equals(get(var, cm)),
+                  expect_that(c(get(var, m)), equals(get(var, cm)),
                                              info = paste0(var, " values differ"))))
 }
 try(test_that("Test that values based on user-supplied functions are correct: ",
@@ -92,7 +96,7 @@ try(test_that("Test that values based on user-supplied functions are correct: ",
                           info = paste0("theta and w are not consistent"))))
 
 try(test_that("Test that arg matching by name is correct: ",
-              expect_that(m$out, is_identical_to(8),
+              expect_that(c(m$out), is_identical_to(8),
                           info = paste0("incorrect arg matching by name in R model"))))
 try(test_that("Test that arg matching by name is correct: ",
               expect_that(cm$out, is_identical_to(8),
@@ -163,7 +167,7 @@ assign('qmyexp', qmyexp, envir = .GlobalEnv)
 ddirchmulti <- nimbleFunction(
     run = function(x = double(1), alpha = double(1), size = double(0), log = integer(0)) {
         returnType(double(0))
-        logProb <- lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
+        logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
         if(log) {
             return(logProb)
         } else {

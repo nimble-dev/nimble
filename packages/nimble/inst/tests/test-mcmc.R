@@ -298,6 +298,39 @@ test_mcmc(model = code, name = "slice sampler example", resampleData = FALSE, re
 
 
 
+### elliptical slice sampler 'ess'
+
+set.seed(0)
+ESScode <- quote({
+    x[1:d] ~ dmnorm(mu_x[1:d], prec = prec_x[1:d, 1:d])
+    y[1:d] ~ dmnorm(x[1:d], prec = prec_y[1:d, 1:d])
+})
+d <- 3
+mu_x <- rnorm(d)
+temp <- array(rnorm(d^2), c(d,d))
+prec_x <- solve(temp %*% t(temp))
+temp <- array(rnorm(d^2), c(d,d))
+prec_y <- solve(temp %*% t(temp))
+y <- rnorm(d)
+ESSconstants <- list(d = d, mu_x = mu_x, prec_x = prec_x, prec_y = prec_y)
+ESSdata <- list(y = y)
+ESSinits <- list(x = rep(0, d))
+
+test_mcmc(model = ESScode, data = c(ESSconstants, ESSdata), inits = ESSinits,
+          name = 'exact values of elliptical slice sampler',
+          seed = 0,
+          exactSample = list(`x[1]` = c(-0.492880566939352, -0.214539223107114, 1.79345037297218, 1.17324496091208, 2.14095077672555, 1.60417482445964, 1.94196916651627, 2.66737323347255, 2.66744178776022, 0.253966883192744), `x[2]` = c(-0.161210109217102, -0.0726534676226932, 0.338308532423757, -0.823652445515156, -0.344130712698579, -0.132642244861469, -0.0253168895009594, 0.0701624130921676, 0.0796842215444978, -0.66369112443311), `x[3]` = c(0.278627475932455, 0.0661336950029345, 0.407055002920732, 1.98761228946318, 1.0839897275519, 1.00262648370199, 0.459841485268785, 2.59229443025387, 1.83769567435409, 1.92954706515119)),
+          samplers = list(list(type = 'ess', target = 'x')))
+
+test_mcmc(model = ESScode, data = c(ESSconstants, ESSdata), inits = ESSinits,
+          name = 'results to tolerance of elliptical slice sampler',
+          results = list(mean = list(x = c(1.0216463, -0.4007247, 1.1416904))),
+          resultsTolerance = list(mean = list(x = c(0.01, 0.01, 0.01))),
+          numItsC = 100000, 
+          samplers = list(list(type = 'ess', target = 'x')))
+
+
+
 ### demo2 of check conjugacy
 
 code <- BUGScode({

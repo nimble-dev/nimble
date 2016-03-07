@@ -1,22 +1,38 @@
-
-
-
-
-#' Automated parameter blocking for efficient MCMC sampling
-#'
-#' Automated blocking description
-#'
-#' @details		
-#' Automated blocking details
+#' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
-#' @param Rmodel
-#'
-#' @return info
-#'  
-#' @examples
-#' ab <- autoBlock(Rmodel)
+#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC specification, and custom-specified blockings of parameters.
+#' 
+#' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intendend to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
 #' 
 #' @author Daniel Turek
+#'
+#' @seealso configureMCMC buildMCMC
+#'
+#' @param Rmodel A NIMBLE model object, created from \link{nimbleModel}.
+#'
+#' @param autoIt The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.
+#'
+#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC specification; a named list element consisting of a quoted code block, which when executed returns an MCMC specification object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
+#'
+#' @param verbose Logical specifying whether to output considerable details of the automated block procedure, through the course of execution.  Default FALSE.
+#' 
+#' @param setSeed Logical specificying whether to call set.seed(0) prior to beginning the blocking procedure.  Default TRUE.
+#'
+#' @param makePlots Logical specifying whether to plot the hierarchical clustering dendrograms, through the course of execution.  Default FALSE.
+#'
+#' @param round Logical specifying whether to round the final output results to two decimal places.  Default TRUE.
+#' 
+#' @return Returns a named list containing elements:
+#' \itemize{
+#' \item \code{summary}: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
+#' \item \code{autoGroups}: A list specifying the parameter blockings converged on by the automated blocking procedure
+#' \item \code{spec}: A NIMBLE MCMC specification object corresponding to the results of the automated blocking procedure
+#' }
+#' 
+#' @references
+#'
+#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. 
+#'
 #' @export
 autoBlock <- function(Rmodel,
                       autoIt = 20000,
@@ -49,7 +65,7 @@ autoBlock <- function(Rmodel,
         }
     } else cat('\nAuto-Blocking converged on all scalar (univariate) sampling\n')
     cat('\n')
-    ## create a new MCMC spec with the autoBlock groupings:
+## create a new MCMC spec with the autoBlock groupings:
     spec <- configureMCMC(Rmodel, nodes = NULL)
     for(nodeGroup in lastAutoGrouping) addSamplerToSpec(Rmodel, spec, nodeGroup)
     retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, spec=spec)
@@ -72,13 +88,12 @@ autoBlockModel <- setRefClass(
         nodeGroupAllBlocked = 'list',
         monitorsVector = 'character',
         initialMCMCspec = 'ANY'
-        ),
+    ),
     methods = list(
         initialize = function(Rmodel_orig) {
-            require(nimble)
             Rmodel_orig <<- Rmodel_orig
             md <<- Rmodel_orig$modelDef
-            Rmodel <<- Rmodel_orig$newModel(replicate = TRUE)
+            Rmodel <<- Rmodel_orig$newModel(replicate = TRUE, check = FALSE)
             ##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
             ##for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
             scalarNodeVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=TRUE)
@@ -135,11 +150,11 @@ autoBlockModel <- setRefClass(
 
 
 autoBlockParamDefaults <- function() {
-    list(
-        makePlots = FALSE,
-        niter = 20000,
-        setSeed = TRUE,
-        verbose = FALSE
+	list(
+            makePlots = FALSE,
+            niter = 20000,
+            setSeed = TRUE,
+            verbose = FALSE
         )
 }
 
@@ -147,19 +162,19 @@ autoBlockParamDefaults <- function() {
 autoBlockClass <- setRefClass(
 
     Class = 'autoBlockClass',
-
+    
     fields = list(
-        
+
         ## special
         abModel = 'ANY',
         it = 'numeric',
-
+        
         ## overall control
         makePlots = 'logical',
         niter = 'numeric',
         setSeed = 'logical',
         verbose = 'logical',
-
+        
         ## persistant lists of historical data
         naming = 'list',
         candidateGroups = 'list',
@@ -174,14 +189,11 @@ autoBlockClass <- setRefClass(
         empCor = 'list',
         distMatrix = 'list',
         hTree = 'list'
-        ),
-
+    ),
+    
     methods = list(
-
-        initialize = function(Rmodel, control=list()) {
-            require(lattice)
-            require(coda)
-            require(nimble)
+        
+	initialize = function(Rmodel, control=list()) {
             abModel <<- autoBlockModel(Rmodel)
             defaultsList <- autoBlockParamDefaults()
             for(i in seq_along(defaultsList)) if(is.null(control[[names(defaultsList)[i]]])) control[[names(defaultsList)[i]]] <- defaultsList[[i]]
@@ -279,7 +291,7 @@ autoBlockClass <- setRefClass(
                 abModel$resetCmodelInitialValues()
                 timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter))[3])
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[i]])
-                essList[[i]] <- apply(burnedSamples, 2, effectiveSize)
+                essList[[i]] <- apply(burnedSamples, 2, coda::effectiveSize)
                 essList[[i]] <- essList[[i]][essList[[i]] > 0]  ## exclude nodes with ESS=0 -- for discrete nodes which are fixed to a certain value; making work with discrete nodes
                 essPTList[[i]] <- essList[[i]] / timingList[[i]]
                 essPTminList[[i]] <- sort(essPTList[[i]])[1]
@@ -500,9 +512,9 @@ plotABS <- function(df, xlimToMin=FALSE, together) {
     nVertPlots <- if(together) nModels*2 else nModels
     xVarNames <- c('ess', 'essPT')
     parCmd <- quote(par(mfrow=c(nVertPlots,1),mar=c(1,0,1,0),tcl=-.1,mgp=c(3,0,0),cex.axis=.7))
-    if(together) { quartz(); eval(parCmd) }
+    if(together) { eval(parCmd) }
     for(xVarName in xVarNames) {
-        if(!together) { quartz(); eval(parCmd) }
+        if(!together) { eval(parCmd) }
         maxMinXVar<-0; for(mod in models) {dfMod<-df[df$model==mod,]; blks<-unique(dfMod$blocking); for(blk in blks) {maxMinXVar<-max(maxMinXVar,min(dfMod[dfMod$blocking==blk,xVarName]))}}
         maxXVar <- if(xlimToMin) maxMinXVar else max(df[, xVarName])
         xlim <- c(maxXVar*-0.05, maxXVar)

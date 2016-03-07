@@ -27,11 +27,13 @@
 #' Rmodel <- nimbleModel(code)
 #' Rmodel_mv <- modelValues(Rmodel, m = 2)
 #'	#Custom modelValues object:
-#' mvSpec <- modelValuesSpec(vars = c('x', 'y'), types = c('double', 'int'), sizes = list(x = 3, y = c(2,2)))
+#' mvSpec <- modelValuesSpec(vars = c('x', 'y'),
+#'              types = c('double', 'int'),
+#'              sizes = list(x = 3, y = c(2,2)))
 #' custom_mv <- modelValues(mvSpec, m = 2)
 #' custom_mv['y',]
 modelValues <- function(spec, m = 1) {
-    if(inherits(spec, 'RModelBaseClass')) return(spec$modelDef$modelValuesClass(m))
+    if(inherits(spec, 'RmodelBaseClass')) return(spec$modelDef$modelValuesClass(m))
     if(isModelValuesSpec(spec)) return(spec(m))
     if(inherits(spec, 'symbolTable')) {
         mvClass <- modelValuesSpec(spec) 
@@ -48,6 +50,7 @@ modelValues <- function(spec, m = 1) {
 #' R objects, they are passed by reference instead of by value. 
 #'
 #'See user manual for more details.
+#' @aliases [,CmodelValues-method [<-,CmodelValues-method [[,CmodelValues-method [[<-,CmodelValues-method [,CmodelValues-method,character,missing [,modelValuesBaseClass-method [<-,modelValuesBaseClass-method [,CmodelValues-method,character,missing,ANY-method [,CmodelValues-method,ANY,ANY [,CmodelValues-method,ANY,ANY
 #' @examples
 #'mvSpec <- modelValuesSpec(vars = c('a', 'b'), 
 #'		types = c('double', 'double'), 
@@ -108,7 +111,7 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
 
 
 setMethod('[', 'modelValuesBaseClass',
-	function(x, i, j){
+	function(x, i, j, ..., drop){
 		if(missing(i) )
 			i <- x$varNames
 		if(is.numeric(i) ) 
@@ -153,7 +156,7 @@ setMethod('[<-', 'modelValuesBaseClass',
 			})
 
 
-#' Create the specs for a custom NIMBLE modelValues Object
+#' Create the specs for a custom NIMBLE modelValues object
 #' 
 #' Builds an R-based modelValues spec object
 #' 
@@ -164,6 +167,7 @@ setMethod('[<-', 'modelValuesBaseClass',
 #' @param symTab For internal use only
 #' @param className For internal use only
 #' @param where For internal use only
+#' @param modelDef For internal use only
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details
@@ -176,15 +180,6 @@ setMethod('[<-', 'modelValuesBaseClass',
 #'				sizes = list(x = 3, y = c(2,2)))
 #' custom_mv <- modelValues(mvSpec, m = 2)
 #' custom_mv['y',]
-#' [[1]]
-#'      [,1] [,2]
-#' [1,]   NA   NA
-#' [2,]   NA   NA
-#'
-#' [[2]]
-#'      [,1] [,2]
-#' [1,]   NA   NA
-#' [2,]   NA   NA
 modelValuesSpec <- function( symTab, className, vars, types, sizes, modelDef = NA, where = globalenv() ) {
     if(missing(className)) className <- 'modelValuesSpec' ## uniqueID will be appended
     makeCustomModelValuesClass(symTab, className, vars, types, sizes, modelDef = modelDef, where)
@@ -313,7 +308,7 @@ pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb 
 
 makeMV_GID_Map <- function(mv){
 	sizeList = mv$sizes
-    varNames = .Internal(sort(mv$varNames, FALSE)) ##sort(mv$varNames)
+    varNames = sort(mv$varNames, FALSE) ## .Internal(sort(mv$varNames, FALSE)) ##sort(mv$varNames)
     nodeNames = NA
     nodeIndex = 0
     nodeNames2GID_maps <- new.env()

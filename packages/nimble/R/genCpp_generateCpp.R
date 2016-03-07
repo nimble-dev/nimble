@@ -17,6 +17,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          'while' = 'cppOutputIfWhile',
                          '[' = 'cppOutputBracket',
                          mvAccessRow = 'cppOutputBracket',
+                         nimSwitch = 'cppOutputNimSwitch',
+                         getParam = 'cppOutputGetParam',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -52,7 +54,7 @@ cppMidOperators[['|']] <- ' || '
 for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
       
-nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile)
+nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch')
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
 ## and the elements are the name of the function to use to generate output for that name
@@ -181,6 +183,25 @@ cppOutputIfWhile <- function(code, symTab) {
     stop('Error in cppOutputIf')
 }
 
+cppOutputNimSwitch <- function(code, symTab) {
+    numChoices <- length(code$args)-2
+    if(numChoices <= 0) return('')
+    choicesCode <- vector('list', numChoices)
+    choiceValues <- code$args[[2]]
+    if(length(choiceValues) != numChoices) stop(paste0('number of switch choices does not match number of indices for ',nimDeparse(code)))
+    for(i in 1:numChoices) {
+        if(code$args[[i+2]]$name != '{')
+            bracketedCode <- insertExprClassLayer(code, i+2, '{')
+        choicesCode[[i]] <- list(paste0('case ',choiceValues[i],':'), nimGenerateCpp(code$args[[i+2]], symTab, showBracket = FALSE), 'break;') 
+    }
+    ans <- list(paste('switch(',code$args[[1]]$name,') {'), choicesCode, '}')
+    ans
+}
+
+cppOutputGetParam <- function(code, symTab) {
+    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
+}
+
 cppOutputEigenMapAssign <- function(code, symTab) {
     useStrides <- length(code$args) > 5
     strideTemplateDec <- if(useStrides) {
@@ -304,7 +325,7 @@ cppOutputParen <- function(code, symTab) {
 }
 
 cppOutputCall <- function(code, symTab) {
-    paste0(cppCalls[[code$name]], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab ), collapse = ', '), ')' ))
+    paste0(cppOutputCalls[[code$name]], '(', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab ) ), collapse = ', '), ')' )
 }
 
 cppOutputPow <- function(code, symTab) {

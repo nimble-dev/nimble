@@ -211,7 +211,7 @@ code <- nimbleCode({
 xVal <- 0.5
 m <- nimbleModel(code, constants = list(sig = 1, x = xVal, y = 0.1))
 expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in first test")
-expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in first test")
+expect_that(c(m$x), equals(xVal), info = "value of 'x' not correctly set in first test")
 expect_that('sig' %in% m$getVarNames(), equals(FALSE), info = "sig not set as constant in first test")
 
 code <- nimbleCode({
@@ -220,7 +220,7 @@ code <- nimbleCode({
 })
 m <- nimbleModel(code, data = list(x = xVal))
 expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in second test")
-expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in second test")
+expect_that(c(m$x), equals(xVal), info = "value of 'x' not correctly set in second test")
 
 code <- nimbleCode({
     x ~ dnorm(mu,1)
@@ -228,7 +228,7 @@ code <- nimbleCode({
 })
 m <- nimbleModel(code, constants = list(x = xVal))
 expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in third test")
-expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in third test")
+expect_that(c(m$x), equals(xVal), info = "value of 'x' not correctly set in third test")
 
 code <- nimbleCode({
     y[1] ~ dnorm(beta*x[1], 1)

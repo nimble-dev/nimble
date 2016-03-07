@@ -17,6 +17,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                list('return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
+                    getParam = 'sizeGetParam',
+                    nimSwitch = 'sizeSwitch',
                     asDoublePtr = 'sizeasDoublePtr',
                    '[' = 'sizeIndexingBracket',
                  ## '[[' for nimbleFunctionList goes through chainedCall
@@ -92,17 +94,18 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$toEigenize <- 'maybe'
 
                     ## If it is a vector of known length 1 and it has no indexing, insert a [1] after it
-                    if(code$nDim == 1) {
-                        if(code$sizeExprs[[1]] == 1) {
-                            if(code$caller$name != '[') {
-                                insertIndexingBracket(code$caller, code$callerArgID, 1)
-                                code$caller$nDim <- 0
-                                code$caller$sizeExprs <- list()
-                                code$caller$toEigenize <- 'maybe'
-                                code$caller$type <- code$type
-                            }
-                        }
-                    }
+                    ## This introduced permanently inconsistent semantic corners, so I am disabling it
+                    ## if(code$nDim == 1) {
+                    ##     if(code$sizeExprs[[1]] == 1) {
+                    ##         if(lengthOneToScalar & code$caller$name != '[') {
+                    ##             insertIndexingBracket(code$caller, code$callerArgID, 1)
+                    ##             code$caller$nDim <- 0
+                    ##             code$caller$sizeExprs <- list()
+                    ##             code$caller$toEigenize <- 'maybe'
+                    ##             code$caller$type <- code$type
+                    ##         }
+                    ##     }
+                    ## }
                 }
             }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
@@ -176,6 +179,31 @@ sizemap <- function(code, symTab, typeEnv) {
     code$sizeExprs <- code$args[[4]]
     code$toEigenize <- 'maybe'
     invisible(NULL)
+}
+
+sizeGetParam <- function(code, symTab, typeEnv) {
+    paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
+    code$type <- paramInfoSym$paramInfo$type
+    code$nDim <- paramInfoSym$paramInfo$nDim
+    code$sizeExprs <- vector(mode = 'list', length = code$nDim)
+    code$toEigenize <- 'no'
+    asserts <- list()
+    if(!(code$caller$name %in% assignmentOperators)) {
+        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        code$toEigenize <- 'maybe'
+    }
+    return(asserts)
+}
+
+sizeSwitch <- function(code, symTab, typeEnv) {
+    if(length(code$args) <= 2) return(invisible(NULL))
+    for(i in 3:length(code$args)) { ## just like the '{' clause of exprClasses_setSizes.  This treats each of the outcomes as if it was a new line or block of code
+        if(inherits(code$args[[i]], 'exprClass')) {
+            newAsserts <- exprClasses_setSizes(code$args[[i]], symTab, typeEnv)
+            code$args[[i]]$assertions <- if(is.null(newAsserts)) list() else newAsserts
+        }
+    }
+    return(invisible(NULL))
 }
 
 sizeAsRowOrCol <- function(code, symTab, typeEnv) {
@@ -546,7 +574,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(length(LHS$nDim) == 0) stop(paste0('Error for ', nimDeparse(code), '. nDim for LHS not set.'), call. = FALSE)
             if(length(RHSnDim) == 0) stop(paste0('Error for ', nimDeparse(code), '. nDim for RHS not set.'), call. = FALSE)
             if(LHS$nDim != RHSnDim) {
-                warning(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '. Going to browser(). Press Q to exit'), call. = FALSE )
+                message(paste0('Warning, mismatched dimensions in assignment: ', nimDeparse(code), '. Going to browser(). Press Q to exit'), call. = FALSE )
                 browser()
             }
             ## and warn if type issue e.g. int <- double
@@ -764,9 +792,18 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
   
     nDimVar <- code$args[[1]]$nDim
-    
+
+    dropBool <- TRUE
     if(nDimVar != length(code$args) - 1) {
-        stop(paste('Error, wrong number of indices provided for ', nimDeparse(code)), call. = FALSE)
+        msg <- paste0('Error, wrong number of indices provided for ', nimDeparse(code),'.')
+        wrongIndices <- TRUE
+        if(nDimVar == length(code$args) - 2) {
+            dropBool <- code$args[[length(code$args)]] ## This is the only situation where RparseTree2ExprClasses will not convert logical to numeric
+            if(is.logical(dropBool)) wrongIndices <- FALSE
+            else msg <- paste0(msg, "(A drop argument must be hard-coded as TRUE or FALSE, not given as a variable.)")
+        }
+        if(wrongIndices) stop(msg, call. = FALSE)
+        code$args[[length(code$args)]] <- NULL
     }
     code$nDim <- nDimVar
     code$type <- code$args[[1]]$type
@@ -776,10 +813,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     iSizes <- 1
     for(i in 1:nDimVar) {
         dropThisDim <- FALSE
+
         if(is.numeric(code$args[[i+1]])) dropThisDim <- TRUE
         else if((code$args[[i+1]]$name != "") & (length(dropSingleSizes(code$args[[i+1]]$sizeExprs)$sizeExprs) == 0)) dropThisDim <- TRUE
+
         if(dropThisDim) {
-            if(nimbleOptions()$indexDrop) {
+            if(nimbleOptions()$indexDrop & dropBool) {
                 code$sizeExprs[[iSizes]] <- NULL
                 code$nDim <- code$nDim - 1
             } else { 
@@ -800,22 +839,29 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             next
         }
     }
+    ## did all dims get dropped?
+   if(length(code$sizeExprs)==0) {
+       code$sizeExprs <- list() ## it was a named, list.  this creates consistency. maybe unnecessary
+       ##needMap will be FALSE if we are in this clause
+       if(!code$args[[1]]$isName)
+           if(code$args[[1]]$name != 'map')
+                if(code$args[[1]]$name != 'dim') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+   }
+    
     code$toEigenize <- 'maybe'
     if(needMap) {
         ## If this is a map on an *expression* that is not a map, lift it
         ## e.g. (A + B)[1:4] must become (Interm <- A + B; Interm[1:4])
         if(!code$args[[1]]$isName) if(code$args[[1]]$name != 'map') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
         ## Replace with a map expression if needed
-        newExpr <- makeMapExprFromBrackets(code)
+        newExpr <- makeMapExprFromBrackets(code, dropBool)
         newExpr$sizeExprs <- code$sizeExprs
         newExpr$type <- code$type
         newExpr$nDim <- code$nDim
         newExpr$toEigenize <- code$toEigenize
         setArg(code$caller, code$callerArgID, newExpr)
-        
     }
     if(length(asserts)==0) NULL else asserts
-
 }
 
 sizeColonOperator <- function(code, symTab, typeEnv) {
@@ -1046,6 +1092,7 @@ sizeReturn <- function(code, symTab, typeEnv) {
     if(length(code$args) > 1) stop('Error, return has argument length > 1', call. = FALSE)
     code$toEigenize <- 'no'
     if(length(code$args) == 0) return(invisible(NULL))
+    
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
         if(!code$args[[1]]$isName) {
@@ -1451,7 +1498,7 @@ sizeVoidPtr <- function(code, symTab, typeEnv) {
 ##
 generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chainedCall = FALSE) {
     useArgs <- unlist(lapply(args, function(x) as.character(x[[1]]) %in% c('double', 'integer', 'logical')))
-
+    
     if(chainedCall) useArgs <- c(FALSE, useArgs)
     if(length(code$args) != length(useArgs)) {
         stop(paste0('Error, wrong number of args for ',code$name), call. = FALSE)

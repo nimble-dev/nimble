@@ -78,6 +78,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  addMissingIndexing             = function() {},
                                  removeTruncationWrapping       = function() {},
                                  expandDistributions            = function() {},
+                                 checkMultivarExpr          = function() {},
                                  processLinks                   = function() {},
                                  reparameterizeDists            = function() {},
                                  addRemainingDotParams          = function() {},
@@ -95,12 +96,16 @@ modelDefClass <- setRefClass('modelDefClass',
                                  buildSymbolTable               = function() {},
                                  genGraphNodesList              = function() {},
                                                                   
-                                 newModel   = function() {},
-                                 printDI    = function() {},
+                                 newModel                       = function() {},
+                                 fixRStudioHanging              = function() {},
+                                 printDI                        = function() {},
                                  
-                                 genNodeInfo3                    = function() {},
-                                 genVarInfo3                     = function() {},
-                                 genExpandedNodeAndParentNames3  = function() {},
+                                 genNodeInfo3                   = function() {},
+                                 genVarInfo3                    = function() {},
+
+                                 # put check of var dims here?
+
+                                 genExpandedNodeAndParentNames3 = function() {},
                                  
                                  #These functions are NOT run inside of setupModel
                                  nodeName2GraphIDs = function(){},
@@ -134,6 +139,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     removeTruncationWrapping()        ## transforms T(ddist(),lower,upper) to put bounds into declInfo
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
+    checkMultivarExpr()           ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName
     addRemainingDotParams()           ## overwrites declInfo, adds any additional .paramNames which aren't there  (uses distributions)
@@ -213,7 +219,7 @@ modelDefClass$methods(assignDimensions = function(dimensions) {
     for(i in seq_along(constantsList)) {
         constName <- names(constantsList)[i]
         ## constDim <- if(is.null(dim(constantsList[[i]]))) length(constantsList[[i]]) else dim(constantsList[[i]])
-        constDim <- dimOrLength(constantsList[[i]])
+        constDim <- dimOrLength(constantsList[[i]], scalarize = TRUE)
         if(constName %in% names(dL)) {
             if(!identical(as.numeric(dL[[constName]]), as.numeric(constDim))) {
                 stop('inconsistent dimensions between constants and dimensions arguments')
@@ -422,13 +428,17 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         tmp <- as.character(newCode[[3]][[1]])
         distRange <- getDistribution(tmp)$range
 
-        if(BUGSdecl$valueExpr[[3]] != "") {
+        if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") {
             BUGSdecl$range$lower <- BUGSdecl$valueExpr[[3]]
         } else   BUGSdecl$range$lower <- distRange[1]
-        if(BUGSdecl$valueExpr[[4]] != "") {
+        if(length(BUGSdecl$valueExpr) >= 4 && BUGSdecl$valueExpr[[4]] != "") {
             BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]
         } else   BUGSdecl$range$upper <- distRange[2]
-    
+        if(length(BUGSdecl$valueExpr) != 4)
+            warning(paste0("Lower and upper bounds not supplied for T(); proceeding with bounds: (",
+                           paste(BUGSdecl$range, collapse = ','), ")."))
+     
+        
         if(BUGSdecl$range$lower == distRange[1] && BUGSdecl$range$upper == distRange[2])  # user specified bounds that are the same as the range
             BUGSdecl$truncated <- FALSE
         
@@ -465,6 +475,35 @@ modelDefClass$methods(expandDistributions = function() {
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
+
+modelDefClass$methods(checkMultivarExpr = function() {
+    checkForExpr <- function(expr) {
+        output <- FALSE
+        if(length(expr) == 1 && class(expr) %in% c("name", "numeric")) return(FALSE)
+        if(!deparse(expr[[1]]) %in% c('[', ':')) return(TRUE)
+        for(i in 2:length(expr)) 
+            if(checkForExpr(expr[[i]])) output <- TRUE
+        return(output)
+    }
+
+    for(i in seq_along(declInfo)) {
+        BUGSdecl <- declInfo[[i]]
+        if(BUGSdecl$type != 'stoch') next
+        dist <- deparse(BUGSdecl$valueExpr[[1]])
+        types <- distributionsInputList[[dist]]$types
+        if(is.null(types)) next
+        tmp <- strsplit(types, " = ")
+        nms <- sapply(tmp, `[[`, 1)
+        # originally was only checking for expr in multivar dist:
+        ## if('value' %in% nms) next
+        ## distDim <- parse(text = tmp[[which(nms == 'value')]])[[2]][[2]]
+        ## if(distDim < 1) next
+        for(k in 2:length(BUGSdecl$valueExpr))
+            if(checkForExpr(BUGSdecl$valueExpr[[k]]))
+                stop("Error with parameter '", names(BUGSdecl$valueExpr)[k], "' of distribution '", dist, "': multivariate parameters cannot be expressions; please define the expression as a separate deterministic variable and use that variable as the parameter.")  
+    }
+})
+
 modelDefClass$methods(processLinks = function() {
     ## overwrites declInfo (*and adds*) for nodes with link functions (uses linkInverses)
     newDeclInfo <- list()
@@ -543,9 +582,16 @@ modelDefClass$methods(reparameterizeDists = function() {
             if(!reqdArgName %in% names(distRule$exprs[[matchedAlt]]))
                 stop('Error: could not find ', reqdArgName, ' in alternative parameterization number ', matchedAlt, ' for: ', deparse(valueExpr), '.')
             transformedParameterPT <- distRule$exprs[[matchedAlt]][[reqdArgName]]
-            for(nm in c(nonReqdArgs, distRule$reqdArgs))
-                # loop thru possible non-canonical parameters in the expression for the canonical parameter
+            ## fixing issue of pathological-case model variable names, e.g.,
+            ## y ~ dnorm(0, tau = sd)
+            ## DT, Feb 2016.
+            ##for(nm in c(nonReqdArgs, distRule$reqdArgs))
+            namesToSubstitute <- intersect(c(nonReqdArgs, distRule$reqdArgs), all.vars(transformedParameterPT))
+            for(nm in namesToSubstitute) {
+                ## loop thru possible non-canonical parameters in the expression for the canonical parameter
+                if(is.null(params[[nm]])) stop('this shouldn\'t happen -- something wrong with my understanding of parameter transformations')
                 transformedParameterPT <- parseTreeSubstitute(pt = transformedParameterPT, pattern = as.name(nm), replacement = params[[nm]])
+            }
             newValueExpr[[iArg + 1]] <- transformedParameterPT
         }
         
@@ -811,6 +857,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
     }
 })
+
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
     
@@ -968,7 +1015,7 @@ expandContextAndReplacements <- function(allReplacements, allReplacementNameExpr
     numContexts <- length(context$singleContexts)
     if(numContexts == 0) { ## it has no indices or known indices
         if(length(allReplacements)==0) {
-            replacementsEnv <<- NULL
+            context$replacementsEnv <<- NULL
             return(NULL)
         }
     }
@@ -1348,11 +1395,11 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             if(anyContext) {
                 boolIndexNamePiecesExprs <- !unlist(lapply(parentIndexNamePieces, is.numeric)) ##!is.numeric(parentIndexNamePieces)
                 if(all(boolIndexNamePiecesExprs)) {
-                    test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces) ])
+                    test <- try(varIndicesToUse <- unrolledBUGSindices[ , unlist(parentIndexNamePieces), drop = FALSE])
                     if(inherits(test, 'try-error')) browser()
                 } else {
                     varIndicesToUse <- matrix(nrow = nrow(unrolledBUGSindices), ncol = length(parentIndexNamePieces))
-                    varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs]]
+                    varIndicesToUse[, boolIndexNamePiecesExprs] <- unrolledBUGSindices[ , unlist(parentIndexNamePieces)[boolIndexNamePiecesExprs], drop = FALSE]
                     indexPieceNumericInds <- which(!boolIndexNamePiecesExprs)
                     for(iii in seq_along(indexPieceNumericInds)) varIndicesToUse[, indexPieceNumericInds[iii] ] <- parentIndexNamePieces[[ indexPieceNumericInds[iii] ]]
                 }
@@ -1377,29 +1424,39 @@ collectEdges <- function(var2vertexID, unrolledBUGSindices, targetIDs, indexExpr
             newIndexExprs <- lapply(replacementNameExprs, function(x) substitute(unrolledBUGSindices[iRow, iCol], list(X = x, iCol = colNums[as.character(x)])))
             accessExpr <- eval( substitute( substitute(AE, newIndexExprs), list(AE = parentExprReplaced) ) )
             iRowRange <- (1:nrow(unrolledBUGSindices))
-            maxNewEdges <- nrow(unrolledBUGSindices) * prod(dim(var2vertexID))
+      ##      maxNewEdges <- nrow(unrolledBUGSindices) * prod(dim(var2vertexID))
         } else {
             accessExpr <- parentExprReplaced
             iRowRange <- 1
-            maxNewEdges <- prod(dim(var2vertexID))
+      ##      maxNewEdges <- prod(dim(var2vertexID))
         }
-       accessExpr[[2]] <- quote(var2vertexID)
+        accessExpr[[2]] <- quote(var2vertexID)
 
-       iNextNewEdge <- 1
-       edgesFrom <- integer(maxNewEdges)
-       edgesTo <- integer(maxNewEdges)
-       
-        for(iRow in iRowRange) {
-            currentVertexIDblock <- eval(accessExpr)
-            uniqueCurrentVertexIDs <- unique(as.numeric(currentVertexIDblock))
-            numNewEdges <- length(uniqueCurrentVertexIDs)
-            edgesFrom[iNextNewEdge - 1 + 1:numNewEdges] <- uniqueCurrentVertexIDs
-            edgesTo[iNextNewEdge - 1 + 1:numNewEdges] <- targetIDs[iRow]
-            iNextNewEdge <- iNextNewEdge + numNewEdges
-        }
-       edgesFrom <- edgesFrom[1:(iNextNewEdge-1)]
-       edgesTo <- edgesTo[1:(iNextNewEdge-1)]
-   }
+        uniqueCurrentVertexIDsList <- lapply(iRowRange, function(iRow) unique(as.numeric(eval(accessExpr))))
+        edgesFrom <- do.call('c', uniqueCurrentVertexIDsList)
+        edgesToList <- lapply(iRowRange, function(iRow) rep(targetIDs[iRow], length(unique(as.numeric(eval(accessExpr))))))
+        edgesTo <- do.call('c', edgesToList)
+
+        ## iNextNewEdge <- 1
+        ## edgesFromOld <- integer(maxNewEdges)
+        ## edgesToOld <- integer(maxNewEdges)
+        
+        ## for(iRow in iRowRange) {
+        ##     currentVertexIDblock <- eval(accessExpr)
+        ##     uniqueCurrentVertexIDs <- unique(as.numeric(currentVertexIDblock))
+        ##     numNewEdges <- length(uniqueCurrentVertexIDs)
+        ##     edgesFromOld[iNextNewEdge - 1 + 1:numNewEdges] <- uniqueCurrentVertexIDs
+        ##     edgesToOld[iNextNewEdge - 1 + 1:numNewEdges] <- targetIDs[iRow]
+        ##     iNextNewEdge <- iNextNewEdge + numNewEdges
+        ## }
+        ## edgesFromOld <- edgesFromOld[1:(iNextNewEdge-1)]
+        ## edgesToOld <- edgesToOld[1:(iNextNewEdge-1)]
+
+        ## if(length(edgesFrom) != length(edgesFromOld) | length(edgesTo) != length(edgesToOld) | max(abs(edgesFrom - edgesFromOld)) > 0 | max(abs(edgesTo - edgesToOld)) > 0) {
+        ##     print('caught discrepancy')
+        ##     browser()
+        ## }
+    }
     list(edgesFrom = edgesFrom, edgesTo = edgesTo)    
 }
 
@@ -2006,7 +2063,7 @@ modelDefClass$methods(buildSymbolTable = function() {
 })
 
 
-modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = TRUE, debug = FALSE) {
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), debug = FALSE) {
     if(debug) browser()
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')
@@ -2029,6 +2086,14 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$setGraph(graph)
     model$buildNodeFunctions(where = where, debug = debug)
     model$buildNodesList() ## This step makes RStudio choke, we think from circular reference classes -- fixed, by not displaying Global Environment in RStudio
+
+    ## handling for JAGS style inits (a list of lists)
+    ## added Oct 2015, DT
+    if(length(inits) > 0 && is.list(inits[[1]])) {
+        message('detected JAGS style initial values, provided as a list of lists...  using the first set of initial values')
+        inits <- inits[[1]]
+    }
+    
     if(length(data) + length(inits) > 0)
         if(nimbleOptions('verbose')) message("setting data and initial values...")
     model$setData(data)
@@ -2058,11 +2123,23 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
         if(nimbleOptions('verbose')) message("checking model...   (use nimbleModel(..., check = FALSE) to skip model check)")
         model$check()
     }
-    ## fixing the problem with RStudio hanging: over-writing the str() method for this model class
-    ## added by DT, April 2015
-    thisClassName <- as.character(class(model))
-    eval(substitute(METHOD <- function(object, ...) str(NULL), list(METHOD = as.name(paste0('str.', thisClassName)))), envir = globalenv())
+    fixRStudioHanging(model)
     return(model)
+})
+
+modelDefClass$methods(fixRStudioHanging = function(model) {
+    ## hopefully the *final* work needed towards fixing the RStudio "hanging" problem. . . .
+    ## added by DT, Nov 2015
+    nullStrMethod <- function(object, ...) str(NULL)
+    classNames <- c(as.character(class(model)),
+                    as.character(class(model$defaultModelValues)),
+                    unique(sapply(model$nodeFunctions, function(nf) as.character(class(nf)))))
+    for(name in c(classNames, "modelDefClass", "igraph")) {
+        eval(substitute(NAME <- METHOD,
+                        list(NAME   = as.name(paste0('str.', name)),
+                             METHOD = nullStrMethod)),
+             envir = globalenv())
+    }
 })
 
 modelDefClass$methods(show = function() {

@@ -2,9 +2,8 @@
 nimbleUserNamespace <- as.environment(list()) 
 # new.env() here fails with: Error in as.environment(pos) : using 'as.environment(NULL)' is defunct when testing package loading during INSTALL
 
-#' options used for NIMBLE package
-#'
-#' @details These options are for development use at this point.
+# options used for NIMBLE package
+# These options are for development use at this point.
 .nimbleOptions <- as.environment(
     list(
         convertSingleVectorsToScalarsInSetupArgs = TRUE,
@@ -21,6 +20,7 @@ nimbleUserNamespace <- as.environment(list())
         compileOnly = FALSE,
         useMultiInterfaceForNestedNimbleFunctions = TRUE,
         clearNimbleFunctionsAfterCompiling = FALSE,
+        checkModel = TRUE,
         verbose = TRUE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.

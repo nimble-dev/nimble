@@ -1,5 +1,5 @@
 #' Class \code{modelBaseClass}
-#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData getDependencies setInits checkConjugacy newModel
+#' @aliases modelBaseClass getVarNames getNodeNames topologicallySortNodes resetData setData isData getDependencies setInits checkConjugacy newModel [[,modelBaseClass-method [[<-,modelBaseClass-method
 #' @export
 #' @description
 #' This class underlies all NIMBLE model objects: both R model objects created from the return value of nimbleModel(), and compiled model objects.
@@ -295,8 +295,8 @@ Details: If a list element contains some number of NA values, then the model nod
                                                       stop('variable name not suitable for setData(): ', varName)
                                                   } else next
                                               }
-                                          if(length(dimOrLength(varValue)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          if(!(all(dimOrLength(varValue) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(length(dimOrLength(varValue, scalarize = TRUE)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(!(all(dimOrLength(varValue, scalarize = TRUE) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           assign(varName, varValue, inherits = TRUE)
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
@@ -343,6 +343,29 @@ Details: The variable or node names specified is expanded into a vector of model
                                     return(ret)
                                   },
 
+                                  getDependenciesList = function(returnNames = TRUE, sort = TRUE) {
+'
+Returns a list of all neighbor relationships.  Each list element gives the one-step dependencies of one vertex, and the element name is the vertex label (integer ID or character node name)
+
+Arguments:
+
+returnNames: If TRUE (default), list names and element contents are returns as character node names, e.g. \'x[1]\'.  If FALSE, everything is returned using graph IDs, which are unique integer labels for each node.
+
+sort: If TRUE (default), each list element is returned in topologically sorted order.  If FALSE, they are returned in arbitrary order.
+
+Details: This provides a fairly raw representation of the graph (model) structure that may be useful for inspecting what NIMBLE has created from model code.
+'
+                                      if(!returnNames)
+                                          if(!sort) return(modelDef$maps$edgesFrom2To)
+                                          else return(lapply(modelDef$maps$edgesFrom2To, sort))
+                                      else {
+                                          if(!sort) ans <- lapply(modelDef$maps$edgesFrom2To, function(x) modelDef$maps$graphID_2_nodeName[x])
+                                          else ans <- lapply(modelDef$maps$edgesFrom2To, function(x) modelDef$maps$graphID_2_nodeName[sort(x)])
+                                          names(ans) <- modelDef$maps$graphID_2_nodeName[as.numeric(names(ans))]
+                                          return(ans)
+                                      }
+                                  },
+                                  
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
@@ -381,10 +404,11 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(inherits(nodes, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
                                           if(returnScalarComponents)
-                                              nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                             # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                              nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
                                                                    FALSE,
                                                                    FALSE,
-                                                                   NA))
+                                                                   NA)
                                           else
                                               nodeIDs <- elementIDs
                                       }
@@ -400,10 +424,11 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       if(inherits(omit, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
                                           if(returnScalarComponents)
-                                              omitIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+#                                              omitIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],
+                                              omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
                                                                    FALSE,
                                                                    FALSE,
-                                                                   NA))
+                                                                   NA)
                                           else
                                               omitIDs <- elementIDs
                                       }
@@ -426,7 +451,7 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       
                                       depIDs <- modelDef$nodeName2GraphIDs(modelDef$maps$graphID_2_nodeName[depIDs], !returnScalarComponents)
                                       if(returnScalarComponents)
-                                          depIDs = .Internal(unique(depIDs, FALSE, FALSE, NA))
+                                          depIDs = unique(depIDs, FALSE, FALSE, NA)
                                       if(returnType == 'ids'){
                                           if(returnScalarComponents) print("nimble development warning: calling getDependencies with returnType = ids and returnScalarComponents may not be meaningful.")
                                           return(depIDs)
@@ -492,48 +517,150 @@ Details: The return value is a named list, with an element corresponding to each
                                       conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
                                   check = function() {
+                                      '
+Checks for common errors in model specification, including missing values, inability to calculate/simulate on a node, and dimension/size mismatches
+'
+                                      # first do size checking; do before check of calculate/simulate so LHS of deterministic expressions are not filled in
+
+                                      for(j in seq_along(.self$modelDef$declInfo)) {
+                                              declInfo <- .self$modelDef$declInfo[[j]]
+                                              nn <- length(declInfo$nodeFunctionNames)
+                                              nfn <- declInfo$nodeFunctionNames[nn]
+                                              nf <- .self$nodeFunctions[[nfn]]
+                                              #context <- as.list(declInfo$unrolledIndicesMatrix[nrow(declInfo$unrolledIndicesMatrix), ])
+
+                                              if(declInfo$type == 'determ') {
+                                                  # check LHS and RHS are same size/dim
+                                                  # need to eval within nf; constants not present otherwise
+                                                  RHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))))
+
+                                                  LHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))))
+                                                  # apparently implicit dropping of size 1 dimensions is ok in determ node calcs
+                                                  if(!is(RHSsize, 'try-error') && !is(LHSsize, 'try-error')) {
+                                                      if(length(RHSsize) > 1 && any(RHSsize == 1))
+                                                          RHSsize <- RHSsize[RHSsize != 1]
+                                                      if(length(LHSsize) > 1 && any(LHSsize == 1))
+                                                          LHSsize <- LHSsize[LHSsize != 1]
+                                                      
+                                                      if(!identical(LHSsize, RHSsize))
+                                                          stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code))
+                                                  }
+                                                  if(is(RHSsize, 'try-error'))
+                                                      stop("Problem evaluating: ", deparse(declInfo$valueExprReplaced))
+                                                  if(is(LHSsize, 'try-error'))
+                                                      stop("Problem evaluating: ", deparse(declInfo$targetExprReplaced))
+                                              } else {
+                                                  # check:
+                                                  #   1) dims of param args match those in distInputList based on calculation
+                                                  #   2) dims of param args match those in distInputList based on varInfo
+                                                  #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
+                                                  dist <- deparse(declInfo$valueExprReplaced[[1]])
+
+                                                  distDims <- as.integer(sapply(getDistribution(dist)$types, function(x) x$nDim))
+                                                  nms <- names(getDistribution(dist)$types)
+                                                  names(distDims) <- nms
+
+                                                  sizes <- list(); length(sizes) <- length(nms); names(sizes) <- nms
+
+                                                  for(k in seq_along(nms)) {
+                                        # sometimes get_foo not found in env of nf (and doesn't appear in ls(nf) )
+                                                      fun <- as.call(parse(text = paste0("nf$get_", nms[k])))
+                                                      e = try(eval(fun))
+                                                      
+                                                      if(!is(e, "try-error")) {
+                                                          sizes[[nms[k]]] <- dimOrLength(e)
+                                                          if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
+                                                      } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
+                                                  }
+                                        # check dimensions based on varInfo
+                                                  if(length(declInfo$targetExprReplaced) > 1) {
+                                                      LHSvar <- deparse(declInfo$targetExprReplaced[[2]])
+                                                  } else LHSvar <- deparse(declInfo$targetExprReplaced)
+                                                  if(.self$modelDef$varInfo[[LHSvar]]$nDim < distDims['value'])
+                                                      stop("Dimension of '", LHSvar, "' does not match required dimension for the distribution '", dist, "'. Necessary dimension is ", distDims['value'], ".", ifelse(distDims['value'] > 0, paste0(" You may need to include explicit indexing information, e.g., variable_name", ifelse(distDims['value'] < 2, "[1:2].", "[1:2,1:2].")), ''))
+                                                  nms2 <- nms[nms%in%names(declInfo$valueExprReplaced)]
+                                                  for(k in seq_along(nms2)) {
+                                                      if(!is.numeric(declInfo$valueExprReplaced[[nms2[k]]]) && !(dist == 'dinterval' && nms2[k] == 'c') && ( length(declInfo$valueExprReplaced[[nms2[k]]]) ==1 || deparse(declInfo$valueExprReplaced[[nms2[k]]][[1]]) == '[' )) {  # can only check variables not expressions or constants
+                                                          # also dinterval can take 'c' param as scalar or vector, so don't check
+                                                          if(length(declInfo$valueExprReplaced[[nms2[k]]]) > 1) {
+                                                              var <- deparse(declInfo$valueExprReplaced[[nms2[k]]][[2]])
+                                                          } else var <- deparse(declInfo$valueExprReplaced[[nms2[k]]])
+                                                          if(var %in% names(.self$modelDef$varInfo) && .self$modelDef$varInfo[[var]]$nDim < distDims[nms2[k]])
+                                                              # check less than because variable dim can be bigger than node dim
+                                                              stop("Dimension of '", nms2[k], "' does not match required dimension for the distribution '", dist, "'. Necessary dimension is ", distDims[nms2[k]], ".", ifelse(distDims[nms2[k]] > 0, paste0(" You may need to include explicit indexing information, e.g., variable_name", ifelse(distDims[nms2[k]] < 2, "[1:2].", "[1:2,1:2].")), ''))
+                                                      }
+                                                  }
+                                                  
+                                        # actual dimensions
+                                                  dims <- sapply(sizes, length)
+                                                  toCheck <- names(dims[!is.na(sizes) & sapply(sizes, function(x) !is.null(x))])
+                                                  if(dist == 'dinterval') toCheck <- toCheck[toCheck != 'c']
+                                        # check dimensions based on empirical size of variables
+                                                  if(!identical(dims[toCheck], distDims[toCheck])) {
+                                                      mismatches <- which(dims[toCheck] != distDims[toCheck])
+                                                      stop("Dimension of distribution argument(s) '", paste(names(mismatches), collapse = ","), "' does not match required dimension(s) for the distribution '", dist, "'. Necessary dimension(s) are ", paste(distDims[toCheck][mismatches], collapse = ","), ".", ifelse(any(distDims[toCheck][mismatches] == 1), " You may need to ensure that you have explicit vectors and not one-row or one-column matrices.", ""))                                                          
+                                                  }
+                                                  
+                                        # check sizes
+                                                  mats <- dims == 2
+                                                  vecs <- dims == 1
+                                                  matRows <- unlist(sapply(sizes[mats], `[`, 1))
+                                                  matCols <- unlist(sapply(sizes[mats], `[`, 2))
+                                                  if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
+                                                      if(dist %in% names(distributionsInputList)) {
+                                                          stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
+                                                      } else {
+                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes.")                                                                                                                                   }
+                                                  
+                                              }
+                                      }
+
+                                      # check for missing values and inability to calculate/simulate
                                       lp <- try(calculate(.self))
-                                      if(isValid(lp)) return(invisible(TRUE))
-                                      varsToCheck <- character()
-                                      for(v in .self$getVarNames())
-                                          if(!isValid(.self[[v]]) || !isValid(getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
-                                              varsToCheck <- c(varsToCheck, v)
-                                      badVars <- list(na=character(), nan=character(), inf=character())
+                                      if(!isValid(lp)) {
+                                          varsToCheck <- character()
+                                          for(v in .self$getVarNames())
+                                              if(!isValid(.self[[v]]) || !isValid(getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
+                                                  varsToCheck <- c(varsToCheck, v)
+                                          badVars <- list(na=character(), nan=character(), inf=character())
                                       ##nns <- getNodeNames(includeRHSonly = TRUE)
-                                      nns <- expandNodeNames(varsToCheck)
-                                      nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
-                                      for(nn in nns) {
-                                          val <- .self[[nn]]
-                                          type <- getNodeType(nn)
-                                          if(length(type) > 1) stop('something wrong with Daniel\'s understanding of nimbleModel')
-                                          if(type == 'RHSonly') {
-                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                          } else if(type == 'determ') {
-                                              test <- try(calculate(.self, nn))
-                                              if(class(test) == 'try-error')
-                                                  cat("Note: cannot calculate logProb for node ", nn, ".\n")
+                                          nns <- expandNodeNames(varsToCheck)
+                                          nns <- topologicallySortNodes(nns)   ## should be unnecessary; just in case
+                                          for(nn in nns) {
                                               val <- .self[[nn]]
-                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                          } else if(type == 'stoch') {
-                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                              test <- try(val <- calculate(.self, nn))
-                                              if(class(test) == 'try-error')
-                                                  cat("Note: cannot calculate logProb for node ", nn, ".\n")
-                                              
-                                              if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
-                                          } else stop('unknown node type: ', type)
+                                              type <- getNodeType(nn)
+                                              if(length(type) > 1) stop('something wrong with Daniel\'s understanding of nimbleModel')
+                                              if(type == 'RHSonly') {
+                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                              } else if(type == 'determ') {
+                                                  test <- try(calculate(.self, nn))
+                                                  if(class(test) == 'try-error')
+                                                      cat("Note: cannot calculate logProb for node ", nn, ".\n")
+                                                  val <- .self[[nn]]
+                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                              } else if(type == 'stoch') {
+                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                                  test <- try(val <- calculate(.self, nn))
+                                                  if(class(test) == 'try-error')
+                                                      cat("Note: cannot calculate logProb for node ", nn, ".\n")
+                                                  
+                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
+                                              } else stop('unknown node type: ', type)
+                                          }
+                                          badVars <- lapply(badVars, removeIndexing)
+                                          badVars <- lapply(badVars, unique)
+                                          badVars <- lapply(badVars, function(nns) if(length(nns>0)) paste0(nns, collapse=', '))
+                                          conds <- list(c('na','NAs'), c('nan','NaNs'), c('inf','Infinite values'))
+                                          for(i in seq_along(conds)) {
+                                              v <- badVars[[conds[[i]][1]]]
+                                              m <- conds[[i]][2]
+                                              if(!is.null(v)) cat(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, ".\n", sep = '')
+                                          }
                                       }
-                                      badVars <- lapply(badVars, removeIndexing)
-                                      badVars <- lapply(badVars, unique)
-                                      badVars <- lapply(badVars, function(nns) if(length(nns>0)) paste0(nns, collapse=', '))
-                                      conds <- list(c('na','NAs'), c('nan','NaNs'), c('inf','Infinite values'))
-                                      for(i in seq_along(conds)) {
-                                          v <- badVars[[conds[[i]][1]]]
-                                          m <- conds[[i]][2]
-                                          if(!is.null(v)) cat(m, ' were detected in model variable', if(grepl(',',v)) 's' else '', ': ', v, ".\n", sep = '')
-                                      }
+
                                   },
-                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = TRUE) {
+
+                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
@@ -545,7 +672,7 @@ inits: A named list specifying initial values, for use in the newly returned mod
 
 replicate: Logical specifying whether to repliate all current values and data flags from the current model in the new model.  If TRUE, then the data and inits arguments are not used.  Default value is FALSE.
 
-check: A logical indicating whether to check the model object for missing or invalid values.  Default is TRUE.
+check: A logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option \'checkModel\', see help on \'nimbleOptions\' for details.
 
 modelName: An optional character string, used to set the internal name of the model object.  If provided, this name will propagate throughout the generated C++ code, serving to improve readability.
 
@@ -593,10 +720,44 @@ setMethod('[[<-', 'modelBaseClass',
           }
 )
 
+insertSingleIndexBrackets <- function(code, varInfo) {
+    cLength <- length(code)
+    if(cLength == 1) {
+        if(is.name(code)) {
+            varName <- as.character(code)
+            thisVarInfo <- varInfo[[varName]]
+            if(!is.null(thisVarInfo)) {
+                if(thisVarInfo$nDim == 0) 
+                    return(substitute(VAR[1], list(VAR = code)))
+            }
+        }
+        return(code)
+    }
+    if(is.call(code)) {
+        recurseIndices <- 2:cLength
+        if(code[[1]] == '[') {
+            if(length(code[[2]]) == 1) {
+                if(is.name(code[[2]])) recurseIndices <- 3:cLength
+            }
+        }
+        for(i in recurseIndices) {
+            code[[i]] <- insertSingleIndexBrackets(code[[i]], varInfo)
+        }
+        return(code)
+    }
+    if(!is.null(code)) message(paste('confused about reaching end of insertSingleBrackets with ', deparse(code)))
+    return(code)
+}
 
 
+# for now export this as R<3.1.2 give warnings if don't
 
-RModelBaseClass <- setRefClass("RModelBaseClass",
+#' Class \code{RmodelBaseClass}
+#' @aliases RmodelBaseClass 
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
+RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                contains = "modelBaseClass",
                                fields = list(
                                    nodeFunctions = 'ANY',	#list
@@ -615,7 +776,7 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                    },
                                    
                                    buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
-                                       ## This creates the nodeFunctions, which are basically nimbleFunctions, for the model
+                                       ## This xoocreates the nodeFunctions, which are basically nimbleFunctions, for the model
                                        if(debug) browser()
                                        iNextNodeFunction <- 1
                                        nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
@@ -627,10 +788,13 @@ RModelBaseClass <- setRefClass("RModelBaseClass",
                                            ## extract needed pieces
                                            type <- BUGSdecl$type
                                            code <- BUGSdecl$codeReplaced
+                                           code <- insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
                                            altParams <- BUGSdecl$altParamExprs
+                                           altParams <- lapply(altParams, insertSingleIndexBrackets, modelDef$varInfo)
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
+                                           logProbNodeExpr <- insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
 
                                            ## make a unique name
@@ -699,7 +863,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
     
     eval(substitute(newClass <- setRefClass(
         Class = className,
-        contains = 'RModelBaseClass',
+        contains = 'RmodelBaseClass',
         fields = FIELDS,
         methods = list(
             initialize = function(inputList, ...) {
@@ -717,7 +881,7 @@ RMakeCustomModelClass <- function(vars, className, isDataVars, modelDef, where =
                 # removed given new handling of lumped data and constants
             }
         ), where = where),
-                    list(FIELDS = makeBUGSclassFields(varnames)
+                    list(FIELDS = makeBUGSclassFields(varnames, vars)
                          )))
     ans <- function(name = character()) {
         newClass(inputList = inputList, name = name)
@@ -730,7 +894,7 @@ MakeCustomModelClass <- function(vars, className, where = globalenv())
 
 ## This builds the list of all fields needed for a reference class definition.
 ## It is built as an unevaluated list parse tree so that when the class if created the function definitions are evaluated then.
-makeBUGSclassFields <- function(vars) {
+makeBUGSclassFields <- function(vars, varDims) {
     activeBindingDefs <- list()
     envDefs <- as.list(rep('ANY', length(vars)))
     names(envDefs) <- makeEnvName(vars)    
@@ -739,18 +903,34 @@ makeBUGSclassFields <- function(vars) {
     names(rowDefs) <- makeRowName(vars)
     names(nameDefs) <- makeNameName(vars)
     for(var in vars) {
-        activeBindingDefs[[var]] <- makeBUGSactiveBindingDef(makeEnvName(var), makeNameName(var), makeRowName(var))
+        activeBindingDefs[[var]] <- makeBUGSactiveBindingDef(makeEnvName(var), makeNameName(var), makeRowName(var), varDims[[var]])
     }
     as.call(c(as.name("list"), activeBindingDefs, envDefs, nameDefs, rowDefs))
 }
 
 ## This uses the activeBindingTemplate and plugs in the 3 needed names
-makeBUGSactiveBindingDef <- function(envVarName, varVarName, rowVarName) {
-    eval( substitute( substitute(aBT, list(ENVNAME = as.name(envVarName), VARNAME = as.name(varVarName), ROWNAME = as.name(rowVarName))), list(aBT = activeBindingTemplate) ) )
+makeBUGSactiveBindingDef <- function(envVarName, varVarName, rowVarName, dims) {
+    if(length(dims) == 0) dims <- 1
+    if(prod(dims) == 1)
+        template <- activeBindingTemplateLength1NonScalar
+    else
+        template <- activeBindingTemplate
+
+    eval( substitute( substitute(aBT, list(ENVNAME = as.name(envVarName), VARNAME = as.name(varVarName), ROWNAME = as.name(rowVarName), DIMNAME = dims)), list(aBT = template) ) )
 }
 ##e.g.  makeBUGSactiveBindingDef('.env_x','.name_x','.row_x')
 
 ## Parse tree template for the active binding functions
+activeBindingTemplateLength1NonScalar <- quote( function(value) {
+    if(missing(value)) return(if(is.na(ROWNAME)) ENVNAME[[VARNAME]] else ENVNAME[[VARNAME]][[ROWNAME]]) ## commas will get inserted after ROWNAME
+    else {
+        value <- array(value, dim = DIMNAME)
+        if(is.na(ROWNAME)) ENVNAME[[VARNAME]] <- value
+        else ENVNAME[[VARNAME]][[ROWNAME]] <- value
+        return(invisible(value))
+    }
+})
+
 activeBindingTemplate <- quote( function(value) {
     if(missing(value)) return(if(is.na(ROWNAME)) ENVNAME[[VARNAME]] else ENVNAME[[VARNAME]][[ROWNAME]]) ## commas will get inserted after ROWNAME
     else {
@@ -759,6 +939,7 @@ activeBindingTemplate <- quote( function(value) {
         return(invisible(value))
     }
 })
+
 
 createDefault_isDataObj <- function(obj) {
     if(length(obj) == 0) return(FALSE)

@@ -92,6 +92,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
         inds <- which(unlist(var$target) %in% currentTargets)
         spec$removeSamplers(inds, print = FALSE)
                                         # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
+        currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
         inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
                                         #      inds <- which(sapply(spec$samplerSpecs, function(x)
                                         #          gsub("\\[[0-9]+\\]", "", x$target))
@@ -553,4 +554,38 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     dyn.unload(getNimbleProject(Rmodel)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
   }
   return(returnVal)
+}
+
+test_size <- function(input, verbose = TRUE) {
+    errorMsg <- paste0(ifelse(input$knownProblem, "KNOWN ISSUE: ", ""), "Result does not match ", input$expectPass)
+    if(verbose) cat("### Testing", input$name, " with RHS variable ###\n")
+    result <- try(
+        m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
+    )    
+    try(test_that(paste0("Test of size/dimension check: ", input$name),
+                  expect_that(!is(result, "try-error"), equals(input$expectPass),
+                              errorMsg)))
+    if(!is(result, "try-error")) {
+        result <- try(
+            { calculate(m); out <- calculate(m)} )          
+        try(test_that(paste0("Test of size/dimension check: ", input$name),
+                      expect_that(!is(result, "try-error"), equals(input$expectPass),
+                                  errorMsg)))
+    }
+    if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
+    if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
+    result <- try(
+        m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
+    )
+    try(test_that(paste0("Test of size/dimension check: ", input$name),
+                  expect_that(!is(result, "try-error"), equals(input$expectPass),
+                              errorMsg)))
+    if(!is(result, "try-error")) {
+        result <- try(
+            { calculate(m); out <- calculate(m)} )          
+        try(test_that(paste0("Test of size/dimension check: ", input$name),
+                      expect_that(!is(result, "try-error"), equals(input$expectPass),
+                                  errorMsg)))
+    }
+    invisible(NULL)
 }

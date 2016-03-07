@@ -68,9 +68,6 @@ getLogProbNodes <- nimbleFunction(
 #' @param model		A nimble model. 
 #' @param nodes		A set of nodes. If none are provided, default is all \code{model$getNodeNames()}
 #' @param mv		A modelValues object in which multiple sets of model variables and their corresponding logProb values are or will be saved. \code{mv} must include the nodes provided
-#' @param expandNames   \code{TRUE} or \code{FALSE}: whether to expand node names provided. defaults to \code{TRUE}.
-#' @param sortNodes     \code{TRUE} or \code{FALSE}: whether to sort node names provided (after expansion) according to the order of the model. defaults to \code{TRUE}.
-#' by \code{node} argument, along with each corresponding \code{'logProb_(nodeName)'}. 
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details
@@ -105,20 +102,22 @@ getLogProbNodes <- nimbleFunction(
 #'
 #' myModel <- nimbleModel(code)
 #' myMV <- modelValues(myModel)
-#' cModel <- compileNimble(myModel)
 #'
 #' Rsim <- simNodesMV(myModel, myMV)
 #' Rcalc <- calcNodesMV(myModel, myMV)
 #' Rglp <- getLogProbNodesMV(myModel, myMV)
-#' Csim <- compileNimble(Rsim, project = myModel)
-#' Ccalc <- compileNimble(Rcalc, project = myModel)
-#' Cglp <- compileNimble(Rglp, project = myModel)
-#' Csim(10)
-#' Ccalc(saveLP = TRUE)
-#' Cglp()	#Gives identical answers to Ccalc because logProbs were saved
-#' Csim(10)
-#' Ccalc(saveLP = FALSE)
-#' Cglp()	#Gives wrong answers because logProbs were not saved
+#' \dontrun{
+#'   cModel <- compileNimble(myModel)
+#'   Csim <- compileNimble(Rsim, project = myModel)
+#'   Ccalc <- compileNimble(Rcalc, project = myModel)
+#'   Cglp <- compileNimble(Rglp, project = myModel)
+#'   Csim$run(10)
+#'   Ccalc$run(saveLP = TRUE)
+#'   Cglp$run()	#Gives identical answers to Ccalc because logProbs were saved
+#'   Csim$run(10)
+#'   Ccalc$run(saveLP = FALSE)
+#'   Cglp$run()	  #Gives wrong answers because logProbs were not saved
+#' }
 simNodesMV <- nimbleFunction(
     setup = function(model, mv, nodes) {
         if(missing(nodes) )

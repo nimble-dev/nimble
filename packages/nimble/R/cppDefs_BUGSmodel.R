@@ -128,7 +128,7 @@ compileBUGSmodel <- function(model, name, fileName, dirName, compileNodes = TRUE
     # if(missing(dirName)) dirName <- fileName
     if(missing(dirName))    dirName <- makeDefaultDirName()
 
-    if(inherits(model, 'RModelBaseClass')) {
+    if(inherits(model, 'RmodelBaseClass')) {
         modelDef <- model$getModelDef()
         modelDefCpp <- cppBUGSmodelClass$new(modelDef = modelDef, model = model, name = Cname) ## model is needed for nodeFunctions
         modelDefCpp$buildAll(buildNodeDefs = compileNodes, where = where, debugCpp = debugCpp)

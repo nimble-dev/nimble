@@ -23,6 +23,7 @@
 ###						Need to discuss what to do if built around existingptr
 
 
+
 CmodelValues <- setRefClass(
     Class = 'CmodelValues',
     fields = list(
@@ -63,7 +64,10 @@ CmodelValues <- setRefClass(
                     warning("a call to getNativeSymbolInfo with only a name and no DLL")
                 }
                                         # Are we actually calling this here
-                extptr <<- .Call(buildCall) 
+
+                # avoid R CMD check problem with registration
+                extptr <<- eval(parse(text = ".Call(buildCall)"))
+#                extptr <<- .Call(buildCall) 
             }
             else{
                 extptr <<- existingPtr
@@ -124,7 +128,8 @@ setMethod('[', 'CmodelValues',
              for(cmp in i)
              	output[[cmp]] <- x[cmp, j]
           return(output)
-          })
+          }
+          )
 
 setMethod('[<-', 'CmodelValues',
 			function(x, i, j, value){

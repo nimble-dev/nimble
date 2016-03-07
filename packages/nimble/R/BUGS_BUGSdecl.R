@@ -1,7 +1,7 @@
 ## The BUGSdeclClass contains the pulled-apart content of a BUGS declaration line
 
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
-nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
+nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
                             'equals','inprod','nimEquals',
                             'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimStep', 'inverse',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
@@ -319,7 +319,11 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     }
 
     if(is.call(code)) {
-        if(code[[1]] == '[') {
+        indexingBracket <- code[[1]] == '['
+        if(indexingBracket) {
+            if(is.call(code[[2]])) indexingBracket <- FALSE ## treat like any other function
+        }
+        if(indexingBracket) { ##if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
             contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
             contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
@@ -394,7 +398,11 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         }
     }
     if(is.call(code)) {
-        if(code[[1]] == '[') {
+        indexingBracket <- code[[1]] == '['
+        if(indexingBracket) {
+            if(is.call(code[[2]])) indexingBracket <- FALSE ## treat like any other function
+        }
+        if(indexingBracket) { ##if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) genReplacementsAndCodeRecurse(x, constAndIndexNames, nimbleFunctionNames, debug = debug))
             contentsCodeReplaced <- lapply(contents, function(x) x$codeReplaced)
             contentsReplacements <- lapply(contents, function(x) x$replacements)

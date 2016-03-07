@@ -338,7 +338,7 @@ nfProcessing$methods(doSetupTypeInference_processNF = function(symTab, setupOutp
         symbolRCobject <- makeTypeObject(name, instances, firstOnly)
         if(is.null(symbolRCobject)) next
         if(is.logical(symbolRCobject)) {
-            warning(paste0('There is an error involving the type of ', name,'.  Going into browser(). Press Q to exit.'), call. = FALSE)
+            message(paste0('There is an error involving the type of ', name,'.  Going into browser(). Press Q to exit.'), call. = FALSE)
             browser()
         }
         if(add) symTab$addSymbol(symbolRCobject)
@@ -438,7 +438,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
                 warning(paste0('Problem: some but not all instances have ', name,' as a model.  Types must be consistent.'))
                 return(invisible(NULL))
             }
-            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RModelBaseClass'))))) {
+            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RmodelBaseClass'))))) {
                 warning(paste0('Problem: models should be provided as R model objects, not C model objects'))
                 return(invisible(NULL))
             }
@@ -498,6 +498,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     }
     if(inherits(instances[[1]][[name]], 'modelValuesAccessorVector')){
     	return(symbolModelValuesAccessorVector(name = name) )     	
+    }
+    if(inherits(instances[[1]][[name]], 'getParam_info')) {
+        return(symbolGetParamInfo(name = name, paramInfo = instances[[1]][[name]]))
     }
     ## if(is.character(instances[[1]][[name]])) {
     ##     return(symbolBase(name = name, type = 'Ronly'))
@@ -638,6 +641,13 @@ nfProcessing$methods(matchKeywords_all = function(){
 ##     singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
 ## }
 
+# for now export this as R<3.1.2 give warnings if don't
+
+#' Class \code{singleVarAccessClass}
+#' @aliases singleVarAccessClass
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 singleVarAccessClass <- setRefClass('singleVarAccessClass',
                                        methods = list(
                                            initialize = function() cat('Oops: building a singleVarAccessClass refClass -- should be defunct\n')
@@ -660,6 +670,13 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
 ##     singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
 ## }
 
+# for now export this as R<3.1.2 give warnings if don't
+
+#' Class \code{singleModelValuesAccessClass}
+#' @aliases singleModelValuesAccessClass
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
                                      methods = list(
                                            initialize = function() cat('Oops: building a singleModelValuesAccessClass refClass -- should be defunct\n')

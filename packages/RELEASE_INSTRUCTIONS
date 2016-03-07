@@ -1,13 +1,28 @@
+no visible binding issues:
+http://stackoverflow.com/questions/8096313/no-visible-binding-for-global-variable-note-in-r-cmd-check
+http://stackoverflow.com/questions/9439256/how-can-i-handle-r-cmd-check-no-visible-binding-for-global-variable-notes-when
+
 make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
 
+for version on nimble website, remove FLIBS from Makevars.in
+for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
+
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
 # before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions
-./prep_pkg # this creates man pages and updates NAMESPACE
+./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
 
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
+This also should work:
+for file in `ls nimble/man`; do
+    if [ -e /tmp/tmp.Rd ]; then
+       rm -rf /tmp/tmp.Rd
+    fi
+     /bin/cp -i nimble/man/$file /tmp/tmp.Rd 
+     sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
+done
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
@@ -22,9 +37,15 @@ go to website: R-nimble.org/login and login
 
 change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
 
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page
+
+(make sure post is set up as a blog entry)
+
 update NEWS info on webpage as high-level summary of NEWS in package
 
 update version numbering on license and citation page
+
+rebuild and post manual
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
@@ -37,3 +58,4 @@ git tag -a v0.3 -m 'NIMBLE version 0.3 release, December 31, 2014'
 git push --tags    ## this is how you push *tags* to the remote
 
 
+before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in

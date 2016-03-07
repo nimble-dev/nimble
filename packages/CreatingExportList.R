@@ -1,7 +1,11 @@
 rm(list = ls())
 
+if(TRUE) { # if TRUE this was preventing alias in nimble-internal.Rd to be created, but seems ok now
+    # keep as TRUE for R 3.1.0 to avoid Ref Class related warnings such as:
+#    1: class "RmodelBaseClass" is defined (with package slot ‘nimble’) but no metadata object found to revise subclass information---not exported?  Making a copy in package ‘.GlobalEnv’ 
+    # eventually we may not export these classes as those warnings don't appear in R 3.2
 individualExportClassNames = c( 
- 'RModelBaseClass',
+ 'RmodelBaseClass',
  'singleModelValuesAccessClass',
  'singleVarAccessClass', 
  'CmodelBaseClass',
@@ -10,6 +14,7 @@ individualExportClassNames = c(
  'modelValuesBaseClass', 
  'codeBlockClass',
  'nimbleFunctionBase')
+} else individualExportClassNames = NULL
 
 individualExportNames = c(
  'checkInterrupt',
@@ -62,10 +67,31 @@ individualExportNames = c(
     'deregisterDistributions',
     'getDistribution',
     'calc_dmnormAltParams',
-    'getDependencyPaths'
+    'getDependencyPaths',
+    'buildConjugateSamplerFunctions',
+    'codeSubstitute', # not clear why this is not found in model$check if not exported
+    'distributionsInputList', # not clear why this is not found in model$check if not exported
+ 'compareMCMCs',
+ 'rename_MCMC_comparison_method',
+ 'combine_MCMC_comparison_results',
+ 'reshape_comparison_results',
+ 'make_MCMC_comparison_pages',
+ 'updateMCMCcomparisonWithHighOrderESS',
+ 'insertSingleIndexBrackets'
 )
 
-individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
+individualMaskedFunctions = c(
+'mysource', 'individualMaskedFunctions', 'maskFileVector', 'AllFiles', 'maskSource', 'maskedFuns', 'individualExportNames', 'nfVar<-', 'getModelValuesMemberElement', 'newModelValues', 'testRows', 'individualExportClassNames',
+# if mask these classes later, uncomment this
+## 'RmodelBaseClass',
+##  'singleModelValuesAccessClass',
+##  'singleVarAccessClass', 
+##  'CmodelBaseClass',
+##  'CnimbleFunctionBase', 
+##  'modelBaseClass',
+##  'modelValuesBaseClass', 
+##  'codeBlockClass',
+##  'nimbleFunctionBase',
 
 'C_dcat', 
 'C_ddirch', 
@@ -190,8 +216,15 @@ individualMaskedFunctions = c('mysource', 'individualMaskedFunctions', 'maskFile
 'parseTreeSubstitute',
 'projectNameCreator',
 'UseLibraryMakevars',
-'replaceDistributionAliasesNameOnly'
-)
+'replaceDistributionAliasesNameOnly',
+
+'as.matrix.CmodelValues',
+'as.matrix.modelValuesBaseClass',
+'length.nimPointerList',
+'deparse',
+'double',
+'insertSingleIndexBrackets'
+                              )
 
 maskFileVector = c(
 					'options.R',
@@ -258,7 +291,8 @@ maskFileVector = c(
  					'cppDefs_nimbleFunction.R',
  					'cppDefs_modelValues.R',
  					'cppDefs_cppProject.R',
- 					'cppDefs_outputCppFromRparseTree.R'
+ 					'cppDefs_outputCppFromRparseTree.R',
+    'MCMC_comparisons.R'
 )
 
 
@@ -297,12 +331,14 @@ exportNames = setdiff(allNames,  removedFuns )
 exportNames = setdiff(exportNames, individualExportClassNames)
 exportNames = union(exportNames, individualExportNames)
 
- exportClasses = individualExportClassNames
+exportClasses = individualExportClassNames
 
 exportNames = sort(exportNames)
 exportClasses = sort(exportClasses)
 
-exportText = c(paste('export(', exportNames, ')', sep = ''), paste('exportClass(', exportClasses, ')', sep = ''))
+exportText = paste('export(', exportNames, ')', sep = '')
+if(!is.null(exportClasses))
+             exportText <- c(exportText, paste0('exportClasses(', paste(exportClasses, collapse = ','), ')', sep = ''))
 
 exportText = paste(exportText, collapse = '\n')
 # cat(exportText, sep = '\n')

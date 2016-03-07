@@ -3,6 +3,7 @@
 #' Performs initialization nimble model node values and log probabilities
 #'
 #' @param model A setup argument, which specializes an instance of this nimble function to a particular model.
+#' @param silent logical indicating whether to suppress logging information
 #' @author Daniel Turek
 #' @details This nimbleFunction may be used at the beginning of nimble algorithms to perform model initialization.
 #' The intended usage is to specialize an instance of this nimbleFunction in the setup function of an algorithm,
@@ -39,7 +40,7 @@ initializeModel <- nimbleFunction(
         
         stochNonDataNodes <- model$getNodeNames(stochOnly = TRUE, includeData = FALSE)
         for(i in seq_along(stochNonDataNodes))
-            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent, stochSimulate)
+            initFunctionList[[iter + i - 1]] <- stochNodeInit(model, stochNonDataNodes[i], silent)
 
         allDetermNodes <- model$getNodeNames(determOnly = TRUE)
         determNodesNodeFxnVector <- nodeFunctionVector(model = model, nodeNames = allDetermNodes)
@@ -68,14 +69,14 @@ checkRSHonlyInit <- nimbleFunction(
 
 stochNodeInit <- nimbleFunction(
     contains = nodeInit_virtual,
-    setup = function(model, node, silent, stochSimulate) {},
+    setup = function(model, node, silent) {},
     run = function() {
         theseVals <- values(model, node)
         if(is.na.vec(theseVals)) simulate(model, node)
         theseVals <- values(model, node)
         if(is.na.vec(theseVals)) print('warning: value of stochastic node is NA')
         lp <- calculate(model, node)
-        if(is.na(lp)) print('warning: problem initializing stochastic node, logProb is NA')
+        if(is.na(lp)) print('warning: problem initializing stochastic node ', node, ', logProb is NA')
         if(!is.na(lp)) {
             if(lp < -1e12) {
                 if(!silent) print('warning: problem initializing stochastic node, logProb less than -1e12')

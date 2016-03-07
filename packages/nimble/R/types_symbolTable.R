@@ -40,7 +40,7 @@ argType2symbol <- function(AT, name = character()) {
         if(nDim > 1) {
             warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
             nDim <- 1
-            size <- if(any(is.na(size))) as.numeric(NA) else product(size)
+            size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
         }
         symbolString(name = name, type = "character", nDim = nDim, size = size) 
     } else {
@@ -315,6 +315,20 @@ symbolModelValuesAccessorVector <-
                     )
                 )
 
+symbolGetParamInfo <-
+    setRefClass(Class = 'symbolGetParamInfo',
+                contains = 'symbolBase',
+                fields = list(paramInfo = 'ANY'), ## getParam_info, i.e. simple list
+                methods = list(
+                    initialize = function(paramInfo, ...) {
+                        callSuper(...)
+                        paramInfo <<- paramInfo
+                        type <<- 'Ronly'
+                    },
+                    show = function() writeLines(paste('symbolGetParamInfo', name)),
+                    genCppVar = function(...) {
+                        stop(paste('Error, you should not be generating a cppVar for symbolGetParamInfo', name))
+                    } ))
 
 symbolNumericList <- 
     setRefClass(Class = 'symbolNumericList',
