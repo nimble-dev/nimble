@@ -126,6 +126,13 @@ compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir
                 }
             }
         }
+        if(is.null(modelContents[[i]][['constants']])) {
+            constants <- modelContents[[i]]$data
+            data <- list()
+        } else {
+            constants <- modelContents[[i]]$constants
+            data <- modelContents[[i]]$data
+        }
         suite_output <- MCMCsuite(modelContents[[i]]$model, constants = modelContents[[i]]$data, inits = modelContents[[i]]$inits
                                   ,setSeed = FALSE
                                   ,MCMCs = MCMCs, makePlot = doSamplePlots, savePlot = doSamplePlots
@@ -390,8 +397,9 @@ allParamEfficiencyComparisonComponent <- function(comparisonResults, modelName, 
         ggplot2::geom_point() + ggplot2::geom_line() + ggplot2::ylab(ylabel) +
             ##     guides(colour = ggplot2::guide_legend(title = "Parameter", override.aes = list(shape = NULL, size = 0.5))) +
             ggplot2::guides(colour = ggplot2::guide_legend(title = "Parameter")) +
-                ggplot2::ggtitle(title) + 
-                    ggplot2::stat_summary(mapping = ggplot2::aes(x = "method", y = "efficiency"), data = vars, inherit.aes = FALSE, fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 2)
+                ggplot2::ggtitle(title)
+    if(replicatedRuns) p <- p + 
+        ggplot2::stat_summary(mapping = ggplot2::aes(x = "method", y = "efficiency"), data = vars, inherit.aes = FALSE, fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 2)
     list(plottable = p, height = 6, width = 5, html_img_args = "height = \"600\" width = \"500\"")
 }
 
