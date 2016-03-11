@@ -896,7 +896,7 @@ posteriorClass <- setRefClass(
                     ## contribution base name matches a parameter name of the posterior
                     theDims[[contribName]] <- getDistribution(distToLookup)$types[[contribNameBase]]$nDim
                 } else {
-                    ## contribution base name doesn't match any paramter; can't easily infer the dimensionality
+                    ## contribution base name doesn't match any parameter; can't easily infer the dimensionality
                     browser()
                     message('The NIMBLE conjugacy system is attempting to infer the dimensionality of the contribution term: ', contribName, '. However, since the posterior distribution is multivariate, and the contribution name doesn\'t match any parameter names of the posterior distribution, NIMBLE can\'t infer this one. This means the conjugacy system might need to be extended, to allow users to provide the dimensionality of contribution terms. Or perhaps something more clever. -DT August 2015')
                 }
