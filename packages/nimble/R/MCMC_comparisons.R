@@ -133,7 +133,7 @@ compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir
             constants <- modelContents[[i]]$constants
             data <- modelContents[[i]]$data
         }
-        suite_output <- MCMCsuite(modelContents[[i]]$model, constants = modelContents[[i]]$data, inits = modelContents[[i]]$inits
+        suite_output <- MCMCsuite(modelContents[[i]]$model, constants = constants, data = data, inits = modelContents[[i]]$inits
                                   ,setSeed = FALSE
                                   ,MCMCs = MCMCs, makePlot = doSamplePlots, savePlot = doSamplePlots
                                  ,summaryStats=c('mean','median','sd','CI95_low','CI95_upp')
