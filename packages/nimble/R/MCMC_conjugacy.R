@@ -680,9 +680,11 @@ conjugacyClass <- setRefClass(
                        },
                        `2` = {
                            functionBody$addCode({
-                               identityMatrix <- model[[target]] * 0
-                               for(sizeIndex in 1:d)   { identityMatrix[sizeIndex, sizeIndex] <- 1 }
-                               model[[target]] <<- identityMatrix   ## initially, propogate through X = I
+                               ## I <- model[[target]] * 0
+                               ## for(sizeIndex in 1:d)   { I[sizeIndex, sizeIndex] <- 1 }
+                               ## model[[target]] <<- I   ## initially, propogate through X = I
+                               I <- identityMatrix(d)
+                               model[[target]] <<- I   ## initially, propogate through X = I
                                calculate(model, calcNodesDeterm)
                            })
                            if(!dynamic) {
@@ -708,7 +710,7 @@ conjugacyClass <- setRefClass(
                                }
                            }
                            functionBody$addCode({
-                               model[[target]] <<- identityMatrix * 2   ## now, propogate through X = 2I
+                               model[[target]] <<- I * 2   ## now, propogate through X = 2I
                                calculate(model, calcNodesDeterm)
                            })
                            if(!dynamic) {
