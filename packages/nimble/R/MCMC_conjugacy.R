@@ -19,7 +19,7 @@ conjugacyRelationshipsInputList <- list(
              dmulti    = list(param = 'prob', contribution_alpha = 'value')),
              ## dcat      = list(param = 'prob', contribution_alpha = as.numeric((1:length(prob)) == value)'),
              ## dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
-          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'), 
+         posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
     
     ## gamma
     list(prior = 'dgamma',
@@ -59,9 +59,13 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
              dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-         posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
-                                  cholesky   = chol(prior_prec + contribution_prec),
-                                  prec_param = 1)'),
+         ## original less efficient posterior definition:
+         ##posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
+         ##                         cholesky   = chol(prior_prec + contribution_prec),
+         ##                         prec_param = 1)'),
+         posterior = '{ dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
+                                    cholesky   = chol(prior_prec + contribution_prec),
+                                    prec_param = 1) }'),
 
     ## wishart
     list(prior = 'dwish',
@@ -386,6 +390,7 @@ conjugacyClass <- setRefClass(
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dynamic = dynamic, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
             
             ## generate new value, store, calculate, copy, etc...
+            functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
             functionBody$addCode({
                 newValue <- RPOSTERIORCALL
                 model[[target]] <<- newValue
@@ -419,6 +424,7 @@ conjugacyClass <- setRefClass(
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dynamic = dynamic, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
             
             ## calculate and return the (log)density for the current value of target
+            functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
             functionBody$addCode({
                 targetValue <- model[[target]]
                 posteriorLogDensity <- DPOSTERIORCALL
@@ -854,6 +860,7 @@ dependentClass <- setRefClass(
 posteriorClass <- setRefClass(
     Class = 'posteriorClass',
     fields = list(
+        prePosteriorCodeBlock =   'ANY',   ## a quoted {...} code block containing  DSL code to execute before making posterior call, possibly empty
         posteriorExpr =	          'ANY',   ## the full, parsed, posterior distribution expression, e.g. dnorm(mean = prior_mean + ..., sd = ...)
         rDistribution =           'ANY',   ## the *R* name of the posterior distribution, e.g. 'rnorm'
         dDistribution =           'ANY',   ## the *R* name of the posterior density distribution, e.g. 'dnorm'
@@ -867,7 +874,10 @@ posteriorClass <- setRefClass(
     ),
     methods = list(
         initialize = function(posteriorText, prior) {
-            posteriorExpr <<- parse(text = posteriorText)[[1]]
+            parsedTotalPosterior <- parse(text = posteriorText)[[1]]
+            if(parsedTotalPosterior[[1]] != '{') parsedTotalPosterior <- substitute({POST}, list(POST = parsedTotalPosterior))
+            prePosteriorCodeBlock <<- parsedTotalPosterior[-length(parsedTotalPosterior)]
+            posteriorExpr <<- parsedTotalPosterior[[length(parsedTotalPosterior)]]
             rDistribution <<- cc_makeRDistributionName(as.character(posteriorExpr[[1]]))
             dDistribution <<- as.character(posteriorExpr[[1]])
             argumentExprs <<- as.list(posteriorExpr)[-1]
