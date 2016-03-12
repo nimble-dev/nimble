@@ -419,10 +419,11 @@ conjugacyClass <- setRefClass(
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dynamic = dynamic, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
             
             ## calculate and return the (log)density for the current value of target
-            functionBody$addCode({targetValue <- model[[target]]
-                                  posteriorLogDensity <- DPOSTERIORCALL
-                                  returnType(double())
-                                  return(posteriorLogDensity)
+            functionBody$addCode({
+                targetValue <- model[[target]]
+                posteriorLogDensity <- DPOSTERIORCALL
+                returnType(double())
+                return(posteriorLogDensity)
             }, list(DPOSTERIORCALL = eval(substitute(substitute(expr, list(VALUE=quote(targetValue))), list(expr=posteriorObject$dCallExpr)))))
             
             functionDef <- quote(function() {})
