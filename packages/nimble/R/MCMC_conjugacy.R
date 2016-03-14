@@ -44,14 +44,15 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
                             sd   = (prior_tau + contribution_tau)^(-0.5))'),
     
+    #####
     ## pareto
-    # list(prior = 'dpar',      ##### waiting for dpar() distribution
-    #      link = 'multiplicative',
-    #      dependents = list(
-    #          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
-    #          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
-    #      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
-    #                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
+    ## list(prior = 'dpar',      ##### waiting for dpar() distribution
+    ##      link = 'multiplicative',
+    ##      dependents = list(
+    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
+    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
+    ##      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
+    ##                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
     #####
     
     ## multivariate-normal
@@ -59,14 +60,15 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
              dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-         posterior = '{ R <- chol(prior_prec + contribution_prec)
-                        A <- prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)
-                        mu <- backsolve(R, forwardsolve(t(R), A))[,1]
-                        dmnorm_chol(mean = mu, cholesky = R, prec_param = 1) }'),
          ## original less efficient posterior definition:
          ## posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
          ##                          cholesky   = chol(prior_prec + contribution_prec),
          ##                          prec_param = 1)'),
+         posterior = '{ R <- chol(prior_prec + contribution_prec)
+                        A <- prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)
+                        mu <- backsolve(R, forwardsolve(t(R), A))[,1]
+                        dmnorm_chol(mean = mu, cholesky = R, prec_param = 1) }'),
+
 
     ## wishart
     list(prior = 'dwish',
