@@ -889,7 +889,7 @@ posteriorClass <- setRefClass(
             argumentNames <<- names(argumentExprs)
             rCallExpr <<- as.call(c(as.name(rDistribution), 1, argumentExprs))
             dCallExpr <<- as.call(c(as.name(dDistribution), quote(VALUE), argumentExprs, log = 1))
-            posteriorVars <- all.vars(rCallExpr)
+            posteriorVars <- all.vars(parsedTotalPosterior)
             neededPriorParams <<- gsub('^prior_', '', posteriorVars[grepl('^prior_', posteriorVars)])
             neededContributionNames <<- posteriorVars[grepl('^contribution_', posteriorVars)]
             neededContributionDims <<- inferContributionTermDimensions(prior)
