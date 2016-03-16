@@ -2,6 +2,12 @@
 
 USER LEVEL CHANGES
 
+-- API changes for MCMCspec objects: new method printSamplers() prints the current samplers (replacing the old getSamplers() method); new functionality for getSamplers(), which now returns a list of samplerSpec objects; new overloaded functionality of setSamplers(), which can accept a list of samplerSpec objects, replacing the current set of samplers; new method getSamplerDefinition(), which returns the nimbleFunction definition of a sampler.
+
+-- API created for modifying samplerSpec objects: setName(), setSamplerFunction(), setTarget(), setControl().
+
+-- MCMC conjugate sampling efficiency improvemented by ~33%
+
 -- new system for automating the comparison of different MCMCs and generating html results pages. main function is compareMCMCs.
 
 -- enhanced checking of model to check for size and dimension mismatch in BUGS code
