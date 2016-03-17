@@ -102,7 +102,7 @@ nimSwitch <- function(paramID, IDoptions, ...) {
 rCalcNodes <- function(model, nodes){
     l_Prob = 0
     
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
     else
@@ -114,7 +114,7 @@ rCalcNodes <- function(model, nodes){
 
 rCalcDiffNodes <- function(model, nodes){
     l_Prob <- 0
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculateDiff')
     else
@@ -196,7 +196,7 @@ calculateDiff <- function(model, nodes, nodeFxnVector)
 rGetLogProbsNodes <- function(model, nodes){
     l_Prob = 0
 
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'getLogProb')
     else
@@ -227,7 +227,7 @@ getLogProb <- function(model, nodes, nodeFxnVector)
 
 
 rSimNodes <- function(model, nodes){
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'simulate')
     else 

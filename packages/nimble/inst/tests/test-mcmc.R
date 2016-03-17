@@ -395,6 +395,8 @@ test_mcmc(model = code, name = 'Dirichlet-multinomial example', data= data, seed
           results = list(mean = list(p = p)),
           resultsTolerance = list(mean = list(p = rep(.06, K))))
 
+# bad mixing for alphas; probably explains why posterior estimates for alphas changed so much as of v 0.4
+
 # with replication
 
 set.seed(0)

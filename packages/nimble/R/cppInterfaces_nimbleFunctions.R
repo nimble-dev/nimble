@@ -534,7 +534,7 @@ buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll, nimbleP
         if(is.nf(thisObj)) {
             RCO <- nf_getRefClassObject(thisObj)
             if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                neededObjects[[iName]] <- nimbleProject$instantiateNimbleFunction(thisObj, dll, asTopLevel = !.nimbleOptions$useMultiInterfaceForNestedNimbleFunctions)
+                neededObjects[[iName]] <- nimbleProject$instantiateNimbleFunction(thisObj, dll, asTopLevel = getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions'))
             }
             next
         }
@@ -543,7 +543,7 @@ buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll, nimbleP
             for(i in seq_along(thisObj$contentsList)) {
                 RCO <- nf_getRefClassObject(thisObj[[i]])
                 if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                    neededObjects[[iName]][[i]] <- nimbleProject$instantiateNimbleFunction(thisObj[[i]], dll, asTopLevel = !.nimbleOptions$useMultiInterfaceForNestedNimbleFunctions)
+                    neededObjects[[iName]][[i]] <- nimbleProject$instantiateNimbleFunction(thisObj[[i]], dll, asTopLevel = getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions'))
                 } else {
                     neededObjects[[iName]][[i]] <- RCO$.CobjectInterface ## either CnimbleFunction or list(CmultiNimbleFunction, index)
                 }
