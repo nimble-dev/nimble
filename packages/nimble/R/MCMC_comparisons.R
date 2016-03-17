@@ -338,7 +338,13 @@ reshape_comparison_results <- function(oneComparisonResult, includeVars = TRUE, 
         methodNames <- dimnames(vars)[[1]]
         numRows <- dim(vars)[1]
         for(j in 1:length(dimnames(vars)[[3]])){
-            temp=as.data.frame(vars[,,j, drop = FALSE], row.names = 1:numRows)
+            varsSubset <- vars[,,j]
+            if(class(varsSubset) == 'numeric') { ## there was only one row (one mcmc method)
+                varsSubset <- matrix(varsSubset, nrow = 1)
+                rownames(varsSubset) <- dimnames(vars)[[1]]
+                colnames(varsSubset) <- dimnames(vars)[[2]]
+            }
+            temp=as.data.frame(varsSubset, row.names = 1:numRows)
             temp$method=methodNames
             temp$var=rep(dimnames(vars)[[3]][j],length(rownames(temp))) 
             dfVars=rbind(dfVars,temp)
