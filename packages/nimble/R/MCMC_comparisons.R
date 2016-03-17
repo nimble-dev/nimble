@@ -2,7 +2,7 @@
 #'
 #' Manages the input and output for multiple calls to MCMCsuite to generate comparisons among MCMCs
 #'
-#' @param models A set of models for which one or more MCMCs should be run.  Can take one of several formats: (1) a character vector of names of classic WinBUGS examples.  (2) for one model, a list with elements \code{model} (containing the model code as returned by \code{\link{nimbleCode}}), \code{data} (containing a list of data that can be provided to \code{\link{nimbleModel}}, \code{inits} (containing a list of initial values that can be provided to \code{\link{nimbleModel}}; this is optional unless it is needed to match names in some of the other arguments, as described below), and \code{name} (a character name; this is optional).  (3) for multiple models, a list of lists formatted as per option (2).
+#' @param modelInfo A set of model information for which one or more MCMCs should be run.  Can take one of several formats: (1) a character vector of names of classic WinBUGS examples.  (2) for one model, a list with elements \code{code} (containing the model code as returned by \code{\link{nimbleCode}}), \code{data} (containing a list of data that can be provided to \code{\link{nimbleModel}}, \code{constants} (containing a list of constants to be provided to \code{\link{nimbleModel}}), \code{inits} (containing a list of initial values that can be provided to \code{\link{nimbleModel}}; this is optional unless it is needed to match names in some of the other arguments, as described below), and \code{name} (a character name; this is optional).  (3) for multiple models, a list of lists formatted as per option (2).  See \code{\link{nimbleModel}} about handling of data vs. constants.  In particular, if both are provided in data, then \code{nimbleModel} will try to determine which is which.
 #' 
 #' @param MCMCs An object acceptable as the \code{MCMCs} argument to \code{\link{MCMCsuite}}.  This specifies the set of MCMCs to be run.  Valid entries include 'jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock', 'stan', 'winbugs', 'openbugs', or a name provided in the \code{MCMCdefs} list.
 #'
@@ -28,24 +28,24 @@
 #' @return If \code{summary} is FALSE, \code{compareMCMCs} returns the object returned by \code{MCMCsuite}, which comes from \code{\link{MCMCsuiteClass}}.  If \code{summary} is TRUE, it returns a list with elements timing, efficiency, and summary.
 #' 
 #' @seealso \code{\link{MCMCsuiteClass}}, \code{\link{updateMCMCcomparisonWithHighOrderESS}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}, \code{\link{combine_MCMC_comparison_results}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{reshape_comparison_results}}.
-compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary=TRUE, ...) {
+compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary=TRUE, ...) {
 
     ## stanInfo = list(codeFile = required, dir = optional,  stanParameterRules = optional, modelName = optional, data = optional, inits = optional)
     ## or simply a character codeFile
     
     ## set up list of models from 3 possible input formats
-    if(is.character(models)) {
+    if(is.character(modelInfo)) {
         modelContents <- list()
-        for (i in seq_along(models)) {
-            thisBUGSdir <- if(missing(BUGSdir)) getBUGSexampleDir(models[i]) else BUGSdir 
-            modelContents[[i]] <- readBUGSmodel(model=models[i],
+        for (i in seq_along(modelInfo)) {
+            thisBUGSdir <- if(missing(BUGSdir)) getBUGSexampleDir(modelInfo[i]) else BUGSdir 
+            modelContents[[i]] <- readBUGSmodel(model=modelInfo[i],
                                     dir=thisBUGSdir,
                                     returnModelComponentsOnly=TRUE)
         }
     } else {
-        if(!is.list(models)) stop('models must be a list if it is not a vector of BUGS example names')
-        if(!is.list(models[[1]])) modelContents <- list(models)
-        else modelContents <- models
+        if(!is.list(modelInfo)) stop('modelInfo must be a list if it is not a vector of BUGS example names')
+        if(!is.list(modelInfo[[1]])) modelContents <- list(modelInfo)
+        else modelContents <- modelInfo
 
         inputNames <- names(modelContents)
         if(is.null(inputNames)) models <- paste0('model', seq_along(modelContents))
@@ -133,7 +133,7 @@ compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir
             constants <- modelContents[[i]]$constants
             data <- modelContents[[i]]$data
         }
-        suite_output <- MCMCsuite(modelContents[[i]]$model, constants = constants, data = data, inits = modelContents[[i]]$inits
+        suite_output <- MCMCsuite(modelContents[[i]]$code, constants = constants, data = data, inits = modelContents[[i]]$inits
                                   ,setSeed = FALSE
                                   ,MCMCs = MCMCs, makePlot = doSamplePlots, savePlot = doSamplePlots
                                  ,summaryStats=c('mean','median','sd','CI95_low','CI95_upp')
