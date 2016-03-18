@@ -36,11 +36,13 @@ compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stan
     ## set up list of models from 3 possible input formats
     if(is.character(modelInfo)) {
         modelContents <- list()
+        models <- modelInfo
         for (i in seq_along(modelInfo)) {
             thisBUGSdir <- if(missing(BUGSdir)) getBUGSexampleDir(modelInfo[i]) else BUGSdir 
             modelContents[[i]] <- readBUGSmodel(model=modelInfo[i],
                                     dir=thisBUGSdir,
-                                    returnModelComponentsOnly=TRUE)
+                                                returnModelComponentsOnly=TRUE)
+            names(modelContents[[i]])[names(modelContents[[i]])=="model"] <- "code"
         }
     } else {
         if(!is.list(modelInfo)) stop('modelInfo must be a list if it is not a vector of BUGS example names')
