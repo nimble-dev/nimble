@@ -6,9 +6,9 @@ USER LEVEL CHANGES
 
 -- API created for modifying samplerSpec objects: setName(), setSamplerFunction(), setTarget(), setControl().
 
--- MCMC conjugate sampling efficiency improvemented by ~33%
+-- MCMC conjugate sampling efficiency improved by ~33%
 
--- new system for automating the comparison of different MCMCs and generating html results pages. main function is compareMCMCs.
+-- new system for automating the comparison of different MCMCs and generating html results pages: the main function is compareMCMCs.
 
 -- enhanced checking of model to check for size and dimension mismatch in BUGS code
 
