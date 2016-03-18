@@ -25,7 +25,7 @@ for file in `ls nimble/man`; do
 done
 
 run tests
-if install nimble in /tmp/nimble can do a diff of the MCMC tests versus previous versions
+in particular check exact MCMC results vs previous versions (ignore differences in compilation log info)
 Rscript -e "library(nimble, lib.loc='/tmp/nimble'); library(testthat); test_package('nimble','mcmc')" > test-mcmc-results-v${VERSION}
 diff test-mcmc-results-v0.4-1 test-mcmc-results-v${VERSION}
 
