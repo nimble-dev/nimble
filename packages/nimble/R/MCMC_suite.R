@@ -62,7 +62,7 @@ MCMCsuite <- function(...) {
 #' \code{'jags'} specifies JAGS;
 #' \code{'stan'} specifies Stan; in this case, must also provide the \code{'stan_model'} argument;
 #' \code{'nimble'} specifies NIMBLE's default MCMC algorithm;
-#' \code{'noConj'} specifies NIMBLE's default MCMC algorithm without the use of any conjugate Gibbs sampling;
+#' \code{'nimble_noConj'} specifies NIMBLE's default MCMC algorithm without the use of any conjugate Gibbs sampling;
 #' \code{'nimble_RW'} specifies NIMBLE MCMC algorithm using only random walk Metropolis-Hastings (\code{'RW'}) samplers;
 #' \code{'nimble_slice'} specifies NIMBLE MCMC algorithm using only slice (\code{'slice'}) samplers;
 #' \code{'autoBlock'} specifies NIMBLE MCMC algorithm with block sampling of dynamically determined parameter groups attempting to maximize sampling efficiency;
@@ -342,7 +342,7 @@ MCMCsuiteClass <- setRefClass(
         
         setMCMCdefs = function(newMCMCdefs) {
             MCMCdefs <<- list(nimble        = quote(configureMCMC(Rmodel)),
-                              noConj        = quote(configureMCMC(Rmodel, useConjugacy = FALSE)),
+                              nimble_noConj = quote(configureMCMC(Rmodel, useConjugacy = FALSE)),
                               nimble_RW     = quote(configureMCMC(Rmodel, onlyRW       = TRUE)),
                               nimble_slice  = quote(configureMCMC(Rmodel, onlySlice    = TRUE)),
                               autoBlock     = quote(configureMCMC(Rmodel, autoBlock    = TRUE)))
