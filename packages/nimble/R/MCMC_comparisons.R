@@ -73,10 +73,11 @@ compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stan
     } else {
         stanNameMaps <- stanDataFile <- stanInitFile <- NULL
     }
-    
-    noConjDef <- list(noConj = quote({ configureMCMC(Rmodel, useConjugacy=FALSE) }))
-    if(missing(MCMCdefs)) MCMCdefs <- noConjDef
-    else MCMCdefs <- c(MCMCdefs, noConjDef)
+
+    ## MCMCsuite MCMC definition renamed from nimble_noConj to noConj
+    ## noConjDef <- list(noConj = quote({ configureMCMC(Rmodel, useConjugacy=FALSE) }))
+    ## if(missing(MCMCdefs)) MCMCdefs <- noConjDef
+    ## else MCMCdefs <- c(MCMCdefs, noConjDef)
   
     for (i in 1:length(models)){
         if(verbose) cat(paste('Working on', models[i]))
