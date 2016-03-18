@@ -1211,6 +1211,7 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
 
 sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or forwardsolve(A, b). For inverse, use inverse(A), not solve(A)
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'sizeSolveOp called with argument length != 2.'), call. = FALSE)
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
     ## need promotion from vectors to matrices with asRow or asCol
     a1 <- code$args[[1]]
     a2 <- code$args[[2]]
@@ -1218,14 +1219,23 @@ sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or f
     code$type <- 'double'
     if(a1$nDim != 2)  stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: first argument to a matrix solver must be a matrix.'), call. = FALSE)
     if(a2$nDim == 1) {
-        a2 <- insertExprClassLayer(code, 2, 'asCol', type = as$type)
-        a2$sizeExprs <- list(code$args[[2]]$sizeExprs[[1]], 1)
-        a1$nDim <- 2
+        a2 <- insertExprClassLayer(code, 2, 'asCol', type = a2$type)
+        a2$nDim <- 2
+        a2$sizeExprs <- list(a2$args[[1]]$sizeExprs[[1]], 1)
+        warning('not sure what to set toEigenize to')
+        a2$toEigenize <- a2$args[[1]]$toEigenize
     }
     code$nDim <- 2
-    code$sizeExprs <- c(a1$sizeExprs[[2]], a2$sizeExprs[[2]])
+    code$sizeExprs <- c(a1$sizeExprs[[1]], a2$sizeExprs[[2]])
+    warning('not sure what to set toEigenize to (again)')
+    code$toEigenize <- 'maybe'
+    ##assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a2$sizeExprs[[1]]))
+    ##return(identityAssert(a1$sizeExprs[[1]], a2$sizeExprs[[1]], assertMessage))
     assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a2$sizeExprs[[1]]))
-    return(identityAssert(a1$sizeExprs[[1]], a2$sizeExprs[[1]], assertMessage))
+    assert1 <- identityAssert(a1$sizeExprs[[1]], a2$sizeExprs[[1]], assertMessage)
+    assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a1$sizeExprs[[2]]))
+    assert2 <- identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], assertMessage)
+    return(c(asserts, assert1, assert2))
 }
 
 ## deprecated and will be removed
