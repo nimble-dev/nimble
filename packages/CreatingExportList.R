@@ -31,6 +31,7 @@ individualExportNames = c(
  'calculate',
  'calculateDiff',
  'getLogProb',
+ 'getParam',
  'nfVar',
  'BUGScontextClass',
  'BUGSdeclClass',

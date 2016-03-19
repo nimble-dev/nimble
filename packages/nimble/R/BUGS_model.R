@@ -36,6 +36,12 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   nimbleProject = 'ANY'
                                   ),
                               methods = list(
+                                  calculate = function(nodes) nimble:::calculate(.self, nodes),
+                                  calculateDiff = function(nodes) nimble:::calculateDiff(.self, nodes),
+                                  getLogProb = function(nodes) nimble:::getLogProb(.self, nodes),
+                                  simulate = function(nodes, includeData = FALSE) nimble:::simulate(.self, nodes, includeData),
+                                  getParam = function(node, param) nimble:::getParam(.self, node, param),
+                                  
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
                                   getModelDef = function() modelDef,
@@ -616,11 +622,11 @@ Checks for common errors in model specification, including missing values, inabi
                                       }
 
                                       # check for missing values and inability to calculate/simulate
-                                      lp <- try(calculate(.self))
+                                      lp <- try(nimble:::calculate(.self))
                                       if(!isValid(lp)) {
                                           varsToCheck <- character()
                                           for(v in .self$getVarNames())
-                                              if(!isValid(.self[[v]]) || !isValid(getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
+                                              if(!isValid(.self[[v]]) || !isValid(nimble:::getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
                                                   varsToCheck <- c(varsToCheck, v)
                                           badVars <- list(na=character(), nan=character(), inf=character())
                                       ##nns <- getNodeNames(includeRHSonly = TRUE)
@@ -633,14 +639,14 @@ Checks for common errors in model specification, including missing values, inabi
                                               if(type == 'RHSonly') {
                                                   if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                               } else if(type == 'determ') {
-                                                  test <- try(calculate(.self, nn))
+                                                  test <- try(nimble:::calculate(.self, nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   val <- .self[[nn]]
                                                   if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
                                               } else if(type == 'stoch') {
                                                   if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                                  test <- try(val <- calculate(.self, nn))
+                                                  test <- try(val <- nimble:::calculate(.self, nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   

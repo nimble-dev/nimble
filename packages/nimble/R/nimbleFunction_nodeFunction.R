@@ -319,14 +319,27 @@ ndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nDi
     paramIDs <- as.integer(paramIDs)
     answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
     switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))
-    ans <- try(eval(substitute(
-        function(PARAMID_ = integer()) {
-            returnType(TYPE(NDIM))
-            SWITCHCODE
-            return(PARAMANSWER_)
-        },
-        list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
-    )))
+    if(nDim == 0) {
+        answerInitCode <- quote(PARAMANSWER_ <- 0)  ## this avoids a Windows compiler warning about a possibly unassigned return variable
+        ans <- try(eval(substitute(
+            function(PARAMID_ = integer()) {
+                returnType(TYPE(NDIM))
+                ANSWERINITCODE
+                SWITCHCODE
+                return(PARAMANSWER_)
+            },
+            list(TYPE = as.name(type), NDIM=nDim, ANSWERINITCODE = answerInitCode, SWITCHCODE = switchCode)
+        )))
+    } else {
+        ans <- try(eval(substitute(
+            function(PARAMID_ = integer()) {
+                returnType(TYPE(NDIM))
+                SWITCHCODE
+                return(PARAMANSWER_)
+            },
+            list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
+        )))
+    }
     if(inherits(ans, 'try-error')) browser()
     attr(ans, 'srcref') <- NULL
     ans

@@ -134,7 +134,9 @@ nimbleFunctionBase <- setRefClass(Class = 'nimbleFunctionBase',
                                   ),
                                   methods = list(
                                       initialize = function(...)
-                                          callSuper(...)
+                                          callSuper(...),
+                                      getDefinition = function()
+                                          nimble:::getDefinition(.self)
                                   ))	#	$runRelated
 
 

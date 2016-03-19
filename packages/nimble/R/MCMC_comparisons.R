@@ -2,7 +2,7 @@
 #'
 #' Manages the input and output for multiple calls to MCMCsuite to generate comparisons among MCMCs
 #'
-#' @param models A set of models for which one or more MCMCs should be run.  Can take one of several formats: (1) a character vector of names of classic WinBUGS examples.  (2) for one model, a list with elements \code{model} (containing the model code as returned by \code{\link{nimbleCode}}), \code{data} (containing a list of data that can be provided to \code{\link{nimbleModel}}, \code{inits} (containing a list of initial values that can be provided to \code{\link{nimbleModel}}; this is optional unless it is needed to match names in some of the other arguments, as described below), and \code{name} (a character name; this is optional).  (3) for multiple models, a list of lists formatted as per option (2).
+#' @param modelInfo A set of model information for which one or more MCMCs should be run.  Can take one of several formats: (1) a character vector of names of classic WinBUGS examples.  (2) for one model, a list with elements \code{code} (containing the model code as returned by \code{\link{nimbleCode}}), \code{data} (containing a list of data that can be provided to \code{\link{nimbleModel}}, \code{constants} (containing a list of constants to be provided to \code{\link{nimbleModel}}), \code{inits} (containing a list of initial values that can be provided to \code{\link{nimbleModel}}; this is optional unless it is needed to match names in some of the other arguments, as described below), and \code{name} (a character name; this is optional).  (3) for multiple models, a list of lists formatted as per option (2).  See \code{\link{nimbleModel}} about handling of data vs. constants.  In particular, if both are provided in data, then \code{nimbleModel} will try to determine which is which.
 #' 
 #' @param MCMCs An object acceptable as the \code{MCMCs} argument to \code{\link{MCMCsuite}}.  This specifies the set of MCMCs to be run.  Valid entries include 'jags', 'nimble', 'nimble_RW', 'nimble_slice', 'autoBlock', 'stan', 'winbugs', 'openbugs', or a name provided in the \code{MCMCdefs} list.
 #'
@@ -28,24 +28,26 @@
 #' @return If \code{summary} is FALSE, \code{compareMCMCs} returns the object returned by \code{MCMCsuite}, which comes from \code{\link{MCMCsuiteClass}}.  If \code{summary} is TRUE, it returns a list with elements timing, efficiency, and summary.
 #' 
 #' @seealso \code{\link{MCMCsuiteClass}}, \code{\link{updateMCMCcomparisonWithHighOrderESS}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}, \code{\link{combine_MCMC_comparison_results}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{reshape_comparison_results}}.
-compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary=TRUE, ...) {
+compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary=TRUE, ...) {
 
     ## stanInfo = list(codeFile = required, dir = optional,  stanParameterRules = optional, modelName = optional, data = optional, inits = optional)
     ## or simply a character codeFile
     
     ## set up list of models from 3 possible input formats
-    if(is.character(models)) {
+    if(is.character(modelInfo)) {
         modelContents <- list()
-        for (i in seq_along(models)) {
-            thisBUGSdir <- if(missing(BUGSdir)) getBUGSexampleDir(models[i]) else BUGSdir 
-            modelContents[[i]] <- readBUGSmodel(model=models[i],
+        models <- modelInfo
+        for (i in seq_along(modelInfo)) {
+            thisBUGSdir <- if(missing(BUGSdir)) getBUGSexampleDir(modelInfo[i]) else BUGSdir 
+            modelContents[[i]] <- readBUGSmodel(model=modelInfo[i],
                                     dir=thisBUGSdir,
-                                    returnModelComponentsOnly=TRUE)
+                                                returnModelComponentsOnly=TRUE)
+            names(modelContents[[i]])[names(modelContents[[i]])=="model"] <- "code"
         }
     } else {
-        if(!is.list(models)) stop('models must be a list if it is not a vector of BUGS example names')
-        if(!is.list(models[[1]])) modelContents <- list(models)
-        else modelContents <- models
+        if(!is.list(modelInfo)) stop('modelInfo must be a list if it is not a vector of BUGS example names')
+        if(!is.list(modelInfo[[1]])) modelContents <- list(modelInfo)
+        else modelContents <- modelInfo
 
         inputNames <- names(modelContents)
         if(is.null(inputNames)) models <- paste0('model', seq_along(modelContents))
@@ -71,7 +73,7 @@ compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir
     } else {
         stanNameMaps <- stanDataFile <- stanInitFile <- NULL
     }
-    
+
     noConjDef <- list(noConj = quote({ configureMCMC(Rmodel, useConjugacy=FALSE) }))
     if(missing(MCMCdefs)) MCMCdefs <- noConjDef
     else MCMCdefs <- c(MCMCdefs, noConjDef)
@@ -126,7 +128,14 @@ compareMCMCs <- function(models, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir
                 }
             }
         }
-        suite_output <- MCMCsuite(modelContents[[i]]$model, constants = modelContents[[i]]$data, inits = modelContents[[i]]$inits
+        if(is.null(modelContents[[i]][['constants']])) {
+            constants <- modelContents[[i]]$data
+            data <- list()
+        } else {
+            constants <- modelContents[[i]]$constants
+            data <- modelContents[[i]]$data
+        }
+        suite_output <- MCMCsuite(modelContents[[i]]$code, constants = constants, data = data, inits = modelContents[[i]]$inits
                                   ,setSeed = FALSE
                                   ,MCMCs = MCMCs, makePlot = doSamplePlots, savePlot = doSamplePlots
                                  ,summaryStats=c('mean','median','sd','CI95_low','CI95_upp')
@@ -331,7 +340,13 @@ reshape_comparison_results <- function(oneComparisonResult, includeVars = TRUE, 
         methodNames <- dimnames(vars)[[1]]
         numRows <- dim(vars)[1]
         for(j in 1:length(dimnames(vars)[[3]])){
-            temp=as.data.frame(vars[,,j], row.names = 1:numRows)
+            varsSubset <- vars[,,j]
+            if(class(varsSubset) == 'numeric') { ## there was only one row (one mcmc method)
+                varsSubset <- matrix(varsSubset, nrow = 1)
+                rownames(varsSubset) <- dimnames(vars)[[1]]
+                colnames(varsSubset) <- dimnames(vars)[[2]]
+            }
+            temp=as.data.frame(varsSubset, row.names = 1:numRows)
             temp$method=methodNames
             temp$var=rep(dimnames(vars)[[3]][j],length(rownames(temp))) 
             dfVars=rbind(dfVars,temp)
@@ -390,8 +405,9 @@ allParamEfficiencyComparisonComponent <- function(comparisonResults, modelName, 
         ggplot2::geom_point() + ggplot2::geom_line() + ggplot2::ylab(ylabel) +
             ##     guides(colour = ggplot2::guide_legend(title = "Parameter", override.aes = list(shape = NULL, size = 0.5))) +
             ggplot2::guides(colour = ggplot2::guide_legend(title = "Parameter")) +
-                ggplot2::ggtitle(title) + 
-                    ggplot2::stat_summary(mapping = ggplot2::aes(x = "method", y = "efficiency"), data = vars, inherit.aes = FALSE, fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 2)
+                ggplot2::ggtitle(title)
+    if(replicatedRuns) p <- p + 
+        ggplot2::stat_summary(mapping = ggplot2::aes(x = "method", y = "efficiency"), data = vars, inherit.aes = FALSE, fun.y = 'mean', fun.ymin = function(x) x, fun.ymax = function(x) x, shape = '-', size = 2)
     list(plottable = p, height = 6, width = 5, html_img_args = "height = \"600\" width = \"500\"")
 }
 
@@ -582,7 +598,7 @@ make_MCMC_comparison_pages <- function(comparisonResults, dir = '.', pageCompone
 }
 
 effectiveSizeStan <- function(x) {
-    if(!requireNamespace('rstan', quietly = TRUE)) stop('Problem loading rstan')
+    if(!require('rstan', quietly = TRUE)) stop('Problem loading rstan')
     x <- array(x, dim = c(length(x), 1, 1))
     ans <- rstan::monitor(x, warmup = 0, probs = numeric(), print = FALSE)
     ans

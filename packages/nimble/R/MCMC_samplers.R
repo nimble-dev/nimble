@@ -362,6 +362,7 @@ sampler_RW_block <- nimbleFunction(
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
             chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
