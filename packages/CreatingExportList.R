@@ -49,6 +49,7 @@ individualExportNames = c(
  'nimCopy',
   'nimPrint',
   'nimStop',
+  'nimSwitch',
  '`nfVar<-`',
  'OptimReadyFunction',
  'getValues', 
