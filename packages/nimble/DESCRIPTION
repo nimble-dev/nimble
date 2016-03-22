@@ -8,6 +8,7 @@ Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Ber
 Depends:  R (>= 3.1.2)
 Imports: methods,igraph,coda
 Suggests: testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
+URL: http://r-nimble.org
 License: BSD_3_clause + file LICENSE
 Note: For convenience, the package includes the necessary header files for the Eigen distribution.
    (This is all that is needed to use that functionality.) You can use an alternative installation
