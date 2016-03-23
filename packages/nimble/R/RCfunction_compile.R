@@ -181,7 +181,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            print('lapply(compileInfo$typeEnv, function(x) x$show())')
                                            lapply(compileInfo$typeEnv, function(x) x$show())
                                            writeLines('***** READY FOR setSizes *****')
-                                      browser()
+                                           browser()
                                        }
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
