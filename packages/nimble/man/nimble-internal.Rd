@@ -481,7 +481,6 @@
 \alias{makeNumericList}
 \alias{makeOffsetRexpr}
 \alias{makeOptimFunctionCallLine}
-\alias{makeParamInfo}
 \alias{makeRowName}
 \alias{makeSetCodeFromAccessorVector}
 \alias{makeSingleIndexAccessCodeNames}
@@ -654,6 +653,7 @@
 \alias{numericList}
 \alias{NumericListBase}
 \alias{operatorRank}
+\alias{operatorsAllowedBeforeIndexBracketsWithoutLifting}
 \alias{OptimFun_argDefs}
 \alias{OptimReadyFunction}
 \alias{optimReadyFun_setupCodeTemplate}
