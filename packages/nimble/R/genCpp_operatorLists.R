@@ -25,7 +25,7 @@ nonNativeEigenCalls <- c('logdet','sd','var','inprod')
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
-matrixSolveOperators <- c('solve','forwardsolve')
+matrixSolveOperators <- c('solve','forwardsolve','backsolve')
 matrixEigenOperators <- c('eigen')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')
@@ -122,7 +122,7 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
 eigOtherMemberFunctionCalls <- c('cwiseSqrt', 'cwiseAbs')
-eigCalls <- c('llt','matrixU','matrix','array')
+eigCalls <- c('llt','matrixU','matrix','array','solve','triangularView<Eigen::Upper>().solve','triangularView<Eigen::Lower>().solve')
 cppCasts = list(as.numeric = 'double',
     as.integer = 'int')
 

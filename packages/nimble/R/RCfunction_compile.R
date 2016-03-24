@@ -60,7 +60,12 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
                                                   setupSymbolTables()
                                               }
-                                          }))
+                                          },
+                                          printCode = function() {
+                                              writeCode(nimDeparse(compileInfo$nimExpr))
+                                          }
+                                      )
+                                      )
 
 RCfunction <- function(f, name = NA, returnCallable = TRUE) {
     if(is.na(name)) name <- rcFunLabelMaker()

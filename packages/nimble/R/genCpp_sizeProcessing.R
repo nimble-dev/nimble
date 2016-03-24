@@ -1219,9 +1219,9 @@ sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or f
     if(!any(a2$nDim == 1:2)) stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: second argument to a matrix solver must be a vector or matrix.'), call. = FALSE)
     code$type <- 'double'
     code$nDim <- a2$nDim  ## keep the same dimension as the 2nd argument
-    if(code$nDim == 1) { code$sizeExprs <- a1$sizeExprs[[1]]
+    if(code$nDim == 1) { code$sizeExprs <- c(a1$sizeExprs[[1]])
                      } else { code$sizeExprs <- c(a1$sizeExprs[[1]], a2$sizeExprs[[2]]) }
-    code$toEigenize <- 'no'
+    code$toEigenize <- 'yes'
     assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a1$sizeExprs[[2]]))
     assert1 <- identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], assertMessage)
     assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a2$sizeExprs[[1]]))
