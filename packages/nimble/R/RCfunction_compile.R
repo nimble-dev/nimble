@@ -170,6 +170,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        
                                        ## build intermediate variables
                                        exprClasses_buildInterms(compileInfo$nimExpr)
+
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
