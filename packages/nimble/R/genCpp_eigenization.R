@@ -348,8 +348,8 @@ eigenize_solve <- function(code, symTab, typeEnv, workEnv) {
     code$eigMatrix <- TRUE
     code$name <- switch(code$name,
                         solve = 'solve',
-                        forwardsolve = 'triangularView<Eigen::Upper>().solve',
-                        backsolve = 'triangularView<Eigen::Lower>().solve',
+                        forwardsolve = 'triangularView<Eigen::Lower>().solve',
+                        backsolve = 'triangularView<Eigen::Upper>().solve',
                         stop('should never get here')
                         )
     invisible(NULL)

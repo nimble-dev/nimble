@@ -122,7 +122,7 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
 eigOtherMemberFunctionCalls <- c('cwiseSqrt', 'cwiseAbs')
-eigCalls <- c('llt','matrixU','matrix','array','solve','triangularView<Eigen::Upper>().solve','triangularView<Eigen::Lower>().solve')
+eigCalls <- c('llt','matrixU','matrix','array','solve','triangularView<Eigen::Lower>().solve','triangularView<Eigen::Upper>().solve')
 cppCasts = list(as.numeric = 'double',
     as.integer = 'int')
 
