@@ -291,6 +291,16 @@ nimArray <- nimbleFunction(
         return(arr)
     },  where = getLoadingNamespace()
 )
+##
+identityMatrix <- nimbleFunction(
+    run = function(d = double()) {
+        declare(arr, double(2, c(d, d)))
+        for(i in 1:d)   for(j in 1:d)   arr[i, j] <- 0
+        for(i in 1:d)                   arr[i, i] <- 1
+        returnType(double(2))
+        return(arr)
+    },  where = getLoadingNamespace()
+)
 
 
 
