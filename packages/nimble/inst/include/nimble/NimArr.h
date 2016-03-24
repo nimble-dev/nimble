@@ -22,7 +22,7 @@ public:
   NimArr<1, T> &mapCopy(const NimArr<1, Tother> &other) {
     //   std::cout<<"In NimArr<1,T> mapCopy\n";
     if(size1 != other.size1) {
-      std::cout<<"Error in mapCopy.  Sizes don't match: "<<size1<<" != "<<other.size1<<"\n";
+      PRINTF("Error in mapCopy.  Sizes don't match: %i != %i \n", size1, other.size1);
     }
     typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset);
     typename vector<Tother>::iterator from = other.vPtr->begin() + other.offset;
@@ -132,7 +132,9 @@ public:
 
   template<class Tfrom>
     void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
-    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    if(NimArrBase<T>::isMap() || from->isMap()) {
+      PRINTF("Error, dynamicMapCopy is not set up for nested maps\n");
+    }
     NimArr<1, T> mapTo;
     mapTo.setMap(*this, offset, str, is);
     NimArr<1, Tfrom> mapFrom;
@@ -189,10 +191,10 @@ public:
   NimArr<2, T> &mapCopy(const NimArr<2, Tother> &other) {
     // std::cout<<"In NimArr<2, T> mapCopy\n";
     if(size1 != other.size1) {
-      std::cout<<"Error in mapCopy.  Sizes 1 don't match: "<<size1<<" != "<<other.size1<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 1 don't match: %i != %i \n", size1, other.size1);
     }
     if(size2 != other.size2) {
-      std::cout<<"Error in mapCopy.  Sizes 2 don't match: "<<size2<<" != "<<other.size2<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 2 don't match: %i != %i \n", size2, other.size2);
     }
 
     typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset);
@@ -316,7 +318,9 @@ public:
 
   template<class Tfrom>
     void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
-    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    if(NimArrBase<T>::isMap() || from->isMap()) {
+      PRINTF("Error, dynamicMapCopy is not set up for nested maps\n");
+    }
     NimArr<2, T> mapTo;
     mapTo.setMap(*this, offset, str, is);
     NimArr<2, Tfrom> mapFrom;
@@ -381,13 +385,13 @@ class NimArr<3, T> : public NimArrBase<T> {
   NimArr<3, T> &mapCopy(const NimArr<3, Tother> &other) {
     // std::cout<<"In NimArr<3, T> mapCopy\n";
     if(size1 != other.size1) {
-      std::cout<<"Error in mapCopy.  Sizes 1 don't match: "<<size1<<" != "<<other.size1<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 1 don't match: %i != %i \n", size1, other.size1);
     }
     if(size2 != other.size2) {
-      std::cout<<"Error in mapCopy.  Sizes 2 don't match: "<<size2<<" != "<<other.size2<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 2 don't match: %i != %i \n", size2, other.size2);
     }
     if(size3 != other.size3) {
-      std::cout<<"Error in mapCopy.  Sizes 3 don't match: "<<size3<<" != "<<other.size3<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 3 don't match: %i != %i \n", size3, other.size3);
     }
 
     typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset);
@@ -533,7 +537,9 @@ class NimArr<3, T> : public NimArrBase<T> {
 
   template<class Tfrom>
     void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
-    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    if(NimArrBase<T>::isMap() || from->isMap()) {
+      PRINTF("Error, dynamicMapCopy is not set up for nested maps\n");
+    }
     NimArr<3, T> mapTo;
     mapTo.setMap(*this, offset, str, is);
     NimArr<3, Tfrom> mapFrom;
@@ -608,16 +614,16 @@ class NimArr<4, T> : public NimArrBase<T> {
     NimArr<4, T> &mapCopy(const NimArr<4, Tother> &other) {
     // std::cout<<"In NimArr<3, T> mapCopy\n";
     if(size1 != other.size1) {
-      std::cout<<"Error in mapCopy.  Sizes 1 don't match: "<<size1<<" != "<<other.size1<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 1 don't match: %i != %i \n", size1, other.size1);
     }
     if(size2 != other.size2) {
-      std::cout<<"Error in mapCopy.  Sizes 2 don't match: "<<size2<<" != "<<other.size2<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 2 don't match: %i != %i \n", size2, other.size2);
     }
     if(size3 != other.size3) {
-      std::cout<<"Error in mapCopy.  Sizes 3 don't match: "<<size3<<" != "<<other.size3<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 3 don't match: %i != %i \n", size3, other.size3);
     }
     if(size4 != other.size4){
-      std::cout << "Error in mapCopy.  Sizes 4 don't match: "<<size4<<" != "<<other.size4<<"\n";
+      PRINTF("Error in mapCopy.  Sizes 4 don't match: %i != %i \n", size4, other.size4);
     }
     typename vector<T>::iterator to(NimArrBase<T>::vPtr->begin() + NimArrBase<T>::offset);
     typename vector<Tother>::iterator from = other.vPtr->begin() + other.offset;
@@ -785,7 +791,9 @@ class NimArr<4, T> : public NimArrBase<T> {
 
   template<class Tfrom>
     void dynamicMapCopy(int offset, vector<int> &str, vector<int> &is, NimArrBase<Tfrom> *from, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
-    if(NimArrBase<T>::isMap() || from->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+    if(NimArrBase<T>::isMap() || from->isMap()) {
+      PRINTF("Error, dynamicMapCopy is not set up for nested maps\n");
+    }
     NimArr<4, T> mapTo;
     mapTo.setMap(*this, offset, str, is);
     NimArr<4, Tfrom> mapFrom;
@@ -860,8 +868,8 @@ class VecNimArr : public VecNimArrBase<T>  {
   std::vector< NimArr<ndim, T> > values;
   NimArr<ndim, T> &operator[](unsigned int i) {
     if(i >= values.size()) {
-      std::cout<<"Error accessing a VecNimArr element: requested element "<<i<<" but values.size() is only "<<values.size()<<"\n";
-      std::cout<<"Returning the first element if possible to avoid a segfault crash\n";
+      PRINTF("Error accessing a VecNimArr element: requested element %i but values.size() is only %i\n", i, values.size());
+      PRINTF("Returning the first element if possible to avoid a segfault crash\n");
       return(values[0]);
     }
     return(values[i]);
@@ -1003,7 +1011,9 @@ template<class Tfrom, class Tto>
   void dynamicMapCopy(NimArrType *toNimArr, int toOffset, vector<int> &toStr, vector<int> &toIs, NimArrType *fromNimArr, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
   int mapDim = toStr.size();
   // must be the same as fromStr.sizes();
-  if(static_cast<NimArrBase<Tfrom> *>(fromNimArr)->isMap() || static_cast<NimArrBase<Tto> *>(toNimArr)->isMap()) std::cout<<"Error, dynamicMapCopy is not set up for nested maps\n";
+  if(static_cast<NimArrBase<Tfrom> *>(fromNimArr)->isMap() || static_cast<NimArrBase<Tto> *>(toNimArr)->isMap()) {
+    PRINTF("Error, dynamicMapCopy is not set up for nested maps\n");
+  }
   switch(mapDim) {
   case 1:
     dynamicMapCopyDim<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr, fromIs);
@@ -1018,7 +1028,7 @@ template<class Tfrom, class Tto>
     dynamicMapCopyDim<Tfrom, Tto, 4>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr, fromIs);
     break;
   default:
-    std::cout<<"Error in copying (dynamicMapCopy): more than 4 dimensions not supported yet\n";
+    PRINTF("Error in copying (dynamicMapCopy): more than 4 dimensions not supported yet\n");
   }
 }
 
@@ -1044,7 +1054,9 @@ template<class Tfrom, class Tto>
   void dynamicMapCopyFlatToDim(NimArrBase<Tto> *toNimArr, int toOffset, vector<int> &toStr, vector<int> &toIs, NimArrBase<Tfrom> *fromNimArr, int fromOffset, int fromStr) {
   int mapDim = toStr.size();
   // must be the same as fromStr.sizes();
-  if(toNimArr->isMap()) std::cout<<"Error, dynamicMapCopyFlatToDim is not set up for nested maps\n";
+  if(toNimArr->isMap()) {
+    PRINTF("Error, dynamicMapCopyFlatToDim is not set up for nested maps\n");
+  }
   switch(mapDim) {
   case 1:
     dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
@@ -1059,7 +1071,7 @@ template<class Tfrom, class Tto>
     dynamicMapCopyFlatToDimFixed<Tfrom, Tto, 4>(toNimArr, toOffset, toStr, toIs, fromNimArr, fromOffset, fromStr);
     break;
   default:
-    std::cout<<"Error in copying (dynamicMapCopyFlatToDim): more than 4 dimensions not supported yet\n";
+    PRINTF("Error in copying (dynamicMapCopyFlatToDim): more than 4 dimensions not supported yet\n");
   }
 }
 
@@ -1087,7 +1099,9 @@ template<class Tfrom, class Tto>
   void dynamicMapCopyDimToFlat(NimArrBase<Tto> *toNimArr, int toOffset, int toStr, NimArrBase<Tfrom> *fromNimArr, int fromOffset, vector<int> &fromStr, vector<int> &fromIs) {
   int mapDim = fromStr.size();
   // must be the same as fromStr.sizes();
-  if(fromNimArr->isMap()) std::cout<<"Error, dynamicMapCopyFlatToDim is not set up for nested maps\n";
+  if(fromNimArr->isMap()) {
+    PRINTF("Error, dynamicMapCopyFlatToDim is not set up for nested maps\n");
+  }
   switch(mapDim) {
   case 1:
     dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 1>(toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
@@ -1102,7 +1116,7 @@ template<class Tfrom, class Tto>
     dynamicMapCopyDimToFlatFixed<Tfrom, Tto, 4>(toNimArr, toOffset, toStr, fromNimArr, fromOffset, fromStr, fromIs);
     break;
   default:
-    std::cout<<"Error in copying (dynamicMapCopyDimToFlat): more than 4 dimensions not supported yet\n";
+    PRINTF("Error in copying (dynamicMapCopyDimToFlat): more than 4 dimensions not supported yet\n");
   }
 }
 
