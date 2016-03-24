@@ -398,7 +398,7 @@ spec <- configureMCMC(m)
 
 try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu1')[[1]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu1")))
 try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu2')[[1]]$name, is_identical_to('RW'), info = "incorrectly assigning conjugate sampler for mu2")))
-try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu3')[[1]]$name, is_identical_to('conjugate_dnorm'), info = "incorrectly not assigning conjugate sampler for mu3")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_that(spec$getSamplers('mu3')[[1]]$name, is_identical_to('conjugate_dnorm_dnorm'), info = "incorrectly not assigning conjugate sampler for mu3")))
    
 # test that truncation on discrete distribution correctly uses [L, U]
 # and test use with alias too

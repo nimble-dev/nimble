@@ -340,7 +340,6 @@
 \alias{getCharacterVectorValue}
 \alias{getCNumericListValue}
 \alias{getCRows}
-\alias{getDefinition}
 \alias{getDependencyPaths}
 \alias{getDistribution}
 \alias{getDistribution2}
