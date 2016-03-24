@@ -3,7 +3,7 @@ Title: Flexible BUGS-Compatible System for Hierarchical Statistical Modeling
     and Algorithm Development
 Description: Flexible application of algorithms to models specified in the BUGS language. Algorithms can be written in the NIMBLE language and made available to any model.
 Version: 0.5
-Maintainer: The NIMBLE Development Team <nimble.stats@gmail.com>
+Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu
 Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
 Depends:  R (>= 3.1.2)
 Imports: methods,igraph,coda
