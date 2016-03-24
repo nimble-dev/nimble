@@ -122,7 +122,7 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
 eigOtherMemberFunctionCalls <- c('cwiseSqrt', 'cwiseAbs')
-eigCalls <- c('llt', 'matrixU', 'matrix', 'array', 'eigen_solve', 'eigen_fs', 'eigen_bs')
+eigCalls <- c('llt', 'matrixU', 'matrix', 'array', 'eigen_chol', 'eigen_solve', 'eigen_fs', 'eigen_bs')
 cppCasts = list(as.numeric = 'double',
     as.integer = 'int')
 

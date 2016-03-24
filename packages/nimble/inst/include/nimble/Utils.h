@@ -91,6 +91,7 @@ using std::string;
 	return R_D__0;					\
    }
 
+#define eigen_chol        llt().matrixU
 #define eigen_solve(x)    lu().solve(x)
 #define eigen_fs(x)       triangularView<Eigen::Lower>().solve(x)
 #define eigen_bs(x)       triangularView<Eigen::Upper>().solve(x)
