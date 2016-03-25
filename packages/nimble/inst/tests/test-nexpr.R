@@ -2,7 +2,7 @@ library(nimble)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 
-context('Testing Eigen matrix operations and other numeric expressions')
+context('Testing general numeric expressions in the DSL')
 
 ## To add a test, add a character string in the 'tests' vector below.
 ## The first character of each string will be stripped, and gives the dimension of the result.
