@@ -1,26 +1,30 @@
+library(nimble)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-context('Testing Eigen matrix operations')
 
-## To add a new test: simply add a character string in the 'tests' vector below.
-## NOTE: if a character string in the 'tests' vector contains ' b ',
-## that is, a lower-case 'b' surrounded by two spaces, then this testing framework assumes
-## the return value of that test is 1-dimensional.  Otherwise, the return value is assumed
-## to be 2-dimensional.  Violating this convention will break this testing framework.
+context('Testing Eigen matrix operations and other numeric expressions')
+
+## To add a test, add a character string in the 'tests' vector below.
+## The first character of each string will be stripped, and gives the dimension of the result.
+## If there's an equal sign in the string, then the RHS gives the expected numeric result
+## (when evaluated in R).
+
 tests <- c(
-    'A %*% B', 'A %*% b', 't(b) %*% A',     ## note: this line all 2-dimensional
-    'chol(A)',
-    'forwardsolve(A, b )', 'forwardsolve(A, B)', 'forwardsolve(L, b )', 'forwardsolve(L, B)',
-       'backsolve(A, b )',    'backsolve(A, B)',    'backsolve(R, b )',    'backsolve(R, B)',
-           'solve(A, b )',        'solve(A, B)',        'solve(R, b )',        'solve(R, B)'
+    '2A %*% B', '2A %*% b', '2t(b) %*% A',
+    '2chol(A) = R',
+    '1forwardsolve(A, b)', '2forwardsolve(A, B)', '1forwardsolve(L, b)', '2forwardsolve(L, B)',
+       '1backsolve(A, b)',    '2backsolve(A, B)',    '1backsolve(R, b)',    '2backsolve(R, B)',
+           '1solve(A, b)',        '2solve(A, B)',        '1solve(R, b)',        '2solve(R, B)',
+    '2forwardsolve(A, B)*2 - chol(A)',  '2inverse(A) + chol(inverse(A))'
 )
 
-testNames <- as.character(sapply(tests, nimble:::Rname2CppName))
-
-## (NOTE) that assumption is used on this next line:
-testDims <- sapply(grepl(' b ', tests), function(x) if(x) 1 else 2)
-
-methods <- mapply(function(test, dim) eval(substitute(function() { ans <- TEST; returnType(double(DIM)); return(ans) }, list(TEST = parse(text=test)[[1]], DIM = dim))), tests, testDims)
+testDims <- as.numeric(substring(tests, 1, 1))
+testsWithoutDim <- substring(tests, 2)
+testsSplitOnEqual <- strsplit(testsWithoutDim, '=')
+testExprs <- sapply(testsSplitOnEqual, function(x) x[1])
+testNames <- as.character(sapply(testExprs, nimble:::Rname2CppName))
+ansExprs <- sapply(testsSplitOnEqual, function(x) if(length(x)>1) x[2] else NA)
+methods <- mapply(function(test, dim) eval(substitute(function() { ans <- TEST; returnType(double(DIM)); return(ans) }, list(TEST = parse(text=test)[[1]], DIM = dim))), testExprs, testDims)
 names(methods) <- testNames
 
 n <- 4
@@ -42,7 +46,7 @@ Rnf <- nfDef(A, R, L, B, b)
 
 Cnf <- compileNimble(Rnf)
 
-testOneCase <- function(test, testName, Rnf, Cnf) {
+testOneCase <- function(test, testName, ans, Rnf, Cnf) {
     Rans <- eval(parse(text=test)[[1]])
     Rnfans <- eval(substitute(Rnf$TEST(), list(TEST=as.name(testName))))
     Cnfans <- eval(substitute(Cnf$TEST(), list(TEST=as.name(testName))))
@@ -50,13 +54,19 @@ testOneCase <- function(test, testName, Rnf, Cnf) {
     if(dif > 1E-15) return(1)
     dif <- max(abs(Rans - Cnfans))
     if(dif > 1E-15) return(1)
+    if(!is.na(ans)) {
+        theans <- eval(parse(text=ans)[[1]])
+        dif <- max(abs(Rans - theans))
+        if(dif > 1E-15) return(1)
+    }
     return(0)
 }
 
 for(i in seq_along(tests)) {
-    test <- tests[i]
+    test <- testExprs[i]
     testName <- testNames[i]
-    testResult <- testOneCase(test, testName, Rnf, Cnf)
+    ans <- ansExprs[i]
+    testResult <- testOneCase(test, testName, ans, Rnf, Cnf)
     ##if(testResult != 0) message('failed test: ', test)
     test_that(test, expect_equal(testResult, 0))
 }
