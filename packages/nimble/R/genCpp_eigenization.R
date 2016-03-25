@@ -90,10 +90,10 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
     makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
     ## matrix ops
-    makeCallList(matrixSolveOperators, 'eigenize_solve'),
+    makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     list('t' = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
-         'chol' = 'eigenize_solve')
+         'chol' = 'eigenize_matrixOps')
 )
 
 eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
@@ -334,7 +334,7 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs
 }
 
-eigenize_solve <- function(code, symTab, typeEnv, workEnv) {
+eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
     if(length(code$args) == 2)
         if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
