@@ -608,7 +608,7 @@ configureMCMC <- function(model, nodes, control = list(),
     if(missing(nodes))        nodes <- character()
     if(missing(monitors))     monitors <- NULL
 
-    if(autoBlock) return(autoBlock(model, ...)$spec)
+    if(autoBlock) return(autoBlock(model, ...)$conf)
     
     thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
