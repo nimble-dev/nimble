@@ -69,7 +69,6 @@ nf_getSetupOutputNames <- function(f, hidden = FALSE) {
     stop('invalid nimbleFunction argument\n')
 }
 
-#' @export
 #'
 #' Get nimbleFunction definition
 #'
@@ -77,6 +76,7 @@ nf_getSetupOutputNames <- function(f, hidden = FALSE) {
 #'
 #' @param nf A nimbleFunction generator, or a compiled or un-compiled specialized nimbleFunction.
 #'
+#' @export
 #' @author Daniel Turek
 getDefinition <- function(nf) {
     nfGen <- nf_getGeneratorFunction(nf)

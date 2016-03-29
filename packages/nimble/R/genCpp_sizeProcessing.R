@@ -1,5 +1,5 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
-
+operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
                makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
@@ -872,16 +872,16 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         code$sizeExprs <- list() ## it was a named, list.  this creates consistency. maybe unnecessary
         ##needMap will be FALSE if we are in this clause
         if(!code$args[[1]]$isName)
-            if(code$args[[1]]$name != 'map')
-                if(code$args[[1]]$name != 'dim') 
-                    if(code$args[[1]]$name != 'mvAccessRow'){
-                        ## At this point we have decided to lift, and the next two if()s determine if that is weird due to being on LHS of assignment
-                        if(code$caller$name %in% assignmentOperators)
-                            if(code$callerArgID == 1)
-                                stop(exprClassProcessingErrorMsg(code, 'There is a problem on the left-hand side of an assignment'), call. = FALSE)
-
-                        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-                    }
+##            if(code$args[[1]]$name != 'map')
+  ##              if(code$args[[1]]$name != 'dim') 
+            if(!(code$args[[1]]$name %in% operatorsAllowedBeforeIndexBracketsWithoutLifting)) {## 'mvAccessRow'){
+                ## At this point we have decided to lift, and the next two if()s determine if that is weird due to being on LHS of assignment
+                if(code$caller$name %in% assignmentOperators)
+                    if(code$callerArgID == 1)
+                        stop(exprClassProcessingErrorMsg(code, 'There is a problem on the left-hand side of an assignment'), call. = FALSE)
+                
+                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+            }
     }
     
     code$toEigenize <- 'maybe'

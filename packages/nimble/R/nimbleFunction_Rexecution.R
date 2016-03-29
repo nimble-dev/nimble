@@ -46,7 +46,18 @@ asCol <- function(x) {
     matrix(x, ncol = 1)
 }
 
+#' Make an object of information about a model-parameter pairing for getParam.  Used internally
+#'
+#' Creates a simple getParam_info object, which has a list with a paramID and a type
+#'
+#' @param model A model such as returned by \link{nimbleModel}.
+#'
+#' @param node A character string naming a stochastic node, such as "mu", "beta[2]", or "eta[1:3, 2]"
+#'
+#' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
+#'
 #' @export
+#' @details This is used internally by \link{getParam}.  It is not intended for direct use by a user or even a nimbleFunction programmer. 
 makeParamInfo <- function(model, node, param) {
     distInfo <- getDistribution(model$getNodeDistribution(node))
     ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
