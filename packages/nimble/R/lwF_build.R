@@ -286,9 +286,10 @@ LWparFunc <- nimbleFunction(
         varMat <- varMat + wts[i]*((pars[,i]-wMean)%*%t(pars[,i]-wMean))
       varMat <- hsq*varMat
       if(length(varMat)==1)
-        varMat[1,1] <- sd(varMat[1,1])
+        varMat[1,1] <- sqrt(varMat[1,1])
       else
         varMat <- chol(varMat)
+      
       return(varMat)
     }
   ), where = getLoadingNamespace() 
@@ -375,6 +376,11 @@ buildLWF <- nimbleFunction(
     if(!all(params%in%model$getNodeNames(stochOnly=T)))
       stop('parameters must be stochastic nodes')
     
+    pardimcheck <- sapply(paramVars, function(n){
+      if(length(nimDim(model[[n]]))>1)
+        stop("Liu and West filter doesn't work for matrix valued top level parameters")
+    })
+    
     latentVars <- model$getVarNames(nodes = nodes)
     paramVars <-  model$getVarNames(nodes =  params)  # need var names too
     if(!saveAll) smoothing <- FALSE
@@ -400,7 +406,7 @@ buildLWF <- nimbleFunction(
       
       names <- c(names, "wts")
       type <- c(type, "double")
-      size$wts <- length(dims)
+      
       mvWSamp  <- modelValues(modelValuesSpec(vars = names,
                                               type = type,
                                               size = size))
@@ -426,6 +432,9 @@ buildLWF <- nimbleFunction(
                                               size = size))
     }
   
+    
+  
+    
     names <- names[1]
     varSymbolObjects = model$getSymbolTable()$getSymbolObjects()[paramVars]
     paramVarDims <- unlist(lapply(varSymbolObjects, function(x){

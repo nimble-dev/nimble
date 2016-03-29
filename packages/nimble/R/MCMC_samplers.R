@@ -698,12 +698,6 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
   methods = list(
     
     generateProposalVector = function() {
-      ##declare(origValueVector, double(1, d))
-      ##origValueVector <- values(model, target)
-      ##declare(normalVarVector, double(1, d))
-      ##for(i in 1:d)     {   normalVarVector[i] <- rnorm(1, 0, 1)   }
-      ##propValueMatrix <- asRow(origValueVector) + asRow(normalVarVector) %*% chol_propCov * scale
-      ##propValueVector <- propValueMatrix[1, ]
       propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
       returnType(double(1))
       return(propValueVector)
@@ -760,16 +754,196 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
 
 
 #######################################################################################  
-### RW_PFilter, does a block RW, but using a particle filter likelihood function ###@@
+### RW_PFilter, does a univariate RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
-
-### 2. add in option to sample latent states - could work by adding monitor
-### for x and then setting model[[x]] as a weighted draw from xs produced by 
-### particle filter with smoothing = T
-### 3. particle number optimization uses procedure from pitt et al., 2011, 
-### "On some properties of Markov chain Monte Carlo simulation methods based on the particle filter"
 sampler_RW_PFilter <- nimbleFunction(
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    ###  control list extraction  ###
+    adaptive       <- control$adaptive
+    adaptInterval  <- control$adaptInterval
+    scale          <- control$scale
+    m              <- control$m
+    latents        <- control$latents
+    resamp         <- control$resamp
+    filterType     <- control$filterType
+    lookahead      <- control$lookahead
+    optimizeM      <- as.integer(control$optimizeM)
+
+    if(optimizeM){
+      m <- 3000  
+    }
+    
+    nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
+    mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
+    storeLLVar <- modelValues(modelValuesSpec(vars = c('LLVar'),
+                                              type = c('double'),
+                                              size = list(LLVar = 1)
+    ))
+    
+    latentSamp <- 0
+    latentDep <- model$getDependencies(latents)
+    topParams <- model$getNodeNames(stochOnly=T, includeData=F,
+                                    topOnly=T)
+    target <- model$expandNodeNames(target)
+    if(!all(target%in%topParams)){
+      if(!all(target[!(target%in%topParams)] %in% model$expandNodeNames(latents))){
+        stop("PMCMC target can only consist of top level parameters and/or latent states")
+      }
+      else{
+        latentTarget <- target[!(target%in%topParams)]
+        latentSamp <- 1
+        target <- target[!(target%in%latentTarget)]
+      }
+    }
+    
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    if(length(targetAsScalar) > 1)     stop('more than one top-level target; cannot use RW_PFilter sampler, try RW_PFilter_block sampler')
+    d <- length(targetAsScalar) 
+    
+    ###  node list generation  ###  
+    calcNodes <- model$getDependencies(target)
+    scaleHistory          <- c(0, 0)
+    acceptanceRateHistory <- c(0, 0)
+    ###  numeric value generation  ###
+    scaleOriginal <- scale
+    timesRan      <- 0
+    timesAccepted <- 0
+    timesAdapted  <- 0
+    prevLL        <- 0
+    nVarEsts      <- 0 
+    itCount       <- 0
+    ## variables previously inside of nested functions:
+    optimalAR <- 0.44
+    gamma1    <- 0
+
+    ###  create a mv object which stores LP from previous iteration
+    storeLP <- modelValues(modelValuesSpec(vars = c('LP0'),
+                                           type = c('double'),
+                                           size = list(LP0 = 1)
+    ))
+    
+    ###  nested function and function list definitions  ###
+    my_setAndCalculate <- setAndCalculate(model, target)
+    my_calcAdaptationFactor <- calcAdaptationFactor(d)
+    my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+    
+    if(filterType == "auxiliary"){
+      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = T, smoothing = T,
+                                                                    lookahead = lookahead))
+    }
+    else if(filterType == "bootstrap"){
+      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = T, smoothing = T))
+    }
+    else{
+      stop("filter type must be either bootstrap or auxiliary")
+    }
+    particleMV <- my_particleFilter$mvEWSamp
+  },
+    
+  run = function() {
+    if(resamp){
+      modelLP0 <- my_particleFilter$run(m)
+      modelLP0 <- modelLP0 + getLogProb(model, target)
+    }
+    else{
+      if(is.nan(storeLP['LP0',1][1])){
+        modelLP0 <- my_particleFilter$run(m)
+        storeLP['LP0',1][1] <<- modelLP0 + getLogProb(model, target)
+      }
+      modelLP0 <- storeLP['LP0',1][1]
+    }
+    propValue <- rnorm(1, mean = model[[target]], sd = scale)
+    model[[target]] <<- propValue
+    modelLP1 <- my_particleFilter$run(m)
+    modelLP1 <- modelLP1 + getLogProb(model, target)
+    jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
+    
+    if(jump & latentSamp){ 
+      ## if we jump, randomly sample latent nodes from pf output and put 
+      ## into model so that they can be monitored
+      index <- ceiling(runif(1, 0, m))
+      copy(particleMV, model, latents, latents, index)
+      calculate(model, latentDep)
+      copy(from = model, to = mvSaved, nodes = latentDep, row = 1, logProb = TRUE)
+    }
+    else if(!jump & latentSamp){
+      ## if we don't jump, replace model latent nodes with saved latent nodes
+      copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
+    }
+    if(jump & resamp)  storeLP['LP0',1][1] <<- modelLP1
+    if(jump & optimizeM) optimM()
+    if(adaptive)     adaptiveProcedure(jump)
+  },
+  
+  methods = list(
+    
+    optimM = function(){
+      tempM <- 15000
+      declare(LLEst, double(1, nVarReps))
+      if(nVarEsts < mBurnIn){  # checks whether we have enough var estimates to get good approximation
+        for(i in 1:nVarReps){  
+          LLEst[i] <- my_particleFilter$run(tempM)
+        }
+        ## next, store average of var estimates 
+        if(nVarEsts == 1)
+          storeLLVar['LLVar',1][1] <<- var(LLEst)/mBurnIn
+        else{
+          LLVar <- storeLLVar['LLVar',1][1]
+          LLVar <- LLVar + var(LLEst)/mBurnIn
+          storeLLVar['LLVar',1][1] <<- LLVar
+        }
+        nVarEsts <<- nVarEsts + 1
+      }
+      else{  # once enough var estimates have been taken, use their average to compute m
+        m <<- m*storeLLVar['LLVar',1][1]/(0.92^2)
+        m <<- ceiling(m)
+        if(!resamp){  #reset LL with new m value after burn-in period
+          modelLP0 <- my_particleFilter$run(m)
+          storeLP['LP0',1][1] <<- modelLP0 + getLogProb(model, target)
+        }
+        optimizeM <<- 0
+      }
+    },
+    
+    adaptiveProcedure = function(jump = logical()) {
+      timesRan <<- timesRan + 1
+      if(jump)     timesAccepted <<- timesAccepted + 1
+      if(timesRan %% adaptInterval == 0) {
+        acceptanceRate <- timesAccepted / timesRan
+        timesAdapted <<- timesAdapted + 1
+        setSize(scaleHistory,          timesAdapted)
+        setSize(acceptanceRateHistory, timesAdapted)
+        scaleHistory[timesAdapted] <<- scale
+        acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+        gamma1 <<- 1/((timesAdapted + 3)^0.8)
+        gamma2 <- 10 * gamma1
+        adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+        scale <<- scale * adaptFactor
+        timesRan <<- 0
+        timesAccepted <<- 0
+      }
+    },
+    
+    reset = function() {
+      scale <<- scaleOriginal
+      timesRan      <<- 0
+      timesAccepted <<- 0
+      timesAdapted  <<- 0
+      scaleHistory          <<- scaleHistory          * 0
+      acceptanceRateHistory <<- acceptanceRateHistory * 0
+      gamma1 <<- 0
+    }
+  ), where = getLoadingNamespace()
+)
+
+
+#######################################################################################  
+### RW_PFilter_block, does a block RW, but using a particle filter likelihood function ###@@
+#######################################################################################
+
+sampler_RW_PFilter_block <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
     ###  control list extraction  ###
@@ -788,8 +962,6 @@ sampler_RW_PFilter <- nimbleFunction(
     if(optimizeM){
       m <- 3000  
     }
-
-    
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
     mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
     storeLLVar <- modelValues(modelValuesSpec(vars = c('LLVar'),
@@ -801,25 +973,23 @@ sampler_RW_PFilter <- nimbleFunction(
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=T, includeData=F,
                                     topOnly=T)
+    target <- model$expandNodeNames(target)
     if(!all(target%in%topParams)){
-      if(!all(model$expandNodeNames(target[!(target%in%topParams)]) %in% model$expandNodeNames(latents))){
-      stop("PMCMC target can only consist of top level parameters and/or latent states")
+      if(!all(target[!(target%in%topParams)] %in% model$expandNodeNames(latents))){
+        stop("PMCMC target can only consist of top level parameters and/or latent states")
       }
       else{
-        latentTarget <- target[!(target%in%model$getNodeNames(stochOnly=T, includeData=F,
-                                                topOnly=T))]
+        latentTarget <- target[!(target%in%topParams)]
         latentSamp <- 1
-        target <- target[!(target%in% latentTarget)]
+        target <- target[!(target%in%latentTarget)]
       }
     }
-
     
-    ###  node list generation  ###
-    
+    ###  node list generation  ### 
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    
-    
+    if(length(targetAsScalar) < 2)     stop('less than two top-level targets; cannot use RW_PFilter_block sampler, try RW_PFilter sampler')
     calcNodes <- model$getDependencies(target)
+    
     ###  numeric value generation  ###
     scaleOriginal <- scale
     timesRan      <- 0
@@ -828,7 +998,6 @@ sampler_RW_PFilter <- nimbleFunction(
     prevLL        <- 0
     nVarEsts      <- 0 
     itCount       <- 0
-    
     scaleHistory          <- c(0, 0)
     acceptanceRateHistory <- c(0, 0)
     d <- length(targetAsScalar)
@@ -897,6 +1066,7 @@ sampler_RW_PFilter <- nimbleFunction(
     if(jump & resamp)  storeLP['LP0',1][1] <<- modelLP1
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
+    
   },
   
   methods = list(
@@ -1087,9 +1257,24 @@ sampler_RW_PFilter <- nimbleFunction(
 #' \cr
 #' @section RW_PFilter sampler
 #' 
-#' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  A bootstrap filter is used to integrate over latent states.
+#' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PFilter sampler uses a Metropolis Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'  \cr
 #' The RW_PFilter sampler accepts the following control list elements: \cr
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
+#' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
+#' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
+#' \item resamp.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
+#' }
+#' \cr
+#' #' @section RW_PFilter_block sampler
+
+#' #' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PFilter_block sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#'  \cr
+#' The RW_PFilter_block sampler accepts the following control list elements: \cr
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
