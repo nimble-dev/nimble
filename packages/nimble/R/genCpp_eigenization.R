@@ -93,7 +93,9 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     list('t' = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
-         'chol' = 'eigenize_matrixOps')
+         'chol' = 'eigenize_chol'
+         ##'chol' = 'eigenize_matrixOps'
+         )
 )
 
 eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
@@ -334,13 +336,21 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs
 }
 
+eigenize_chol <- function(code, symTab, typeEnv, workEnv) {
+    if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
+    code$eigMatrix <- TRUE
+    code$name <- 'matrixU' ## replace 'chol' by 'matrixU'
+    insertExprClassLayer(code, 1, 'llt', eigMatrix = TRUE, nDim = code$nDim, sizeExprs = code$sizeExprs, type = code$type) ## insert llt 
+    invisible(NULL)
+}
+
 eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
     if(length(code$args) == 2)
         if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
     code$eigMatrix <- TRUE
     code$name <- switch(code$name,
-                        chol = 'eigen_chol',          # 'llt().matrixU,
+                        ##chol = 'eigen_chol',          # 'llt().matrixU,
                         solve = 'eigen_solve',        # 'lu().solve',
                         forwardsolve = 'eigen_fs',    # 'triangularView<Eigen::Lower>().solve',
                         backsolve = 'eigen_bs',       # 'triangularView<Eigen::Upper>().solve',

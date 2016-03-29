@@ -1059,7 +1059,7 @@ sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
     }
     if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeUnaryCwiseSquare called with argument that is not a matrix.'), call. = FALSE)
     if(!identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]])) {
-        asserts <- identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], paste0("Run-time size error: expected ", nimDeparse(a1), " to be square.") )
+        asserts <- c(asserts, identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], paste0("Run-time size error: expected ", nimDeparse(a1), " to be square.") ))
         if(is.integer(a1$sizeExprs[[1]])) {
             newSize <- a1$sizeExprs[[1]]
         } else {
@@ -1070,7 +1070,6 @@ sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
             }
         }
     } else {
-        asserts <- NULL
         newSize <- a1$sizeExprs[[1]]
     }
     code$nDim <- 2
@@ -1226,7 +1225,8 @@ sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or f
     assert1 <- identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], assertMessage)
     assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[1]]), " == ", deparse(a2$sizeExprs[[1]]))
     assert2 <- identityAssert(a1$sizeExprs[[1]], a2$sizeExprs[[1]], assertMessage)
-    return(c(asserts, assert1, assert2))
+    asserts <- c(asserts, assert1, assert2)
+    return(asserts)
 }
 
 ## deprecated and will be removed
