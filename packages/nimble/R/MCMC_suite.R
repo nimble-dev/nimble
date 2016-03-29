@@ -404,7 +404,7 @@ MCMCsuiteClass <- setRefClass(
 
         run_stan = function(dataFile, initFile) {
             if(setSeed) set.seed(0)
-            if(require('rstan', quietly = TRUE)) {
+            if(requireNamespace('rstan', quietly = TRUE)) {
                 if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
                 ##            dataFile <- gsub('stan$', 'data.R', stan_model)
                 ##            initFile <- gsub('stan$', 'init.R', stan_model)
