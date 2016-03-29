@@ -122,15 +122,14 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
 eigOtherMemberFunctionCalls <- c('cwiseSqrt', 'cwiseAbs')
-eigCalls <- c('llt', 'matrixU', 'matrix', 'array')
-##eigCalls <- c(matrix', 'array', 'eigen_chol')
+eigCalls <- c('matrix', 'array')
 cppCasts = list(as.numeric = 'double', as.integer = 'int')
 
 ##http://en.cppreference.com/w/cpp/language/operator_precedence
 
 ## Used to decide when to put parentheses around LHS or RHS based on operator precendence.
 operatorRank <- c(
-    list('<-' = 100, '^' = 4, llt = 3),
+    list('<-' = 100, '^' = 4),
     makeCallList(c('*','/','%*%', '%%'), 5),
     makeCallList(c('+', '-'), 6),
     makeCallList(c('>','<','<=', '>='), 7),

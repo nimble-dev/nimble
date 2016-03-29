@@ -341,10 +341,10 @@ eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
         if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
     code$eigMatrix <- TRUE
     code$name <- switch(code$name,
-                        chol = 'eigen_chol',          # 'llt().matrixU,
-                        solve = 'eigen_solve',        # 'lu().solve',
-                        forwardsolve = 'eigen_fs',    # 'triangularView<Eigen::Lower>().solve',
-                        backsolve = 'eigen_bs',       # 'triangularView<Eigen::Upper>().solve',
+                        chol = 'eigen_chol',
+                        solve = 'eigen_solve',
+                        forwardsolve = 'eigen_fs',
+                        backsolve = 'eigen_bs',
                         stop('should never get here')
                         )
     invisible(NULL)
