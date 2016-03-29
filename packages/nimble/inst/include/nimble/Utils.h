@@ -92,9 +92,9 @@ using std::string;
    }
 
 //#define eigen_chol        llt().matrixU
-#define eigen_solve(x)    lu().solve(x)
-#define eigen_fs(x)       triangularView<Eigen::Lower>().solve(x)
-#define eigen_bs(x)       triangularView<Eigen::Upper>().solve(x)
+#define eigen_solve(x,y)    x.lu().solve(y)
+#define eigen_fs(x,y)       x.triangularView<Eigen::Lower>().solve(y)
+#define eigen_bs(x,y)       x.triangularView<Eigen::Upper>().solve(y)
 
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
