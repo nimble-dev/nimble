@@ -598,7 +598,7 @@ make_MCMC_comparison_pages <- function(comparisonResults, dir = '.', pageCompone
 }
 
 effectiveSizeStan <- function(x) {
-    if(!requireNamespace('rstan', quietly = TRUE)) stop('Problem loading rstan')
+    if(!require('rstan', quietly = TRUE)) stop('Problem loading rstan')
     x <- array(x, dim = c(length(x), 1, 1))
     ans <- rstan::monitor(x, warmup = 0, probs = numeric(), print = FALSE)
     ans
