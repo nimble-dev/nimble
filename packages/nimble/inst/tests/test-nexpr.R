@@ -1,7 +1,6 @@
 library(nimble)
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-
 context('Testing general numeric expressions in the DSL')
 
 ## To add a test, add a character string in the 'tests' vector below.
