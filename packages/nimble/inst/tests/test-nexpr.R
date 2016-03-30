@@ -5,8 +5,7 @@ context('Testing general numeric expressions in the DSL')
 
 ## To add a test, add a character string in the 'tests' vector below.
 ## The first character of each string will be stripped, and gives the dimension of the result.
-## If there's an equal sign in the string, then the RHS gives the expected numeric result
-## (when evaluated in R).
+## If there's an equal sign in the string, then the RHS gives the expected numeric result.
 
 tests <- c(
     ## matrix-multiplication
