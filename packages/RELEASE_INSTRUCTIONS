@@ -16,12 +16,25 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
 This also should work:
+
 for file in `ls nimble/man`; do
     if [ -e /tmp/tmp.Rd ]; then
        rm -rf /tmp/tmp.Rd
     fi
      /bin/cp -i nimble/man/$file /tmp/tmp.Rd 
      sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
+done
+
+
+R CMD build nimble
+R CMD check --as-cran nimble_${VERSION}.tar.gz
+# officially this should be done on a development build of R, such as in a BCE or docker instance; for Chris, easiest to do via installing R-devel on SCF
+
+run tests:
+in particular check exact results vs previous versions (ignore differences in compilation log info)
+types="compareMCMCs copy declare dsl_dists getparam math mcmc models size trunc user"
+for type in $types; do
+Rscript -e "library(nimble); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v0.5
 done
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
@@ -45,7 +58,8 @@ update NEWS info on webpage as high-level summary of NEWS in package
 
 update version numbering on license and citation page
 
-rebuild and post manual
+rebuild and post manual and put new version of manual in inst/doc
+git tag the manual repository
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 

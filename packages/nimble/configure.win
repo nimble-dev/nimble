@@ -4,6 +4,9 @@ cp inst/CppCode/*.cpp src
 
 mv inst/Eigen_local inst/include/Eigen
 
+if test -r src/Makevars.win ; then
+    mv src/Makevars.win src/Makevars
+fi
 
 echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"
 #export BOB="$R_PACKAGE_DIR"

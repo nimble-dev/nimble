@@ -6,6 +6,7 @@
 #' Density and random generation for the Wishart distribution, using the Cholesky factor of either the scale matrix or the rate matrix.
 #'
 #' @name Wishart
+#' @aliases wishart
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -47,6 +48,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' Density and random generation for the Dirichlet distribution
 #'
 #' @name Dirichlet
+#' @aliases dirichlet
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
