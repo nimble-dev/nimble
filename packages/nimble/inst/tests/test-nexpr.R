@@ -10,11 +10,16 @@ context('Testing general numeric expressions in the DSL')
 ## (when evaluated in R).
 
 tests <- c(
+    ## matrix-multiplication
     '2A %*% B', '2A %*% b', '2t(b) %*% A',
+    ## chol(), including non-symmetric argument cases
     '2chol(A) = R',        '2chol(A + A)',        '2chol(A + L + t(L))', '2chol(3*A + L + t(L))',
+    '2chol(A + L)',        '2chol(5*A - 2*L)',   ## non-symmetric
+    ## forwardsolve(), backsolve(), solve()
     '1forwardsolve(A, b)', '2forwardsolve(A, B)', '1forwardsolve(L, b)', '2forwardsolve(L, B)',
        '1backsolve(A, b)',    '2backsolve(A, B)',    '1backsolve(R, b)',    '2backsolve(R, B)',
            '1solve(A, b)',        '2solve(A, B)',        '1solve(R, b)',        '2solve(R, B)',
+    ## grab-bag
     '2forwardsolve(A, B)*2 - chol(A)',  '2inverse(A) + chol(inverse(A))'
 )
 
