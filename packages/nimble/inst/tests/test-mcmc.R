@@ -474,12 +474,12 @@ if(FALSE) {
     scale <- nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
     propCov * scale^2
     
-nfVar(Cmcmc, 'samplerFunctions')[[1]]$scaleHistory
-nfVar(Cmcmc, 'samplerFunctions')[[1]]$acceptanceRateHistory
-nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
-nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
-# why is the proposal cov w/ .99 cross-corrs?
-# also MCMC in C takes a surprisingly long time - this might be threaded lin alg behaving badly on small matrices
+    nfVar(Cmcmc, 'samplerFunctions')[[1]]$scaleHistory
+    nfVar(Cmcmc, 'samplerFunctions')[[1]]$acceptanceRateHistory
+    nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
+    nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
+    ## why is the proposal cov w/ .99 cross-corrs?
+    ## also MCMC in C takes a surprisingly long time - this might be threaded lin alg behaving badly on small matrices
 }
 
 ### DT's model
