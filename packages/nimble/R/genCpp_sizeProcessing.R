@@ -1214,7 +1214,8 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
     if(is.null(newAssert))
         return(asserts)
     else
-        return(c(list(identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)), asserts))
+        return(c(asserts, list(newAssert)))
+     ##   return(c(list(identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)), asserts))
 }
 
 sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or forwardsolve(A, b). For inverse, use inverse(A), not solve(A)
