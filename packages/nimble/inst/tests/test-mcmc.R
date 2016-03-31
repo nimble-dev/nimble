@@ -592,7 +592,7 @@ data <- list(y=y)
 inits <- list(x=x)
 Rmodel <- nimbleModel(code, constants, data, inits)
 spec <- configureMCMC(Rmodel)
-spec$getSamplers()
+##spec$getSamplers()
 Rmcmc <- buildMCMC(spec)
 
 Cmodel <- compileNimble(Rmodel)
