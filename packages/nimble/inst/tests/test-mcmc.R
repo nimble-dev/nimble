@@ -583,9 +583,9 @@ code <- nimbleCode({
     for(i in 1:4)
         mu_y[i,1:5] <- asCol(a[i,1:5]) + B[i,1:5,1:5] %*% asCol(x[i,1:5])
     y[1,1:5] ~ dmnorm(mu_y[1,1:5], prec = M_y[1,1:5,1:5])
-    y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov  = M_y[1,1:5,1:5])
-    y[3,1:5] ~ dmnorm(mu_y[3,1:5], prec = M_y[1,1:5,1:5])
-    y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov  = M_y[1,1:5,1:5])
+    y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov  = M_y[2,1:5,1:5])
+    y[3,1:5] ~ dmnorm(mu_y[3,1:5], prec = M_y[3,1:5,1:5])
+    y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov  = M_y[4,1:5,1:5])
 })
 constants <- list(mu0=mu0, ident=ident, a=a, B=B, M_y=M_y)
 data <- list(y=y)
@@ -605,10 +605,17 @@ set.seed(0)
 Cmcmc$run(10)
 Csamples <- as.matrix(Cmcmc$mvSamples)
 
-test_that('expected R sample', expect_equal(as.numeric(Rsamples[10,]), c(-0.664261208, 0.099154542, -0.130795851, 0.629849462, -0.084328505, 0.880630509, 0.017773682, -0.605118180, -0.093222868, -1.723684791, 0.077596514, 0.411975546, 0.478154095, 0.002361055, -0.025174649, -0.069951619, 0.420233580, 1.225317108, 0.043035066, 0.271698043)))
+test_that('expected R sample', expect_equal(as.numeric(Rsamples[10,]), c(-0.664261208, 0.034887337, -0.109995108, 1.346972653, -0.084328505, 0.641090632, 0.043589202, -0.892874168, -0.093222868, -1.403563604, 0.026331880, 0.175576456, 0.478154095, -0.067907215, -0.001062447, -0.266442713, 0.420233580, 1.197230464, 0.019829570, -0.191506476)))
 
 dif <- as.numeric(Rsamples - Csamples)
 test_that('R and C equiv', expect_less_than(max(abs(dif)), 1E-15))
+
+Cmcmc$run(10000)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+as.numeric(apply(Csamples, 2, mean))
+
+
+
 
 
 ### scalar RW updates in place of conjugate mv update
