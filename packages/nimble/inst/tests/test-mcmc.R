@@ -557,12 +557,6 @@ test_mcmc(model = code, name = 'two-level multivariate normal', data = data, see
 ## using both cov and prec parametrizaions of MVN,
 ## and various linear links
 
-library(nimble)
-library(testthat)
-warning('************************** REMOVE THESE LINES **********************')
-source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
-context("Testing of default MCMC")
-
 set.seed(0)
 prior_mean <- rep(0,5)
 tmp <- array(rnorm(25), c(5,5))
@@ -624,17 +618,13 @@ y_prec[1,,] <-       M_y[1,,]
 y_prec[2,,] <- solve(M_y[2,,])
 y_prec[3,,] <-       M_y[3,,]
 y_prec[4,,] <- solve(M_y[4,,])
-
 contribution_mean <- array(NA, c(4,5))
 for(i in 1:4)   contribution_mean[i,] <- t(B[i,,]) %*% y_prec[i,,] %*% (y[i,] - a[i,])
-
 contribution_prec <- array(NA, c(4,5,5))
 for(i in 1:4)   contribution_prec[i,,] <- t(B[i,,]) %*% y_prec[i,,] %*% B[i,,]
-
 prior_prec <- solve(prior_cov)
 post_prec <- prior_prec + apply(contribution_prec, c(2,3), sum)
 post_cov <- solve(post_prec)
-
 post_mean <- (post_cov %*% (prior_prec %*% prior_mean + apply(contribution_mean, 2, sum)))[,1]
 
 Cmcmc$run(100000)
@@ -645,9 +635,6 @@ test_that('posterior mean', expect_true(all(abs(dif_mean) < 0.001)))
 
 dif_cov <- as.numeric(cov(Csamples) - post_cov)
 test_that('posterior cov', expect_true(all(abs(dif_cov) < 0.001)))
-
-
-
 
 
 
