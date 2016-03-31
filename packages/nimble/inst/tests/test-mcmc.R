@@ -610,11 +610,6 @@ test_that('expected R sample', expect_equal(as.numeric(Rsamples[10,]), c(-0.6642
 dif <- as.numeric(Rsamples - Csamples)
 test_that('R and C equiv', expect_less_than(max(abs(dif)), 1E-15))
 
-Cmcmc$run(10000)
-Csamples <- as.matrix(Cmcmc$mvSamples)
-as.numeric(apply(Csamples, 2, mean))
-
-
 
 
 
