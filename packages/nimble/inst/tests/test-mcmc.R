@@ -557,37 +557,41 @@ test_mcmc(model = code, name = 'two-level multivariate normal', data = data, see
 ## using both cov and prec parametrizaions of MVN,
 ## and various linear links
 
+library(nimble)
+library(testthat)
+warning('************************** REMOVE THESE LINES **********************')
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+context("Testing of default MCMC")
+
 set.seed(0)
-mu0 <- rep(0,5)
-ident <- diag(5)
+prior_mean <- rep(0,5)
+tmp <- array(rnorm(25), c(5,5))
+tmp <- tmp + t(tmp) + 5*diag(5)
+prior_cov <- tmp
 a <- array(rnorm(20), c(4,5))
-B <- array(NA, c(4, 5, 5))
-for(i in c(1,3)) {
-    A <- array(rnorm(25,i), c(5,5))
-    A <- A + t(A) + 5*i*diag(5)
-    B[i,,] <- A
+B <- array(NA, c(4,5,5))
+for(i in c(2,4))   B[i,,] <- array(rnorm(25), c(5,5))
+B[1,,] <- diag(5)
+B[3,,] <- diag(5)
+M_y <- array(NA, c(4,5,5))
+for(i in 1:4) {
+    tmp <- array(rnorm(25,i), c(5,5))
+    tmp <- tmp + t(tmp) + 5*i*diag(5)
+    M_y[i,,] <- tmp
 }
-B[2,,] <- diag(5)
-B[4,,] <- diag(5)
-M_y <- array(NA, c(4, 5, 5))
-for(i in 1:4)
-    M_y[i,,] <- i * diag(5)
-x <- array(0, c(4,5))
-y <- array(0, c(4,5))
+x <- rep(0, 5)
+y <- array(rnorm(20), c(4,5))
 
 code <- nimbleCode({
-    for(i in 1:2)
-        x[i,1:5] ~ dmnorm(mu0[1:5], prec = ident[1:5,1:5])
-    for(i in 3:4)
-        x[i,1:5] ~ dmnorm(mu0[1:5], cov  = ident[1:5,1:5])
+    x[1:5] ~ dmnorm(mean = prior_mean[1:5], cov = prior_cov[1:5,1:5])
     for(i in 1:4)
-        mu_y[i,1:5] <- asCol(a[i,1:5]) + B[i,1:5,1:5] %*% asCol(x[i,1:5])
+        mu_y[i,1:5] <- asCol(a[i,1:5]) + B[i,1:5,1:5] %*% asCol(x[1:5])
     y[1,1:5] ~ dmnorm(mu_y[1,1:5], prec = M_y[1,1:5,1:5])
     y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov  = M_y[2,1:5,1:5])
     y[3,1:5] ~ dmnorm(mu_y[3,1:5], prec = M_y[3,1:5,1:5])
     y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov  = M_y[4,1:5,1:5])
 })
-constants <- list(mu0=mu0, ident=ident, a=a, B=B, M_y=M_y)
+constants <- list(prior_mean=prior_mean, prior_cov=prior_cov, a=a, B=B, M_y=M_y)
 data <- list(y=y)
 inits <- list(x=x)
 Rmodel <- nimbleModel(code, constants, data, inits)
@@ -605,10 +609,44 @@ set.seed(0)
 Cmcmc$run(10)
 Csamples <- as.matrix(Cmcmc$mvSamples)
 
-test_that('expected R sample', expect_equal(as.numeric(Rsamples[10,]), c(-0.664261208, 0.034887337, -0.109995108, 1.346972653, -0.084328505, 0.641090632, 0.043589202, -0.892874168, -0.093222868, -1.403563604, 0.026331880, 0.175576456, 0.478154095, -0.067907215, -0.001062447, -0.266442713, 0.420233580, 1.197230464, 0.019829570, -0.191506476)))
+test_that(
+    'expected R sample',
+    expect_equal(round(as.numeric(Rsamples), 8),
+                 ##cat('c(', paste0(as.numeric(round(Rsamples,8)), collapse=', '), ')\n')
+                 c(0.97473128, 0.50438666, 1.1251132, 0.83830666, 0.74077066, 0.92935482, 0.83758372, 0.98708273, 1.24199937, 0.67348127, -0.54387714, -0.60713969, -0.51392796, -0.3176801, -0.34416529, -0.08530564, -0.47160157, -0.21996584, -0.20504917, -0.77287122, 0.78462584, 0.46103509, 0.43862813, 0.49343096, 0.61020864, 0.55088287, 0.53887202, 0.49863894, 0.62691318, 0.80142839, 0.34941152, 0.06623608, 0.05624477, 0.21369178, 0.26585415, -0.1439989, -0.03133488, 0.3544062, -0.03518959, 0.27415746, 0.40977, 0.8351078, 0.25719293, 0.05663917, 0.30894028, 0.33113315, 0.47647909, 0.26143962, 0.07180759, 0.27255767)
+                 ))
 
 dif <- as.numeric(Rsamples - Csamples)
 test_that('R and C equiv', expect_less_than(max(abs(dif)), 1E-15))
+
+y_prec <- array(NA, c(4,5,5))
+y_prec[1,,] <-       M_y[1,,]
+y_prec[2,,] <- solve(M_y[2,,])
+y_prec[3,,] <-       M_y[3,,]
+y_prec[4,,] <- solve(M_y[4,,])
+
+contribution_mean <- array(NA, c(4,5))
+for(i in 1:4)   contribution_mean[i,] <- t(B[i,,]) %*% y_prec[i,,] %*% (y[i,] - a[i,])
+
+contribution_prec <- array(NA, c(4,5,5))
+for(i in 1:4)   contribution_prec[i,,] <- t(B[i,,]) %*% y_prec[i,,] %*% B[i,,]
+
+prior_prec <- solve(prior_cov)
+post_prec <- prior_prec + apply(contribution_prec, c(2,3), sum)
+post_cov <- solve(post_prec)
+
+post_mean <- (post_cov %*% (prior_prec %*% prior_mean + apply(contribution_mean, 2, sum)))[,1]
+
+Cmcmc$run(100000)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+
+dif_mean <- as.numeric(apply(Csamples, 2, mean)) - post_mean
+test_that('posterior mean', expect_true(all(abs(dif_mean) < 0.001)))
+
+dif_cov <- as.numeric(cov(Csamples) - post_cov)
+test_that('posterior cov', expect_true(all(abs(dif_cov) < 0.001)))
+
+
 
 
 
