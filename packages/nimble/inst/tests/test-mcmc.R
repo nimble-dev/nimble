@@ -552,6 +552,65 @@ test_mcmc(model = code, name = 'two-level multivariate normal', data = data, see
 
 
 
+
+## another example of MVN conjugate sampler, for test-mcmc.R
+## using both cov and prec parametrizaions of MVN,
+## and various linear links
+
+set.seed(0)
+mu0 <- rep(0,5)
+ident <- diag(5)
+a <- array(rnorm(20), c(4,5))
+B <- array(NA, c(4, 5, 5))
+for(i in c(1,3)) {
+    A <- array(rnorm(25,i), c(5,5))
+    A <- A + t(A) + 5*i*diag(5)
+    B[i,,] <- A
+}
+B[2,,] <- diag(5)
+B[4,,] <- diag(5)
+M_y <- array(NA, c(4, 5, 5))
+for(i in 1:4)
+    M_y[i,,] <- i * diag(5)
+x <- array(0, c(4,5))
+y <- array(0, c(4,5))
+
+code <- nimbleCode({
+    for(i in 1:2)
+        x[i,1:5] ~ dmnorm(mu0[1:5], prec = ident[1:5,1:5])
+    for(i in 3:4)
+        x[i,1:5] ~ dmnorm(mu0[1:5], cov  = ident[1:5,1:5])
+    for(i in 1:4)
+        mu_y[i,1:5] <- asCol(a[i,1:5]) + B[i,1:5,1:5] %*% asCol(x[i,1:5])
+    y[1,1:5] ~ dmnorm(mu_y[1,1:5], prec = M_y[1,1:5,1:5])
+    y[2,1:5] ~ dmnorm(mu_y[2,1:5], cov  = M_y[1,1:5,1:5])
+    y[3,1:5] ~ dmnorm(mu_y[3,1:5], prec = M_y[1,1:5,1:5])
+    y[4,1:5] ~ dmnorm(mu_y[4,1:5], cov  = M_y[1,1:5,1:5])
+})
+constants <- list(mu0=mu0, ident=ident, a=a, B=B, M_y=M_y)
+data <- list(y=y)
+inits <- list(x=x)
+Rmodel <- nimbleModel(code, constants, data, inits)
+spec <- configureMCMC(Rmodel)
+spec$getSamplers()
+Rmcmc <- buildMCMC(spec)
+
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+set.seed(0)
+Rmcmc$run(10)
+Rsamples <- as.matrix(Rmcmc$mvSamples)
+set.seed(0)
+Cmcmc$run(10)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+
+test_that('expected R sample', expect_equal(as.numeric(Rsamples[10,]), c(-0.664261208, 0.099154542, -0.130795851, 0.629849462, -0.084328505, 0.880630509, 0.017773682, -0.605118180, -0.093222868, -1.723684791, 0.077596514, 0.411975546, 0.478154095, 0.002361055, -0.025174649, -0.069951619, 0.420233580, 1.225317108, 0.043035066, 0.271698043)))
+
+dif <- as.numeric(Rsamples - Csamples)
+test_that('R and C equiv', expect_less_than(max(abs(dif)), 1E-15))
+
+
 ### scalar RW updates in place of conjugate mv update
 
 test_mcmc(model = code, name = 'two-level multivariate normal with scalar updaters', data = data, seed = 0, numItsC = 100000,
