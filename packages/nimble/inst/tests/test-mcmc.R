@@ -551,6 +551,19 @@ test_mcmc(model = code, name = 'two-level multivariate normal', data = data, see
             cov = list(mu = matrix(.01, 3, 3))))
 
 
+### scalar RW updates in place of conjugate mv update
+
+test_mcmc(model = code, name = 'two-level multivariate normal with scalar updaters', data = data, seed = 0, numItsC = 100000,
+          results = list(mean = list(mu = muMeanTrue),
+                           cov = list(mu = solve(muQtrue))),
+          resultsTolerance = list(mean = list(mu = rep(.03,3)),
+            cov = list(mu = matrix(.03, 3, 3))),
+          samplers = list(list(type = 'RW', target = 'mu[1]'),
+            list(type = 'RW', target = 'mu[2]'),
+            list(type = 'RW', target = 'mu[3]')),
+          removeAllDefaultSamplers = TRUE)
+
+
 
 
 ## another example of MVN conjugate sampler, for test-mcmc.R
@@ -637,18 +650,6 @@ dif_cov <- as.numeric(cov(Csamples) - post_cov)
 test_that('posterior cov', expect_true(all(abs(dif_cov) < 0.001)))
 
 
-
-### scalar RW updates in place of conjugate mv update
-
-test_mcmc(model = code, name = 'two-level multivariate normal with scalar updaters', data = data, seed = 0, numItsC = 100000,
-          results = list(mean = list(mu = muMeanTrue),
-                           cov = list(mu = solve(muQtrue))),
-          resultsTolerance = list(mean = list(mu = rep(.03,3)),
-            cov = list(mu = matrix(.03, 3, 3))),
-          samplers = list(list(type = 'RW', target = 'mu[1]'),
-            list(type = 'RW', target = 'mu[2]'),
-            list(type = 'RW', target = 'mu[3]')),
-          removeAllDefaultSamplers = TRUE)
 
 ### test of conjugate Wishart
 

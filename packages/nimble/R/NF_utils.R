@@ -274,6 +274,8 @@ getLogProbNodesMV <- nimbleFunction(
 ## NIMBLE DSL functions for creating vector or array strctures
 ## added by Daniel June 2015
 ## these deserve documentation!
+
+#' @export
 nimVector <- nimbleFunction(
     run = function(value = double(), length = double()) {
         declare(vec, double(1, length))
@@ -282,7 +284,8 @@ nimVector <- nimbleFunction(
         return(vec)
     },  where = getLoadingNamespace()
 )
-##
+
+#' @export
 nimArray <- nimbleFunction(
     run = function(value = double(), nrow = double(), ncol = double()) {
         declare(arr, double(2, c(nrow, ncol)))
@@ -291,7 +294,8 @@ nimArray <- nimbleFunction(
         return(arr)
     },  where = getLoadingNamespace()
 )
-##
+
+#' @export
 identityMatrix <- nimbleFunction(
     run = function(d = double()) {
         declare(arr, double(2, c(d, d)))
