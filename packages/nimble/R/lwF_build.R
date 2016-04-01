@@ -19,14 +19,12 @@ LWStepVirtual <- nimbleFunctionVirtual(
 
 # Has a return_mean method which returns the mean of a normally distributed nimble node.
 normMean <- nimbleFunction(
-  setup = function(model, node) {
-    nfList <- nimbleFunctionList(node_stoch_dnorm)
-    nfList[[1]] <- model$nodeFunctions[[node]]
-  },  
+  setup = function(model, node){},
   methods = list(                        
     return_mean = function() {         
-      returnType(double())           
-      return(nfList[[1]]$get_mean()) 
+      returnType(double())      
+      mean <- model$getParam(node, 'mean')
+      return(mean) 
     }                                  
   ), where = getLoadingNamespace()                                    
 )
@@ -369,21 +367,21 @@ buildLWF <- nimbleFunction(
     }
     params <- model$expandNodeNames(params, sort = TRUE)
     
+    latentVars <- model$getVarNames(nodes = nodes)
+    paramVars <-  model$getVarNames(nodes =  params)  # need var names too
+    if(!saveAll) smoothing <- FALSE
+    
     if(identical(params, character(0)))
       stop('must be at least one higher level parameter for Liu and West filter to work')
     if(any(params %in% nodes))
       stop('parameters cannot be latent states')
     if(!all(params%in%model$getNodeNames(stochOnly=T)))
       stop('parameters must be stochastic nodes')
-    
     pardimcheck <- sapply(paramVars, function(n){
       if(length(nimDim(model[[n]]))>1)
         stop("Liu and West filter doesn't work for matrix valued top level parameters")
     })
-    
-    latentVars <- model$getVarNames(nodes = nodes)
-    paramVars <-  model$getVarNames(nodes =  params)  # need var names too
-    if(!saveAll) smoothing <- FALSE
+ 
     
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent 

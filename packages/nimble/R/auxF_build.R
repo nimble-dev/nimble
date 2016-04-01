@@ -21,7 +21,7 @@ auxLookFunc = nimbleFunction(
   setup = function(model, node){},
   methods = list(
     lookahead = function(){
-      model[[node]] <<- model$getParam(model, node, 'mean')
+      model[[node]] <<- model$getParam(node, 'mean')
     }
   ), where = getLoadingNamespace()
 )
