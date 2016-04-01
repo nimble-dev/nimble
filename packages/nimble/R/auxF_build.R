@@ -16,28 +16,12 @@ auxFuncVirtual <- nimbleFunctionVirtual(
   )
 )
 
-auxMLookFunc = nimbleFunction(
-  contains = auxFuncVirtual,
-  setup = function(model, node){
-    nodeFuncList <- nimbleFunctionList(node_stoch_dmnorm)
-    nodeFuncList[[1]] <- model$nodeFunctions[[node]]
-  },
-  methods = list(
-    lookahead = function(){
-      model[[node]] <<- nodeFuncList[[1]]$get_mean()
-    }
-  ), where = getLoadingNamespace()
-)
-
 auxLookFunc = nimbleFunction(
   contains = auxFuncVirtual,
-  setup = function(model, node){
-    nodeFuncList <- nimbleFunctionList(node_stoch_dnorm) 
-    nodeFuncList[[1]] <- model$nodeFunctions[[node]]
-  },
+  setup = function(model, node){},
   methods = list(
     lookahead = function(){
-      model[[node]] <<- nodeFuncList[[1]]$get_mean()
+      model[[node]] <<- model$getParam(model, node, 'mean')
     }
   ), where = getLoadingNamespace()
 )
@@ -88,12 +72,7 @@ auxFStep <- nimbleFunction(
     
     auxFuncList <- nimbleFunctionList(auxFuncVirtual) 
     if(lookahead == "mean"){
-    if(xDim > 1){
-      auxFuncList[[1]] <- auxMLookFunc(model, thisNode)
-    }
-    else{
       auxFuncList[[1]] <- auxLookFunc(model, thisNode)
-    } 
     }
     else{
       auxFuncList[[1]] <- auxSimFunc(model, thisNode)
