@@ -2,6 +2,8 @@
 
 USER LEVEL CHANGES
 
+-- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, same functionality as in R.
+
 -- API changes for MCMCspec objects: new method printSamplers() prints the current samplers (replacing the old getSamplers() method); new functionality for getSamplers(), which now returns a list of samplerSpec objects; new overloaded functionality of setSamplers(), which can accept a list of samplerSpec objects, replacing the current set of samplers; new method getSamplerDefinition(), which returns the nimbleFunction definition of a sampler.
 
 -- API created for modifying samplerSpec objects: setName(), setSamplerFunction(), setTarget(), setControl().
