@@ -23,8 +23,7 @@ normMean <- nimbleFunction(
   methods = list(                        
     return_mean = function() {         
       returnType(double())      
-      mean <- model$getParam(node, 'mean')
-      return(mean) 
+      return(model$getParam(node, 'mean')) 
     }                                  
   ), where = getLoadingNamespace()                                    
 )
