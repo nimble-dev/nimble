@@ -26,6 +26,8 @@ USER LEVEL CHANGES
 
 -- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
 
+-- added ability to use any of the methods for R's optim function in MCEM optimization step
+
 -- There are more flexible ways to provide arguments to declare and setSize.
 
 -- The random walk block sampler is a bit more efficient.
