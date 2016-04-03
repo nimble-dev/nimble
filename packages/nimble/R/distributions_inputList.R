@@ -74,7 +74,7 @@ distributionsInputList <- list(
     
     dbeta   = list(BUGSdist = 'dbeta(shape1, shape2, mean, sd)',
                    Rdist    = 'dbeta(shape1 = mean^2*(1-mean)/sd^2-mean, shape2 = mean*(1-mean)^2/sd^2+mean-1)',
-                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1*shape2)^2*(shape1+shape2+1)))'),
+                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1 + shape2)^2*(shape1+shape2+1)))'),
                    range    = c(0, 1),
                    pqAvail  = TRUE),
     
