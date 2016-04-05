@@ -202,7 +202,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        outputSOfile <<- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), .Platform$dynlib.ext))
 
 
-                                       SHLIBcmd <- paste('R CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
+                                       SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
                                        
                                        cur = getwd()
                                        setwd(dirName)
