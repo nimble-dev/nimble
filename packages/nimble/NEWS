@@ -2,9 +2,9 @@
 
 USER LEVEL CHANGES
 
--- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, same functionality as in R.
+-- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, with the same functionality as in R.
 
--- Improved performance of conjugate mutivariate-normal - mutivariate-normal sampling.
+-- Improved performance of conjugate multivariate-normal - multivariate-normal sampling.
 
 -- API changes for MCMCspec objects: new method printSamplers() prints the current samplers (replacing the old getSamplers() method); new functionality for getSamplers(), which now returns a list of samplerSpec objects; new overloaded functionality of setSamplers(), which can accept a list of samplerSpec objects, replacing the current set of samplers; new method getSamplerDefinition(), which returns the nimbleFunction definition of a sampler.
 
