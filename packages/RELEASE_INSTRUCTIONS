@@ -11,8 +11,9 @@ for CRAN, we need it in there, but it prevents easy source installation on Macs 
 
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
-# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions
+# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure)
 ./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
+(in general you'll need to run prep_pkg twice as first time will generate errors when writing Rd files; also will often need to remove 00LOCK files)
 
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
 This also should work:
