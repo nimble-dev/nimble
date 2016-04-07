@@ -51,7 +51,10 @@ go to website: R-nimble.org/login and login
 
 change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page
+put new user manual in /web/R-nimble/wordpress/manuals
+and change symlink to point to newest pdf
+
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
 (make sure post is set up as a blog entry)
 
