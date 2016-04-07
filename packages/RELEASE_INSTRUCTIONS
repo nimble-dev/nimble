@@ -72,6 +72,8 @@ git checkout master
 git merge devel
 git commit -am'merged new version onto master'
 
+probably best at this poitn also to merge master onto devel
+
 git tag -a v0.3 -m 'NIMBLE version 0.3 release, December 31, 2014'
 git push --tags    ## this is how you push *tags* to the remote
 
