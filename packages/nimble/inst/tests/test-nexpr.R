@@ -53,13 +53,15 @@ testOneCase <- function(test, testName, ans, Rnf, Cnf) {
     Rans <- eval(parse(text=test)[[1]])
     Rnfans <- eval(substitute(Rnf$TEST(), list(TEST=as.name(testName))))
     Cnfans <- eval(substitute(Cnf$TEST(), list(TEST=as.name(testName))))
-    dif <- max(abs(Rans - Rnfans) / Rans)
+    magn <- Rans
+    magn[magn == 0] <- 1
+    dif <- max(abs(Rans - Rnfans) / magn)
     if(dif > 1E-15) return(1)
-    dif <- max(abs(Rans - Cnfans) / Rans)
+    dif <- max(abs(Rans - Cnfans) / magn)
     if(dif > 1E-15) return(1)
     if(!is.na(ans)) {
         theans <- eval(parse(text=ans)[[1]])
-        dif <- max(abs(Rans - theans) / Rans)
+        dif <- max(abs(Rans - theans) / magn)
         if(dif > 1E-15) return(1)
     }
     return(0)
