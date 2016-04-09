@@ -149,7 +149,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
 '
             
             samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
-            model <<- model
+            ##model <<- model
+            if(is(model, 'RmodelBaseClass')) {
+                model <<- model
+            } else if(is(model, 'CmodelBaseClass')) {
+                model <<- model$Rmodel
+            } else stop('\'model\' must be a compiled or un-compiled NIMBLE model object')
             addMonitors( monitors,  print = FALSE)
             addMonitors2(monitors2, print = FALSE)
             thin  <<- thin
@@ -253,13 +258,12 @@ Invisibly returns a list of the current sampler specifications, which are sample
 '
 
             if(is.character(type)) {
-                if(type == 'end') type <- 'sampler_end'  ## because 'end' is an R function
                 thisSamplerName <- gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
-                if(exists(type)) {   ## try to find sampler function 'type'
+                if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
                     sampler_type <- paste0('sampler_', type)   ## next, try to find sampler function 'sampler_type'
-                    if(exists(sampler_type)) {
+                    if(exists(sampler_type) && is.nfGenerator(eval(as.name(sampler_type)))) {   ## try to find sampler function 'sampler_type'
                         samplerFunction <- eval(as.name(sampler_type))
                     } else stop(paste0('cannot find sampler type \'', type, '\''))
                 }
