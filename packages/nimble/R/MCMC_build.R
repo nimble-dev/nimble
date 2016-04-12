@@ -45,7 +45,6 @@
 #' samples[['x']]
 #' Rmcmc$run(100, reset = FALSE)
 buildMCMC <- nimbleFunction(
-    #
     setup = function(mcmcspec, ...) {
     	if(inherits(mcmcspec, 'modelBaseClass'))
     		mcmcspec <- configureMCMC(mcmcspec, ...)
