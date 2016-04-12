@@ -2004,7 +2004,8 @@ modelDefClass$methods(genVarInfo3 = function() {
             }
             if(varInfo[[rhsVar]]$nDim > 0) {
                 for(iDim in 1:varInfo[[rhsVar]]$nDim) {
-                    indexNamePieces <- BUGSdecl$parentIndexNamePieces[[iV]][[iDim]] 
+                    indexNamePieces <- BUGSdecl$parentIndexNamePieces[[iV]][[iDim]]
+                    if(is.null(indexNamePieces)) stop(paste0('There is a problem with some indexing in this line: ', deparse(BUGSdecl$codeReplaced), '.\nOne way this can happen is if you wanted to provide a vector of indices but did not include it in constants.'))
                     if(is.list(indexNamePieces)) { ## a list would be made if there is a ':' operator in the index expression
                         indsLow <- if(is.numeric(indexNamePieces[[1]])) indexNamePieces[[1]] else BUGSdecl$replacementsEnv[[ indexNamePieces[[1]] ]]
                         indsHigh <- if(is.numeric(indexNamePieces[[2]])) indexNamePieces[[2]] else BUGSdecl$replacementsEnv[[ indexNamePieces[[2]] ]]
