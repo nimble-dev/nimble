@@ -46,7 +46,10 @@ compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stan
         }
     } else {
         if(!is.list(modelInfo)) stop('modelInfo must be a list if it is not a vector of BUGS example names')
-        if(!is.list(modelInfo[[1]])) modelContents <- list(modelInfo)
+        if(!is.list(modelInfo[[1]])) {
+            modelContents <- list(modelInfo)
+            if('name' %in% names(modelInfo)) names(modelContents) <- modelInfo$name
+        }
         else modelContents <- modelInfo
 
         inputNames <- names(modelContents)
@@ -214,7 +217,7 @@ make_main <- function(models, mainPageName = 'main'){
 
 #' Rename a method in an object returned by compareMCMCs
 #'
-#' Switches one label for a new one in the timing, efficiency, and summary elements of a compareMCMCs result.
+#' Switches one label for a new one in the timing, efficiency, summary, and samples (if present) elements of a compareMCMCs result.
 #'
 #' @param oldname (character) Existing name for the method (which would have been determined from inputs to \code{\link{compareMCMCs}}).
 #'
@@ -247,6 +250,7 @@ rename_MCMC_comparison_method <- function(oldname, newname, comparison) {
     names(comparison$efficiency$min) <- methodNames
     names(comparison$efficiency$mean) <- methodNames
     rownames(comparison$summary) <- methodNames
+    if(!is.null(comparison$samples)) rownames(comparison$samples) <- methodNames
     comparison
 }
 
@@ -273,7 +277,6 @@ rename_MCMC_comparison_method <- function(oldname, newname, comparison) {
 #'
 #' @return An object in the same format as returned by \code{\link{compareMCMCs}} with \code{summary} = TRUE.
 #' @export
-#' @details Only the summary, timing, and efficiency elements will survive the combination.  MCMC samples will not.
 #'
 #' @seealso \code{\link{compareMCMCs}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}.
 combine_MCMC_comparison_results <- function(..., name = "MCMCresults") {
@@ -293,8 +296,15 @@ combine_MCMC_comparison_results <- function(..., name = "MCMCresults") {
     }
     efficiencies <- lapply(dotsArgs, `[[`, 'efficiency')
     efficiency <- list(min = unlist( lapply(efficiencies, `[[`, 'min') ),
-                         mean = unlist( lapply(efficiencies, `[[`, 'mean') ))
-    ans <- list(list(summary = summary, timing = timing, efficiency = efficiency))
+                       mean = unlist( lapply(efficiencies, `[[`, 'mean') ))
+    if(all(sapply(lapply(dotsArgs, `[[`, 'samples'), function(x) !is.null(x)))) {
+        ## if all comparisons have 'samples' field, then we'll combine those too
+        allSamples <- lapply(dotsArgs, `[[`, 'samples')
+        samples <- do.call(abind1, allSamples)
+        ans <- list(list(samples = samples, summary = summary, timing = timing, efficiency = efficiency))
+    } else {
+        ans <- list(list(summary = summary, timing = timing, efficiency = efficiency))
+    }
     names(ans) <- name
     ans
 }
