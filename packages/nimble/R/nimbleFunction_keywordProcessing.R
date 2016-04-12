@@ -474,6 +474,19 @@ doubleBracket_keywordInfo <- keywordInfoClass(
         stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
     })
 
+modelMemberFun_keywordInfo <- keywordInfoClass(
+    keyword = 'multiple',
+    processor = function(code, nfProc) {
+        ## if we get here it must be model$member(args)
+        ## We will turn it into member(model, args)
+        newRunCode <- do.call("call",
+                              c(list(as.character(code[[1]][[3]]),
+                                     code[[1]][[2]]),
+                                as.list(code[-1])),
+                              quote = TRUE)
+        return(newRunCode)
+    })
+
 dollarSign_keywordInfo <- keywordInfoClass(
 	keyword = '$',
 	processor = function(code, nfProc){
@@ -504,13 +517,13 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				
 		if(class == 'symbolNimPtrList'){
 			return(code)
-			}
-		if(class == 'symbolModel'){
-			singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
-			accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
-			addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
-			return(as.name(accessName))
-		}
+                    }
+            if(class == 'symbolModel'){
+                singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
+                accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
+                addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
+                return(as.name(accessName))
+            }
 		if(class == 'symbolNimbleFunction'){
 			
 			#	Code is of the form myNimbleFunction$myMethod
@@ -601,6 +614,13 @@ keywordList[['pexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
+keywordListModelMemberFuns <- new.env()
+keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['simulate']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['calculateDiff']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['getLogProb']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
+
 # necessary keywords:
 #	calculate 	(done)
 #	simulate	(done)
@@ -627,8 +647,8 @@ matchFunctions[['calculateDiff']] <- calculateDiff		#function(model, nodes, node
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
 matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
-matchFunctions[['double']] <- function(dim, default){}
-matchFunctions[['int']] <- function(dim, default){}
+matchFunctions[['double']] <- function(nDim, dim, default, ...){}
+matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
@@ -642,6 +662,13 @@ matchFunctions[['dexp_nimble']] <- function(x, rate, scale = 1, log = FALSE){}
 matchFunctions[['rexp_nimble']] <- function(n, rate, scale = 1){}
 matchFunctions[['qexp_nimble']] <- function(p, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pexp_nimble']] <- function(q, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
+
+matchModelMemberFunctions <- new.env()
+matchModelMemberFunctions[['calculate']] <- function(nodes) {}
+matchModelMemberFunctions[['calculateDiff']] <- function(nodes) {}
+matchModelMemberFunctions[['getLogProb']] <- function(nodes) {}
+matchModelMemberFunctions[['simulate']] <- function(nodes, includeData = FALSE) {}
+matchModelMemberFunctions[['getParam']] <- function(node, param) {}
 
 # remove ncp from signatures
 stripArgs <- function(fname, argNames) {
@@ -709,11 +736,77 @@ processKeyword <- function(code, nfProc){
   return(code)
 }
 
+processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b(c) as one unit
+    ## this includes nf$method()
+    ## nfList[[i]]$method
+    ## model$calculate(nodes)
+    dollarSignPart <- code[[1]]
+    objectPart <- dollarSignPart[[2]]
 
+    isModel <- FALSE
+    if(length(objectPart) != 1) isModel <- FALSE ## a case like a[[i]]$b(), which can only be a nimbleFunction list
+    else {
+        symObj <- nfProc$setupSymTab$getSymbolObject(as.character(objectPart))
+        if(is.null(symObj)) stop(paste0("In processKeywordCodeMemberFun: not sure what to do with ", deparse(code)))
+        if(inherits(symObj, 'symbolModel'))
+            isModel <- TRUE
+    }
+    if(isModel) {
+        thisKeywordInfo <- keywordListModelMemberFuns[[ as.character(dollarSignPart[[3]]) ]]
+        if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code)))
+        rearrangedCode <- thisKeywordInfo$processor(code, nfProc)
+        rearrangedCode <- matchKeywordCode(rearrangedCode, nfProc)
+        return(processKeywords_recurse(rearrangedCode, nfProc))
+    } else {
+        ## same as processKeywords_recurse
+        ## first line here creates something like nfMethod(model, method)(args)
+        ## which is handled as a chainedCall in later processing
+        code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        cl <- length(code)
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+        return(code)
+    }
+}
 
-
-
-
+processKeywords_recurse <- function(code, nfProc = NULL) {
+    cl = length(code)
+    if(cl == 1) {
+        if(is.call(code)) {
+            if(length(code[[1]]) > 1)
+                if(deparse(code[[1]][[1]] == '$'))
+                    code <- processKeywordCodeMemberFun(code, nfProc)
+                else
+                    code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        }
+        return(code)
+    }
+    
+    if(length(code[[1]]) == 1) {
+        code <- processKeyword(code, nfProc)
+    }
+    
+    cl = length(code)
+    
+    if(is.call(code)) {
+        if(length(code[[1]]) > 1) {
+            if(deparse(code[[1]][[1]] == '$')) {
+                code <- processKeywordCodeMemberFun(code, nfProc) ## case like model$calculate(nodes)
+                return(code) ## don't recurse on arguments of anything in this category
+            }
+            code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        }
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+    }
+    return(code)
+}
 
 #####	SETUPCODE TEMPLATES
 
@@ -1004,29 +1097,43 @@ matchAndFill.call <- function(def, call){
   theseFormals <- formals(def)
   formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
   theseFormals <- theseFormals[nchar(theseFormals) > 0]
-  matchedCall <- match.call(def, call)
+  matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
   missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
-  for(ind in missingArgs){
+  for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
     name <- names(theseFormals)[ind]
     matchedCall[[name]] <- theseFormals[[name]]    
   }
     
   newCall <- matchedCall[1]
 
-  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly
+  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly, including anything omitted
   	thisArg <- matchedCall[[thisArgName]]
 	if(!is.null(thisArg))
 	  	newCall[[thisArgName]] <- thisArg
   }
   
-  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
+##  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
  		# i.e. are there any "..." args? if so, adds them on in the end
   		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
   		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
-  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
+##  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
 
-  for(thisArg in informalArgNames)
-  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+##  for(thisArg in informalArgNames)
+##  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+
+  ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
+  ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
+  ## tacked on even without a '...' in the def
+  indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+  for(thisIndex in indexAdditionalArgs) {
+      thisName <- names(matchedCall)[thisIndex+1]
+      if(thisName=="")
+          newCall[[thisIndex + 1]] <- matchedCall[[thisIndex + 1]]
+      else {
+          newCall[[thisName]] <- matchedCall[[thisName]]
+      }
+  }
+      
   return(newCall)
 }
 
@@ -1077,7 +1184,12 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
             if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
             thisFunctionMatch <- thisRCfunProc$RCfun$template
             return(matchAndFill.call(thisFunctionMatch, code ) )
-        } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
+        } else 
+            if(inherits(symObj, 'symbolModel')) {
+                thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
+                if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
+                return(matchAndFill.call(thisFunctionMatch, code) )
+            } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
     }
     ## then look in R
     if(exists(nfName)) {
@@ -1117,6 +1229,35 @@ matchKeywordCode <- function(code, nfProc){
         return(matchAndFill.call(thisFunctionMatch, code ) )
     return(code)
 }
+
+matchKeywords_recurse <- function(code, nfProc = NULL) {
+    cl = length(code)
+    if(cl == 1){ ## There are no arguments
+        if(is.call(code)){  
+            if(length(code[[1]]) > 1)
+                if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc)
+                else
+                    code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
+        }
+        return(code)
+    }
+    if(length(code[[1]]) == 1) ## a simple call like a(b,c), not a$b(c)
+        code <- matchKeywordCode(code, nfProc)
+    
+    if(is.call(code)) {
+        if(length(code[[1]]) > 1) {
+            if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc) ## handle a$b(c) as one unit
+            else code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## handle "a(b)" part of a(b)(c), which is probably *never* triggered
+        }
+        if(cl >= 2) { ## recurse through arguments
+            for(i in 2:cl) {
+                code[[i]] <- matchKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+    }
+    return(code)
+}
+
 
 makeSingleIndexAccessExpr <- function(newName, newNameExpr) {
     codeNames <- makeSingleIndexAccessCodeNames(newName)

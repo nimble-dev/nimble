@@ -4,7 +4,7 @@
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
 bool decide(double lMHr) { // simple function accept or reject based on log Metropolis-Hastings ratio
-  if(isnan(lMHr)) return(false);
+  if(ISNAN(lMHr)) return(false);
   if(lMHr > 0) return(true);
   if(runif(0,1) < exp(lMHr)) return(true);
   return(false);

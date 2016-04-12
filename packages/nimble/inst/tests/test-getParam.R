@@ -5,9 +5,9 @@ context("Testing of getParam")
 gpScalar <- nimbleFunction(
     setup = function(model, node, param) {},
     run = function() {
-        ans1 <- getParam(model, node, param)
-##        ans2 <- getParam(model, node, param) ## to become model$getParam(node, param)
-##        if(ans1 != ans2) stop('oops, ans1 != ans2')
+        ans1 <- model$getParam(node, param)
+        ans2 <- getParam(model, node, param) ## to become model$getParam(node, param)
+        if(ans1 != ans2) stop('oops, ans1 != ans2')
         return(ans1)
         returnType(double())
     })
@@ -114,3 +114,46 @@ testGetParam(quote(dweib(shape = 1.2, scale = 1.3)))
 testGetParam(quote(dweib(shape = 1.2, rate = 1.3)))
 testGetParam(quote(dweib(shape = 1.2, lambda = 1.3)))
 
+## We haven't written an extensive version of testing getParam for non-scalar parameters
+## However the following covers testing that the size processing and eigenization steps work with getParam.
+
+testCode <- nimbleCode({
+    for(i in 1:3) x[i] ~ dnorm(0, 1)
+    y[1:3] ~ dmnorm(x[1:3], mycov[1:3, 1:3])
+})
+
+y <- rnorm(3)
+mycov <- diag(3)
+testModel <- nimbleModel(testCode, data = list(y = y, mycov = diag(3)))
+x <- rnorm(3)
+testModel$x <- x
+
+nf <- nimbleFunction(
+    setup = function(model, mvNode){},
+    run = function() {
+        ans <- model$getParam(mvNode, 'mean')
+        return(ans)
+        returnType(double(1))
+    },
+    methods = list(
+        test2 = function() {
+            ans <- 1.1 + model$getParam(mvNode, 'mean')
+            return(ans)
+            returnType(double(1))
+        },
+        test3 = function(z = double(1)) {
+            ans <- z + model$getParam(mvNode, 'mean')
+            return(ans)
+            returnType(double(1))
+        })
+)
+
+nf1 <- nf(testModel, 'y[1:3]')
+test_that('multivar 1', expect_equivalent(nf1$run(), testModel$x))
+test_that('multivar 2', expect_equivalent(nf1$test2(), testModel$x + 1.1))
+test_that('multivar 3', expect_equivalent(nf1$test3(11:13), testModel$x + 11:13))
+
+Ctest <- compileNimble(testModel, nf1)
+test_that('multivar 4', expect_equivalent(Ctest$nf1$run(), Ctest$testModel$x))
+test_that('multivar 5', expect_equivalent(Ctest$nf1$test2(), Ctest$testModel$x + 1.1))
+test_that('multivar 6', expect_equivalent(Ctest$nf1$test3(11:13), Ctest$testModel$x + 11:13))

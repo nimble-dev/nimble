@@ -1,8 +1,8 @@
 
-## This is a base class for c++ variables.
-## To avoid having many unused fields in many cases, this can handle only ptrs and refs.
-## If you need static, const, template arguments, or other adornments, use cppFullVar
-## Below there are some wrappers for common cases like cppDouble, cppNimArrPtr, cppVoid, etc.
+## ## This is a base class for c++ variables.
+## ## To avoid having many unused fields in many cases, this can handle only ptrs and refs.
+## ## If you need static, const, template arguments, or other adornments, use cppFullVar
+## ## Below there are some wrappers for common cases like cppDouble, cppNimArrPtr, cppVoid, etc.
 ## cppVar <- setRefClass('cppVar',
 ##                              fields = list(
 ##                                  baseType = 'ANY',	#characater
@@ -28,8 +28,8 @@
 ## Remove excess white spaces.  Keep one space.
 cleanWhite <- function(s) gsub('[[:blank:]]+', ' ', s)
 
-## Here is the full version that can handle most c++ variable declarations.
-## One thing that cannot be handled is function pointers or member pointers
+## ## Here is the full version that can handle most c++ variable declarations.
+## ## One thing that cannot be handled is function pointers or member pointers
 ## cppVarFull <- setRefClass('cppVarFull',
 ##                       contains = 'cppVar',
 ##                       fields = list(

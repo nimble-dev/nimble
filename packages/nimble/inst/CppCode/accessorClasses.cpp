@@ -447,7 +447,8 @@ void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesM
 #endif
   
   if(fromAccessors.size() != toAccessors.size()) {
-    std::cout<<"Error in setting up a copierVector: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+    _nimble_global_output<<"Error in setting up a copierVector: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+    nimble_print_to_R(_nimble_global_output);
   }
   copyVector.resize( fromAccessors.size() );
   //PRINTF("Ready to set up length %i\n", copyVector.size());
@@ -485,7 +486,8 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
 #endif
   
   if(fromAccessors.size() != toAccessors.size()) {
-    std::cout<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+    _nimble_global_output<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+    nimble_print_to_R(_nimble_global_output);
   }
 
   vector<SingleVariableMapAccessBase *>::iterator iFrom, iTo, iFromEnd;
@@ -639,7 +641,8 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
 	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<double> *>(fromNimArr))[from->getOffset()];
       break;
     default:
-      cout<<"Error in nimCopyOne: unknown type for destination\n";
+      _nimble_global_output<<"Error in nimCopyOne: unknown type for destination\n";
+      nimble_print_to_R(_nimble_global_output);
     }
     break;
   case INT:
@@ -651,11 +654,13 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
 	(*static_cast<NimArrBase<int> *>(toNimArr))[to->getOffset()] = (*static_cast<NimArrBase<int> *>(fromNimArr))[from->getOffset()];
       break;
     default:
-      cout<<"Error in nimCopyOne: unknown type for destination\n";
+      _nimble_global_output<<"Error in nimCopyOne: unknown type for destination\n";
+      nimble_print_to_R(_nimble_global_output);
     }
     break;
   default:
-    cout<<"Error in nimCopyOne: unknown type for source\n";
+    _nimble_global_output<<"Error in nimCopyOne: unknown type for source\n";
+    nimble_print_to_R(_nimble_global_output);
     }
   } else {
 #ifdef __NIMBLE_DEBUG_ACCESSORS
@@ -672,7 +677,8 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
 	dynamicMapCopy<double, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
-	cout<<"Error in nimCopyOne: unknown type for destination\n";
+	_nimble_global_output<<"Error in nimCopyOne: unknown type for destination\n";
+	nimble_print_to_R(_nimble_global_output);
       }
       break;
     case INT:
@@ -684,11 +690,11 @@ void nimCopyOne(SingleVariableMapAccessBase *from, SingleVariableMapAccessBase *
 	dynamicMapCopy<int, int>(toNimArr, to->getOffset(), to->getStrides(), to->getSizes(), fromNimArr, from->getOffset(), from->getStrides(), from->getSizes() );
 	break;
       default:
-	cout<<"Error in nimCopyOne: unknown type for destination\n";
+	_nimble_global_output<<"Error in nimCopyOne: unknown type for destination\n";
       }
       break;
     default:
-      cout<<"Error in nimCopyOne: unknown type for destination\n";
+      _nimble_global_output<<"Error in nimCopyOne: unknown type for destination\n";
     }
   }
 }
@@ -741,7 +747,8 @@ void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to) {
   vector<SingleVariableAccessBase *> toAccessors = to.getAccessVector();
 
   if(fromAccessors.size() != toAccessors.size()) {
-    std::cout<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+    _nimble_global_output<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+    nimble_print_to_R(_nimble_global_output);
   }
 
   vector<SingleVariableAccessBase *>::iterator iFrom, iTo, iFromEnd;
@@ -791,7 +798,8 @@ void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to) {
       nimCopyOneTyped<double, int>(from, to);
       break;
     default:
-      cout<<"Error in nimCopyOne: unknown type for destination\n";
+      _nimble_global_output<<"Error in nimCopyOne: unknown type for destination\n";
+      nimble_print_to_R(_nimble_global_output);
     }
     break;
   case INT:
@@ -804,11 +812,13 @@ void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to) {
       nimCopyOneTyped<int, int>(from, to);
       break;
     default:
-      cout<<"Error in nimCopyOne: unknown type for destination\n";
+      _nimble_global_output<<"Error in nimCopyOne: unknown type for destination\n";
+      nimble_print_to_R(_nimble_global_output);
     }
     break;
   default:
-    cout<<"Error in nimCopyOne: unknown type for source\n";
+    _nimble_global_output<<"Error in nimCopyOne: unknown type for source\n";
+    nimble_print_to_R(_nimble_global_output);
   }
 }
 
@@ -1236,8 +1246,10 @@ void parseVarAndInds(const string &input, varAndIndicesClass &output) { //string
   int firstNum, secondNum;
   std::size_t iNextStart, iNonBlank;
   iBracket = restOfInput.find_first_of(']');
-  if(iBracket == std::string::npos) std::cout<<"problem in parseVarAndInds: there is no closing bracket\n";
-
+  if(iBracket == std::string::npos) {
+    _nimble_global_output<<"problem in parseVarAndInds: there is no closing bracket\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
   while(!done) {
     iColon   = restOfInput.find_first_of(':');
     iComma   = restOfInput.find_first_of(',');
@@ -1357,8 +1369,14 @@ void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int snDim, con
   } else {
     //    vector<bool> blockBool(nDim, false);
     int thisSize;
-    if(nDim != sizes.size()) std::cout<<"Confused in varAndInds2MapParts: nDim != sizes.size()\n";
-    if(nDim != varAndInds.indices.size()) std::cout<<"Confused in varAndInds2MapParts: nDim != varAndInds.indices.size()\n";
+    if(nDim != sizes.size()) {
+      _nimble_global_output<<"Confused in varAndInds2MapParts: nDim != sizes.size()\n";
+      nimble_print_to_R(_nimble_global_output);
+    }
+    if(nDim != varAndInds.indices.size()) {
+      _nimble_global_output<<"Confused in varAndInds2MapParts: nDim != varAndInds.indices.size()\n";
+      nimble_print_to_R(_nimble_global_output);
+    }
     for(unsigned int i = 0; i < nDim; ++i) {
       thisSize = varAndInds.indices[i].size();
       switch(thisSize) {
@@ -1376,7 +1394,8 @@ void varAndIndices2mapParts(const varAndIndicesClass &varAndInds, int snDim, con
 	output.strides.push_back( currentStride );
 	break;
       default:
-	std::cout<<"Confused in varAndInds2MapParts: an index content has length > 2\n";
+	_nimble_global_output<<"Confused in varAndInds2MapParts: an index content has length > 2\n";
+	nimble_print_to_R(_nimble_global_output);
 	break;
       }
       currentStride *= sizes[i];
@@ -1441,7 +1460,8 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   int totalLength = 0;
 
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-  std::cout<<"New: "<<numNames<<"\n";
+  _nimble_global_output<<"New: "<<numNames<<"\n";
+  nimble_print_to_R(_nimble_global_output);
 #endif
   
   for(int i = 0; i < numNames; i++) {
@@ -1449,20 +1469,22 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
     sizes = SEXP_2_vectorInt(VECTOR_ELT(SoneSizesAndNdims, 0));
     nDim = SEXP_2_int(VECTOR_ELT(SoneSizesAndNdims, 1));
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-    std::cout<<nodeNames[i]<<"\n";
+    _nimble_global_output<<nodeNames[i]<<"\n";
+    nimble_print_to_R(_nimble_global_output);
 #endif
     parseVarAndInds(nodeNames[i], varAndIndices);
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-    std::cout<<varAndIndices.varName<<" parsed: (";
+    _nimble_global_output<<varAndIndices.varName<<" parsed: (";
     for(int j = 0; j < varAndIndices.indices.size(); j++) {
-      std::cout<<"(";
-      for(int k = 0; k < varAndIndices.indices[j].size(); k++) std::cout<<varAndIndices.indices[j][k]<<" ";
-      std::cout<<") ";
+      _nimble_global_output<<"(";
+      for(int k = 0; k < varAndIndices.indices[j].size(); k++) _nimble_global_output<<varAndIndices.indices[j][k]<<" ";
+      _nimble_global_output<<") ";
     }
-    std::cout<<"\n";
-    std::cout<<"input nDim "<< nDim << "(";
-    for(int j = 0; j < sizes.size(); j++) std::cout<<sizes[j]<<" ";
-    std::cout<<")\n";
+    _nimble_global_output<<"\n";
+    _nimble_global_output<<"input nDim "<< nDim << "(";
+    for(int j = 0; j < sizes.size(); j++) _nimble_global_output<<sizes[j]<<" ";
+    _nimble_global_output<<")\n";
+    nimble_print_to_R(_nimble_global_output);
 #endif
     varAndIndices2mapParts(varAndIndices, nDim, sizes, mapInfo);
     (*singleAccessors)[i]->getOffset() = mapInfo.offset;
@@ -1474,11 +1496,12 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
     (*singleAccessors)[i]->setObject( sourceNamedObject->getObjectPtr(varAndIndices.varName) );
 
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-    std::cout<< varAndIndices.varName <<" "<<mapInfo.offset<<", (";
-    for(int j = 0; j < mapInfo.sizes.size(); j++) std::cout<<mapInfo.sizes[j]<<",";
-    std::cout<<"), "<<(*singleAccessors)[i]->getLength()<<", (";
-    for(int j = 0; j < mapInfo.strides.size(); j++) std::cout<<mapInfo.strides[j]<<",";
-    std::cout<<"), "<<(*singleAccessors)[i]->getSingleton()<<".\n";
+    _nimble_global_output<< varAndIndices.varName <<" "<<mapInfo.offset<<", (";
+    for(int j = 0; j < mapInfo.sizes.size(); j++) _nimble_global_output<<mapInfo.sizes[j]<<",";
+    _nimble_global_output<<"), "<<(*singleAccessors)[i]->getLength()<<", (";
+    for(int j = 0; j < mapInfo.strides.size(); j++) _nimble_global_output<<mapInfo.strides[j]<<",";
+    _nimble_global_output<<"), "<<(*singleAccessors)[i]->getSingleton()<<".\n";
+    nimble_print_to_R(_nimble_global_output);
 #endif
 
 
@@ -1486,7 +1509,8 @@ SEXP populateValueMapAccessorsFromNodeNames(SEXP StargetPtr, SEXP SnodeNames, SE
   }
   valuesAccessor->getTotalLength() = totalLength;
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-  std::cout<<totalLength<<"\n";
+  _nimble_global_output<<totalLength<<"\n";
+  nimble_print_to_R(_nimble_global_output);
 #endif
   return(R_NilValue);
 }
@@ -1504,7 +1528,8 @@ SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrM
   int totalLength = 0;
 
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-  std::cout<<"Old: "<<numAccessors<<"\n";
+  _nimble_global_output<<"Old: "<<numAccessors<<"\n";
+  nimble_print_to_R(_nimble_global_output);
 #endif
 
   
@@ -1519,18 +1544,20 @@ SEXP populateValueMapAccessors(SEXP StargetPtr, SEXP SsourceList, SEXP SModelOrM
     varName = STRSEXP_2_string(VECTOR_ELT(SoneSource, 3), 0);
     (*singleAccessors)[i]->setObject( sourceNamedObject->getObjectPtr(varName) );
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-    std::cout<< varName <<" "<<(*singleAccessors)[i]->getOffset()<<", (";
-    for(int j = 0; j < (*singleAccessors)[i]->getSizes().size(); j++) std::cout<<(*singleAccessors)[i]->getSizes()[j]<<",";
-    std::cout<<"), "<<(*singleAccessors)[i]->getLength()<<", (";
-    for(int j = 0; j < (*singleAccessors)[i]->getStrides().size(); j++) std::cout<<(*singleAccessors)[i]->getStrides()[j]<<",";
-    std::cout<<"), "<<(*singleAccessors)[i]->getSingleton()<<".\n";
+    _nimble_global_output<< varName <<" "<<(*singleAccessors)[i]->getOffset()<<", (";
+    for(int j = 0; j < (*singleAccessors)[i]->getSizes().size(); j++) _nimble_global_output<<(*singleAccessors)[i]->getSizes()[j]<<",";
+    _nimble_global_output<<"), "<<(*singleAccessors)[i]->getLength()<<", (";
+    for(int j = 0; j < (*singleAccessors)[i]->getStrides().size(); j++) _nimble_global_output<<(*singleAccessors)[i]->getStrides()[j]<<",";
+    _nimble_global_output<<"), "<<(*singleAccessors)[i]->getSingleton()<<".\n";
+    nimble_print_to_R(_nimble_global_output);
 #endif
 
     UNPROTECT(1);
   }
   valuesAccessor->getTotalLength() = totalLength;
 #ifdef _DEBUG_POPULATE_MAP_ACCESSORS
-  std::cout<<totalLength<<"\n";
+  _nimble_global_output<<totalLength<<"\n";
+  nimble_print_to_R(_nimble_global_output);
 #endif
 
   return(R_NilValue);

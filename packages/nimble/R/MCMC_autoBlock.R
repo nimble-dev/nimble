@@ -1,6 +1,6 @@
 #' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
-#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC specification, and custom-specified blockings of parameters.
+#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC configuration, and custom-specified blockings of parameters.
 #' 
 #' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intendend to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
 #' 
@@ -12,7 +12,7 @@
 #'
 #' @param autoIt The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.
 #'
-#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC specification; a named list element consisting of a quoted code block, which when executed returns an MCMC specification object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
+#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC configuration; a named list element consisting of a quoted code block, which when executed returns an MCMC configuration object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
 #'
 #' @param verbose Logical specifying whether to output considerable details of the automated block procedure, through the course of execution.  Default FALSE.
 #' 
@@ -26,7 +26,7 @@
 #' \itemize{
 #' \item \code{summary}: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
 #' \item \code{autoGroups}: A list specifying the parameter blockings converged on by the automated blocking procedure
-#' \item \code{spec}: A NIMBLE MCMC specification object corresponding to the results of the automated blocking procedure
+#' \item \code{conf}: A NIMBLE MCMC configuration object corresponding to the results of the automated blocking procedure
 #' }
 #' 
 #' @references
@@ -68,7 +68,7 @@ autoBlock <- function(Rmodel,
 ## create a new MCMC spec with the autoBlock groupings:
     spec <- configureMCMC(Rmodel, nodes = NULL)
     for(nodeGroup in lastAutoGrouping) addSamplerToSpec(Rmodel, spec, nodeGroup)
-    retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, spec=spec)
+    retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, conf=spec)
     return(invisible(retList))
 }
 

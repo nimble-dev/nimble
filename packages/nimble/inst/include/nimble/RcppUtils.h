@@ -404,6 +404,12 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 
 
 
+/* forwardsolve, backsolve */
+// 
+//NimArr<1, double> forwardsolve(NimArr<2, double> A, NimArr<1, double> b);
+//NimArr<2, double> forwardsolve(NimArr<2, double> A, NimArr<2, double> B);
+
+
 #endif
 
 

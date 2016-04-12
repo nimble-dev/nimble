@@ -46,7 +46,18 @@ asCol <- function(x) {
     matrix(x, ncol = 1)
 }
 
+#' Make an object of information about a model-parameter pairing for getParam.  Used internally
+#'
+#' Creates a simple getParam_info object, which has a list with a paramID and a type
+#'
+#' @param model A model such as returned by \link{nimbleModel}.
+#'
+#' @param node A character string naming a stochastic node, such as "mu", "beta[2]", or "eta[1:3, 2]"
+#'
+#' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
+#'
 #' @export
+#' @details This is used internally by \link{getParam}.  It is not intended for direct use by a user or even a nimbleFunction programmer. 
 makeParamInfo <- function(model, node, param) {
     distInfo <- getDistribution(model$getNodeDistribution(node))
     ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
@@ -102,7 +113,7 @@ nimSwitch <- function(paramID, IDoptions, ...) {
 rCalcNodes <- function(model, nodes){
     l_Prob = 0
     
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
     else
@@ -114,7 +125,7 @@ rCalcNodes <- function(model, nodes){
 
 rCalcDiffNodes <- function(model, nodes){
     l_Prob <- 0
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculateDiff')
     else
@@ -196,7 +207,7 @@ calculateDiff <- function(model, nodes, nodeFxnVector)
 rGetLogProbsNodes <- function(model, nodes){
     l_Prob = 0
 
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'getLogProb')
     else
@@ -227,7 +238,7 @@ getLogProb <- function(model, nodes, nodeFxnVector)
 
 
 rSimNodes <- function(model, nodes){
-    if(inherits(model, 'CmodelBaseClass') & getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
         for(nName in nodes)
             model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'simulate')
     else 
@@ -682,20 +693,27 @@ nimPrint <- function(...) {
 declare <- function(name, def){
     defCode <- substitute(def)
     name <- substitute(name)
-    if(exists(as.character(name), parent.frame())) return(invisible(NULL))
+    if(exists(as.character(name), parent.frame(), inherits = FALSE)) return(invisible(NULL))
     value <- if(defCode[[1]] == 'logical') FALSE else 0
-    if(length(defCode) == 1){
+    if(length(defCode) == 1){  ## no arg, like double()
         assign(as.character(name), value, envir = parent.frame() )
         return()
     }
     nDim = eval(defCode[[2]], envir = parent.frame() )
-    if(nDim == 0 ){
+    if(nDim == 0 ){ ## like double(0)
         assign(as.character(name), value, envir = parent.frame() )
         return()
     }
     dims = rep(1, nDim)
-    if(length(defCode) == 3)
+    if(length(defCode) == 3) ## notation like double(2, c(3, 5))
         dims = eval(defCode[[3]], envir = parent.frame() )
+    else {
+        if(length(defCode) == 2 + nDim) {
+            dims <- numeric(nDim)
+            for(i in 1:nDim)
+                dims[i] <- eval(defCode[[2 + i]], envir = parent.frame())
+        }
+    }
     if(length(dims) != nDim)
         stop('in declare, dimensions are not declared properly')
     assign(as.character(name), array(value, dim = dims), envir = parent.frame() )

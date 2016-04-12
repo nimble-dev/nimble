@@ -74,7 +74,7 @@ distributionsInputList <- list(
     
     dbeta   = list(BUGSdist = 'dbeta(shape1, shape2, mean, sd)',
                    Rdist    = 'dbeta(shape1 = mean^2*(1-mean)/sd^2-mean, shape2 = mean*(1-mean)^2/sd^2+mean-1)',
-                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1*shape2)^2*(shape1+shape2+1)))'),
+                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1 + shape2)^2*(shape1+shape2+1)))'),
                    range    = c(0, 1),
                    pqAvail  = TRUE),
     
@@ -150,11 +150,8 @@ distributionsInputList <- list(
     
     dmnorm  = list(BUGSdist = 'dmnorm(mean, prec, cov, cholesky, prec_param)',
                    Rdist    = c('dmnorm_chol(mean, cholesky = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, cholesky = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, cholesky, prec_param)'),
-                  altParams= c('prec = calc_dmnormAltParams(cholesky, prec_param, 1)', 'cov = calc_dmnormAltParams(cholesky, prec_param, 0)'),
-  #       altParams= c('prec = cholesky', 'cov = cholesky'), ## NOT CORRECT. These are placeholders to get other parts working
-        types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
-    # altParams above is inefficient computationally;  want back/forwardsolve to avoid inverse; and having crossProd would be more efficient too - CP
-    # also at the moment, the cholesky arg being fed to calc_dmnormAltParams is chol(Q) rather than lifted_chol_foo; we should revisit this when we rework altParms
+                   altParams= c('prec = calc_dmnormAltParams(cholesky, prec_param, 1)', 'cov = calc_dmnormAltParams(cholesky, prec_param, 0)'),
+                   types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
     
     ## dmt     = list(BUGSdist = 'dmt(mu, T, k)'),   ## not sure the state of this?  -DT
     

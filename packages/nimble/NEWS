@@ -1,8 +1,18 @@
-                        CHANGES IN VERSION 0.5 (Feb. 2016)
+                        CHANGES IN VERSION 0.5 (March 2016)
 
 USER LEVEL CHANGES
 
--- new system for automating the comparison of different MCMCs and generating html results pages. main function is compareMCMCs.
+-- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, with the same functionality as in R.
+
+-- Improved performance of conjugate multivariate-normal - multivariate-normal sampling.
+
+-- API changes for MCMCspec objects: new method printSamplers() prints the current samplers (replacing the old getSamplers() method); new functionality for getSamplers(), which now returns a list of samplerSpec objects; new overloaded functionality of setSamplers(), which can accept a list of samplerSpec objects, replacing the current set of samplers; new method getSamplerDefinition(), which returns the nimbleFunction definition of a sampler.
+
+-- API created for modifying samplerSpec objects: setName(), setSamplerFunction(), setTarget(), setControl().
+
+-- MCMC conjugate sampling efficiency improved by ~33%
+
+-- new system for automating the comparison of different MCMCs and generating html results pages: the main function is compareMCMCs.
 
 -- enhanced checking of model to check for size and dimension mismatch in BUGS code
 
@@ -10,11 +20,19 @@ USER LEVEL CHANGES
 
 -- models have a new method, getDependenciesList, that provides a list of neighbor relationships in the model graph.
 
--- The NIMBLE DSL (nimbleFunction run code) has a new function getParam(model, node, parameter) that returns the value of a parameter of a stochastic node.
+-- There is a new function, getParam(model, node, parameter), that returns the value of a parameter of a stochastic node.  It works in R and in the NIMBLE DSL (compilable run code).
+
+-- Models now have member functions for calculate, simulate, getLogProb, calculateDiff, and getParam.  model$calculate(nodes) is equivalent to calculate(model, nodes), etc.
 
 -- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
 
--- Block sampler is a bit more efficient
+-- added ability to use any of the methods for R's optim function in MCEM optimization step
+
+-- There are more flexible ways to provide arguments to declare and setSize.
+
+-- The random walk block sampler is a bit more efficient.
+
+-- There is better error trapping during some compilation steps.
 
 DEVELOPER LEVEL CHANGES
 

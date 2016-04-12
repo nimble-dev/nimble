@@ -66,6 +66,7 @@
 \alias{cAddBlank}
 \alias{calcAdaptationFactor}
 \alias{calc_dmnormAltParams}
+\alias{calc_dmnormConjugacyContributions}
 \alias{calc_E_llk_gen}
 \alias{calculateDiff_keywordInfo}
 \alias{calculate_keywordInfo}
@@ -200,7 +201,6 @@
 \alias{cppProjectClass}
 \alias{cppSEXP}
 \alias{cppStrideType}
-\alias{cppVar}
 \alias{cppVarFull}
 \alias{cppVecNimArr}
 \alias{cppVecNimArrPtr}
@@ -211,6 +211,7 @@
 \alias{C_rdirch}
 \alias{createDefault_isDataObj}
 \alias{createDFfromABlist}
+\alias{createDynamicConjugateSamplerName}
 \alias{createMakevars}
 \alias{createNamedObjectsFromList}
 \alias{C_rinterval}
@@ -246,6 +247,12 @@
 \alias{double}
 \alias{doubleBracket_keywordInfo}
 \alias{dropSingleSizes}
+\alias{dynamicConjugateSamplerAdd}
+\alias{dynamicConjugateSamplerDefinitionsEnv}
+\alias{dynamicConjugateSamplerExists}
+\alias{dynamicConjugateSamplerFunctionsEnv}
+\alias{dynamicConjugateSamplerGet}
+\alias{dynamicConjugateSamplerWrite}
 \alias{effectiveSizeHO}
 \alias{effectiveSizeStan}
 \alias{efficiencyDetailsComparisonComponent}
@@ -256,7 +263,6 @@
 \alias{eigenizeCalls}
 \alias{eigenizeCallsBeforeRecursing}
 \alias{eigenize_chainedCall}
-\alias{eigenize_chol}
 \alias{eigenize_cWiseAddSub}
 \alias{eigenize_cWiseBinaryArray}
 \alias{eigenize_cWiseBinaryEitherMatch}
@@ -268,6 +274,7 @@
 \alias{eigenize_cWiseUnaryMatrix}
 \alias{eigenize_doNotRecurse}
 \alias{eigenizeMatricize}
+\alias{eigenize_matrixOps}
 \alias{eigenizeName}
 \alias{eigenizeNameStrided}
 \alias{eigenize_nfVar}
@@ -306,6 +313,7 @@
 \alias{exprClasses_liftMaps}
 \alias{exprClasses_processSpecificCalls}
 \alias{exprClasses_setSizes}
+\alias{exprClassProcessingErrorMsg}
 \alias{exprName2Cpp}
 \alias{exprTypeInfoClass}
 \alias{extractAnyVectorizedIndexExprs}
@@ -387,6 +395,7 @@
 \alias{hasBracket}
 \alias{icloglog}
 \alias{identityAssert}
+\alias{identityMatrix}
 \alias{ifOrWhile}
 \alias{ilogit}
 \alias{IncludeCodeDir}
@@ -400,6 +409,7 @@
 \alias{inverse}
 \alias{iprobit}
 \alias{is.blank}
+\alias{is.Cnf}
 \alias{isCodeArgBlank}
 \alias{isCodeScalar}
 \alias{isEigScalar}
@@ -420,6 +430,7 @@
 \alias{is.vectorized}
 \alias{keywordInfoClass}
 \alias{keywordList}
+\alias{keywordListModelMemberFuns}
 \alias{keywordOnlyMatchDistList}
 \alias{labelFunctionCreator}
 \alias{length.nimPointerList}
@@ -437,6 +448,7 @@
 \alias{makeCSingleVariableAccessor}
 \alias{MakeCustomModelClass}
 \alias{makeCustomModelValuesClass}
+\alias{makeDeclareSizeField}
 \alias{makeDefaultDirName}
 \alias{makeDSLCallforVoidPtr_fromArgInfAndCall}
 \alias{makeEigenArgsMatch}
@@ -447,6 +459,7 @@
 \alias{makeFixedParameterCallCodeForOptim}
 \alias{makefnScaleLine}
 \alias{makeGetCodeFromAccessorVector}
+\alias{makeIndexedVariable}
 \alias{makeIndexNamePieces}
 \alias{makeLogProbEnvName}
 \alias{makeLogProbName}
@@ -469,7 +482,6 @@
 \alias{makeNumericList}
 \alias{makeOffsetRexpr}
 \alias{makeOptimFunctionCallLine}
-\alias{makeParamInfo}
 \alias{makeRowName}
 \alias{makeSetCodeFromAccessorVector}
 \alias{makeSingleIndexAccessCodeNames}
@@ -489,6 +501,8 @@
 \alias{matchFunctions}
 \alias{matchKeywordCode}
 \alias{matchKeywordCodeMemberFun}
+\alias{matchKeywords_recurse}
+\alias{matchModelMemberFunctions}
 \alias{matrix2mv}
 \alias{matrixEigenOperators}
 \alias{matrixFlipOperators}
@@ -506,6 +520,7 @@
 \alias{minMeanAllComparisonComponent}
 \alias{minMeanComparisonComponent}
 \alias{modelDefInfoClass}
+\alias{modelMemberFun_keywordInfo}
 \alias{modelValuesAccessorVector}
 \alias{modelValuesAccessorVector_setupCodeTemplate}
 \alias{modelValuesElement2Matrix}
@@ -571,6 +586,7 @@
 \alias{nimArrMapExpr}
 \alias{NimbleCodeDir}
 \alias{nimbleFunctionList}
+\alias{nimbleGeneralParseDeparse}
 \alias{nimbleIncludeFile}
 \alias{nimbleOrRfunctionNames}
 \alias{nimbleProjectClass}
@@ -638,6 +654,7 @@
 \alias{numericList}
 \alias{NumericListBase}
 \alias{operatorRank}
+\alias{operatorsAllowedBeforeIndexBracketsWithoutLifting}
 \alias{OptimFun_argDefs}
 \alias{OptimReadyFunction}
 \alias{optimReadyFun_setupCodeTemplate}
@@ -689,6 +706,8 @@
 \alias{probit}
 \alias{processDistributionAliases}
 \alias{processKeyword}
+\alias{processKeywordCodeMemberFun}
+\alias{processKeywords_recurse}
 \alias{processModelFile}
 \alias{processMonitorNames}
 \alias{processNonParseableCode}

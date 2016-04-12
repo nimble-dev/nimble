@@ -478,9 +478,10 @@ void nimCopyOneTyped(SingleVariableAccessBase *fromSVA, SingleVariableAccessBase
   NimArrBase<Tfrom> *fromNimPtr = static_cast<NimArrBase<Tfrom> *> ( (fromSVA)->getNimArrPtr() ); //	I don't believe static casting should be necessary
   NimArrBase<Tto>  *toNimPtr = static_cast<NimArrBase<Tto> *> ( (toSVA)->getNimArrPtr() );		//	Same
   if(fromSVA->getLength() != toSVA->getLength()) {
-    cout<<"Error in nimCopyOneTyped: lengths do not match.\n";
-    cout << "FromLength = " << fromSVA->getLength() << " ToLength = "<< toSVA->getLength() << "\n";
-  	return;
+    _nimble_global_output<<"Error in nimCopyOneTyped: lengths do not match.\n";
+    _nimble_global_output << "FromLength = " << fromSVA->getLength() << " ToLength = "<< toSVA->getLength() << "\n";
+    nimble_print_to_R(_nimble_global_output);
+    return;
   }
   if(fromSVA->getLength() == 1) {
     (*toNimPtr)[toSVA->getIndexStart()] = (*fromNimPtr)[fromSVA->getIndexStart()];

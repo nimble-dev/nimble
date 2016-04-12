@@ -14,11 +14,12 @@ void nimble_print_to_R(std::ostringstream &input) {
 }
 
 void multivarTestCall(double *x, int n) {
-  std::cout<<"In multivarTestCall\n";
+  _nimble_global_output<<"In multivarTestCall\n";
   for(int iii = 0; iii < n; ++iii) {
-    std::cout<<x[iii]<<" ";
+    _nimble_global_output<<x[iii]<<" ";
   }
-  std::cout<<"\n";
+  _nimble_global_output<<"\n";
+  nimble_print_to_R(_nimble_global_output);
 }
 
 SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize) {
@@ -528,7 +529,7 @@ SEXP getNRow(SEXP Sextptr){
 	}
 	else{
 		PRINTF("Data type of VecNimArr not currently supported\n");
-		cout<< "vecType = " << vecType << "\n";
+		_nimble_global_output<< "vecType = " << vecType << "\n"; nimble_print_to_R(_nimble_global_output);
 //		cout << "vecType DOUBLE = " << DOUBLE << "\n";
 		}
 	SEXP rNRow;
@@ -576,14 +577,16 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 	  for(int i = 0; i < k; i++){
 	  if((indexFrom[i] > sizeFrom) | (indexFrom[i] <= 0))
 	    {
-	    cout<<"Warning: invalid index to copy from. Index = " << indexFrom[i] << " sizeFrom = " << sizeFrom << "\n";
+	    _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexFrom[i] << " sizeFrom = " << sizeFrom << "\n";
+	    nimble_print_to_R(_nimble_global_output);
 	    if(i > 0)
 	      PRINTF("Warning: partial copy completed before error discovered!\n");
 	    return(returnStatus(false) );
     	}
   	if((indexTo[i] > sizeTo) | (indexTo[i] <=0))
   	  {
-  	  cout<<"Warning: invalid index to copy from. Index = " << indexTo[i] << " sizeTo = "<< sizeTo << "\n";
+	    _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexTo[i] << " sizeTo = "<< sizeTo << "\n";
+	    nimble_print_to_R(_nimble_global_output);
   	  if(i > 0)
   	    PRINTF("Warning: partial copy completed before error discovered!\n");
   	  return(returnStatus(false) );
@@ -622,15 +625,17 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 	  for(int i = 0; i < k; i++){
 	  if((indexFrom[i] > sizeFrom) | (indexFrom[i] <= 0))
 	    {
-	    cout<<"Warning: invalid index to copy from. Index = " << indexFrom[i] << " sizeFrom = " << sizeFrom << "\n";
+	    _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexFrom[i] << " sizeFrom = " << sizeFrom << "\n";
+	    nimble_print_to_R(_nimble_global_output);
 	    if(i > 0)
 	      PRINTF("Warning: partial copy completed before error discovered!\n");
 	    return(returnStatus(false) );
     	}
   	if((indexTo[i] > sizeTo) | (indexTo[i] <=0))
   	  {
-  	  cout<<"Warning: invalid index to copy from. Index = " << indexTo[i] << " sizeTo = "<< sizeTo << "\n";
-  	  if(i > 0)
+  	  _nimble_global_output<<"Warning: invalid index to copy from. Index = " << indexTo[i] << " sizeTo = "<< sizeTo << "\n";
+	  nimble_print_to_R(_nimble_global_output);
+	  if(i > 0)
   	    PRINTF("Warning: partial copy completed before error discovered!\n");
   	  return(returnStatus(false) );
   	  }
@@ -1735,4 +1740,23 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 	//actually, nothing else to do at this point! 
 	//Could return ans if we decided to build it on the fly here instead of providing it as argument
 }	
+
+
+
+/* forwardsolve, backsolve */
+//
+//NimArr<1, double> forwardsolve(NimArr<2, double> A, NimArr<1, double> b) {
+//  NimArr<1, double> ans = NimArr<1, double>();
+//  return(ans);
+//}
+// 
+//NimArr<2, double> forwardsolve(NimArr<2, double> A, NimArr<2, double> B) {
+//  NimArr<2, double> ans = NimArr<2, double>();
+//  return(ans);
+//}
+
+
+
+
+
 

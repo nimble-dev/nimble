@@ -34,7 +34,11 @@ exprClass <- setRefClass('exprClass',
                              show = function(indent = '', showType = FALSE, showAssertions = FALSE, showToEigenize = FALSE) {
                                  ## optionally include size information
                                  sizeDisp <- if(showType) { 
-                                     paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                                     if(inherits(type, 'uninitializedField')) {
+                                         paste0(' \t| type = (uninitializedField)(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                                     } else {
+                                         paste0(' \t| type = ', type,'(', length(sizeExprs), ', c(', paste0(unlist(lapply(sizeExprs, function(x) if(inherits(x, 'exprClass')) nimDeparse(x) else deparse(x))), collapse = ', '), '))')
+                                     }
                                  } else
                                      character()
 
@@ -182,6 +186,14 @@ nimDeparse <- function(code, indent = '') {
     }
     ## for a general function call
     return( paste0(code$name, '(', paste0(unlist(lapply(code$args, nimDeparse) ), collapse = ', '), ')' ) )
+}
+
+## error trapping utilities to be used from the various processing steps
+exprClassProcessingErrorMsg <- function(code, msg) {
+    contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
+    ans <- paste0(msg, '\n This occurred for: ', nimDeparse(code),'\n', collapse = '')
+    if(!is.null(contextCode)) ans <- paste(ans, '\n This was part of the call: ', contextCode, collapse = '')
+    ans
 }
 
 ## some utilities

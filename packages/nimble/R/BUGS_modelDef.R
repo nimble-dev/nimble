@@ -78,13 +78,13 @@ modelDefClass <- setRefClass('modelDefClass',
                                  addMissingIndexing             = function() {},
                                  removeTruncationWrapping       = function() {},
                                  expandDistributions            = function() {},
-                                 checkMultivarExpr          = function() {},
+                                 checkMultivarExpr              = function() {},
                                  processLinks                   = function() {},
                                  reparameterizeDists            = function() {},
-                                 addRemainingDotParams          = function() {},
                                  insertDistributionBounds       = function() {},
                                  replaceAllConstants            = function() {},
                                  liftExpressionArgs             = function() {},
+                                 addRemainingDotParams          = function() {},
                                  addIndexVarsToDeclInfo         = function() {},
                                  genSymbolicParentNodes         = function() {},
                                  genReplacementsAndCodeReplaced = function() {},
@@ -140,13 +140,13 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     removeTruncationWrapping()        ## transforms T(ddist(),lower,upper) to put bounds into declInfo
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
-    checkMultivarExpr()           ## checks that multivariate params are not expressions
+    checkMultivarExpr()               ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName
-    addRemainingDotParams()           ## overwrites declInfo, adds any additional .paramNames which aren't there  (uses distributions)
-    insertDistributionBounds()        # put lower and upper into code expression
+    insertDistributionBounds()        ## put lower and upper into code expression
     replaceAllConstants()             ## overwrites declInfo with constants replaced; only replaces scalar constants
     liftExpressionArgs()              ## overwrites declInfo (*and adds*), lifts expressions in distribution arguments to new nodes.  does NOT lift '.param' names
+    addRemainingDotParams()           ## overwrites declInfo, adds any additional .paramNames which aren't there  (uses distributions)
     addIndexVarsToDeclInfo()          ## sets field declInfo[[i]]$indexVariableExprs from contexts.  must be after overwrites of declInfo
     genSymbolicParentNodes()          ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
     genReplacementsAndCodeReplaced()  ## sets fields: declInfo[[i]]$replacements, $codeReplaced, $replacementNameExprs, $logProbNodeExpr
@@ -641,7 +641,7 @@ modelDefClass$methods(insertDistributionBounds = function() {
     for(i in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[i]]
         if(BUGSdecl$type != 'stoch' || !BUGSdecl$truncated) next
-
+        
         newValueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
 
         nParams <- length(newValueExpr) 
@@ -2022,7 +2022,8 @@ modelDefClass$methods(genVarInfo3 = function() {
             }
             if(varInfo[[rhsVar]]$nDim > 0) {
                 for(iDim in 1:varInfo[[rhsVar]]$nDim) {
-                    indexNamePieces <- BUGSdecl$parentIndexNamePieces[[iV]][[iDim]] 
+                    indexNamePieces <- BUGSdecl$parentIndexNamePieces[[iV]][[iDim]]
+                    if(is.null(indexNamePieces)) stop(paste0('There is a problem with some indexing in this line: ', deparse(BUGSdecl$codeReplaced), '.\nOne way this can happen is if you wanted to provide a vector of indices but did not include it in constants.'))
                     if(is.list(indexNamePieces)) { ## a list would be made if there is a ':' operator in the index expression
                         indsLow <- if(is.numeric(indexNamePieces[[1]])) indexNamePieces[[1]] else BUGSdecl$replacementsEnv[[ indexNamePieces[[1]] ]]
                         indsHigh <- if(is.numeric(indexNamePieces[[2]])) indexNamePieces[[2]] else BUGSdecl$replacementsEnv[[ indexNamePieces[[2]] ]]

@@ -17,6 +17,11 @@ is.nf <- function(f) {
                existsFunctionEnvVar(f, 'nfRefClassObject') ) 	
 }
 
+is.Cnf <- function(f) {
+    if(inherits(f, 'CnimbleFunctionBase')) return(TRUE)
+    return(FALSE)
+}
+
 is.nfGenerator <- function(f) {
     return(is.function(f) && 
                existsFunctionEnvVar(f, 'generatorFunction') &&
@@ -38,6 +43,7 @@ nf_getRefClassObject <- function(f) {
 nf_getGeneratorFunction <- function(f) {
     if(is.nfGenerator(f))    return(f)
     if(is.nf(f))             return(nf_getRefClassObject(f)$.generatorFunction)
+    if(is.Cnf(f))            return(nf_getGeneratorFunction(f$Robject))
     
     #if(is.refObject(f))		return(f$.generatorFunction)
     
@@ -63,6 +69,21 @@ nf_getSetupOutputNames <- function(f, hidden = FALSE) {
     stop('invalid nimbleFunction argument\n')
 }
 
+#'
+#' Get nimbleFunction definition
+#'
+#' Returns a list containing the nimbleFunction definition components (setup function, run function, and other member methods) for the supplied nimbleFunction generator or specialized instance.
+#'
+#' @param nf A nimbleFunction generator, or a compiled or un-compiled specialized nimbleFunction.
+#'
+#' @export
+#' @author Daniel Turek
+getDefinition <- function(nf) {
+    nfGen <- nf_getGeneratorFunction(nf)
+    nfEnv <- environment(nfGen)
+    defList <- c(list(setup=nfEnv$setup, run=nfEnv$run), nfEnv$methods)
+    defList
+}
 
 
 

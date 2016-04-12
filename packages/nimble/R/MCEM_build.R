@@ -30,6 +30,8 @@ calc_E_llk_gen = nimbleFunction(
         if(is.nan(mean_LL)){
             mean_LL = -Inf	
         }
+        # L-BFGS-B errors out if given -Inf
+        if(mean_LL == -Inf) mean_LL = -1e307
         returnType(double())
         return(mean_LL)
     },
@@ -52,8 +54,10 @@ calc_E_llk_gen = nimbleFunction(
 #' \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}. 
 #' @param burnIn			burn-in used for MCMC sampler in E step
 #' @param mcmcControl		list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details
-#' @param boxConstraints	A list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.
-#' @param buffer			A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount. 
+#' @param optimMethod		method to be passed to \code{optim} as the method argument - see \code{help(optim)} for more details; defaults to L-BFGS-B
+#' @param optimControl		list passed to \code{optim} as the \code{control} argument - see \code{help(optim)} for more details
+#' @param boxConstraints	A list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed. Only used with optim method L-BFGS-B.
+#' @param buffer			A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount. Only used with optim method L-BFGS-B.
 #' @author Clifford Anderson-Bergman
 #' @export
 #' @details buildMCEM calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
@@ -110,13 +114,13 @@ calc_E_llk_gen = nimbleFunction(
 #' }
 #'
 #' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
-buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20), boxConstraints = list(), buffer = 10^-6) {
+buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20), boxConstraints = list(), buffer = 10^-6, optimMethod = "L-BFGS-B", optimControl = list()) {
     latentNodes = model$expandNodeNames(latentNodes)
     latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
     allStochNonDataNodes = model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
     
     if(buffer == 0)
-    	cat("warning: buffer 0. Can cause problems if the likelihood function is degenerate on boundary")
+    	cat("warning: buffer is zero. This can cause problems if the likelihood function is degenerate on the boundary.")
     if(buffer < 0)
     	stop('buffer must be non-negative')
     
@@ -188,11 +192,16 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         }
         
         sampleSize = m1
+        if(optimMethod != 'L-BFGS-B') {
+            low_limits <- -Inf
+            hi_limits <- Inf
+        }
+        optimControl$fnscale <- -1
         for(it in 1:maxit){
             if(it > maxit/2)
                 sampleSize = m2
             cmcmc_Latent$run(sampleSize, reset = TRUE)
-            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
+            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, control = optimControl, method = optimMethod, lower = low_limits, upper = hi_limits)
             theta = optimOutput$par            
             comp_llk <- cCalc_E_llk$run(theta) 	#actually doing this to set values. wasteful, but optim is going to be several fold longer
         }

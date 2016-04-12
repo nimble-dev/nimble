@@ -73,7 +73,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ## 1. generate CnodeFunClasses
                                        ##     - by iterating through the nodeGenerators in the Rmodel
                                        nodesEnv <- new.env()
-                                       asTopLevel <- !getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')
+                                       asTopLevel <- getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
                                        for(i in names(Rmodel$nodeFunctions)) {
                                            nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll, asTopLevel = asTopLevel)
                                        }

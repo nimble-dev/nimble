@@ -104,7 +104,12 @@ makeMapExprFromBrackets <- function(code, drop = TRUE) {
             } else {
                 ## It is a ":"
                 blockBool[im1] <- TRUE
-                firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]$args[[1]]), keep.source = FALSE)[[1]] 
+                if(!is.null(code$args[[i]]$sizeExprs))
+                    if(length(code$args[[i]]$sizeExprs[[1]])==1)
+                        if(is.numeric(code$args[[i]]$sizeExprs[[1]]))
+                            if(code$args[[i]]$sizeExprs[[1]]==1)
+                                blockBool[im1] <- FALSE
+                firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]$args[[1]]), keep.source = FALSE)[[1]]
             }
         } else {
             firstIndexRexprs[[im1]] <- code$args[[i]]
