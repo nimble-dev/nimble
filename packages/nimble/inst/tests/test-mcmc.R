@@ -760,3 +760,33 @@ test_that('binary sampler posterior', expect_less_than(abs(means[['g']] - 0.0475
 test_that('binary sampler posterior', expect_less_than(abs(means[['h']] - 0.5), tol))
 
 
+
+## testing the binary sampler handles 'out of bounds' ok
+
+code <- nimbleCode({
+    px ~ dbern(0.5)
+    py ~ dbern(0.5)
+    x ~ dnorm(0, sd = px - 0.5)
+    y ~ dnorm(0, tau = py)
+})
+constants <- list()
+data <- list(x = 0, y = 0)
+inits <- list(px = 1, py = 1)
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+spec <- configureMCMC(Rmodel)
+spec$printSamplers()
+Rmcmc <- buildMCMC(spec)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+set.seed(0)
+Rmcmc$run(100)
+Rsamples <- as.matrix(Rmcmc$mvSamples)
+test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Rsamples) == 1)))
+
+set.seed(0)
+Cmcmc$run(100)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Csamples) == 1)))
+
