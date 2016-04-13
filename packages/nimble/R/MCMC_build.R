@@ -87,6 +87,7 @@ buildMCMC <- nimbleFunction(
         }
 
         for(iter in 1:niter) {
+            checkInterrupt()
             for(i in seq_along(samplerFunctions))
                 samplerFunctions[[i]]$run()
             if(iter %% thin  == 0)
