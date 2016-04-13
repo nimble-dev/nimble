@@ -51,7 +51,7 @@ sampler_binary <- nimbleFunction(
         currentProb <- exp(getLogProb(model, calcNodes))
         model[[target]] <<- 1 - model[[target]]
         otherProb <- exp(calculate(model, calcNodes))
-        if(runif(1,0,1) < otherProb/(currentProb+otherProb))
+        if(!is.nan(otherProb) & runif(1,0,1) < otherProb/(currentProb+otherProb))
             nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else
             nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
