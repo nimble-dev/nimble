@@ -459,8 +459,10 @@ addSamplerToSpec <- function(Rmodel, spec, nodeGroup) {
     ## if((!is.null(conjugacyResult)) && conjOveride) {
     ##     spec$addSampler(target = ??????, type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
     ## }
-    discrete <- Rmodel$isDiscrete(nodeGroup)
-    if(discrete) {
+    if(Rmodel$isBinary(nodeGroup)) {
+        spec$addSampler(target = nodeGroup, type = 'binary', print = FALSE); return()
+    }
+    if(Rmodel$isDiscrete(nodeGroup)) {
         spec$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {

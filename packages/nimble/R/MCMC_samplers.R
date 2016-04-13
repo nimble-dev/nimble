@@ -35,6 +35,34 @@ sampler_end <- nimbleFunction(
 
 
 ####################################################################
+### binary Gibbs sampler ###########################################
+####################################################################
+
+sampler_binary <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
+        ###  node list generation  ###
+        calcNodes  <- model$getDependencies(target)
+    },
+    run = function() {
+        currentProb <- exp(getLogProb(model, calcNodes))
+        model[[target]] <<- 1 - model[[target]]
+        otherProb <- exp(calculate(model, calcNodes))
+        if(runif(1,0,1) < otherProb/(currentProb+otherProb))
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+
+
+####################################################################
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
 

@@ -177,6 +177,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             for(i in seq_along(nodes)) {
             	node <- nodes[i]
                 discrete <- model$isDiscrete(node)
+                binary <- model$isBinary(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 
@@ -205,6 +206,9 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     if(!is.null(conjugacyResult)) {
                         addConjugateSampler(conjugacyResult = conjugacyResult, print = print);     next }
                 }
+
+                ## if node is discrete 0/1 (binary), assign 'binary' sampler
+                if(binary) { addSampler(target = node, type = 'binary', print = print);     next }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
                 if(discrete) { addSampler(target = node, type = 'slice', print = print);     next }
