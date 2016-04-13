@@ -1,6 +1,6 @@
                         CHANGES IN VERSION 0.5 (March 2016)
 
--- Added binary sampler for Gibbs sampling of discrete 0/1 nodes.
+-- Added binary sampler for Gibbs sampling of discrete 0/1 nodes. This is the default sampler used for Bernoulli and Binomial(p, size=1) nodes.
 
 USER LEVEL CHANGES
 
