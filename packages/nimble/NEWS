@@ -1,5 +1,7 @@
                         CHANGES IN VERSION 0.5 (March 2016)
 
+-- Added binary sampler for Gibbs sampling of discrete 0/1 nodes.
+
 USER LEVEL CHANGES
 
 -- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, with the same functionality as in R.
