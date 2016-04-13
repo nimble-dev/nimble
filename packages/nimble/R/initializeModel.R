@@ -34,7 +34,7 @@ initializeModel <- nimbleFunction(
 
         RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
         if(length(RHSonlyNodes) > 0) {
-            initFunctionList[[iter]] <- checkRSHonlyInit(model = model, nodes = RHSonlyNodes)
+            initFunctionList[[iter]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodes)
             iter <- iter + 1
         }
         
@@ -58,7 +58,7 @@ initializeModel <- nimbleFunction(
 
 nodeInit_virtual <- nimbleFunctionVirtual()
 
-checkRSHonlyInit <- nimbleFunction(
+checkRHSonlyInit <- nimbleFunction(
     contains = nodeInit_virtual,
     setup = function(model, nodes) {},
     run = function() {
