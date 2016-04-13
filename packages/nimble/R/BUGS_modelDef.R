@@ -1890,7 +1890,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$types <<- types[newGraphID_2_oldGraphID]
     maps$notStoch <<- maps$types != 'stoch'
     maps$nodeNamesLHSall <<- nodeNamesLHSall
-    maps$nodeNamesRHSonly <<- nodeNamesRHSonly
+    maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
     if(any(duplicated(maps$nodeNames))) stop(paste0("Error building model, there are multiple definitions for nodes:", paste(maps$nodeNames[duplicated(maps$nodeNames)], collapse = ',')))
     if(debug) browser()
