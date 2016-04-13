@@ -1259,7 +1259,10 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
     vectorIndices <- lapply(parentIndexNamePieces, function(x) {if(is.list(x)) {allScalar <<- FALSE; return(TRUE)}; FALSE})
 
         ## step 4 evaporated
-    currentVertexCounts <- tabulate(var2vertexID, max(max(var2vertexID, na.rm = TRUE), maxVertexID))
+        if(all(is.na(var2vertexID)))
+            currentVertexCounts <- rep(0, maxVertexID)
+        else
+            currentVertexCounts <- tabulate(var2vertexID, max(max(var2vertexID, na.rm = TRUE), maxVertexID))
     ## 5. Set up initial table of vertexIDcounts
 
     ## 6. All scalar case: iterate or vectorize via cbind and put new vertexIDs over -1s
