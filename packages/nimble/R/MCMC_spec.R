@@ -237,7 +237,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = TRUE, name) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name) {
             '
 Adds a sampler to the list of samplers contained in the MCMCspec object.
 
