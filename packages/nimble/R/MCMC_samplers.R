@@ -41,10 +41,10 @@ sampler_end <- nimbleFunction(
 sampler_binary <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        ###  node list generation  ###
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         if(length(targetAsScalar) > 1)     stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
-        ###  node list generation  ###
         calcNodes  <- model$getDependencies(target)
     },
     run = function() {
@@ -465,7 +465,7 @@ sampler_slice <- nimbleFunction(
         maxSteps      <- control$sliceMaxSteps
         ###  node list generation  ###
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop(paste0('more than one target: ', target, '; cannot use slice sampler'))
+        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
         calcNodes <- model$getDependencies(target)
         ###  numeric value generation  ###
         widthOriginal <- width
