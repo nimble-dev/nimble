@@ -25,7 +25,7 @@ distributionsInputList <- list(
     dbin    = list(BUGSdist = 'dbin(prob, size)',
                    Rdist    = 'dbinom(size, prob)',
                    discrete = TRUE,
-                   range = c(0, 1),
+                   range = c(0, Inf),
                    pqAvail = TRUE,
                    alias   = 'dbinom'),
     

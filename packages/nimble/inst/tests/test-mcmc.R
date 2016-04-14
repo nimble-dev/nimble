@@ -692,3 +692,101 @@ test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numIt
           resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
             sd = list(Omega = matrix(0.06, M, M))))
 # issue with Chol in R MCMC - probably same issue as in jaw-linear
+
+
+
+## testing binary sampler
+
+code <- nimbleCode({
+    a ~ dbern(0.5)
+    b ~ dbern(0.6)
+    c ~ dbern(0.05)
+    d ~ dbin(prob=0.2, size=1)
+    e ~ dbinom(prob=0.9, size=1)
+    f ~ dbern(0.5)
+    g ~ dbern(0.5)
+    h ~ dbern(0.5)
+    for(i in 1:10)
+        yf[i] ~ dnorm(f, sd = 1)
+    for(i in 1:10)
+        yg[i] ~ dnorm(g, sd = 1)
+    for(i in 1:10)
+        yh[i] ~ dnorm(h, sd = 1)
+})
+constants <- list()
+data <- list(yf = c(rep(0,2), rep(1,8)), yg = c(rep(0,8), rep(1,2)), yh = c(rep(0,5), rep(1,5)))
+inits <- list(a=0, b=0, c=0, d=0, e=0, f=0, g=0, h=0)
+
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+test_that('model$isBinary', expect_true(Rmodel$isBinary('a')))
+test_that('model$isBinary', expect_true(Rmodel$isBinary('b')))
+test_that('model$isBinary', expect_true(Rmodel$isBinary('c')))
+test_that('model$isBinary', expect_true(Rmodel$isBinary('d')))
+test_that('model$isBinary', expect_true(Rmodel$isBinary('e')))
+test_that('model$isBinary', expect_true(Rmodel$isBinary('f')))
+test_that('model$isBinary', expect_true(Rmodel$isBinary('g')))
+test_that('model$isBinary', expect_true(Rmodel$isBinary('h')))
+
+spec <- configureMCMC(Rmodel, nodes = NULL)
+spec$addSampler('a', 'binary', print=FALSE)
+spec$addSampler('b', 'binary', print=FALSE)
+spec$addSampler('c', 'binary', print=FALSE)
+spec$addSampler('d', 'binary', print=FALSE)
+spec$addSampler('e', 'binary', print=FALSE)
+spec$addSampler('f', 'binary', print=FALSE)
+spec$addSampler('g', 'binary', print=FALSE)
+spec$addSampler('h', 'binary', print=FALSE)
+##spec$printSamplers()
+
+Rmcmc <- buildMCMC(spec)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+set.seed(0)
+Cmcmc$run(100000)
+samples <- as.matrix(Cmcmc$mvSamples)
+means <- apply(samples, 2, mean)
+##means
+
+tol <- 0.0025
+test_that('binary sampler posterior', expect_less_than(abs(means[['a']] - 0.5), tol))
+test_that('binary sampler posterior', expect_less_than(abs(means[['b']] - 0.6), tol))
+test_that('binary sampler posterior', expect_less_than(abs(means[['c']] - 0.05), tol))
+test_that('binary sampler posterior', expect_less_than(abs(means[['d']] - 0.2), tol))
+test_that('binary sampler posterior', expect_less_than(abs(means[['e']] - 0.9), tol))
+test_that('binary sampler posterior', expect_less_than(abs(means[['f']] - 0.9525), tol))
+test_that('binary sampler posterior', expect_less_than(abs(means[['g']] - 0.0475), tol))
+test_that('binary sampler posterior', expect_less_than(abs(means[['h']] - 0.5), tol))
+
+
+
+## testing the binary sampler handles 'out of bounds' ok
+
+code <- nimbleCode({
+    px ~ dbern(0.5)
+    py ~ dbern(0.5)
+    x ~ dnorm(0, sd = px - 0.5)
+    y ~ dnorm(0, tau = py)
+})
+constants <- list()
+data <- list(x = 0, y = 0)
+inits <- list(px = 1, py = 1)
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+spec <- configureMCMC(Rmodel)
+spec$printSamplers()
+Rmcmc <- buildMCMC(spec)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+set.seed(0)
+Rmcmc$run(100)
+Rsamples <- as.matrix(Rmcmc$mvSamples)
+test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Rsamples) == 1)))
+
+set.seed(0)
+Cmcmc$run(100)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Csamples) == 1)))
+

@@ -314,10 +314,26 @@ autoBlockClass <- setRefClass(
             if(auto) {
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[bestInd]])
                 burnedSamples <- burnedSamples[, abModel$scalarNodeVectorCont]   ## making work with discrete nodes
-                empCov[[it]] <<- cov(burnedSamples)
-                empCor[[it]] <<- cov2cor(empCov[[it]])
+
+                ##empCov[[it]] <<- cov(burnedSamples)
+                e <- try(cov(burnedSamples))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 1; 2
+                } else empCov[[it]] <<- e
+
+                ##empCor[[it]] <<- cov2cor(empCov[[it]])
+                e <- try(cov2cor(empCov[[it]]))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 3; 4
+                } else empCor[[it]] <<- e
+
                 distMatrix[[it]] <<- as.dist(1 - abs(empCor[[it]]))
-                hTree[[it]] <<- hclust(distMatrix[[it]])
+
+                ##hTree[[it]] <<- hclust(distMatrix[[it]])
+                e <- try(hclust(distMatrix[[it]]))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 5; 6
+                } else hTree[[it]] <<- e
             }
             
             if(verbose) printCurrent(name, specList[[bestInd]])
@@ -459,8 +475,10 @@ addSamplerToSpec <- function(Rmodel, spec, nodeGroup) {
     ## if((!is.null(conjugacyResult)) && conjOveride) {
     ##     spec$addSampler(target = ??????, type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
     ## }
-    discrete <- Rmodel$isDiscrete(nodeGroup)
-    if(discrete) {
+    if(Rmodel$isBinary(nodeGroup)) {
+        spec$addSampler(target = nodeGroup, type = 'binary', print = FALSE); return()
+    }
+    if(Rmodel$isDiscrete(nodeGroup)) {
         spec$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {

@@ -1259,8 +1259,11 @@ splitVertices <- function(var2vertexID, unrolledBUGSindices, indexExprs = NULL, 
     allScalar <- TRUE
     vectorIndices <- lapply(parentIndexNamePieces, function(x) {if(is.list(x)) {allScalar <<- FALSE; return(TRUE)}; FALSE})
 
-    ## step 4 evaporated    
-    currentVertexCounts <- tabulate(var2vertexID, maxVertexID)
+        ## step 4 evaporated
+        if(all(is.na(var2vertexID)))
+            currentVertexCounts <- rep(0, maxVertexID)
+        else
+            currentVertexCounts <- tabulate(var2vertexID, max(max(var2vertexID, na.rm = TRUE), maxVertexID))
     ## 5. Set up initial table of vertexIDcounts
 
     ## 6. All scalar case: iterate or vectorize via cbind and put new vertexIDs over -1s
@@ -1630,7 +1633,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     ##             for(i in 1:2) z[i] <- x[i]
     ##    From above, there is a nodeOrigID for "x[1:2]"
     ##    But now, based on the RHS usage of x[1] and x[2], there needs to be a separate vertexID for each of them
-    ##    
+    ##
+    if(debug) browser()
     nextVertexID <- maxOrigNodeID+1 ## origVertexIDs start after origNodeIDs.  These will be sorted later.
     for(iDI in seq_along(declInfo)) {  ## Iterate over BUGS declarations (lines)
         BUGSdecl <- declInfo[[iDI]]
@@ -1887,7 +1891,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$types <<- types[newGraphID_2_oldGraphID]
     maps$notStoch <<- maps$types != 'stoch'
     maps$nodeNamesLHSall <<- nodeNamesLHSall
-    maps$nodeNamesRHSonly <<- nodeNamesRHSonly
+    maps$nodeNamesRHSonly <<- maps$graphID_2_nodeName[maps$types == 'RHSonly'] ##nodeNamesRHSonly
     maps$nodeNames <<- maps$graphID_2_nodeName
     if(any(duplicated(maps$nodeNames))) stop(paste0("Error building model, there are multiple definitions for nodes:", paste(maps$nodeNames[duplicated(maps$nodeNames)], collapse = ',')))
     if(debug) browser()

@@ -35,6 +35,36 @@ sampler_end <- nimbleFunction(
 
 
 ####################################################################
+### binary Gibbs sampler ###########################################
+####################################################################
+
+sampler_binary <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ###  node list generation  ###
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     stop('cannot use binary sampler on more than one target node')
+        if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
+        calcNodes  <- model$getDependencies(target)
+    },
+    run = function() {
+        currentProb <- exp(getLogProb(model, calcNodes))
+        model[[target]] <<- 1 - model[[target]]
+        otherProb <- exp(calculate(model, calcNodes))
+        if(!is.nan(otherProb) & runif(1,0,1) < otherProb/(currentProb+otherProb))
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else
+            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+    },
+    methods = list(
+        reset = function() { }
+    ), where = getLoadingNamespace()
+)
+
+
+
+
+####################################################################
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
 
@@ -42,6 +72,7 @@ sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ###  control list extraction  ###
+        logScale      <- control$log
         adaptive      <- control$adaptive
         adaptInterval <- control$adaptInterval
         scale         <- control$scale
@@ -56,91 +87,19 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         scaleHistory          <- c(0, 0)
         acceptanceRateHistory <- c(0, 0)
-        ## variables previously inside of nested functions:
         optimalAR <- 0.44
         gamma1    <- 0
     },
     
     run = function() {
-        propValue <- rnorm(1, mean = model[[target]], sd = scale)
-     	model[[target]] <<- propValue
+        if(!logScale)    propValue <-     rnorm(1, mean =     model[[target]],  sd = scale)
+        else             propValue <- exp(rnorm(1, mean = log(model[[target]]), sd = scale))
+        model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
+        if(logScale)     logMHR <- logMHR + log(propValue) - log(mvSaved[target, 1][1])
         jump <- decide(logMHR)
-        if(jump)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        else
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
-        if(adaptive)     adaptiveProcedure(jump)
-    },
-    
-    methods = list(
-        
-        adaptiveProcedure = function(jump = logical()) {
-            timesRan <<- timesRan + 1
-            if(jump)     timesAccepted <<- timesAccepted + 1
-            if(timesRan %% adaptInterval == 0) {
-                acceptanceRate <- timesAccepted / timesRan
-                timesAdapted <<- timesAdapted + 1
-                setSize(scaleHistory,          timesAdapted)
-                setSize(acceptanceRateHistory, timesAdapted)
-                scaleHistory[timesAdapted] <<- scale
-                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
-                gamma1 <<- 1/((timesAdapted + 3)^0.8)
-                gamma2 <- 10 * gamma1
-                adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
-                scale <<- scale * adaptFactor
-                timesRan <<- 0
-                timesAccepted <<- 0
-            }
-        },
-        
-        reset = function() {
-            scale <<- scaleOriginal
-            timesRan      <<- 0
-            timesAccepted <<- 0
-            timesAdapted  <<- 0
-            scaleHistory          <<- scaleHistory          * 0
-            acceptanceRateHistory <<- acceptanceRateHistory * 0
-            gamma1 <<- 0
-        }
-    ), where = getLoadingNamespace()
-)
-
-sampler_RW_log <- nimbleFunction(
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        ###  control list extraction  ###
-        adaptive      <- control$adaptive
-        adaptInterval <- control$adaptInterval
-        scale         <- control$scale
-        ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('more than one target; cannot use RW sampler, try RW_block sampler')
-        calcNodes  <- model$getDependencies(target)
-        ###  numeric value generation  ###
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
-        scaleHistory          <- c(0, 0)
-        acceptanceRateHistory <- c(0, 0)
-	# variables previously inside of nested functions:
-        optimalAR <- 0.44
-        gamma1    <- 0
-    },
-    
-    run = function() {
-        logCurrentValue <- log(model[[target]])
-        logPropValue <- rnorm(1, mean = logCurrentValue, sd = scale)
-        propValue <- exp(logPropValue)
-        propRatio <- logPropValue - logCurrentValue
-     	model[[target]] <<- propValue
-        logMHR <- calculateDiff(model, calcNodes) + propRatio
-        jump <- decide(logMHR)
-        if(jump)
-            nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-        else
-            nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         if(adaptive)     adaptiveProcedure(jump)
     },
     
@@ -435,7 +394,7 @@ sampler_slice <- nimbleFunction(
         maxSteps      <- control$sliceMaxSteps
         ###  node list generation  ###
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop(paste0('more than one target: ', target, '; cannot use slice sampler'))
+        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
         calcNodes <- model$getDependencies(target)
         ###  numeric value generation  ###
         widthOriginal <- width
@@ -655,21 +614,24 @@ sampler_crossLevel <- nimbleFunction(
 #' 
 #' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below. 
 #' 
+#' @section binary sampler:
+#' 
+#' The binary sampler performs Gibbs sampling for binary-valued (discrete 0/1) nodes.  This can only be used for nodes following either a \code{dbern(p)} or \code{dbinom(p, size=1)} distribution.
+#' 
+#' The binary sampler accepts no control list arguments. 
+#' 
 #' @section RW sampler:
 #' 
 #' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node. 
 #' 
 #' The RW sampler accepts the following control list elements: 
 #' \itemize{
+#' \item log. A logical argument, specifying whether the sampler should operate on the log scale. (default = FALSE)
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
 #'
-#' @section RW_log sampler:
-#'
-#' This is like the RW sampler but operates on the log of the parameter being sampled.
-#' 
 #' @section RW_block sampler:
 #' 
 #' The RW_block sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr

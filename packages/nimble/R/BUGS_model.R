@@ -125,6 +125,16 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       return(discrete)
                                   },
 
+                                  isBinary = function(node) {
+                                      dist <- getNodeDistribution(node)
+                                      if(dist == 'dbern') return(TRUE)
+                                      if(dist == 'dbin') {
+                                          if(getNodeParamExpr(node, 'size') == 1)
+                                              return(TRUE)
+                                      }
+                                      return(FALSE)
+                                  },
+
                                   isTruncated = function(node) {
                                       di <- getDeclInfo(node)[[1]]
                                       if(di$truncated) return(TRUE) else return(FALSE)
