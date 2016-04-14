@@ -35,6 +35,7 @@ nimbleUserNamespace <- as.environment(list())
         ## default settings for MCMC samplers
         ## (formerly controlDefaultList appearing in MCMCspec.R)
         MCMCcontrolDefaultList = list(
+            log = FALSE,
             adaptive = TRUE,
             adaptScaleOnly = FALSE,
             adaptInterval = 200,
