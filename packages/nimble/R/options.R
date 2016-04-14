@@ -36,6 +36,7 @@ nimbleUserNamespace <- as.environment(list())
         ## (formerly controlDefaultList appearing in MCMCspec.R)
         MCMCcontrolDefaultList = list(
             log = FALSE,
+            reflective = FALSE,
             adaptive = TRUE,
             adaptScaleOnly = FALSE,
             adaptInterval = 200,
