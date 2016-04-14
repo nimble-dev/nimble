@@ -87,7 +87,6 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         scaleHistory          <- c(0, 0)
         acceptanceRateHistory <- c(0, 0)
-        ## variables previously inside of nested functions:
         optimalAR <- 0.44
         gamma1    <- 0
     },
