@@ -4,6 +4,8 @@
 
 -- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
 
+-- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+
 USER LEVEL CHANGES
 
 -- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, with the same functionality as in R.
