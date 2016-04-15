@@ -181,7 +181,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-                if(isNodeEnd[i]) { addSampler(node, 'posterior_predictive');     next }
+                if(isNodeEnd[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
@@ -192,12 +192,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
                     }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
-                            addSampler(scalarNode, 'RW') };     next }
-                    addSampler(node, 'RW_block');     next }
+                            addSampler(target = scalarNode, type = 'RW') };     next }
+                    addSampler(target = node, type = 'RW_block');     next }
 
                 ## node is scalar, non-end node
-                if(onlyRW && !discrete)   { addSampler(node, 'RW'   );     next }
-                if(onlySlice)             { addSampler(node, 'slice');     next }
+                if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW'   );     next }
+                if(onlySlice)             { addSampler(target = node, type = 'slice');     next }
                 
                 ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                 if(useConjugacy) {
@@ -207,13 +207,13 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 }
 
                 ## if node is discrete 0/1 (binary), assign 'binary' sampler
-                if(binary) { addSampler(node, 'binary');     next }
+                if(binary) { addSampler(target = node, type = 'binary');     next }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) { addSampler(node, 'slice');     next }
+                if(discrete) { addSampler(target = node, type = 'slice');     next }
                 
                 ## default: 'RW' sampler
-                addSampler(node, 'RW');     next
+                addSampler(target = node, type = 'RW');     next
             }
             ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
             if(print)   printSamplers()
