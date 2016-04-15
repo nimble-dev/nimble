@@ -100,10 +100,12 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                            .self$.nodeFxnPointers_byDeclID[declID] <- basePtr ## nodes[[nodeName]]$.basePtr
                                        }
 
+                                       maxGraphID <- length(modelDef$maps$graphIDs)
                                        .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       .nodeValPointers_byGID$resize(maxID)
+                                       .nodeValPointers_byGID$resize(maxGraphID)
                                        .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       .nodeLogProbPointers_byGID$resize(maxID)
+                                       .nodeLogProbPointers_byGID$resize(maxGraphID)
+                                
                                        for(vName in Rmodel$getVarNames()){
                                        		flatIndices = 1
                                        		if(length(vars[vName]) > 0)

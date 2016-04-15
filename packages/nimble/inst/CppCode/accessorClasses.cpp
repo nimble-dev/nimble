@@ -8,7 +8,7 @@ double calculate(NodeVectorClassNew &nodes) {
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
-  std::cout<<"length of useInfoVec = "<<useInfoVec.size()<<"\n";
+  //  std::cout<<"length of useInfoVec = "<<useInfoVec.size()<<"\n";
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
   return(ans);

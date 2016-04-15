@@ -82,7 +82,7 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
         methodList <- eval(substitute(
             list(
                 simulate   = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { LHS <<- STOCHSIM                                                         },
-                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { print("inside calculate"); STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
+                calculate  = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) { STOCHCALC_FULLEXPR;   returnType(double());   return(invisible(LOGPROB)) },
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {STOCHCALC_FULLEXPR_DIFF; LocalAns <- LocalNewLogProb - LOGPROB;  LOGPROB <<- LocalNewLogProb;
                                             returnType(double());   return(invisible(LocalAns))},
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                       returnType(double());   return(LOGPROB)            }

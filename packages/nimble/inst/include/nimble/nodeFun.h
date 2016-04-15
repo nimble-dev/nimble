@@ -46,7 +46,7 @@ class nodeFun : public NamedObjects {
  public:  // etc. put iNI into all cases
   vector<indexedNodeInfo> indexedNodeInfoTable;
   vector<indexedNodeInfo> *getIndexedNodeInfoTablePtr() {return(&indexedNodeInfoTable);}
-  virtual void shout() {PRINTF("shouting\n");}
+  // virtual void shout() {PRINTF("shouting\n");}
   // carry these here to allow compilation for now -- can the old and new systems coexist?
    /* virtual double calculate()=0;  */
    /* virtual double calculateDiff()=0; */
@@ -75,14 +75,14 @@ class nodeFun : public NamedObjects {
     double ans(0);
     vector<int>::const_iterator iIndex(biNI.indicesForIndexedNodeInfo.begin());
     vector<int>::const_iterator iIndexEnd(biNI.indicesForIndexedNodeInfo.end());
-    std::cout<<"length of useInfoForIndexedNodeInfo = "<<biNI.indicesForIndexedNodeInfo.size()<<"\n";
+    //std::cout<<"length of useInfoForIndexedNodeInfo = "<<biNI.indicesForIndexedNodeInfo.size()<<"\n";
     for(; iIndex != iIndexEnd; iIndex++) {
-      std::cout<<"about to call calculate\n";
-      std::cout<<indexedNodeInfoTable.size()<<"\n";
-      std::cout<< *iIndex <<"\n";
-      std::cout<< indexedNodeInfoTable[ *iIndex ].info.size() <<":";
-      for(int iii = 0; iii < indexedNodeInfoTable[ *iIndex ].info.size(); iii++) std::cout<<indexedNodeInfoTable[ *iIndex ].info[iii]<<" ";
-      std::cout<<"\n";
+      //   std::cout<<"about to call calculate\n";
+      //    std::cout<<indexedNodeInfoTable.size()<<"\n";
+      //    std::cout<< *iIndex <<"\n";
+      //   std::cout<< indexedNodeInfoTable[ *iIndex ].info.size() <<":";
+      //  for(int iii = 0; iii < indexedNodeInfoTable[ *iIndex ].info.size(); iii++) std::cout<<indexedNodeInfoTable[ *iIndex ].info[iii]<<" ";
+      // std::cout<<"\n";
       ans += calculate(indexedNodeInfoTable[ *iIndex ]);
     }
     return(ans);
