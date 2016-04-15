@@ -42,7 +42,8 @@ samplerSpec <- setRefClass(
         toStr = function() {
             tempList <- list()
             tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
-            mcmc_listContentsToStr(c(tempList, control))
+            infoList <- c(tempList, control)
+            mcmc_listContentsToStr(infoList)
         },
         show = function() {
             cat(paste0(name, ' sampler acting on ', paste0(target, collapse = ', ')))

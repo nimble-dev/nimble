@@ -219,17 +219,23 @@ codeBlockClass <- setRefClass(
 
 mcmc_listContentsToStr <- function(ls) {
     if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
-    ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)
+    ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)   ## change functions
     ls2 <- list()
+    defaultOptions <- getNimbleOption('MCMCcontrolDefaultList')
     for(i in seq_along(ls)) {
-        if(length(ls[[i]]) > 0) {
-            deparsedItem <- deparse(ls[[i]])
-            if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
-            ls2[[i]] <- paste0(names(ls)[i], ': ', deparsedItem)
-        }
+        controlName <- names(ls)[i]
+        controlValue <- ls[[i]]
+        if(length(controlValue) == 0) next   ## remove length 0
+        if(controlName %in% names(defaultOptions))   ## skip default control values
+            if(identical(controlValue, defaultOptions[[controlName]])) next
+        deparsedItem <- deparse(controlValue)
+        if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
+        ls2[[i]] <- paste0(controlName, ': ', deparsedItem)
     }
     ls2 <- ls2[unlist(lapply(ls2, function(i) !is.null(i)))]
     str <- paste0(ls2, collapse = ',  ')
+    if(length(ls2) == 1)
+        str <- paste0(str, ', default')
     str <- gsub('\"', '', str)
     str <- gsub('c\\((.*?)\\)', '\\1', str)
     return(str)
