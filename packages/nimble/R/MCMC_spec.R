@@ -46,7 +46,7 @@ samplerSpec <- setRefClass(
             mcmc_listContentsToStr(infoList)
         },
         show = function() {
-            cat(paste0(name, ' sampler acting on ', paste0(target, collapse = ', ')))
+            cat(toStr())
         }
     )
 )
