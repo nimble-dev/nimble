@@ -13,10 +13,10 @@ sampler_BASE <- nimbleFunctionVirtual(
 
 
 ####################################################################
-### end sampler for trailing stochastic (predictive) nodes #########
+### posterior_predictive sampler for trailing stoch. nodes #########
 ####################################################################
 
-sampler_end <- nimbleFunction(
+sampler_posterior_predictive <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ###  node list generation  ###
@@ -41,10 +41,10 @@ sampler_end <- nimbleFunction(
 sampler_binary <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
-        ###  node list generation  ###
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('cannot use binary sampler on more than one target node')
+        if(length(targetAsScalar) > 1)  stop('cannot use binary sampler on more than one target node')
         if(!model$isBinary(target))     stop('can only use binary sampler on discrete 0/1 (binary) nodes')
+        ###  node list generation  ###
         calcNodes  <- model$getDependencies(target)
     },
     run = function() {
@@ -71,14 +71,17 @@ sampler_binary <- nimbleFunction(
 sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
+        if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
         ###  control list extraction  ###
         logScale      <- control$log
+        reflective    <- control$reflective
         adaptive      <- control$adaptive
         adaptInterval <- control$adaptInterval
         scale         <- control$scale
+        if(logScale & reflective)        stop('cannot use reflective RW sampler on a log scale (i.e. with options log=TRUE and reflective=TRUE')
         ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('more than one target; cannot use RW sampler, try RW_block sampler')
         calcNodes  <- model$getDependencies(target)
         ###  numeric value generation  ###
         scaleOriginal <- scale
@@ -89,14 +92,19 @@ sampler_RW <- nimbleFunction(
         acceptanceRateHistory <- c(0, 0)
         optimalAR <- 0.44
         gamma1    <- 0
+        range <- getDistribution(model$getNodeDistribution(target))$range
     },
     
     run = function() {
-        if(!logScale)    propValue <-     rnorm(1, mean =     model[[target]],  sd = scale)
-        else             propValue <- exp(rnorm(1, mean = log(model[[target]]), sd = scale))
+        currentValue <- model[[target]]
+        if(!logScale)    propValue <-     rnorm(1, mean =     currentValue,  sd = scale)
+        else             propValue <- exp(rnorm(1, mean = log(currentValue), sd = scale))
+        if(reflective)   while(propValue < range[1] | propValue > range[2]) {
+            if(propValue < range[1]) propValue <- 2*range[1] - propValue
+            if(propValue > range[2]) propValue <- 2*range[2] - propValue    }
         model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes)
-        if(logScale)     logMHR <- logMHR + log(propValue) - log(mvSaved[target, 1][1])
+        if(logScale)     logMHR <- logMHR + log(propValue) - log(currentValue)
         jump <- decide(logMHR)
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
@@ -387,21 +395,21 @@ sampler_RW_llFunction <- nimbleFunction(
 sampler_slice <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
         ###  control list extraction  ###
         adaptive      <- control$adaptive
         adaptInterval <- control$adaptInterval
         width         <- control$sliceWidth
         maxSteps      <- control$sliceMaxSteps
         ###  node list generation  ###
-        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
         calcNodes <- model$getDependencies(target)
         ###  numeric value generation  ###
         widthOriginal <- width
         timesRan      <- 0
         timesAdapted  <- 0
         sumJumps      <- 0
-        discrete      <- model$isDiscrete(targetAsScalar)
+        discrete      <- model$isDiscrete(target)
     },
     
     run = function() {
@@ -622,15 +630,18 @@ sampler_crossLevel <- nimbleFunction(
 #' 
 #' @section RW sampler:
 #' 
-#' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node. 
+#' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale.
 #' 
 #' The RW sampler accepts the following control list elements: 
 #' \itemize{
 #' \item log. A logical argument, specifying whether the sampler should operate on the log scale. (default = FALSE)
+#' \item reflective. A logical argument, specifying whether the normal proposal distribution should reflect to stay within the range of the target distribution. (default = FALSE)
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
 #' }
+#'
+#' The RW sampler cannot be used with options log=TRUE and reflective=TRUE, i.e. it cannot do reflective sampling on a log scale.
 #'
 #' @section RW_block sampler:
 #' 
@@ -690,17 +701,17 @@ sampler_crossLevel <- nimbleFunction(
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity' or any positive definite matrix of the appropriate dimensions. (default = 'identity')
 #' }
 #'
-#' @section end sampler:
+#' @section posterior_predictive sampler:
 #' 
-#' The end sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE. 
+#' The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE. 
 #' 
-#' The end sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of an end sampler to any non-terminal node will result in invalid posterior inferences.  The end sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler. \cr
+#' The posterior_predictive sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of a posterior_predictive sampler to any non-terminal node will result in invalid posterior inferences.  The posterior_predictive sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler. \cr
 #' 
-#' The end sampler accepts no control list arguments. 
+#' The posterior_predictive sampler accepts no control list arguments. 
 #' 
 #' @name samplers
 #' 
-#' @aliases sampler end RW RW_block RW_llFunction slice crossLevel sampler_end sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel
+#' @aliases sampler posterior_predictive RW RW_block RW_llFunction slice crossLevel sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel
 #'
 #' @seealso configureMCMC addSampler buildMCMC
 #'
