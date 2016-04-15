@@ -181,46 +181,47 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-                if(isNodeEnd[i]) { addSampler(target = node, type = 'posterior_predictive', print = print);     next }
+                if(isNodeEnd[i]) { addSampler(node, 'posterior_predictive');     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
-                            addConjugateSampler(conjugacyResult = conjugacyResult, print = print);     next }
+                            addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                     }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
-                            addSampler(target = scalarNode, type = 'RW', print = print) };     next }
-                    addSampler(target = node, type = 'RW_block', print = print);     next }
+                            addSampler(scalarNode, 'RW') };     next }
+                    addSampler(node, 'RW_block');     next }
 
                 ## node is scalar, non-end node
-                if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW',    print = print);     next }
-                if(onlySlice)             { addSampler(target = node, type = 'slice', print = print);     next }
+                if(onlyRW && !discrete)   { addSampler(node, 'RW'   );     next }
+                if(onlySlice)             { addSampler(node, 'slice');     next }
                 
                 ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                 if(useConjugacy) {
                     conjugacyResult <- conjugacyResultsAll[[node]]
                     if(!is.null(conjugacyResult)) {
-                        addConjugateSampler(conjugacyResult = conjugacyResult, print = print);     next }
+                        addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                 }
 
                 ## if node is discrete 0/1 (binary), assign 'binary' sampler
-                if(binary) { addSampler(target = node, type = 'binary', print = print);     next }
+                if(binary) { addSampler(node, 'binary');     next }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) { addSampler(target = node, type = 'slice', print = print);     next }
+                if(discrete) { addSampler(node, 'slice');     next }
                 
                 ## default: 'RW' sampler
-                addSampler(target = node, type = 'RW', print = print);     next
+                addSampler(node, 'RW');     next
             }
             ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
+            if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, print) {
+        addConjugateSampler = function(conjugacyResult) {
             if(!getNimbleOption('useDynamicConjugacy')) {
-                addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control, print = print)
+                addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
                 return(NULL)
             }
             prior <- conjugacyResult$prior
@@ -233,7 +234,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
-            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
+            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, name = nameToPrint)
         },
         
         addSampler = function(target, type = 'RW', control = list(), print = FALSE, name) {
