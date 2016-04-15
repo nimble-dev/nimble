@@ -219,7 +219,7 @@ codeBlockClass <- setRefClass(
 
 mcmc_listContentsToStr <- function(ls) {
     if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
-    ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)   ## change functions
+    ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     defaultOptions <- getNimbleOption('MCMCcontrolDefaultList')
     for(i in seq_along(ls)) {
@@ -234,8 +234,8 @@ mcmc_listContentsToStr <- function(ls) {
     }
     ls2 <- ls2[unlist(lapply(ls2, function(i) !is.null(i)))]
     str <- paste0(ls2, collapse = ',  ')
-    if(length(ls2) == 1)
-        str <- paste0(str, ', default')
+    ##if(length(ls2) == 1)
+    ##    str <- paste0(str, ', default')
     str <- gsub('\"', '', str)
     str <- gsub('c\\((.*?)\\)', '\\1', str)
     return(str)
