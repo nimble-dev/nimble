@@ -1,0 +1,36 @@
+## Please run the following with devel installed and with newNodeFxn installed
+## and do so for each of the two options below
+
+library(nimble)
+
+mc <- nimbleCode({
+    for(i in 1:2) a[i] <-.5 
+    for(i in 1:10000) x[i] ~ dnorm(a[1], sd = 1)
+    for(i in 1:10000) y[i] ~ dnorm(a[1], sd = 1)
+})
+
+m <- nimbleModel(mc, debug = FALSE, check = FALSE)
+cm <- compileNimble(m, dirName = '.')
+
+nfCalc <- nimbleFunction(
+    setup = function(model, nodes){},
+    run = function(m = integer()) {
+        for(i in 1:m) {
+            ans <- model$calculate(nodes)
+        }
+        return(ans)
+        returnType(double())
+    })
+
+## uncomment either the line after option 1 or the two lines after option 2
+
+## option 1:
+## nfCalc1 <- nfCalc(m, c('x[1:10000]'))
+
+## option 2:
+nodes <- as.vector(rbind(m$expandNodeNames('x[1:10000]'), m$expandNodeNames('y[1:10000]'))) ## interleaves them to ensure no efficiency from contiguous x's or y's
+nfCalc1 <- nfCalc(m, c(nodes)) 
+
+compiled <- compileNimble(nfCalc1, project = m)
+
+system.time(compiled$run(10000))
