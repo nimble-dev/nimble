@@ -805,7 +805,7 @@ SEXP C_dmvt_chol(SEXP x, SEXP mean, SEXP chol, SEXP df, SEXP prec_param, SEXP re
   //   including all n x n elements; lower-triangular elements are ignored
 {
   if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isReal(df) || !isReal(prec_param) || !isLogical(return_log))
-    RBREAK("Error (C_dnorm_chol): invalid input type for one of the arguments.\n");
+    RBREAK("Error (C_dmvt_chol): invalid input type for one of the arguments.\n");
   int n_x = LENGTH(x);
   int n_mean = LENGTH(mean);
   int give_log = (int) LOGICAL(return_log)[0];
