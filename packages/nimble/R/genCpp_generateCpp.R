@@ -203,7 +203,8 @@ cppOutputNimSwitch <- function(code, symTab) {
 }
 
 cppOutputGetParam <- function(code, symTab) {
-    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
+    ##    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
+    return(paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])'))
 }
 
 cppOutputEigenMapAssign <- function(code, symTab) {

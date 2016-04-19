@@ -52,13 +52,13 @@ class NodeVectorClassNew {
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
 double calculate(NodeVectorClassNew &nodes);
+double calculateDiff(NodeVectorClassNew &nodes);
+double getLogProb(NodeVectorClassNew &nodes);
+void simulate(NodeVectorClassNew &nodes);
 
-/* double calculate(NodeVectorClass &nodes); */
-/* double calculateDiff(NodeVectorClass &nodes); */
-/* //double calculateFaster(NodeVectorClass &nodes); */
-/* double getLogProb(NodeVectorClass &nodes); */
-/* void simulate(NodeVectorClass &nodes); */
-
+double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo);
+NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo);
+NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo);
 
 /////////////////////
 // new version of variable accessors using maps (offset and strided windows into multivariate objects (NimArr<>s) )

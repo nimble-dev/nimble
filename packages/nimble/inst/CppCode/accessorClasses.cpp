@@ -3,17 +3,56 @@
 #include<sstream>
 using std::istringstream;
 
+double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo) {
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
+}
+
+NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo) {
+  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.useInfo));
+}
+
+NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo) {
+  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID, useInfo.useInfo));
+}
+
 double calculate(NodeVectorClassNew &nodes) {
   double ans(0);
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
-  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
-  
-  //  std::cout<<"length of useInfoVec = "<<useInfoVec.size()<<"\n";
+  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());  
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
   return(ans);
 }
+
+double calculateDiff(NodeVectorClassNew &nodes) {
+  double ans(0);
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
+  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());  
+  for(; iNode != iNodeEnd; iNode++)
+    ans += iNode->nodeFunPtr->calculateDiffBlock(iNode->useInfo);
+  return(ans);
+}
+
+double getLogProb(NodeVectorClassNew &nodes) {
+  double ans(0);
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
+  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());  
+  for(; iNode != iNodeEnd; iNode++)
+    ans += iNode->nodeFunPtr->getLogProbBlock(iNode->useInfo);
+  return(ans);
+}
+
+void simulate(NodeVectorClassNew &nodes) {
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
+  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());  
+  for(; iNode != iNodeEnd; iNode++)
+    iNode->nodeFunPtr->simulateBlock(iNode->useInfo);
+}
+
 
 // // 1. NodeVectors
 // // double calculateOld(NodeVectorClass &nodes) {
