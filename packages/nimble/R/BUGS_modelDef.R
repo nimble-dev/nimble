@@ -144,6 +144,7 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
     reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName
     insertDistributionBounds()        ## put lower and upper into code expression
+    replaceAllConstants()
     liftExpressionArgs()              ## overwrites declInfo (*and adds*), lifts expressions in distribution arguments to new nodes.  does NOT lift '.param' names
     addRemainingDotParams()           ## overwrites declInfo, adds any additional .paramNames which aren't there  (uses distributions)
     replaceAllConstants()             ## overwrites declInfo with constants replaced; only replaces scalar constants
