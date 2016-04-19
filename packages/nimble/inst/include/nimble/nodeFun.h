@@ -75,6 +75,7 @@ class nodeFun : public NamedObjects {
     double ans(0);
     vector<int>::const_iterator iIndex(biNI.indicesForIndexedNodeInfo.begin());
     vector<int>::const_iterator iIndexEnd(biNI.indicesForIndexedNodeInfo.end());
+    
     //std::cout<<"length of useInfoForIndexedNodeInfo = "<<biNI.indicesForIndexedNodeInfo.size()<<"\n";
     for(; iIndex != iIndexEnd; iIndex++) {
       //   std::cout<<"about to call calculate\n";

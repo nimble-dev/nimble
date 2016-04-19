@@ -8,6 +8,7 @@ double calculate(NodeVectorClassNew &nodes) {
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  
   //  std::cout<<"length of useInfoVec = "<<useInfoVec.size()<<"\n";
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
@@ -1100,14 +1101,24 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
   NodeVectorClassNew* nfv = static_cast<NodeVectorClassNew*>(R_ExternalPtrAddr(SnodeFxnVec) ) ;
   //  (*nfv).useInfoVec.resize(len);
   int previousIndex = -1;
+  int nextRowInd;
   for(int i = 0; i < len; i++){
     index = gids[i] - 1;
+   
     std::cout<<"index "<<index<<" i "<<i<<" rowinds[i]-1 "<<rowinds[i]-1<<"\n";
+    nextRowInd = rowinds[i]-1;
+    if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
+      nextRowInd = 0;
+      if(len > 1) {
+	PRINTF("Warning from populateNodeFxnVectorNew_byDeclID: nextRowInd == -1 (so it should be a scalar) but len > 1 (so it cannot be a scalar).\n");
+	return(R_NilValue);
+      }
+    }
     if(index != previousIndex) {
-      (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), rowinds[i]-1)); 
+      (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd)); 
       previousIndex = index;
-    } else {
-      (*nfv).useInfoVec.back().useInfo.indicesForIndexedNodeInfo.push_back(rowinds[i]-1);
+    } else { // simple form of aggregation: push rows of same nodeFun into same object if they come one after the other
+      (*nfv).useInfoVec.back().useInfo.indicesForIndexedNodeInfo.push_back(nextRowInd);
     }
   }
   std::cout<<"done with "<<(*nfv).useInfoVec.size()<<"\n";
@@ -1123,6 +1134,13 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
   int ncol = INTEGER(Sdim)[1];
   std::cout<<"nrow "<<nrow<<" ncol "<<ncol<<"\n";
   vector<indexedNodeInfo> *tablePtr = static_cast<vector<indexedNodeInfo> *>(R_ExternalPtrAddr(StablePtr));
+  if(nrow == 0) {
+    void *vptr=0;
+    tablePtr->push_back(indexedNodeInfo(static_cast<int *>(vptr), 0, 0));
+    if(ncol != 0) {PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");}
+    return(R_NilValue);
+  }
+  
   if(!isNumeric(StableContents)) {PRINTF("Warning from populateIndexedNodeInfoTable: StableContents is not numeric"); return(R_NilValue);}
   if(isInteger(StableContents)) {
     int *contentsPtr = INTEGER(StableContents);

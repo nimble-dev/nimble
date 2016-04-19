@@ -126,7 +126,7 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName){
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
 	
-    .Call('populateNodeFxnVectorNew_byDeclID', fxnVecPtr, as.integer(declIDs), numberedPtrs, rowIndices)
+    .Call('populateNodeFxnVectorNew_byDeclID', fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices))
 }
 
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName) {
