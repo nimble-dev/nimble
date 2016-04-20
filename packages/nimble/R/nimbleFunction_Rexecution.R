@@ -87,20 +87,42 @@ makeParamInfo <- function(model, node, param) {
 #' which one was used to declare the node.
 getParam <- function(model, node, param) {
     if(missing(param)) { ## already converted by keyword conversion
+        stop('This case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
         nodeFunction <- model
         paramInfo <- node
     } else {
         ## not already converted
-        nodeFunction <- model$nodes[[node]]
+        nfv <- nodeFunctionVector(model, node)
+        indexingInfo <- nfv$indexingInfo
+        declID <- indexingInfo$declIDs[1] ## should only be one
+        nodeFunction <- model$nodeFunctions[[ declID ]] 
         paramInfo <- makeParamInfo(model, node, param)
     }
     paramID <- paramInfo$paramID
     nDim <- paramInfo$nDim
     type <- paramInfo$type
+    unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
     funName <- paste0('getParam_',nDim,'D_',type)
-    ans <- eval(substitute(nodeFunction$FUNNAME(paramID), list(FUNNAME = as.name(funName))))
+    ans <- eval(substitute(nodeFunction$FUNNAME(paramID, unrolledIndicesMatrixRow), list(FUNNAME = as.name(funName))))
     return(ans)
 }
+
+## getParam <- function(model, node, param) {
+##     if(missing(param)) { ## already converted by keyword conversion
+##         nodeFunction <- model
+##         paramInfo <- node
+##     } else {
+##         ## not already converted
+##         nodeFunction <- model$nodes[[node]]
+##         paramInfo <- makeParamInfo(model, node, param)
+##     }
+##     paramID <- paramInfo$paramID
+##     nDim <- paramInfo$nDim
+##     type <- paramInfo$type
+##     funName <- paste0('getParam_',nDim,'D_',type)
+##     ans <- eval(substitute(nodeFunction$FUNNAME(paramID), list(FUNNAME = as.name(funName))))
+##     return(ans)
+## }
 
 #' @export
 nimSwitch <- function(paramID, IDoptions, ...) {
@@ -110,27 +132,51 @@ nimSwitch <- function(paramID, IDoptions, ...) {
     invisible(NULL)
 }
 
-rCalcNodes <- function(model, nodes){
+rCalcNodes <- function(model, nfv){ ##nodeFunctionVector
     l_Prob = 0
     
-    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
+        stop('calling compiled model from R calculate() or other functions is not supported yet for newNodeFunction system.')
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
-    else
-        for(nName in nodes)
-            l_Prob = l_Prob + model$nodes[[nName]]$calculate()
-    
+    } else {
+        model <- nfv$model
+        indexingInfo <- nfv$indexingInfo
+        declIDs <- indexingInfo$declIDs
+        numNodes <- length(declIDs)
+        if(numNodes < 1) return(l_Prob)
+        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+        for(i in 1:numNodes) {
+            declID <- declIDs[i]
+            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+        }
+    }
     return(l_Prob)
 }
 
-rCalcDiffNodes <- function(model, nodes){
+getNodeFunctionIndexedInfo <- function(indexedNodeInfo, iCol) indexedNodeInfo[iCol]
+
+rCalcDiffNodes <- function(model, nfv){
     l_Prob <- 0
-    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
+
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
+        stop('calling compiled model from R calculateDiff() or other functions is not supported yet for newNodeFunction system.')
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculateDiff')
-    else
-        for(nName in nodes)
-            l_Prob = l_Prob + model$nodes[[nName]]$calculateDiff()
+    } else {
+        model <- nfv$model
+        indexingInfo <- nfv$indexingInfo
+        declIDs <- indexingInfo$declIDs
+        numNodes <- length(declIDs)
+        if(numNodes < 1) return(l_Prob)
+        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+        for(i in 1:numNodes) {
+            declID <- declIDs[i]
+            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculateDiff(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+        }
+    }
     return(l_Prob)
 }
 
@@ -173,46 +219,67 @@ NULL
 calculate <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
-        model <- nodeFxnVector$model
-        nodes <- nodeFxnVector$getNodeNames()
-        return(rCalcNodes(model, nodes))
+        return(rCalcNodes(model, nodeFxnVector))
     }
     if(inherits(model, 'modelBaseClass') ){
         if(missing(nodes) ) 
             nodes <- model$getMaps('nodeNamesLHSall')
         nfv <- nodeFunctionVector(model, nodes)
-        nodeNames <- nfv$getNodeNames()
-        return(rCalcNodes(model, nodeNames))
+        return(rCalcNodes(model, nfv))
     }	
 }
+
+## calculate <- function(model, nodes, nodeFxnVector)		
+## {
+##     if(!missing(nodeFxnVector)){
+##         model <- nodeFxnVector$model
+##         nodes <- nodeFxnVector$getNodeNames()
+##         return(rCalcNodes(model, nodes))
+##     }
+##     if(inherits(model, 'modelBaseClass') ){
+##         if(missing(nodes) ) 
+##             nodes <- model$getMaps('nodeNamesLHSall')
+##         nfv <- nodeFunctionVector(model, nodes)
+##         nodeNames <- nfv$getNodeNames()
+##         return(rCalcNodes(model, nodeNames))
+##     }	
+## }
 
 #' @rdname nodeFunctions
 #' @export
 calculateDiff <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
-        model <- nodeFxnVector$model
-        nodes <- nodeFxnVector$getNodeNames()
-        return(rCalcDiffNodes(model, nodes))
+        return(rCalcDiffNodes(model, nodeFxnVector))
     }
     if(inherits(model, 'modelBaseClass') ){
         if(missing(nodes) ) 
             nodes <- model$getMaps('nodeNamesLHSall')
         nfv <- nodeFunctionVector(model, nodes)
-        nodeNames <- nfv$getNodeNames()
         return(rCalcDiffNodes(model, nodeNames))
     }	
 }
 
-rGetLogProbsNodes <- function(model, nodes){
+rGetLogProbsNodes <- function(model, nfv){
     l_Prob = 0
 
-    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
+        stop('calling compiled model from R getLogProb() or other functions is not supported yet for newNodeFunction system.')
         for(nName in nodes)
             l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'getLogProb')
-    else
-        for(nName in nodes)
-            l_Prob = l_Prob + model$nodes[[nName]]$getLogProb()
+    } else {
+        model <- nfv$model
+        indexingInfo <- nfv$indexingInfo
+        declIDs <- indexingInfo$declIDs
+        numNodes <- length(declIDs)
+        if(numNodes < 1) return(l_Prob)
+        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+        for(i in 1:numNodes) {
+            declID <- declIDs[i]
+            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$getLogProb(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+        }
+    }
     return(l_Prob)
 }
 
@@ -220,48 +287,51 @@ rGetLogProbsNodes <- function(model, nodes){
 #' @export
 getLogProb <- function(model, nodes, nodeFxnVector)		
 {
-	if(!missing(nodeFxnVector)){
-		model <- nodeFxnVector$model
-		nodes <- nodeFxnVector$getNodeNames()
-		return(rGetLogProbsNodes(model, nodes))
-	}
-	if( inherits(model, "modelBaseClass") ){		
-		if(missing(nodes) ) 
-                    nodes <- model$getMaps('nodeNamesLHSall')
-
-		nfv <- nodeFunctionVector(model, nodes)
-		nodeNames <- nfv$getNodeNames()
-
-    	return(rGetLogProbsNodes(model, nodeNames))
+    if(!missing(nodeFxnVector)){
+        return(rGetLogProbsNodes(model, nodeFxnVector))
+    }
+    if( inherits(model, "modelBaseClass") ){		
+        if(missing(nodes) ) 
+            nodes <- model$getMaps('nodeNamesLHSall')
+        nfv <- nodeFunctionVector(model, nodes)
+    	return(rGetLogProbsNodes(model, nfv))
     }        
 }
 
 
-rSimNodes <- function(model, nodes){
-    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) 
+rSimNodes <- function(model, nfv){
+    if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
+        stop('calling compiled model from R simulate() or other functions is not supported yet for newNodeFunction system.')
         for(nName in nodes)
             model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'simulate')
-    else 
-        for(nName in nodes)
-            model$nodes[[nName]]$simulate()
+    } else {
+        model <- nfv$model
+        indexingInfo <- nfv$indexingInfo
+        declIDs <- indexingInfo$declIDs
+        numNodes <- length(declIDs)
+        if(numNodes < 1) return()
+        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+        for(i in 1:numNodes) {
+            declID <- declIDs[i]
+            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+            model$nodeFunctions[[ declID ]]$simulate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+        }
+    }
 }
 
 #' @rdname nodeFunctions
 #' @export
 simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
 {
-	if(!missing(nodeFxnVector)){
-		model <- nodeFxnVector$model
-		nodes <- nodeFxnVector$getNodeNames()
-		rSimNodes(model, nodes)
-	}
-	else if( inherits(model, "modelBaseClass") ) {
-		if(missing(nodes) ) 
-			nodes <- model$getMaps('nodeNamesLHSall')
-		nfv <- nodeFunctionVector(model, nodes, excludeData = !includeData)
-		nodeNames <- model$expandNodeNames(nfv$gids)			
-		rSimNodes(nfv$model, nodeNames)
-	}
+    if(!missing(nodeFxnVector)){
+        rSimNodes(model, nodeFxnVector)
+    }
+    else if( inherits(model, "modelBaseClass") ) {
+        if(missing(nodes) ) 
+            nodes <- model$getMaps('nodeNamesLHSall')
+        nfv <- nodeFunctionVector(model, nodes, excludeData = !includeData)
+        rSimNodes(nfv$model, nfv)
+    }
 }
 
 

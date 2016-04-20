@@ -498,12 +498,12 @@ sampler_ess <- nimbleFunction(
         ###  numeric value generation  ###
         pi <- 3.141592653589793238462643383279502884197
         ###  nested function and function list definitions  ###
-        target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
-        target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
+        ##target_nodeFunctionList <- nimbleFunctionList(node_stoch_dmnorm)
+        ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
     },
     run = function() {
         u <- getLogProb(model, calcNodes) - rexp(1, 1)
-        target_mean <- target_nodeFunctionList[[1]]$get_mean()
+        target_mean <- model$getParam(target, 'mean') ##target_nodeFunctionList[[1]]$get_mean()
         f <- model[[target]] - target_mean
         simulate(model, target)
         nu <- model[[target]] - target_mean

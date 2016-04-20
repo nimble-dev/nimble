@@ -90,7 +90,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       unrolledIndices <- as.list(indicesMatrix[unrolledRowNumber, ])
                                       return(unrolledIndices)
                                   },
-
+                                  
                                   ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
                                   getNodeDistribution = function(node) {
                                       getDeclInfo(node)[[1]]$getDistributionName()

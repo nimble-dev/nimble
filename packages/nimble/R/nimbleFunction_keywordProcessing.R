@@ -244,6 +244,12 @@ calculate_keywordInfo <- keywordInfoClass(
 		if(!isCodeArgBlank(code, 'nodeFxnVector'))
 			return(code)
 		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+                ## STOPPED HERE
+                ## if(!isCodeArgBlank(code, 'nodeFunction')) { ## new case: calculate(nodeFunction = myNodeFunctionVector[[i]]), if myNodeFunctionVector was hand-created in setup code
+                ##     if(!isCodeArgBlank(code, 'model') | !isCodeArgBlank(code, 'nodes'))
+                ##         stop('model or nodes argument cannot be provided to calculate if nodeFunction is specified')
+
+                ## }
 		if(isCodeArgBlank(code, 'model'))
 			stop('model argument missing from calculate, with no accessor argument supplied')
 		if(isCodeArgBlank(code, 'nodes')){

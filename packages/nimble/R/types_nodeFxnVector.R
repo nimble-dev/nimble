@@ -40,10 +40,10 @@ nodeFunctionVector <- setRefClass(
         getNodeNames = function(){ ## not used anywhere. provided only for debugging/inspection
         	model$expandNodeNames(gids)	
         },
-        show = function() cat(paste0('nodeFunctionVector: ', paste(nodes, collapse=', '), '\n'))
+        show = function() {
+            cat('nodeFunctionVector: \n')
+            print(cbind(indexingInfo$declIDs, indexingInfo$unrolledIndicesMatrixRows))
+        }
     )
 )
 
-getNodeFxnPtrs <- function(cModel){	
-    lapply( cModel$nodes, `[[`, '.basePtr' )
-}

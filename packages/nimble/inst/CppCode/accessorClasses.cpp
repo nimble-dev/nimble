@@ -1148,10 +1148,6 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
     nextRowInd = rowinds[i]-1;
     if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
       nextRowInd = 0;
-      if(len > 1) {
-	PRINTF("Warning from populateNodeFxnVectorNew_byDeclID: nextRowInd == -1 (so it should be a scalar) but len > 1 (so it cannot be a scalar).\n");
-	return(R_NilValue);
-      }
     }
     if(index != previousIndex) {
       (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd)); 
@@ -1177,6 +1173,7 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
     void *vptr=0;
     tablePtr->push_back(indexedNodeInfo(static_cast<int *>(vptr), 0, 0));
     if(ncol != 0) {PRINTF("Warning from populateIndexedNodeInfoTable: nrow == 0 but ncol != 0.");}
+    UNPROTECT(1);
     return(R_NilValue);
   }
   
