@@ -25,6 +25,12 @@ double calculate(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
+
+double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
+  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
+  return(oneUseInfo.nodeFunPtr->calculateBlock(oneUseInfo.useInfo));
+}
+
 double calculateDiff(NodeVectorClassNew &nodes) {
   double ans(0);
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
@@ -33,6 +39,11 @@ double calculateDiff(NodeVectorClassNew &nodes) {
   for(; iNode != iNodeEnd; iNode++)
     ans += iNode->nodeFunPtr->calculateDiffBlock(iNode->useInfo);
   return(ans);
+}
+
+double calculateDiff(NodeVectorClassNew &nodes, int iNodeFunction) {
+  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
+  return(oneUseInfo.nodeFunPtr->calculateDiffBlock(oneUseInfo.useInfo));
 }
 
 double getLogProb(NodeVectorClassNew &nodes) {
@@ -45,12 +56,22 @@ double getLogProb(NodeVectorClassNew &nodes) {
   return(ans);
 }
 
+double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction) {
+  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
+  return(oneUseInfo.nodeFunPtr->getLogProbBlock(oneUseInfo.useInfo));
+}
+
 void simulate(NodeVectorClassNew &nodes) {
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
   vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
   vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());  
   for(; iNode != iNodeEnd; iNode++)
     iNode->nodeFunPtr->simulateBlock(iNode->useInfo);
+}
+
+void simulate(NodeVectorClassNew &nodes, int iNodeFunction) {
+  const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
+  oneUseInfo.nodeFunPtr->simulateBlock(oneUseInfo.useInfo);
 }
 
 
@@ -1149,7 +1170,7 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
     if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
       nextRowInd = 0;
     }
-    if(index != previousIndex) {
+    if(true) { // (Disabling this aggregation because it messes up use of individual nodeFunctionVector elements) if(index != previousIndex) {
       (*nfv).useInfoVec.push_back(oneNodeUseInfo(static_cast<nodeFun*>(numObj->getObjectPtr(index)), nextRowInd)); 
       previousIndex = index;
     } else { // simple form of aggregation: push rows of same nodeFun into same object if they come one after the other

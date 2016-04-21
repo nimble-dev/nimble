@@ -85,7 +85,7 @@ makeParamInfo <- function(model, node, param) {
 #' parameter known to the distribution.  For example, one can request
 #' the scale or rate parameter of a gamma distribution, regardless of
 #' which one was used to declare the node.
-getParam <- function(model, node, param) {
+getParam <- function(model, node, param, nodeFunctionIndex) {
     if(missing(param)) { ## already converted by keyword conversion
         stop('This case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
         nodeFunction <- model
@@ -216,7 +216,7 @@ NULL
 
 #' @rdname nodeFunctions
 #' @export
-calculate <- function(model, nodes, nodeFxnVector)		
+calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)	
 {
     if(!missing(nodeFxnVector)){
         return(rCalcNodes(model, nodeFxnVector))
@@ -247,7 +247,7 @@ calculate <- function(model, nodes, nodeFxnVector)
 
 #' @rdname nodeFunctions
 #' @export
-calculateDiff <- function(model, nodes, nodeFxnVector)		
+calculateDiff <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)		
 {
     if(!missing(nodeFxnVector)){
         return(rCalcDiffNodes(model, nodeFxnVector))
@@ -285,7 +285,7 @@ rGetLogProbsNodes <- function(model, nfv){
 
 #' @rdname nodeFunctions
 #' @export
-getLogProb <- function(model, nodes, nodeFxnVector)		
+getLogProb <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)		
 {
     if(!missing(nodeFxnVector)){
         return(rGetLogProbsNodes(model, nodeFxnVector))
@@ -321,7 +321,7 @@ rSimNodes <- function(model, nfv){
 
 #' @rdname nodeFunctions
 #' @export
-simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
+simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector, nodeFunctionIndex)		
 {
     if(!missing(nodeFxnVector)){
         rSimNodes(model, nodeFxnVector)

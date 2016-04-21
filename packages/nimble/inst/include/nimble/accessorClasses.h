@@ -52,10 +52,15 @@ class NodeVectorClassNew {
 // utilities for calling node functions from a vector of node pointers
 // see .cpp file for definitions
 double calculate(NodeVectorClassNew &nodes);
+double calculate(NodeVectorClassNew &nodes, int iNodeFunction);
 double calculateDiff(NodeVectorClassNew &nodes);
+double calculateDiff(NodeVectorClassNew &nodes, int iNodeFunction);
 double getLogProb(NodeVectorClassNew &nodes);
+double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction);
 void simulate(NodeVectorClassNew &nodes);
+void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 
+// for these, if there is use of iNodeFunction, it is generated directly from cppOutputGetParam
 double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo);
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo);
 NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo);

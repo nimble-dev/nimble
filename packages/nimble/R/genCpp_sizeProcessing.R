@@ -50,8 +50,10 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
-               makeCallList(c('calculate', 'calculateDiff', 'getLogProb', 'decide', 'size', 'getsize','getNodeFunctionIndexedInfo'), 'sizeScalar'),
-               makeCallList(c('simulate', 'blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
+               makeCallList(c('decide', 'size', 'getsize','getNodeFunctionIndexedInfo'), 'sizeScalar'),
+               makeCallList(c('calculate','calculateDiff', 'getLogProb'), 'sizeScalarModelOp'),
+               simulate = 'sizeSimulate',
+               makeCallList(c('blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
                )
 
 scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical', getNodeFunctionIndexedInfo = 'integer') # , nimArr_rcat = 'double', nimArr_rinterval = 'double')
@@ -182,12 +184,24 @@ sizemap <- function(code, symTab, typeEnv) {
 }
 
 sizeGetParam <- function(code, symTab, typeEnv) {
+    if(length(code$args) > 3) {
+        asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, FALSE, FALSE, rep(TRUE, length(code$args)-3)))
+        for(i in 4:length(code$args)) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeGetParam: There is an expression beyond the third argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+            }
+        }
+    } else {
+        asserts <- list()
+    }
+ 
+    
     paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
     code$type <- paramInfoSym$paramInfo$type
     code$nDim <- paramInfoSym$paramInfo$nDim
     code$sizeExprs <- vector(mode = 'list', length = code$nDim)
     code$toEigenize <- 'no'
-    asserts <- list()
+
     if(!(code$caller$name %in% assignmentOperators)) {
         if(!is.null(code$caller$name))
             if(!(code$caller$name == '{')) ## could be on its own line -- useless but possible
@@ -757,6 +771,48 @@ sizeScalar <- function(code, symTab, typeEnv) {
     code$sizeExprs <- list()
     code$toEigenize <- 'maybe' ## a scalar can be eigenized or not
     invisible(NULL)
+}
+
+sizeScalarModelOp <- function(code, symTab, typeEnv) {
+    if(length(code$args) > 1) {
+        asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
+        for(i in 2:length(code$args)) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeScalarModelOp: There is an expression beyond the first argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+            }
+        }
+    } else {
+        asserts <- list()
+    }
+    if(code$args[[1]]$toEigenize == 'yes') {
+        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+    }
+    code$nDim <- 0
+    outputType <- scalarOutputTypes[[code$name]]
+    if(is.null(outputType)) code$type <- 'double'
+    else code$type <- outputType
+    code$sizeExprs <- list()
+    code$toEigenize <- 'maybe' ## a scalar can be eigenized or not
+    invisible(NULL)
+}
+
+sizeSimulate <- function(code, symTab, typeEnv) {
+    if(length(code$args) > 1) {
+        asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
+        for(i in 2:length(code$args)) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeSimulate: There is an expression beyond the first argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+            }
+        }
+    } else {
+        asserts <- list()
+    }
+
+    code$nDim <- 0
+    code$type <- as.character(NA)
+    code$sizeExprs <- list()
+    code$toEigenize <- 'maybe'
+    return(asserts)
 }
 
 sizeScalarRecurse <- function(code, symTab, typeEnv) {
