@@ -75,7 +75,11 @@ conjugacyRelationshipsInputList <- list(
     list(prior = 'dwish',
          link = 'linear',
          dependents = list(
-             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean) %*% coeff', contribution_df = '1')),
+             ## parentheses added to the contribution_R calculation:
+             ## colVec * (rowVec * matrix)
+             ## Chris is checking to see whether this makes a difference for Eigen
+             ## -DT April 2016
+             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
                                  scale_param = 0)')
