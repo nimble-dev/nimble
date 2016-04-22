@@ -171,7 +171,19 @@ testsComparison = list(
   list(name = 'and operator, scalar', expr = quote(out <- arg1 & arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE)),
   list(name = 'or operator, scalar', expr = quote(out <- arg1 | arg2), inputDim = c(0,0), outputDim = 0, logicalArgs = c(TRUE, TRUE)),
   list(name = 'not operator, scalar', expr = quote(out <- !arg1), inputDim = c(0), outputDim = 0, logicalArgs = c(TRUE))
-  )
+)
+
+
+testsMatrix = list(
+    list(name = 'forwardsolve matrix-vector', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'forwardsolve matrix-matrix', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'backsolve matrix-vector', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'backsolve matrix-matrix', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'chol', expr = quote({ A <- arg1 %*% arg1; B <- A + t(A) ; out <- chol(B) }), inputDim = c(2), outputDim = 2),
+    list(name = 'matrix-vector multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 1), outputDim = 2),
+    list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2),
+    list(name = 'matrix-matrix multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 2), outputDim = 2)
+)
   
 
 set.seed(0)
@@ -180,6 +192,7 @@ sapply(testsBasicMath, test_math)
 sapply(testsMoreMath, test_math)
 sapply(testsReduction, test_math)
 sapply(testsComparison, test_math)
+sapply(testsMatrix, test_math)
 
 
 
