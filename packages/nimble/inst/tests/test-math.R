@@ -179,7 +179,7 @@ testsMatrix = list(
     list(name = 'forwardsolve matrix-matrix', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
     list(name = 'backsolve matrix-vector', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
     list(name = 'backsolve matrix-matrix', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
-    list(name = 'chol', expr = quote({ for(i in 1:dim(arg1)[1]) arg1[i,i] <- arg1[i,i] + 10; out <- chol(arg1) }), inputDim = c(2), outputDim = 2),
+    list(name = 'chol', expr = quote({ A <- arg1; for(i in 1:dim(A)[1]) A[i,i] <- A[i,i] + 10; out <- chol(A) }), inputDim = c(2), outputDim = 2),
     list(name = 'matrix-vector multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 1), outputDim = 2),
     list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2),
     list(name = 'matrix-matrix multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 2), outputDim = 2)
