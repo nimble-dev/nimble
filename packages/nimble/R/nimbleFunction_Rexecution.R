@@ -58,9 +58,15 @@ asCol <- function(x) {
 #'
 #' @export
 #' @details This is used internally by \link{getParam}.  It is not intended for direct use by a user or even a nimbleFunction programmer. 
-makeParamInfo <- function(model, node, param) {
-    distInfo <- getDistribution(model$getNodeDistribution(node))
-    ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
+makeParamInfo <- function(model, nodes, param) {
+    ## updating to allow nodes to be a vector
+    distInfo <- getDistributionList(model$getNodeDistribution(nodes))
+    paramIDvec <- unlist(lapply(distInfo, function(x) x$paramIDs[param]))
+    typeVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$type))
+    nDimVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$nDim))
+    if(length(unique(typeVec)) != 1 | length(unique(nDimVec)) != 1) stop('cannot have multiple nodes accessed by the same getParam if they have different types or dimensions for the same parameter.') 
+##    ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
+    ans <- c(list(paramID = paramIDvec), distInfo[[1]]$types[[param]])
     class(ans) <- 'getParam_info'
     ans
 }

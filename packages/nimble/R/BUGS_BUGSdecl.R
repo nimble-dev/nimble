@@ -25,6 +25,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  sourceLineNumber = 'ANY',
                                  code = 'ANY',        ## original BUGS code line
                                  type = 'ANY',
+                                 distributionName = 'ANY',
                                  targetExpr = 'ANY',   ## LHS of code
                                  valueExpr = 'ANY',    ## RHS of code
                                  transExpr = 'ANY',
@@ -115,7 +116,8 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  },
                                  getDistributionName = function() {
                                      if(type != 'stoch')  stop('getting distribution of non-stochastic node')
-                                     return(as.character(valueExprReplaced[[1]]))
+                                     return(distributionName)
+                                     ##return(as.character(valueExprReplaced[[1]]))
                                  }
                              )
 )
@@ -226,7 +228,9 @@ BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNa
     
     targetExprReplaced <<- codeReplaced[[2]] ## shouldn't have any link functions at this point
     valueExprReplaced <<- codeReplaced[[3]]
-
+    if(type == 'stoch') distributionName <<- as.character(valueExprReplaced[[1]])
+    else distributionName <<- NA
+    
     symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
     rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) if(length(x) == 1) as.character(x) else as.character(x[[2]])))
 

@@ -3,8 +3,18 @@
 #include<sstream>
 using std::istringstream;
 
-double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo) {
+double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { //iNodeFunction has default 0 in prototype
+  /* iNodeFunction sometimes needs to be generated in a call even if not needed */
+  /* but we want to avoid compiled warnings about an unused argument */
+  /* the following line of code tries to make the compiler think iNodeFunction will be used */
+  if(iNodeFunction == 0) paramID += 0;
   return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
+}
+
+/* This is for a case like model$getParam(nodes[i], 'mean'), where then paramID becomes a vector.  The vector of nodeFxnPtrs is unpacked at the line of generated C++ */
+template<class paramIDtype>
+double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
 }
 
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo) {
@@ -27,6 +37,10 @@ double calculate(NodeVectorClassNew &nodes) {
 
 
 double calculate(NodeVectorClassNew &nodes, int iNodeFunction) {
+  if(nodes.getUseInfoVec().size() < iNodeFunction) {
+    PRINTF("Warning in calculate: index of requested set of nodes is too large\n");
+    return(0);
+  }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
   return(oneUseInfo.nodeFunPtr->calculateBlock(oneUseInfo.useInfo));
 }
@@ -42,6 +56,10 @@ double calculateDiff(NodeVectorClassNew &nodes) {
 }
 
 double calculateDiff(NodeVectorClassNew &nodes, int iNodeFunction) {
+  if(nodes.getUseInfoVec().size() < iNodeFunction) {
+    PRINTF("Warning in calculateDiff: index of requested set of nodes is too large\n");
+    return(0);
+  }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
   return(oneUseInfo.nodeFunPtr->calculateDiffBlock(oneUseInfo.useInfo));
 }
@@ -57,6 +75,10 @@ double getLogProb(NodeVectorClassNew &nodes) {
 }
 
 double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction) {
+  if(nodes.getUseInfoVec().size() < iNodeFunction) {
+    PRINTF("Warning in getLogProb: index of requested set of nodes is too large\n");
+    return(0);
+  }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
   return(oneUseInfo.nodeFunPtr->getLogProbBlock(oneUseInfo.useInfo));
 }
@@ -70,6 +92,10 @@ void simulate(NodeVectorClassNew &nodes) {
 }
 
 void simulate(NodeVectorClassNew &nodes, int iNodeFunction) {
+  if(nodes.getUseInfoVec().size() < iNodeFunction) {
+    PRINTF("Warning in simulate: index of requested set of nodes is too large\n");
+    return;
+  }
   const oneNodeUseInfo &oneUseInfo = nodes.getUseInfoVec()[iNodeFunction-1];
   oneUseInfo.nodeFunPtr->simulateBlock(oneUseInfo.useInfo);
 }

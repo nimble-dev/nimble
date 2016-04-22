@@ -187,8 +187,8 @@ nimOptim_keywordInfo <- keywordInfoClass(
 		return(newRunCode)
 	}
 )
-                            
-                                    
+
+
 values_keywordInfo <- keywordInfoClass(
     keyword = 'values',
     processor = function(code, nfProc){
@@ -213,7 +213,7 @@ values_keywordInfo <- keywordInfoClass(
 getParam_keywordInfo <- keywordInfoClass(
     keyword = 'getParam',
     processor = function(code, nfProc) {
-
+browser()
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE)
@@ -240,7 +240,7 @@ getParam_keywordInfo <- keywordInfoClass(
 
         if(isCodeArgBlank(code, 'param'))
             stop('param argument missing from getParam, with no accessor argument supplied')
-        paramInfo_ArgList <- list(model = code$model, node = code$node, param = code$param)
+        paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
         paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
         paramIDname <- paramInfo_SetupTemplate$makeOtherNames(paramInfoName, paramInfo_ArgList)
 

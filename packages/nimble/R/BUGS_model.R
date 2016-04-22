@@ -92,8 +92,10 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
                                   
                                   ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
-                                  getNodeDistribution = function(node) {
-                                      getDeclInfo(node)[[1]]$getDistributionName()
+                                  getNodeDistribution = function(nodes) {
+                                      if(length(nodes)==1) getDeclInfo(nodes)[[1]][['distributionName']]
+                                      else unlist(lapply(getDeclInfo(nodes), `[[`, 'distributionName'))
+                                      ##getDeclInfo(nodes)[[1]]$getDistributionName()
                                   },
 
                                   ## returns the expr corresponding to 'param' in the distribution of 'node'

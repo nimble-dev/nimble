@@ -61,7 +61,14 @@ void simulate(NodeVectorClassNew &nodes);
 void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 
 // for these, if there is use of iNodeFunction, it is generated directly from cppOutputGetParam
-double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo);
+double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
+
+template<typename paramIDtype>
+double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+extern template double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+extern template double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+
+
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo);
 NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo);
 
