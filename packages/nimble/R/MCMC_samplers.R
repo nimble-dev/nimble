@@ -97,14 +97,19 @@ sampler_RW <- nimbleFunction(
     
     run = function() {
         currentValue <- model[[target]]
-        if(!logScale)    propValue <-     rnorm(1, mean =     currentValue,  sd = scale)
-        else             propValue <- exp(rnorm(1, mean = log(currentValue), sd = scale))
+        ##if(!logScale)    propValue <- rnorm(1, mean = currentValue,  sd = scale)
+        ##else             propValue <- exp(rnorm(1, mean = log(currentValue), sd = scale))
+        if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
+                       propValue <- currentValue * exp(propLogScale)
+        } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
         if(reflective)   while(propValue < range[1] | propValue > range[2]) {
             if(propValue < range[1]) propValue <- 2*range[1] - propValue
             if(propValue > range[2]) propValue <- 2*range[2] - propValue    }
         model[[target]] <<- propValue
-        logMHR <- calculateDiff(model, calcNodes)
-        if(logScale)     logMHR <- logMHR + log(propValue) - log(currentValue)
+        ##logMHR <- calculateDiff(model, calcNodes)
+        ##if(logScale)     logMHR <- logMHR + log(propValue) - log(currentValue)
+        if(logScale) logMHR <- calculateDiff(model, calcNodes) + propLogScale
+        else         logMHR <- calculateDiff(model, calcNodes)
         jump <- decide(logMHR)
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
