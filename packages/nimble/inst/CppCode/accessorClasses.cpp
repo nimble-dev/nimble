@@ -1182,6 +1182,7 @@ SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedOb
 SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS){
   //std::cout<<"in populateNodeFxnVectorNew_byDeclID\n";
   int len = LENGTH(S_ROWINDS);
+  if(len == 0) return(R_NilValue);
   //std::cout<<"len = "<<len<<"\n";
   int* gids = INTEGER(S_GIDs);
   int* rowinds = INTEGER(S_ROWINDS);
@@ -1205,7 +1206,7 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
       (*nfv).useInfoVec.back().useInfo.indicesForIndexedNodeInfo.push_back(nextRowInd);
     }
   }
-  std::cout<<"done with "<<(*nfv).useInfoVec.size()<<"\n";
+  //  std::cout<<"done with "<<(*nfv).useInfoVec.size()<<"\n";
   return(R_NilValue);
 }
 

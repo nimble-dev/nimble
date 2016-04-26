@@ -46,7 +46,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    ##.nodeFxnPointers_byGID = 'ANY',
                                    .nodeFxnPointers_byDeclID = 'ANY',
                                    .nodeValPointers_byGID = 'ANY',
-                                   .nodeLogProbPointers_byGID = 'ANY'
+                                   .nodeLogProbPointers_byGID = 'ANY',
+                                   nodeFunctions = 'ANY' ## Added for newNodeFxns, so we can access nodeFunctions by declID. Could be migrated up to modelBaseClass.
                                    ),
                                methods = list(
                                    show = function() {
@@ -74,10 +75,14 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ##     - by iterating through the nodeGenerators in the Rmodel
                                        nodesEnv <- new.env()
                                        asTopLevel <- getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
-                                       for(i in names(Rmodel$nodeFunctions)) {
-                                           nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll, asTopLevel = asTopLevel)
+                                       nodeFunctions <<- vector('list', length(Rmodel$nodeFunctions))
+                                       for(i in seq_along(Rmodel$nodeFunctions)) {
+                                           thisNodeFunName <- names(Rmodel$nodeFunctions)[i]
+                                           nodesEnv[[thisNodeFunName]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[thisNodeFunName]], dll = dll, asTopLevel = asTopLevel)
+                                           nodeFunctions[[i]] <<- nodesEnv[[thisNodeFunName]]
                                        }
                                        nodes <<- nodesEnv
+                                       names(nodeFunctions) <<- names(Rmodel$nodeFunctions)
                                        
                                        ##.nodeFxnPointers_byGID <<- new('numberedObjects')
                                        .nodeFxnPointers_byDeclID <<- new('numberedObjects') 

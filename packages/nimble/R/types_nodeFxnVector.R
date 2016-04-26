@@ -16,9 +16,10 @@ nodeFunctionVector <- setRefClass(
     methods = list(
         initialize = function(model, nodeNames, excludeData = FALSE, env = parent.frame()) {
             model <<- model
-            if(length(nodeNames) == 0)
+            if(length(nodeNames) == 0) {
             	gids <<- numeric(0)
-            else{
+                indexingInfo <<- list(declIDs = integer(), rowIndices = integer())
+            } else {
                 if(is.numeric(nodeNames)) 		#In case we start with graph ids instead of names
                     temp_gids <- unique(sort(nodeNames, FALSE),
                                                   FALSE,

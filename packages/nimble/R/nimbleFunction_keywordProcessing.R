@@ -213,7 +213,6 @@ values_keywordInfo <- keywordInfoClass(
 getParam_keywordInfo <- keywordInfoClass(
     keyword = 'getParam',
     processor = function(code, nfProc) {
-browser()
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
         nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE)
