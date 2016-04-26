@@ -48,7 +48,7 @@ class NimArrBase: public NimArrType {
   int size() const {return(NAlength);}
   virtual int numDims() const = 0;
   virtual int dimSize(int i) const = 0;
-  T &operator[](int i) {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
+  T &operator[](int i) const {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
   virtual int calculateIndex(vector<int> &i)=0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;

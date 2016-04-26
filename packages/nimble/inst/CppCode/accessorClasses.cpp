@@ -17,6 +17,9 @@ double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useI
   return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
 }
 
+template double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+template double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo) {
   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.useInfo));
 }
@@ -1177,9 +1180,9 @@ SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedOb
 }
 
 SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_ROWINDS){
-  std::cout<<"in populateNodeFxnVectorNew_byDeclID\n";
+  //std::cout<<"in populateNodeFxnVectorNew_byDeclID\n";
   int len = LENGTH(S_ROWINDS);
-  std::cout<<"len = "<<len<<"\n";
+  //std::cout<<"len = "<<len<<"\n";
   int* gids = INTEGER(S_GIDs);
   int* rowinds = INTEGER(S_ROWINDS);
   int index;
@@ -1190,8 +1193,7 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
   int nextRowInd;
   for(int i = 0; i < len; i++){
     index = gids[i] - 1;
-   
-    std::cout<<"index "<<index<<" i "<<i<<" rowinds[i]-1 "<<rowinds[i]-1<<"\n";
+    //    std::cout<<"index "<<index<<" i "<<i<<" rowinds[i]-1 "<<rowinds[i]-1<<"\n";
     nextRowInd = rowinds[i]-1;
     if(nextRowInd == -1) { // should only happen from a scalar, so there is one dummy indexedNodeInfo
       nextRowInd = 0;
@@ -1209,12 +1211,12 @@ SEXP populateNodeFxnVectorNew_byDeclID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP Snumb
 
 SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
   SEXP Sdim;
-  std::cout<<"in populateIndexedNodeInfoTable\n";
+  //  std::cout<<"in populateIndexedNodeInfoTable\n";
   PROTECT(Sdim = getAttrib(StableContents, R_DimSymbol));
   if(LENGTH(Sdim) != 2) {PRINTF("Warning from populateIndexedNodeInfoTable: LENGTH(Sdim) != 2"); return(R_NilValue);}
   int nrow = INTEGER(Sdim)[0];
   int ncol = INTEGER(Sdim)[1];
-  std::cout<<"nrow "<<nrow<<" ncol "<<ncol<<"\n";
+  //std::cout<<"nrow "<<nrow<<" ncol "<<ncol<<"\n";
   vector<indexedNodeInfo> *tablePtr = static_cast<vector<indexedNodeInfo> *>(R_ExternalPtrAddr(StablePtr));
   if(nrow == 0) {
     void *vptr=0;
@@ -1238,7 +1240,7 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
       tablePtr->push_back(indexedNodeInfo(contentsPtrd + i, ncol, nrow));
     }
   }
-  std::cout<<"done with size "<<tablePtr->size()<<"\n";
+  //  std::cout<<"done with size "<<tablePtr->size()<<"\n";
   UNPROTECT(1);
   return(R_NilValue);
 }

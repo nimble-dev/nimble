@@ -10,10 +10,10 @@ class indexedNodeInfo {
   indexedNodeInfo() {};
   template<typename itertype>
     indexedNodeInfo(itertype iStart, int ncol, int stride = 1) {
-    std::cout<<"in templated constructor for indexedNodeInfo iStart "<<iStart<<" ncol "<<ncol<<" stride "<<stride<< "\n";
+    //  std::cout<<"in templated constructor for indexedNodeInfo iStart "<<iStart<<" ncol "<<ncol<<" stride "<<stride<< "\n";
     info.reserve(ncol);
     for(int i = 0; i < ncol; i++, iStart += stride) {
-      std::cout<<"pushing back "<<*iStart<<"\n";
+      //      std::cout<<"pushing back "<<*iStart<<"\n";
       info.push_back(*iStart);
     }
   }

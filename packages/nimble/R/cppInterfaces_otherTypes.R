@@ -132,7 +132,6 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName){
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName) {
     iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName)
     iNITcontent <- Robject[[indexedNodeInfoTableName]]$unrolledIndicesMatrix
-    message('testing populateIndexedNodeInfoTable')
     .Call('populateIndexedNodeInfoTable', iNITptr, iNITcontent)
 }
 
