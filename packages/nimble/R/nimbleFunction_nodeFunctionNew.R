@@ -118,21 +118,20 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
         ## need a value Entry
         distName <- as.character(RHS[[1]])
 
-            allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
-            typesListAllParams <- getDistribution(distName)$types
-            ##numParams <- length(typesListAllParams)
-            typesNDims <- unlist(lapply(typesListAllParams, `[[`, 'nDim'))
-            typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
-            paramIDs <- getDistribution(distName)$paramIDs
-            ## rely on only double for now
-            for(nDimSupported in c(0, 1, 2)) {
-                boolThisCase <- typesNDims == nDimSupported & typesTypes == 'double'
-                paramNamesToUse <- names(typesListAllParams)[boolThisCase]
-                caseName <- paste0("getParam_",nDimSupported,"D_double")
-                if(length(paramNamesToUse) > 0) 
-                    methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
-            }
-        
+        allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
+        typesListAllParams <- getDistribution(distName)$types
+        ##numParams <- length(typesListAllParams)
+        typesNDims <- unlist(lapply(typesListAllParams, `[[`, 'nDim'))
+        typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
+        paramIDs <- getDistribution(distName)$paramIDs
+        ## rely on only double for now
+        for(nDimSupported in c(0, 1, 2)) {
+            boolThisCase <- typesNDims == nDimSupported ## & typesTypes == 'double' ## until (if ever) we have separate handling of integer params, these should be folded in with doubles.  We don't normally have any integer params, because we handle integers as doubles
+            paramNamesToUse <- names(typesListAllParams)[boolThisCase]
+            caseName <- paste0("getParam_",nDimSupported,"D_double")
+            if(length(paramNamesToUse) > 0) 
+                methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
+        }
     }
     ## add model$ in front of all names, except the setupOutputs
     methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "INDEXEDNODEINFO_"))
