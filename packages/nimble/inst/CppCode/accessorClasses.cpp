@@ -20,13 +20,32 @@ double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useI
 template double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 template double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
-NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo) {
+NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  if(iNodeFunction == 0) paramID += 0;
   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.useInfo));
 }
 
-NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo) {
+template<class paramIDtype>
+NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+}
+
+template NimArr<1, double> getParam_1D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+template NimArr<1, double> getParam_1D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+
+NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  if(iNodeFunction == 0) paramID += 0;
   return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID, useInfo.useInfo));
 }
+
+template<class paramIDtype>
+NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+}
+
+template NimArr<2, double> getParam_2D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+
 
 double calculate(NodeVectorClassNew &nodes) {
   double ans(0);
