@@ -91,10 +91,10 @@ using std::string;
 	return R_D__0;					\
    }
 
-#define eigen_chol(x)       (x).selfadjointView<Eigen::Upper>().llt().matrixU()
-#define eigen_solve(x,y)    (x).lu().solve(y)
-#define eigen_fs(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
-#define eigen_bs(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
+#define EIGEN_CHOL(x)       (x).selfadjointView<Eigen::Upper>().llt().matrixU()
+#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)
+#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
+#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
 
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);
