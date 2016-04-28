@@ -337,9 +337,17 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             
             if(variable$hasIndex) stop('Error: Variable', deparse(code[[2]]), 'on outside of [ contains a BUGS code index.')
             if(variable$replaceable) { ## recheck from devel. right here decide if there are any indexing blocks. ## don't want that recursed due to foo(1:3) possibility
-                return(list(code = contentsCode, ## if there are any indexing blocks, code c(contentsCode, list(code))
-                            replaceable = all(contentsReplaceable),
-                            hasIndex = any(contentsHasIndex)))
+
+                boolIndexingBlock <- unlist(lapply(code[-c(1,2)], function(x) if(length(x) > 1) if(x[[1]] == ':') TRUE else FALSE else FALSE))
+                if(any(boolIndexingBlock)) {
+                    return(list(code = c(contentsCode, code),
+                                replaceable = FALSE,
+                                hasIndex = any(contentsHasIndex)))
+                } else {
+                    return(list(code = contentsCode, ## old behavior 
+                                replaceable = all(contentsReplaceable),
+                                hasIndex = any(contentsHasIndex)))
+                }
             } else {
                 if(all(contentsReplaceable)) {
                     return(list(code = c(contentsCode, list(code)),
