@@ -34,6 +34,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  constantsEnv = 'ANY', ## environment with constants, set in assignConstants()
                                  constantsList = 'ANY',  ## named list with constants, set in assignConstants()
                                  constantsNamesList = 'ANY', ## list of constants name objects, set in assignConstants()
+                                 constantsScalarNamesList = 'ANY', ## could eventually replace constantsNamesList. added for newNodeFxns
                                  dimensionsList = 'ANY',		#list		   ## list of provided dimension information, set in assignDimensions()
                                  contexts = 'ANY',				#list 			 ## list of BUGScontextClass objects
                                  declInfo = 'ANY',				#list				 ## list of BUGSdeclInfo objects
@@ -204,10 +205,19 @@ modelDefClass$methods(assignConstants = function(constants) {
         list2env(constants, constantsEnv)
         constantsList <<- constants
         constantsNamesList <<- lapply(ls(constants), as.name)
+        constantLengths <- unlist(lapply(constants, length))
+        if(any(constantLengths > 1)) {
+            iLong <- which(constantLengths > 1)
+            message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and may be handled as data if necessary.'))
+            ## note some of the processing behind this message occurs in BUGSmodel between making the model def and the model
+            constantsScalarNamesList <<- constantsNamesList[-iLong]
+        } else
+            constantsScalarNamesList <<- constantsNamesList 
     } else {
         constantsList <<- list()
         names(constantsList) <<- character(0)
         constantsNamesList <<- list()
+        constantsScalarNamesList <<- list()
     }
 })
 modelDefClass$methods(assignDimensions = function(dimensions) {
@@ -341,6 +351,7 @@ modelDefClass$methods(splitConstantsAndData = function() {
         if(length(newDataVars)) {
             if(nimbleOptions('verbose')) cat("Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.\n")
             constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
+            constantsScalarNamesList <<- constantsScalarNamesList[ !(as.character(constantsScalarNamesList) %in% newDataVars) ]
             constantsList[newDataVars] <<- NULL
             for(varName in newDataVars) eval(substitute(rm(varName, envir = constantsEnv), list(varName = varName)))
         }
