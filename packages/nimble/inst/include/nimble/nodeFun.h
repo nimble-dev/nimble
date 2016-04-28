@@ -6,7 +6,7 @@
 // typically we'll have a vector of these in a node function or some such way of packaging information 
 class indexedNodeInfo {
  public:
-  vector<int> info;
+  vector<double> info; // although the main purposes of this is for indices, it will sometimes hold constants (sometimes from partially evaluated expressions)
   indexedNodeInfo() {};
   template<typename itertype>
     indexedNodeInfo(itertype iStart, int ncol, int stride = 1) {
@@ -17,8 +17,8 @@ class indexedNodeInfo {
       info.push_back(*iStart);
     }
   }
-  indexedNodeInfo(vector<int> newinfo) {info = newinfo;};
-  operator vector<int>() const {return(info);}
+  indexedNodeInfo(vector<double> newinfo) {info = newinfo;};
+  operator vector<double>() const {return(info);}
 };
 
 // this will be the information for a block of indexedNodeInfo to use within one call to a new node function to trigger operations for one or more nodes 

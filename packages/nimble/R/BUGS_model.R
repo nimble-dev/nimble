@@ -544,7 +544,8 @@ Checks for common errors in model specification, including missing values, inabi
                                               declInfo <- .self$modelDef$declInfo[[j]]
                                               nn <- length(declInfo$nodeFunctionNames)
                                               nfn <- declInfo$nodeFunctionNames[nn]
-                                              nf <- .self$nodeFunctions[[nfn]]
+                                              ## NEWNODEFXNS
+                                              nf <- .self$nodeFunctions[[j]]
                                               #context <- as.list(declInfo$unrolledIndicesMatrix[nrow(declInfo$unrolledIndicesMatrix), ])
 
                                               if(declInfo$type == 'determ') {
@@ -579,13 +580,15 @@ Checks for common errors in model specification, including missing values, inabi
                                                   distDims <- as.integer(sapply(getDistribution(dist)$types, function(x) x$nDim))
                                                   nms <- names(getDistribution(dist)$types)
                                                   names(distDims) <- nms
-
+                                                  
                                                   sizes <- list(); length(sizes) <- length(nms); names(sizes) <- nms
 
                                                   for(k in seq_along(nms)) {
                                         # sometimes get_foo not found in env of nf (and doesn't appear in ls(nf) )
-                                                      fun <- as.call(parse(text = paste0("nf$get_", nms[k])))
-                                                      e = try(eval(fun))
+                                                      ##fun <- as.call(parse(text = paste0("nf$get_", nms[k])))
+                                                      ##e = try(eval(fun))
+                                                      ## NEWNODEFXN
+                                                      e <- try(.self$getParam(nfn, nms[k]))
                                                       
                                                       if(!is(e, "try-error")) {
                                                           sizes[[nms[k]]] <- dimOrLength(e)
@@ -816,7 +819,10 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
                                            logProbNodeExpr <- insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
-                                           
+                                           ## ensure they are in the same order as the columns of the unrolledIndicesMatrix, because that is assumed in nodeFunctionNew
+                                           ## This can be necessary in a case like for(j in ...) for(i in ...) x[i,j] ~ ...; because x uses inner index first
+                                           if(nrow(BUGSdecl$unrolledIndicesMatrix) > 0)
+                                               setupOutputExprs <- setupOutputExprs[ colnames(BUGSdecl$unrolledIndicesMatrix) ]
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
@@ -830,7 +836,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                    },
                                    
                                    buildNodeFunctions_old = function(where = globalenv(), debug = FALSE) {
-                                       ## This xoocreates the nodeFunctions, which are basically nimbleFunctions, for the model
+                                       ## This creates the nodeFunctions, which are basically nimbleFunctions, for the model
                                        if(debug) browser()
                                        iNextNodeFunction <- 1
                                        nodeFunctions <<- vector('list', length = modelDef$numNodeFunctions)  ## for the specialized instances
