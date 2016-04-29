@@ -71,20 +71,33 @@ void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
  
 
 // for these, if there is use of iNodeFunction, it is generated directly from cppOutputGetParam
-double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
+//getParam_0D
+inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo) {
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
+};
+inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { 
+  /* iNodeFunction sometimes needs to be generated in a call even if not needed */
+  /* but we want to avoid compiled warnings about an unused argument */
+  /* the following line of code tries to make the compiler think iNodeFunction will be used */
+  if(iNodeFunction) paramID += 0;
+  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
+};
 template<typename paramIDtype>
-double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-extern template double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-extern template double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+inline double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+};
 
+//template inline double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+//template inline double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
+//getParam_1D
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
 template<typename paramIDtype>
 NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 extern template NimArr<1, double> getParam_1D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 extern template NimArr<1, double> getParam_1D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
-
+//getParam_2D
 NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
 template<typename paramIDtype>
 NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
