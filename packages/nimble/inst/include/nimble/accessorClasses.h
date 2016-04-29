@@ -60,6 +60,16 @@ double getLogProb(NodeVectorClassNew &nodes, int iNodeFunction);
 void simulate(NodeVectorClassNew &nodes);
 void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 
+// ideas on efficiency
+/* ## could propagate const-ness through getParam_0D_double_block etc. */
+/* ## could pull getParam implementations back to .h for inlining. */
+/*  ## could make a const version of operator[] and operator() for NimArray's */
+/*  ## the getParam_..._block is not needed.   */
+/*  ## could do this all on a new branch of newNodeFxn to be able to compare */
+/*  ## instead of the extra argument with default 0, use overloaded versions */
+/*  ## try making all calculate, simulate etc. const */
+ 
+
 // for these, if there is use of iNodeFunction, it is generated directly from cppOutputGetParam
 double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
 template<typename paramIDtype>
