@@ -17,10 +17,12 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                           name = 'ANY',		#character
                                           RCfun = 'ANY', ##nfMethodRC
                                           nameSubList = 'ANY',
-                                          compileInfo = 'ANY' ## RCfunctionCompileClass``
+                                          compileInfo = 'ANY', ## RCfunctionCompileClass``
+                                          const = 'ANY'
                                           ),
                                       methods = list(
-                                          initialize = function(f = NULL, funName) {
+                                          initialize = function(f = NULL, funName, const = FALSE) {
+                                              const <<- const
                                               if(!is.null(f)) {
                                                   if(missing(funName)) {
                                                       sf <- substitute(f)

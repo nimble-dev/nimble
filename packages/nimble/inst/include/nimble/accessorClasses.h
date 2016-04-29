@@ -61,12 +61,12 @@ void simulate(NodeVectorClassNew &nodes);
 void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 
 // ideas on efficiency
-/* ## could propagate const-ness through getParam_0D_double_block etc. */
+/* ## could propagate const-ness through getParam_0D_double_block etc. - that helped */
 /* ## could pull getParam implementations back to .h for inlining. */
 /*  ## could make a const version of operator[] and operator() for NimArray's */
-/*  ## the getParam_..._block is not needed.   */
+/*  ## the getParam_..._block is not needed. -skipping this didn't help   */
 /*  ## could do this all on a new branch of newNodeFxn to be able to compare */
-/*  ## instead of the extra argument with default 0, use overloaded versions */
+/*  ## instead of the extra argument with default 0, use overloaded versions - might have helped - didn't compare carefully */
 /*  ## try making all calculate, simulate etc. const */
  
 
@@ -74,6 +74,7 @@ void simulate(NodeVectorClassNew &nodes, int iNodeFunction);
 //getParam_0D
 inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo) {
   return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
+  //return(useInfo.nodeFunPtr->getParam_0D_double(paramID, (*(useInfo.nodeFunPtr->getIndexedNodeInfoTablePtr()))[ useInfo.useInfo.indicesForIndexedNodeInfo[0] ] ) );
 };
 inline double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { 
   /* iNodeFunction sometimes needs to be generated in a call even if not needed */
