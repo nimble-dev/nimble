@@ -45,8 +45,56 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 #		dollarSign_keywordInfo
 #		singleBracket_keywordInfo
 		
+
+
+vector_keywordInfo <- keywordInfoClass(
+    keyword = 'vector',
+    processor = function(code, nfProc) {
+        newCode <- quote(nimArrayGeneral())
+        newCode$type <- code$type
+        newCode$dim <- list(code$length)
+        newCode$value <- code$value
+        newCode$init <- code$init
+	return(newCode)
+    }
+)
 		
-		
+numeric_keywordInfo <- keywordInfoClass(
+    keyword = 'numeric',
+    processor = function(code, nfProc) {
+        newCode <- quote(nimArrayGeneral())
+        newCode$type <- 'double'
+        newCode$dim <- list(code$length)
+        newCode$value <- code$value
+        newCode$init <- code$init
+	return(newCode)
+    }
+)
+
+matrix_keywordInfo <- keywordInfoClass(
+    keyword = 'matrix',
+    processor = function(code, nfProc) {
+        newCode <- quote(nimArrayGeneral())
+        newCode$type <- code$type
+        newCode$dim <- list(code$nrow, code$ncol)
+        newCode$value <- code$value
+        newCode$init <- code$init
+	return(newCode)
+    }
+)
+
+array_keywordInfo <- keywordInfoClass(
+    keyword = 'array',
+    processor = function(code, nfProc) {
+        newCode <- quote(nimArrayGeneral())
+        newCode$type <- code$type
+        newCode$dim <- as.list(code$dim)
+        newCode$value <- code$value
+        newCode$init <- code$init
+	return(newCode)
+    }
+)
+
 d_gamma_keywordInfo <- keywordInfoClass(
 	keyword = 'dgamma',
 	processor = function(code, nfProc){
@@ -585,6 +633,10 @@ singleBracket_keywordInfo <- keywordInfoClass(
 
 #	KeywordList
 keywordList <- new.env()
+keywordList[['vector']] <- vector_keywordInfo
+keywordList[['numeric']] <- numeric_keywordInfo
+keywordList[['matrix']] <- matrix_keywordInfo
+keywordList[['array']] <- array_keywordInfo
 keywordList[['getParam']] <- getParam_keywordInfo
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo
@@ -637,6 +689,10 @@ keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
+matchFunctions[['vector']] <- function(type = 'double', length, value = 0, init = TRUE) {}
+matchFunctions[['numeric']] <- function(length, value = 0, init = TRUE) {}
+matchFunctions[['matrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
+matchFunctions[['array']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['getParam']] <- getParam
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}

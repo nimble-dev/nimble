@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'nimArrayGeneral')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
@@ -41,6 +41,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimPrint = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
+                    nimArrayGeneral = 'sizeNimArrayGeneral',
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
@@ -180,6 +181,18 @@ sizemap <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'maybe'
     invisible(NULL)
 }
+
+sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
+    browser()  ## XXXXXX
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- code$args[[1]]                 ## args[[1]]: 'type' argument
+    code$nDim <- length(code$args[[2]])         ## args[[2]]: 'dim' argument
+    code$sizeExprs <- as.list(code$args[[2]])   ## args[[2]]: 'dim' argument
+    code$toEigenize <- 'no'
+    return(asserts)
+}
+
+
 
 sizeGetParam <- function(code, symTab, typeEnv) {
     paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
