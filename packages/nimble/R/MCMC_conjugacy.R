@@ -360,22 +360,24 @@ conjugacyClass <- setRefClass(
                                               NUM_DEPNODES      = as.name(paste0('num_depNodes_', distName))
                                          ))
 
-                    depNodeValueNdim <- getDistribution(distName)$types$value$nDim
+                    ## uncomment this block to move from declare to setup outputs for some variables
+                    ## depNodeValueNdim <- getDistribution(distName)$types$value$nDim
+                    ## functionBody$addCode({
+                    ##     DEP_VALUES_VAR <- array(0, dim = DECLARE_SIZE)
+                    ## },
+                    ##                      list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),
+                    ##                           DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeValueNdim)
+                    ##                           ))
+                    ## neededParams <- dependents[[distName]]$neededParamsForPosterior
+                    ## for(param in neededParams) {
+                    ##     depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
+                    ##     ## NEWNODEFXN
+                    ##     functionBody$addCode(DEP_PARAM_VAR <- array(0, dim = DECLARE_SIZE),
+                    ##                          list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
+                    ##                               DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeParamNdim)))
+                    ## }
 
-                    functionBody$addCode({
-                        DEP_VALUES_VAR <- array(0, dim = DECLARE_SIZE)
-                    },
-                                         list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),
-                                              DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeValueNdim)
-                                              ))
-                    neededParams <- dependents[[distName]]$neededParamsForPosterior
-                    for(param in neededParams) {
-                        depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
-                        ## NEWNODEFXN
-                        functionBody$addCode(DEP_PARAM_VAR <- array(0, dim = DECLARE_SIZE),
-                                             list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
-                                                  DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeParamNdim)))
-                    }
+                    ## old
                     ## functionBody$addCode({
                     ##     DEP_NODENAMES <- control$DEP_CONTROL_NAME
                     ##     DEP_NODEFUNCTIONS <- nimbleFunctionList(NF_VIRTUAL)
@@ -403,20 +405,21 @@ conjugacyClass <- setRefClass(
                             N_DEP             = as.name(paste0('N_dep_', distName)),
                             DEP_CONTROL_NAME  = as.name(paste0(  'dep_', distName))))
 
-                    functionBody$addCode({
-                        DEP_VALUES_VAR <- array(0, dim = DECLARE_SIZE)
-                    },
-                                         list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),
-                                              DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dep_',distName)), depNodeValueNdim)
-                                              ))
-                    neededParams <- dependents[[distName]]$neededParamsForPosterior
-                    for(param in neededParams) {
-                        depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
-                        ## NEWNODEFXN
-                        functionBody$addCode(DEP_PARAM_VAR <- array(0, dim = DECLARE_SIZE),
-                                             list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
-                                                  DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('N_dep_',distName)), depNodeParamNdim)))
-                    }
+                    ## uncomment this block to move from declare() to setup outputs for some variables
+                    ## functionBody$addCode({
+                    ##     DEP_VALUES_VAR <- array(0, dim = DECLARE_SIZE)
+                    ## },
+                    ##                      list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),
+                    ##                           DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dep_',distName)), depNodeValueNdim)
+                    ##                           ))
+                    ## neededParams <- dependents[[distName]]$neededParamsForPosterior
+                    ## for(param in neededParams) {
+                    ##     depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
+                    ##     ## NEWNODEFXN
+                    ##     functionBody$addCode(DEP_PARAM_VAR <- array(0, dim = DECLARE_SIZE),
+                    ##                          list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
+                    ##                               DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('N_dep_',distName)), depNodeParamNdim)))
+                    ## }
 
                     ## functionBody$addCode({
                     ##     N_DEP <- length(control$DEP_CONTROL_NAME)
@@ -530,18 +533,18 @@ conjugacyClass <- setRefClass(
                     
                     depNodeValueNdim <- getDistribution(distName)$types$value$nDim
 
-                    ## ## NEWNODEFXNS (moved to setup)
-                    ## functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                       ## DECLARE() statement
-                    ##                      list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
-                    ##                           DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
-                    ##                           DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeValueNdim)))
-                    ## functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                       ## DECLARE() statement
-                    ##                      list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
-                    ##                           DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
-                    ##                           DECLARE_SIZE           = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')))), depNodeValueNdim)))
+                    ## NEWNODEFXNS (comment this region to move these up to setup outputs)
+                    functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                       ## DECLARE() statement
+                                         list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
+                                              DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
+                                              DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeValueNdim)))
+                    functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                       ## DECLARE() statement
+                                         list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
+                                              DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
+                                              DECLARE_SIZE           = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')))), depNodeValueNdim)))
 
                     ## NEWNODEFXN
-                    forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[i], 'value'),
+                    forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- model$getParam(DEP_NODENAMES[i], 'value'),
                                         list(DEP_NODENAMES = as.name(paste0('dep_', distName, '_nodeNames')),
                                              DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), depNodeValueNdim, indexExpr = quote(i)))) 
                     ## forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- nfMethod(DEP_NODEFUNCTIONS[[i]], 'get_value')(),
@@ -551,19 +554,20 @@ conjugacyClass <- setRefClass(
                     neededParams <- dependents[[distName]]$neededParamsForPosterior
                     for(param in neededParams) {
                         depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
-                        ## ## NEWNODEFXN (moved to setup)
-                        ## functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                     ## DECLARE() statement
-                        ##                      list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
-                        ##                           DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                       ## DECLARE() statement
-                        ##                           DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeParamNdim)))
+                        ## NEWNODEFXN (could be moved to setup)
+                        functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                     ## DECLARE() statement
+                                             list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
+                                                  DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                       ## DECLARE() statement
+                                                  DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('num_depNodes_',distName)), depNodeParamNdim)))
 
+                        ## old
                         ## functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                     ## DECLARE() statement
                         ##                      list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
                         ##                           DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                       ## DECLARE() statement
                         ##                           DECLARE_SIZE       = makeDeclareSizeField(substitute(length(DEP_NODEFUNCTIONS), list(DEP_NODEFUNCTIONS = as.name(paste0('dep_', distName, '_nfs')))), depNodeParamNdim)))
 
                         ## NEWNODEFXN
-                        forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[i], PARAM_NAME),
+                        forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <- model$getParam(DEP_NODENAMES[i], PARAM_NAME),
                                             list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(i)),
                                                  DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames')),
                                                  PARAM_NAME    = param))
@@ -592,15 +596,15 @@ conjugacyClass <- setRefClass(
                     forLoopBody <- codeBlockClass()
                     
                     ## DECLARE() statement for dependent node values
-                    ## NEWNODEFXN: no change needed in this clause (moved to setup)
-                    ## functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                       ## DECLARE() statement
-                    ##                      list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
-                    ##                           DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
-                    ##                           DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeValueNdim)))
+                    ## NEWNODEFXN: no change needed in this clause (can be moved to setup)
+                    functionBody$addCode(declare(DEP_VALUES_VAR, double(DEP_VALUES_VAR_NDIM, DECLARE_SIZE)),                       ## DECLARE() statement
+                                         list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
+                                              DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
+                                              DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeValueNdim)))
 
                     ## get *value* of each dependent node
                     ## NEWNODEFXN
-                    forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[iDep],'value'), 
+                    forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- model$getParam(DEP_NODENAMES[iDep],'value'), 
                                         list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), depNodeValueNdim, indexExpr = quote(iDep)),
                                              DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames'))))
                     
@@ -611,15 +615,15 @@ conjugacyClass <- setRefClass(
                     for(param in neededParams) {
                         depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
                         ## DECLARE() statement for each dependent node *parameter* value
-                        ## NEWNODEFXN - no change needed here (moved to setup)
-                        ## functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                     ## DECLARE() statement
-                        ##                      list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
-                        ##                           DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                       ## DECLARE() statement
-                        ##                           DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeParamNdim)))
+                        ## NEWNODEFXN - no change needed here (can be moved to setup)
+                        functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                     ## DECLARE() statement
+                                             list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
+                                                  DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                       ## DECLARE() statement
+                                                  DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeParamNdim)))
 
                         ## get *parameter values* for each dependent node
                         ## NEWNODEFXN
-                        forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <<- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME), 
+                        forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME), 
                                             list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep)),
                                                  DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames')),
                                                  PARAM_NAME    = param))

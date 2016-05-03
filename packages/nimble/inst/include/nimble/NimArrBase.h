@@ -32,18 +32,26 @@ enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 template<class T>
 class NimArrBase: public NimArrType {
  public:
-  vector<T> v;
-  vector<T> *vPtr;
-  void setVptr() {vPtr = &v;}
-  vector<T> *getVptr() const {return(vPtr);}
-  vector<int> NAdims;
-  const vector<int> &dim() const {return(NAdims);}
-  vector<int> NAstrides;
+  //vector<T> v;
+  T *v;
+  //vector<T> *vPtr;
+  T **vPtr;
+  void setVptr() {vPtr = &v;} 
+  //  vector<T> *getVptr() const {return(vPtr);}
+  double **getVptr() const{return(vPtr);}
+  bool own_v;
+  //vector<int> NAdims;
+  int *NAdims;
+    //  const vector<int> &dim() const {return(NAdims);}
+  const int* dim() const {return(NAdims);}    
+    //vector<int> NAstrides;
+  int *NAstrides;
   int stride1, offset; // everyone has a stride1, and the flat [] operator needs it, so it is here. 
   int getOffset() {return(offset);}
   bool boolMap;
   bool isMap() const {return(boolMap);}
-  const vector<int> &strides() const {return(NAstrides);}
+  //const vector<int> &strides() const {return(NAstrides);}
+  const int* strides() const {return(NAstrides);}
   int NAlength; // name length can cause problems if R headers have been #include'd, as they have #define length Rf_length
   int size() const {return(NAlength);}
   virtual int numDims() const = 0;
@@ -53,7 +61,11 @@ class NimArrBase: public NimArrType {
   virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
-  void setLength(int l) {NAlength = l; v.resize(l); } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
+  void setLength(int l) {
+    NAlength = l;
+    //v.resize(l);
+    v = new T[l];
+  } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
   void setMyType() {
     myType = UNDEFINED;
     if(typeid(T) == typeid(int) )
@@ -61,18 +73,25 @@ class NimArrBase: public NimArrType {
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
   }
-  ~NimArrBase(){};
+  virtual ~NimArrBase(){
+    delete[] NAdims;
+    delete[] NAstrides;
+    if(own_v) delete [] v;
+  };
  NimArrBase(const NimArrBase<T> &other) :
-  NAdims(other.dim()),
-    offset(0),
+  //NAdims(other.dim()),
+  offset(0),
     boolMap(false),
+    own_v(false), // isn't a map but how should it get values?
     NAlength(other.size())
       {
+	NAdims = new int[other.numDims()];
+	std::memcpy(NAdims, other.dim(), other.numDims()*sizeof(int));
 	// std::cout<<"Using copy constructor for a NimArrBase<T>\n";
    	myType = other.getNimType();
       };
 
- NimArrBase() : v(), vPtr(&v), offset(0), boolMap(false), NAlength(0) {
+ NimArrBase() : v(), vPtr(&v), offset(0), boolMap(false), NAlength(0), own_v {
     //  std::cout<<"Creating a NimArr with &v = "<<&v<<" and "<<" vPtr = "<<vPtr<<"\n";
     setMyType();
   }

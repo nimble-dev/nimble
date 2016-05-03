@@ -45,7 +45,8 @@ public:
      return(mapCopy(other));
     }
   
-    NimArrBase<T>::NAdims = other.dim();
+    //    NimArrBase<T>::NAdims = other.dim();
+    NimArrBase<T>::NAdims[0] = other.dim()[0];
     size1 = NimArrBase<T>::NAdims[0];
 
     NimArrBase<T>::NAlength = other.size();
@@ -86,10 +87,13 @@ public:
   NimArrBase<T>(other)
   {
     //   std::cout<<"Using copy constructor for a NimArr<1, T>\n";
-    NimArrBase<T>::NAdims = other.dim();
+    //NimArrBase<T>::NAdims = other.dim();
+    NimArrBase<T>::NAdims = new int[1];
+    NimArrBase<T>::NAdims[0] = other.dim()[0];
     size1 = NimArrBase<T>::NAdims[0];
     // vPtr, NAstrides, offset, stride1, boolMap
-    NimArrBase<T>::NAstrides.resize(1); 
+    //    NimArrBase<T>::NAstrides.resize(1);
+    NimArrBase<T>::NAstrides = new int[1]; 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;   
      if(other.boolMap) {
        NimArrBase<T>::v.resize(size1);
@@ -109,8 +113,10 @@ public:
   }
 
   NimArr<1, T>() : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(1);
-    NimArrBase<T>::NAstrides.resize(1);
+    //NimArrBase<T>::NAdims.resize(1);
+    NimArrBase<T>::NAdims = new int[1];
+    //    NimArrBase<T>::NAstrides.resize(1);
+    NimArrBase<T>::NAstrides = new int[1];
     setSize(0);
   }
 
@@ -143,15 +149,19 @@ public:
   }
 
   NimArr<1, T>(vector<T> &vm, int off, int str1, int is1) : NimArrBase<T>(vm, off) {
-    NimArrBase<T>::NAdims.resize(1);
-    NimArrBase<T>::NAstrides.resize(1);
+    //    NimArrBase<T>::NAdims.resize(1);
+    NimArrBase<T>::NAdims = new int[1];
+    //    NimArrBase<T>::NAstrides.resize(1);
+    NimArrBase<T>::NAstrides = new int[1];
     NimArrBase<T>::NAdims[0] = NimArrBase<T>::NAlength = size1 = is1;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
   }
 
   NimArr<1, T>(int is1) : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(1);
-    NimArrBase<T>::NAstrides.resize(1);
+    //    NimArrBase<T>::NAdims.resize(1);
+    NimArrBase<T>::NAdims = new int[1];
+    //    NimArrBase<T>::NAstrides.resize(1);
+    NimArrBase<T>::NAstrides = new int[1];
     setSize(is1);
   }
 
@@ -221,7 +231,8 @@ public:
       return(mapCopy(other));
     }
 
-    NimArrBase<T>::NAdims = other.dim();
+    //    NimArrBase<T>::NAdims = other.dim();
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 2*sizeof(int));
     size1 = NimArrBase<T>::NAdims[0];
     size2 = NimArrBase<T>::NAdims[1];
 
@@ -260,12 +271,15 @@ public:
   NimArr<2, T> (const NimArr<2, T> &other) :
   NimArrBase<T>(other)
   {
-    NimArrBase<T>::NAdims = other.dim();
+    //    NimArrBase<T>::NAdims = other.dim();
+    NimArrBase<T>::NAdims = new int[2];
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 2 * sizeof(int));
     // std::cout<<"Using copy constructor for a NimArr<2, T>\n";
     size1 = NimArrBase<T>::NAdims[0];
     size2 = NimArrBase<T>::NAdims[1];
 
-    NimArrBase<T>::NAstrides.resize(2); 
+    //    NimArrBase<T>::NAstrides.resize(2);
+    NimArrBase<T>::NAstrides = new int[2]; 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;   
     NimArrBase<T>::NAstrides[1] = stride2 = size1;   
     if(other.boolMap) {
@@ -289,8 +303,10 @@ public:
   }
 
   NimArr<2, T> () : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(2);
-    NimArrBase<T>::NAstrides.resize(2);
+    //    NimArrBase<T>::NAdims.resize(2);
+    NimArrBase<T>::NAdims = new int[2];
+    //    NimArrBase<T>::NAstrides.resize(2);
+    NimArrBase<T>::NAstrides = new int[2];
     setSize(0, 0);
   }
 
@@ -329,19 +345,23 @@ public:
   }
   
   NimArr<2, T>(vector<T> &vm, int off, int str1, int str2, int is1, int is2) : NimArrBase<T>(vm, off) {
-    NimArrBase<T>::NAdims.resize(2);
+    //    NimArrBase<T>::NAdims.resize(2);
+    NimArrBase<T>::NAdims = new int[2];
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAdims[1] = size2 = is2;
     NimArrBase<T>::NAlength = size1 * size2;
     // not setSize because it uses the allocated vm
-    NimArrBase<T>::NAstrides.resize(2);
+    //    NimArrBase<T>::NAstrides.resize(2);
+    NimArrBase<T>::NAstrides = new int[2];
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
   }
 
   NimArr<2, T>(int is1, int is2) : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(2); 
-    NimArrBase<T>::NAstrides.resize(2);
+    //    NimArrBase<T>::NAdims.resize(2);
+    NimArrBase<T>::NAdims = new int[2]; 
+    //    NimArrBase<T>::NAstrides.resize(2);
+    NimArrBase<T>::NAstrides = new int[2];
     setSize(is1, is2);
   }
 
@@ -423,7 +443,9 @@ class NimArr<3, T> : public NimArrBase<T> {
       return(mapCopy(other));
     }
 
-    NimArrBase<T>::NAdims = other.dim();
+    //    NimArrBase<T>::NAdims = other.dim();
+    NimArrBase<T>::NAdims = new int[3];
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 3 * sizeof(int));
     size1 = NimArrBase<T>::NAdims[0];
     size2 = NimArrBase<T>::NAdims[1];
     size3 = NimArrBase<T>::NAdims[2];
@@ -468,13 +490,16 @@ class NimArr<3, T> : public NimArrBase<T> {
   NimArr<3, T> (const NimArr<3, T> &other) :
   NimArrBase<T>(other)
   {
-    NimArrBase<T>::NAdims = other.dim();
+    //    NimArrBase<T>::NAdims = other.dim();
+    NimArrBase<T>::NAdims = new int[3];
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 3 * sizeof(int));
     // std::cout<<"Using copy constructor for a NimArr<3, T>\n";
     size1 = NimArrBase<T>::NAdims[0];
     size2 = NimArrBase<T>::NAdims[1];
     size3 = NimArrBase<T>::NAdims[2];
 
-    NimArrBase<T>::NAstrides.resize(3); 
+    //    NimArrBase<T>::NAstrides.resize(3);
+    NimArrBase<T>::NAstrides = new int[3]; 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;   
     NimArrBase<T>::NAstrides[1] = stride2 = size1;   
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;   
@@ -503,8 +528,10 @@ class NimArr<3, T> : public NimArrBase<T> {
   }
 
   NimArr<3, T> () : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(3); 
-    NimArrBase<T>::NAstrides.resize(3); 
+    //    NimArrBase<T>::NAdims.resize(3);
+    NimArrBase<T>::NAdims = new int[3]; 
+    //    NimArrBase<T>::NAstrides.resize(3);
+    NimArrBase<T>::NAstrides = new int[3]; 
     setSize(0, 0, 0);
   }
 
@@ -528,7 +555,7 @@ class NimArr<3, T> : public NimArrBase<T> {
     NimArrBase<T>::vPtr = source.getVptr();
     NimArrBase<T>::NAdims[0] = size1 = is[0];
     NimArrBase<T>::NAdims[1] = size2 = is[1];
-    NimArrBase<T>::NAdims[1] = size3 = is[2];
+    NimArrBase<T>::NAdims[2] = size3 = is[2];
     NimArrBase<T>::NAlength = size1*size2*size3;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str[0];
     NimArrBase<T>::NAstrides[1] = stride2 = str[1];
@@ -549,13 +576,15 @@ class NimArr<3, T> : public NimArrBase<T> {
 
 
   NimArr<3, T>(vector<T> &vm, int off, int str1, int str2, int str3, int is1, int is2, int is3) : NimArrBase<T>(vm, off) {
-    NimArrBase<T>::NAdims.resize(3);
+    //    NimArrBase<T>::NAdims.resize(3);
+    NimArrBase<T>::NAdims = new int[3];
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAdims[1] = size2 = is2;
     NimArrBase<T>::NAdims[2] = size3 = is3;
 
     // not setSize because it uses the allocated vm
-    NimArrBase<T>::NAstrides.resize(3);
+    //    NimArrBase<T>::NAstrides.resize(3);
+    NimArrBase<T>::NAstrides = new int[3];
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
     NimArrBase<T>::NAstrides[2] = stride3 = str3;
@@ -564,8 +593,10 @@ class NimArr<3, T> : public NimArrBase<T> {
   }  
 
   NimArr<3, T>(int is1, int is2, int is3) : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(3);
-    NimArrBase<T>::NAstrides.resize(3);
+    //    NimArrBase<T>::NAdims.resize(3);
+    NimArrBase<T>::NAdims = new int[3];
+    //    NimArrBase<T>::NAstrides.resize(3);
+    NimArrBase<T>::NAstrides = new int[3];
     setSize(is1, is2, is3);
   }
 
@@ -659,7 +690,9 @@ class NimArr<4, T> : public NimArrBase<T> {
       return(mapCopy(other));
     }
 
-    NimArrBase<T>::NAdims = other.dim();
+    //    NimArrBase<T>::NAdims = other.dim();
+    NimArrBase<T>::NAdims = new int[4];
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 4 * sizeof(int));
     size1 = NimArrBase<T>::NAdims[0];
     size2 = NimArrBase<T>::NAdims[1];
     size3 = NimArrBase<T>::NAdims[2];
@@ -710,14 +743,17 @@ class NimArr<4, T> : public NimArrBase<T> {
   NimArr<4, T> (const NimArr<4, T> &other) :
   NimArrBase<T>(other)
   {
-    NimArrBase<T>::NAdims = other.dim();
+    //    NimArrBase<T>::NAdims = other.dim();
+    NimArrBase<T>::NAdims = new int[4];
+    std::memcpy(NimArrBase<T>::NAdims, other.dim(), 4 * sizeof(int));
     // std::cout<<"Using copy constructor for a NimArr<3, T>\n";
     size1 = NimArrBase<T>::NAdims[0];
     size2 = NimArrBase<T>::NAdims[1];
     size3 = NimArrBase<T>::NAdims[2];
-	size4 = NimArrBase<T>::NAdims[3];
-
-    NimArrBase<T>::NAstrides.resize(4); 
+    size4 = NimArrBase<T>::NAdims[3];
+    
+    //    NimArrBase<T>::NAstrides.resize(4);
+    NimArrBase<T>::NAstrides = new int[4]; 
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;   
     NimArrBase<T>::NAstrides[1] = stride2 = size1;   
     NimArrBase<T>::NAstrides[2] = stride3 = size1 * size2;   
@@ -752,8 +788,10 @@ class NimArr<4, T> : public NimArrBase<T> {
   }
 
   NimArr<4, T> () : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(4); 
-    NimArrBase<T>::NAstrides.resize(4); 
+    //    NimArrBase<T>::NAdims.resize(4);
+    NimArrBase<T>::NAdims = new int[4]; 
+    //    NimArrBase<T>::NAstrides.resize(4);
+    NimArrBase<T>::NAstrides = new int[4]; 
     setSize(0, 0, 0, 0);
   }
 
@@ -803,24 +841,28 @@ class NimArr<4, T> : public NimArrBase<T> {
 
 
   NimArr<4, T>(vector<T> &vm, int off, int str1, int str2, int str3, int str4, int is1, int is2, int is3, int is4) : NimArrBase<T>(vm, off) {
-    NimArrBase<T>::NAdims.resize(4);
+    //    NimArrBase<T>::NAdims.resize(4);
+    NimArrBase<T>::NAdims = new int[4];
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAdims[1] = size2 = is2;
     NimArrBase<T>::NAdims[2] = size3 = is3;
 	NimArrBase<T>::NAdims[3] = size4 = is4;
     // not setSize because it uses the allocated vm
-    NimArrBase<T>::NAstrides.resize(4);
+    //NimArrBase<T>::NAstrides.resize(4);
+    NimArrBase<T>::NAstrides = new int[4];
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = str1;
     NimArrBase<T>::NAstrides[1] = stride2 = str2;
     NimArrBase<T>::NAstrides[2] = stride3 = str3;
-	NimArrBase<T>::NAstrides[3] = stride4 = str4;
+    NimArrBase<T>::NAstrides[3] = stride4 = str4;
 
     NimArrBase<T>::NAlength = size1 * size2 * size3 * size4;
   }  
 
   NimArr<4, T>(int is1, int is2, int is3, int is4) : NimArrBase<T>() {
-    NimArrBase<T>::NAdims.resize(4);
-    NimArrBase<T>::NAstrides.resize(4);
+    //    NimArrBase<T>::NAdims.resize(4);
+    NimArrBase<T>::NAdims = new int[4];
+    //    NimArrBase<T>::NAstrides.resize(4);
+    NimArrBase<T>::NAstrides = new int[4];
     setSize(is1, is2, is3, is4);
   }
 
