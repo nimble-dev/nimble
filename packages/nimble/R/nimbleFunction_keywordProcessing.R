@@ -47,48 +47,59 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 		
 
 
-vector_keywordInfo <- keywordInfoClass(
-    keyword = 'vector',
+nimVector_keywordInfo <- keywordInfoClass(
+    keyword = 'nimVector',
     processor = function(code, nfProc) {
         newCode <- quote(nimArrayGeneral())
         newCode$type <- code$type
-        newCode$dim <- list(code$length)
+        newCode$nDim <- 1
+        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
         newCode$value <- code$value
         newCode$init <- code$init
 	return(newCode)
     }
 )
 		
-numeric_keywordInfo <- keywordInfoClass(
-    keyword = 'numeric',
+nimNumeric_keywordInfo <- keywordInfoClass(
+    keyword = 'nimNumeric',
     processor = function(code, nfProc) {
         newCode <- quote(nimArrayGeneral())
         newCode$type <- 'double'
-        newCode$dim <- list(code$length)
+        newCode$nDim <- 1
+        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
         newCode$value <- code$value
         newCode$init <- code$init
 	return(newCode)
     }
 )
 
-matrix_keywordInfo <- keywordInfoClass(
-    keyword = 'matrix',
+nimMatrix_keywordInfo <- keywordInfoClass(
+    keyword = 'nimMatrix',
     processor = function(code, nfProc) {
         newCode <- quote(nimArrayGeneral())
         newCode$type <- code$type
-        newCode$dim <- list(code$nrow, code$ncol)
+        newCode$nDim <- 2
+        newCode$sizeExprs <- substitute(c(SIZE1, SIZE2), list(SIZE1 = code$nrow, size2 = code$ncol))
         newCode$value <- code$value
         newCode$init <- code$init
 	return(newCode)
     }
 )
 
-array_keywordInfo <- keywordInfoClass(
-    keyword = 'array',
+nimArray_keywordInfo <- keywordInfoClass(
+    keyword = 'nimArray',
     processor = function(code, nfProc) {
         newCode <- quote(nimArrayGeneral())
         newCode$type <- code$type
-        newCode$dim <- as.list(code$dim)
+        d <- code$dim
+        if(is.call(d) && d[[1]] == 'c') {
+            newCode$nDim <- length(d) - 1
+            newCode$sizeExprs <- d
+        } else {
+            ## assume that code$dim is a scalar expression
+            newCode$nDim <- 1
+            newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = d))
+        }
         newCode$value <- code$value
         newCode$init <- code$init
 	return(newCode)
@@ -633,10 +644,10 @@ singleBracket_keywordInfo <- keywordInfoClass(
 
 #	KeywordList
 keywordList <- new.env()
-keywordList[['vector']] <- vector_keywordInfo
-keywordList[['numeric']] <- numeric_keywordInfo
-keywordList[['matrix']] <- matrix_keywordInfo
-keywordList[['array']] <- array_keywordInfo
+keywordList[['nimVector']] <- nimVector_keywordInfo
+keywordList[['nimNumeric']] <- nimNumeric_keywordInfo
+keywordList[['nimMatrix']] <- nimMatrix_keywordInfo
+keywordList[['nimArray']] <- nimArray_keywordInfo
 keywordList[['getParam']] <- getParam_keywordInfo
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo
@@ -689,10 +700,10 @@ keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
-matchFunctions[['vector']] <- function(type = 'double', length, value = 0, init = TRUE) {}
-matchFunctions[['numeric']] <- function(length, value = 0, init = TRUE) {}
-matchFunctions[['matrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
-matchFunctions[['array']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
+matchFunctions[['nimVector']] <- function(type = 'double', length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimMatrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
+matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['getParam']] <- getParam
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}

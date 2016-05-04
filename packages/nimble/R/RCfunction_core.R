@@ -4,7 +4,12 @@ nimKeyWords <- list(copy = 'nimCopy',
                     equals = 'nimEquals',
                     dim = 'nimDim',
                     stop = 'nimStop',
-                    round = 'nimRound')
+                    round = 'nimRound',
+                    vector = 'nimVector',
+                    numeric = 'nimNumeric',
+                    matrix = 'nimMatrix',
+                    array = 'nimArray'
+                    )
 
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',

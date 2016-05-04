@@ -183,13 +183,13 @@ sizemap <- function(code, symTab, typeEnv) {
 }
 
 sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
-    browser()  ## XXXXXX
-    asserts <- recurseSetSizes(code, symTab, typeEnv)
-    code$type <- code$args[[1]]                 ## args[[1]]: 'type' argument
-    code$nDim <- length(code$args[[2]])         ## args[[2]]: 'dim' argument
-    code$sizeExprs <- as.list(code$args[[2]])   ## args[[2]]: 'dim' argument
+    ##asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- code$args[[1]]    ## args[[1]]: 'type' argument
+    code$nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
+    code$sizeExprs <- as.list(code$args[[3]]$expr[-1])  ## args[[3]]: sizeExprs arg: 'c(...)
     code$toEigenize <- 'no'
-    return(asserts)
+    ##return(asserts)
+    return(NULL)
 }
 
 

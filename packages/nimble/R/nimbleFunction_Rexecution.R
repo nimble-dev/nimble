@@ -673,7 +673,7 @@ nimPrint <- function(...) {
 
 #' @author Daniel Turek
 #' @export
-vector <- function(type = 'double', length, value = 0, init = TRUE) {
+nimVector <- function(type = 'double', length = 0, value = 0, init = TRUE) {
     fillValue <- if(init) value else as.numeric(NA)
     fillValue <- makeCorrectType(fillValue, type)
     rep(fillValue, length)
@@ -681,14 +681,14 @@ vector <- function(type = 'double', length, value = 0, init = TRUE) {
 
 #' @author Daniel Turek
 #' @export
-numeric <- function(length, value = 0, init = TRUE) {
+nimNumeric <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- if(init) value else as.numeric(NA)
     rep(fillValue, length)
 }
 
 #' @author Daniel Turek
 #' @export
-matrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
+nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
     fillValue <- if(init) value else as.numeric(NA)
     fillValue <- makeCorrectType(fillValue, type)
     base::matrix(fillValue, nrow, ncol)
@@ -696,7 +696,7 @@ matrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') 
 
 #' @author Daniel Turek
 #' @export
-array <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
+nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
     fillValue <- if(init) value else as.numeric(NA)
     fillValue <- makeCorrectType(fillValue, type)
     base::array(fillValue, dim)
