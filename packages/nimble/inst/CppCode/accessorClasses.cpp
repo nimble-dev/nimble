@@ -813,10 +813,10 @@ void singletonCopyCheck(NimArrType *NAT, int offset) {
   int NATsize;
   switch(NATtype) {
   case INT:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   case DOUBLE:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:
     PRINTF("Error with a NimArrType type\n");
@@ -831,10 +831,10 @@ void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vect
   int NATsize;
   switch(NATtype) {
   case INT:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   case DOUBLE:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:
     PRINTF("Error with a NimArrType type\n");

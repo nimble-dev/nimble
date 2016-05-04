@@ -38,14 +38,16 @@ class NimArrBase: public NimArrType {
   T **vPtr;
   void setVptr() {vPtr = &v;} 
   //  vector<T> *getVptr() const {return(vPtr);}
-  double **getVptr() const{return(vPtr);}
+  T **getVptr() const{return(vPtr);}
   bool own_v;
   //vector<int> NAdims;
-  int *NAdims;
-    //  const vector<int> &dim() const {return(NAdims);}
+  //  int *NAdims;
+  int NAdims[4];
+  //  const vector<int> &dim() const {return(NAdims);}
   const int* dim() const {return(NAdims);}    
     //vector<int> NAstrides;
-  int *NAstrides;
+  //  int *NAstrides;
+  int NAstrides[4];
   int stride1, offset; // everyone has a stride1, and the flat [] operator needs it, so it is here. 
   int getOffset() {return(offset);}
   bool boolMap;
@@ -74,28 +76,28 @@ class NimArrBase: public NimArrType {
       myType = DOUBLE;
   }
   virtual ~NimArrBase(){
-    delete[] NAdims;
-    delete[] NAstrides;
+    //delete[] NAdims;
+    //delete[] NAstrides;
     if(own_v) delete [] v;
   };
- NimArrBase(const NimArrBase<T> &other) :
+ NimArrBase(const NimArrBase<T> &other) : // do we ever use this case?
   //NAdims(other.dim()),
-  offset(0),
-    boolMap(false),
-    own_v(false), // isn't a map but how should it get values?
+    own_v(false), // isn't a map but we'll only set to true when giving it values.
+      offset(0),
+      boolMap(false),
     NAlength(other.size())
       {
-	NAdims = new int[other.numDims()];
+	//	NAdims = new int[other.numDims()];
 	std::memcpy(NAdims, other.dim(), other.numDims()*sizeof(int));
 	// std::cout<<"Using copy constructor for a NimArrBase<T>\n";
    	myType = other.getNimType();
       };
 
- NimArrBase() : v(), vPtr(&v), offset(0), boolMap(false), NAlength(0), own_v {
+ NimArrBase() : v(), vPtr(&v), own_v(false), offset(0), boolMap(false), NAlength(0) {
     //  std::cout<<"Creating a NimArr with &v = "<<&v<<" and "<<" vPtr = "<<vPtr<<"\n";
     setMyType();
   }
- NimArrBase(const vector<T> &vm, int off) : vPtr(&vm), offset(off), boolMap(true) {
+ NimArrBase(const T* &vm, int off) : vPtr(&vm), own_v(false), offset(off), boolMap(true) {
     setMyType();
   }
   template<class Tfrom>
