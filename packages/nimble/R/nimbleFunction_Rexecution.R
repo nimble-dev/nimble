@@ -669,6 +669,48 @@ nimPrint <- function(...) {
     cat('\n')
 }
 
+
+
+#' @author Daniel Turek
+#' @export
+vector <- function(type = 'double', length, value = 0, init = TRUE) {
+    fillValue <- if(init) value else as.numeric(NA)
+    fillValue <- makeCorrectType(fillValue, type)
+    rep(fillValue, length)
+}
+
+#' @author Daniel Turek
+#' @export
+numeric <- function(length, value = 0, init = TRUE) {
+    fillValue <- if(init) value else as.numeric(NA)
+    rep(fillValue, length)
+}
+
+#' @author Daniel Turek
+#' @export
+matrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
+    fillValue <- if(init) value else as.numeric(NA)
+    fillValue <- makeCorrectType(fillValue, type)
+    base::matrix(fillValue, nrow, ncol)
+}
+
+#' @author Daniel Turek
+#' @export
+array <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
+    fillValue <- if(init) value else as.numeric(NA)
+    fillValue <- makeCorrectType(fillValue, type)
+    base::array(fillValue, dim)
+}
+
+makeCorrectType <- function(fillValue, type) {
+    switch(type,
+           double = as.numeric(fillValue),
+           integer = as.integer(fillValue),
+           logical = as.logical(fillValue),
+           stop('unknown type arg in vector(), matrix(), or array()'))
+}
+
+
 #' Explicitly declare a variable in run-time code of a nimbleFunction
 #'
 #' Explicitly declare a variable in run-time code of a nimbleFunction, for cases when its dimensions cannot be inferred before it is used.  Works in R and NIMBLE.
