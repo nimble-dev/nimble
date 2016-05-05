@@ -160,6 +160,16 @@ public:
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     NimArrBase<T>::setLength(size1);
   }
+
+  void initialize(T value, bool init) {
+    if(init) {
+      for(int i = 0; i < size1; i++) {
+	(*NimArrBase<T>::vPtr)[calculateIndex(i)] = value;
+      }
+    }
+  }
+  
+  
   virtual void setSize(vector<int> sizeVec) {setSize(sizeVec[0]);}
   virtual int numDims() const {return(1);}
   virtual int dimSize(int i) const {
@@ -355,6 +365,17 @@ public:
     virtual void setSize(vector<int> sizeVec) {
       setSize(sizeVec[0], sizeVec[1]);
     }
+
+    void initialize(T value, bool init) {
+      if(init) {
+	for(int i = 0; i < size1; i++) {
+	  for(int j = 0; j < size2; j++) {
+	    (*NimArrBase<T>::vPtr)[calculateIndex(i, j)] = value;
+	  }
+	}
+      }
+    }
+    
     virtual int numDims() const {return(2);}
     virtual int dimSize(int i) const {
       switch(i) {
@@ -581,6 +602,19 @@ class NimArr<3, T> : public NimArrBase<T> {
 
   
   virtual void setSize(vector<int> sizeVec) {setSize(sizeVec[0], sizeVec[1], sizeVec[2]);}
+
+  void initialize(T value, bool init) {
+    if(init) {
+      for(int i = 0; i < size1; i++) {
+	for(int j = 0; j < size2; j++) {
+	  for(int k = 0; k < size3; k++) {
+	    (*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)] = value;
+	  }
+	}
+      }
+    }
+  }
+  
   virtual int numDims() const {return(3);}
   virtual int dimSize(int i) const {
     switch(i) {
@@ -838,6 +872,13 @@ class NimArr<4, T> : public NimArrBase<T> {
 
   
   virtual void setSize(vector<int> sizeVec) {setSize(sizeVec[0], sizeVec[1], sizeVec[2], sizeVec[3]);}
+
+  void initialize(T value, bool init) {
+    if(init) {
+      // NEED TO IMPLEMENT         XXXXXXXXX
+    }
+  }
+  
   virtual int numDims() const {return(4);}
   virtual int dimSize(int i) const {
     switch(i) {
@@ -944,6 +985,13 @@ class VecNimArr : public VecNimArrBase<T>  {
   	return;  	
   }
 
+  void initialize(T value, bool init) {
+    if(init) {
+      // NEED TO IMPLEMENT         XXXXXXXXX
+    }
+  }
+
+  
 
 };
 

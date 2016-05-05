@@ -7,6 +7,7 @@ nimKeyWords <- list(copy = 'nimCopy',
                     round = 'nimRound',
                     vector = 'nimVector',
                     numeric = 'nimNumeric',
+                    integer = 'nimInteger',
                     matrix = 'nimMatrix',
                     array = 'nimArray'
                     )

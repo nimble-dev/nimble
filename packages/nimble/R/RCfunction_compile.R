@@ -151,6 +151,11 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            compileInfo$newRcode <<- nf_substituteExceptFunctionsAndDollarSigns(compileInfo$newRcode, nameSubList)
                                        ## set up exprClass object
                                        compileInfo$nimExpr <<- RparseTree2ExprClasses(compileInfo$newRcode)
+
+                                       ## build intermediate variables MOVED UP TO HERE
+                                       ## -DT May 2016
+                                       exprClasses_buildInterms(compileInfo$nimExpr)
+
                                        
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
@@ -161,15 +166,20 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
 
                                        exprClasses_processSpecificCalls(compileInfo$nimExpr, compileInfo$newLocalSymTab)
 
-                                       if(debug) {
-                                           print('nimDeparse(compileInfo$nimExpr)')
-                                           writeCode(nimDeparse(compileInfo$nimExpr))
-                                           writeLines('***** READY FOR buildInterms *****')
-                                           browser()
-                                       }
+                                       ##if(debug) {
+                                       ##    print('nimDeparse(compileInfo$nimExpr)')
+                                       ##    writeCode(nimDeparse(compileInfo$nimExpr))
+                                       ##    writeLines('***** READY FOR buildInterms *****')
+                                       ##    browser()
+                                       ##}
+
                                        
-                                       ## build intermediate variables
-                                       exprClasses_buildInterms(compileInfo$nimExpr)
+                                       ## build intermediate variables FORMERLY WAS HERE
+                                       ## MOVING IT UP, ABOVE processSpecificCalls, so that nimArrayGeneral()
+                                       ## always appears on RHS of <- assignment, for handling in processSpecificCalls()
+                                       ## -DT May 2016
+                                       ## NO LONGER HERE: exprClasses_buildInterms(compileInfo$nimExpr)
+                                       
 
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')

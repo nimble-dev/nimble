@@ -682,7 +682,14 @@ nimVector <- function(type = 'double', length = 0, value = 0, init = TRUE) {
 #' @author Daniel Turek
 #' @export
 nimNumeric <- function(length = 0, value = 0, init = TRUE) {
-    fillValue <- if(init) value else as.numeric(NA)
+    fillValue <- if(init) as.numeric(value) else as.numeric(NA)
+    rep(fillValue, length)
+}
+
+#' @author Daniel Turek
+#' @export
+nimInteger <- function(length = 0, value = 0, init = TRUE) {
+    fillValue <- if(init) as.integer(value) else as.integer(NA)
     rep(fillValue, length)
 }
 
