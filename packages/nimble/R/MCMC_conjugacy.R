@@ -1101,17 +1101,25 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
     if(is.numeric(expr)) return(expr)     # return numeric
     if(is.name(expr) || (is.call(expr) && (expr[[1]] == '['))) { # expr is a name, or an indexed name
         exprText <- deparse(expr)
-        expandedNodeNames <- try(model$expandNodeNames(exprText), silent=TRUE)  # causes error when expr is the name of an array memberData object, which isn't a node name
-        if(inherits(expandedNodeNames, 'try-error')) {
-            ## at this point, should only be a 'name', representing an array memberData object
-            ## if it's an indexed name, we'll throw an error.
-            if(is.call(expr)) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
-            return(expr) # expr is the name of an array memberData object; rather than throw an error, return expr
+        expandedNodeNamesRaw <- try(model$expandNodeNames(exprText), silent=TRUE)  # causes error when expr is the name of an array memberData object, which isn't a node name
+        if(inherits(expandedNodeNamesRaw, 'try-error')) {
+            ## this case should no longer ever occur, I believe, under the newNodeFxns system -DT May 2016
+            stop('something wrong with Daniel\'s understanding of newNodeFxns system')
+            ##### at this point, should only be a 'name', representing an array memberData object
+            ##### if it's an indexed name, we'll throw an error.
+            ###if(is.call(expr)) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+            ###return(expr) # expr is the name of an array memberData object; rather than throw an error, return expr
         }
+        ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
+        expandedNodeNames <- if(exprText %in% expandedNodeNamesRaw) exprText else expandedNodeNamesRaw
         if(length(expandedNodeNames) == 1 && (expandedNodeNames == exprText)) {
             ## expr is a single node in the model
             type <- model$getNodeType(exprText)
-            if(length(type) > 1) stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+            if(length(type) > 1) {
+                ## if exprText is a node itself (and also part of a larger node), then we only want the expansion to be the exprText node:
+                if(exprText %in% expandedNodeNamesRaw) type <- type[which(exprText == expandedNodeNamesRaw)]
+                else stop('something went wrong with Daniel\'s understanding of newNimbleModel')
+            }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
                 newExpr <- model$getNodeValueExpr(exprText)
