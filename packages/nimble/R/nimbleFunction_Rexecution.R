@@ -670,7 +670,7 @@ nimPrint <- function(...) {
 }
 
 
-#' creates a numeric vector object
+#' creates a numeric vector
 #'
 #' @param length the length of the vector (default = 0)
 #' @param value the initial value for each element of the vector (default = 0)
@@ -686,7 +686,7 @@ nimNumeric <- function(length = 0, value = 0, init = TRUE) {
 }
 
 
-#' creates an integer vector object
+#' creates an integer vector
 #'
 #' @param length the length of the vector (default = 0)
 #' @param value the initial value for each element of the vector (default = 0L)
@@ -702,7 +702,7 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 }
 
 
-###' creates a vector object
+###' creates a vector
 ###'
 ###' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
 ###' @param length the length of the vector (default = 0)
@@ -719,7 +719,7 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 ###}
 
 
-#' creates a matrix object
+#' creates a matrix
 #' 
 #' @param value the initial value for each element of the matrix (default = 0)
 #' @param nrow the number of rows in the matrix (default = 1)
@@ -737,7 +737,7 @@ nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double
 }
 
 
-#' creates an array object
+#' creates an array
 #'
 #' @param value the initial value for each element of the array (default = 0)
 #' @param dim a vector specifying the dimensionality and sizes of the array, provided as c(size1, ...) (default = c(1, 1))
