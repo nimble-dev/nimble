@@ -409,6 +409,7 @@ conjugacyClass <- setRefClass(
                 if(distributions[[distName]]$types$value$nDim > 0) {
                     functionBody$addCode({
                         DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
+                        if(length(DEP_NODESIZES) == 1) DEP_NODESIZES <- c(DEP_NODESIZES, -1)    ## guarantee to be a vector, for indexing and size processing
                         DEP_NODESIZEMAX <- max(DEP_NODESIZES)
                     }, list(DEP_NODESIZES   = as.name(paste0('dep_', distName, '_nodeSizes')),
                             DEP_NODENAMES   = as.name(paste0('dep_', distName, '_nodeNames')),
