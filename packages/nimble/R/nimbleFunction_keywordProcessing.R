@@ -1313,10 +1313,12 @@ matchKeywords_recurse <- function(code, nfProc = NULL) {
     cl = length(code)
     if(cl == 1){ ## There are no arguments
         if(is.call(code)){  
-            if(length(code[[1]]) > 1)
+            if(length(code[[1]]) > 1) {
                 if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc)
                 else
                     code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
+            } else
+                code <- matchKeywordCode(code, nfProc)
         }
         return(code)
     }

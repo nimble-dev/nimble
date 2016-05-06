@@ -99,10 +99,12 @@ nf_changeNimKeywords <- function(code){
 nf_changeNimKeywordsOne <- function(code){
     if(length(code) == 1){
         if(as.character(code) %in% names(nimKeyWords) ) {
-            if(is.call(code)) 
+            if(is.call(code)) {
                 code[[1]] <- as.name( nimKeyWords[[as.character(code)]] )
-            else
-                code <- as.name( nimKeyWords[[as.character(code)]] )
+            } else {
+                if(!is.character(code))
+                    code <- as.name( nimKeyWords[[as.character(code)]] )
+            }
         }
     }
     else if(length(code) > 1){	

@@ -170,6 +170,7 @@ nimArrayGeneralHandler <- function(code, symTab) {
     newName <- newName$name
     if(symTab$symbolExists(newName)) stop(paste0('Error: declaring ',newName,' which already exists.'))
     type <- code$args[[1]]
+    if(!(type %in% c('double', 'integer'))) stop('only type arguments \'double\' and \'integer\' are currently supported')
     nDim <- code$args[[2]]
     sizeExprs <- as.list(code$args[[3]]$args)  ## strip the leading c() call, and get the rest as an actual R list
     if(length(sizeExprs) != nDim) stop('something we wrong processing in nimArrayGeneralHandler')
