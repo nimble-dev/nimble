@@ -669,35 +669,84 @@ nimPrint <- function(...) {
     cat('\n')
 }
 
+
+#' creates a numeric vector object
+#'
+#' @param length the length of the vector (default = 0)
+#' @param value the initial value for each element of the vector (default = 0)
+#' @param init logical, whether to initialize elements of the vector (default = TRUE)
+#'
 #' @author Daniel Turek
+#' @aliases numeric
+#' @seealso \link{integer} \link{matrix} \link{array}
 #' @export
 nimNumeric <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'double', init)
     rep(fillValue, length)
 }
 
+
+#' creates an integer vector object
+#'
+#' @param length the length of the vector (default = 0)
+#' @param value the initial value for each element of the vector (default = 0L)
+#' @param init logical, whether to initialize elements of the vector (default = TRUE)
+#'
 #' @author Daniel Turek
+#' @aliases integer
+#' @seealso \link{numeric} \link{matrix} \link{array}
 #' @export
 nimInteger <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'integer', init)
     rep(fillValue, length)
 }
 
-###' @author Daniel Turek
-###' @export
-##nimVector <- function(type = 'double', length = 0, value = 0, init = TRUE) {
-##    fillValue <- makeFillValue(value, type, init)
-##    rep(fillValue, length)
-##}
 
-#' @author Daniel Turek
+###' creates a vector object
+###'
+###' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
+###' @param length the length of the vector (default = 0)
+###' @param value the initial value for each element of the vector (default = 0L)
+###' @param init logical, whether to initialize elements of the vector (default = TRUE)
+###'
+###' @author Daniel Turek
+###' @aliases vector
+###' @seealso \link{numeric} \link{integer} \link{matrix} \link{array}
+###' @export
+###nimVector <- function(type = 'double', length = 0, value = 0, init = TRUE) {
+###    fillValue <- makeFillValue(value, type, init)
+###    rep(fillValue, length)
+###}
+
+
+#' creates a matrix object
+#' 
+#' @param value the initial value for each element of the matrix (default = 0)
+#' @param nrow the number of rows in the matrix (default = 1)
+#' @param ncol the number of columns in the matrix (default = 1)
+#' @param init logical, whether to initialize elements of the matrix (default = TRUE)
+#' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
+#'
+#' @author Daniel Turek#' @author Daniel Turek
+#' @aliases matrix
+#' @seealso \link{numeric} \link{integer} \link{array}
 #' @export
 nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
     fillValue <- makeFillValue(value, type, init)
     base::matrix(fillValue, nrow, ncol)
 }
 
+
+#' creates an array object
+#'
+#' @param value the initial value for each element of the array (default = 0)
+#' @param dim a vector specifying the dimensionality and sizes of the array, provided as c(size1, ...) (default = c(1, 1))
+#' @param init logical, whether to initialize elements of the matrix (default = TRUE)
+#' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
+#'
 #' @author Daniel Turek
+#' @aliases array
+#' @seealso \link{numeric} \link{integer} \link{matrix}
 #' @export
 nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
     fillValue <- makeFillValue(value, type, init)
