@@ -448,7 +448,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          Cname <- nf_getRefClassObject(funList[[1]])$Cname
                                          if(is.null(nfCompInfos[[generatorName]])) stop("Requested buildNimbleFunctionCompilationInfo for a generator for which no specialized NF has been added to the project", call. = FALSE)
                                          if(inherits(nfCompInfos[[generatorName]]$nfProc, 'uninitializedField')) 
-                                             nfCompInfos[[generatorName]]$nfProc <<- nfProcessing(funList, generatorName, fromModel = fromModel, project = .self)
+                                             nfCompInfos[[generatorName]]$nfProc <<- nfProcessing(funList, generatorName, fromModel = fromModel, project = .self, isNode = isNode)
                                      } else {
                                          if(missing(generatorName)) stop("If funList is omitted, a generator name must be provided to buildNimbleFunctionCompilationInfo", call. = FALSE)
                                          if(inherits(nfCompInfos[[generatorName]]$nfProc, 'uninitializedField')) stop("buildNimbleFunctionCompilationInfo was called with only a generatorName (probably from genNeededTypes), but the nfProc is missing.", call. = FALSE)

@@ -12,7 +12,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        show = function() {
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
-                                       initialize = function(f = NULL, className, virtual = TRUE) {
+                                       initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE) {
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
                                        		
@@ -35,7 +35,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                for(i in seq_along(origMethods)) {
                                                    RCname <- names(origMethods)[i]
                                                    if(RCname == 'run') RCname <- 'operator()'
-                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname) else RCfunProcessing$new(origMethods[[i]], RCname)
+                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = isNode) else RCfunProcessing$new(origMethods[[i]], RCname, const = isNode)
                                                }
                                                compileInfos <<- lapply(RCfunProcs,
                                                                        function(x) x$compileInfo)
@@ -77,7 +77,7 @@ nfProcessing <- setRefClass('nfProcessing',
                               show = function() {
                                   writeLines(paste0('nfProcessing object ', name))
                               },
-                              initialize = function(f = NULL, className, fromModel = FALSE, project) {
+                              initialize = function(f = NULL, className, fromModel = FALSE, project, isNode = FALSE) {
                               	neededTypes <<- list()
                               	neededObjectNames <<- character()
                               	newSetupCode <<- list()
@@ -91,7 +91,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                       } else {
                                           name <<- className
                                       }
-                                      callSuper(f, name, virtual = FALSE)
+                                      callSuper(f, name, virtual = FALSE, isNode = isNode)
                                       instances <<- if(inherits(f, 'list')) lapply(f, nf_getRefClassObject) else list(nf_getRefClassObject(f))
                                      
                                       newSetupOutputNames <<- character()

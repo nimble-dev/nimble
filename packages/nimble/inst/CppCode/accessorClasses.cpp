@@ -3,22 +3,22 @@
 #include<sstream>
 using std::istringstream;
 
-double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { //iNodeFunction has default 0 in prototype
-  /* iNodeFunction sometimes needs to be generated in a call even if not needed */
-  /* but we want to avoid compiled warnings about an unused argument */
-  /* the following line of code tries to make the compiler think iNodeFunction will be used */
-  if(iNodeFunction == 0) paramID += 0;
-  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
-}
+// double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { //iNodeFunction has default 0 in prototype
+//   /* iNodeFunction sometimes needs to be generated in a call even if not needed */
+//   /* but we want to avoid compiled warnings about an unused argument */
+//   /* the following line of code tries to make the compiler think iNodeFunction will be used */
+//   if(iNodeFunction == 0) paramID += 0;
+//   return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
+// }
 
-/* This is for a case like model$getParam(nodes[i], 'mean'), where then paramID becomes a vector.  The vector of nodeFxnPtrs is unpacked at the line of generated C++ */
-template<class paramIDtype>
-double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-  return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
-}
+// /* This is for a case like model$getParam(nodes[i], 'mean'), where then paramID becomes a vector.  The vector of nodeFxnPtrs is unpacked at the line of generated C++ */
+// template<class paramIDtype>
+// double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+//   return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+// }
 
-template double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-template double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+// template double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+// template double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
@@ -813,10 +813,10 @@ void singletonCopyCheck(NimArrType *NAT, int offset) {
   int NATsize;
   switch(NATtype) {
   case INT:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   case DOUBLE:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:
     PRINTF("Error with a NimArrType type\n");
@@ -831,10 +831,10 @@ void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vect
   int NATsize;
   switch(NATtype) {
   case INT:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   case DOUBLE:
-    NATsize = static_cast<NimArrBase<int>*>(NAT)->getVptr()->size();
+    NATsize = static_cast<NimArrBase<int>*>(NAT)->size(); //getVptr()->size();
     break;
   default:
     PRINTF("Error with a NimArrType type\n");
