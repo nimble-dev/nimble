@@ -345,8 +345,6 @@ getLogProbNodesMV <- nimbleFunction(
 #'
 #' @author Daniel Turek
 #'
-#' @seealso \code{\link{nimVector}}, \code{\link{nimArray}}
-#'
 #' @examples
 #' Id <- identityMatrix(d = 3)
 #'

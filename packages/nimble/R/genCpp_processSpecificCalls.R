@@ -160,10 +160,11 @@ declareHandler <- function(code, symTab) {
 
 ## handler for nimArrayGeneral()
 ## the prototype for nimArrayGeneral is *always*
-## newName <- nimArrayGeneral(typeCharString, nDim,      c(sizeExpr1, ...), initialValue, initializeLogical)
-## newName <- nimArrayGeneral(args[[1]],      args[[2]], args[[3]],         args[[4]],    args[[5]])
+## newName <- nimArrayGeneral(typeCharString, nDim,      c(sizeExpr1, ...), initializeValue, initializeLogical)
+## newName <- nimArrayGeneral(args[[1]],      args[[2]], args[[3]],         args[[4]],   args[[5]])
 nimArrayGeneralHandler <- function(code, symTab) {
     assignmentCall <- code$caller
+    if(assignmentCall$name != '<-') stop('something wrong, nimArrayGeneral should only exist on RHS of an assignment operator')
     newName <- assignmentCall$args[[1]]
     if(!newName$isName) stop('numeric, vector, matrix, array can only create complete variables (not part of an indexed variable)')
     newName <- newName$name
@@ -178,8 +179,8 @@ nimArrayGeneralHandler <- function(code, symTab) {
     newSym <- symbolBasic(name = newName, type = type, nDim = nDim, size = newSizes)
     symTab$addSymbol(newSym)
     ## generate setSize() call
-    nameExpr <- exprClass(name = newName, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-    setSizeExpr <- exprClass(name = 'setSize', isCall = TRUE, isName = FALSE,isAssign = FALSE, args = c(list(nameExpr), sizeExprs), caller = code$caller, callerArgID = code$callerArgID)
+    nameExpr1 <- exprClass(name = newName, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
+    setSizeExpr <- exprClass(name = 'setSize', isCall = TRUE, isName = FALSE,isAssign = FALSE, args = c(list(nameExpr1), sizeExprs), caller = code$caller, callerArgID = code$callerArgID)
     for(j in seq_along(setSizeExpr$args)) {
         if(inherits(setSizeExpr$args[[j]], 'exprClass')) {
             setSizeExpr$args[[j]]$caller <- setSizeExpr
@@ -188,11 +189,11 @@ nimArrayGeneralHandler <- function(code, symTab) {
     }
     ## generate initialize() call
     nameExpr2 <- exprClass(name = newName, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-    initialValue <- code$args[[4]]
+    initializeValue <- code$args[[4]]
     initializeLogical <- code$args[[5]]
     ## NOTE: prototype for R call to initialize() is:
-    ## initialize(nimArrName, initialValue, initializeLogical)
-    initializeExpr <- exprClass(name = 'initialize', isCall = TRUE, isName = FALSE, isAssign = FALSE, args = list(nameExpr2, initialValue, initializeLogical), caller = code$caller, callerArgID = code$callerArgID)
+    ## initialize(nimArrName, initializeValue, initializeLogical)
+    initializeExpr <- exprClass(name = 'initialize', isCall = TRUE, isName = FALSE, isAssign = FALSE, args = list(nameExpr2, initializeValue, initializeLogical), caller = code$caller, callerArgID = code$callerArgID)
     for(j in seq_along(initializeExpr$args)) {
         if(inherits(initializeExpr$args[[j]], 'exprClass')) {
             initializeExpr$args[[j]]$caller <- initializeExpr

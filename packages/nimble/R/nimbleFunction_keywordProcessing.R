@@ -47,19 +47,6 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 		
 
 
-nimVector_keywordInfo <- keywordInfoClass(
-    keyword = 'nimVector',
-    processor = function(code, nfProc) {
-        newCode <- quote(nimArrayGeneral())
-        newCode$type <- code$type
-        newCode$nDim <- 1
-        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
-        newCode$value <- code$value
-        newCode$init <- code$init
-	return(newCode)
-    }
-)
-		
 nimNumeric_keywordInfo <- keywordInfoClass(
     keyword = 'nimNumeric',
     processor = function(code, nfProc) {
@@ -86,6 +73,19 @@ nimInteger_keywordInfo <- keywordInfoClass(
     }
 )
 
+##nimVector_keywordInfo <- keywordInfoClass(
+##    keyword = 'nimVector',
+##    processor = function(code, nfProc) {
+##        newCode <- quote(nimArrayGeneral())
+##        newCode$type <- code$type
+##        newCode$nDim <- 1
+##        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
+##        newCode$value <- code$value
+##        newCode$init <- code$init
+##        return(newCode)
+##    }
+##)
+		
 nimMatrix_keywordInfo <- keywordInfoClass(
     keyword = 'nimMatrix',
     processor = function(code, nfProc) {
@@ -657,9 +657,9 @@ singleBracket_keywordInfo <- keywordInfoClass(
 
 #	KeywordList
 keywordList <- new.env()
-keywordList[['nimVector']] <- nimVector_keywordInfo
 keywordList[['nimNumeric']] <- nimNumeric_keywordInfo
 keywordList[['nimInteger']] <- nimInteger_keywordInfo
+##keywordList[['nimVector']] <- nimVector_keywordInfo
 keywordList[['nimMatrix']] <- nimMatrix_keywordInfo
 keywordList[['nimArray']] <- nimArray_keywordInfo
 keywordList[['getParam']] <- getParam_keywordInfo
@@ -714,9 +714,9 @@ keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
-matchFunctions[['nimVector']] <- function(type = 'double', length = 0, value = 0, init = TRUE) {}
 matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
 matchFunctions[['nimInteger']] <- function(length = 0, value = 0, init = TRUE) {}
+##matchFunctions[['nimVector']] <- function(type = 'double', length = 0, value = 0, init = TRUE) {}
 matchFunctions[['nimMatrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
 matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}

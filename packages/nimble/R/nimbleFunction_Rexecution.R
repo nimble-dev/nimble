@@ -669,52 +669,49 @@ nimPrint <- function(...) {
     cat('\n')
 }
 
-
-
-#' @author Daniel Turek
-#' @export
-nimVector <- function(type = 'double', length = 0, value = 0, init = TRUE) {
-    fillValue <- if(init) value else as.numeric(NA)
-    fillValue <- makeCorrectType(fillValue, type)
-    rep(fillValue, length)
-}
-
 #' @author Daniel Turek
 #' @export
 nimNumeric <- function(length = 0, value = 0, init = TRUE) {
-    fillValue <- if(init) as.numeric(value) else as.numeric(NA)
+    fillValue <- makeFillValue(value, 'double', init)
     rep(fillValue, length)
 }
 
 #' @author Daniel Turek
 #' @export
 nimInteger <- function(length = 0, value = 0, init = TRUE) {
-    fillValue <- if(init) as.integer(value) else as.integer(NA)
+    fillValue <- makeFillValue(value, 'integer', init)
     rep(fillValue, length)
 }
+
+###' @author Daniel Turek
+###' @export
+##nimVector <- function(type = 'double', length = 0, value = 0, init = TRUE) {
+##    fillValue <- makeFillValue(value, type, init)
+##    rep(fillValue, length)
+##}
 
 #' @author Daniel Turek
 #' @export
 nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
-    fillValue <- if(init) value else as.numeric(NA)
-    fillValue <- makeCorrectType(fillValue, type)
+    fillValue <- makeFillValue(value, type, init)
     base::matrix(fillValue, nrow, ncol)
 }
 
 #' @author Daniel Turek
 #' @export
 nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
-    fillValue <- if(init) value else as.numeric(NA)
-    fillValue <- makeCorrectType(fillValue, type)
+    fillValue <- makeFillValue(value, type, init)
     base::array(fillValue, dim)
 }
 
-makeCorrectType <- function(fillValue, type) {
-    switch(type,
-           double = as.numeric(fillValue),
-           integer = as.integer(fillValue),
-           logical = as.logical(fillValue),
-           stop('unknown type arg in vector(), matrix(), or array()'))
+makeFillValue <- function(value, type, init) {
+    fillValue <- if(init) value else NA
+    fillValueTyped <- switch(type,
+                             double = as.numeric(fillValue),
+                             integer = as.integer(fillValue),
+                             ##logical = as.logical(fillValue),
+                             stop('unknown type argument'))
+    return(fillValueTyped)
 }
 
 
