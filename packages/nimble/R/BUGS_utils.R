@@ -190,29 +190,6 @@ Rname2CppName <- function(rName, colonsOK = TRUE) {
 }
 
 
-## creates objects in the parent.frame(), named by names(lst), values are eval(lst[[i]])
-## this is used for creating the conjugate sampler nimble function generators, among other things
-createNamedObjectsFromList <- function(lst, writeToFile = NULL, envir = parent.frame()) {
-    for(i in seq_along(lst)) {
-        objName <- names(lst)[i]
-        obj <- eval(lst[[i]])
-        assign(objName, obj, envir = envir)
-    }
-    if(!is.null(writeToFile)) {
-        write('', file = writeToFile)
-        for(i in seq_along(lst)) {
-            expr <- substitute(VAR <- VALUE, list(VAR = as.name(names(lst)[i]), VALUE = lst[[i]]))
-            deparseExpr <- deparse(expr, control=c())
-            deparseExpr <- gsub('\"', '\'', deparseExpr)
-            write(deparseExpr, file = writeToFile, append = TRUE)
-            write('\n\n\n', file = writeToFile, append = TRUE)
-        }
-    }
-}
-
-
-
-
 vectorIndex_2_flat <- function(index, strides){
 	return(sum((index-1) * strides) + 1)
 }
