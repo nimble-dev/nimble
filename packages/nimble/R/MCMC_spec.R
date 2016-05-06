@@ -220,10 +220,11 @@ print: A logical argument, specifying whether to print the ordered list of defau
         },
 
         addConjugateSampler = function(conjugacyResult) {
-            if(!getNimbleOption('useDynamicConjugacy')) {
-                addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
-                return(NULL)
-            }
+            ## update May 2016: old (non-dynamic) system is no longer supported -DT
+            ##if(!getNimbleOption('useDynamicConjugacy')) {
+            ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
+            ##    return(NULL)
+            ##}
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
