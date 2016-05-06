@@ -455,14 +455,13 @@ conjugacyClass <- setRefClass(
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dynamic = dynamic, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
             
             ## generate new value, store, calculate, copy, etc...
-            functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
+            functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)            
             functionBody$addCode({
                 newValue <- RPOSTERIORCALL
                 model[[target]] <<- newValue
                 calculate(model, calcNodes)
                 nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
             }, list(RPOSTERIORCALL = posteriorObject$rCallExpr))
-            
             ## only if we're verifying conjugate posterior distributions: figure out if conjugate posterior distribution is correct
             if(nimbleOptions()$verifyConjugatePosteriors) {
                 functionBody$addCode({
@@ -601,13 +600,12 @@ conjugacyClass <- setRefClass(
                                          list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
                                               DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
                                               DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeValueNdim)))
-
                     ## get *value* of each dependent node
                     ## NEWNODEFXN
                     forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- model$getParam(DEP_NODENAMES[iDep],'value'), 
                                         list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), depNodeValueNdim, indexExpr = quote(iDep)),
                                              DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames'))))
-                    
+
                     ## forLoopBody$addCode(DEP_VALUES_VAR_INDEXED <- DEP_NODEFUNCTIONS[[iDep]]$get_value(),
                     ##                     list(DEP_VALUES_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), depNodeValueNdim, indexExpr = quote(iDep)),
                     ##                          DEP_NODEFUNCTIONS      = as.name(paste0('dep_', distName, '_nfs'))))
@@ -620,13 +618,14 @@ conjugacyClass <- setRefClass(
                                              list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
                                                   DEP_PARAM_VAR_NDIM = 1 + depNodeParamNdim,                                       ## DECLARE() statement
                                                   DECLARE_SIZE       = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), depNodeParamNdim)))
-
+                        
                         ## get *parameter values* for each dependent node
                         ## NEWNODEFXN
                         forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <- model$getParam(DEP_NODENAMES[iDep], PARAM_NAME), 
                                             list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep)),
                                                  DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames')),
                                                  PARAM_NAME    = param))
+                        
                         ## forLoopBody$addCode(DEP_PARAM_VAR_INDEXED <- DEP_NODEFUNCTIONS[[iDep]]$GET_PARAM_NAME(),
                         ##                     list(DEP_PARAM_VAR_INDEXED = makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), depNodeParamNdim, indexExpr = quote(iDep)),
                         ##                          DEP_NODEFUNCTIONS     = as.name(paste0('dep_', distName, '_nfs')),
@@ -911,7 +910,7 @@ conjugacyClass <- setRefClass(
                                            DEP_OFFSET_VAR[iDep, 1:d, 1:d] <- DEP_OFFSET_VAR[iDep, 1:d, 1:d] - DEP_COEFF_VAR[iDep, 1:d, 1:d],   ## now, DEP_OFFSET_VAR = (A+B)-(B) = A
                                        list(N_DEP             = as.name(paste0('N_dep_', distName)),
                                             DEP_OFFSET_VAR    = as.name(paste0('dep_', distName, '_offset')),
-                                            DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff'))))
+                                            DEP_COEFF_VAR     = as.name(paste0('dep_', distName, '_coeff'))))                                   
                                }
                            }
                        },

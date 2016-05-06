@@ -157,7 +157,7 @@ rCalcNodes <- function(model, nfv){ ##nodeFunctionVector
             declID <- declIDs[i]
             unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
             if(useCompiledNonNestedInterface) {
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculate', as.integer(unrolledIndicesMatrixRow))
+                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculate', unrolledIndicesMatrixRow)
             } else
                 l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
         }
@@ -186,7 +186,7 @@ rCalcDiffNodes <- function(model, nfv){
             declID <- declIDs[i]
             unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
             if(useCompiledNonNestedInterface) {
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculateDiff', as.integer(unrolledIndicesMatrixRow))
+                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculateDiff', unrolledIndicesMatrixRow)
             } else
                 l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculateDiff(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
         }
@@ -293,7 +293,7 @@ rGetLogProbsNodes <- function(model, nfv){
             declID <- declIDs[i]
             unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
             if(useCompiledNonNestedInterface) {
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'getLogProb', as.integer(unrolledIndicesMatrixRow))
+                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'getLogProb', unrolledIndicesMatrixRow)
             } else
                 l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$getLogProb(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
         }
@@ -336,7 +336,7 @@ rSimNodes <- function(model, nfv){
             declID <- declIDs[i]
             unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
             if(useCompiledNonNestedInterface) {
-                model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'simulate', as.integer(unrolledIndicesMatrixRow))
+                model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'simulate', unrolledIndicesMatrixRow)
                 
             } else
                 model$nodeFunctions[[ declID ]]$simulate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering

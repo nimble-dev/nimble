@@ -64,9 +64,17 @@ class NimArrBase: public NimArrType {
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
   void setLength(int l) {
+    if(NAlength==l) return;
+    T *new_v = new T[l];
+    if(own_v) {
+      if(l < NAlength) std::copy(v, v + l, new_v);
+      else std::copy(v, v + NAlength, new_v);
+      delete[] v;
+    }
     NAlength = l;
     //v.resize(l);
-    v = new T[l];
+    v = new_v;
+    own_v = true;
   } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
   void setMyType() {
     myType = UNDEFINED;
