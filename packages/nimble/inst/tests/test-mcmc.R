@@ -695,6 +695,53 @@ test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numIt
 
 
 
+## testing conjugate MVN updating with ragged dependencies;
+## that is, dmnorm dependents of different lengths from the target node
+code <- nimbleCode({
+    x[1:3] ~ dmnorm(mu0[1:3], prec = ident[1:3,1:3])
+    mu_y2[1:2] <- asCol(a[1:2]) + B[1:2,1:3] %*% asCol(x[1:3])
+    mu_y3[1:3] <- asCol(a[1:3]) + B[1:3,1:3] %*% asCol(x[1:3])
+    mu_y5[1:5] <- asCol(a[1:5]) + B[1:5,1:3] %*% asCol(x[1:3])
+    y2[1:2] ~ dmnorm(mu_y2[1:2], prec = prec_y[1:2,1:2])
+    y3[1:3] ~ dmnorm(mu_y3[1:3], prec = prec_y[1:3,1:3])
+    y5[1:5] ~ dmnorm(mu_y5[1:5], prec = prec_y[1:5,1:5])
+})
+
+mu0 <- rep(0,3)
+ident <- diag(3)
+a <- 11:15
+B <- matrix(1:15, nrow=5, ncol=3, byrow=TRUE)
+prec_y <- diag(1:5)
+
+constants <- list(mu0=mu0, ident=ident, a=a, B=B, prec_y=prec_y)
+data <- list(y2=1:2, y3=1:3, y5=1:5)
+inits <- list(x=rep(0,3))
+
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+spec <- configureMCMC(Rmodel)
+##spec$getSamplers()
+Rmcmc <- buildMCMC(spec)
+
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+set.seed(0)
+Rmcmc$run(10)
+
+set.seed(0)
+Cmcmc$run(10)
+
+Rsamples <- as.matrix(Rmcmc$mvSamples)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+
+test_that('correct samples for ragged dmnorm conjugate update', expect_true(all(abs(as.numeric(Rsamples[,]) - c(4.96686874, 3.94112676, 4.55975130, 4.01930176, 4.47744412, 4.12927167, 4.91242131, 4.62837537, 4.54227859, 4.97237602, -1.12524733, 1.24545265, -0.13454814, 0.82755276, 0.08252775, 0.71187071, -0.31322184, -0.57462284, -0.64800963, -0.52885823, -3.92276916, -5.23904995, -4.53535941, -4.89919931, -4.66995650, -4.94181562, -4.63558011, -4.16385294, -4.03469945, -4.51128205)) < 1E-8)))
+
+dif <- Rsamples - Csamples
+test_that('R and C samples same for ragged dmnorm conjugate update', expect_true(all(abs(dif) < 1E-13)))
+
+
+
 ## testing binary sampler
 
 code <- nimbleCode({
