@@ -742,6 +742,54 @@ test_that('R and C samples same for ragged dmnorm conjugate update', expect_true
 
 
 
+set.seed(0)
+Cmcmc$run(200000)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+
+pprec <- ident +
+    t(B[1:2,1:3]) %*% prec_y[1:2,1:2] %*% B[1:2,1:3] +
+    t(B[1:3,1:3]) %*% prec_y[1:3,1:3] %*% B[1:3,1:3] +
+    t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% B[1:5,1:3]
+
+pmean <- as.numeric(inverse(pprec) %*% (ident %*% mu0 +
+             t(B[1:2,1:3]) %*% prec_y[1:2,1:2] %*% (1:2 - a[1:2]) +
+             t(B[1:3,1:3]) %*% prec_y[1:3,1:3] %*% (1:3 - a[1:3]) +
+             t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% (1:5 - a[1:5])   ))
+
+pmean
+as.numeric(apply(Csamples, 2, mean))
+pmean-as.numeric(apply(Csamples, 2, mean))
+
+pprec
+inverse(cov(Csamples))
+pprec-inverse(cov(Csamples))
+
+test_that('ragged dmnorm conjugate posterior mean', expect_equal(pmean, as.numeric(apply(Csamples, 2, mean)), tol = 0.001))
+
+test_that('ragged dmnorm conjugate posterior precition', expect_equal(as.numeric(pprec), as.numeric(inverse(cov(Csamples))), tol = 3.2))
+
+
+## when I ran this with only y2 and y3 dependents
+##> pprec-inverse(cov(Csamples))
+##           x[1]       x[2]       x[3]
+##x[1] -0.4035707 -0.3845104 -0.4025517
+##x[2] -0.3845104 -0.3423690 -0.3502558
+##x[3] -0.4025517 -0.3502558 -0.3671454
+
+
+## with all three y2, y3, y5 dependents
+##> pprec-inverse(cov(Csamples))
+##          x[1]      x[2]      x[3]
+##x[1] -3.090899 -3.078432 -3.100470
+##x[2] -3.078432 -3.022367 -3.013173
+##x[3] -3.100470 -3.013173 -2.997411
+
+
+
+
+
+
+
 ## testing binary sampler
 
 code <- nimbleCode({
