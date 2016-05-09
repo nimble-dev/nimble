@@ -720,7 +720,6 @@ inits <- list(x=rep(0,3))
 Rmodel <- nimbleModel(code, constants, data, inits)
 
 spec <- configureMCMC(Rmodel)
-##spec$getSamplers()
 Rmcmc <- buildMCMC(spec)
 
 Cmodel <- compileNimble(Rmodel)
@@ -738,55 +737,33 @@ Csamples <- as.matrix(Cmcmc$mvSamples)
 test_that('correct samples for ragged dmnorm conjugate update', expect_true(all(abs(as.numeric(Rsamples[,]) - c(4.96686874, 3.94112676, 4.55975130, 4.01930176, 4.47744412, 4.12927167, 4.91242131, 4.62837537, 4.54227859, 4.97237602, -1.12524733, 1.24545265, -0.13454814, 0.82755276, 0.08252775, 0.71187071, -0.31322184, -0.57462284, -0.64800963, -0.52885823, -3.92276916, -5.23904995, -4.53535941, -4.89919931, -4.66995650, -4.94181562, -4.63558011, -4.16385294, -4.03469945, -4.51128205)) < 1E-8)))
 
 dif <- Rsamples - Csamples
+
 test_that('R and C samples same for ragged dmnorm conjugate update', expect_true(all(abs(dif) < 1E-13)))
-
-
 
 set.seed(0)
 Cmcmc$run(200000)
 Csamples <- as.matrix(Cmcmc$mvSamples)
+
+obsmean <- apply(Csamples, 2, mean)
+
+obsprec <- inverse(cov(Csamples))
 
 pprec <- ident +
     t(B[1:2,1:3]) %*% prec_y[1:2,1:2] %*% B[1:2,1:3] +
     t(B[1:3,1:3]) %*% prec_y[1:3,1:3] %*% B[1:3,1:3] +
     t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% B[1:5,1:3]
 
-pmean <- as.numeric(inverse(pprec) %*% (ident %*% mu0 +
+
+pmean <- inverse(pprec) %*% (ident %*% mu0 +
              t(B[1:2,1:3]) %*% prec_y[1:2,1:2] %*% (1:2 - a[1:2]) +
              t(B[1:3,1:3]) %*% prec_y[1:3,1:3] %*% (1:3 - a[1:3]) +
-             t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% (1:5 - a[1:5])   ))
-
-pmean
-as.numeric(apply(Csamples, 2, mean))
-pmean-as.numeric(apply(Csamples, 2, mean))
-
-pprec
-inverse(cov(Csamples))
-pprec-inverse(cov(Csamples))
-
-test_that('ragged dmnorm conjugate posterior mean', expect_equal(pmean, as.numeric(apply(Csamples, 2, mean)), tol = 0.001))
-
-test_that('ragged dmnorm conjugate posterior precition', expect_equal(as.numeric(pprec), as.numeric(inverse(cov(Csamples))), tol = 3.2))
+             t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% (1:5 - a[1:5])   )
 
 
-## when I ran this with only y2 and y3 dependents
-##> pprec-inverse(cov(Csamples))
-##           x[1]       x[2]       x[3]
-##x[1] -0.4035707 -0.3845104 -0.4025517
-##x[2] -0.3845104 -0.3423690 -0.3502558
-##x[3] -0.4025517 -0.3502558 -0.3671454
+test_that('ragged dmnorm conjugate posterior mean', expect_true(all(abs(pmean - obsmean) / pmean < 0.01)))
 
 
-## with all three y2, y3, y5 dependents
-##> pprec-inverse(cov(Csamples))
-##          x[1]      x[2]      x[3]
-##x[1] -3.090899 -3.078432 -3.100470
-##x[2] -3.078432 -3.022367 -3.013173
-##x[3] -3.100470 -3.013173 -2.997411
-
-
-
-
+test_that('ragged dmnorm conjugate posterior precision', expect_true(all(abs(pprec - obsprec) / pprec < 0.005)))
 
 
 
