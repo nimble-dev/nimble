@@ -88,8 +88,8 @@ sampler_RW <- nimbleFunction(
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
-        scaleHistory          <- c(0, 0)
-        acceptanceRateHistory <- c(0, 0)
+        ##scaleHistory          <- c(0, 0)
+        ##acceptanceRateHistory <- c(0, 0)
         optimalAR <- 0.44
         gamma1    <- 0
         range <- getDistribution(model$getNodeDistribution(target))$range
@@ -124,10 +124,10 @@ sampler_RW <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
-                setSize(scaleHistory,          timesAdapted)
-                setSize(acceptanceRateHistory, timesAdapted)
-                scaleHistory[timesAdapted] <<- scale
-                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+                ##setSize(scaleHistory,          timesAdapted)
+                ##setSize(acceptanceRateHistory, timesAdapted)
+                ##scaleHistory[timesAdapted] <<- scale
+                ##acceptanceRateHistory[timesAdapted] <<- acceptanceRate
                 gamma1 <<- 1/((timesAdapted + 3)^0.8)
                 gamma2 <- 10 * gamma1
                 adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
@@ -142,8 +142,8 @@ sampler_RW <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
-            scaleHistory          <<- scaleHistory          * 0
-            acceptanceRateHistory <<- acceptanceRateHistory * 0
+            ##scaleHistory          <<- scaleHistory          * 0
+            ##acceptanceRateHistory <<- acceptanceRateHistory * 0
             gamma1 <<- 0
         }
     ), where = getLoadingNamespace()
@@ -270,8 +270,8 @@ sampler_RW_block <- nimbleFunction(
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
-        scaleHistory          <- c(0, 0)
-        acceptanceRateHistory <- c(0, 0)
+        ##scaleHistory          <- c(0, 0)
+        ##acceptanceRateHistory <- c(0, 0)
         d <- length(targetAsScalar)
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
@@ -310,10 +310,10 @@ sampler_RW_block <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
-                setSize(scaleHistory,          timesAdapted)
-                setSize(acceptanceRateHistory, timesAdapted)
-                scaleHistory[timesAdapted] <<- scale
-                acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+                ##setSize(scaleHistory,          timesAdapted)
+                ##setSize(acceptanceRateHistory, timesAdapted)
+                ##scaleHistory[timesAdapted] <<- scale
+                ##acceptanceRateHistory[timesAdapted] <<- acceptanceRate
                 adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
@@ -338,8 +338,8 @@ sampler_RW_block <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
-            scaleHistory          <<- scaleHistory          * 0
-            acceptanceRateHistory <<- acceptanceRateHistory * 0
+            ##scaleHistory          <<- scaleHistory          * 0
+            ##acceptanceRateHistory <<- acceptanceRateHistory * 0
             my_calcAdaptationFactor$reset()
         }
     ),  where = getLoadingNamespace()
