@@ -20,13 +20,13 @@ bootFStep <- nimbleFunction(
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     thisNode <- nodes[iNode]
-    allPrevNodes <- nodes[1:(iNode-1)]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
     t <- iNode  # current time point
     # Get names of xs node for current and previous time point (used in copy)
     if(saveAll == 1){
+      allPrevNodes <- model$expandNodeNames(nodes[1:(iNode-1)])
       prevXName <- prevNode    
       thisXName <- thisNode
       currInd <- t
@@ -37,6 +37,7 @@ bootFStep <- nimbleFunction(
       }
     }
     else{
+      allPrevNodes <- names
       prevXName <- names    
       thisXName <- names
       currInd <- 1
@@ -48,7 +49,6 @@ bootFStep <- nimbleFunction(
     returnType(double(1))
     declare(wts, double(1, m))
     declare(ids, integer(1, m))
-    declare(ess, double())
     declare(llEst, double(1,m))
     declare(out, double(1,2))
     
@@ -137,10 +137,12 @@ bootFStep <- nimbleFunction(
 #' Each of the control() list options are described in detail below:
 #' \describe{
 #'  \item{"thresh"}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
-#'   effective sample size is less than thresh*(number of particles).  Defaults to 0.5.}
+#'   effective sample size is less than thresh*(number of particles).  Defaults to 0.8.}
 #'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
 #'  \item{"smoothing"}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),  
 #'  or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T}
+#'  \item{"timeIndex"}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
 #' }
 #' 
 #'  The bootstrap filter starts by generating a sample of estimates from the 
@@ -151,14 +153,14 @@ bootFStep <- nimbleFunction(
 #'  The algorithm then proceeds
 #'  to the next time point.  Neither the transition nor the observation equations are required to 
 #'  be normal for the bootstrap filter to work.   
-
-#' The resulting specialized particle filter algorthm will accept a
+#'  
+#'  The resulting specialized particle filter algorthm will accept a
 #'  single integer argument (m, default 10,000), which specifies the number
 #'  of random \'particles\' to use for estimating the log-likelihood.  The algorithm 
 #'  returns the estimated log-likelihood value, and saves
 #'  unequally weighted samples from the posterior distribution of the latent
 #'  states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
-#'  An equally weighted sample from the posterior can be found in mvEWsamp.
+#'  An equally weighted sample from the posterior can be found in the mvEWsamp model values object.
 #'  
 #' @family particle filtering methods
 #' @references Gordon, Neil J., David J. Salmond, and Adrian FM Smith. 
@@ -174,23 +176,43 @@ bootFStep <- nimbleFunction(
 #' @export
 buildBootF <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
-    nodes <- model$expandNodeNames(nodes, sort = TRUE)
-    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
-    vars <- model$getVarNames(nodes =  nodes)  # need var names too
     
-    
+    #control list extraction
     thresh <- control[['thresh']]
     saveAll <- control[['saveAll']]
     smoothing <- control[['smoothing']]
     silent <- control[['silent']]
+    timeIndex <- control[['timeIndex']]
+    if(is.null(thresh)) thresh <- .8
     if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
-    if(is.null(thresh)) thresh <- .5
+    
+    #latent state info
+    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
+    if(length(unique(varName))>1){
+      stop("all latent nodes must come from same variable")
+    }
+    varName <- varName[1]
+    info <- model$getVarInfo(varName)
+    latentDims <- info$nDim
+    if(is.null(timeIndex)){
+      timeIndex <- which.max(info$maxs)
+      timeLength <- max(info$maxs)
+      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
+        stop("unable to determine which dimension indexes time. 
+             Specify manually using the 'timeIndex' control list argument")
+    } else{
+      timeLength <- info$maxs[timeIndex]
+    }
+    
     my_initializeModel <- initializeModel(model, silent = silent)
     
-    
+    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
+                   rep(",", info$nDim - timeIndex),"]", sep="")
+    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
+    if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states varies')
+    vars <- model$getVarNames(nodes =  nodes)  # need var names too
     
     if(0>thresh || 1<thresh || !is.numeric(thresh)) stop('thresh must be between 0 and 1')
     if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
@@ -207,8 +229,6 @@ buildBootF <- nimbleFunction(
                                               type = type,
                                               size = size))
       
-
-      
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- length(dims)
@@ -224,7 +244,6 @@ buildBootF <- nimbleFunction(
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
       size[[1]] <- as.numeric(dims[[1]])
-      
       
       mvEWSamp <- modelValues(modelValuesSpec(vars = names,
                                               type = type,
@@ -247,7 +266,6 @@ buildBootF <- nimbleFunction(
   },
   run = function(m = integer(default = 10000)) {
     returnType(double())
-    declare(out, double(1,2))
     my_initializeModel$run()
     resize(mvWSamp, m)
     resize(mvEWSamp, m)

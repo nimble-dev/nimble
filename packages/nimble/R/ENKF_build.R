@@ -113,7 +113,7 @@ ENKFStep <- nimbleFunction(
     }
   },
   run = function(m = integer()) {
-    declare(xf, double(2, c(xDim, m)))  # currently only works for x of length 1!
+    declare(xf, double(2, c(xDim, m))) 
     declare(yf, double(2, c(yLength, m)))
     declare(varMat, double(2, c(yLength, yLength))) # combined covariance matrix for all depndent nodes
     declare(preturb, double(2, c(yLength, m)))  # matrix for preturbed observations  
@@ -122,10 +122,25 @@ ENKFStep <- nimbleFunction(
     if(yLength == 1){
       setSize(yObs, 1)
       setSize(meanVec, 1)
-    }    
+    }  
+    
+    
+    # girst get var, doesn't depend on x value
+    for(j in 1:nNodes){
+      yVar <- ENKFFuncList[[j]]$getVar() 
+      ySize <- yInds[j+1]-yInds[j]
+      if(ySize == 1){
+        varMat[yInds[j+1], yInds[j+1]] <-yVar[1,1]
+      }
+      else{
+        varMat[(yInds[j]+1):yInds[j+1], (yInds[j]+1):yInds[j+1]] <- yVar
+      }
+    }
+    
+    
     #  Forecast Step
     #  cycle through data nodes and particles,
-    #  forecast x values, get mean and variance of y, add to mean vector and cov matrix
+    #  forecast x values, get mean of y, add to mean vector
     for(i in 1:m) {
       if(notFirst) {
         copy(from = mvSamp, to = model, nodes = prevXSName, nodesTo = prevNode, row = i)          
@@ -135,16 +150,13 @@ ENKFStep <- nimbleFunction(
       calculate(model, thisDeterm) 
       xf[,i] <- values(model,thisNode)
       for(j in 1:nNodes){
-        yVar <- ENKFFuncList[[j]]$getVar() # var doesn't depend on x value
         yfVal <- ENKFFuncList[[j]]$getMean()
         ySize <- yInds[j+1]-yInds[j]
         if(ySize == 1){
-          yf[yInds[j+1], i] <-yfVal[1]
-          varMat[yInds[j+1], yInds[j+1]] <-yVar[1,1]
+          yf[yInds[j+1], i] <- yfVal[1]
         }
         else{
           yf[(yInds[j]+1):yInds[j+1], i] <- yfVal
-          varMat[(yInds[j]+1):yInds[j+1], (yInds[j]+1):yInds[j+1]] <- yVar
         }
       }
     }
@@ -154,7 +166,7 @@ ENKFStep <- nimbleFunction(
     oneVec <- nimVector(1,m)
     efx <- xf - (1/md)*(xf%*%oneVec%*%t(oneVec))
     efy <- yf -  (1/md)*(yf%*%oneVec%*%t(oneVec))
-    kMat <- (1/(md-1))*efx%*%t(efy)%*%inverse((1/(md-1))*(efy%*%t(efy)+varMat))
+    kMat <- (1/(md-1))*efx%*%t(efy)%*%inverse((1/(md-1))*(efy%*%t(efy))+varMat)
     
     #  next, cycle through particles, create preturbed observations,
     #  and store in model values object
@@ -190,6 +202,8 @@ ENKFStep <- nimbleFunction(
 #' The control() list option is described in detail below:
 #' \describe{
 #'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+#' \item{"timeIndex"}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
 #' }
 #' 
 #' Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  The ensemble Kalman filter
@@ -216,17 +230,37 @@ ENKFStep <- nimbleFunction(
 #' @export
 buildENKF <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
-    my_initializeModel <- initializeModel(model)
-    nodes <- model$expandNodeNames(nodes, sort = TRUE)
+
+    #control list extraction
+    saveAll <- control[['saveAll']]
+    silent <- control[['silent']]
+    timeIndex <- control[['timeIndex']]
+    if(is.null(silent)) silent <- FALSE
+    if(is.null(saveAll)) saveAll <- FALSE
+     
+    #get latent state info
+    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
+    if(length(unique(varName))>1){
+      stop("all latent nodes must come from same variable")
+    }
+    varName <- varName[1]
+    info <- model$getVarInfo(varName)
+    latentDims <- info$nDim
+    if(is.null(timeIndex)){
+      timeIndex <- which.max(info$maxs)
+      timeLength <- max(info$maxs)
+      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
+        stop("unable to determine which dimension indexes time. 
+             Specify manually using the 'timeIndex' control list argument")
+    } else{
+      timeLength <- info$maxs[timeIndex]
+    }
+    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
+                   rep(",", info$nDim - timeIndex),"]", sep="")
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent states varies')
     xDim <- dims[[1]]
-    
-    saveAll <- control[['saveAll']]
-    silent <- control[['silent']]
-    if(is.null(silent)) silent <- FALSE
-    if(is.null(saveAll)) saveAll <- FALSE
-    
+     
     #  get list of y nodes depening on each x node
     #  necessary if the bugs model specifies something like:
     #  y[1,1] ~ dnorm(x[1], 1)
@@ -234,9 +268,9 @@ buildENKF <- nimbleFunction(
     #  where multiple separately specified y nodes depend on the same x node(s)
     yNodes <- lapply(nodes, function(n) model$getDependencies(n, dataOnly = TRUE))  
     yDim <- unlist(sapply(yNodes, function(x){unname(sapply(x, function(z) nimDim(model[[z]])))})) #dimensions of each dependent y node
+    
     # Create mv variables for x state.  If saveAll=T, 
     # the  x states will be recorded at each time point.
-    
     vars <- model$getVarNames(nodes =  nodes)  # need var names too
     modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
     if(saveAll){
@@ -264,7 +298,7 @@ buildENKF <- nimbleFunction(
                                             size = size))
     }
     
-    
+    my_initializeModel <- initializeModel(model)
     names <- names[1]
     ENKFStepFunctions <- nimbleFunctionList(ENKFStepVirtual)
     for(iNode in seq_along(nodes)){

@@ -18,13 +18,15 @@ auxFuncVirtual <- nimbleFunctionVirtual(
 
 auxLookFunc = nimbleFunction(
   contains = auxFuncVirtual,
-  setup = function(model, node){},
+  setup = function(model, node){
+  },
   methods = list(
     lookahead = function(){
-      model[[node]] <<- model$getParam(node, 'mean')
-    }
-  ), where = getLoadingNamespace()
+    model[[node]] <<- model$getParam(node, 'mean')
+    }),
+  where = getLoadingNamespace()
 )
+
 
 auxSimFunc = nimbleFunction(
   contains = auxFuncVirtual,
@@ -41,7 +43,6 @@ auxFStep <- nimbleFunction(
                    lookahead, silent = TRUE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
-    allPrevNodes <- nodes[1:(iNode-1)]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
     thisNode <- nodes[iNode]
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
@@ -52,6 +53,7 @@ auxFStep <- nimbleFunction(
     # will be different depending on whether we are saving all time points
     # or only the most recent
     if(saveAll == 1){
+      allPrevNodes <- model$expandNodeNames(nodes[1:(iNode-1)])
       prevXName <- prevNode    
       thisXName <- thisNode
       currInd <- t
@@ -62,32 +64,33 @@ auxFStep <- nimbleFunction(
       }
     }
     else{
+      allPrevNodes <- names
       prevXName <- names    
       thisXName <- names
       currInd <- 1
       prevInd <- 1 
     }
     isLast <- (iNode == length(nodes))
-    xDim <- nimDim(model[[thisXName]])
-    
+
     auxFuncList <- nimbleFunctionList(auxFuncVirtual) 
+    allLatentNodes <- model$expandNodeNames(thisNode)
+    numLatentNodes <- length(allLatentNodes)
     if(lookahead == "mean"){
-      auxFuncList[[1]] <- auxLookFunc(model, thisNode)
+       for(i in 1:numLatentNodes)
+         auxFuncList[[i]] <- auxLookFunc(model, allLatentNodes[i])
     }
     else{
-      auxFuncList[[1]] <- auxSimFunc(model, thisNode)
-    }
+      for(i in 1:numLatentNodes)
+        auxFuncList[[i]] <- auxSimFunc(model,  allLatentNodes)
+     }
   },
   run = function(m = integer()) {
     returnType(double())
     declare(auxll, double(1,m))
     declare(auxWts, double(1,m))
-    declare(normAuxWts, double(1,m))
     declare(wts, double(1,m))
-    declare(normWts, double(1,m))
     declare(ids, integer(1, m))
     declare(ll, double(1,m))
-    declare(LL, double(1,m))
 
     ## This is the look-ahead step, not conducted for first time-point
     if(notFirst){ 
@@ -97,7 +100,13 @@ auxFStep <- nimbleFunction(
         }
         copy(mvWSamp, model, prevXName, prevNode, row=i)        
         calculate(model, prevDeterm)
-        auxFuncList[[1]]$lookahead()
+        if(lookahead == "mean"){
+          for(j in 1:numLatentNodes)
+              auxFuncList[[j]]$lookahead()
+        }
+        else
+          auxFuncList[[1]]$lookahead()
+        
         calculate(model, thisDeterm)
         auxll[i] <- calculate(model, thisData)  # get p(y_t+1 | x_t+1)
         if(is.nan(auxll[i])){
@@ -143,7 +152,6 @@ auxFStep <- nimbleFunction(
       copy(mvWSamp, mvEWSamp, thisXName, thisXName, ids[i], i)
     }
     
-    
     ##  Calculate likelihood p(y_t+1 | y_1:t) as in equation (3) of paper
     if(notFirst){
       outLL <- sum(exp(wts))/m
@@ -153,6 +161,7 @@ auxFStep <- nimbleFunction(
       outLL <- sum(exp(wts))/m
     }
     return(log(outLL))
+return(0)
   }, where = getLoadingNamespace()
 )
 
@@ -167,8 +176,14 @@ auxFStep <- nimbleFunction(
 #' @details 
 #' 
 #' \describe{
+#' \item{"lookahead"}{The lookahead function used to calculate auxiliary weights.  Can choose between 'mean' and 'simulate'. 
+#'  Defaults to 'simulate'.}
 #'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
-#' }
+#'  \item{"smoothing"}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]),  
+#'  or instead to save filtered samples from f(x[t]|y[1:t]) at each time point.  Only works if saveAll=T} 
+#'  \item{"timeIndex"}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  }
 #' 
 #'      The auxiliary particle filter modifies the bootstrap filter (\code{\link{buildBootF}})
 #'      by adding a lookahead step to 
@@ -183,11 +198,10 @@ auxFStep <- nimbleFunction(
 #'  returns the estimated log-likelihood value, and saves
 #'  unequally weighted samples from the posterior distribution of the latent
 #'  states in the mvWSamp model values object, with corresponding logged weights in mvWSamp['wts',].
-#'  An equally weighted sample from the posterior can be found in mvEWsamp.  
+#'  An equally weighted sample from the posterior can be found in the mvEWsamp model values object.  
 #'  
-#'   The auxiliary particle filter uses a lookahead function to select promising particles before propogation.  Currently, the lookahead
-#'   funciton uses the expected value of the latent state at the next time point given the current particle, e E(x[t+1]|x[t]).
-#'   The auxiliary particle filter currently only works for models with univariate normal transition densities. 
+#'   The auxiliary particle filter uses a lookahead function to select promising particles before propogation.  This function can eithre be the expected
+#'   value of the latent state at the next time point (lookahead = 'mean') or a simulation from the distribution of the latent state at the next time point (lookahead = 'simulate'), conditioned on the current particle.
 #'   @references Pitt, Michael K., and Neil Shephard. "Filtering via simulation: Auxiliary particle filters."
 #'    Journal of the American statistical association 94.446 (1999): 590-599.
 #'   @references Pitt, Michael K., et al. "On some properties of Markov chain Monte Carlo simulation methods based on the particle filter." 
@@ -203,33 +217,52 @@ auxFStep <- nimbleFunction(
 buildAuxF <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
     
-    nodes <- model$expandNodeNames(nodes, sort = TRUE)
-    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
-    vars <- model$getVarNames(nodes =  nodes)  # need var names too
+   
     
-    if(length(unique(dims)) > 1) 
-      stop('sizes or dimension of latent states varies')
-    
+    #control list extraction
     saveAll <- control[['saveAll']]
-    silent <- control[['silent']]
     smoothing <- control[['smoothing']]
+    silent <- control[['silent']]
+    timeIndex <- control[['timeIndex']]
     lookahead <- control[['lookahead']]
-    
     if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
-    if(is.null(lookahead)) lookahead <- "simulate"
+    if(is.null(lookahead)) lookahead = 'simulate'
+    if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
+    if(lookahead == "mean"){
+      errors <- sapply(model$expandNodeNames(nodes), function(node){tryCatch(getParam(model, node, 'mean'), error=function(a){return("error")})})
+      if(any(errors == "error", na.rm=T)) stop("cannot use 'mean' lookahead for this model, try 'simulate'")
+    } 
+    else if(lookahead != "simulate"){
+      stop("lookahead argument must be either 'simulate' or 'mean'")
+    }
+    
+    #latent state info
+    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
+    if(length(unique(varName))>1){
+      stop("all latent nodes must come from same variable")
+    }
+    varName <- varName[1]
+    info <- model$getVarInfo(varName)
+    latentDims <- info$nDim
+    if(is.null(timeIndex)){
+      timeIndex <- which.max(info$maxs)
+      timeLength <- max(info$maxs)
+      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
+        stop("unable to determine which dimension indexes time. 
+             Specify manually using the 'timeIndex' control list argument")
+    } else{
+      timeLength <- info$maxs[timeIndex]
+    }
+    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
+                   rep(",", info$nDim - timeIndex),"]", sep="")
+    dims <- lapply(nodes, function(n) nimDim(model[[n]]))
+    if(length(unique(dims)) > 1) stop('sizes or dimensions of latent states varies')
+    vars <- model$getVarNames(nodes =  nodes)  # need var names too
     
     my_initializeModel <- initializeModel(model, silent = silent)
     
-    
-    if(lookahead == "mean"){
-      errors <- sapply(model$expandNodeNames(nodes), function(node){tryCatch(model$nodes[[node]]$get_mean(), error=function(a){return("error")})})
-      if(any(errors == "error", na.rm=T)) stop("transition equation must be normal to use mean as lookahead function")
-    } 
-    else if(lookahead != "simulate"){
-      stop("lookahead must be either simulate or mean")
-    }
     
     # Create mv variables for x state and sampled x states.  If saveAll=T, 
     # the sampled x states will be recorded at each time point. 
@@ -259,7 +292,6 @@ buildAuxF <- nimbleFunction(
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
       size[[1]] <- as.numeric(dims[[1]])
-      
       
       mvEWSamp <- modelValues(modelValuesSpec(vars = names,
                                               type = type,

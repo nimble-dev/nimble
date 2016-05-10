@@ -872,7 +872,7 @@ sampler_RW_PFilter <- nimbleFunction(
       ## if we don't jump, replace model latent nodes with saved latent nodes
       copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
     }
-    if(jump & resamp)  storeLP['LP0',1][1] <<- modelLP1
+    if(jump & !resamp)  storeLP['LP0',1][1] <<- modelLP1
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
   },
@@ -1063,7 +1063,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
       ## if we don't jump, replace model latent nodes with saved latent nodes
       copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
     }
-    if(jump & resamp)  storeLP['LP0',1][1] <<- modelLP1
+    if(jump & !resamp)  storeLP['LP0',1][1] <<- modelLP1
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
     

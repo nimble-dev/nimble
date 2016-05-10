@@ -16,16 +16,19 @@ LWStepVirtual <- nimbleFunctionVirtual(
     returnType(double())
 )
 
+LWSetMeanVirtual <- nimbleFunctionVirtual(
+  run = function()
+    returnType()
+)
 
 # Has a return_mean method which returns the mean of a normally distributed nimble node.
-normMean <- nimbleFunction(
-  setup = function(model, node){},
-  methods = list(                        
-    return_mean = function() {         
-      returnType(double())      
-      return(model$getParam(node, 'mean')) 
-    }                                  
-  ), where = getLoadingNamespace()                                    
+paramMean <- nimbleFunction(
+  contains = LWSetMeanVirtual,
+  setup = function(model, node){
+  },
+    run = function() {
+        model[[node]] <<- model$getParam(node, 'mean')
+    }, where = getLoadingNamespace()                                    
 )
 
 LWSetParVirtual <- nimbleFunctionVirtual(
@@ -109,7 +112,6 @@ LWStep <- nimbleFunction(
     parDeterm <- model$getDependencies(paramNodes, determOnly=TRUE)
     thisDeterm <- model$getDependencies(thisNode, determOnly = TRUE)
     thisData   <- model$getDependencies(thisNode, dataOnly = TRUE)
-    getmean <- normMean(model, thisNode)
     isLast <- (iNode == length(nodes))
             
     t <- iNode  # current time point
@@ -139,6 +141,14 @@ LWStep <- nimbleFunction(
       doVarList[[i]] <- doPars(paramVars[i], mvWSamp, mvEWSamp)
       varSize[i] <- paramInds[i+1]-paramInds[i]
     }
+    
+    setMeanList <- nimbleFunctionList(LWSetMeanVirtual)
+    allLatentNodes <- model$expandNodeNames(thisNode)
+    numLatentNodes <- length(allLatentNodes)
+    for(i in 1:numLatentNodes){
+      setMeanList[[i]] <- paramMean(model, allLatentNodes[i])
+    }
+
     if(singleParam)
       varSize = c(varSize, 0)  # ensure that varSize is treated as a vector even with only one parameter
   },
@@ -169,7 +179,9 @@ LWStep <- nimbleFunction(
          values(model, paramNodes) <<- meanVec[,i]
          calculate(model, parDeterm) 
          calculate(model, prevDeterm) 
-         model[[thisNode]] <<- getmean$return_mean()
+         for(j in 1:numLatentNodes){
+           setMeanList[[j]]$run()
+         }
          calculate(model, thisDeterm)
          auxWts[i] <- exp(calculate(model, thisData))
          if(is.nan(auxWts[i])) auxWts[i] <- 0 #check for ok param values
@@ -246,8 +258,7 @@ LWStep <- nimbleFunction(
          }
        } 
      }
-#    return(log(mean(l)))
-return(0)
+  return(0)
   },  where = getLoadingNamespace()
 )
 
@@ -262,8 +273,6 @@ LWparFunc <- nimbleFunction(
   },  
   methods = list(                        
     shrinkMean = function(m = integer(), wts = double(1), pars = double(2)) {
-      declare(parMean, double(2))
-      declare(wtMean,double(2, c(parDim, m)))
       declare(oneMat, double(1, m))
       for(i in 1:m){
         oneMat[i] <- 1
@@ -299,6 +308,9 @@ LWparFunc <- nimbleFunction(
 #' @param nodes A character vector specifying the latent model nodes 
 #'  over which the particle filter will stochastically integrate over to
 #'  estimate the log-likelihood function
+#' @param params A character vector sepcifying the top-level parameters to estimate the posterior distribution of. 
+#'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
+#'  are not in the set of latent nodes specified in 'nodes'.}
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 
 #' @author Nicholas Michaud
@@ -307,12 +319,11 @@ LWparFunc <- nimbleFunction(
 #' 
 #' Each of the control() list options are described in detail below:
 #' \describe{
-#'  \item{"params"}{A character vector sepcifying the parameters you would 
-#'  like to estimate the posterior distribution of.  If unspecified, parameter nodes are specified as all stochastic top level nodes which
-#'  are not in the set of latent nodes specified in 'nodes'.}
 #'  \item{"d"}{A discount factor for the Liu-West filter.  Should be close to,
 #'  but not above, 1.}
 #'  \item{"saveAll"}{Indicates whether to save state samples for all time points (T), or only for the most recent time point (F)}
+#' \item{"timeIndex"}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
 #' }
 #' 
 #'  The Liu and West filter samples from the posterior 
@@ -347,46 +358,65 @@ LWparFunc <- nimbleFunction(
 #' 
 #' @export
 buildLWF <- nimbleFunction(
-  setup = function(model, nodes, control = list()){
-    my_initializeModel <- initializeModel(model)
-    nodes <- model$expandNodeNames(nodes, sort = TRUE)
+  setup = function(model, nodes, params = NULL, control = list()){
     
+    #control list extraction
     saveAll <- control[['saveAll']]
     silent <- control[['silent']]
-    params <- control[['params']]
     d <- control[['d']]
+    timeIndex <- control[['timeIndex']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(d)) d <- .99
+    
+    #get latent state info
+    varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
+    if(length(unique(varName))>1){
+      stop("all latent nodes must come from same variable")
+    }
+    varName <- varName[1]
+    info <- model$getVarInfo(varName)
+    latentDims <- info$nDim
+    if(is.null(timeIndex)){
+      timeIndex <- which.max(info$maxs)
+      timeLength <- max(info$maxs)
+      if(sum(info$maxs==timeLength)>1) # check if multiple dimensions share the max index size
+        stop("unable to determine which dimension indexes time. 
+             Specify manually using the 'timeIndex' control list argument")
+    } else{
+      timeLength <- info$maxs[timeIndex]
+    }
+    nodes <- paste(info$varName,"[",rep(",", timeIndex-1), 1:timeLength,
+                   rep(",", info$nDim - timeIndex),"]", sep="")
+    latentVars <- model$getVarNames(nodes = nodes)
+    
     # if unspecified, parameter nodes are specified as all stochastic top level nodes which
     # are not in the set of latent nodes above
     if(all(is.null(params))){
-      params <- setdiff(model$getNodeNames(stochOnly=T, includeData=F,
-                                           topOnly=T),nodes)
+      params <-  model$getNodeNames(stochOnly=T, includeData=F,
+                                           topOnly=T)
+      parLatents <- sapply(params, function(x){return(model$getVarNames(nodes = x) %in% latentVars)})
+      params <- params[!parLatents]
     }
     params <- model$expandNodeNames(params, sort = TRUE)
-    
-    latentVars <- model$getVarNames(nodes = nodes)
-    paramVars <-  model$getVarNames(nodes =  params)  # need var names too
-    if(!saveAll) smoothing <- FALSE
-    
     if(identical(params, character(0)))
       stop('must be at least one higher level parameter for Liu and West filter to work')
     if(any(params %in% nodes))
       stop('parameters cannot be latent states')
     if(!all(params%in%model$getNodeNames(stochOnly=T)))
       stop('parameters must be stochastic nodes')
+    paramVars <-  model$getVarNames(nodes =  params)  # need var names too
     pardimcheck <- sapply(paramVars, function(n){
       if(length(nimDim(model[[n]]))>1)
         stop("Liu and West filter doesn't work for matrix valued top level parameters")
     })
- 
     
     dims <- lapply(nodes, function(n) nimDim(model[[n]]))
     if(length(unique(dims)) > 1) stop('sizes or dimension of latent 
                                       states varies')
     paramDims <-   sapply(params, function(n) nimDim(model[[n]]))
     
+    my_initializeModel <- initializeModel(model, silent = silent)
     
     modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[c(latentVars, paramVars)]
     if(saveAll){
@@ -403,6 +433,7 @@ buildLWF <- nimbleFunction(
       
       names <- c(names, "wts")
       type <- c(type, "double")
+      size$wts <- length(dims)
       
       mvWSamp  <- modelValues(modelValuesSpec(vars = names,
                                               type = type,
@@ -428,9 +459,6 @@ buildLWF <- nimbleFunction(
                                               type = type,
                                               size = size))
     }
-  
-    
-  
     
     names <- names[1]
     varSymbolObjects = model$getSymbolTable()$getSymbolObjects()[paramVars]
