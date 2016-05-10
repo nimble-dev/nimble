@@ -166,7 +166,16 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                           ans <- ans[!allData]
                                       }
     	                              return(ans)
-                                    },
+                                  },
+
+                                  getNodeFunction = function(nodes) {
+                                      gids <- modelDef$nodeName2GraphIDs(nodes)
+                                      dclids <- modelDef$graphIDs2indexedNodeInfo(gids)$declIDs
+                                      if(length(dclids) == 1)
+                                          return(nodeFunctions[[dclids]])
+                                      else
+                                          return(nodeFunctions[dclids])
+                                  },
                                   
                                   getNodeNames = function(determOnly = FALSE, stochOnly = FALSE,
                                                           includeData = TRUE, dataOnly = FALSE, includeRHSonly = FALSE,
