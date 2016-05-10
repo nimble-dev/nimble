@@ -765,11 +765,12 @@ sampler_RW_PFilter <- nimbleFunction(
     adaptInterval  <- control$adaptInterval
     scale          <- control$scale
     m              <- control$m
-    latents        <- control$latents
     resamp         <- control$resamp
     filterType     <- control$filterType
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
+    latents        <- control$latents
+    latentSamp   <- control$sampleLatents 
 
     if(optimizeM){
       m <- 3000  
@@ -782,21 +783,15 @@ sampler_RW_PFilter <- nimbleFunction(
                                               size = list(LLVar = 1)
     ))
     
-    latentSamp <- 0
+
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=T, includeData=F,
                                     topOnly=T)
-    target <- model$expandNodeNames(target)
-    if(!all(target%in%topParams)){
-      if(!all(target[!(target%in%topParams)] %in% model$expandNodeNames(latents))){
-        stop("PMCMC target can only consist of top level parameters and/or latent states")
-      }
-      else{
-        latentTarget <- target[!(target%in%topParams)]
-        latentSamp <- 1
-        target <- target[!(target%in%latentTarget)]
-      }
+
+    if(any(target%in%model$expandNodeNames(latents))){
+      stop("PMCMC 'target' argument cannot include latent states")
     }
+   
     
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     if(length(targetAsScalar) > 1)     stop('more than one top-level target; cannot use RW_PFilter sampler, try RW_PFilter_block sampler')
@@ -945,7 +940,7 @@ sampler_RW_PFilter <- nimbleFunction(
 
 sampler_RW_PFilter_block <- nimbleFunction(
   contains = sampler_BASE,
-  setup = function(model, mvSaved, target, control) {
+  setup = function(model, mvSaved, target,  control) {
     ###  control list extraction  ###
     adaptive       <- control$adaptive
     adaptScaleOnly <- control$adaptScaleOnly
@@ -953,11 +948,12 @@ sampler_RW_PFilter_block <- nimbleFunction(
     scale          <- control$scale
     propCov        <- control$propCov 
     m              <- control$m
-    latents        <- control$latents
     resamp         <- control$resamp
     filterType     <- control$filterType
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
+    latents        <- control$latents
+    latentSamp     <- control$sampleLatents
     
     if(optimizeM){
       m <- 3000  
@@ -969,20 +965,12 @@ sampler_RW_PFilter_block <- nimbleFunction(
                                               size = list(LLVar = 1)
     ))
     
-    latentSamp <- 0
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=T, includeData=F,
                                     topOnly=T)
     target <- model$expandNodeNames(target)
-    if(!all(target%in%topParams)){
-      if(!all(target[!(target%in%topParams)] %in% model$expandNodeNames(latents))){
-        stop("PMCMC target can only consist of top level parameters and/or latent states")
-      }
-      else{
-        latentTarget <- target[!(target%in%topParams)]
-        latentSamp <- 1
-        target <- target[!(target%in%latentTarget)]
-      }
+    if(any(target%in%model$expandNodeNames(latents))){
+      stop("PMCMC 'target' argument cannot include latent states")
     }
     
     ###  node list generation  ### 
