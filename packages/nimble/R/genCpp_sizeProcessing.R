@@ -41,6 +41,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimPrint = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
+                    nimArrayGeneral = 'sizeNimArrayGeneral',
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
@@ -180,6 +181,18 @@ sizemap <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'maybe'
     invisible(NULL)
 }
+
+sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
+    ##asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- code$args[[1]]    ## args[[1]]: 'type' argument
+    code$nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
+    code$sizeExprs <- as.list(code$args[[3]]$expr[-1])  ## args[[3]]: sizeExprs arg: 'c(...)
+    code$toEigenize <- 'no'
+    ##return(asserts)
+    return(NULL)
+}
+
+
 
 sizeGetParam <- function(code, symTab, typeEnv) {
     paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
