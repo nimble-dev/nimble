@@ -96,6 +96,8 @@ declareHandler <- function(code, symTab) {
         if(symTab$symbolExists(newNames[i])) stop(paste0('Error: declaring ',newNames[i],' which already exists.'))
     }
     typeDeclExpr <- code$args[[2]]
+    ## a very patchy solution: go inside declare’s processSpecificCalls handler and switch nimInteger back to integer
+    if(typeDeclExpr$name == 'nimInteger') typeDeclExpr$name <- 'integer'
     type <- typeDeclExpr$name
     if(length(typeDeclExpr$args) == 0) {
         nDim <- 0
