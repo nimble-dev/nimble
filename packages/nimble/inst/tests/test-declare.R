@@ -458,5 +458,20 @@ test_that('integer', expect_equal(Cfun(), expected))
 test_that('integer', expect_identical(class(Rfun()[1,1]), 'integer'))
 test_that('integer', expect_identical(class(Cfun()[1,1]), 'integer'))
 
+expected <- c(99, 10.5, 10.5, 10.5)
+Rfun <- nimbleFunction(run = function() {
+    a <- numeric(4)
+    a[1] <- 99
+    b <- numeric(value=.5, 4)
+    a[2:4] <- b[1:3] + numeric(3, 10)
+    returnType(double(1))
+    return(a)
+})
+Cfun <- compileNimble(Rfun)
+test_that('numeric', expect_equal(Rfun(), expected))
+test_that('numeric', expect_equal(Cfun(), expected))
+test_that('numeric', expect_identical(class(Rfun()[1]), 'numeric'))
+test_that('numeric', expect_identical(class(Cfun()[1]), 'numeric'))
+
 
 
