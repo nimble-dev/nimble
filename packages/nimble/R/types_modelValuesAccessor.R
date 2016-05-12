@@ -133,9 +133,16 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
     varNames <- timingFunction3(nodeNames) ##.Call('parseVar', nodeNames)
     symTab <- timingFunction4(sourceObject) ##sourceObject$getSymbolTable()
     varSizesAndNDims <- timingFunction5(varNames, symTab) ## lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
-    varSizesAndNDims2 <- symObj$makeDimAndSizeList(varNames)
-    if(!identical(varSizesAndNDims, varSizesAndNdims2)) browser()
-    
+    varSizesAndNDims2 <- symTab$makeDimAndSizeList(varNames)
+    test <- varSizesAndNDims
+    if(length(varNames)>0) names(test) <- varNames
+    else {
+        names(test) <- NULL
+        names(varSizesAndNDims2) <- NULL
+    }
+    if(!identical(test, varSizesAndNDims2)) browser()
+
+    varSizesAndNDims <- varSizesAndNDims2
 ##    varSizesAndNDims <- SINGLE_LAPPLY_FOR_PROFILING(varNames, symTab)
     
     list(nodeNames, varSizesAndNDims)

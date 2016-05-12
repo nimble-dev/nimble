@@ -470,8 +470,11 @@ symbolTable <-
                       ##  if(!is(symbolRCobject, 'symbolBase'))   stop('adding non-symbol object to symbolTable')
                         name <- symbolRCobject$name
                         if(name %in% getSymbolNames())            warning(paste0('duplicate symbol name: ', name))
-                        symbols[[name]] <<- symbolRCobject },
-                    
+                        symbols[[name]] <<- symbolRCobject
+                        if(dimAndSizeListMade) {
+                            dimAndSizeList[[name]] <<- {ans <- try(list(symbolRCobject$size, symbolRCobject$nDim)); if(inherits(ans, 'try-error')) NULL else ans}
+                        }
+                    },
                     ## remove a symbol RC object from this symbolTable; gives warning if symbol isn't in table
                     removeSymbol = function(name) {
                         if(!(name %in% getSymbolNames()))         warning(paste0('removing non-existant symbol name: ', name))

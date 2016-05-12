@@ -2176,14 +2176,20 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
     ##     return(output[!is.na(output)])
     ## }
     
-    if(nodeFunctionID) 
+    if(nodeFunctionID) {
         ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
         ## old system had IDs for RHSonly things here.  This puts that back in for now.
         output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-    else
+        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
+        if(!identical(as.numeric(output), as.numeric(output2))) browser()
+    } else {
         ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
         ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
         output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
+        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
+        if(!identical(as.numeric(output), as.numeric(output2))) browser()
+    }
+    output <- output2
     return(output[!is.na(output)])
 })
 
@@ -2213,10 +2219,13 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 pl
     output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
 
     
-    graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
-    fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs2]
-    output2 <- unique(parseEvalCharacterMany(fullNodeNames2, env = maps$vars2LogProbName))
-    if(!identical(output, output2)) browser()
+    ##graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
+    ##fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs2]
+    ##output2 <- unique(parseEvalCharacterMany(fullNodeNames2, env = maps$vars2LogProbName))
+    output2 <- unique(parseEvalCharacterMany(nodeName, env = maps$vars2LogProbName))
+    if(!identical(output[!is.na(output)], as.character(output2[!is.na(output2)]))) browser()
+
+    output <- output2
     
     return(output[!is.na(output)])
 })
