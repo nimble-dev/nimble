@@ -9,7 +9,7 @@ include $(R_HOME)/etc$(R_ARCH)/Makeconf
 
 OS=$(shell uname)
 ifeq ($(OS), Darwin)
-INSTALL_NAME=-install_name "$(R_PACKAGE_DIR)/CppCode/libnimble$(DYLIB_EXT)                                                                        "
+INSTALL_NAME=-install_name "$(R_PACKAGE_DIR)/CppCode/libnimble$(DYLIB_EXT)"
 #Relative paths don't work on OSX. "../CppCode/libnimble$(DYLIB_EXT)"
 endif
 
