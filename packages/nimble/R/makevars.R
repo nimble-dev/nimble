@@ -34,17 +34,48 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
      if(!file.exists(.copyFrom))
          stop("No default Makevars file")
 
-     file.copy(.copyFrom, target)  # file.link won't work across file systems.
+     if(!sameDir(AutoconfInfo$rpkg_install_dir, system.file(package = "nimble")))
+        genLocalMakevars(target)
+     else
+        file.copy(.copyFrom, target)  # file.link won't work across file systems.
+     
      return(target)
   }
 
+   #XXX do we need to include Makevars(_lib) and if so, do we need to usegenLocalMakevars with the extra additions.
   args = list(...)
   if(!missing(pkgFlags))
      args$PKG_CPPFLAGS = pkgFlags
   if(!missing(pkgLibs))
      args$PKG_LIBS = pkgLibs
   args = sapply(args, as.character)
-  cat(sprintf("%s=%s", names(args), args), sep = "\n", file = target)
-
+#  cat(sprintf("%s=%s", names(args), args), sep = "\n", file = target)
+  genLocalMakevars(target, args, .useLib)
+  
   target
+}
+
+genLocalMakevars =
+function(target, vars = character(), .useLib = UseLibraryMakevars)
+{
+    cat("creating local makeVars in", target, "\n")
+    inc.make = system.file("make", if(.useLib) "Makevars_lib" else "Makevars", package = "nimble")
+
+    vars = c(EIGEN_INC = AutoconfInfo$eigenInc,
+             NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
+             NIMBLE_DIR =  system.file(package = "nimble"),
+             RPATH=AutoconfInfo$rpath, vars)
+    varDefs = mapply(function(id, val) paste(id, val, sep = "="), names(vars), vars)
+    content = c(varDefs, "", sprintf("include %s", inc.make))
+
+    cat(content, file = target, sep = "\n")
+}
+
+
+
+
+sameDir =
+function(a, b)
+{
+    path.expand(a) == path.expand(b)
 }

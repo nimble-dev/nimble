@@ -1,5 +1,10 @@
 NeedMakevarsFile = @NEED_MAKEVARS_FILE@
 UseLibraryMakevars = @R_ENABLE_LIB@
+AutoconfInfo = list(eigenInc = "@EIGEN_INC@",
+                    rpkg_install_dir = "@R_PACKAGE_DIR@",
+                    rpath="@RPATH@")
 @USE_REGISTRATION@
+
+NimbleSessionInfo = new.env(parent = emptyenv())
 
 
