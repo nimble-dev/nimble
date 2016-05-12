@@ -35,11 +35,12 @@ specificCallHandlers = c(
          mvAccess = 'mvAccessHandler',
          numListAccess = 'mvAccessHandler',
          declare = 'declareHandler',
-         nimArrayGeneral = 'nimArrayGeneralHandler',
+         ##nimArrayGeneral = 'nimArrayGeneralHandler',
          nfMethod = 'nfMethodErrorHandler',
          min = 'minMaxHandler',
          max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
+    makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
     makeCallList(c('dmnorm_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
@@ -158,55 +159,115 @@ declareHandler <- function(code, symTab) {
 }
 
 
+## process specific calls handler for nimArrayGeneral()
+## the resulting function nimArrayGeneral() looks like:
+## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
+## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
+nimArrayGeneralHandler <- function(code, symTab) {
+    switch(code$name,
+           ##nimNumeric(length = 0, value = 0, init = TRUE)
+           nimNumeric = {
+               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('numeric doesnt handle c() in length')
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[1], caller=code, callerArgID=3)
+               newArgs <- list('double', 1, sizeExprs, code$args[[2]], code$args[[3]])
+           },
+           ##nimInteger(length = 0, value = 0, init = TRUE)
+           nimInteger = {
+               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[1], caller=code, callerArgID=3)
+               newArgs <- list('integer', 1, sizeExprs, code$args[[2]], code$args[[3]])
+           },
+           ##nimVector(type = 'double', length = 0, value = 0, init = TRUE)
+           ##nimVector = {},
+           ##nimMatrix(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double')
+           nimMatrix = {
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[2:3], caller=code, callerArgID=3)
+               newArgs <- list(code$args[[5]], 2, sizeExprs, code$args[[1]], code$args[[4]])
+           },
+           ##nimArray(value = 0, dim = c(1, 1), init = TRUE, type = 'double')
+           nimArray = {
+               ## nimArray will handle dim=c(...), and also dim=EXPR
+               if(inherits(code$args[[2]], 'exprClass') && code$args[[2]]$isCall && code$args[[2]]$name == 'c') {
+                   ## dim argument is c(...)
+                   newArgs <- list(code$args[[4]], length(code$args[[2]]$args), code$args[[2]], code$args[[1]], code$args[[3]])
+               } else {
+                   ## dim argument is a single number or expression
+                   sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[2], caller=code, callerArgID=3)
+                   newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
+               }
+           },
+           stop('should never get here')
+           )
+    code$name <- 'nimArrayGeneral'
+    code$args <- newArgs
+    ## set caller / callerArgID for the new nimArraryGeneral() call arguments
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            code$args[[i]]$callerArgID <- i
+            code$args[[i]]$caller <- code
+        }
+    }
+    ## set caller / callerArgID for the c(size expressions...) call
+    for(i in seq_along(code$args[[3]]$args)) {
+        if(inherits(code$args[[3]]$args[[i]], 'exprClass')) {
+            code$args[[3]]$args[[i]]$callerArgID <- i
+            code$args[[3]]$args[[i]]$caller <- code$args[[3]]
+        }
+    }
+    if(!(code$args[[1]] %in% c('double', 'integer'))) stop('unknown type in nimArrayGeneral')
+    if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
+}
+
+
 ## handler for nimArrayGeneral()
 ## the prototype for nimArrayGeneral is *always*
 ## newName <- nimArrayGeneral(typeCharString, nDim,      c(sizeExpr1, ...), initializeValue, initializeLogical)
 ## newName <- nimArrayGeneral(args[[1]],      args[[2]], args[[3]],         args[[4]],   args[[5]])
-nimArrayGeneralHandler <- function(code, symTab) {
-    assignmentCall <- code$caller
-    if(assignmentCall$name != '<-') stop('something wrong, nimArrayGeneral should only exist on RHS of an assignment operator')
-    newName <- assignmentCall$args[[1]]
-    if(!newName$isName) stop('numeric, vector, matrix, array can only create complete variables (not part of an indexed variable)')
-    newName <- newName$name
-    if(symTab$symbolExists(newName)) stop(paste0('Error: declaring ',newName,' which already exists.'))
-    type <- code$args[[1]]
-    if(!(type %in% c('double', 'integer'))) stop('only type arguments \'double\' and \'integer\' are currently supported')
-    nDim <- code$args[[2]]
-    sizeExprs <- as.list(code$args[[3]]$args)  ## strip the leading c() call, and get the rest as an actual R list
-    if(length(sizeExprs) != nDim) stop('something we wrong processing in nimArrayGeneralHandler')
-    newSizes <- rep(as.numeric(NA), nDim)
-    for(i in 1:nDim)
-        if(is.numeric(sizeExprs[[i]])) newSizes[i] <- sizeExprs[[i]]
-    newSym <- symbolBasic(name = newName, type = type, nDim = nDim, size = newSizes)
-    symTab$addSymbol(newSym)
-    ## generate setSize() call
-    nameExpr1 <- exprClass(name = newName, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-    setSizeExpr <- exprClass(name = 'setSize', isCall = TRUE, isName = FALSE,isAssign = FALSE, args = c(list(nameExpr1), sizeExprs), caller = code$caller, callerArgID = code$callerArgID)
-    for(j in seq_along(setSizeExpr$args)) {
-        if(inherits(setSizeExpr$args[[j]], 'exprClass')) {
-            setSizeExpr$args[[j]]$caller <- setSizeExpr
-            setSizeExpr$args[[j]]$callerArgID <- j
-        }
-    }
-    ## generate initialize() call
-    nameExpr2 <- exprClass(name = newName, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-    initializeValue <- code$args[[4]]
-    initializeLogical <- code$args[[5]]
-    ## NOTE: prototype for R call to initialize() is:
-    ## initialize(nimArrName, initializeValue, initializeLogical)
-    initializeExpr <- exprClass(name = 'initialize', isCall = TRUE, isName = FALSE, isAssign = FALSE, args = list(nameExpr2, initializeValue, initializeLogical), caller = code$caller, callerArgID = code$callerArgID)
-    for(j in seq_along(initializeExpr$args)) {
-        if(inherits(initializeExpr$args[[j]], 'exprClass')) {
-            initializeExpr$args[[j]]$caller <- initializeExpr
-            initializeExpr$args[[j]]$callerArgID <- j
-        }
-    }
-    ## make setSize() and initialize() into a single bracketExpr, and set the caller / callerIDs
-    newBrackExpr <- newBracketExpr(list(setSizeExpr, initializeExpr))
-    ## taking your exprClass to new levels.....
-    ## yes, this is a chained code$caller$caller lookup, to over-write the original <- assignment
-    setArg(code$caller$caller, code$caller$callerArgID, newBrackExpr)
-}
+##nimArrayGeneralHandler <- function(code, symTab) {
+##    assignmentCall <- code$caller
+##    if(assignmentCall$name != '<-') stop('something wrong, nimArrayGeneral should only exist on RHS of an assignment operator')
+##    newName <- assignmentCall$args[[1]]
+##    if(!newName$isName) stop('numeric, vector, matrix, array can only create complete variables (not part of an indexed variable)')
+##    newName <- newName$name
+##    if(symTab$symbolExists(newName)) stop(paste0('Error: declaring ',newName,' which already exists.'))
+##    type <- code$args[[1]]
+##    if(!(type %in% c('double', 'integer'))) stop('only type arguments \'double\' and \'integer\' are currently supported')
+##    nDim <- code$args[[2]]
+##    sizeExprs <- as.list(code$args[[3]]$args)  ## strip the leading c() call, and get the rest as an actual R list
+##    if(length(sizeExprs) != nDim) stop('something we wrong processing in nimArrayGeneralHandler')
+##    newSizes <- rep(as.numeric(NA), nDim)
+##    for(i in 1:nDim)
+##        if(is.numeric(sizeExprs[[i]])) newSizes[i] <- sizeExprs[[i]]
+##    newSym <- symbolBasic(name = newName, type = type, nDim = nDim, size = newSizes)
+##    symTab$addSymbol(newSym)
+##    ## generate setSize() call
+##    nameExpr1 <- exprClass(name = newName, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
+##    setSizeExpr <- exprClass(name = 'setSize', isCall = TRUE, isName = FALSE,isAssign = FALSE, args = c(list(nameExpr1), sizeExprs), caller = code$caller, callerArgID = code$callerArgID)
+##    for(j in seq_along(setSizeExpr$args)) {
+##        if(inherits(setSizeExpr$args[[j]], 'exprClass')) {
+##            setSizeExpr$args[[j]]$caller <- setSizeExpr
+##            setSizeExpr$args[[j]]$callerArgID <- j
+##        }
+##    }
+##    ## generate initialize() call
+##    nameExpr2 <- exprClass(name = newName, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
+##    initializeValue <- code$args[[4]]
+##    initializeLogical <- code$args[[5]]
+##    ## NOTE: prototype for R call to initialize() is:
+##    ## initialize(nimArrName, initializeValue, initializeLogical)
+##    initializeExpr <- exprClass(name = 'initialize', isCall = TRUE, isName = FALSE, isAssign = FALSE, args = list(nameExpr2, initializeValue, initializeLogical), caller = code$caller, callerArgID = code$callerArgID)
+##    for(j in seq_along(initializeExpr$args)) {
+##        if(inherits(initializeExpr$args[[j]], 'exprClass')) {
+##            initializeExpr$args[[j]]$caller <- initializeExpr
+##            initializeExpr$args[[j]]$callerArgID <- j
+##        }
+##    }
+##    ## make setSize() and initialize() into a single bracketExpr, and set the caller / callerIDs
+##    newBrackExpr <- newBracketExpr(list(setSizeExpr, initializeExpr))
+##    ## taking your exprClass to new levels.....
+##    ## yes, this is a chained code$caller$caller lookup, to over-write the original <- assignment
+##    setArg(code$caller$caller, code$caller$callerArgID, newBrackExpr)
+##}
 
 ## for min(V), no change.  for min(v1, v2), change to pairmin(v1, v2)
 minMaxHandler <- function(code, symTab) {

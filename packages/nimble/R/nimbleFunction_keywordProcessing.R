@@ -47,31 +47,31 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 		
 
 
-nimNumeric_keywordInfo <- keywordInfoClass(
-    keyword = 'nimNumeric',
-    processor = function(code, nfProc) {
-        newCode <- quote(nimArrayGeneral())
-        newCode$type <- 'double'
-        newCode$nDim <- 1
-        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
-        newCode$value <- code$value
-        newCode$init <- code$init
-	return(newCode)
-    }
-)
-
-nimInteger_keywordInfo <- keywordInfoClass(
-    keyword = 'nimInteger',
-    processor = function(code, nfProc) {
-        newCode <- quote(nimArrayGeneral())
-        newCode$type <- 'integer'
-        newCode$nDim <- 1
-        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
-        newCode$value <- code$value
-        newCode$init <- code$init
-	return(newCode)
-    }
-)
+##nimNumeric_keywordInfo <- keywordInfoClass(
+##    keyword = 'nimNumeric',
+##    processor = function(code, nfProc) {
+##        newCode <- quote(nimArrayGeneral())
+##        newCode$type <- 'double'
+##        newCode$nDim <- 1
+##        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
+##        newCode$value <- code$value
+##        newCode$init <- code$init
+##        return(newCode)
+##    }
+##)
+## 
+##nimInteger_keywordInfo <- keywordInfoClass(
+##    keyword = 'nimInteger',
+##    processor = function(code, nfProc) {
+##        newCode <- quote(nimArrayGeneral())
+##        newCode$type <- 'integer'
+##        newCode$nDim <- 1
+##        newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = code$length))
+##        newCode$value <- code$value
+##        newCode$init <- code$init
+##        return(newCode)
+##    }
+##)
 
 ##nimVector_keywordInfo <- keywordInfoClass(
 ##    keyword = 'nimVector',
@@ -86,38 +86,38 @@ nimInteger_keywordInfo <- keywordInfoClass(
 ##    }
 ##)
 		
-nimMatrix_keywordInfo <- keywordInfoClass(
-    keyword = 'nimMatrix',
-    processor = function(code, nfProc) {
-        newCode <- quote(nimArrayGeneral())
-        newCode$type <- code$type
-        newCode$nDim <- 2
-        newCode$sizeExprs <- substitute(c(SIZE1, SIZE2), list(SIZE1 = code$nrow, size2 = code$ncol))
-        newCode$value <- code$value
-        newCode$init <- code$init
-	return(newCode)
-    }
-)
-
-nimArray_keywordInfo <- keywordInfoClass(
-    keyword = 'nimArray',
-    processor = function(code, nfProc) {
-        newCode <- quote(nimArrayGeneral())
-        newCode$type <- code$type
-        d <- code$dim
-        if(is.call(d) && d[[1]] == 'c') {
-            newCode$nDim <- length(d) - 1
-            newCode$sizeExprs <- d
-        } else {
-            ## assume that code$dim is a scalar expression
-            newCode$nDim <- 1
-            newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = d))
-        }
-        newCode$value <- code$value
-        newCode$init <- code$init
-	return(newCode)
-    }
-)
+##nimMatrix_keywordInfo <- keywordInfoClass(
+##    keyword = 'nimMatrix',
+##    processor = function(code, nfProc) {
+##        newCode <- quote(nimArrayGeneral())
+##        newCode$type <- code$type
+##        newCode$nDim <- 2
+##        newCode$sizeExprs <- substitute(c(SIZE1, SIZE2), list(SIZE1 = code$nrow, size2 = code$ncol))
+##        newCode$value <- code$value
+##        newCode$init <- code$init
+##        return(newCode)
+##    }
+##)
+## 
+##nimArray_keywordInfo <- keywordInfoClass(
+##    keyword = 'nimArray',
+##    processor = function(code, nfProc) {
+##        newCode <- quote(nimArrayGeneral())
+##        newCode$type <- code$type
+##        d <- code$dim
+##        if(is.call(d) && d[[1]] == 'c') {
+##            newCode$nDim <- length(d) - 1
+##            newCode$sizeExprs <- d
+##        } else {
+##            ## assume that code$dim is a scalar expression
+##            newCode$nDim <- 1
+##            newCode$sizeExprs <- substitute(c(SIZE), list(SIZE = d))
+##        }
+##        newCode$value <- code$value
+##        newCode$init <- code$init
+##        return(newCode)
+##    }
+##)
 
 d_gamma_keywordInfo <- keywordInfoClass(
 	keyword = 'dgamma',
@@ -657,11 +657,11 @@ singleBracket_keywordInfo <- keywordInfoClass(
 
 #	KeywordList
 keywordList <- new.env()
-keywordList[['nimNumeric']] <- nimNumeric_keywordInfo
-keywordList[['nimInteger']] <- nimInteger_keywordInfo
+##keywordList[['nimNumeric']] <- nimNumeric_keywordInfo
+##keywordList[['nimInteger']] <- nimInteger_keywordInfo
 ##keywordList[['nimVector']] <- nimVector_keywordInfo
-keywordList[['nimMatrix']] <- nimMatrix_keywordInfo
-keywordList[['nimArray']] <- nimArray_keywordInfo
+##keywordList[['nimMatrix']] <- nimMatrix_keywordInfo
+##keywordList[['nimArray']] <- nimArray_keywordInfo
 keywordList[['getParam']] <- getParam_keywordInfo
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo

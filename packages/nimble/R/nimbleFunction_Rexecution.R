@@ -754,7 +754,7 @@ nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
 }
 
 makeFillValue <- function(value, type, init) {
-    fillValue <- if(init) value else NA
+    fillValue <- if(init) value else 0
     fillValueTyped <- switch(type,
                              double = as.numeric(fillValue),
                              integer = as.integer(fillValue),
