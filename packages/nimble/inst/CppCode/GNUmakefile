@@ -9,7 +9,8 @@ include $(R_HOME)/etc$(R_ARCH)/Makeconf
 
 OS=$(shell uname)
 ifeq ($(OS), Darwin)
-INSTALL_NAME=-install_name "$(R_PACKAGE_DIR)/CppCode/libnimble$(DYLIB_EXT)"
+INSTALL_NAME=-install_name "$(R_PACKAGE_DIR)/CppCode/libnimble$(DYLIB_EXT)                                                                        "
+#Relative paths don't work on OSX. "../CppCode/libnimble$(DYLIB_EXT)"
 endif
 
 libnimble$(DYLIB_EXT): $(OBJECTS)
@@ -17,6 +18,9 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 	@echo "$(OS)   $(INSTALL_NAME)"
 	$(CXX) $(SHLIB_CXXLDFLAGS) -o $@  $(OBJECTS) $(INSTALL_NAME)
 	-rm *.o
+
+
+#	cp libnimble$(DYLIB_EXT) ../../src
 
 %.o: %.cpp
 	$(R_HOME)/bin/R CMD COMPILE $<
