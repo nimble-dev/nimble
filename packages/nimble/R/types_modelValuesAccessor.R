@@ -98,20 +98,44 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
 ##     ans
 ## }
 
+
+## 5 and 2 are the big ones
+
+timingFunction1 <- function(a, envir) {
+    eval(a, envir = envir)
+}
+
+timingFunction2 <- function(a, b) {
+    a$modelDef$nodeName2LogProbName(b)
+}
+
+timingFunction3 <- function(a) .Call('parseVar', a)
+
+timingFunction4 <- function(a) a$getSymbolTable()
+
+timingFunction6 <- function(symTab, x) symTab$getSymbolObject(x)
+
+timingFunction5 <- function(varNames, symTab) lapply(varNames, function(x) {symObj <- timingFunction6(symTab, x); list(symObj$size, symObj$nDim)})
+
 makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
 ##    length <- 0
-    nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])
+    nodeNames <- timingFunction1(accessorVector[[2]], envir = accessorVector[[4]]) ## eval(accessorVector[[2]], envir = accessorVector[[4]])
     sourceObject <- accessorVector[[1]] ## a model or modelValues
     
     if(accessorVector[[3]]) {## logProb == TRUE
         isLogProbName <- grepl('logProb_', nodeNames)
-        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
+        nodeNames <- c(nodeNames, timingFunction2(sourceObject, nodeNames[!isLogProbName])) ##sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
 ##        nodeNames <- c(nodeNames, nodeName2LogProbName_FOR_PROFILING(sourceObject$modelDef, nodeNames[!isLogProbName]))
     }
 
-    varNames <- .Call('parseVar', nodeNames)
-    symTab <- sourceObject$getSymbolTable()
-    varSizesAndNDims <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
+## time these also
+    
+    varNames <- timingFunction3(nodeNames) ##.Call('parseVar', nodeNames)
+    symTab <- timingFunction4(sourceObject) ##sourceObject$getSymbolTable()
+    varSizesAndNDims <- timingFunction5(varNames, symTab) ## lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
+    varSizesAndNDims2 <- symObj$makeDimAndSizeList(varNames)
+    if(!identical(varSizesAndNDims, varSizesAndNdims2)) browser()
+    
 ##    varSizesAndNDims <- SINGLE_LAPPLY_FOR_PROFILING(varNames, symTab)
     
     list(nodeNames, varSizesAndNDims)

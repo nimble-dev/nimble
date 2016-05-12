@@ -2211,6 +2211,13 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 pl
     fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
     ## 3 get corresponding logProbNames
     output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
+
+    
+    graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
+    fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs2]
+    output2 <- unique(parseEvalCharacterMany(fullNodeNames2, env = maps$vars2LogProbName))
+    if(!identical(output, output2)) browser()
+    
     return(output[!is.na(output)])
 })
 
@@ -2223,12 +2230,27 @@ modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in c
 })
 
 parseEvalNumeric <- function(x, env){
-	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
-	as.numeric(ans)
+    ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+    as.numeric(ans)
 }
+
+parseEvalNumericMany <- function(x, env) {
+    if(length(x) > 1) {
+        return(as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
+    } else 
+        as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
+}
+
 parseEvalCharacter <- function(x, env){
-	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
-	as.character(ans)
+    ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+    as.character(ans)
+}
+
+parseEvalCharacterMany <- function(x, env){
+    if(length(x) > 1) {
+        return(as.character(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
+    } else 
+        as.character(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
 }
 
 getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {

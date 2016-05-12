@@ -445,7 +445,9 @@ symbolInt <- function(name, size = numeric(), nDim = length(size)) {
 symbolTable <- 
     setRefClass(Class   = 'symbolTable',
                 fields  = list(symbols  = 'ANY', 		#'list',
-                               parentST = 'ANY'),
+                    parentST = 'ANY',
+                    dimAndSizeList = 'ANY',
+                    dimAndSizeListMade = 'ANY'),
                 methods = list(
                     initialize = function(parentST = NULL, ...) {
                         symbols  <<- list()
@@ -459,7 +461,9 @@ symbolTable <-
                                 }
                             } else stop('Error: symbols provided must be a list')
                         }
-                        parentST <<- parentST },
+                        parentST <<- parentST
+                        dimAndSizeListMade <<- FALSE
+                    },
                     
                     ## add a symbol RC object to this symbolTable; checks for valid symbolRC object, and duplicate symbol names
                     addSymbol  = function(symbolRCobject) {
@@ -479,11 +483,22 @@ symbolTable <-
                     getSymbolNames   = function()      if(is.null(names(symbols))) return(character(0)) else return(names(symbols)),
                     getSymbolObject  = function(name, inherits = FALSE) {
                         ans <- symbols[[name]]
-                        if(is.null(ans) & inherits & !is.null(parentST)) ans <- parentST$getSymbolObject(name, TRUE)
+                        if(is.null(ans)) if(inherits) if(!is.null(parentST)) ans <- parentST$getSymbolObject(name, TRUE)
                         return(ans)
                     },
                     symbolExists = function(name, inherits = FALSE) {
                         return(!is.null(getSymbolObject(name, inherits)))
+                    },
+                    initDimAndSizeList = function() {
+                        dimAndSizeList <<- lapply(symbols, function(x) {
+                            ans <- try(list(x$size, x$nDim))
+                            if(inherits(ans, 'try-error')) NULL else ans
+                        })
+                        dimAndSizeListMade <<- TRUE
+                    },
+                    makeDimAndSizeList = function(names) {
+                        if(!dimAndSizeListMade) initDimAndSizeList()
+                        dimAndSizeList[names]
                     },
                     getSymbolType    = function(name)               return(symbols[[name]]$type),
                     getSymbolField   = function(name, field)        return(symbols[[name]][[field]]),
