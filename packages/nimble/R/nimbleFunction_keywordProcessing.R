@@ -45,8 +45,8 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 #		dollarSign_keywordInfo
 #		singleBracket_keywordInfo
 		
-
-
+		
+		
 d_gamma_keywordInfo <- keywordInfoClass(
 	keyword = 'dgamma',
 	processor = function(code, nfProc){

@@ -167,7 +167,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            writeLines('***** READY FOR buildInterms *****')
                                            browser()
                                        }
-
+                                       
                                        ## build intermediate variables
                                        exprClasses_buildInterms(compileInfo$nimExpr)
 
