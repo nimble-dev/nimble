@@ -702,23 +702,6 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 }
 
 
-###' creates a vector
-###'
-###' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
-###' @param length the length of the vector (default = 0)
-###' @param value the initial value for each element of the vector (default = 0L)
-###' @param init logical, whether to initialize elements of the vector (default = TRUE)
-###'
-###' @author Daniel Turek
-###' @aliases vector
-###' @seealso \link{numeric} \link{integer} \link{matrix} \link{array}
-###' @export
-###nimVector <- function(type = 'double', length = 0, value = 0, init = TRUE) {
-###    fillValue <- makeFillValue(value, type, init)
-###    rep(fillValue, length)
-###}
-
-
 #' creates a matrix
 #' 
 #' @param value the initial value for each element of the matrix (default = 0)

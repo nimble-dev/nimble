@@ -151,7 +151,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            compileInfo$newRcode <<- nf_substituteExceptFunctionsAndDollarSigns(compileInfo$newRcode, nameSubList)
                                        ## set up exprClass object
                                        compileInfo$nimExpr <<- RparseTree2ExprClasses(compileInfo$newRcode)
-
+                                       
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
@@ -160,7 +160,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        }
 
                                        exprClasses_processSpecificCalls(compileInfo$nimExpr, compileInfo$newLocalSymTab)
-                                       
+
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
@@ -168,6 +168,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
 
+                                       ## build intermediate variables
                                        exprClasses_buildInterms(compileInfo$nimExpr)
 
                                        if(debug) {

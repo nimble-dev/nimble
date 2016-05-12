@@ -167,7 +167,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                   if(debug) browser()
                                   addBaseClassTypes()
 								
-                                  ##NEW PROCESSING TOOLS.
+                                  ##NEW PROCESSING TOOLS.   
                                   matchKeywords_all()
                                   processKeywords_all()
                                   

@@ -4,13 +4,11 @@ nimKeyWords <- list(copy = 'nimCopy',
                     equals = 'nimEquals',
                     dim = 'nimDim',
                     stop = 'nimStop',
-                    round = 'nimRound',
-                    ##vector = 'nimVector',
                     numeric = 'nimNumeric',
                     integer = 'nimInteger',
                     matrix = 'nimMatrix',
-                    array = 'nimArray'
-                    )
+                    array = 'nimArray',
+                    round = 'nimRound')
 
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',
@@ -107,7 +105,7 @@ nf_changeNimKeywordsOne <- function(code){
             }
         }
     }
-    else if(length(code) > 1){
+    else if(length(code) > 1){ 
         for(i in seq_along(code) ) {
             if(!is.null(code[[i]]) )
                 code[[i]] <- nf_changeNimKeywordsOne(code[[i]])
