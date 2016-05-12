@@ -677,8 +677,8 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
     if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     propCovOriginal <- propCov
     chol_propCov <- chol(propCov)
-    statSums  <- matrix(0, nrow=1, ncol=d)   # sums of each node, stored as a row-matrix
-    statProds <- matrix(0, nrow=d, ncol=d)   # sums of pairwise products of nodes
+    chol_propCov_scale <- scale * chol_propCov
+    empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
     ###  nested function and function list definitions  ###
     my_setAndCalculate <- setAndCalculate(model, target)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
@@ -698,7 +698,7 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
   methods = list(
     
     generateProposalVector = function() {
-      propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
+      propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
       returnType(double(1))
       return(propValueVector)
     },
@@ -706,13 +706,7 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
     adaptiveProcedure = function(jump = logical()) {
       timesRan <<- timesRan + 1
       if(jump)     timesAccepted <<- timesAccepted + 1
-      if(!adaptScaleOnly) {
-        declare(newValues, double(1, d))
-        
-        newValues <- values(model, target)
-        statSums  <<- statSums + asRow(newValues)
-        statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
-      }
+      if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
       if(timesRan %% adaptInterval == 0) {
         acceptanceRate <- timesAccepted / timesRan
         timesAdapted <<- timesAdapted + 1
@@ -725,12 +719,12 @@ sampler_RW_llFunctionBlock <- nimbleFunction(
         ## calculate empirical covariance, and adapt proposal covariance
         if(!adaptScaleOnly) {
           gamma1 <- my_calcAdaptationFactor$gamma1
-          empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
+          for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+          empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
           propCov <<- propCov + gamma1 * (empirCov - propCov)
           chol_propCov <<- chol(propCov)
-          statSums  <<- statSums  * 0
-          statProds <<- statProds * 0      ##  setAll(statProds, 0)    ## setAll() doesn't work in R, and doesn't work for vectors (only works for dim=2 objects)
         }
+        chol_propCov_scale <<- chol_propCov * scale
         timesRan <<- 0
         timesAccepted <<- 0
       }
@@ -770,11 +764,18 @@ sampler_RW_PFilter <- nimbleFunction(
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
     latents        <- control$latents
-    latentSamp   <- control$sampleLatents 
-
+   
     if(optimizeM){
       m <- 3000  
     }
+    
+    latentSamp <- F
+    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e) 
+    if(identical(MCMCmonitors, T))
+      latentSamp <- T
+    else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
+      latentSamp <- T    
+    
     
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
     mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
@@ -783,7 +784,6 @@ sampler_RW_PFilter <- nimbleFunction(
                                               size = list(LLVar = 1)
     ))
     
-
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=T, includeData=F,
                                     topOnly=T)
@@ -941,7 +941,8 @@ sampler_RW_PFilter <- nimbleFunction(
 sampler_RW_PFilter_block <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target,  control) {
-    ###  control list extraction  ###
+    ###  control list extraction  ###  
+    
     adaptive       <- control$adaptive
     adaptScaleOnly <- control$adaptScaleOnly
     adaptInterval  <- control$adaptInterval
@@ -953,7 +954,13 @@ sampler_RW_PFilter_block <- nimbleFunction(
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
     latents        <- control$latents
-    latentSamp     <- control$sampleLatents
+    
+    latentSamp <- F
+    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e) 
+    if(identical(MCMCmonitors, T))
+      latentSamp <- T
+    else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
+      latentSamp <- T    
     
     if(optimizeM){
       m <- 3000  
@@ -996,8 +1003,8 @@ sampler_RW_PFilter_block <- nimbleFunction(
     if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     propCovOriginal <- propCov
     chol_propCov <- chol(propCov)
-    statSums  <- matrix(0, nrow=1, ncol=d)   # sums of each node, stored as a row-matrix
-    statProds <- matrix(0, nrow=d, ncol=d)   # sums of pairwise products of nodes
+    chol_propCov_scale <- scale * chol_propCov
+    empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
     
     ###  create a mv object which stores LP from previous iteration
     storeLP <- modelValues(modelValuesSpec(vars = c('LP0'),
@@ -1009,12 +1016,19 @@ sampler_RW_PFilter_block <- nimbleFunction(
     my_setAndCalculate <- setAndCalculate(model, target)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     my_calcAdaptationFactor <- calcAdaptationFactor(d)
+    if(latentSamp == T){
+      saveAllVal <- T
+      smoothingVal <- T
+    } else{
+      saveAllVal <- F
+      smoothingVal <- F
+    }  
     if(filterType == "auxiliary"){
-      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = T, smoothing = T,
+      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal,
                                                                     lookahead = lookahead))
     }
     else if(filterType == "bootstrap"){
-      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = T, smoothing = T))
+      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal))
     }
     else{
       stop("filter type must be either bootstrap or auxiliary")
@@ -1087,8 +1101,9 @@ sampler_RW_PFilter_block <- nimbleFunction(
       }
     },
     
+    
     generateProposalVector = function() {
-      propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov * scale, 0)  ## last argument specifies prec_param = FALSE
+      propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
       returnType(double(1))
       return(propValueVector)
     },
@@ -1096,15 +1111,8 @@ sampler_RW_PFilter_block <- nimbleFunction(
     adaptiveProcedure = function(jump = logical()) {
       timesRan <<- timesRan + 1
       if(jump)     timesAccepted <<- timesAccepted + 1
-      if(!adaptScaleOnly) {
-        declare(newValues, double(1, d))
-        
-        newValues <- values(model, target)
-        statSums  <<- statSums + asRow(newValues)
-        statProds <<- statProds + asCol(newValues) %*% asRow(newValues)
-      }
+      if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
       if(timesRan %% adaptInterval == 0) {
-        
         acceptanceRate <- timesAccepted / timesRan
         timesAdapted <<- timesAdapted + 1
         setSize(scaleHistory,          timesAdapted)
@@ -1116,16 +1124,17 @@ sampler_RW_PFilter_block <- nimbleFunction(
         ## calculate empirical covariance, and adapt proposal covariance
         if(!adaptScaleOnly) {
           gamma1 <- my_calcAdaptationFactor$gamma1
-          empirCov <- (statProds - (t(statSums) %*% statSums)/timesRan) / (timesRan-1)
+          for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+          empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
           propCov <<- propCov + gamma1 * (empirCov - propCov)
           chol_propCov <<- chol(propCov)
-          statSums  <<- statSums  * 0
-          statProds <<- statProds * 0      ##  setAll(statProds, 0)    ## setAll() doesn't work in R, and doesn't work for vectors (only works for dim=2 objects)
         }
+        chol_propCov_scale <<- chol_propCov * scale
         timesRan <<- 0
         timesAccepted <<- 0
       }
     },
+    
     
     reset = function() {
       scale   <<- scaleOriginal

@@ -88,11 +88,10 @@ Collate: config.R
  MCMC_autoBlock.R
  MCEM_build.R
  PF_build.R
- auxF_build.R
- lwF_build.R
- ENKF_build.R
- bootF_build.R
- normConst_build.R
+ filtering_auxiliary.R
+ filtering_liuwest.R
+ filtering_enkf.R
+ filtering_bootstrap.R
  ascentMCEM_build.R
  optimTools.R
  NF_utils.R
