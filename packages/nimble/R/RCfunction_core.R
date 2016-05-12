@@ -4,6 +4,10 @@ nimKeyWords <- list(copy = 'nimCopy',
                     equals = 'nimEquals',
                     dim = 'nimDim',
                     stop = 'nimStop',
+                    numeric = 'nimNumeric',
+                    integer = 'nimInteger',
+                    matrix = 'nimMatrix',
+                    array = 'nimArray',
                     round = 'nimRound')
 
 nfMethodRC <- 
@@ -21,13 +25,13 @@ nfMethodRC <-
                     initialize = function(method, name) {
                     	
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
-						neededRCfuns <<- list()	
+                        neededRCfuns <<- list()	
                         argInfo <<- formals(method)
-                        code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                         if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
+                        code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                     },
                     generateArgs = function() {
                         argsList <- nf_createAList(names(argInfo))
@@ -93,13 +97,15 @@ nf_changeNimKeywords <- function(code){
 nf_changeNimKeywordsOne <- function(code){
     if(length(code) == 1){
         if(as.character(code) %in% names(nimKeyWords) ) {
-            if(is.call(code)) 
+            if(is.call(code)) {
                 code[[1]] <- as.name( nimKeyWords[[as.character(code)]] )
-            else
-                code <- as.name( nimKeyWords[[as.character(code)]] )
+            } else {
+                if(!is.character(code))
+                    code <- as.name( nimKeyWords[[as.character(code)]] )
+            }
         }
     }
-    else if(length(code) > 1){	
+    else if(length(code) > 1){ 
         for(i in seq_along(code) ) {
             if(!is.null(code[[i]]) )
                 code[[i]] <- nf_changeNimKeywordsOne(code[[i]])
