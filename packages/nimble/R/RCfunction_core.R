@@ -27,11 +27,11 @@ nfMethodRC <-
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
                         neededRCfuns <<- list()	
                         argInfo <<- formals(method)
+                        code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                         if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
-                        code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                     },
                     generateArgs = function() {
                         argsList <- nf_createAList(names(argInfo))
@@ -64,6 +64,8 @@ nfMethodRC <-
                             returnTypeDeclaration <- code[[returnLineNum]][[2]]
                             code[returnLineNum] <<- NULL
                         }
+                        ## a very patchy solution: switch nimInteger back to integer
+                        if(as.character(returnTypeDeclaration[[1]]) == 'nimInteger') returnTypeDeclaration[[1]] <- as.name('integer')
                         returnType <<- returnTypeDeclaration
                     },
                     generateFunctionObject = function(keep.nfMethodRC = FALSE) {
