@@ -52,6 +52,7 @@ class NimArrBase: public NimArrType {
   virtual int calculateIndex(vector<int> &i)=0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
+  void fillAllValues(T value) { std::fill(v.begin(), v.end(), value); }
   void setLength(int l) {NAlength = l; v.resize(l); } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
   void setMyType() {
     myType = UNDEFINED;
