@@ -2210,19 +2210,15 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 pl
     
     ## 1. so this needs to first get to a nodeFunctionID
     graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-##    eval(parse(text="w1[3:4, 1:2]", keep.source = FALSE)[[1]], envir= maps$vars2GraphID_functions)
-
-    
     ## 2. get node function names
     fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
     ## 3 get corresponding logProbNames
     output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
 
-    
     ##graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
     ##fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs2]
     ##output2 <- unique(parseEvalCharacterMany(fullNodeNames2, env = maps$vars2LogProbName))
-    output2 <- unique(parseEvalCharacterMany(nodeName, env = maps$vars2LogProbName))
+    output2 <- unique(parseEvalCharacterMany(nodeName, env = maps$vars2LogProbName)) ## output2
     if(!identical(output[!is.na(output)], as.character(output2[!is.na(output2)]))) browser()
 
     output <- output2

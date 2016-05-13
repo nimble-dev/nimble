@@ -109,14 +109,6 @@ timingFunction2 <- function(a, b) {
     a$modelDef$nodeName2LogProbName(b)
 }
 
-timingFunction3 <- function(a) .Call('parseVar', a)
-
-timingFunction4 <- function(a) a$getSymbolTable()
-
-timingFunction6 <- function(symTab, x) symTab$getSymbolObject(x)
-
-timingFunction5 <- function(varNames, symTab) lapply(varNames, function(x) {symObj <- timingFunction6(symTab, x); list(symObj$size, symObj$nDim)})
-
 makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
 ##    length <- 0
     nodeNames <- timingFunction1(accessorVector[[2]], envir = accessorVector[[4]]) ## eval(accessorVector[[2]], envir = accessorVector[[4]])
@@ -130,9 +122,9 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
 
 ## time these also
     
-    varNames <- timingFunction3(nodeNames) ##.Call('parseVar', nodeNames)
-    symTab <- timingFunction4(sourceObject) ##sourceObject$getSymbolTable()
-    varSizesAndNDims <- timingFunction5(varNames, symTab) ## lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
+    varNames <- .Call('parseVar', nodeNames)
+    symTab <- sourceObject$getSymbolTable()
+    varSizesAndNDims <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
     varSizesAndNDims2 <- symTab$makeDimAndSizeList(varNames)
     test <- varSizesAndNDims
     if(length(varNames)>0) names(test) <- varNames
@@ -141,7 +133,7 @@ makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
         names(varSizesAndNDims2) <- NULL
     }
     if(!identical(test, varSizesAndNDims2)) browser()
-
+    
     varSizesAndNDims <- varSizesAndNDims2
 ##    varSizesAndNDims <- SINGLE_LAPPLY_FOR_PROFILING(varNames, symTab)
     
