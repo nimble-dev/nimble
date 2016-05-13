@@ -781,7 +781,7 @@ conjugacyClass <- setRefClass(
                 functionBody$addCode(CONTRIB_NAME <- CONTRIB_INITIAL_DECLARATION,
                                      list(CONTRIB_NAME                = as.name(contributionName),
                                           CONTRIB_INITIAL_DECLARATION = switch(as.character(contribNdim),
-                                              `0` = 0, `1` = quote(nimVector(0, d)), `2` = quote(nimArray(0, d, d)), stop())))
+                                              `0` = 0, `1` = quote(numeric(length = d)), `2` = quote(array(dim = c(d, d)))), stop())))
             }
             if(!dynamic) {
                 for(distName in dependentDistNames) {
