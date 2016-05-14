@@ -7,12 +7,9 @@ calc_asympVar = nimbleFunction(
   },
   run = function(nsamps = integer(0), theta = double(1), oldTheta = double(1)){
     declare(svals, double(1, numReps))
-    declare(h, integer(0)) #number of blocks to use for q function calculation
-    declare(l, integer(0)) #length of each block
-    declare(q, integer(0)) #total number of blocks available to sample from
-    l <- ceiling(min(1000, nsamps/10))  #method for choosing l, ensures it's not too big
-    q <- nsamps - l + 1
-    h <- ceiling(nsamps/l)
+    l <- ceiling(min(1000, nsamps/10)) #length of each block, ensures it's not too big
+    q <- nsamps - l + 1 #total number of blocks available to sample from
+    h <- ceiling(nsamps/l) #number of blocks to use for q function calculation
     resize(mvBlock, h*l) #size our model value object to be approximately of size m (number of mc samples)
     for(r in 1:numReps){
       for(i in 1:h){
@@ -46,9 +43,6 @@ calc_E_llk_gen = nimbleFunction(
 	areLatentDetermNodes <- length(paramDepDetermNodes_latent) >0
     },
     run = function(paramValues = double(1)){
-        declare(sample_LL, double() )
-        declare(mean_LL, double() )
-        declare(nSamples, integer() )
         values(model, fixedNodes) <<- paramValues
         if(areFixedDetermNodes){
             simulate(model, paramDepDetermNodes_fixed)	#	Fills in the deterministic nodes
