@@ -1,3 +1,4 @@
+
                                                CHANGES IN VERSION 0.5-1 (May 2016)
 
 USER LEVEL CHANGES
@@ -58,8 +59,24 @@ BUG FIXES
 
 
                 CHANGES IN VERSION 0.5 (March 2016)
+=======
+
+-- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions.  These effectively replace the old system of declare() and setSize().
+
+¯                        CHANGES IN VERSION 0.5 (March 2016)
+
+-- Added binary sampler for Gibbs sampling of discrete 0/1 nodes. This is the default sampler used for Bernoulli and Binomial(p, size=1) nodes.
+
+-- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
+
+-- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+>>>>>>> upstream/devel
 
 USER LEVEL CHANGES
+
+-- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, with the same functionality as in R.
+
+-- Improved performance of conjugate multivariate-normal - multivariate-normal sampling.
 
 -- API changes for MCMCspec objects: new method printSamplers() prints the current samplers (replacing the old getSamplers() method); new functionality for getSamplers(), which now returns a list of samplerSpec objects; new overloaded functionality of setSamplers(), which can accept a list of samplerSpec objects, replacing the current set of samplers; new method getSamplerDefinition(), which returns the nimbleFunction definition of a sampler.
 
@@ -80,6 +97,8 @@ USER LEVEL CHANGES
 -- Models now have member functions for calculate, simulate, getLogProb, calculateDiff, and getParam.  model$calculate(nodes) is equivalent to calculate(model, nodes), etc.
 
 -- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
+
+-- added ability to use any of the methods for R's optim function in MCEM optimization step
 
 -- There are more flexible ways to provide arguments to declare and setSize.
 

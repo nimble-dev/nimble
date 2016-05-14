@@ -125,6 +125,16 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       return(discrete)
                                   },
 
+                                  isBinary = function(node) {
+                                      dist <- getNodeDistribution(node)
+                                      if(dist == 'dbern') return(TRUE)
+                                      if(dist == 'dbin') {
+                                          if(getNodeParamExpr(node, 'size') == 1)
+                                              return(TRUE)
+                                      }
+                                      return(FALSE)
+                                  },
+
                                   isTruncated = function(node) {
                                       di <- getDeclInfo(node)[[1]]
                                       if(di$truncated) return(TRUE) else return(FALSE)
@@ -538,9 +548,9 @@ Checks for common errors in model specification, including missing values, inabi
                                               if(declInfo$type == 'determ') {
                                                   # check LHS and RHS are same size/dim
                                                   # need to eval within nf; constants not present otherwise
-                                                  RHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))))
+                                                  RHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))), silent = TRUE)
 
-                                                  LHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))))
+                                                  LHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))), silent = TRUE)
                                                   # apparently implicit dropping of size 1 dimensions is ok in determ node calcs
                                                   if(!is(RHSsize, 'try-error') && !is(LHSsize, 'try-error')) {
                                                       if(length(RHSsize) > 1 && any(RHSsize == 1))
@@ -551,10 +561,12 @@ Checks for common errors in model specification, including missing values, inabi
                                                       if(!identical(LHSsize, RHSsize))
                                                           stop("Size/dimension mismatch between left-hand side and right-hand size of BUGS expression: ", deparse(declInfo$code))
                                                   }
-                                                  if(is(RHSsize, 'try-error'))
-                                                      stop("Problem evaluating: ", deparse(declInfo$valueExprReplaced))
-                                                  if(is(LHSsize, 'try-error'))
-                                                      stop("Problem evaluating: ", deparse(declInfo$targetExprReplaced))
+                                                  ## these lines caused a problem for functions such as chol() in BUGS code
+                                                  ## removed by DT April 2016
+                                                  ##if(is(RHSsize, 'try-error'))
+                                                  ##    stop("Problem evaluating: ", deparse(declInfo$valueExprReplaced))
+                                                  ##if(is(LHSsize, 'try-error'))
+                                                  ##    stop("Problem evaluating: ", deparse(declInfo$targetExprReplaced))
                                               } else {
                                                   # check:
                                                   #   1) dims of param args match those in distInputList based on calculation

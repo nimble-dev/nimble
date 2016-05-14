@@ -155,6 +155,11 @@ public:
     setSize(is1);
   }
 
+  void initialize(T value, bool init, int is1) {
+    setSize(is1);
+    if(init) { NimArrBase<T>::fillAllValues(value); }
+  }
+
   void setSize(int is1) {
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
@@ -343,6 +348,11 @@ public:
     NimArrBase<T>::NAdims.resize(2); 
     NimArrBase<T>::NAstrides.resize(2);
     setSize(is1, is2);
+  }
+
+  void initialize(T value, bool init, int is1, int is2) {
+    setSize(is1, is2);
+    if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
     void setSize(int is1, int is2) {
@@ -567,6 +577,11 @@ class NimArr<3, T> : public NimArrBase<T> {
     NimArrBase<T>::NAdims.resize(3);
     NimArrBase<T>::NAstrides.resize(3);
     setSize(is1, is2, is3);
+  }
+
+  void initialize(T value, bool init, int is1, int is2, int is3) {
+    setSize(is1, is2, is3);
+    if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
   void setSize(int is1, int is2, int is3) {
@@ -822,6 +837,11 @@ class NimArr<4, T> : public NimArrBase<T> {
     NimArrBase<T>::NAdims.resize(4);
     NimArrBase<T>::NAstrides.resize(4);
     setSize(is1, is2, is3, is4);
+  }
+
+  void initialize(T value, bool init, int is1, int is2, int is3, int is4) {
+    setSize(is1, is2, is3, is4);
+    if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
   void setSize(int is1, int is2, int is3, int is4) {

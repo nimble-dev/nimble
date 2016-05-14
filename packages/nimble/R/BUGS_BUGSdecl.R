@@ -3,12 +3,13 @@
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
 nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
                             'equals','inprod','nimEquals',
-                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimStep', 'inverse',
+                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'step', 'nimStep',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
                             'ceiling', 'floor', 'round', 'trunc',
                             'mean','sum','max','min','prod',
                             'asRow', 'asCol',
+                            'chol', 'inverse', ## 'solve', 'forwardsolve', 'backsolve',  ## removed these from BUGS functions, pending problems with Eigen
                             '>', '<', '>=', '<=', '==', '!=', '&', '|',
                             distributionFuns,
                             # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
@@ -222,7 +223,6 @@ makeIndexNamePieces <- function(indexCode) {
 
 BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNamesList, context, nimFunNames) { ## assuming codeReplaced is there
     ## generate hasBracket info
-    
     targetExprReplaced <<- codeReplaced[[2]] ## shouldn't have any link functions at this point
     valueExprReplaced <<- codeReplaced[[3]]
 
@@ -264,24 +264,26 @@ BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
     
     if(type == 'stoch') {
         RHSreplaced <- codeReplaced[[3]]
-        paramNamesAll <- names(RHSreplaced)
-        paramNamesDotLogicalVector <- grepl('^\\.', paramNamesAll)
-        RHSreplacedWithoutDotParams <- RHSreplaced[!paramNamesDotLogicalVector]    ## removes all parameters whose name begins with '.' from distribution
-        codeReplaced[[3]] <<- RHSreplacedWithoutDotParams
-        
-        altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
-        names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
-#         dotParamNames <- names(dotParamExprs)
-#         distRuleAltParamExprs <- getDistribution(as.character(RHSreplaced[[1]]))$altParams
-#         for(altParam in names(distRuleAltParamExprs)) {
-#             if(altParam %in% dotParamNames) {
-#                 altParamExprs[[altParam]] <<- dotParamExprs[[altParam]]
-#             } else {
-#                 defaultParamExpr <- getDistributions(as.character(RHSreplaced[[1]]))$altParams[[altParam]]
-#                 subParamExpr <- eval(substitute(substitute(EXPR, as.list(RHSreplaced)[-1]), list(EXPR=defaultParamExpr)))
-#                 altParamExprs[[altParam]] <<- subParamExpr
-#             }
-#         }
+        if(length(RHSreplaced) > 1) { ## It actually has argument(s)
+            paramNamesAll <- names(RHSreplaced)
+            paramNamesDotLogicalVector <- grepl('^\\.', paramNamesAll)
+            RHSreplacedWithoutDotParams <- RHSreplaced[!paramNamesDotLogicalVector]    ## removes all parameters whose name begins with '.' from distribution
+            codeReplaced[[3]] <<- RHSreplacedWithoutDotParams
+            
+            altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
+            names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
+                                        #         dotParamNames <- names(dotParamExprs)
+                                        #         distRuleAltParamExprs <- getDistribution(as.character(RHSreplaced[[1]]))$altParams
+                                        #         for(altParam in names(distRuleAltParamExprs)) {
+                                        #             if(altParam %in% dotParamNames) {
+                                        #                 altParamExprs[[altParam]] <<- dotParamExprs[[altParam]]
+                                        #             } else {
+                                        #                 defaultParamExpr <- getDistributions(as.character(RHSreplaced[[1]]))$altParams[[altParam]]
+                                        #                 subParamExpr <- eval(substitute(substitute(EXPR, as.list(RHSreplaced)[-1]), list(EXPR=defaultParamExpr)))
+                                        #                 altParamExprs[[altParam]] <<- subParamExpr
+                                        #             }
+                                        #         }
+        }
     }
 })
 

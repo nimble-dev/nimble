@@ -25,7 +25,7 @@ distributionsInputList <- list(
     dbin    = list(BUGSdist = 'dbin(prob, size)',
                    Rdist    = 'dbinom(size, prob)',
                    discrete = TRUE,
-                   range = c(0, 1),
+                   range = c(0, Inf),
                    pqAvail = TRUE,
                    alias   = 'dbinom'),
     
@@ -74,7 +74,7 @@ distributionsInputList <- list(
     
     dbeta   = list(BUGSdist = 'dbeta(shape1, shape2, mean, sd)',
                    Rdist    = 'dbeta(shape1 = mean^2*(1-mean)/sd^2-mean, shape2 = mean*(1-mean)^2/sd^2+mean-1)',
-                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1*shape2)^2*(shape1+shape2+1)))'),
+                   altParams= c('mean = shape1/(shape1+shape2)', 'sd = sqrt(shape1*shape2/((shape1 + shape2)^2*(shape1+shape2+1)))'),
                    range    = c(0, 1),
                    pqAvail  = TRUE),
     
@@ -152,13 +152,6 @@ distributionsInputList <- list(
                    Rdist    = c('dmnorm_chol(mean, cholesky = chol(prec), prec_param = 1)', 'dmnorm_chol(mean, cholesky = chol(cov), prec_param = 0)', 'dmnorm_chol(mean, cholesky, prec_param)'),
                    altParams= c('prec = calc_dmnormAltParams(cholesky, prec_param, 1)', 'cov = calc_dmnormAltParams(cholesky, prec_param, 0)'),
                    types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
-    ## altParams above is inefficient computationally;  want back/forwardsolve to avoid inverse; and having crossProd would be more efficient too - CP
-    ## also at the moment, the cholesky arg being fed to calc_dmnormAltParams is chol(Q) rather than lifted_chol_foo; we should revisit this when we rework altParms
-    ## calculations involved with dmnorm:
-    ## parametrized using   Covariance (S)                 Precision (Q)
-    ## simulate:            L_S %*% b                      R_Q^-1 %*% b (backslv)
-    ## calculate:           L_S^-1 %*% y (fwdslv)          R_Q %*% y
-    ## conjugate update:    S^-1, or  L_S^-1 %*% I ???     Q
     
     ## dmt     = list(BUGSdist = 'dmt(mu, T, k)'),   ## not sure the state of this?  -DT
     

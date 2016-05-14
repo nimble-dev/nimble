@@ -1,8 +1,8 @@
 #' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
-#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC specification, and custom-specified blockings of parameters.
+#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC configuration, and custom-specified blockings of parameters.
 #' 
-#' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intendend to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
+#' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intended to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
 #' 
 #' @author Daniel Turek
 #'
@@ -12,7 +12,7 @@
 #'
 #' @param autoIt The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.
 #'
-#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC specification; a named list element consisting of a quoted code block, which when executed returns an MCMC specification object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
+#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC configuration; a named list element consisting of a quoted code block, which when executed returns an MCMC configuration object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
 #'
 #' @param verbose Logical specifying whether to output considerable details of the automated block procedure, through the course of execution.  Default FALSE.
 #' 
@@ -26,7 +26,7 @@
 #' \itemize{
 #' \item \code{summary}: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
 #' \item \code{autoGroups}: A list specifying the parameter blockings converged on by the automated blocking procedure
-#' \item \code{spec}: A NIMBLE MCMC specification object corresponding to the results of the automated blocking procedure
+#' \item \code{conf}: A NIMBLE MCMC configuration object corresponding to the results of the automated blocking procedure
 #' }
 #' 
 #' @references
@@ -68,7 +68,7 @@ autoBlock <- function(Rmodel,
 ## create a new MCMC spec with the autoBlock groupings:
     spec <- configureMCMC(Rmodel, nodes = NULL)
     for(nodeGroup in lastAutoGrouping) addSamplerToSpec(Rmodel, spec, nodeGroup)
-    retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, spec=spec)
+    retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, conf=spec)
     return(invisible(retList))
 }
 
@@ -314,10 +314,26 @@ autoBlockClass <- setRefClass(
             if(auto) {
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[bestInd]])
                 burnedSamples <- burnedSamples[, abModel$scalarNodeVectorCont]   ## making work with discrete nodes
-                empCov[[it]] <<- cov(burnedSamples)
-                empCor[[it]] <<- cov2cor(empCov[[it]])
+
+                ##empCov[[it]] <<- cov(burnedSamples)
+                e <- try(cov(burnedSamples))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 1; 2
+                } else empCov[[it]] <<- e
+
+                ##empCor[[it]] <<- cov2cor(empCov[[it]])
+                e <- try(cov2cor(empCov[[it]]))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 3; 4
+                } else empCor[[it]] <<- e
+
                 distMatrix[[it]] <<- as.dist(1 - abs(empCor[[it]]))
-                hTree[[it]] <<- hclust(distMatrix[[it]])
+
+                ##hTree[[it]] <<- hclust(distMatrix[[it]])
+                e <- try(hclust(distMatrix[[it]]))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 5; 6
+                } else hTree[[it]] <<- e
             }
             
             if(verbose) printCurrent(name, specList[[bestInd]])
@@ -387,8 +403,8 @@ autoBlockClass <- setRefClass(
         checkOverMCMCspec = function(spec) {
             warn <- FALSE
             for(ss in spec$samplerSpecs) {
-                ## if(ss$name == 'end') {
-                ##     msg <- 'using \'end\' sampler may lead to results we don\'t want'
+                ## if(ss$name == 'posterior_predictive') {
+                ##     msg <- 'using \'posterior_predictive\' sampler may lead to results we don\'t want'
                 ##     cat(paste0('\nWARNING: ', msg, '\n\n')); warning(msg)
                 ## }
                 if(grepl('^conjugate_', ss$name) && getNimbleOption('verifyConjugatePosteriors')) {
@@ -452,15 +468,17 @@ addSamplerToSpec <- function(Rmodel, spec, nodeGroup) {
         spec$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
     }
     if(nodeGroup %in% Rmodel$getMaps('nodeNamesEnd')) {
-        ##cat(paste0('warning: using \'end\' sampler for node ', nodeGroup, ' may lead to results we don\'t want\n\n'))
-        spec$addSampler(target = nodeGroup, type = 'end', print = FALSE); return()
+        ##cat(paste0('warning: using \'posterior_predictive\' sampler for node ', nodeGroup, ' may lead to results we don\'t want\n\n'))
+        spec$addSampler(target = nodeGroup, type = 'posterior_predictive', print = FALSE); return()
     }
     ## conjugacyResult <- Rmodel$checkConjugacy(nodeGroup)
     ## if((!is.null(conjugacyResult)) && conjOveride) {
     ##     spec$addSampler(target = ??????, type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
     ## }
-    discrete <- Rmodel$isDiscrete(nodeGroup)
-    if(discrete) {
+    if(Rmodel$isBinary(nodeGroup)) {
+        spec$addSampler(target = nodeGroup, type = 'binary', print = FALSE); return()
+    }
+    if(Rmodel$isDiscrete(nodeGroup)) {
         spec$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {

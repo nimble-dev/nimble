@@ -71,29 +71,31 @@ callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternal
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
     makeCallList(c('abs','square','sqrt','('), 'eigenize_cWiseUnaryEither'),
     makeCallList('pow', 'eigenize_cWiseByScalarArray'),
-                   makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
-                      ## component-wise unarys valid only for only Eigen array
-                   makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
-                   
-                   ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
-                   ## Check on which if any of these can extend to a scalar on one side
-                   makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
+    makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
+    ## component-wise unarys valid only for only Eigen array
+    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
+    
+    ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
+    ## Check on which if any of these can extend to a scalar on one side
+    makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
 
-                   ## component-wise multiplication or division
-                   makeCallList(c('*','/'), 'eigenize_cWiseMultDiv'),
-                   
-                   ## component-wise addition or subtraction
-                   makeCallList(c('+','-'), 'eigenize_cWiseAddSub'),
+    ## component-wise multiplication or division
+    makeCallList(c('*','/'), 'eigenize_cWiseMultDiv'),
+    
+    ## component-wise addition or subtraction
+    makeCallList(c('+','-'), 'eigenize_cWiseAddSub'),
 
-                   makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), ##'eigenize_cWiseUnaryEither'),
-                   makeCallList(reductionUnaryOperatorsArray, 'eigenize_reductionArray'),
-                   makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
-                   makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
-                      ## matrix ops
-                   list('t' = 'eigenize_cWiseUnaryEither',
-                        'inverse' = 'eigenize_cWiseUnaryMatrix',
-                        'chol' = 'eigenize_chol')
-                   )
+    makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), ##'eigenize_cWiseUnaryEither'),
+    makeCallList(reductionUnaryOperatorsArray, 'eigenize_reductionArray'),
+    makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
+    makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
+    ## matrix ops
+    makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
+    list('t' = 'eigenize_cWiseUnaryEither',
+         'inverse' = 'eigenize_cWiseUnaryMatrix',
+         'chol' = 'eigenize_matrixOps'
+         )
+)
 
 eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
     makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam'), 'eigenize_doNotRecurse'),
@@ -333,11 +335,18 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs
 }
 
-eigenize_chol <- function(code, symTab, typeEnv, workEnv) {
+eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
+    if(length(code$args) == 2)
+        if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
     code$eigMatrix <- TRUE
-    code$name <- 'matrixU' ## replace 'chol' by 'matrixU'
-    insertExprClassLayer(code, 1, 'llt', eigMatrix = TRUE, nDim = code$nDim, sizeExprs = code$sizeExprs, type = code$type) ## insert llt 
+    code$name <- switch(code$name,
+                        chol = 'EIGEN_CHOL',
+                        solve = 'EIGEN_SOLVE',
+                        forwardsolve = 'EIGEN_FS',
+                        backsolve = 'EIGEN_BS',
+                        stop('should never get here')
+                        )
     invisible(NULL)
 }
 

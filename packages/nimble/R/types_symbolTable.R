@@ -88,7 +88,11 @@ symbolBasic <-
                                 size = 'ANY'), 		#'numeric'),
                 methods = list(
                     show = function() {
-                        writeLines(paste0(name,': ', type, ' sizes = (', paste(size, collapse = ', '), '), nDim = ', nDim))
+                        if(inherits(size, 'uninitializedField')) {
+                            writeLines(paste0(name,': ', type, ' sizes = (uninitializedField), nDim = ', nDim))
+                        } else {
+                            writeLines(paste0(name,': ', type, ' sizes = (', paste(size, collapse = ', '), '), nDim = ', nDim))
+                        }
                     },
                     genCppVar = function(functionArg = FALSE) {
                         if(type == 'void') return(cppVoid())

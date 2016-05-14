@@ -66,6 +66,7 @@
 \alias{cAddBlank}
 \alias{calcAdaptationFactor}
 \alias{calc_dmnormAltParams}
+\alias{calc_dmnormConjugacyContributions}
 \alias{calc_E_llk_gen}
 \alias{calculateDiff_keywordInfo}
 \alias{calculate_keywordInfo}
@@ -262,7 +263,6 @@
 \alias{eigenizeCalls}
 \alias{eigenizeCallsBeforeRecursing}
 \alias{eigenize_chainedCall}
-\alias{eigenize_chol}
 \alias{eigenize_cWiseAddSub}
 \alias{eigenize_cWiseBinaryArray}
 \alias{eigenize_cWiseBinaryEitherMatch}
@@ -274,6 +274,7 @@
 \alias{eigenize_cWiseUnaryMatrix}
 \alias{eigenize_doNotRecurse}
 \alias{eigenizeMatricize}
+\alias{eigenize_matrixOps}
 \alias{eigenizeName}
 \alias{eigenizeNameStrided}
 \alias{eigenize_nfVar}
@@ -394,6 +395,7 @@
 \alias{hasBracket}
 \alias{icloglog}
 \alias{identityAssert}
+\alias{identityMatrix}
 \alias{ifOrWhile}
 \alias{ilogit}
 \alias{IncludeCodeDir}

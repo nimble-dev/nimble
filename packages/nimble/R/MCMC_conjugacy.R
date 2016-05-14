@@ -19,7 +19,7 @@ conjugacyRelationshipsInputList <- list(
              dmulti    = list(param = 'prob', contribution_alpha = 'value')),
              ## dcat      = list(param = 'prob', contribution_alpha = as.numeric((1:length(prob)) == value)'),
              ## dcat      = list(param = 'prob', contribution_alpha = {tmp = rep(0,length(prob)); tmp[value]=1; tmp}')),
-          posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'), 
+         posterior = 'ddirch(alpha = prior_alpha + contribution_alpha)'),
     
     ## gamma
     list(prior = 'dgamma',
@@ -44,30 +44,42 @@ conjugacyRelationshipsInputList <- list(
          posterior = 'dnorm(mean = (prior_mean*prior_tau + contribution_mean) / (prior_tau + contribution_tau),
                             sd   = (prior_tau + contribution_tau)^(-0.5))'),
     
+    #####
     ## pareto
-    # list(prior = 'dpar',      ##### waiting for dpar() distribution
-    #      link = 'multiplicative',
-    #      dependents = list(
-    #          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
-    #          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
-    #      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
-    #                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
+    ## list(prior = 'dpar',      ##### waiting for dpar() distribution
+    ##      link = 'multiplicative',
+    ##      dependents = list(
+    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
+    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
+    ##      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
+    ##                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
     #####
     
     ## multivariate-normal
     list(prior = 'dmnorm',
          link = 'linear',
          dependents = list(
-             dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-         posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
-                                  cholesky   = chol(prior_prec + contribution_prec),
-                                  prec_param = 1)'),
+           ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
+             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, 1) %*% asCol(value-offset))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, 2)')),
+         ## original less efficient posterior definition:
+         ## posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
+         ##                          cholesky   = chol(prior_prec + contribution_prec),
+         ##                          prec_param = 1)'),
+         posterior = '{ R <- chol(prior_prec + contribution_prec)
+                        A <- prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)
+                        mu <- backsolve(R, forwardsolve(t(R), A))[,1]
+                        dmnorm_chol(mean = mu, cholesky = R, prec_param = 1) }'),
+
 
     ## wishart
     list(prior = 'dwish',
          link = 'linear',
          dependents = list(
-             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean) %*% coeff', contribution_df = '1')),
+             ## parentheses added to the contribution_R calculation:
+             ## colVec * (rowVec * matrix)
+             ## Chris is checking to see whether this makes a difference for Eigen
+             ## -DT April 2016
+             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
                                  scale_param = 0)')
@@ -386,6 +398,7 @@ conjugacyClass <- setRefClass(
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dynamic = dynamic, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
             
             ## generate new value, store, calculate, copy, etc...
+            functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
             functionBody$addCode({
                 newValue <- RPOSTERIORCALL
                 model[[target]] <<- newValue
@@ -419,10 +432,12 @@ conjugacyClass <- setRefClass(
             addPosteriorQuantitiesGenerationCode(functionBody = functionBody, dynamic = dynamic, dependentCounts = dependentCounts)    ## adds code to generate the quantities prior_xxx, and contribution_xxx
             
             ## calculate and return the (log)density for the current value of target
-            functionBody$addCode({targetValue <- model[[target]]
-                                  posteriorLogDensity <- DPOSTERIORCALL
-                                  returnType(double())
-                                  return(posteriorLogDensity)
+            functionBody$addCode(posteriorObject$prePosteriorCodeBlock, quote = FALSE)
+            functionBody$addCode({
+                targetValue <- model[[target]]
+                posteriorLogDensity <- DPOSTERIORCALL
+                returnType(double())
+                return(posteriorLogDensity)
             }, list(DPOSTERIORCALL = eval(substitute(substitute(expr, list(VALUE=quote(targetValue))), list(expr=posteriorObject$dCallExpr)))))
             
             functionDef <- quote(function() {})
@@ -673,9 +688,11 @@ conjugacyClass <- setRefClass(
                        },
                        `2` = {
                            functionBody$addCode({
-                               identityMatrix <- model[[target]] * 0
-                               for(sizeIndex in 1:d)   { identityMatrix[sizeIndex, sizeIndex] <- 1 }
-                               model[[target]] <<- identityMatrix   ## initially, propogate through X = I
+                               ## I <- model[[target]] * 0
+                               ## for(sizeIndex in 1:d)   { I[sizeIndex, sizeIndex] <- 1 }
+                               ## model[[target]] <<- I   ## initially, propogate through X = I
+                               I <- identityMatrix(d)
+                               model[[target]] <<- I   ## initially, propogate through X = I
                                calculate(model, calcNodesDeterm)
                            })
                            if(!dynamic) {
@@ -701,7 +718,7 @@ conjugacyClass <- setRefClass(
                                }
                            }
                            functionBody$addCode({
-                               model[[target]] <<- identityMatrix * 2   ## now, propogate through X = 2I
+                               model[[target]] <<- I * 2   ## now, propogate through X = 2I
                                calculate(model, calcNodesDeterm)
                            })
                            if(!dynamic) {
@@ -764,7 +781,7 @@ conjugacyClass <- setRefClass(
                 functionBody$addCode(CONTRIB_NAME <- CONTRIB_INITIAL_DECLARATION,
                                      list(CONTRIB_NAME                = as.name(contributionName),
                                           CONTRIB_INITIAL_DECLARATION = switch(as.character(contribNdim),
-                                              `0` = 0, `1` = quote(nimVector(0, d)), `2` = quote(nimArray(0, d, d)), stop())))
+                                              `0` = 0, `1` = quote(numeric(length = d)), `2` = quote(array(dim = c(d, d))), stop())))
             }
             if(!dynamic) {
                 for(distName in dependentDistNames) {
@@ -853,6 +870,7 @@ dependentClass <- setRefClass(
 posteriorClass <- setRefClass(
     Class = 'posteriorClass',
     fields = list(
+        prePosteriorCodeBlock =   'ANY',   ## a quoted {...} code block containing  DSL code to execute before making posterior call, possibly empty
         posteriorExpr =	          'ANY',   ## the full, parsed, posterior distribution expression, e.g. dnorm(mean = prior_mean + ..., sd = ...)
         rDistribution =           'ANY',   ## the *R* name of the posterior distribution, e.g. 'rnorm'
         dDistribution =           'ANY',   ## the *R* name of the posterior density distribution, e.g. 'dnorm'
@@ -866,14 +884,17 @@ posteriorClass <- setRefClass(
     ),
     methods = list(
         initialize = function(posteriorText, prior) {
-            posteriorExpr <<- parse(text = posteriorText)[[1]]
+            parsedTotalPosterior <- parse(text = posteriorText)[[1]]
+            if(parsedTotalPosterior[[1]] != '{') parsedTotalPosterior <- substitute({POST}, list(POST = parsedTotalPosterior))
+            prePosteriorCodeBlock <<- parsedTotalPosterior[-length(parsedTotalPosterior)]
+            posteriorExpr <<- parsedTotalPosterior[[length(parsedTotalPosterior)]]
             rDistribution <<- cc_makeRDistributionName(as.character(posteriorExpr[[1]]))
             dDistribution <<- as.character(posteriorExpr[[1]])
             argumentExprs <<- as.list(posteriorExpr)[-1]
             argumentNames <<- names(argumentExprs)
             rCallExpr <<- as.call(c(as.name(rDistribution), 1, argumentExprs))
             dCallExpr <<- as.call(c(as.name(dDistribution), quote(VALUE), argumentExprs, log = 1))
-            posteriorVars <- all.vars(rCallExpr)
+            posteriorVars <- all.vars(parsedTotalPosterior)
             neededPriorParams <<- gsub('^prior_', '', posteriorVars[grepl('^prior_', posteriorVars)])
             neededContributionNames <<- posteriorVars[grepl('^contribution_', posteriorVars)]
             neededContributionDims <<- inferContributionTermDimensions(prior)

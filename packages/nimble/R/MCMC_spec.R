@@ -43,10 +43,11 @@ samplerSpec <- setRefClass(
         toStr = function() {
             tempList <- list()
             tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
-            mcmc_listContentsToStr(c(tempList, control))
+            infoList <- c(tempList, control)
+            mcmc_listContentsToStr(infoList)
         },
         show = function() {
-            cat(paste0(name, ' sampler acting on ', paste0(target, collapse = ', ')))
+            cat(toStr())
         }
     )
 )
@@ -138,11 +139,9 @@ thin2: The thinning interval for \'monitors2\'.  Default value is one.
 
 useConjugacy: A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
 
-onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (sampler_RW) will be assigned for all non-terminal continuous-valued nodes nodes.
-Discrete-valued nodes are assigned a slice sampler (sampler_slice), and terminal (predictive) nodes are assigned an end sampler (sampler_end).
+onlyRW: A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler, and terminal nodes are assigned a posterior_predictive sampler.
 
-onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
-Terminal (predictive) nodes are still assigned an end sampler (sampler_end).
+onlySlice: A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 
 multivariateNodesAsScalars: A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided useConjugacy == TRUE), regardless of the value of this argument.
 
@@ -150,7 +149,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
 '
             
             samplerSpecs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
-            model <<- model
+            ##model <<- model
+            if(is(model, 'RmodelBaseClass')) {
+                model <<- model
+            } else if(is(model, 'CmodelBaseClass')) {
+                model <<- model$Rmodel
+            } else stop('\'model\' must be a compiled or un-compiled NIMBLE model object')
             addMonitors( monitors,  print = FALSE)
             addMonitors2(monitors2, print = FALSE)
             thin  <<- thin
@@ -174,47 +178,52 @@ print: A logical argument, specifying whether to print the ordered list of defau
             for(i in seq_along(nodes)) {
             	node <- nodes[i]
                 discrete <- model$isDiscrete(node)
+                binary <- model$isBinary(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 
-                ## if node has 0 stochastic dependents, assign 'end' sampler (e.g. for predictive nodes)
-             	if(isNodeEnd[i]) { addSampler(target = node, type = 'end', print = print);     next }
+                ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
+                if(isNodeEnd[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
                 if(nodeLength > 1) {
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
-                            addConjugateSampler(conjugacyResult = conjugacyResult, print = print);     next }
+                            addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                     }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
-                            addSampler(target = scalarNode, type = 'RW', print = print) };     next }
-                    addSampler(target = node, type = 'RW_block', print = print);     next }
+                            addSampler(target = scalarNode, type = 'RW') };     next }
+                    addSampler(target = node, type = 'RW_block');     next }
 
                 ## node is scalar, non-end node
-                if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW',    print = print);     next }
-                if(onlySlice)             { addSampler(target = node, type = 'slice', print = print);     next }
+                if(onlyRW && !discrete)   { addSampler(target = node, type = 'RW'   );     next }
+                if(onlySlice)             { addSampler(target = node, type = 'slice');     next }
                 
                 ## if node passes checkConjugacy(), assign 'conjugate_dxxx' sampler
                 if(useConjugacy) {
                     conjugacyResult <- conjugacyResultsAll[[node]]
                     if(!is.null(conjugacyResult)) {
-                        addConjugateSampler(conjugacyResult = conjugacyResult, print = print);     next }
+                        addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                 }
+
+                ## if node is discrete 0/1 (binary), assign 'binary' sampler
+                if(binary) { addSampler(target = node, type = 'binary');     next }
                 
                 ## if node distribution is discrete, assign 'slice' sampler
-                if(discrete) { addSampler(target = node, type = 'slice', print = print);     next }
+                if(discrete) { addSampler(target = node, type = 'slice');     next }
                 
                 ## default: 'RW' sampler
-                addSampler(target = node, type = 'RW', print = print);     next
+                addSampler(target = node, type = 'RW');     next
             }
             ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
+            if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult, print) {
+        addConjugateSampler = function(conjugacyResult) {
             if(!getNimbleOption('useDynamicConjugacy')) {
-                addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control, print = print)
+                addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
                 return(NULL)
             }
             prior <- conjugacyResult$prior
@@ -227,10 +236,10 @@ print: A logical argument, specifying whether to print the ordered list of defau
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
-            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
+            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, name = nameToPrint)
         },
         
-        addSampler = function(target, type = 'RW', control = list(), print = TRUE, name) {
+        addSampler = function(target, type = 'RW', control = list(), print = FALSE, name) {
             '
 Adds a sampler to the list of samplers contained in the MCMCspec object.
 
@@ -255,13 +264,12 @@ Invisibly returns a list of the current sampler specifications, which are sample
 '
 
             if(is.character(type)) {
-                if(type == 'end') type <- 'sampler_end'  ## because 'end' is an R function
                 thisSamplerName <- gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
-                if(exists(type)) {   ## try to find sampler function 'type'
+                if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
                     sampler_type <- paste0('sampler_', type)   ## next, try to find sampler function 'sampler_type'
-                    if(exists(sampler_type)) {
+                    if(exists(sampler_type) && is.nfGenerator(eval(as.name(sampler_type)))) {   ## try to find sampler function 'sampler_type'
                         samplerFunction <- eval(as.name(sampler_type))
                     } else stop(paste0('cannot find sampler type \'', type, '\''))
                 }
@@ -307,7 +315,7 @@ print: A logical argument, default value FALSE, specifying whether to print the 
             return(invisible(NULL))
         },
         
-        setSamplers = function(ind, print = TRUE) {
+        setSamplers = function(ind, print = FALSE) {
             '
 Sets the ordering of the list of MCMC samplers.
 
@@ -584,16 +592,14 @@ Details: See the initialize() function
 #'@param thin The thinning interval for \code{monitors}.  Default value is one.
 #'@param thin2 The thinning interval for \code{monitors2}.  Default value is one.
 #'@param useConjugacy A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
-#'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes.
-#'Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal (predictive) nodes are assigned an end sampler (\link{sampler_end}).
-#'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes.
-#'Terminal (predIctive) nodes are still assigned an end sampler (sampler_end).
+#'@param onlyRW A logical argument, with default value FALSE.  If specified as TRUE, then Metropolis-Hastings random walk samplers (\link{sampler_RW}) will be assigned for all non-terminal continuous-valued nodes nodes. Discrete-valued nodes are assigned a slice sampler (\link{sampler_slice}), and terminal nodes are assigned a posterior_predictive sampler (\link{sampler_posterior_predictive}).
+#'@param onlySlice A logical argument, with default value FALSE.  If specified as TRUE, then a slice sampler is assigned for all non-terminal nodes. Terminal nodes are still assigned a posterior_predictive sampler.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC specification object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
 #'@param oldSpec An optional MCMCspec object to modify rather than creating a new MCMCspec from scratch
 #'@param ... Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
-#' @author Daniel Turek
+#'@author Daniel Turek
 #'@details See \code{MCMCspec} for details on how to manipulate the \code{MCMCspec} object
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
@@ -610,7 +616,7 @@ configureMCMC <- function(model, nodes, control = list(),
     if(missing(nodes))        nodes <- character()
     if(missing(monitors))     monitors <- NULL
 
-    if(autoBlock) return(autoBlock(model, ...)$spec)
+    if(autoBlock) return(autoBlock(model, ...)$conf)
     
     thisSpec <- MCMCspec(model = model, nodes = nodes, control = control, 
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,

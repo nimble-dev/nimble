@@ -11,8 +11,9 @@ for CRAN, we need it in there, but it prevents easy source installation on Macs 
 
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
-# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions
+# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure)
 ./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
+(in general you'll need to run prep_pkg twice as first time will generate errors when writing Rd files; also will often need to remove 00LOCK files)
 
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
 This also should work:
@@ -50,7 +51,10 @@ go to website: R-nimble.org/login and login
 
 change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
 
-make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page
+put new user manual in /web/R-nimble/wordpress/manuals
+and change symlink to point to newest pdf
+
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
 (make sure post is set up as a blog entry)
 
@@ -68,8 +72,14 @@ git checkout master
 git merge devel
 git commit -am'merged new version onto master'
 
+probably best at this poitn also to merge master onto devel
+
 git tag -a v0.3 -m 'NIMBLE version 0.3 release, December 31, 2014'
 git push --tags    ## this is how you push *tags* to the remote
 
+# make tag for nimble-docs too
+git tag -a v0.5 -m 'NIMBLE version 0.5 release, April 6, 2016'
+git push --tags    ## this is how you push *tags* to the remote
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in
+and comment out rstan usage as in cran_0.5 branch on CJP machine

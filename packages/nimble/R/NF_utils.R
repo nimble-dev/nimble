@@ -271,22 +271,28 @@ getLogProbNodesMV <- nimbleFunction(
 )
 
 
-## NIMBLE DSL functions for creating vector or array strctures
-## added by Daniel June 2015
-## these deserve documentation!
-nimVector <- nimbleFunction(
-    run = function(value = double(), length = double()) {
-        declare(vec, double(1, length))
-        for(i in 1:length)   vec[i] <- value
-        returnType(double(1))
-        return(vec)
-    },  where = getLoadingNamespace()
-)
-##
-nimArray <- nimbleFunction(
-    run = function(value = double(), nrow = double(), ncol = double()) {
-        declare(arr, double(2, c(nrow, ncol)))
-        for(i in 1:nrow)   for(j in 1:ncol)   arr[i, j] <- value
+
+#' Create an Identity matrix
+#'
+#' Returns a d-by-d identity matrix (square matrix of 0's, with 1's on the main diagnol).
+#'
+#' This function can be used in the NIMBLE DSL, i.e. in the run function and member methods of nimbleFunctions.
+#'
+#' @param d The size of the identity matrix to return, will return a d-by-d matrix
+#'
+#' @return A d-by-d identity matrix
+#'
+#' @author Daniel Turek
+#'
+#' @examples
+#' Id <- identityMatrix(d = 3)
+#'
+#' @export
+identityMatrix <- nimbleFunction(
+    run = function(d = double()) {
+        declare(arr, double(2, c(d, d)))
+        for(i in 1:d)   for(j in 1:d)   arr[i, j] <- 0
+        for(i in 1:d)                   arr[i, i] <- 1
         returnType(double(2))
         return(arr)
     },  where = getLoadingNamespace()
