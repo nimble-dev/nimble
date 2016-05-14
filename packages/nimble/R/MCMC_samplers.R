@@ -647,7 +647,7 @@ sampler_crossLevel <- nimbleFunction(
 ### RW_llFunctionBlock, does a block RW, but using a generic log-likelihood function ###
 ########################################################################################
 
-sampler_RW_llFunctionBlock <- nimbleFunction(
+sampler_RW_llFunction_block <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
     ###  control list extraction  ###
@@ -769,12 +769,12 @@ sampler_RW_PFilter <- nimbleFunction(
       m <- 3000  
     }
     
-    latentSamp <- F
+    latentSamp <- FALSE
     MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e) 
-    if(identical(MCMCmonitors, T))
-      latentSamp <- T
+    if(identical(MCMCmonitors, TRUE))
+      latentSamp <- TRUE
     else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
-      latentSamp <- T    
+      latentSamp <- TRUE  
     
     
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
@@ -785,8 +785,8 @@ sampler_RW_PFilter <- nimbleFunction(
     ))
     
     latentDep <- model$getDependencies(latents)
-    topParams <- model$getNodeNames(stochOnly=T, includeData=F,
-                                    topOnly=T)
+    topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
+                                    topOnly=TRUE)
 
     if(any(target%in%model$expandNodeNames(latents))){
       stop("PMCMC 'target' argument cannot include latent states")
@@ -825,16 +825,16 @@ sampler_RW_PFilter <- nimbleFunction(
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     
     if(filterType == "auxiliary"){
-      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = T, smoothing = T,
+      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = TRUE, smoothing = TRUE,
                                                                     lookahead = lookahead))
     }
     else if(filterType == "bootstrap"){
-      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = T, smoothing = T))
+      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = TRUE, smoothing = TRUE))
     }
     else{
       stop("filter type must be either bootstrap or auxiliary")
     }
-    particleMV <- my_particleFilter$mvEWSamp
+    particleMV <- my_particleFilter$mvEWSamples
   },
     
   run = function() {
@@ -955,12 +955,12 @@ sampler_RW_PFilter_block <- nimbleFunction(
     optimizeM      <- as.integer(control$optimizeM)
     latents        <- control$latents
     
-    latentSamp <- F
+    latentSamp <- FALSE
     MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e) 
-    if(identical(MCMCmonitors, T))
-      latentSamp <- T
+    if(identical(MCMCmonitors, TRUE))
+      latentSamp <- TRUE
     else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
-      latentSamp <- T    
+      latentSamp <- TRUE    
     
     if(optimizeM){
       m <- 3000  
@@ -973,8 +973,8 @@ sampler_RW_PFilter_block <- nimbleFunction(
     ))
     
     latentDep <- model$getDependencies(latents)
-    topParams <- model$getNodeNames(stochOnly=T, includeData=F,
-                                    topOnly=T)
+    topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
+                                    topOnly=TRUE)
     target <- model$expandNodeNames(target)
     if(any(target%in%model$expandNodeNames(latents))){
       stop("PMCMC 'target' argument cannot include latent states")
@@ -1016,12 +1016,12 @@ sampler_RW_PFilter_block <- nimbleFunction(
     my_setAndCalculate <- setAndCalculate(model, target)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     my_calcAdaptationFactor <- calcAdaptationFactor(d)
-    if(latentSamp == T){
-      saveAllVal <- T
-      smoothingVal <- T
+    if(latentSamp == TRUE){
+      saveAllVal <- TRUE
+      smoothingVal <- TRUE
     } else{
-      saveAllVal <- F
-      smoothingVal <- F
+      saveAllVal <- FALSE
+      smoothingVal <- FALSE
     }  
     if(filterType == "auxiliary"){
       my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal,
@@ -1033,7 +1033,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
     else{
       stop("filter type must be either bootstrap or auxiliary")
     }
-    particleMV <- my_particleFilter$mvEWSamp
+    particleMV <- my_particleFilter$mvEWSamples
   },
   
   run = function() {
@@ -1237,7 +1237,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' }
 #' 
 #' \cr
-#' @section RW_llFunctionBlock sampler:
+#' @section RW_llFunction_block sampler:
 #' 
 #' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu, 2010).  The RW_llFunctionBlock sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). \cr
 #' \cr
@@ -1263,6 +1263,8 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
+#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from "bootstrap" and "auxiliary".  Defaults to "bootstrap".
+#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from "simulate" and "mean".  Only applicable if filterType is set to "auxiliary".
 #' \item resamp.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
 #' }
@@ -1281,6 +1283,8 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 #' \item resamp.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
+#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from "bootstrap" and "auxiliary".  Defaults to "bootstrap".
+#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from "simulate" and "mean".  Only applicable if filterType is set to "auxiliary".
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
 #' }
 #' \cr
