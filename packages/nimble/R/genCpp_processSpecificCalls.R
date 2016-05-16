@@ -165,6 +165,13 @@ declareHandler <- function(code, symTab) {
 ## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
 ## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
 nimArrayGeneralHandler <- function(code, symTab) {
+    ## check to see if we're inside a declare statement()
+    if(code$caller$name == 'declare') {
+        if(code$name != 'nimInteger') stop('something going wrong with backwards compatibility fix for declare(..., integer())')
+        code$name <- 'integer'
+        code$args <- if(code$args[[2]] == 0) code$args[1] else code$args[1:2]
+        return()
+    }
     switch(code$name,
            ##nimNumeric(length = 0, value = 0, init = TRUE)
            nimNumeric = {
