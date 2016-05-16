@@ -637,6 +637,10 @@ keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
+matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimInteger']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimMatrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
+matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['getParam']] <- getParam
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
@@ -1231,10 +1235,12 @@ matchKeywords_recurse <- function(code, nfProc = NULL) {
     cl = length(code)
     if(cl == 1){ ## There are no arguments
         if(is.call(code)){  
-            if(length(code[[1]]) > 1)
+            if(length(code[[1]]) > 1) {
                 if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc)
                 else
                     code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
+            } else
+                code <- matchKeywordCode(code, nfProc)
         }
         return(code)
     }

@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
@@ -41,6 +41,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimPrint = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
+                    nimArrayGeneral = 'sizeNimArrayGeneral',
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
@@ -180,6 +181,37 @@ sizemap <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'maybe'
     invisible(NULL)
 }
+
+## size handler for nimArrayGeneral()
+## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
+## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
+sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, FALSE, FALSE, TRUE, TRUE))  ## recurse on initialValue and initialLogical only
+    cSizeExprs <- code$args[[3]]
+    if(!inherits(cSizeExprs, 'exprClass'))        stop('something wrong 1')
+    if(cSizeExprs$name != 'c')                    stop('something wrong 2')
+    if(code$args[[2]] != length(cSizeExprs$args)) stop('something wrong 3')
+    asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
+    type <- code$args[[1]]    ## args[[1]]: 'type' argument
+    nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
+    if(!(type %in% c('double', 'integer')))       stop('unknown type in nimArrayGeneral')
+    code$name <- 'initialize'
+    code$args <- c(code$args[4:5], cSizeExprs$args)  ##  args: initialize(initializeValue, initializeLogical, sizeExpr1, sizeExpr2, etc...)
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            code$args[[i]]$callerArgID <- i
+            code$args[[i]]$caller <- code
+        }
+    }
+    code$type <- type
+    code$nDim <- nDim
+    code$sizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse)
+    code$toEigenize <- 'no'
+    return(asserts)
+}
+
+
+
 
 sizeGetParam <- function(code, symTab, typeEnv) {
     paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
