@@ -655,16 +655,18 @@ sampler_RW_llFunction_block <- nimbleFunction(
     my_setAndCalculate <- setAndCalculate(model, target)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     my_calcAdaptationFactor <- calcAdaptationFactor(d)
+    storeLP0 <- -Inf
   },
   
   run = function() {
-    modelLP0 <- llFunction$run()
+    modelLP0 <- storeLP0
     if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
     propValueVector <- generateProposalVector()
     my_setAndCalculate$run(propValueVector)
     modelLP1 <- llFunction$run()+ getLogProb(model, target)
     jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
     if(adaptive)     adaptiveProcedure(jump)
+    if(jump) storeLP0 <<- modelLP1
   },
   
   methods = list(
@@ -711,8 +713,6 @@ sampler_RW_llFunction_block <- nimbleFunction(
       timesAdapted  <<- 0
       scaleHistory          <<- scaleHistory          * 0
       acceptanceRateHistory <<- acceptanceRateHistory * 0
-      statSums  <<- statSums  * 0
-      statProds <<- statProds * 0
       my_calcAdaptationFactor$reset()
     }
   ),  where = getLoadingNamespace()
@@ -731,7 +731,7 @@ sampler_RW_PFilter <- nimbleFunction(
     adaptInterval  <- control$adaptInterval
     scale          <- control$scale
     m              <- control$m
-    resamp         <- control$resamp
+    resample         <- control$resample
     filterType     <- control$filterType
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
@@ -751,10 +751,6 @@ sampler_RW_PFilter <- nimbleFunction(
     
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
     mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
-    storeLLVar <- modelValues(modelValuesSpec(vars = c('LLVar'),
-                                              type = c('double'),
-                                              size = list(LLVar = 1)
-    ))
     
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
@@ -785,11 +781,9 @@ sampler_RW_PFilter <- nimbleFunction(
     optimalAR <- 0.44
     gamma1    <- 0
 
-    ###  create a mv object which stores LP from previous iteration
-    storeLP <- modelValues(modelValuesSpec(vars = c('LP0'),
-                                           type = c('double'),
-                                           size = list(LP0 = 1)
-    ))
+    ###  create a object which stores LP from previous iteration
+    storeLP0 <- -Inf
+    storeLLVar <- 0
     
     ###  nested function and function list definitions  ###
     my_setAndCalculate <- setAndCalculate(model, target)
@@ -810,16 +804,12 @@ sampler_RW_PFilter <- nimbleFunction(
   },
     
   run = function() {
-    if(resamp){
+    if(resample){
       modelLP0 <- my_particleFilter$run(m)
       modelLP0 <- modelLP0 + getLogProb(model, target)
     }
     else{
-      if(is.nan(storeLP['LP0',1][1])){
-        modelLP0 <- my_particleFilter$run(m)
-        storeLP['LP0',1][1] <<- modelLP0 + getLogProb(model, target)
-      }
-      modelLP0 <- storeLP['LP0',1][1]
+      modelLP0 <- storeLP0
     }
     propValue <- rnorm(1, mean = model[[target]], sd = scale)
     model[[target]] <<- propValue
@@ -839,7 +829,7 @@ sampler_RW_PFilter <- nimbleFunction(
       ## if we don't jump, replace model latent nodes with saved latent nodes
       copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
     }
-    if(jump & !resamp)  storeLP['LP0',1][1] <<- modelLP1
+    if(jump & !resample)  storeLP0 <<- modelLP1
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
   },
@@ -855,20 +845,20 @@ sampler_RW_PFilter <- nimbleFunction(
         }
         ## next, store average of var estimates 
         if(nVarEsts == 1)
-          storeLLVar['LLVar',1][1] <<- var(LLEst)/mBurnIn
+          storeLLVar <<- var(LLEst)/mBurnIn
         else{
-          LLVar <- storeLLVar['LLVar',1][1]
+          LLVar <- storeLLVar
           LLVar <- LLVar + var(LLEst)/mBurnIn
-          storeLLVar['LLVar',1][1] <<- LLVar
+          storeLLVar<<- LLVar
         }
         nVarEsts <<- nVarEsts + 1
       }
       else{  # once enough var estimates have been taken, use their average to compute m
-        m <<- m*storeLLVar['LLVar',1][1]/(0.92^2)
+        m <<- m*storeLLVar/(0.92^2)
         m <<- ceiling(m)
-        if(!resamp){  #reset LL with new m value after burn-in period
+        if(!resample){  #reset LL with new m value after burn-in period
           modelLP0 <- my_particleFilter$run(m)
-          storeLP['LP0',1][1] <<- modelLP0 + getLogProb(model, target)
+          storeLP0 <<- modelLP0 + getLogProb(model, target)
         }
         optimizeM <<- 0
       }
@@ -898,6 +888,7 @@ sampler_RW_PFilter <- nimbleFunction(
       timesRan      <<- 0
       timesAccepted <<- 0
       timesAdapted  <<- 0
+      storeLP0 <<- -Inf
       scaleHistory          <<- scaleHistory          * 0
       acceptanceRateHistory <<- acceptanceRateHistory * 0
       gamma1 <<- 0
@@ -921,7 +912,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
     scale          <- control$scale
     propCov        <- control$propCov 
     m              <- control$m
-    resamp         <- control$resamp
+    resample       <- control$resample
     filterType     <- control$filterType
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
@@ -939,10 +930,6 @@ sampler_RW_PFilter_block <- nimbleFunction(
     }
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
     mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
-    storeLLVar <- modelValues(modelValuesSpec(vars = c('LLVar'),
-                                              type = c('double'),
-                                              size = list(LLVar = 1)
-    ))
     
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
@@ -978,11 +965,8 @@ sampler_RW_PFilter_block <- nimbleFunction(
     chol_propCov_scale <- scale * chol_propCov
     empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
     
-    ###  create a mv object which stores LP from previous iteration
-    storeLP <- modelValues(modelValuesSpec(vars = c('LP0'),
-                                           type = c('double'),
-                                           size = list(LP0 = 1)
-    ))
+    storeLP0 <- -Inf
+    storeLLVar <- 0
     
     ###  nested function and function list definitions  ###
     my_setAndCalculate <- setAndCalculate(model, target)
@@ -1009,16 +993,12 @@ sampler_RW_PFilter_block <- nimbleFunction(
   },
   
   run = function() {
-    if(resamp){
+    if(resample){
       modelLP0 <- my_particleFilter$run(m)
       modelLP0 <- modelLP0 + getLogProb(model, target)
     }
     else{
-      if(is.nan(storeLP['LP0',1][1])){
-        modelLP0 <- my_particleFilter$run(m)
-        storeLP['LP0',1][1] <<- modelLP0 + getLogProb(model, target)
-      }
-      modelLP0 <- storeLP['LP0',1][1]
+      modelLP0 <- storeLP0
     }
     propValueVector <- generateProposalVector()
     my_setAndCalculate$run(propValueVector)
@@ -1037,7 +1017,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
       ## if we don't jump, replace model latent nodes with saved latent nodes
       copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
     }
-    if(jump & !resamp)  storeLP['LP0',1][1] <<- modelLP1
+    if(jump & !resample)  storeLP0 <<- modelLP1
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
     
@@ -1054,20 +1034,20 @@ sampler_RW_PFilter_block <- nimbleFunction(
         }
         ## next, store average of var estimates 
         if(nVarEsts == 1)
-          storeLLVar['LLVar',1][1] <<- var(LLEst)/mBurnIn
+          storeLLVar <<- var(LLEst)/mBurnIn
         else{
-          LLVar <- storeLLVar['LLVar',1][1]
+          LLVar <- storeLLVar
           LLVar <- LLVar + var(LLEst)/mBurnIn
-          storeLLVar['LLVar',1][1] <<- LLVar
+          storeLLVar <<- LLVar
         }
         nVarEsts <<- nVarEsts + 1
       }
       else{  # once enough var estimates have been taken, use their average to compute m
-        m <<- m*storeLLVar['LLVar',1][1]/(0.92^2)
+        m <<- m*storeLLVar/(0.92^2)
         m <<- ceiling(m)
-        if(!resamp){  #reset LL with new m value after burn-in period
+        if(!resample){  #reset LL with new m value after burn-in period
           modelLP0 <- my_particleFilter$run(m)
-          storeLP['LP0',1][1] <<- modelLP0 + getLogProb(model, target)
+          storeLP0 <<- modelLP0 + getLogProb(model, target)
         }
         optimizeM <<- 0
       }
@@ -1112,13 +1092,12 @@ sampler_RW_PFilter_block <- nimbleFunction(
       scale   <<- scaleOriginal
       propCov <<- propCovOriginal
       chol_propCov <<- chol(propCov)
+      storeLP0 <<- -Inf
       timesRan      <<- 0
       timesAccepted <<- 0
       timesAdapted  <<- 0
       scaleHistory          <<- scaleHistory          * 0
       acceptanceRateHistory <<- acceptanceRateHistory * 0
-      statSums  <<- statSums  * 0
-      statProds <<- statProds * 0
       my_calcAdaptationFactor$reset()
     }
   ),  where = getLoadingNamespace()
@@ -1243,7 +1222,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 #' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from "bootstrap" and "auxiliary".  Defaults to "bootstrap".
 #' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from "simulate" and "mean".  Only applicable if filterType is set to "auxiliary".
-#' \item resamp.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
+#' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
 #' }
 #' \cr
@@ -1260,7 +1239,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
-#' \item resamp.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
+#' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from "bootstrap" and "auxiliary".  Defaults to "bootstrap".
 #' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from "simulate" and "mean".  Only applicable if filterType is set to "auxiliary".
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
