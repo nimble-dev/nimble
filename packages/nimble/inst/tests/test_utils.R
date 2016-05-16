@@ -336,12 +336,12 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
 
 test_filter <- function(example, model, data = NULL, inits = NULL,
-                         verbose = TRUE, numItsR = 5, numItsC = 10000,
-                         basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
-                         numItsC_results = numItsC, dims = NULL,
-                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
-                         doubleCompare = FALSE, filterType2 = NULL,
-                         doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+                        verbose = TRUE, numItsR = 5, numItsC = 10000,
+                        basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
+                        numItsC_results = numItsC, dims = NULL,
+                        seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
+                        doubleCompare = FALSE, filterType2 = NULL,
+                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
   # There are two modes of testing:
   # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states 
   # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
@@ -379,7 +379,6 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     Cmodel <- compileNimble(Rmodel)
     cat('done compiling model\n')
   }
-  gc()
   cat("Building filter\n")
   if(filterType == "bootstrap"){
     if(!is.null(filterControl))  Rfilter <- buildBootF(Rmodel, nodes = latentNodes, control = filterControl)
@@ -436,9 +435,10 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
         C_subSamples2 <- C_samples2[, attributes(R_samples2)$dimnames[[2]], drop = FALSE]
       }
+      
+      
       ## for some reason columns in different order in CmvSample...
     }
-    gc()
     if(doR && doCpp && !is.null(R_samples)) {
       context(paste0("testing ", example," ", filterType, " filter"))
       if(filterType == "ENKF"){
@@ -458,11 +458,10 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         )
       }
     }
+    
     if(is.null(R_samples)) {
       cat("R Filter failed.\n")
     }
-    
-    gc()
     if(doCpp) {
       if(!is.null(exactSample)) {
         for(varName in names(exactSample))
@@ -482,7 +481,6 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
       }
     }
   }
-  gc()
   
   # assume doR and doCpp from here down
   if(!is.null(results)) { 
@@ -501,6 +499,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         else
           CfilterSample <- nfVar(Cfilter, 'mvEWSamples') 
       }
+      
       C_samples <- as.matrix(CfilterSample)[, , drop = FALSE]
       if(weightedOutput == "weighted"){
         wtIndices <- grep("^wts\\[", dimnames(C_samples)[[2]])
@@ -513,14 +512,10 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         latentIndices <- match(latentNames, dimnames(C_samples)[[2]])
         latentSampLength <- length(latentNames)
         latentDim <- latentSampLength/dim(C_weights)[2]
-        print(latentDim)
-        print(latentIndices)
-        print(dim(C_weights)[2])
         samplesToWeightsMatch[latentIndices] <- rep(1:dim(C_weights)[2], each = latentDim )
         
       }
       for(metric in names(results)) {
-        gc()
         if(!metric %in% c('mean', 'median', 'sd', 'var', 'cov', 'll'))
           stop("Results input should be named list with the names indicating the summary metrics to be assessed, from amongst 'mean', 'median', 'sd', 'var', 'cov', and 'll'.")
         if(!(metric %in% c('cov', 'll'))) {
