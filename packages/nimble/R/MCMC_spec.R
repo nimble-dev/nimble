@@ -1,17 +1,14 @@
 
-
-controlDefaultList <- list(
-    adaptive = TRUE,
-    adaptScaleOnly = FALSE,
-    adaptInterval = 200,
-    scale = 1,
-    propCov = 'identity',
-    sliceWidth = 1,
-    sliceMaxSteps = 100,
-    m = 1000
-)
-
-
+## moved controlDefaultList to be a NIMBLE system option (as a single list: MCMCcontrolDefaultList)
+## controlDefaultList <- list(
+##     adaptive = TRUE,
+##     adaptScaleOnly = FALSE,
+##     adaptInterval = 200,
+##     scale = 1,
+##     propCov = 'identity',
+##     sliceWidth = 1,
+##     sliceMaxSteps = 100
+## )
 
 samplerSpec <- setRefClass(
     Class = 'samplerSpec',
