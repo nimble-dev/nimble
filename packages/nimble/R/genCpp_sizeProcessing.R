@@ -93,20 +93,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$sizeExprs <- info$sizeExprs
                     code$nDim <- info$nDim
                     code$toEigenize <- 'maybe'
-
-                    ## If it is a vector of known length 1 and it has no indexing, insert a [1] after it
-                    ## This introduced permanently inconsistent semantic corners, so I am disabling it
-                    ## if(code$nDim == 1) {
-                    ##     if(code$sizeExprs[[1]] == 1) {
-                    ##         if(lengthOneToScalar & code$caller$name != '[') {
-                    ##             insertIndexingBracket(code$caller, code$callerArgID, 1)
-                    ##             code$caller$nDim <- 0
-                    ##             code$caller$sizeExprs <- list()
-                    ##             code$caller$toEigenize <- 'maybe'
-                    ##             code$caller$type <- code$type
-                    ##         }
-                    ##     }
-                    ## }
                 }
             }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
@@ -352,8 +338,6 @@ sizeValues <- function(code, symTab, typeEnv) {
             LHS <- code$caller$args[[1]]
             if(LHS$isName) { ## It is a little awkward to insert setSize here, but this is different from other cases in sizeAssignAfterRecursing
                 assertSS <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
-                ##sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
-                ## assertSS[[1]][[3]] <- as.name(sym$lengthName) ## this is from when we used to have a separate setup output with the size
                 assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
                 asserts <- c(assertSS, asserts)
             }
@@ -987,9 +971,6 @@ sizeTranspose <- function(code, symTab, typeEnv) {
         code$sizeExprs <- c(code$sizeExprs[2], code$sizeExprs[1])
     } else if(length(code$sizeExprs) == 1) {
         if(code$nDim != 1) warning(paste0('In sizeTranspose, there is 1 sizeExpr but nDim != 1'), call. = FALSE)
-        ##setAsRowOrCol(code, 1, 'asRow', code$args[[1]]$type)
-        ##code <- removeExprClassLayer(code, 1)
-        ##code$toEigenize <- 'yes'
         code$name <- 'asRow'
         code$sizeExprs <- c(list(1), code$sizeExprs[[1]])
         code$nDim <- 2
