@@ -1,103 +1,112 @@
 Package: nimble
 Title: Flexible BUGS-Compatible System for Hierarchical Statistical Modeling
     and Algorithm Development
-Description: Flexible application of algorithms to models specified in the BUGS language. Algorithms can be written in the NIMBLE language and made available to any model.
+Description: Flexible application of algorithms to models specified in the BUGS
+    language. Algorithms can be written in the NIMBLE language and made available to
+    any model.
 Version: 0.5-1
 Maintainer: Christopher Paciorek <paciorek@stat.berkeley.edu>
-Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-Bergman, Duncan Temple Lang
-Depends:  R (>= 3.1.2)
-Imports: methods,igraph,coda
-Suggests: testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
+Author: Perry de Valpine, Christopher Paciorek, Daniel Turek, Cliff Anderson-
+    Bergman, Duncan Temple Lang
+Depends:
+    R (>= 3.1.2)
+Imports:
+    methods,igraph,coda
+Suggests:
+    testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
 URL: http://r-nimble.org
 SystemRequirements: GNU make
 License: BSD_3_clause + file LICENSE
-Note: For convenience, the package includes the necessary header files for the Eigen distribution.
-   (This is all that is needed to use that functionality.) You can use an alternative installation
-   of Eigen on your system or the one we provide.  The license for the Eigen code is very permissive
-   and allows us to distribute it with this package. See http://eigen.tuxfamily.org/index.php?title=Main_Page
-   and also the License section on that page.
+Note: For convenience, the package includes the necessary header files for the
+    Eigen distribution. (This is all that is needed to use that functionality.)
+    You can use an alternative installation of Eigen on your system or the one
+    we provide. The license for the Eigen code is very permissive and allows us
+    to distribute it with this package. See http://eigen.tuxfamily.org/index.php?
+    title=Main_Page and also the License section on that page.
 LazyData: false
-Collate: config.R
- all_utils.R
- options.R
- distributions_inputList.R
- distributions_processInputList.R
- distributions_implementations.R
- BUGS_BUGSdecl.R
- BUGS_contexts.R
- BUGS_modelDef.R
- BUGS_model.R
- BUGS_graphNodeMaps.R
- BUGS_readBUGS.R
- BUGS_testBUGS.R
- BUGS_getDependencies.R
- BUGS_utils.R
- BUGS_mathCompatibility.R
- genCpp_exprClass.R
- genCpp_operatorLists.R
- genCpp_RparseTree2exprClasses.R
- genCpp_initSizes.R
- genCpp_buildIntermediates.R
- genCpp_processSpecificCalls.R
- genCpp_sizeProcessing.R
- genCpp_insertAssertions.R
- genCpp_maps.R
- genCpp_liftMaps.R
- genCpp_eigenization.R
- genCpp_addDebugMarks.R
- genCpp_generateCpp.R
- RCfunction_core.R
- RCfunction_compile.R
- nimbleFunction_util.R
- nimbleFunction_core.R
- nimbleFunction_nodeFunction.R
- nimbleFunction_Rexecution.R
- nimbleFunction_compile.R
- nimbleFunction_keywordProcessing.R
- types_util.R
- types_symbolTable.R
- types_modelValues.R
- types_modelValuesAccessor.R
- types_modelVariableAccessor.R
- types_nimbleFunctionList.R
- types_nodeFxnVector.R
- types_numericLists.R
- cppDefs_utils.R
- cppDefs_variables.R
- cppDefs_core.R
- cppDefs_namedObjects.R
- cppDefs_BUGSmodel.R
- cppDefs_RCfunction.R
- cppDefs_nimbleFunction.R
- cppDefs_modelValues.R
- cppDefs_cppProject.R
- cppDefs_outputCppFromRparseTree.R
- cppInterfaces_utils.R
- cppInterfaces_models.R
- cppInterfaces_modelValues.R
- cppInterfaces_nimbleFunctions.R
- cppInterfaces_otherTypes.R
- nimbleProject.R
- initializeModel.R
- MCMC_utils.R
- MCMC_spec.R
- MCMC_build.R
- MCMC_samplers.R
- MCMC_conjugacy.R
- MCMC_suite.R
- MCMC_comparisons.R
- MCMC_autoBlock.R
- MCEM_build.R
- PF_build.R
- filtering_auxiliary.R
- filtering_liuwest.R
- filtering_enkf.R
- filtering_bootstrap.R
- ascentMCEM_build.R
- optimTools.R
- NF_utils.R
- miscFunctions.R
- makevars.R
- registration.R
- nimble-package.r
- zzz.R
+Collate:
+    config.R
+    all_utils.R
+    options.R
+    distributions_inputList.R
+    distributions_processInputList.R
+    distributions_implementations.R
+    BUGS_BUGSdecl.R
+    BUGS_contexts.R
+    BUGS_modelDef.R
+    BUGS_model.R
+    BUGS_graphNodeMaps.R
+    BUGS_readBUGS.R
+    BUGS_testBUGS.R
+    BUGS_getDependencies.R
+    BUGS_utils.R
+    BUGS_mathCompatibility.R
+    genCpp_exprClass.R
+    genCpp_operatorLists.R
+    genCpp_RparseTree2exprClasses.R
+    genCpp_initSizes.R
+    genCpp_buildIntermediates.R
+    genCpp_processSpecificCalls.R
+    genCpp_sizeProcessing.R
+    genCpp_insertAssertions.R
+    genCpp_maps.R
+    genCpp_liftMaps.R
+    genCpp_eigenization.R
+    genCpp_addDebugMarks.R
+    genCpp_generateCpp.R
+    RCfunction_core.R
+    RCfunction_compile.R
+    nimbleFunction_util.R
+    nimbleFunction_core.R
+    nimbleFunction_nodeFunction.R
+    nimbleFunction_Rexecution.R
+    nimbleFunction_compile.R
+    nimbleFunction_keywordProcessing.R
+    types_util.R
+    types_symbolTable.R
+    types_modelValues.R
+    types_modelValuesAccessor.R
+    types_modelVariableAccessor.R
+    types_nimbleFunctionList.R
+    types_nodeFxnVector.R
+    types_numericLists.R
+    cppDefs_utils.R
+    cppDefs_variables.R
+    cppDefs_core.R
+    cppDefs_namedObjects.R
+    cppDefs_BUGSmodel.R
+    cppDefs_RCfunction.R
+    cppDefs_nimbleFunction.R
+    cppDefs_modelValues.R
+    cppDefs_cppProject.R
+    cppDefs_outputCppFromRparseTree.R
+    cppInterfaces_utils.R
+    cppInterfaces_models.R
+    cppInterfaces_modelValues.R
+    cppInterfaces_nimbleFunctions.R
+    cppInterfaces_otherTypes.R
+    nimbleProject.R
+    initializeModel.R
+    MCMC_utils.R
+    MCMC_spec.R
+    MCMC_build.R
+    MCMC_samplers.R
+    MCMC_conjugacy.R
+    MCMC_suite.R
+    MCMC_comparisons.R
+    MCMC_autoBlock.R
+    MCEM_build.R
+    PF_build.R
+    filtering_auxiliary.R
+    filtering_liuwest.R
+    filtering_enkf.R
+    filtering_bootstrap.R
+    ascentMCEM_build.R
+    optimTools.R
+    NF_utils.R
+    miscFunctions.R
+    makevars.R
+    registration.R
+    nimble-package.r
+    zzz.R
+RoxygenNote: 5.0.1
