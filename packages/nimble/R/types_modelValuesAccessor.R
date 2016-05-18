@@ -98,26 +98,14 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
 ##     ans
 ## }
 
-
-## 5 and 2 are the big ones
-
-timingFunction1 <- function(a, envir) {
-    eval(a, envir = envir)
-}
-
-timingFunction2 <- function(a, b) {
-    a$modelDef$nodeName2LogProbName(b)
-}
-
 makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
 ##    length <- 0
-    nodeNames <- timingFunction1(accessorVector[[2]], envir = accessorVector[[4]]) ## eval(accessorVector[[2]], envir = accessorVector[[4]])
+    nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])
     sourceObject <- accessorVector[[1]] ## a model or modelValues
     
     if(accessorVector[[3]]) {## logProb == TRUE
         isLogProbName <- grepl('logProb_', nodeNames)
-        nodeNames <- c(nodeNames, timingFunction2(sourceObject, nodeNames[!isLogProbName])) ##sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
-##        nodeNames <- c(nodeNames, nodeName2LogProbName_FOR_PROFILING(sourceObject$modelDef, nodeNames[!isLogProbName]))
+        nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
     }
 
 ## time these also
