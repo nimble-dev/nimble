@@ -315,7 +315,7 @@ MCMCsuiteClass <- setRefClass(
             calculateEfficiency <<- calculateEfficiency
             if(calculateEfficiency) {
                 n <- length
-                ess <- coda::effectiveSize
+                ess <- effectiveSize
                 efficiency <- function(x) return(0)   ## placeholder; calculation done in addToOutput()
                 summaryStats_arg <- c(summaryStats_arg, 'n', 'ess', 'efficiency')
             }

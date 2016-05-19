@@ -95,22 +95,6 @@ setSize <- function(numObj, ..., row){
     thisCall <- as.list(match.call()[-1])
     if(length(thisCall) < 2) stop("No information provided to setSize")
     newDims <- unlist(list(...))
-    ## newDims <- if("row" %in% names(thisCall)) {
-    ##     ## this case is currently never used. 7/31/15.
-    ##     ## if it comes back into use, we would need to include eval()s, but it is moot due to using list(...) above
-    ##     if(length(thisCall) < 3) stop("Insufficient information provided to setSize")
-    ##     as.numeric(thisCall[2:(length(thisCall) - 1)])
-    ## } else {
-    ##     ## change made by DT to fix R execution of MCMC sampling in July 2015.
-    ##     ## I think this code (R function setSize) is still probably buggy,
-    ##     ## and should be reviewed in great detail.
-    ##     ## 7/31/15: DT's fix wasn't right, all moot by use list(...)
-    ##     ##as.numeric(thisCall[-1]) ## this was the buggy cod
-    ##     ##as.numeric(eval(thisCall[[-1]], envir = parent.frame())) ## this was DT's fix but it assumes the ... is one argument giving a vector of sizes.
-    ##     ## It should instead handle multiple ... args, each giving a scalar size for one dimension
-    ## next line is correct but moot by using list(...) above
-    ##     as.numeric(unlist(lapply(thisCall[-1], eval, envir = parent.frame())))
-    ## }
     if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
     if(is.numeric(numObj)) {
         oldDims <- nimDim(numObj)
