@@ -69,13 +69,13 @@ reference_samps <- mvtnorm::rmvt(n = 10000, delta = mn, sigma = cov, df = df)
 r_samps <- t(replicate(10000, rmvt_chol(n = 1, mn, chol(cov), df, prec_param = FALSE)))
 
 try(test_that("Test that random samples (R) have correct mean: ",
-              expect_equal(colMeans(r_samps), (colMeans(reference_samps),
-                                                    tol = 0.01),
+              expect_equal(colMeans(r_samps), (colMeans(reference_samps)),
+                                                    tol = 0.01,
                           info = "Difference in means exceeds tolerance")))
 
 try(test_that("Test that random samples (R) have correct covariance: ",
-              expect_equal(cov(r_samps), (cov(reference_samps),
-                                               tol = 0.1),
+              expect_equal(cov(r_samps), (cov(reference_samps)),
+                                               tol = 0.1,
                           info = "Difference in covs exceeds tolerance")))
 
 
@@ -92,13 +92,13 @@ nf_sampling <- nimbleFunction(
 nf_samps <- t(replicate(10000, nf_sampling(mn, cov, df)))
 
 try(test_that("Test that random samples (nf) have correct mean: ",
-              expect_equal(colMeans(nf_samps), (colMeans(reference_samps),
-                                                    tol = 0.01),
+              expect_equal(colMeans(nf_samps), (colMeans(reference_samps)),
+                                                    tol = 0.01,
                           info = "Difference in means exceeds tolerance")))
 
 try(test_that("Test that random samples (nf) have correct covariance: ",
-              expect_equal(cov(nf_samps), (cov(reference_samps),
-                                                tol = 0.1),
+              expect_equal(cov(nf_samps), (cov(reference_samps)),
+                                                tol = 0.1,
                           info = "Difference in covs exceeds tolerance")))
 
 ## sampling via `simulate`
@@ -111,11 +111,11 @@ simul_samp <- function(model) {
 simul_samps <- t(replicate(1000, simul_samp(c_mvt_model)))
 
 try(test_that("Test that random samples (simulate) have correct mean: ",
-              expect_equal(colMeans(simul_samps), (colMeans(reference_samps),
-                                                    tol = 0.1),
+              expect_equal(colMeans(simul_samps), (colMeans(reference_samps)),
+                                                    tol = 0.1,
                           info = "Difference in means exceeds tolerance")))
 
 try(test_that("Test that random samples (simulate) have correct covariance: ",
-              expect_equal(cov(simul_samps), (cov(reference_samps),
-                                                tol = 0.5),
+              expect_equal(cov(simul_samps), (cov(reference_samps)),
+                                                tol = 0.5,
                           info = "Difference in covs exceeds tolerance")))
