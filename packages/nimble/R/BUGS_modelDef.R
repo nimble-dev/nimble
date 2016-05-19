@@ -2139,8 +2139,6 @@ modelDefClass$methods(printDI = function() {
 modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
     if(length(nodeName) == 0)
         return(NULL)
-    
-<<<<<<< HEAD
     if(nodeFunctionID) {
         ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
         ## old system had IDs for RHSonly things here.  This puts that back in for now.
@@ -2149,12 +2147,6 @@ modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TR
         ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
     } else {
         ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
-=======
-    if(nodeFunctionID) 
-        ## old system had IDs for RHSonly things here.  This puts that back in for now.
-        output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-    else
->>>>>>> devel
         ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
         ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
         output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
