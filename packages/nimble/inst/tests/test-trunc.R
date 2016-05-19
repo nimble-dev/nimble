@@ -108,8 +108,8 @@ Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
-try(test_that("Test that MCMC respects truncation bounds: ", expect_gt(min(smp), 0.2, info = "minimum in MCMC greater than lower bound")))
-try(test_that("Test that MCMC respects truncation bounds: ", expect_lt(min(smp), 2, info = "maximum in MCMC less than upper bound")))
+try(test_that("Test that MCMC respects truncation bounds: minimum in MCMC greater than lower bound", expect_gt(min(smp), 0.2)))
+try(test_that("Test that MCMC respects truncation bounds: maximum in MCMC less than upper bound", expect_lt(min(smp), 2)))
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
           results = list(mean = list(mu = 1.5), sd = list(mu = .27 )),
@@ -150,9 +150,9 @@ Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
-try(test_that("Test that MCMC respects right-censoring bounds: ", expect_gt(min(smp[ , 'bnd'] - max(y[!is.cens])), 0, info = "upper bound in MCMC exceeds observations")))
-try(test_that("Test that MCMC respects censoring bounds: ",
-              expect_gt(min(smp[ , 'y[1]'] - smp[ , 'bnd']), 0, info = "minimum inferred censored value in MCMC greater than bound")))
+try(test_that("Test that MCMC respects right-censoring bounds: upper bound in MCMC exceeds observations", expect_gt(min(smp[ , 'bnd'] - max(y[!is.cens])), 0)))
+try(test_that("Test that MCMC respects censoring bounds: minimum inferred censored value in MCMC greater than bound",
+              expect_gt(min(smp[ , 'y[1]'] - smp[ , 'bnd']), 0)))
 
 
 test_mcmc(model = code, data = c(data, constants), inits = inits, numItsC = 10000,
@@ -193,9 +193,9 @@ Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
-try(test_that("Test that MCMC respects left-censoring bounds: ", expect_gt(min(min(y[not.cens]) - smp[ , 'bnd']), 0, info = "lower bound in MCMC is less than observations")))
-try(test_that("Test that MCMC respects censoring bounds: ",
-              expect_gt(max(smp[ , 'bnd'] - smp[ , 'y[1]']), 0, info = "maximum inferred censored value in MCMC less than bound")))
+try(test_that("Test that MCMC respects left-censoring bounds: lower bound in MCMC is less than observations", expect_gt(min(min(y[not.cens]) - smp[ , 'bnd']), 0)))
+try(test_that("Test that MCMC respects censoring bounds: maximum inferred censored value in MCMC less than bound",
+              expect_gt(max(smp[ , 'bnd'] - smp[ , 'y[1]']), 0)))
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
           results = list(mean = list(mu = 43.4, 'y[1]' = 33), sd = list(mu = 2.4, 'y[1]' = 5.3)),
@@ -269,8 +269,8 @@ Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
-try(test_that("Test that MCMC respects constraints: ", expect_gt(min(smp[ , 'mu1'] + smp[ , 'mu2']), 0, info = "constraint on sum of mu1 and mu2 is violated")))
-try(test_that("Test that MCMC respects constraints: ", expect_gt(min(smp[ , 'mu1']), 0, info = "constraint on mu1 is violated")))
+try(test_that("Test that MCMC respects constraints: constraint on sum of mu1 and mu2 is violated", expect_gt(min(smp[ , 'mu1'] + smp[ , 'mu2']), 0)))
+try(test_that("Test that MCMC respects constraints: constraint on mu1 is violated", expect_gt(min(smp[ , 'mu1']), 0)))
 
 test_mcmc(model = code, data = c(data, constants), inits = inits,
           results = list(mean = list(mu1 = 1.45, mu2 = -.82), sd = list(mu1 = .26, mu2 = .30)),
@@ -367,8 +367,8 @@ Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
-try(test_that("Test that MCMC respects constraints: ", expect_lt(max(smp[ , 'a0[1]'] - smp[ , 'a0[2]']), 0, info = "constraint on ordering of a[1] and a[2] is violated")))
-try(test_that("Test that MCMC respects constraints: ", expect_lt(max(smp[ , 'a0[2]'] - smp[ , 'a0[3]']), 0, info = "constraint on ordering of a[2] and a[3] is violated")))
+try(test_that("Test that MCMC respects constraints: constraint on ordering of a[1] and a[2] is violated", expect_lt(max(smp[ , 'a0[1]'] - smp[ , 'a0[2]']), 0)))
+try(test_that("Test that MCMC respects constraints: constraint on ordering of a[2] and a[3] is violated", expect_lt(max(smp[ , 'a0[2]'] - smp[ , 'a0[3]']), 0)))
 
 test_mcmc(model = code, inits = as.list(inits), data = c(data, as.list(constants)), numItsC = 10000,
           resampleData = TRUE, basic = FALSE,
@@ -446,7 +446,7 @@ for(j in 1:5) {
 
 diffProbsR <- abs(simProbs - c(dens_y123[1], dens_y123[1], dens_y123[1], dens_y4[1], dens_y5[1]))
 
-try(test_that("Test that truncation with discrete distribution gives correct simulation: ", expect_lt(max(diffProbsR), 0.015, info = "simulation does not give approximate density values")))
+try(test_that("Test that truncation with discrete distribution gives correct simulation: simulation does not give approximate density values", expect_lt(max(diffProbsR), 0.015)))
 
 m$y[1] <- 1
 try(test_that("Test that truncation with discrete distribution gives correct density: ", expect_equal(calculate(m, 'y[1]'), (log(dens_y123[1])), info = "incorrect R model density for y[1]=1")))
