@@ -345,13 +345,13 @@ test_size <- function(input, verbose = TRUE) {
     )    
     try(test_that(paste0("Test of size/dimension check: ", input$name),
                   expect_equal(!is(result, "try-error"), input$expectPass,
-                              errorMsg)))
+                              info = errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
         try(test_that(paste0("Test of size/dimension check: ", input$name),
                       expect_equal(!is(result, "try-error"), input$expectPass,
-                                  errorMsg)))
+                                  info = errorMsg)))
     }
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
     if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
@@ -360,13 +360,13 @@ test_size <- function(input, verbose = TRUE) {
     )
     try(test_that(paste0("Test of size/dimension check: ", input$name),
                   expect_equal(!is(result, "try-error"), input$expectPass,
-                              errorMsg)))
+                              info = errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
         try(test_that(paste0("Test of size/dimension check: ", input$name),
                       expect_equal(!is(result, "try-error"), input$expectPass,
-                                  errorMsg)))
+                                  info = errorMsg)))
     }
     invisible(NULL)
 }
