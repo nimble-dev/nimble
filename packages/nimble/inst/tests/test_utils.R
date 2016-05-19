@@ -181,7 +181,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           context(paste0("testing ", example, " MCMC"))
           try(
               test_that(paste0("test of equality of output from R and C versions of ", example, " MCMC"), {
-                  expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
+                  expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
               })
               )
       }
@@ -194,7 +194,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
               for(varName in names(exactSample))
                   try(
                       test_that(paste("Test of MCMC result against known samples for", example, ":", varName), {
-                          expect_that(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), equals(round(exactSample[[varName]], 8))) })
+                          expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8)) })
                       )
           }
       }
@@ -234,7 +234,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
             try(
               test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"), {
-                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
               })
               )
           }
@@ -249,7 +249,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
             try(
               test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
-                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
               })
               )
           }
@@ -318,7 +318,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     miscoverage <- abs(coverage - 0.95)
     try(
       test_that(paste("Test of MCMC coverage on known parameter values for:", example), {
-                expect_that(miscoverage, is_less_than(tolerance))
+                expect_lt(miscoverage, tolerance)
               })
       )
     if(miscoverage > tolerance || verbose) {
