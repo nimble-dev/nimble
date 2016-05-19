@@ -92,16 +92,15 @@ class VecNimArrBase : public NimVecType {
    	return(static_cast<NimArrType *> (getBasePtr(row) )  );	
    }
 
-//  virtual int size()=0;
-    VecNimArrBase() {
-      myType = UNDEFINED;
-      if(typeid(T) == typeid(int) )
-    	myType = INT;
-      if(typeid(T) == typeid(double) )
-    	myType = DOUBLE;
-    }
-
-    ~VecNimArrBase(){};
+  VecNimArrBase() {
+    myType = UNDEFINED;
+    if(typeid(T) == typeid(int) )
+      myType = INT;
+    if(typeid(T) == typeid(double) )
+      myType = DOUBLE;
+  }
+  
+  ~VecNimArrBase(){};
 };
 
 

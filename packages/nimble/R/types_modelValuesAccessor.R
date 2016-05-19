@@ -67,72 +67,20 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
     getCode
 }
 
-## getValues.modelValuesAccessorVector <- function(accessorVector, i, row = NA) {
-##     if(is.na(row)) stop('Can no longer use row = NA in getValues.modelValuesAccessorVector')
-##     nodeName <- eval(accessorVector[[2]], envir = accessorVector[[4]])[i]
-##     nodeCode <- parse(text = nodeName, keep.source = FALSE)[[1]]
-##     sourceObject <- accessorVector[[1]]
-##     if(is.name(nodeCode)) return(sourceObject[[nodeName]][[row]])
-##     nodeCode[[2]] <- substitute(sourceObject[[VN]][[row]], list(VN = as.character(nodeCode[[2]]) ) )
-##     eval(nodeCode)
-## }
-## setValues.modelValuesAccessorVector <- function(accessorVector, i, vals, row = NA) {
-##     if(is.na(row)) stop('Can no longer use row = NA in setValues.modelValuesAccessorVector')
-##     nodeName <- eval(accessorVector[[2]], envir = accessorVector[[4]])[i]
-##     nodeCode <- parse(text = nodeName, keep.source = FALSE)[[1]]
-##     sourceObject <- accessorVector[[1]]
-##     if(is.name(nodeCode)) nodeCode <- quote(sourceObject[[nodeName]][[row]])
-##     nodeCode[[2]] <- substitute(sourceObject[[VN]][[row]], list(VN = as.character(nodeCode[[2]]) ) )
-##     eval(substitute(A <- vals), list(A = nodeCode))
-## }
-
-## A wrapper on one lapply to get clearer Rprof results
-## SINGLE_LAPPLY_FOR_PROFILING <- function( varNames, symTab ) {
-##     ans <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
-##     ans
-## }
-
-## A wrapper on one member function to get clearer Rprof results
-## nodeName2LogProbName_FOR_PROFILING <- function(md, arg1) {
-##     ans <- md$nodeName2LogProbName(arg1)
-##     ans
-## }
-
 makeMapInfoFromAccessorVectorFaster <- function(accessorVector ) {
-##    length <- 0
     nodeNames <- eval(accessorVector[[2]], envir = accessorVector[[4]])
     sourceObject <- accessorVector[[1]] ## a model or modelValues
     
     if(accessorVector[[3]]) {## logProb == TRUE
         isLogProbName <- grepl('logProb_', nodeNames)
         nodeNames <- c(nodeNames, sourceObject$modelDef$nodeName2LogProbName(nodeNames[!isLogProbName]))
-##        nodeNames <- c(nodeNames, nodeName2LogProbName_FOR_PROFILING(sourceObject$modelDef, nodeNames[!isLogProbName]))
     }
 
     varNames <- .Call('parseVar', nodeNames)
     symTab <- sourceObject$getSymbolTable()
     varSizesAndNDims <- lapply(varNames, function(x) {symObj <- symTab$getSymbolObject(x); list(symObj$size, symObj$nDim)})
-##    varSizesAndNDims <- SINGLE_LAPPLY_FOR_PROFILING(varNames, symTab)
     
     list(nodeNames, varSizesAndNDims)
-    ## mapInfo <- lapply(nodeNames, function(z) {
-    ##     x <- parse(text = z, keep.source = FALSE)[[1]]
-    ##     varAndIndices <- getVarAndIndices(x)
-    ##     varName <- as.character(varAndIndices$varName)
-    ##     varSym <- sourceObject$getSymbolTable()$getSymbolObject(varName) ## previously from model$getVarInfo(varName)
-    ##     ans <- varAndIndices2mapParts(varAndIndices, varSym$size, varSym$nDim)
-    ##     ans$varName <- varName
-    ##     anslength <- prod(ans$sizes)
-    ##     length <<- length + anslength
-    ##     ans$singleton <- anslength == 1
-    ##     ans$length <- anslength ## putting it last so it doesn't mess up current C++ code
-    ##     ans
-    ## }) ## list elements will be offset, sizes, strides, varName, and singleton in that order.  Any changes must be propogated to C++
-
-    ## if(length(accessorVector) > 4) { ## set the length variable in the calling (setup) environment if needed
-    ##     assign(accessorVector[[5]], length, envir = accessorVector[[4]]) 
-    ## }
-    ## mapInfo
 }
 
 makeMapInfoFromAccessorVector <- function(accessorVector ) {
@@ -224,60 +172,3 @@ valuesAccessorVector <- setRefClass( ## new implementation
     )
     )
 
-
-## I don't think this is used any more
-## makeSingleModelValuesAccessor <- function(ids, modelValues){
-## 	return(modelValuesAccessor(id = id, modelValues = modelValues))
-##     }
-
-
-## modelValuesAccessorVector <- setRefClass( ## new implementation
-##    Class = 'modelValuesAccessorVector',
-##     contains = 'valuesAccessorVector',
-##     fields = list(row = 'ANY'),
-##     methods = list(
-##         initialize = function(...) {
-##             callSuper(...)
-##             row <<- as.integer(NA)
-##             makeAccessAndSetCode()
-##         },
-##         makeAccessAndSetCode = function() {
-##             accessCode <<- lapply(code, function(temp) {
-##                 if(is.name(temp)) return(substitute(sourceObject$B[[localrow]], list(B = temp)))
-##                 temp[[2]] <- substitute(sourceObject$B[[localrow]], list(B = temp[[2]]))
-##                 temp
-##             })
-##             setCode <<- lapply(accessCode, function(x) substitute(A <- vals, list(A = x)))
-##         },
-##         setRow = function(row) {
-##             row <<- row
-##         },
-##         getValues = function(i, row = NA) {
-##             ## model version
-##             localrow <- if(is.na(row)) .self$row else row
-##             eval(accessCode[[i]])
-##         },
-##         setValues = function(i, vals, row = NA) {
-##             ## model version
-##             localrow <- if(is.na(row)) .self$row else row
-##             eval(setCode[[i]])
-##         }
-##     ))
-
-## length.modelValuesAccessorVector <- function(access)
-## 	return(access$length)
-
-## I don't think this is used any more
-## modelValuesAccessor <- setRefClass(
-##     Class = 'modelValuesAccessor',
-##     fields = list(modelValues = 'ANY',
-##     			   id = 'ANY'
-##    #               var         = 'ANY', 		#'character',
-##    #               first       = 'ANY', 		#'numeric',
-##    #               last        = 'ANY', 		#'numeric',
-##    #               length	  = 'ANY' 		#'numeric'
-##     ),
-##     methods = list(toStr = function() paste0(var, '[', first, ':', last, ']'),
-##                    show  = function() cat(paste0(toStr(), '\n'))
-##     )
-## )

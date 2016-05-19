@@ -310,9 +310,6 @@ getValuesAccess <- function(access) {
     sourceFromObject <- access[[1]]
     unlist(lapply(fromCode, function(i) eval(i)))
 
-##    if(access$numAccessors==0) return(numeric()) ## NEW ACCESSORS
-##    unlist(lapply(1:access$numAccessors, function(i) access$getValues(i)))
-
 }
 
 
@@ -332,19 +329,6 @@ setValuesAccess <- function(input, access) {
     }
     invisible(NULL)
 
-    ## if(access$numAccessors==0) return(NULL) ## NEW ACCESSORS
-    ## nextIndex <- 0
-    ## if(access$getLength() != length(input)) {
-    ##     writeLines('Length of input does not match accessor')
-    ##     if(access$getLength() > length(input)) stop('Bailing out because not enough values were provided for accessor')
-    ##     writeLines('Too many input values provided.  Continuing anyway')
-    ## }
-    ## for(i in 1:length(access$code)) {
-    ##     nextLength <- access$getLength(i)
-    ##     access$setValues(i, input[nextIndex + (1:nextLength)])
-    ##     nextIndex <- nextIndex + nextLength
-    ## }
-    ## invisible(NULL)
 }
 
 

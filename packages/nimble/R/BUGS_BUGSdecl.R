@@ -272,17 +272,6 @@ BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
             
             altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
             names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
-                                        #         dotParamNames <- names(dotParamExprs)
-                                        #         distRuleAltParamExprs <- getDistribution(as.character(RHSreplaced[[1]]))$altParams
-                                        #         for(altParam in names(distRuleAltParamExprs)) {
-                                        #             if(altParam %in% dotParamNames) {
-                                        #                 altParamExprs[[altParam]] <<- dotParamExprs[[altParam]]
-                                        #             } else {
-                                        #                 defaultParamExpr <- getDistributions(as.character(RHSreplaced[[1]]))$altParams[[altParam]]
-                                        #                 subParamExpr <- eval(substitute(substitute(EXPR, as.list(RHSreplaced)[-1]), list(EXPR=defaultParamExpr)))
-                                        #                 altParamExprs[[altParam]] <<- subParamExpr
-                                        #             }
-                                        #         }
         }
     }
 })
@@ -364,14 +353,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
                 !checkNimbleOrRfunctionNames(funName)
-#                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")
                 unreplaceable <- sapply(contents[!contentsReplaceable], function(x) as.character(x$code))
                 stop("R function '", funName,"' has arguments that cannot be evaluated; either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ", paste(unreplaceable, collapse = ","), ".")
             }
-            # old text:  non-replaceable node values as arguments.  Must be a nimble function.
 
             return(list(code = contentsCode,
                         replaceable = allContentsReplaceable & isRfunction,
@@ -437,7 +424,6 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2, replaceable=allContentsReplaceable))
         if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
-#        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
         isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
         if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))
