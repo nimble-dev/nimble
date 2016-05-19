@@ -344,13 +344,13 @@ test_size <- function(input, verbose = TRUE) {
         m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
     )    
     try(test_that(paste0("Test of size/dimension check: ", input$name),
-                  expect_that(!is(result, "try-error"), equals(input$expectPass),
+                  expect_equal(!is(result, "try-error"), input$expectPass,
                               errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
         try(test_that(paste0("Test of size/dimension check: ", input$name),
-                      expect_that(!is(result, "try-error"), equals(input$expectPass),
+                      expect_equal(!is(result, "try-error"), input$expectPass,
                                   errorMsg)))
     }
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
@@ -359,13 +359,13 @@ test_size <- function(input, verbose = TRUE) {
         m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
     )
     try(test_that(paste0("Test of size/dimension check: ", input$name),
-                  expect_that(!is(result, "try-error"), equals(input$expectPass),
+                  expect_equal(!is(result, "try-error"), input$expectPass,
                               errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
         try(test_that(paste0("Test of size/dimension check: ", input$name),
-                      expect_that(!is(result, "try-error"), equals(input$expectPass),
+                      expect_equal(!is(result, "try-error"), input$expectPass,
                                   errorMsg)))
     }
     invisible(NULL)
