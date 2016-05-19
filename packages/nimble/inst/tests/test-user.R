@@ -82,18 +82,14 @@ for(var in c('dx', 'y', 'dz', 'w')) {
                   expect_equal(c(get(var, m)), (get(var, cm)),
                                              info = paste0(var, " values differ"))))
 }
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_lt(abs(2*cm$x - cm$dx), (.03),
-                          info = paste0("x and dx are not consistent"))))
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_lt(max(abs(2*cm$mu - cm$y)), (.03),
-                          info = paste0("mu and y are not consistent"))))
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03),
-                          info = paste0("x plus z and dz are not consistent"))))
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_lt(max(abs(2*cm$theta - cm$w)), (.03),
-                          info = paste0("theta and w are not consistent"))))
+try(test_that("Test that values based on user-supplied functions are correct (x and dx consistent): ",
+              expect_lt(abs(2*cm$x - cm$dx), (.03))))
+try(test_that("Test that values based on user-supplied functions are correct (mu and y consistent): ",
+              expect_lt(max(abs(2*cm$mu - cm$y)), (.03))))
+try(test_that("Test that values based on user-supplied functions are correct (x plus z and dz consistent):",
+              expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03))))
+try(test_that("Test that values based on user-supplied functions are correct (theta and w consistent):",
+              expect_lt(max(abs(2*cm$theta - cm$w)), (.03))))
 
 try(test_that("Test that arg matching by name is correct: ",
               expect_identical(c(m$out), (8),
@@ -260,13 +256,11 @@ m2 <- nimbleModel(code2, data = data2['y3'], constants = data2[c('upper', 'n2')]
 cm2 <- compileNimble(m2)
 simulate(m2, 'lambda')
 simulate(cm2, 'lambda')
-try(test_that("Test that truncation works with simulate nodeFunction for user-supplied distribution: ",
-              expect_lt(max(c(m2$lambda, cm2$lambda)), (upper),
-                          info = paste0("parameter exceeds upper bound"))))
+try(test_that("Test that truncation works with simulate nodeFunction for user-supplied distribution (parameter not exceed upper bound): ",
+              expect_lt(max(c(m2$lambda, cm2$lambda)), (upper))))
 m2$lambda <- cm2$lambda <- upper + 1
-try(test_that("Test that truncation works with calculate nodeFunction for user-supplied distribution: ",
-              expect_identical(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), (-Inf),
-                          info = paste0("calculate on out-of-bounds value does not return -Inf"))))
+try(test_that("Test that truncation works with calculate nodeFunction for user-supplied distribution (calculation on out-of-bounds not return -Inf): ",
+              expect_identical(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), (-Inf))))
 
 
 testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
@@ -294,9 +288,8 @@ Cmcmc <- compileNimble(Rmcmc, project = m)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
 
-try(test_that("Test that truncation works with MCMC for user-supplied distribution: ",
-              expect_lt(max(smp[ , 'lambda']), (upper),
-                          info = paste0("parameter exceeds upper bound"))))
+try(test_that("Test that truncation works with MCMC for user-supplied distribution (parameter not exceed upper bound): ",
+              expect_lt(max(smp[ , 'lambda']), (upper))))
 
 
 deregisterDistributions('ddirchmulti')
