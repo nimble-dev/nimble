@@ -79,27 +79,27 @@ simulate(cm)
 # need c() in here because R nodes are arrays
 for(var in c('dx', 'y', 'dz', 'w')) {
     try(test_that("Test that R and C models agree with user-supplied functions: ",
-                  expect_that(c(get(var, m)), equals(get(var, cm)),
+                  expect_equal(c(get(var, m)), (get(var, cm)),
                                              info = paste0(var, " values differ"))))
 }
 try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(abs(2*cm$x - cm$dx), is_less_than(.03),
+              expect_lt(abs(2*cm$x - cm$dx), (.03),
                           info = paste0("x and dx are not consistent"))))
 try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(max(abs(2*cm$mu - cm$y)), is_less_than(.03),
+              expect_lt(max(abs(2*cm$mu - cm$y)), (.03),
                           info = paste0("mu and y are not consistent"))))
 try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(abs(2*(cm$x + cm$z) - cm$dz), is_less_than(.03),
+              expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03),
                           info = paste0("x plus z and dz are not consistent"))))
 try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(max(abs(2*cm$theta - cm$w)), is_less_than(.03),
+              expect_lt(max(abs(2*cm$theta - cm$w)), (.03),
                           info = paste0("theta and w are not consistent"))))
 
 try(test_that("Test that arg matching by name is correct: ",
-              expect_that(c(m$out), is_identical_to(8),
+              expect_identical(c(m$out), (8),
                           info = paste0("incorrect arg matching by name in R model"))))
 try(test_that("Test that arg matching by name is correct: ",
-              expect_that(cm$out, is_identical_to(8),
+              expect_identical(cm$out, (8),
                           info = paste0("incorrect arg matching by name in C model"))))
 
 ## User-supplied distributions
@@ -261,11 +261,11 @@ cm2 <- compileNimble(m2)
 simulate(m2, 'lambda')
 simulate(cm2, 'lambda')
 try(test_that("Test that truncation works with simulate nodeFunction for user-supplied distribution: ",
-              expect_that(max(c(m2$lambda, cm2$lambda)), is_less_than(upper),
+              expect_lt(max(c(m2$lambda, cm2$lambda)), (upper),
                           info = paste0("parameter exceeds upper bound"))))
 m2$lambda <- cm2$lambda <- upper + 1
 try(test_that("Test that truncation works with calculate nodeFunction for user-supplied distribution: ",
-              expect_that(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), is_identical_to(-Inf),
+              expect_identical(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), (-Inf),
                           info = paste0("calculate on out-of-bounds value does not return -Inf"))))
 
 
@@ -295,12 +295,12 @@ Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
 
 try(test_that("Test that truncation works with MCMC for user-supplied distribution: ",
-              expect_that(max(smp[ , 'lambda']), is_less_than(upper),
+              expect_lt(max(smp[ , 'lambda']), (upper),
                           info = paste0("parameter exceeds upper bound"))))
 
 
 deregisterDistributions('ddirchmulti')
 try(test_that("Test that deregistration of user-supplied distributions works: ",
-              expect_that(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), equals(TRUE),
+              expect_equal(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), (TRUE),
                           info = paste0("ddirchmulti has not been deregistered"))))
 
