@@ -291,7 +291,7 @@ autoBlockClass <- setRefClass(
                 abModel$resetCmodelInitialValues()
                 timingList[[i]] <- as.numeric(system.time(CmcmcList[[i]]$run(niter))[3])
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[i]])
-                essList[[i]] <- apply(burnedSamples, 2, coda::effectiveSize)
+                essList[[i]] <- apply(burnedSamples, 2, effectiveSize)
                 essList[[i]] <- essList[[i]][essList[[i]] > 0]  ## exclude nodes with ESS=0 -- for discrete nodes which are fixed to a certain value; making work with discrete nodes
                 essPTList[[i]] <- essList[[i]] / timingList[[i]]
                 essPTminList[[i]] <- sort(essPTList[[i]])[1]

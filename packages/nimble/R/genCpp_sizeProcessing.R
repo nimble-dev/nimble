@@ -1146,7 +1146,7 @@ sizeReturn <- function(code, symTab, typeEnv) {
         if(!code$args[[1]]$isName) {
 ##            if(code$args[[1]]$toEigenize == 'yes') {
             if(anyNonScalar(code$args[[1]])) {
-                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv, forceAssign = TRUE))
             }
             ##            }
         }

@@ -56,8 +56,10 @@ test_math <- function(input, verbose = TRUE, size = 3) {
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
   if(is.logical(out)) out <- as.numeric(out)
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
-  try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name), expect_that(out, equals(out_nfR))))
-  try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name), expect_that(out, equals(out_nfC))))
+  try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name),
+                expect_equal(out, out_nfR)))
+  try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name),
+                expect_equal(out, out_nfC)))
   # unload DLL as R doesn't like to have too many loaded
   dyn.unload(project$cppProjects[[1]]$getSOName())
   invisible(NULL)
@@ -179,7 +181,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
           context(paste0("testing ", example, " MCMC"))
           try(
               test_that(paste0("test of equality of output from R and C versions of ", example, " MCMC"), {
-                  expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
+                  expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
               })
               )
       }
@@ -192,7 +194,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
               for(varName in names(exactSample))
                   try(
                       test_that(paste("Test of MCMC result against known samples for", example, ":", varName), {
-                          expect_that(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), equals(round(exactSample[[varName]], 8))) })
+                          expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8)) })
                       )
           }
       }
@@ -232,7 +234,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
             try(
               test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, strInfo, ")"), {
-                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
               })
               )
           }
@@ -247,7 +249,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
             strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
             try(
               test_that(paste("Test of MCMC result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
-                expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+                expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
               })
               )
           }
@@ -316,7 +318,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     miscoverage <- abs(coverage - 0.95)
     try(
       test_that(paste("Test of MCMC coverage on known parameter values for:", example), {
-                expect_that(miscoverage, is_less_than(tolerance))
+                expect_lt(miscoverage, tolerance)
               })
       )
     if(miscoverage > tolerance || verbose) {
@@ -342,14 +344,14 @@ test_size <- function(input, verbose = TRUE) {
         m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
     )    
     try(test_that(paste0("Test of size/dimension check: ", input$name),
-                  expect_that(!is(result, "try-error"), equals(input$expectPass),
-                              errorMsg)))
+                  expect_equal(!is(result, "try-error"), input$expectPass,
+                              info = errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
         try(test_that(paste0("Test of size/dimension check: ", input$name),
-                      expect_that(!is(result, "try-error"), equals(input$expectPass),
-                                  errorMsg)))
+                      expect_equal(!is(result, "try-error"), input$expectPass,
+                                  info = errorMsg)))
     }
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
     if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
@@ -357,14 +359,14 @@ test_size <- function(input, verbose = TRUE) {
         m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
     )
     try(test_that(paste0("Test of size/dimension check: ", input$name),
-                  expect_that(!is(result, "try-error"), equals(input$expectPass),
-                              errorMsg)))
+                  expect_equal(!is(result, "try-error"), input$expectPass,
+                              info = errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
         try(test_that(paste0("Test of size/dimension check: ", input$name),
-                      expect_that(!is(result, "try-error"), equals(input$expectPass),
-                                  errorMsg)))
+                      expect_equal(!is(result, "try-error"), input$expectPass,
+                                  info = errorMsg)))
     }
     invisible(NULL)
 }

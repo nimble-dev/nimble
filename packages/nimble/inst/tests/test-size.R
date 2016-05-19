@@ -254,6 +254,7 @@ testsDeterm <- list(
          inits = list(a = mat2, b = mat2 )),
     
     list(name = 'deterministic, nodes within multivar variables, input wrong dimension', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({
              for(i in 1:1)
                  y[1:2, i] <- a[1:2,1:2] %*% b[1:2, 1:2]}),
