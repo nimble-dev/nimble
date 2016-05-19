@@ -56,8 +56,10 @@ test_math <- function(input, verbose = TRUE, size = 3) {
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
   if(is.logical(out)) out <- as.numeric(out)
   if(is.logical(out_nfR)) out_nfR <- as.numeric(out_nfR)
-  try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name), expect_that(out, equals(out_nfR))))
-  try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name), expect_that(out, equals(out_nfC))))
+  try(test_that(paste0("Test of math (direct R calc vs. R nimbleFunction): ", input$name),
+                expect_equal(out, out_nfR)))
+  try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name),
+                expect_equal(out, out_nfC)))
   # unload DLL as R doesn't like to have too many loaded
   dyn.unload(project$cppProjects[[1]]$getSOName())
   invisible(NULL)
