@@ -58,9 +58,11 @@ make a posting about the release on the webpage: click New Post (or maybe Posts 
 
 (make sure post is set up as a blog entry)
 
+add info on new release to release notes page
+
 update NEWS info on webpage as high-level summary of NEWS in package
 
-update version numbering on license and citation page
+update version numbering on license and citation page and 'What is Nimble' page
 
 rebuild and post manual and put new version of manual in inst/doc
 git tag the manual repository
@@ -99,3 +101,5 @@ type "command" and press enter, to open a dos prompt.  (PowerShell is better, bu
 if you're in the directory with the batch file (build.bat), then just type "build" at the prompt.
 
 Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
+
+
