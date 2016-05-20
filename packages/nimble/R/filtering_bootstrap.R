@@ -1,5 +1,5 @@
 ##  Contains code to run bootstrap particle filters.
-##  We have a build function (buildBootF),
+##  We have a build function (buildBootstrapFilter),
 ##  and step function.
 
 
@@ -166,13 +166,13 @@ bootFStep <- nimbleFunction(
 #' IEE Proceedings F (Radar and Signal Processing). Vol. 140. No. 2. IET Digital Library, 1993.
 #' @examples
 #' model <- nimbleModel(code = ...)
-#' my_BootF <- buildBootF(model, 'x[1:100]')
+#' my_BootF <- buildBootstrapFilter(model, 'x[1:100]')
 #' Cmodel <- compileNimble(model)
 #' Cmy_BootF <- compileNimble(my_BootF, project = model)
 #' logLike <- Cmy_BootF(m = 100000)
 #' boot_X <- as.matrix(Cmy_BootF$mvEWSamples)
 #' @export
-buildBootF <- nimbleFunction(
+buildBootstrapFilter <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
     
     #control list extraction

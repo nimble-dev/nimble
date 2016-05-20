@@ -1,5 +1,5 @@
 ##  Contains code to run auxiliary particle filters.
-##  We have a build function (buildAuxF),
+##  We have a build function (buildAuxiliaryFilter),
 ##  and step function (auxFStep)
 ##
 ##  This version of the APF is based on 
@@ -209,13 +209,13 @@ return(0)
 #'   
 #' @examples
 #' model <- nimbleModel(code = ...)
-#' my_AuxF <- buildAuxF(model, 'x[1:100]', control = list(saveAll = TRUE, lookahead = 'mean'))
+#' my_AuxF <- buildAuxiliaryFilter(model, 'x[1:100]', control = list(saveAll = TRUE, lookahead = 'mean'))
 #' Cmodel <- compileNimble(model)
 #' Cmy_AuxF <- compileNimble(my_AuxF, project = model)
 #' logLike <- Cmy_AuxF(m = 100000)
 #' hist(as.matrix(Cmy_Auxf$mvEWSamples, 'x'))
 #' @export
-buildAuxF <- nimbleFunction(
+buildAuxiliaryFilter <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
     
    

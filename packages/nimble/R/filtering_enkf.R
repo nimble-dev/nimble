@@ -1,6 +1,6 @@
 ##  Contains code to run Ensemble Kalman Filter.
 ##  Algorithm found in Evenson '03.
-##  The buildENKF() funtion builds and runs the ENKF.
+##  The buildEnsembleKF() funtion builds and runs the ENKF.
 ##  The ENKFStep() function gets samples from latent states
 ##  for one timepoint. The ENKFStep function uses either the 
 ##  ENKFMultFunc or ENFKScalFunc depending on whether the dependent data
@@ -221,14 +221,14 @@ ENKFStep <- nimbleFunction(
 #'  Monthly Weather Review 126.3 (1998): 796-811.
 #' @examples
 #' model <- nimbleModel(code = ...)
-#' my_ENKFF <- buildENKF(model, 'x')
+#' my_ENKFF <- buildEnsembleKF(model, 'x')
 #' Cmodel <- compileNimble(model)
 #' Cmy_ENKF <- compileNimble(my_ENKF, project = model)
 #' Cmy_ENKF$run(m = 100000)
 #' ENKF_X <- as.matrix(Cmy_ENKF$mvSamples, 'x')
 #' hist(ENKF_X)
 #' @export
-buildENKF <- nimbleFunction(
+buildEnsembleKF <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
 
     #control list extraction

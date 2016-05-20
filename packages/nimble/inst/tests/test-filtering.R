@@ -56,7 +56,7 @@ test_filter(model = code, name = 'basic auxiliary w/ mean lookahead', data = tes
                                      var = list(x = rep(.2,3)),
                                      ll = list(2)))
 
-test_filter(model = code, name = 'basic ENKF', data = testdata, filterType = "ENKF", latentNodes = "x", 
+test_filter(model = code, name = 'basic ensembleKF', data = testdata, filterType = "ensembleKF", latentNodes = "x", 
              inits = inits,
              results = list(mean = list(x = c(0,0.454,1.209)),
                             var = list(x = c(.667, .909, .977))),
@@ -119,7 +119,7 @@ test_filter(model = code, name = 'multivariate auxiliary mean lookahead', data =
              resultsTolerance = list(mean = list(x = xFilterTol),
                                      ll = list(2)))
 
-test_filter(model = code, name = 'multivariate enkf', data = testdata, filterType = "ENKF", latentNodes = "x",
+test_filter(model = code, name = 'multivariate ensembleKF', data = testdata, filterType = "ensembleKF", latentNodes = "x",
             filterControl = list(timeIndex = 1, saveAll = F),
             results = list(mean = list(x = xFilter[3,])),
             resultsTolerance = list(mean = list(x = xFilterTol[3,])))
@@ -159,7 +159,7 @@ testdata <- list(y=y)
 
 inits <- list(sigma_x=1,sigma_y=.1)
 
-test_filter(model = code, name = 'scalar lwf', inits = inits, data = testdata, filterType = "LW", latentNodes = "x", results = list(
+test_filter(model = code, name = 'scalar lwf', inits = inits, data = testdata, filterType = "LiuWest", latentNodes = "x", results = list(
   mean = list(x = x,
               sigma_x = sigma_x,
               sigma_y = sigma_y)),
@@ -167,9 +167,9 @@ test_filter(model = code, name = 'scalar lwf', inits = inits, data = testdata, f
                                       sigma_x = .5,
                                       sigma_y = .5)))
 
-test_mcmc(model = code, name = 'scalar pmcmc', inits = inits, data = testdata, doR = FALSE,  samplers = list(
-  list(type = 'RW_PFilter', target = 'sigma_x', control = list(latents = 'x', m = 1000, resample = F)),
-  list(type = 'RW_PFilter', target = 'sigma_y', control = list(latents = 'x', m = 1000, resample = F))),
+test_mcmc(model = code, name = 'scalar pmcmc', inits = inits, data = testdata,  samplers = list(
+  list(type = 'RW_PF', target = 'sigma_x', control = list(latents = 'x', m = 1000, resample = F)),
+  list(type = 'RW_PF', target = 'sigma_y', control = list(latents = 'x', m = 1000, resample = F))),
   removeAllDefaultSamplers = TRUE, numItsC = 1000, results = list(
   mean = list( sigma_x = sigma_x,
               sigma_y = sigma_y)),
@@ -177,7 +177,7 @@ test_mcmc(model = code, name = 'scalar pmcmc', inits = inits, data = testdata, d
                                       sigma_y = .5)))
 
 test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = testdata,  samplers = list(
-  list(type = 'RW_PFilter_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = F))),
+  list(type = 'RW_PF_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = F))),
   removeAllDefaultSamplers = TRUE, numItsC = 1000, results = list(
     mean = list(sigma_x = sigma_x,
                 sigma_y = sigma_y)),

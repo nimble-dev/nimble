@@ -720,10 +720,10 @@ sampler_RW_llFunction_block <- nimbleFunction(
 
 
 #######################################################################################  
-### RW_PFilter, does a univariate RW, but using a particle filter likelihood function ###@@
+### RW_PF, does a univariate RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
-sampler_RW_PFilter <- nimbleFunction(
+sampler_RW_PF <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
     ###  control list extraction  ###
@@ -762,7 +762,7 @@ sampler_RW_PFilter <- nimbleFunction(
    
     
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    if(length(targetAsScalar) > 1)     stop('more than one top-level target; cannot use RW_PFilter sampler, try RW_PFilter_block sampler')
+    if(length(targetAsScalar) > 1)     stop('more than one top-level target; cannot use RW_PF sampler, try RW_PF_block sampler')
     d <- length(targetAsScalar) 
     
     ###  node list generation  ###  
@@ -791,11 +791,11 @@ sampler_RW_PFilter <- nimbleFunction(
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     
     if(filterType == "auxiliary"){
-      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = TRUE, smoothing = TRUE,
+      my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE,
                                                                     lookahead = lookahead))
     }
     else if(filterType == "bootstrap"){
-      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = TRUE, smoothing = TRUE))
+      my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE))
     }
     else{
       stop("filter type must be either bootstrap or auxiliary")
@@ -898,10 +898,10 @@ sampler_RW_PFilter <- nimbleFunction(
 
 
 #######################################################################################  
-### RW_PFilter_block, does a block RW, but using a particle filter likelihood function ###@@
+### RW_PF_block, does a block RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
-sampler_RW_PFilter_block <- nimbleFunction(
+sampler_RW_PF_block <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target,  control) {
     ###  control list extraction  ###  
@@ -941,7 +941,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
     
     ###  node list generation  ### 
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-    if(length(targetAsScalar) < 2)     stop('less than two top-level targets; cannot use RW_PFilter_block sampler, try RW_PFilter sampler')
+    if(length(targetAsScalar) < 2)     stop('less than two top-level targets; cannot use RW_PF_block sampler, try RW_PF sampler')
     calcNodes <- model$getDependencies(target)
     
     ###  numeric value generation  ###
@@ -980,11 +980,11 @@ sampler_RW_PFilter_block <- nimbleFunction(
       smoothingVal <- FALSE
     }  
     if(filterType == "auxiliary"){
-      my_particleFilter <- buildAuxF(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal,
+      my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal,
                                                                     lookahead = lookahead))
     }
     else if(filterType == "bootstrap"){
-      my_particleFilter <- buildBootF(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal))
+      my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal))
     }
     else{
       stop("filter type must be either bootstrap or auxiliary")
@@ -1209,11 +1209,11 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
 #' }
 #' \cr
-#' @section RW_PFilter sampler
+#' @section RW_PF sampler
 #' 
-#' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PFilter sampler uses a Metropolis Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PF sampler uses a Metropolis Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'  \cr
-#' The RW_PFilter sampler accepts the following control list elements: \cr
+#' The RW_PF sampler accepts the following control list elements: \cr
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
@@ -1226,11 +1226,11 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
 #' }
 #' \cr
-#' #' @section RW_PFilter_block sampler
+#' #' @section RW_PF_block sampler
 
-#' #' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PFilter_block sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#' #' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PF_block sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'  \cr
-#' The RW_PFilter_block sampler accepts the following control list elements: \cr
+#' The RW_PF_block sampler accepts the following control list elements: \cr
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
@@ -1256,7 +1256,7 @@ sampler_RW_PFilter_block <- nimbleFunction(
 #' 
 #' @name samplers
 #' 
-#' @aliases sampler posterior_predictive RW RW_block RW_llFunction slice crossLevel RW_llFunction_block RW_PFilter RW_PFilter_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PFilter sampler_RW_PFilter_block
+#' @aliases sampler posterior_predictive RW RW_block RW_llFunction slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block
 #'
 #' @seealso configureMCMC addSampler buildMCMC
 #'

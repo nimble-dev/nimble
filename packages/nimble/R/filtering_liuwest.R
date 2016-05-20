@@ -1,5 +1,5 @@
 ##  Contains code to run a Liu and West filter.  The filter has a build
-##  function (buildLWF) and a step function (LWstepNS). Also contains 
+##  function (buildLiuWestFilter) and a step function (LWstepNS). Also contains 
 ##  a function for caluclating useful quantities. The doPars() function
 ##  is specialized to different variables in the mv objects, and allows
 ##  these variables to be set / retrieved within the mv objects without
@@ -346,7 +346,7 @@ LWparFunc <- nimbleFunction(
 #' 
 #' @examples
 #' model <- nimbleModel(code = ...)
-#' my_LWF <- buildLWF(model, 'x[1:100]', params = 'sigma_x')
+#' my_LWF <- buildLiuWestFilter(model, 'x[1:100]', params = 'sigma_x')
 #' Cmodel <- compileNimble(model)
 #' Cmy_LWF <- compileNimble(my_LWF, project = model)
 #' Cmy_LWF$run(100000)
@@ -357,7 +357,7 @@ LWparFunc <- nimbleFunction(
 #' 
 #' 
 #' @export
-buildLWF <- nimbleFunction(
+buildLiuWestFilter <- nimbleFunction(
   setup = function(model, nodes, params = NULL, control = list()){
     
     #control list extraction

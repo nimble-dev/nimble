@@ -346,7 +346,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
   # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states 
   # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
   #    and likelihoods within tolerance specified in resultsTolerance.  Results are compared for both weighted and unweighted samples.
-  # filterType determines which filter to use for the model.  Valid options are: "bootstrap", "auxiliary", "LW", "ENKF"
+  # filterType determines which filter to use for the model.  Valid options are: "bootstrap", "auxiliary", "LiuWest", "ensembleKF"
   # filterControl specifies options to filter function, such as saveAll = TRUE/FALSE.
   
   if(is.null(name)) {
@@ -381,20 +381,20 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
   }
   cat("Building filter\n")
   if(filterType == "bootstrap"){
-    if(!is.null(filterControl))  Rfilter <- buildBootF(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildBootF(Rmodel, nodes = latentNodes, control = list(saveAll = T, thresh = 0))    
+    if(!is.null(filterControl))  Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = filterControl)
+    else Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = list(saveAll = T, thresh = 0))    
   } 
   if(filterType == "auxiliary"){
-    if(!is.null(filterControl))  Rfilter <- buildAuxF(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildAuxF(Rmodel, nodes = latentNodes, control = list(saveAll = T))
+    if(!is.null(filterControl))  Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = filterControl)
+    else Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = list(saveAll = T))
   }  
-  if(filterType == "LW"){
-    if(!is.null(filterControl))  Rfilter <- buildLWF(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildLWF(Rmodel, nodes = latentNodes, control = list(saveAll = T))
+  if(filterType == "LiuWest"){
+    if(!is.null(filterControl))  Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = filterControl)
+    else Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = list(saveAll = T))
   }  
-  if(filterType == "ENKF"){
-    if(!is.null(filterControl))  Rfilter <- buildENKF(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildENKF(Rmodel, nodes = latentNodes, control = list(saveAll = T))
+  if(filterType == "ensembleKF"){
+    if(!is.null(filterControl))  Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = filterControl)
+    else Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = list(saveAll = T))
   }  
   
   if(doCpp) {
@@ -407,7 +407,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
       set.seed(seed);
       RfilterOut <- try(Rfilter$run(numItsR))
       if(!is(RfilterOut, "try-error")) {
-        if(filterType == "ENKF"){  
+        if(filterType == "ensembleKF"){  
           RmvSample  <- nfVar(Rfilter, 'mvSamples')
           R_samples <- as.matrix(RmvSample)
         }
@@ -422,7 +422,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     if(doCpp) {
       set.seed(seed)
       CfilterOut <- Cfilter$run(numItsR)
-      if(filterType == "ENKF"){  
+      if(filterType == "ensembleKF"){  
         CmvSample <- nfVar(Cfilter, 'mvSamples')
         C_samples <- as.matrix(CmvSample)
         C_subSamples <- C_samples[, attributes(R_samples)$dimnames[[2]], drop = FALSE]
@@ -441,7 +441,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     }
     if(doR && doCpp && !is.null(R_samples)) {
       context(paste0("testing ", example," ", filterType, " filter"))
-      if(filterType == "ENKF"){
+      if(filterType == "ensembleKF"){
         try(
           test_that(paste0("test of equality of output from R and C versions of ", example," ", filterType, " filter"), {
             expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
@@ -489,7 +489,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     Cll <- Cfilter$run(numItsC_results)
     for(wMetric in c(TRUE, FALSE)){
       weightedOutput <- 'unweighted'
-      if(filterType == "ENKF")
+      if(filterType == "ensembleKF")
         CfilterSample <- nfVar(Cfilter, 'mvSamples')
       else{
         if(wMetric){
