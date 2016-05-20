@@ -85,6 +85,7 @@ rdirch <- function(n = 1, alpha) {
 #' Density and random generation for the multinomial distribution
 #'
 #' @name Multinomial
+#' @aliases multinomial
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -259,7 +260,9 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #'
 #' Density and random generation for the multivariate t distribution, using the Cholesky factor of either the precision matrix or the covariance matrix.
 #'
-#' @aliases rmvt_chol
+#' @name Multivariate-t
+#'
+#' @aliases mvt multivariate-t 
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
@@ -282,6 +285,10 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #' x <- rmvt_chol(1, mean, ch, df = 1, prec_param = FALSE)
 #' dmvt_chol(x, mean, ch, df = 1, prec_param = FALSE)
 #' 
+NULL
+
+#' @rdname Multivariate-t
+#' @export
 dmvt_chol <- function(x, mean, cholesky, df, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
@@ -289,6 +296,8 @@ dmvt_chol <- function(x, mean, cholesky, df, prec_param = TRUE, log = FALSE) {
         as.double(df), as.double(prec_param), as.logical(log))
 }
 
+#' @rdname Multivariate-t
+#' @export
 rmvt_chol <- function(n = 1, mean, cholesky, df, prec_param = TRUE) {
   ## cholesky should be upper triangular
   ## FIXME: allow cholesky to be lower tri
