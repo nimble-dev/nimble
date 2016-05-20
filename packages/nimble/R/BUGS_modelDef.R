@@ -1441,7 +1441,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     vars_2_nodeOrigID <- new.env()     ## IDs for node function labels, e.g. for x[1:4] might be (NA, NA, NA, 2) if x[1:3] is RHS-only and x[4] is LHS
     vars_2_vertexOrigID <- new.env()   ## IDs for node labels, e.g. x[1:4] might be: 1, 1, 1, 2
     vars2LogProbName <- new.env()      ## e.g. "x" might be "logProb_x" if it has any LHS
-    vars2LogProbID <- new.env()        ## yiels LogProbIDs, which are not sorted in any way and we might move away from.
+    ##vars2LogProbID <- new.env()        ## yiels LogProbIDs, which are not sorted in any way and we might move away from.
 
     ## 1b. set up variables in all the environments
     for(iV in seq_along(varInfo)) {
@@ -1450,12 +1450,12 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         if(varInfo[[iV]]$nDim > 0) {
             vars_2_nodeOrigID[[varName]] <- array(as.numeric(NA), dim = varInfo[[iV]]$maxs)
             vars2LogProbName[[varName]] <- array(dim = varInfo[[iV]]$maxs)
-            vars2LogProbID[[varName]] <- array(dim = varInfo[[iV]]$maxs)
+           ## vars2LogProbID[[varName]] <- array(dim = varInfo[[iV]]$maxs)
             storage.mode(vars2LogProbName[[varName]]) <- 'character'
         } else {
             vars_2_nodeOrigID[[varName]] <- as.numeric(NA)
             vars2LogProbName[[varName]] <- as.character(NA)
-            vars2LogProbID[[varName]] <- as.numeric(NA)
+            ##vars2LogProbID[[varName]] <- as.numeric(NA)
         }
     }
 
@@ -1560,10 +1560,10 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 IDassignCode <- insertSubIndexExpr(targetExprWithMins, quote(iAns))
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbIDs
                 forCode <- substitute( for(iAns in 1:OUTPUTSIZE) ASSIGNCODE <- logProbIDs[iAns], list(OUTPUTSIZE = BUGSdecl$outputSize, ASSIGNCODE = IDassignCode) )
-                BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbID[[lhsVar]]
-                eval(forCode, envir = BUGSdecl$replacementsEnv)
-                vars2LogProbID[[lhsVar]] <- BUGSdecl$replacementsEnv[[lhsVar]]
-                rm(list = c(lhsVar, 'logProbIDs'), envir = BUGSdecl$replacementsEnv)
+##                BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbID[[lhsVar]]
+##                eval(forCode, envir = BUGSdecl$replacementsEnv)
+##                vars2LogProbID[[lhsVar]] <- BUGSdecl$replacementsEnv[[lhsVar]]
+##                rm(list = c(lhsVar, 'logProbIDs'), envir = BUGSdecl$replacementsEnv)
 
                 BUGSdecl$replacementsEnv[['logProbIDs']] <- newLogProbNames
                 BUGSdecl$replacementsEnv[[lhsVar]] <- vars2LogProbName[[lhsVar]]
@@ -1572,13 +1572,13 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
                 rm(list = c(lhsVar, 'logProbIDs'), envir = BUGSdecl$replacementsEnv)
             } else {
                 ## If no replacementsEnv was set up, then there were no index variables (only numerics)
-                eval(substitute(A <- B, list(A = targetExprWithMins, B = newLogProbIDs)), envir = vars2LogProbID)
+##                eval(substitute(A <- B, list(A = targetExprWithMins, B = newLogProbIDs)), envir = vars2LogProbID)
                 eval(substitute(A <- B, list(A = targetExprWithMins, B = newLogProbNames)), envir = vars2LogProbName)
             }
         } else { ## nDim == 0
             logProbNames <- c(logProbNames, logProbVarName)
             logProbIDs <- c(logProbIDs, nextLogProbID)
-            vars2LogProbID[[lhsVar]] <- nextLogProbID
+            ##vars2LogProbID[[lhsVar]] <- nextLogProbID
             vars2LogProbName[[lhsVar]] <- logProbVarName
             nextLogProbID <- nextLogProbID + 1
         }
@@ -1877,9 +1877,13 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     if(debug) browser()
 
     maps$vars2LogProbName <<- vars2LogProbName
-    maps$vars2LogProbID <<- vars2LogProbID
-    maps$logProbIDs_2_LogProbName <<- logProbNames
+##    maps$vars2LogProbID <<- vars2LogProbID
+##    maps$logProbIDs_2_LogProbName <<- logProbNames
 
+    graphID_2_logProbName <- paste0("logProb_", gsub(":[0123456789]+", "", maps$graphID_2_nodeName))
+    graphID_2_logProbName[ maps$types != "stoch"] <- NA
+    maps$graphID_2_logProbName <<- graphID_2_logProbName
+    
     maps$edgesFrom <<- oldGraphID_2_newGraphID[edgesFrom]
     maps$edgesTo <<- oldGraphID_2_newGraphID[edgesTo]
     maps$edgesParentExprID <<- edgesParentExprID
@@ -2135,13 +2139,20 @@ modelDefClass$methods(printDI = function() {
 modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
     if(length(nodeName) == 0)
         return(NULL)
-    
-    if(nodeFunctionID) 
+    if(nodeFunctionID) {
+        ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
         ## old system had IDs for RHSonly things here.  This puts that back in for now.
-        output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-    else
+        ##output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
+        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
+        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
+    } else {
+        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
         ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
-        output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
+        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
+        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
+        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
+    }
+    output <- output2
     return(output[!is.na(output)])
 })
 
@@ -2151,33 +2162,65 @@ modelDefClass$methods(nodeName2LogProbName = function(nodeName){ ## used in 3 pl
     if(length(nodeName) == 0)
         return(NULL)
     
-    ## 1. so this needs to first get to a nodeFunctionID
-    graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-##    eval(parse(text="w1[3:4, 1:2]", keep.source = FALSE)[[1]], envir= maps$vars2GraphID_functions)
+##     ## 1. so this needs to first get to a nodeFunctionID
+##     graphIDs <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
+##     ## 2. get node function names
+##     fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
+##     ## 3 get corresponding logProbNames
+##     output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
 
-    
-    ## 2. get node function names
-    fullNodeNames <- maps$graphID_2_nodeName[graphIDs]
-    ## 3 get corresponding logProbNames
-    output <- unique(unlist(sapply(fullNodeNames, parseEvalCharacter, env = maps$vars2LogProbName, USE.NAMES = FALSE)))
-    return(output[!is.na(output)])
+##     ##graphIDs2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions))
+##     ##fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs2]
+##     ##output2 <- unique(parseEvalCharacterMany(fullNodeNames2, env = maps$vars2LogProbName))
+## ##    output2 <- unique(parseEvalCharacterMany(nodeName, env = maps$vars2LogProbName)) ## output2
+## ##    if(!identical(output[!is.na(output)], as.character(output2[!is.na(output2)]))) browser()
+##     output <- output[!is.na(output)]
+
+    graphIDs2 <- unique(parseEvalNumericMany(nodeName, env =  maps$vars2GraphID_functions))
+    output2 <- maps$graphID_2_logProbName[graphIDs2]
+    output2 <- output2[!is.na(output2)]
+
+    ## fullNodeNames2 <- maps$graphID_2_nodeName[graphIDs [maps$types[graphIDs] == "stoch"] ]
+    ## output2 <- gsub(":[0123456789]+", "", fullNodeNames2 )
+    ## output2 <- output2[!is.na(output2)]
+    ## output2 <- paste0("logProb_", output2)
+##    if(!identical(output, output2)) browser()
+
+##    output <- output2
+    return(output2)
+##    return(output[!is.na(output)])
 })
 
-modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
-    ## I think this will only work if nodeName is already ensured to be a node function name
-	if(length(nodeName) == 0)
-		return(NULL)
-	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 
-	return(output[!is.na(output)])
-})
+## modelDefClass$methods(nodeName2LogProbID = function(nodeName){ ## used only in cppInterfaces_models
+##     ## I think this will only work if nodeName is already ensured to be a node function name
+## 	if(length(nodeName) == 0)
+## 		return(NULL)
+## 	output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2LogProbID, USE.NAMES = FALSE) ) ) 
+## 	return(output[!is.na(output)])
+## })
 
 parseEvalNumeric <- function(x, env){
-	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
-	as.numeric(ans)
+    ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+    as.numeric(ans)
 }
+
+parseEvalNumericMany <- function(x, env) {
+    if(length(x) > 1) {
+        return(as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
+    } else 
+        as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
+}
+
 parseEvalCharacter <- function(x, env){
-	ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
-	as.character(ans)
+    ans <- eval(parse(text = x, keep.source = FALSE)[[1]], envir = env)
+    as.character(ans)
+}
+
+parseEvalCharacterMany <- function(x, env){
+    if(length(x) > 1) {
+        return(as.character(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
+    } else 
+        as.character(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
 }
 
 getDependencyPaths <- function(nodeID, maps, nodeIDrow = NULL) {

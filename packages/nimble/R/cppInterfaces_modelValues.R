@@ -32,7 +32,7 @@ CmodelValues <- setRefClass(
         varNames = 'ANY',
         componentExtptrs = 'ANY',
         blankAns = 'ANY',
-        .nodePtrs_byGID = 'ANY',
+        ##.nodePtrs_byGID = 'ANY',
         GID_map = 'ANY',
         symTab = 'ANY',
         initialized = 'ANY',
@@ -83,19 +83,19 @@ CmodelValues <- setRefClass(
             for(comp in varNames) 
                 componentExtptrs[[comp]] <<- .Call(getNativeSymbolInfo('getModelObjectPtr'), extptr, comp)
                 
-            .nodePtrs_byGID <<- new('numberedObjects')
-            GID_map <<- makeMV_GID_Map(.self)
-            if(length(sizes) > 0){
-            	varLengths <- sapply(sizes, prod)
-            	totLength <- sum(varLengths)
-           		.nodePtrs_byGID$resize(totLength)
-            	index = 1
-            	for(i in seq_along(varNames)){
-          		  	vName <- varNames[i]
-          		  	.Call('populateNumberedObject_withSingleModelValuesAccessors', extptr, vName, as.integer(expandNodeNames(vName, returnType = 'ids')), as.integer(1) , .nodePtrs_byGID$.ptr)
-            		index = index + varLengths[i]
-            	}
-            }
+            ## .nodePtrs_byGID <<- new('numberedObjects')
+            ## GID_map <<- makeMV_GID_Map(.self)
+            ## if(length(sizes) > 0){
+            ## 	varLengths <- sapply(sizes, prod)
+            ## 	totLength <- sum(varLengths)
+            ##     	.nodePtrs_byGID$resize(totLength)
+            ## 	index = 1
+            ## 	for(i in seq_along(varNames)){
+            ##     	  	vName <- varNames[i]
+            ##     	  	.Call('populateNumberedObject_withSingleModelValuesAccessors', extptr, vName, as.integer(expandNodeNames(vName, returnType = 'ids')), as.integer(1) , .nodePtrs_byGID$.ptr)
+            ## 		index = index + varLengths[i]
+            ## 	}
+            ## }
         },
         resize = function(rows){	
         	for(ptr in componentExtptrs)
