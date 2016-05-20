@@ -9,9 +9,9 @@ calc_E_llk_gen = nimbleFunction(
 	areLatentDetermNodes <- length(paramDepDetermNodes_latent) >0
     },
     run = function(paramValues = double(1)){
-        declare(sample_LL, double() )
-        declare(mean_LL, double() )
-        declare(nSamples, integer() )
+        ##declare(sample_LL, double() )
+        ##declare(mean_LL, double() )
+        ##declare(nSamples, integer() )
         values(model, fixedNodes) <<- paramValues
         if(areFixedDetermNodes){
             simulate(model, paramDepDetermNodes_fixed)	#	Fills in the deterministic nodes

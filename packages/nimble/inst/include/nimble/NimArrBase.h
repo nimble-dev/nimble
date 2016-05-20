@@ -76,6 +76,7 @@ class NimArrBase: public NimArrType {
     v = new_v;
     own_v = true;
   } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
+  void fillAllValues(T value) { std::fill(v, v + NAlength, value); }
   void setMyType() {
     myType = UNDEFINED;
     if(typeid(T) == typeid(int) )
@@ -121,16 +122,15 @@ class VecNimArrBase : public NimVecType {
    	return(static_cast<NimArrType *> (getBasePtr(row) )  );	
    }
 
-//  virtual int size()=0;
-    VecNimArrBase() {
-      myType = UNDEFINED;
-      if(typeid(T) == typeid(int) )
-    	myType = INT;
-      if(typeid(T) == typeid(double) )
-    	myType = DOUBLE;
-    }
-
-    ~VecNimArrBase(){};
+  VecNimArrBase() {
+    myType = UNDEFINED;
+    if(typeid(T) == typeid(int) )
+      myType = INT;
+    if(typeid(T) == typeid(double) )
+      myType = DOUBLE;
+  }
+  
+  ~VecNimArrBase(){};
 };
 
 

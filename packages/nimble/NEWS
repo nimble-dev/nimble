@@ -1,10 +1,17 @@
-¯                        CHANGES IN VERSION 0.5 (March 2016)
+                           CHANGES IN VERSION 0.5-1 (May 2016)
+
+-- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still needed to change the size of an existing object. 
+
+-- Added multivariate-t distribution for use in BUGS code and the DSL. 
+
 
 -- Added binary sampler for Gibbs sampling of discrete 0/1 nodes. This is the default sampler used for Bernoulli and Binomial(p, size=1) nodes.
 
 -- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
 
 -- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+
+                           CHANGES IN VERSION 0.5 (March 2016)
 
 USER LEVEL CHANGES
 

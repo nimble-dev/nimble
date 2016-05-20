@@ -271,67 +271,6 @@ getLogProbNodesMV <- nimbleFunction(
 )
 
 
-#' Create a 1-dimensional vector object
-#'
-#' Returns a 1-dimensional vector object of constant numeric value.
-#'
-#' This function can be used in the NIMBLE DSL, i.e. in the run function and member methods of nimbleFunctions.
-#'
-#' @param value The initial value for each element of the vector
-#' @param length The length of the vector
-#'
-#' @return A numeric vector object for use in nimbleFunctions
-#'
-#' @author Daniel Turek
-#'
-#' @seealso \code{\link{nimArray}}, \code{\link{identityMatrix}}
-#'
-#' @examples
-#' vec <- nimVector(value = 0, length = 5)
-#'
-#' @export
-nimVector <- nimbleFunction(
-    run = function(value = double(), length = double()) {
-        declare(vec, double(1, length))
-        for(i in 1:length)   vec[i] <- value
-        returnType(double(1))
-        return(vec)
-    },  where = getLoadingNamespace()
-)
-
-
-
-
-#' Create a 2-dimensional array object
-#'
-#' Returns a 2-dimensional array object of constant numeric value.
-#'
-#' This function can be used in the NIMBLE DSL, i.e. in the run function and member methods of nimbleFunctions.
-#'
-#' @param value The initial value for each element of the array
-#' @param nrow The number of rows in the array
-#' @param ncol The number of columns in the array
-#'
-#' @return A numeric array object for use in nimbleFunctions
-#'
-#' @author Daniel Turek
-#'
-#' @seealso \code{\link{nimVector}}, \code{\link{identityMatrix}}
-#'
-#' @examples
-#' ar <- nimArray(value = 0, nrow = 10, ncol = 3)
-#'
-#' @export
-nimArray <- nimbleFunction(
-    run = function(value = double(), nrow = double(), ncol = double()) {
-        declare(arr, double(2, c(nrow, ncol)))
-        for(i in 1:nrow)   for(j in 1:ncol)   arr[i, j] <- value
-        returnType(double(2))
-        return(arr)
-    },  where = getLoadingNamespace()
-)
-
-
 
 #' Create an Identity matrix
 #'
@@ -344,8 +283,6 @@ nimArray <- nimbleFunction(
 #' @return A d-by-d identity matrix
 #'
 #' @author Daniel Turek
-#'
-#' @seealso \code{\link{nimVector}}, \code{\link{nimArray}}
 #'
 #' @examples
 #' Id <- identityMatrix(d = 3)

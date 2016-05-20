@@ -154,6 +154,11 @@ distributionsInputList <- list(
                    types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
     
     ## dmt     = list(BUGSdist = 'dmt(mu, T, k)'),   ## not sure the state of this?  -DT
+    dmvt  = list(BUGSdist = 'dmvt(mean, prec, cov, cholesky, df, prec_param)',
+                   Rdist    = c('dmvt_chol(mean, cholesky = chol(prec), df = df, prec_param = 1)', 'dmvt_chol(mean, cholesky = chol(cov), df = df, prec_param = 0)', 'dmvt_chol(mean, cholesky, df = df, prec_param)'),
+                   ## I think it's okay to use the same altParams function for multivariate normal and t
+                   altParams= c('prec = calc_dmnormAltParams(cholesky, prec_param, 1)', 'cov = calc_dmnormAltParams(cholesky, prec_param, 0)'),
+                   types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'df = double(0)', 'prec = double(2)', 'cov = double(2)')),
     
     dwish   = list(BUGSdist = 'dwish(R, df, S)',
                    Rdist    = c('dwish_chol(cholesky = chol(R), df, scale_param = 0)', 'dwish_chol(cholesky = chol(S), df, scale_param = 1)'),

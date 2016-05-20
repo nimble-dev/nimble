@@ -9,7 +9,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(nonNativeEigenProxyCalls, 'cppOutputNonNativeEigen'),
                     makeCallList(eigProxyCalls, 'cppOutputEigMemberFunction'),
                     makeCallList(eigCalls, 'cppOutputMemberFunction'),
-                    makeCallList(c('setSize', 'size', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
+                    makeCallList(c('setSize', 'initialize', 'size', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
                     makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
                     list('for' = 'cppOutputFor',
@@ -100,18 +100,6 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
         return(code$name)
     }
 }
-
-## This was an experiment about computational cost of Rmath's dnorm
-## exprName2Cpp <- function(code, symTab, asArg = FALSE) {
-##     if(!is.null(symTab)) {
-##         sym <- symTab$getSymbolObject(code$name, inherits = TRUE)
-##         if(!is.null(sym)) return(sym$generateUse(asArg = asArg))
-##         ans <- code$name
-##     } else {
-##         ans <- code$name
-##     }
-##     if(ans == 'dnorm') 'nim_dnorm' else ans
-## }
 
 cppOutputVoidPtr <- function(code, symTab) {
     paste('static_cast<void *>(&',code$args[[1]]$name,')')
@@ -298,7 +286,7 @@ cppOutputMidOperator <- function(code, symTab) {
     useDoubleCast <- FALSE
     if(code$name == '/') ## cast the denominator to double if it is any numeric or if it is an scalar integer expression
         if(is.numeric(code$args[[2]]) ) useDoubleCast <- TRUE
-        else ##if(identical(code$args[[2]]$type, 'integer')) ## We have cases where a integer ends up with type type 'double' during compilation but should be cast to double for C++, so we shouldn't filter on 'integer' types here
+        else ## We have cases where a integer ends up with type type 'double' during compilation but should be cast to double for C++, so we shouldn't filter on 'integer' types here
             if(identical(code$args[[2]]$nDim, 0)) useDoubleCast <- TRUE
 
     secondPart <- nimGenerateCpp(code$args[[2]], symTab)
