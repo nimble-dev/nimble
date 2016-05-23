@@ -299,7 +299,9 @@ LWparFunc <- nimbleFunction(
   ), where = getLoadingNamespace() 
 )
 
-#' Creates a Liu and West particle filter algorithm.  
+#' Create a Liu and West particle filter algorithm.  
+#' 
+#' @description Create a Liu and West particle filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A NIMBLE model object, typically representing a state 
 #'  space model or a hidden Markov model

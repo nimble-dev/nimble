@@ -121,7 +121,9 @@ bootFStep <- nimbleFunction(
   }, where = getLoadingNamespace()
 )
 
-#' Creates a bootstrap particle filter algorithm to estimate log-likelihood.
+#' Create a bootstrap particle filter algorithm to estimate log-likelihood.
+#'
+#'@description Create a bootstrap particle filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A nimble model object, typically representing a state 
 #'  space model or a hidden Markov model

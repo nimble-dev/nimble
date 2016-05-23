@@ -166,7 +166,9 @@ return(0)
 )
 
 
-#' Creates an auxiliary particle filter algorithm to estimate log-likelihood.
+#' Create an auxiliary particle filter algorithm to estimate log-likelihood.
+#' 
+#' @description Create an auxiliary particle filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function

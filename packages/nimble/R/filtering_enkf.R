@@ -190,7 +190,9 @@ ENKFStep <- nimbleFunction(
   }, where = getLoadingNamespace()
 )
 
-#' Creates an Ensemble Kalman filter algorithm to sample from latent states.
+#' Create an Ensemble Kalman filter algorithm to sample from latent states.
+#' 
+#' @description Create an Ensemble Kalman filter algorithm for a given NIMBLE state space model.  
 #'
 #' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes which the Ensemble Kalman filter will estimate.
