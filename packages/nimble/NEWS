@@ -2,13 +2,13 @@
 
 USER LEVEL CHANGES
 
--- Sequential Monte Carlo algorithms added: Bootstrap filter, Auxiliary particle filter, Ensemble Kalman filter, and Liu and West filter can be accessed by calls to buildBootstrapFilter(), buildAuxiliaryFilter, buildEnsembleKF(), and buildLiuWestFilter() respectively.
+-- Sequential Monte Carlo algorithms added: Bootstrap filter, Auxiliary particle filter, Ensemble Kalman filter, and Liu and West filter can be accessed by calls to buildBootstrapFilter(), buildAuxiliaryFilter, buildEnsembleKF(), and buildLiuWestFilter() respectively. buildPF() is no longer available, but that name will be re-used in a future version as a wrapper to some of the filter functions listed above.
 
 -- Particle MCMC (Particle Marginal Metropolis Hastings) samplers can be added to an MCMCconf object.  RW_PF can be used to sample scalar parameters, and RW_PF_block can be used for multivariate parameters or multiple parameters.
 
--- A block sampler that uses user-specified likelihoods has been implemented, and can be added to an MCMCconf via RW_llFunction_block .
+-- A block sampler that uses user-specified likelihoods has been implemented, and can be added to an MCMCconf via RW_llFunction_block.
 
--- An ascent-based convergence ctiterion for the EM algorithm has been added and can be used by calling buildAscentMCEM()
+-- An ascent-based convergence criterion for the EM algorithm has been added to buildMCEM().
 
 -- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still needed to change the size of an existing object. 
 
