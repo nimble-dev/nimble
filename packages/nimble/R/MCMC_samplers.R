@@ -1052,7 +1052,7 @@ sampler_RW_PF_block <- nimbleFunction(
 #' 
 #' @section RW_llFunction sampler:
 #' 
-#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu, 2010).  The RW_llFunction sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). 
+#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010).  The RW_llFunction sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). 
 #' 
 #' The RW_llFunction sampler accepts the following control list elements: 
 #' \itemize{
@@ -1098,11 +1098,11 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \cr
 #' @section RW_llFunction_block sampler:
 #' 
-#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu, 2010).  The RW_llFunctionBlock sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). \cr
+#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010) (but see samplers listed below for NIMBLE's direct implementation of PMCMC).  The \code{RW_llFunctionBlock} sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). \cr
 #' \cr
 #' The RW_llFunctionBlock sampler accepts the following control list elements: \cr
 #' \itemize{
-#' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default is TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
@@ -1113,38 +1113,38 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \cr
 #' @section RW_PF sampler
 #' 
-#' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PF sampler uses a Metropolis Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF} sampler uses a Metropolis Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'  \cr
-#' The RW_PF sampler accepts the following control list elements: \cr
+#' The \code{RW_PF} sampler accepts the following control list elements: \cr
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
-#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from "bootstrap" and "auxiliary".  Defaults to "bootstrap".
-#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from "simulate" and "mean".  Only applicable if filterType is set to "auxiliary".
-#' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
+#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code"bootstrap"}.
+#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if filterType is set to \code{"auxiliary"}.
+#' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of \code{m} specified above. 
 #' }
 #' \cr
-#' #' @section RW_PF_block sampler
+#' #' @section \code{RW_PF_block} sampler
 
-#' #' The particle filter sampler allows the user to perform PMCMC (Andrieu '10), integrating over latent nodes in the model to sample top-level parameters.  The RW_PF_block sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#' #' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'  \cr
-#' The RW_PF_block sampler accepts the following control list elements: \cr
+#' The \code{RW_PF_block} sampler accepts the following control list elements: \cr
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
-#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for \code{scale} (TRUE) or also for \code{provCov} (FALSE).  This argument is only relevant when \code{adaptive = TRUE}.  When \code{adaptScaleOnly = FALSE}, both \code{scale} and \code{propCov} undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When \code{adaptScaleOnly = FALSE}, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
-#' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
-#' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
+#' \item scale. The initial value of the scalar multiplier for \code{propCov}.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
+#' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the \code{'identity'}, in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default is \code{'identity'})
 #' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
-#' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
+#' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function.
 #' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
-#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from "bootstrap" and "auxiliary".  Defaults to "bootstrap".
-#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from "simulate" and "mean".  Only applicable if filterType is set to "auxiliary".
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of m specified above. 
+#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
+#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{filterType = "auxiliary"}.
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above. 
 #' }
 #' \cr
 #'
@@ -1171,6 +1171,8 @@ sampler_RW_PF_block <- nimbleFunction(
 #' Neal, Radford M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741. 
 #' 
 #' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175. 
+#' 
+#' Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
 #' 
 #' Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317. 
 #' 

@@ -132,14 +132,13 @@ bootFStep <- nimbleFunction(
 #' @author Daniel Turek and Nicholas Michaud
 #' @details 
 #' 
-#' Each of the control() list options are described in detail below:
+#' Each of the \code{control()} list options are described in detail here:
 #' \describe{
-#'  \item{"thresh"}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
-#'   effective sample size is less than thresh*(number of particles).  Defaults to 0.8.}
-#'  \item{"saveAll"}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#'  \item{"smoothing"}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if smoothing = TRUE,  
-#'  or instead to save filtered samples from f(x[t]|y[1:t]) if smoothing = FALSE.  smoothing = TRUE only works if saveAll = TRUE} 
-#'  \item{"timeIndex"}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{thresh}{ A number between 0 and 1 specifying when to resample: the resampling step will occur when the
+#'   effective sample size is less than \code{thresh} times the number of particles.  Defaults to 0.8.}
+#'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
+#'  \item{smoothing}{Decides whether to save smoothed estimates of latent states, i.e., samples from f(x[1:t]|y[1:t]) if \code{smoothing = TRUE}, or instead to save filtered samples from f(x[t]|y[1:t]) if \code{smoothing = FALSE}.  \code{smoothing = TRUE} only works if \code{saveAll = TRUE}.}
+#'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
 #' }
 #' 
@@ -153,25 +152,26 @@ bootFStep <- nimbleFunction(
 #'  be normal for the bootstrap filter to work.   
 #'  
 #'  The resulting specialized particle filter algorthm will accept a
-#'  single integer argument (m, default 10,000), which specifies the number
+#'  single integer argument (\code{m}, default 10,000), which specifies the number
 #'  of random \'particles\' to use for estimating the log-likelihood.  The algorithm 
 #'  returns the estimated log-likelihood value, and saves
 #'  unequally weighted samples from the posterior distribution of the latent
-#'  states in the mvWSamples model values object, with corresponding logged weights in mvWSamples['wts',].
-#'  An equally weighted sample from the posterior can be found in the mvEWsamp model values object.
-#'  
+#'  states in the \code{mvWSamples} modelValues object, with corresponding logged weights in \code{mvWSamples['wts',]}.
+#'  An equally weighted sample from the posterior can be found in the \code{mvEWsamp} \code{modelValues} object.
+#'
+#' @export
+#' 
 #' @family particle filtering methods
-#' @references Gordon, Neil J., David J. Salmond, and Adrian FM Smith. 
-#' "Novel approach to nonlinear/non-Gaussian Bayesian state estimation." 
-#' IEE Proceedings F (Radar and Signal Processing). Vol. 140. No. 2. IET Digital Library, 1993.
+#' @references Gordon, N.J., D.J. Salmond, and A.F.M. Smith. (1993). Novel approach to nonlinear/non-Gaussian Bayesian state estimation. \emph{IEEE Proceedings F (Radar and Signal Processing)}. Vol. 140. No. 2. IET Digital Library, 1993.
 #' @examples
+#' \dontrun{
 #' model <- nimbleModel(code = ...)
 #' my_BootF <- buildBootstrapFilter(model, 'x[1:100]')
 #' Cmodel <- compileNimble(model)
 #' Cmy_BootF <- compileNimble(my_BootF, project = model)
 #' logLike <- Cmy_BootF(m = 100000)
 #' boot_X <- as.matrix(Cmy_BootF$mvEWSamples)
-#' @export
+#' }
 buildBootstrapFilter <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
     

@@ -299,28 +299,28 @@ LWparFunc <- nimbleFunction(
   ), where = getLoadingNamespace() 
 )
 
-#' Creates a Liu and West filter.  
+#' Creates a Liu and West particle filter algorithm.  
 #'
-#' @param model A nimble model object, typically representing a state 
+#' @param model A NIMBLE model object, typically representing a state 
 #'  space model or a hidden Markov model
 #' @param nodes A character vector specifying the latent model nodes 
 #'  over which the particle filter will stochastically integrate over to
 #'  estimate the log-likelihood function
-#' @param params A character vector sepcifying the top-level parameters to estimate the posterior distribution of. 
+#' @param params A character vector specifying the top-level parameters to estimate the posterior distribution of. 
 #'   If unspecified, parameter nodes are specified as all stochastic top level nodes which
-#'  are not in the set of latent nodes specified in 'nodes'.
+#'  are not in the set of latent nodes specified in \code{nodes}.
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 
 #' @author Nicholas Michaud
 #' @family particle filtering methods
 #' @details 
 #' 
-#' Each of the control() list options are described in detail below:
+#' Each of the \code{control()} list options are described in detail below:
 #' \describe{
-#'  \item{"d"}{A discount factor for the Liu-West filter.  Should be close to,
+#'  \item{d}{A discount factor for the Liu-West filter.  Should be close to,
 #'  but not above, 1.}
-#'  \item{"saveAll"}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#' \item{"timeIndex"}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
+#' \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
 #' }
 #' 
@@ -333,18 +333,20 @@ LWparFunc <- nimbleFunction(
 #'  time point to the next through a smoothed kernel density based on previous particle values.  
 #'        
 #'  The resulting specialized particle filter algorthm will accept a
-#'  single integer argument (m, default 10,000), which specifies the number
+#'  single integer argument (\code{m}, default 10,000), which specifies the number
 #'  of random \'particles\' to use for sampling from the posterior distributions.  The algorithm  saves
 #'  unequally weighted samples from the posterior distribution of the latent
-#'  states and top-level parameters in mvWSamples, with corresponding logged weights in mvWSamples['wts',].
-#'  An equally weighted sample from the posterior can be found in mvEWSamples. 
+#'  states and top-level parameters in \code{mvWSamples}, with corresponding logged weights in \code{mvWSamples['wts',]}.
+#'  An equally weighted sample from the posterior can be found in \code{mvEWSamples}. 
 #'  
-#'  Note that if saveAll is set to TRUE, the top-level parameter samples given in the mvWSamples output will correspond to the weights from the final time point.
-#'  
-#' @references Liu, Jane, and Mike West. "Combined parameter and state estimation in simulation-based filtering." 
-#' Sequential Monte Carlo methods in practice. Springer New York, 2001. 197-223.
+#'  Note that if \code{saveAll=TRUE}, the top-level parameter samples given in the \code{mvWSamples} output will correspond to the weights from the final time point.
+#'
+#' @export
+#' 
+#' @references Liu, J., and M. West. (2001). Combined parameter and state estimation in simulation-based filtering. \emph{Sequential Monte Carlo methods in practice}. Springer New York, pages 197-223.
 #' 
 #' @examples
+#' \dontrun{
 #' model <- nimbleModel(code = ...)
 #' my_LWF <- buildLiuWestFilter(model, 'x[1:100]', params = 'sigma_x')
 #' Cmodel <- compileNimble(model)
@@ -354,9 +356,7 @@ LWparFunc <- nimbleFunction(
 #' 
 #' #  samples from posterior of a top level parameter named sigma_x:
 #' lw_sigma_x <- as.matrix(Cmy_LWF$mvEWSamples, 'sigma_x')
-#' 
-#' 
-#' @export
+#' }
 buildLiuWestFilter <- nimbleFunction(
   setup = function(model, nodes, params = NULL, control = list()){
     

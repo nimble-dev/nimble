@@ -192,34 +192,33 @@ ENKFStep <- nimbleFunction(
 
 #' Creates an Ensemble Kalman filter algorithm to sample from latent states.
 #'
-#' @param model A nimble model object, typically representing a state space model or a hidden Markov model
-#' @param nodes A character vector specifying the latent model nodes which the ENKF will estimate.
+#' @param model A NIMBLE model object, typically representing a state space model or a hidden Markov model
+#' @param nodes A character vector specifying the latent model nodes which the Ensemble Kalman filter will estimate.
 #' @param control  A list specifying different control options for the particle filter.  Options are described in the details section below.
 #' @author Nicholas Michaud
 #' @family particle filtering methods
 
 #' @details 
-#' The control() list option is described in detail below:
+#' The \code{control()} list option is described in detail below:
 #' \describe{
-#'  \item{"saveAll"}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#' \item{"timeIndex"}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
+#' \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
 #' }
 #' 
 #' Runs an Ensemble Kalman filter to estimate a latent state given observations at each time point.  The ensemble Kalman filter
-#' is a monte-carlo approximation to a Kalman filter that can be used when the model's transition euqations do not follow a normal distribution.  
+#' is a Monte Carlo approximation to a Kalman filter that can be used when the model's transition euqations do not follow a normal distribution.  
 #' Latent states (x[t]) and observations (y[t]) can be scalars or vectors at each time point, 
 #' and sizes of observations can vary from time point to time point.
 #' In the BUGS model, the observations (y[t]) must be equal to some (possibly nonlinear) deterministic function
 #' of the latent state (x[t]) plus an additive error term.  Currently only normal and multivariate normal
 #' error terms are supported.
 #' The transition from x[t] to x[t+1] does not have to be normal or linear.  Output from the posterior distribution of the latent
-#' states is stored in mvSamples.
+#' states is stored in \code{mvSamples}.
 #' @family filtering methods
-#' @references Houtekamer, Peter L., and Herschel L. Mitchell.
-#'  "Data assimilation using an ensemble Kalman filter technique."
-#'  Monthly Weather Review 126.3 (1998): 796-811.
+#' @references Houtekamer, P.L., and H.L. Mitchell. (1998). Data assimilation using an ensemble Kalman filter technique. \emph{Monthly Weather Review}, 126(3), 796-811.
 #' @examples
+#' \dontrun{
 #' model <- nimbleModel(code = ...)
 #' my_ENKFF <- buildEnsembleKF(model, 'x')
 #' Cmodel <- compileNimble(model)
@@ -227,6 +226,7 @@ ENKFStep <- nimbleFunction(
 #' Cmy_ENKF$run(m = 100000)
 #' ENKF_X <- as.matrix(Cmy_ENKF$mvSamples, 'x')
 #' hist(ENKF_X)
+#' }
 #' @export
 buildEnsembleKF <- nimbleFunction(
   setup = function(model, nodes, control = list()) {
