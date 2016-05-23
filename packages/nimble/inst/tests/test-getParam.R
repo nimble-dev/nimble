@@ -35,7 +35,7 @@ testGetParam <- function(distCall) {
     if(is.null(whichExpr)) {
         if(all(providedArgs %in% reqdArgs)) whichExpr <- 0
     }
-    test_that(paste(distCallText, 'args found'), expect_that(is.null(whichExpr), equals(FALSE)))
+    test_that(paste(distCallText, 'args found'), expect_equal(is.null(whichExpr), FALSE))
 
     
     ## exprs give expressions for calculating reqdArgs from alts
@@ -65,7 +65,7 @@ testGetParam <- function(distCall) {
             expectedResults[[i]] <- eval(as.name(altParamNames[i]), envir = evalEnv)
         else  ## it wasn't provided so eval the expression to calculate it from reqdArgs
             expectedResults[[i]] <- eval(altParams[[i]], envir = evalEnv)
-        test_that(paste(distCallText, 'uncompiled', altParamNames[i]), expect_that(gpFuns[[i]]$run(), equals(expectedResults[[i]])))
+        test_that(paste(distCallText, 'uncompiled', altParamNames[i]), expect_equal(gpFuns[[i]]$run(), expectedResults[[i]]))
     }
 
     resultsNames <- altParamNames
@@ -73,14 +73,14 @@ testGetParam <- function(distCall) {
     for(i in seq_along(reqdArgs)) {
         gpFuns[[nextI]] <- gpScalar(m, 'x', reqdArgs[i])
         expectedResults[[nextI]] <- eval(as.name(reqdArgs[i]), envir = evalEnv) ## it was already calculated into evalEnv above
-        test_that(paste(distCallText, 'uncompiled reqd', reqdArgs[i]), expect_that(gpFuns[[nextI]]$run(), equals(expectedResults[[nextI]])))
+        test_that(paste(distCallText, 'uncompiled reqd', reqdArgs[i]), expect_equal(gpFuns[[nextI]]$run(), expectedResults[[nextI]]))
         resultsNames[nextI] <- reqdArgs[i]
         nextI <- nextI + 1
     }
     
     compiled <- do.call('compileNimble', c(list(m), gpFuns, list(resetFunctions = TRUE)))
     for(i in seq_along(expectedResults)) {
-        test_that(paste(distCallText, 'compiled', resultsNames[i]), expect_that(compiled[[i+1]]$run(), equals(expectedResults[[i]])))
+        test_that(paste(distCallText, 'compiled', resultsNames[i]), expect_equal(compiled[[i+1]]$run(), expectedResults[[i]]))
     }
 }
 

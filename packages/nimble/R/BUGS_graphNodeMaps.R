@@ -23,6 +23,7 @@ mapsClass <- setRefClass(
         
         ## graphID_2_xxxx maps
         graphID_2_nodeName = 		'ANY',              ## vector of character nodeNames
+        graphID_2_logProbName =       'ANY',
         graphID_2_nodeFunctionName ='ANY',      ## vector of character nodeFunctionNames
         graphID_2_declID   =  'ANY',
         
@@ -32,9 +33,9 @@ mapsClass <- setRefClass(
         vars2GraphID_functions_and_RHSonly = 'ANY', 
         vars2ID_elements = 'ANY',
         vars2LogProbName =			'ANY',
-        vars2LogProbID = 			'ANY',
+##        vars2LogProbID = 			'ANY',
         
-        logProbIDs_2_LogProbName =	'ANY',
+        ##logProbIDs_2_LogProbName =	'ANY',
         ## positions vectors of nodeNames (top, latent, end)
         isEndNode_byGID = 'ANY',
 
@@ -67,21 +68,21 @@ assignLogProbName <- function(nodeInfo, nodeName2LogProbMap){
 		
 }
 
-assignLogProbID <- function(nodeName2LogProbMap, nodeName2LogProbIDMap){
-	numIDs = 0
-	varNames <- ls(nodeName2LogProbMap)
-	logProbIDs_2_LogProbName = character(0)
-	for(vName in varNames){
-		hasLogProb = which(!is.na(nodeName2LogProbMap[[vName]] ) )
-		if(length(hasLogProb) > 0){
-			theseIDs <- numIDs + 1:length(hasLogProb)
-			nodeName2LogProbIDMap[[vName]][hasLogProb] <- theseIDs
-			logProbIDs_2_LogProbName[theseIDs] <- nodeName2LogProbMap[[vName]][hasLogProb]
-			numIDs = numIDs + length(hasLogProb)
-		}
-	}
-	return(logProbIDs_2_LogProbName)
-}
+## assignLogProbID <- function(nodeName2LogProbMap, nodeName2LogProbIDMap){
+## 	numIDs = 0
+## 	varNames <- ls(nodeName2LogProbMap)
+## 	logProbIDs_2_LogProbName = character(0)
+## 	for(vName in varNames){
+## 		hasLogProb = which(!is.na(nodeName2LogProbMap[[vName]] ) )
+## 		if(length(hasLogProb) > 0){
+## 			theseIDs <- numIDs + 1:length(hasLogProb)
+## 			nodeName2LogProbIDMap[[vName]][hasLogProb] <- theseIDs
+## 			logProbIDs_2_LogProbName[theseIDs] <- nodeName2LogProbMap[[vName]][hasLogProb]
+## 			numIDs = numIDs + length(hasLogProb)
+## 		}
+## 	}
+## 	return(logProbIDs_2_LogProbName)
+## }
 
 mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used any more!
     ## new version to work with XXX3 system from modelDefClass

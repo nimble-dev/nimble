@@ -201,10 +201,6 @@ values_keywordInfo <- keywordInfoClass(
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
       
-      ## accessLengthArgList <- list(accessName = accessName)
-      ## accessLengthName <- accessorVectorLength_setupCodeTemplate$makeName(accessLengthArgList)
-      ## addNecessarySetupCode(accessLengthName, accessLengthArgList, accessorVectorLength_setupCodeTemplate, nfProc)
-
       newRunCode <- substitute(values(accessor = ACCESS_NAME), 
                                list(ACCESS_NAME = as.name(accessName)))
       return(newRunCode)
@@ -889,15 +885,6 @@ accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not
            ACCESSLENGTHNAME = resultName)
   })
 
-## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## NEW ACCESSORS
-##   #Note to programmer: required fields of argList are accessName 
-##   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-##   codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
-##   makeCodeSubList = function(resultName, argList){
-##   	list(ACCESSNAME = as.name(argList$accessName),
-##   		ACCESSLENGTH = as.name(resultName) )
-##   	})
-
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and includeData
@@ -1310,14 +1297,10 @@ determineNdimFromOneCase <- function(model, varAndIndices) {
 ## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
 
 varAndIndices2mapParts <- function(varAndIndices, sizes, nDim) {
-    ##varName <- varAndIndices$name
     indices <- varAndIndices$indices
     ## put together offsetExpr, sizeExprs, strideExprs
     ## need sizes to get strides
     if(length(sizes) == 0) sizes <- 1
-##    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
-##    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
-##        nDim <- varInfo$nDim
     if(nDim > 0 & length(indices)==0) {
         blockBool <- rep(TRUE, nDim)
         firstIndexRexprs <- rep(list(1), nDim)

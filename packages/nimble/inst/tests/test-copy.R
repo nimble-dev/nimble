@@ -493,7 +493,7 @@ copyTestCaseListValues <- list(
             P <- nfM$run()
             checkP <- numeric()
             for(i in nodes) checkP <- c(checkP, m[[i]])
-            expect_identical(P, checkP)
+            test_that('getValues', expect_identical(P, checkP))
         })
     ),
     setValues = list(
@@ -516,7 +516,7 @@ copyTestCaseListValues <- list(
                 modelP <- m[[oneName]]
                 checkP <- P[i + 1:length(modelP)]
                 i <- i + length(modelP)
-                expect_identical(as.numeric(modelP), as.numeric(checkP ))
+                test_that('setValues', expect_identical(as.numeric(modelP), as.numeric(checkP )))
             }
         })
         )
