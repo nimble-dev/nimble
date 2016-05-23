@@ -136,7 +136,7 @@ calc_E_llk_gen = nimbleFunction(
 #'
 #' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
 #' 
-buildAscentMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20),
+buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20),
                       boxConstraints = list(), buffer = 10^-6, alpha = 0.1, beta = 0.1, gamma = 0.05, C = .1, numReps = 100, verbose = T) {
     latentNodes = model$expandNodeNames(latentNodes)
     latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
