@@ -4,14 +4,14 @@
 using std::istringstream;
 
 // 1. NodeVectors
-double calculateOld(NodeVectorClass &nodes) {
-  double ans(0);
-  vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
-  int vecSize = nodeFunPtrs.size();
-  for(int i = 0; i < vecSize; i++)
-  	 	ans +=	nodeFunPtrs[i]->calculate();
-  return(ans);
-}
+// double calculateOld(NodeVectorClass &nodes) {
+//   double ans(0);
+//   vector<nodeFun *> nodeFunPtrs = nodes.getNodeFunctionPtrs();
+//   int vecSize = nodeFunPtrs.size();
+//   for(int i = 0; i < vecSize; i++)
+//   	 	ans +=	nodeFunPtrs[i]->calculate();
+//   return(ans);
+// }
 
 double calculate(NodeVectorClass &nodes) {
   double ans(0);
@@ -1078,19 +1078,19 @@ SEXP populateNodeFxnVector_byGID(SEXP SnodeFxnVec, SEXP S_GIDs, SEXP SnumberedOb
 	return(R_NilValue);
 }
 
-SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj){
-	int len = LENGTH(S_GIDs);
-	int* gids = INTEGER(S_GIDs);
-	int index;
-	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
-	ManyModelValuesAccessor* accessVector = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(SmodelValuesAccessorVector) );
-	(*accessVector).varAccessors.resize(len);
-	for(int i = 0; i < len; i++){
-		index = gids[i] - 1;
-		(*accessVector).varAccessors[i] = static_cast<SingleModelValuesAccess*>(numObj->getObjectPtr(index));
-		}
-	return(R_NilValue);
-}
+// SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj){
+// 	int len = LENGTH(S_GIDs);
+// 	int* gids = INTEGER(S_GIDs);
+// 	int index;
+// 	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
+// 	ManyModelValuesAccessor* accessVector = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(SmodelValuesAccessorVector) );
+// 	(*accessVector).varAccessors.resize(len);
+// 	for(int i = 0; i < len; i++){
+// 		index = gids[i] - 1;
+// 		(*accessVector).varAccessors[i] = static_cast<SingleModelValuesAccess*>(numObj->getObjectPtr(index));
+// 		}
+// 	return(R_NilValue);
+// }
 
 /// NEWER
 

@@ -190,13 +190,6 @@ modelValuesSpec <- function( symTab, className, vars, types, sizes, modelDef = N
 makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, modelDef, where = globalenv(), addUniqueID = TRUE){
 
     if(addUniqueID) className <- paste0(className, '_', nimbleUniqueID())
-    ## if(exists(className, modelValuesLibrary, inherits = FALSE)) {
-    ## 	oldSymTab = modelValuesLibrary[[className]]$symTab
-    ## 	if(areMVSymTabsEqual(oldSymTab, SymbolTable) )
-    ##             return(modelValuesLibrary[[className]]$modelValuesClass)
-	        
-    ##        className <- modelValuesClassLabelCreator()   
-    ## }
     if(!missing(symTab) ) {    
         vars <- symTab$getSymbolNames()
         sizes <- list()
@@ -258,11 +251,6 @@ makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, mo
                                 )))
 
     .isModelValuesSpec <- TRUE ## will be looked in the environment of the returned function
-    ## cppClassName <- Rname2CppName(className)
-    ## modelValuesLibrary[[className]] <- list(modelValuesClass = ans,
-    ##                                         symTab = SymbolTable,
-    ##                                         cppClassName = cppClassName,
-    ##                                         cppClass = NULL)
     ans <- function(nrow = 1L) {
         res <- newClass(symTab, vars, sizes, nrow = nrow, modelDef = modelDef)
         res$mvSpec <- ans
@@ -281,8 +269,6 @@ makeModelValuesClassFields <- function(vars) {
     as.call(c(as.name("list"), varDefs))
 }
 ## e.g. makeModelValuesClassFields(c('a','b','c'))
-
-
 
 pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb = FALSE) {
     if(is.null(vars)) {
@@ -308,7 +294,7 @@ pointAt <- function(model, to, vars = NULL, toVars = NULL, index = NA,  logProb 
 
 makeMV_GID_Map <- function(mv){
 	sizeList = mv$sizes
-    varNames = sort(mv$varNames, FALSE) ## .Internal(sort(mv$varNames, FALSE)) ##sort(mv$varNames)
+    varNames = sort(mv$varNames, FALSE)
     nodeNames = NA
     nodeIndex = 0
     nodeNames2GID_maps <- new.env()

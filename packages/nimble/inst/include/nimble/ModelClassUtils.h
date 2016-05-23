@@ -9,7 +9,6 @@ class ModelBase : public NamedObjects{
 	public:
 	Values* _modelValues;
 	virtual Values* getModelValuesPtr(){ return _modelValues; }
-	//	NimArrType** getVariablePtrAddress(string &name);
 	};
 
 extern "C" {
@@ -28,5 +27,5 @@ extern "C" {
 
 
 NimArrType** cGetModelElementPtr(SEXP Sextptr, SEXP Sname);	// Gets the ptr to an element of name Sname from
-												    // the ModelValues object pointed to by Sextptr
+// the ModelValues object pointed to by Sextptr
 #endif

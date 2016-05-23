@@ -627,21 +627,8 @@ nfProcessing$methods(processKeywords_all = function(){
 nfProcessing$methods(matchKeywords_all = function(){
 	for(i in seq_along(compileInfos))
             RCfunProcs[[i]]$matchKeywords(.self)
-            ##	compileInfos[[i]]$origRcode <<- matchKeywords_one(compileInfos[[i]]$origRcode)
 })
 
-## singleVarAccessClass <- setRefClass('singleVarAccessClass',
-##                                     fields = list(model = 'ANY', var = 'ANY', useSingleIndex = 'ANY'),
-##                                     methods = list(
-##                                         show = function() {
-##                                             writeLines(paste('singleVarAccess for model',model$name,'to var',var))
-##                                         })
-##                                     )
-## singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
-##     singleVarAccessClass$new(model = model, var = var, useSingleIndex = useSingleIndex)
-## }
-
-# for now export this as R<3.1.2 give warnings if don't
 
 #' Class \code{singleVarAccessClass}
 #' @aliases singleVarAccessClass
@@ -659,18 +646,6 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
     ans
 }
 
-## singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
-##                                     fields = list(modelValues = 'ANY', var = 'ANY'),
-##                                     methods = list(
-##                                         show = function() {
-##                                             writeLines(paste('singleModelValuesAccess for model to var',var))
-##                                         })
-##                                     )
-## singleModelValuesAccess <- function(modelValues, var) {
-##     singleModelValuesAccessClass$new(modelValues = modelValues, var = var)
-## }
-
-# for now export this as R<3.1.2 give warnings if don't
 
 #' Class \code{singleModelValuesAccessClass}
 #' @aliases singleModelValuesAccessClass

@@ -109,7 +109,6 @@ nimbleFunction <- function(setup         = NULL,
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
 
     .globalSetupEnv <- new.env()
-##    browser()
     if(!is.null(globalSetup)) {
         if(!is.function(globalSetup)) stop('If globalSetup is not NULL, it must be a function', call. = FALSE)
         if(!length(formals(globalSetup))==0) stop('globalSetup cannot take input arguments', call. = FALSE)
@@ -161,14 +160,10 @@ nf_createRefClassDef <- function(setup, methodList, className = nf_refClassLabel
 
 ## creates a list of the fields (setupOutputs) for a nimble function reference class
 nf_createRefClassDef_fields <- function(setup, methodList, globalSetup, declaredSetupOutputNames) {
-##    setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
     setupOutputNames <- nf_createSetupOutputNames(setup, methodList, declaredSetupOutputNames, globalSetup)
     if(FALSE) print(setupOutputNames)
     fields <- as.list(rep('ANY', length(setupOutputNames)))
     names(fields) <- setupOutputNames
-  #  fields$.generatorFunction = 'ANY'
-  #  fields$.CobjectInterface <- 'ANY'
-  #  fields$.newSetupLinesProcessed <- 'ANY'
     return(fields)
 }
 

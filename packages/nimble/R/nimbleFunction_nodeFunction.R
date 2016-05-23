@@ -88,7 +88,6 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
             ## need a value Entry
             allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
             typesListAllParams <- getDistribution(distName)$types
-            ##numParams <- length(typesListAllParams)
             typesNDims <- unlist(lapply(typesListAllParams, `[[`, 'nDim'))
             typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
             paramIDs <- getDistribution(distName)$paramIDs
@@ -163,6 +162,7 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
         ddistTemplate <- RHS
         ddistTemplate[[1]] <- as.name(paste0("d", dist))
         ddistTemplate <- addArg(ddistTemplate, 0, logName)
+        ceilTemplate <- quote(ceiling(x))
     } else ddistTemplate <- NULL
     
     # create bounds for runif() using pdist expressions
@@ -171,10 +171,13 @@ ndf_createStochSimulateTrunc <- function(RHS, discrete = FALSE) {
     VALUE_EXPR <- 0
     if(lower != -Inf) {
         pdistTemplate[[2]] <- lower
-        MIN_EXPR <- pdistTemplate
-        if(discrete)
-            ddistTemplate[[2]] <- lower
+        if(discrete) {
+            ceilTemplate[[2]] <- lower
+            ddistTemplate[[2]] <- ceilTemplate
+            pdistTemplate[[2]] <- ceilTemplate
+        }
         VALUE_EXPR <- ddistTemplate
+        MIN_EXPR <- pdistTemplate
     } 
     if(upper != Inf) {
         pdistTemplate[[2]] <- upper
@@ -248,6 +251,7 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
         ddistTemplate <- RHS
         ddistTemplate[[1]] <- as.name(paste0("d", dist))
         ddistTemplate <- addArg(ddistTemplate, 0, logName)
+        ceilTemplate <- quote(ceiling(x))
     } else ddistTemplate <- NULL
     
     PDIST_LOWER <- 0
@@ -255,8 +259,11 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
     DDIST_LOWER <- 0
     if(lower != -Inf) {
         pdistTemplate[[2]] <- lower
-        if(discrete)
-            ddistTemplate[[2]] <- lower
+        if(discrete) {
+            ceilTemplate[[2]] <- lower
+            ddistTemplate[[2]] <- ceilTemplate
+            pdistTemplate[[2]] <- ceilTemplate
+        }
         PDIST_LOWER <- pdistTemplate
         DDIST_LOWER <- ddistTemplate
     } 
@@ -282,7 +289,6 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                LOWER = lower,
                                UPPER = upper,
                                VALUE = LHS,
-##                               LOGPROB = logProbNodeExpr,
                                DENSITY = RHS,
                                PDIST_LOWER = PDIST_LOWER,
                                PDIST_UPPER = PDIST_UPPER,

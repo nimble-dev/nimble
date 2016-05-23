@@ -1,72 +1,30 @@
-
-                                               CHANGES IN VERSION 0.5-1 (May 2016)
+                           CHANGES IN VERSION 0.5-1 (May 2016)
 
 USER LEVEL CHANGES
 
--- Sequential Monte Carlo algorithms added: Bootstrap filter, Auxiliary particle filter, Ensemble Kalman filter, and Liu and West filter can be accessed by calls to buildBootF(), buildAuxF, buildENKF(), and buildLWF() respectively.
+-- Sequential Monte Carlo algorithms added: Bootstrap filter, Auxiliary particle filter, Ensemble Kalman filter, and Liu and West filter can be accessed by calls to buildBootstrapFilter(), buildAuxiliaryFilter, buildEnsembleKF(), and buildLiuWestFilter() respectively.
 
--- Particle MCMC (Particle Marginal Metropolis Hastings) samplers can be added to an MCMCspec object.  RW_PFilter can be used to sample scalar parameters, and RW_PFilter_block can be used for multivariate parameters or multiple parameters.
+-- Particle MCMC (Particle Marginal Metropolis Hastings) samplers can be added to an MCMCconf object.  RW_PF can be used to sample scalar parameters, and RW_PF_block can be used for multivariate parameters or multiple parameters.
 
--- A block sampler which uses user-specified likelihoods has been implemented, and can be added to an MCMCspec vis RW_llFunction_block 
+-- A block sampler that uses user-specified likelihoods has been implemented, and can be added to an MCMCconf via RW_llFunction_block .
 
--- An ascent-based convergence ctiterion for the EM algorithm has been added, and can be used by calling buildAscentMCEM()
+-- An ascent-based convergence ctiterion for the EM algorithm has been added and can be used by calling buildAscentMCEM()
 
+-- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still needed to change the size of an existing object. 
 
-DEVELOPER LEVEL CHANGES
-
--- Testing has been added for SMC algorithms
-
-                                               CHANGES IN VERSION 0.5 (March 2016)
-USER LEVEL CHANGES
-
--- API changes for MCMCspec objects: new method printSamplers() prints the current samplers (replacing the old getSamplers() method); new functionality for getSamplers(), which now returns a list of samplerSpec objects; new overloaded functionality of setSamplers(), which can accept a list of samplerSpec objects, replacing the current set of samplers; new method getSamplerDefinition(), which returns the nimbleFunction definition of a sampler.
-
--- API created for modifying samplerSpec objects: setName(), setSamplerFunction(), setTarget(), setControl().
-
--- MCMC conjugate sampling efficiency improved by ~33%
-
--- new system for automating the comparison of different MCMCs and generating html results pages: the main function is compareMCMCs.
-
--- enhanced checking of model to check for size and dimension mismatch in BUGS code
-
--- some steps of building models and determining dependencies (e.g. getDependencies method for model classes) are faster and use less memory
-
--- models have a new method, getDependenciesList, that provides a list of neighbor relationships in the model graph.
-
--- There is a new function, getParam(model, node, parameter), that returns the value of a parameter of a stochastic node.  It works in R and in the NIMBLE DSL (compilable run code).
-
--- Models now have member functions for calculate, simulate, getLogProb, calculateDiff, and getParam.  model$calculate(nodes) is equivalent to calculate(model, nodes), etc.
-
--- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
-
--- There are more flexible ways to provide arguments to declare and setSize.
-
--- The random walk block sampler is a bit more efficient.
-
--- There is better error trapping during some compilation steps.
-
-DEVELOPER LEVEL CHANGES
-
--- various modifications to conform to CRAN rules 
-
-BUG FIXES
-
--- Compilation of BUGS function inprod is fixed
-
--- some cases of handling multivariate variables of length one (e.g. a 1x1 matrix) have been fixed.
-
--- added warning when 'size' in multinomial is not sum of values
-
-
-                CHANGES IN VERSION 0.5 (March 2016)
-
--- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions.  These effectively replace the old system of declare() and setSize().
+-- Added multivariate-t distribution for use in BUGS code and the DSL. 
 
 -- Added binary sampler for Gibbs sampling of discrete 0/1 nodes. This is the default sampler used for Bernoulli and Binomial(p, size=1) nodes.
 
 -- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
 
 -- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+
+DEVELOPER LEVEL CHANGES
+
+-- Testing has been added for SMC algorithms
+
+                           CHANGES IN VERSION 0.5 (March 2016)
 
 USER LEVEL CHANGES
 

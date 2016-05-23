@@ -41,9 +41,10 @@ specificCallHandlers = c(
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
-    makeCallList(c('dmnorm_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
+    makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
+specificCallHandlers[['rmvt_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rwish_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rmulti']] <- 'rmFunHandler'
 specificCallHandlers[['rcat']] <- 'rmFunHandler' ## not really multivar, but same processing
@@ -165,6 +166,13 @@ declareHandler <- function(code, symTab) {
 ## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
 ## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
 nimArrayGeneralHandler <- function(code, symTab) {
+    ## check to see if we're inside a declare statement()
+    if(code$caller$name == 'declare') {
+        if(code$name != 'nimInteger') stop('something going wrong with backwards compatibility fix for declare(..., integer())')
+        code$name <- 'integer'
+        code$args <- if(code$args[[2]] == 0) code$args[1] else code$args[1:2]
+        return()
+    }
     switch(code$name,
            ##nimNumeric(length = 0, value = 0, init = TRUE)
            nimNumeric = {
