@@ -16,6 +16,7 @@ Suggests:
     testthat,R2WinBUGS,rjags,rstan,xtable,abind,ggplot2
 URL: http://r-nimble.org
 SystemRequirements: GNU make
+Biarch: true
 License: BSD_3_clause + file LICENSE
 Note: For convenience, the package includes the necessary header files for the
     Eigen distribution. (This is all that is needed to use that functionality.)
@@ -107,4 +108,3 @@ Collate:
     registration.R
     nimble-package.r
     zzz.R
-RoxygenNote: 5.0.1

@@ -267,13 +267,13 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
 #' @param mu vector of values giving the location of the distribution.
-#' @param cholesky upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).
+#' @param cholesky upper-triangular Cholesky factor of either the precision matrix (i.e., inverse scale matrix) (when \code{prec_param} is TRUE) or scale matrix (otherwise).
 #' @param df degrees of freedom.
-#' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.
+#' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the scale matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Peter Sujan
 #' @export
-#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The 'precision' matrix as used here is defined as the inverse of the scale matrix, \eqn{\Sigma^{-1}}, given in Gelman et al. 
 #' @return \code{dmvt_chol} gives the density and \code{rmvt_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 #' @seealso \link{Distributions} for other standard distributions

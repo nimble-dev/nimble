@@ -33,7 +33,6 @@
 \alias{arithmeticOutputType}
 \alias{as.matrix.CmodelValues}
 \alias{as.matrix.modelValuesBaseClass}
-\alias{assignLogProbID}
 \alias{assignLogProbName}
 \alias{assignmentAsFirstArgFuns}
 \alias{assignmentOperators}
@@ -42,11 +41,18 @@
 \alias{autoBlockClass}
 \alias{autoBlockModel}
 \alias{autoBlockParamDefaults}
+\alias{auxFStep}
+\alias{auxFuncVirtual}
+\alias{auxLookFunc}
+\alias{auxSimFunc}
+\alias{auxStepVirtual}
 \alias{binaryLeftOperators}
 \alias{binaryMidLogicalOperators}
 \alias{binaryMidOperators}
 \alias{binaryOperators}
 \alias{binaryOrUnaryOperators}
+\alias{bootFStep}
+\alias{bootStepVirtual}
 \alias{brackOperators}
 \alias{BUGScode}
 \alias{BUGScontextClass}
@@ -65,6 +71,7 @@
 \alias{buildSymbolTable}
 \alias{cAddBlank}
 \alias{calcAdaptationFactor}
+\alias{calc_asympVar}
 \alias{calc_dmnormAltParams}
 \alias{calc_dmnormConjugacyContributions}
 \alias{calc_E_llk_gen}
@@ -106,7 +113,7 @@
 \alias{checkForDuplicateNodeDeclaration}
 \alias{checkNimbleFunctionListCpp}
 \alias{checkNimbleOrRfunctionNames}
-\alias{checkRSHonlyInit}
+\alias{checkRHSonlyInit}
 \alias{cleanWhite}
 \alias{cloglog}
 \alias{Cmatrix2mvOneVar}
@@ -201,6 +208,7 @@
 \alias{cppProjectClass}
 \alias{cppSEXP}
 \alias{cppStrideType}
+\alias{cppVar}
 \alias{cppVarFull}
 \alias{cppVecNimArr}
 \alias{cppVecNimArrPtr}
@@ -244,6 +252,7 @@
 \alias{distributionsInputList}
 \alias{dmFunHandler}
 \alias{dollarSign_keywordInfo}
+\alias{doPars}
 \alias{double}
 \alias{doubleBracket_keywordInfo}
 \alias{dropSingleSizes}
@@ -291,6 +300,11 @@
 \alias{embedInRbracket}
 \alias{embedListInRbracket}
 \alias{emptyTypeInfo}
+\alias{ENKFFuncVirtual}
+\alias{enkfMultFunc}
+\alias{enkfScalFunc}
+\alias{ENKFStep}
+\alias{ENKFStepVirtual}
 \alias{ETentriesFromExternalUnaries}
 \alias{evalBracketArgs}
 \alias{evalBracketArgsKnownBracket}
@@ -395,7 +409,6 @@
 \alias{hasBracket}
 \alias{icloglog}
 \alias{identityAssert}
-\alias{identityMatrix}
 \alias{ifOrWhile}
 \alias{ilogit}
 \alias{IncludeCodeDir}
@@ -439,6 +452,11 @@
 \alias{logfact}
 \alias{loggam}
 \alias{logit}
+\alias{LWparFunc}
+\alias{LWSetMeanVirtual}
+\alias{LWSetParVirtual}
+\alias{LWStep}
+\alias{LWStepVirtual}
 \alias{makeBUGSactiveBindingDef}
 \alias{makeBUGSclassFields}
 \alias{makeCallList}
@@ -456,6 +474,7 @@
 \alias{makeEigenTypeLabel}
 \alias{makeEnvName}
 \alias{make_example_html}
+\alias{makeFillValue}
 \alias{makeFixedParameterCallCodeForOptim}
 \alias{makefnScaleLine}
 \alias{makeGetCodeFromAccessorVector}
@@ -577,12 +596,13 @@
 \alias{nfMethodErrorHandler}
 \alias{nfMethodRC}
 \alias{nf_namesNotHidden}
+\alias{nf_preProcessMemberDataObject}
 \alias{nfProcessing}
 \alias{nf_processSetupFunctionBody}
 \alias{nf_refClassLabelMaker}
 \alias{nf_substituteExceptFunctionsAndDollarSigns}
 \alias{nfWriteCompileAndLoadSO}
-\alias{nimArray}
+\alias{nimArrayGeneralHandler}
 \alias{nimArrMapExpr}
 \alias{NimbleCodeDir}
 \alias{nimbleFunctionList}
@@ -604,7 +624,6 @@
 \alias{nimRound}
 \alias{nimStep}
 \alias{nimSwitch}
-\alias{nimVector}
 \alias{nl_addIndicesToVariables}
 \alias{nl_aggregateConsecutiveBlocks}
 \alias{nl_checkNodeNamesInModel}
@@ -639,6 +658,7 @@
 \alias{node_stoch_dlogis}
 \alias{node_stoch_dmnorm}
 \alias{node_stoch_dmulti}
+\alias{node_stoch_dmvt}
 \alias{node_stoch_dnegbin}
 \alias{node_stoch_dnorm}
 \alias{node_stoch_dpois}
@@ -679,13 +699,14 @@
 \alias{outputGeneralCppFunction2}
 \alias{outputTypeCast2}
 \alias{paramInfo_SetupTemplate}
+\alias{paramMean}
 \alias{parseEvalCharacter}
+\alias{parseEvalCharacterMany}
 \alias{parseEvalNumeric}
+\alias{parseEvalNumericMany}
 \alias{parseTreeSubstitute}
 \alias{passThroughOperators}
 \alias{pasteSemicolon}
-\alias{pfStep}
-\alias{pfStepVirtual}
 \alias{phi}
 \alias{plotABS}
 \alias{plotMinMeanAll}
@@ -768,6 +789,7 @@
 \alias{R_setPtrVectorOfPtrs}
 \alias{rSimNodes}
 \alias{sampler_BASE}
+\alias{sampler_binary}
 \alias{sampler_conjugate_dbeta}
 \alias{sampler_conjugate_ddirch}
 \alias{sampler_conjugate_dgamma}
@@ -775,7 +797,6 @@
 \alias{sampler_conjugate_dnorm}
 \alias{sampler_conjugate_dwish}
 \alias{sampler_ess}
-\alias{sampler_RW_log}
 \alias{samplerSpec}
 \alias{scalarOutputTypes}
 \alias{seqAlongHandler}
@@ -829,6 +850,7 @@
 \alias{sizeMatrixSquareReduction}
 \alias{sizemvAccessBracket}
 \alias{sizeNFvar}
+\alias{sizeNimArrayGeneral}
 \alias{sizeNimbleFunction}
 \alias{sizeOneEigenCommand}
 \alias{sizeRCfunction}
