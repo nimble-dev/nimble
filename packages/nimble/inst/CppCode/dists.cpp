@@ -632,7 +632,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 //   including all n x n elements; lower-triangular elements are ignored
 {
   if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isReal(prec_param) || !isLogical(return_log))
-    RBREAK("Error (C_dnorm_chol): invalid input type for one of the arguments.\n");
+    RBREAK("Error (C_dmnorm_chol): invalid input type for one of the arguments.\n");
   int n_x = LENGTH(x);
   int n_mean = LENGTH(mean);
   int give_log = (int) LOGICAL(return_log)[0];
@@ -749,6 +749,182 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
   return ans;
 }
 
+// Begin multivariate t
+
+double dmvt_chol(double* x, double* mean, double* chol, double df, int n, double prec_param, int give_log) {
+  char uplo('U');
+  char transPrec('N');
+  char transCov('T');
+  char diag('N');
+  int lda(n);
+  int incx(1);
+  
+  double dens = lgammafn((df + n) / 2) - lgammafn(df / 2) - n * M_LN_SQRT_PI - n * log(df) / 2;
+  int i;
+  // add diagonals of Cholesky
+  
+  if (R_IsNA(x, n) || R_IsNA(mean, n) || R_IsNA(chol, n*n) || R_IsNA(df) || R_IsNA(prec_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, n) || R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_IsNA(df) || R_isnancpp(prec_param))
+    return R_NaN;
+#endif
+  
+  if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mean, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
+  
+  
+  if(prec_param) {
+    for(i = 0; i < n*n; i += n + 1) 
+      dens += log(chol[i]);
+  } else {
+    for(i = 0; i < n*n; i += n + 1) 
+      dens -= log(chol[i]);
+  }
+  for(i = 0; i < n; i++) 
+    x[i] -= mean[i];
+  
+  // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
+  // or upper-triangular (transpose) solve (cov parameterization)
+  // dtr{m,s}v is a BLAS level-2 function
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
+  
+  // sum of squares to calculate quadratic form
+  double tmp = 0.0;
+  for(i = 0; i < n; i++)
+    tmp += x[i] * x[i];
+  
+  dens += -0.5 * (df + n) * log(1 + tmp / df);
+  
+  return give_log ? dens : exp(dens);
+}
+
+SEXP C_dmvt_chol(SEXP x, SEXP mean, SEXP chol, SEXP df, SEXP prec_param, SEXP return_log) 
+  // calculates mv normal density given Cholesky of precision matrix or covariance matrix
+  // Cholesky matrix should be given as a numeric vector in column-major order
+  //   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isReal(df) || !isReal(prec_param) || !isLogical(return_log))
+    RBREAK("Error (C_dmvt_chol): invalid input type for one of the arguments.\n");
+  int n_x = LENGTH(x);
+  int n_mean = LENGTH(mean);
+  int give_log = (int) LOGICAL(return_log)[0];
+  double c_df = REAL(df)[0];
+  double prec = REAL(prec_param)[0];
+  
+  double* c_x = REAL(x);
+  double* c_mean = REAL(mean);
+  double* c_chol = REAL(chol);
+  
+  double* xcopy = new double[n_x];
+  for(int i = 0; i < n_x; ++i) 
+    xcopy[i] = c_x[i];
+  
+  double* full_mean;
+  if(n_mean < n_x) {
+    full_mean = new double[n_x];
+    int i_mean = 0;
+    for(int i = 0; i < n_x; i++) {
+      full_mean[i] = c_mean[i_mean++];
+      if(i_mean == n_mean) i_mean = 0;
+    }
+  } else full_mean = c_mean;
+  
+  SEXP ans;
+  PROTECT(ans = allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dmvt_chol(xcopy, full_mean, c_chol, c_df, n_x, prec, give_log);
+  if(n_mean < n_x)
+    delete [] full_mean;
+  delete [] xcopy;
+  UNPROTECT(1);
+  return ans;
+}
+
+void rmvt_chol(double *ans, double* mean, double* chol, double df, int n, double prec_param) {
+  // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
+  char uplo('U');
+  char transPrec('N');
+  char transCov('T');
+  char diag('N');
+  int lda(n);
+  int incx(1);
+  
+  int i, j;
+  
+#ifdef IEEE_754
+  if (R_isnancpp(mean, n) || R_isnancpp(chol, n*n) || R_isnancpp(df) || R_isnancpp(prec_param)) {
+    for(j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+#endif
+  
+  if(!R_FINITE_VEC(chol, n*n)) { 
+    for(j = 0; j < n; j++) 
+      ans[j] = R_NaN;
+    return;
+  }
+  
+  double* devs = new double[n];
+  //  double* ans = new double[n];
+  
+  for(i = 0; i < n; i++) 
+    devs[i] = norm_rand();
+  
+  // sample from chi-squared and calculate scaling factor
+  double scaling = sqrt(df / rchisq(df));
+  
+  // do upper-triangular solve or (transpose) multiply
+  // dtr{s,m}v is a BLAS level-2 function
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, devs, &incx);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, devs, &incx);
+  
+  for(i = 0; i < n; i++) 
+    ans[i] = mean[i] + devs[i] * scaling;
+  
+  delete [] devs;
+}
+
+SEXP C_rmvt_chol(SEXP mean, SEXP chol, SEXP df, SEXP prec_param) 
+  // generates single mv normal draw given Cholesky of precision matrix or covariance matrix
+  // Cholesky matrix should be given as a numeric vector in column-major order
+  //   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!isReal(mean) || !isReal(chol) || !isReal(df) || !isReal(prec_param))
+    RBREAK("Error (C_rmvt_chol): invalid input type for one of the arguments.\n");
+  int n_mean = LENGTH(mean);
+  int n_chol = LENGTH(chol);
+  int n_values = pow(n_chol, 0.5);
+  double c_df = REAL(df)[0];
+  double prec = REAL(prec_param)[0];
+  
+  int i;
+  
+  double* c_mean = REAL(mean);
+  double* c_chol = REAL(chol);
+  double* full_mean; 
+  
+  if(n_mean < n_values) {
+    full_mean = new double[n_values];
+    int i_mean = 0;
+    for(i = 0; i < n_values; i++) {
+      full_mean[i] = c_mean[i_mean++];
+      if(i_mean == n_mean) i_mean = 0;
+    }
+  } else full_mean = c_mean;
+  
+  GetRNGstate(); 
+  
+  SEXP ans;
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  rmvt_chol(REAL(ans), full_mean, c_chol, c_df, n_values, prec);
+  
+  PutRNGstate();
+  if(n_mean < n_values) 
+    delete [] full_mean;
+  UNPROTECT(1);
+  return ans;
+}
 
 
 double dt_nonstandard(double x, double df, double mu, double sigma, int give_log)

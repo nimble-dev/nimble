@@ -1265,19 +1265,19 @@ SEXP populateIndexedNodeInfoTable(SEXP StablePtr, SEXP StableContents) {
   return(R_NilValue);
 }
 
-SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj){
-	int len = LENGTH(S_GIDs);
-	int* gids = INTEGER(S_GIDs);
-	int index;
-	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
-	ManyModelValuesAccessor* accessVector = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(SmodelValuesAccessorVector) );
-	(*accessVector).varAccessors.resize(len);
-	for(int i = 0; i < len; i++){
-		index = gids[i] - 1;
-		(*accessVector).varAccessors[i] = static_cast<SingleModelValuesAccess*>(numObj->getObjectPtr(index));
-		}
-	return(R_NilValue);
-}
+// SEXP populateModelValuesAccessors_byGID(SEXP SmodelValuesAccessorVector, SEXP S_GIDs, SEXP SnumberedObj){
+// 	int len = LENGTH(S_GIDs);
+// 	int* gids = INTEGER(S_GIDs);
+// 	int index;
+// 	NumberedObjects* numObj = static_cast<NumberedObjects*>(R_ExternalPtrAddr(SnumberedObj));
+// 	ManyModelValuesAccessor* accessVector = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(SmodelValuesAccessorVector) );
+// 	(*accessVector).varAccessors.resize(len);
+// 	for(int i = 0; i < len; i++){
+// 		index = gids[i] - 1;
+// 		(*accessVector).varAccessors[i] = static_cast<SingleModelValuesAccess*>(numObj->getObjectPtr(index));
+// 		}
+// 	return(R_NilValue);
+// }
 
 /// NEWER
 

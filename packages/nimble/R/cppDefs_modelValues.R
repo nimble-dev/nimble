@@ -97,8 +97,6 @@ cppModelValuesClass <- setRefClass('cppModelValuesClass',
                                            buildConstructorFunctionDef()
                                            buildResizeFunctionDef()
                                            buildSEXPgenerator(finalizer = 'namedObjects_Finalizer')
-                                           ##buildSEXPgenerator()
-                                           ##buildSEXPfinalizer()
                                        }
                                        )
                                    )

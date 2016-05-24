@@ -330,137 +330,6 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                            else Robject <<- Robj
                                            Robject$.CobjectInterface <<- .self 
                                        },
-                                       ## buildNeededObjects = function(Robj) {
-                                       ##     if(missing(Robj)) Robj <- Robject
-                                       ##     for(iName in compiledNodeFun$nfProc$neededObjectNames) {
-                                       ##         thisObj <- Robj[[iName]]
-                                       ##         if(inherits(thisObj, 'modelValuesBaseClass')) {
-                                       ##             if(inherits(thisObj$CobjectInterface, 'uninitializedField') || is.null(thisObj$CobjectInterface)) {
-                                       ##                 neededObjects[[iName]] <<- nimbleProject$instantiateCmodelValues(thisObj, dll)
-                                       ##             }
-                                       ##             next
-                                       ##         }
-                                       ##         if(is.nf(thisObj)) {
-                                       ##             RCO <- nf_getRefClassObject(thisObj)
-                                       ##             if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                                       ##                 neededObjects[[iName]] <<- nimbleProject$instantiateNimbleFunction(thisObj, dll)
-                                       ##             }
-                                       ##             next
-                                       ##         }
-                                       ##         if(inherits(thisObj, 'nimbleFunctionList')) {
-                                       ##             neededObjects[[iName]] <<- nimPointerList(thisObj$baseClass, length(thisObj$contentsList))
-                                       ##             for(i in seq_along(thisObj$contentsList)) {
-                                       ##                 RCO <- nf_getRefClassObject(thisObj[[i]])
-                                       ##                 if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
-                                       ##                     neededObjects[[iName]][[i]] <<- nimbleProject$instantiateNimbleFunction(thisObj[[i]], dll)
-                                       ##                 } else {
-                                       ##                     neededObjects[[iName]][[i]] <<- RCO$.CobjectInterface 
-                                       ##                 }
-                                       ##             }
-                                       ##             names(neededObjects[[iName]]$contentsList) <<- names(thisObj$contentsList)
-                                       ##             thisObj$CobjectInterface <- neededObjects[[iName]]
-                                       ##             next
-                                       ##         }
-                                       ##         warning('Warning: object ',iName,' not of a type that can be built.', call. = FALSE)
-                                       ##     }
-                                       ## },
-                                       ## copyFromRobject = function(Robj) {
-                                       ##     if(missing(Robj)) Robj <- Robject
-                                       ##     for(v in cppNames) {
-                                       ##         if(is.null(cppCopyTypes[[v]])) next
-                                       ##         if(is.null(Robj[[v]])) {
-                                       ##             warning("Problem in copyFromRobject.  There is an object to be copied that is NULL.  Going to browser.", call. = FALSE)
-                                       ##             browser()
-                                       ##         }
-                                       ##         if(cppCopyTypes[[v]] == 'modelVar') {
-                                       ##             modelVar <- Robj[[v]] ## this is a singleVarAccessClass created by replaceModelSingles
-                                       ##             Cmodel <- modelVar$model$CobjectInterface
-                                       ##             varName <- modelVar$var
-                                       ##             .self[[v]] <<- .Call('getModelObjectPtr', Cmodel$.basePtr, varName)
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
-                                       ##             modelVar <- Robj[[v]]
-                                       ##             Cnf <- nf_getRefClassObject(modelVar)$.CobjectInterface ##environment(modelVar)$.CobjectInterface
-                                       ##             .self[[v]] <- Cnf
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'nimPtrList') {
-                                       ##             if(is.null(Robj[[v]]$contentsList)) {
-                                       ##                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
-                                       ##                 browser()
-                                       ##             }
-                                       ##             if(any(unlist(lapply(Robj[[v]]$contentsList, is.null)))) {
-                                       ##                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL')
-                                       ##                 browser()
-                                       ##             }
-                                       ##             modelVar <- Robj[[v]] ## This is a nimPtrList 
-                                       ##             Cmv <- modelVar$CobjectInterface ## This was created above in build neededObjects
-                                       ##             .self[[v]] <- Cmv
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'modelValues') { ## somewhat similar to modelVar
-                                       ##             rModelValues <- Robj[[v]]
-                                       ##             Cmv <- rModelValues$CobjectInterface
-                                       ##             k = getsize(rModelValues)
-                                       ##             resize(Cmv, k)
-                                       ##           	vNames = rModelValues[['varNames']]
-                                       ##           	for(vN in vNames)
-                                       ##           		Cmv[vN,] <- rModelValues[vN,]
-                                       ##           	Cmv$symTab <- rModelValues$symTab	
-                                       ##             .self[[v]] <- Cmv
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
-                                       ##             populateNodeFxnVec(fxnPtr = .basePtr, Robject = Robj, fxnVecName = v) 
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'modelVarAccess'){
-                                       ##             populateManyModelVarMapAccess(fxnPtr = .basePtr, Robject = Robj, manyAccessName = v)
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'modelValuesAccess'){
-                                       ##             populateManyModelValuesMapAccess(fxnPtr = .basePtr, Robject = Robj, manyAccessName = v)
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == "modelValuesPtr"){
-                                       ##             curObj <- Robj[[v]]
-                                       ##             mvPtr = curObj$modelValues$CobjectInterface$componentExtptrs[[curObj$var]]
-                                       ##             .self[[v]] <<- mvPtr
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'numericList'){
-                                       ##             rawPtr = .Call('getModelObjectPtr', .basePtr, v)
-                                       ##             .self[[v]] <<- numericList(buildType = 'C', extPtr = rawPtr)
-                                       ##             nRows = Robj[[v]]$nRow
-                                       ##             resize(.self[[v]], nRows)
-                                       ##             for(i in 1:nRows){
-                                       ##                 copyDims = max(c(1, dimOrLength[[v]][[i]]) )
-                                       ##                 d1 = copyDims[1]
-                                       ##                 d2 = copyDims[2]
-                                       ##                 d3 = copyDims[3]
-                                       ##                 setSize(.self[[v]], row = i, d1, d2, d3)
-                                       ##                 .self[[v]][[i]] <<- Robj[[v]][[i]]
-                                       ##             }
-                                       ##             next
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'character') {
-                                       ##             .self[[v]] <<- Robj[[v]]
-                                       ##         }
-                                       ##         else if(cppCopyTypes[[v]] == 'numeric') {
-                                       ##             .self[[v]] <<- Robj[[v]]
-                                       ##         }
-                                       ##         else if(!(cppCopyTypes[[v]] %in% c('copierVector'))) {
-                                       ##             warning(paste0("Note: cppCopyTypes not recognized. Type = ", cppCopyTypes[[v]], "\n"), call. = FALSE)
-                                       ##         }
-                                       ##     }
-                                       ##     ## second pass is for initializations that require everything from first pass be done
-                                       ##     for(v in cppNames) {
-                                       ##         if(is.null(cppCopyTypes[[v]])) next
-                                       ##         if(cppCopyTypes[[v]] == 'copierVector') {
-                                       ##             populateCopierVector(fxnPtr = .basePtr, Robject = Robj, vecName = v)
-                                       ##         }
-                                       ##     }
-                                       ## },
                                        lookupSymbol = function(symname) {
                                            if(is.null(dll))
                                                stop("No DLL for this object")
@@ -921,22 +790,18 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                      dll <<- dll       ## should only occur first time addInstance is called
                                                  }
                                                  compiledNodeFun$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
-                                                 ##      nfObjectList <<- c(nfObjectList, nfObject)
                                                  
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
-                                                 # newBasePtr <- .Call(basePtrCall)
                                                  
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)
                                                  else newRobject <- nfObject
                                                  newRobject$.CobjectInterface <- list(.self, length(basePtrList))
-                                                 ##newRobject[['.CobjectInterfaceIndex']] <- length(basePtrList)
                                                  RobjectList[[length(RobjectList)+1]] <<- newRobject
                                                  newNeededObjects <- buildNeededObjects(newRobject, compiledNodeFun, list(), dll, nimbleProject)
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
                                                  copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr)
-                                                 ## cat('clearing\n')
                                                  if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              },
@@ -962,10 +827,6 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                                'Could not get or set a value for this variable')
                                                  ans
                                              }
-                                             ##setRobject = function() {},
-                                             ##buildNeededObjects = function() {},
-                                             ##copyFromRobject = function() {},
-                                             ##lookupSymbol = function() {}
                                          ))
 
 valueInCompiledNimbleFunction <- function(cnf, name, value) { ## value can be missing

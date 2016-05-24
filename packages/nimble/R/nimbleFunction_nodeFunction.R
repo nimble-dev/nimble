@@ -88,7 +88,6 @@ ndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type, set
             ## need a value Entry
             allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
             typesListAllParams <- getDistribution(distName)$types
-            ##numParams <- length(typesListAllParams)
             typesNDims <- unlist(lapply(typesListAllParams, `[[`, 'nDim'))
             typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
             paramIDs <- getDistribution(distName)$paramIDs
@@ -282,7 +281,6 @@ ndf_createStochCalculateTrunc <- function(logProbNodeExpr, LHS, RHS, diff = FALS
                                LOWER = lower,
                                UPPER = upper,
                                VALUE = LHS,
-##                               LOGPROB = logProbNodeExpr,
                                DENSITY = RHS,
                                PDIST_LOWER = PDIST_LOWER,
                                PDIST_UPPER = PDIST_UPPER,

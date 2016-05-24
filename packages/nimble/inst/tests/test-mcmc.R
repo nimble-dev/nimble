@@ -624,7 +624,7 @@ test_that(
                  ))
 
 dif <- as.numeric(Rsamples - Csamples)
-test_that('R and C equiv', expect_less_than(max(abs(dif)), 1E-15))
+test_that('R and C equiv', expect_lt(max(abs(dif)), 1E-15))
 
 y_prec <- array(NA, c(4,5,5))
 y_prec[1,,] <-       M_y[1,,]
@@ -644,10 +644,10 @@ Cmcmc$run(100000)
 Csamples <- as.matrix(Cmcmc$mvSamples)
 
 dif_mean <- as.numeric(apply(Csamples, 2, mean)) - post_mean
-test_that('posterior mean', expect_true(all(abs(dif_mean) < 0.001)))
+test_that('posterior mean', expect_lt(max(abs(dif_mean)), 0.001))
 
 dif_cov <- as.numeric(cov(Csamples) - post_cov)
-test_that('posterior cov', expect_true(all(abs(dif_cov) < 0.001)))
+test_that('posterior cov', expect_lt(max(abs(dif_cov)), 0.001))
 
 
 
@@ -822,14 +822,14 @@ means <- apply(samples, 2, mean)
 ##means
 
 tol <- 0.0025
-test_that('binary sampler posterior', expect_less_than(abs(means[['a']] - 0.5), tol))
-test_that('binary sampler posterior', expect_less_than(abs(means[['b']] - 0.6), tol))
-test_that('binary sampler posterior', expect_less_than(abs(means[['c']] - 0.05), tol))
-test_that('binary sampler posterior', expect_less_than(abs(means[['d']] - 0.2), tol))
-test_that('binary sampler posterior', expect_less_than(abs(means[['e']] - 0.9), tol))
-test_that('binary sampler posterior', expect_less_than(abs(means[['f']] - 0.9525), tol))
-test_that('binary sampler posterior', expect_less_than(abs(means[['g']] - 0.0475), tol))
-test_that('binary sampler posterior', expect_less_than(abs(means[['h']] - 0.5), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['a']] - 0.5), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['b']] - 0.6), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['c']] - 0.05), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['d']] - 0.2), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['e']] - 0.9), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['f']] - 0.9525), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['g']] - 0.0475), tol))
+test_that('binary sampler posterior', expect_lt(abs(means[['h']] - 0.5), tol))
 
 
 
