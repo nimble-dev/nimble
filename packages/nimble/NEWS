@@ -8,9 +8,9 @@ USER LEVEL CHANGES
 
 -- A block sampler that uses user-specified likelihoods has been implemented and can be used as a sampler within an MCMC, by using 'RW_llFunction_block'.
 
--- An ascent-based convergence criterion for the EM algorithm has been added to buildMCEM().
+-- An ascent-based version of the EM algorithm has been added to buildMCEM().
 
--- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still needed to change the size of an existing object. 
+-- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still available to change the size of an existing object prior to assigning into specific elements, but another call to one of the new functions can also be used for that purpose.
 
 -- Added multivariate-t distribution for use in BUGS code and the DSL. 
 
@@ -19,6 +19,12 @@ USER LEVEL CHANGES
 -- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
 
 -- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+
+-- Some steps of building and compiling models and algorithms are generally faster.
+
+-- forwardsolve(), backsolve() and solve() now work more flexibly than before and can be used in BUGS code.
+
+-- A variety of small bug fixes.
 
 DEVELOPER LEVEL CHANGES
 
