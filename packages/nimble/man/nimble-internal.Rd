@@ -796,16 +796,7 @@
 \alias{sampler_conjugate_dmnorm}
 \alias{sampler_conjugate_dnorm}
 \alias{sampler_conjugate_dwish}
-\alias{sampler_crossLevel}
 \alias{sampler_ess}
-\alias{sampler_posterior_predictive}
-\alias{sampler_RW}
-\alias{sampler_RW_block}
-\alias{sampler_RW_llFunction}
-\alias{sampler_RW_llFunction_block}
-\alias{sampler_RW_PF}
-\alias{sampler_RW_PF_block}
-\alias{sampler_slice}
 \alias{samplerSpec}
 \alias{scalarOutputTypes}
 \alias{seqAlongHandler}

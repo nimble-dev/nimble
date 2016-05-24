@@ -1010,9 +1010,9 @@ sampler_RW_PF_block <- nimbleFunction(
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
 #'
-#' The precise behaviour NIMBLE's MCMC sampling algorithms may be customized using the control argument provided to \code{addSampler()}.  The usage syntax is:
+#' The precise behavior NIMBLE's MCMC sampling algorithms may be customized using the control argument provided to \code{addSampler()}.  The usage syntax is:
 #'
-#' \code{mcmcspec$addSampler(target = targetnode, type = samplertype, control = controllist)}
+#' \code{mcmcConf$addSampler(target = targetnode, type = samplertype, control = controllist)}
 #' 
 #' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below. 
 #' 
@@ -1110,8 +1110,9 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \item llFunction. A specialized nimbleFunction that accepts no arguments and returns a scalar double number.  The return value must be the total log-likelihood of all stochastic dependents of the target nodes -- and, if includesTarget = TRUE, of the target node(s) themselves --  or whatever surrogate is being used for the total log-likelihood.  This is a required element with no default.
 #' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
 #' }
+#' 
 #' \cr
-#' @section RW_PF sampler
+#' @section RW_PF sampler:
 #' 
 #' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF} sampler uses a Metropolis Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'  \cr
@@ -1119,18 +1120,19 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
-#' \item scale. The initial value of the normal proposal standard deviation.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item scale. The initial value of the normal proposal standard deviation.  If \code{adaptive = FALSE}, scale will never change. (default = 1)
 #' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
-#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code"bootstrap"}.
-#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if filterType is set to \code{"auxiliary"}.
+#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
+#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{filterType} is set to \code{"auxiliary"}.
 #' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt 2011.  This will override any value of \code{m} specified above. 
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above. 
 #' }
+#' 
 #' \cr
-#' #' @section \code{RW_PF_block} sampler
-
-#' #' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
+#' @section \code{RW_PF_block} sampler:
+#'
+#' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'  \cr
 #' The \code{RW_PF_block} sampler accepts the following control list elements: \cr
 #' \itemize{
@@ -1178,7 +1180,7 @@ sampler_RW_PF_block <- nimbleFunction(
 #' 
 #' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University. 
 #' 
-
+NULL
 
 
 

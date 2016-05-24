@@ -105,7 +105,7 @@ calc_E_llk_gen = nimbleFunction(
 #' @references Caffo, Brian S., Wolfgang Jank, and Galin L. Jones. "Ascent-based Monte Carlo expectation-maximization."
 #'  Journal of the Royal Statistical Society: Series B (Statistical Methodology) 67.2 (2005): 235-251.
 #' @examples
-#' 
+#' \dontrun{
 #' pumpCode <- nimbleCode({ 
 #'  for (i in 1:N){
 #'      theta[i] ~ dgamma(alpha,beta);
@@ -133,8 +133,8 @@ calc_E_llk_gen = nimbleFunction(
 #' pumpMCEM <- buildMCEM(model = pumpModel, latentNodes = 'theta[1:10]',
 #'                        boxConstraints = box)
 #' pumpMCEM(initM = 1000)
-#'
-#' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
+#' }
+#' # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 #' 
 buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20),
                       boxConstraints = list(), buffer = 10^-6, alpha = 0.1, beta = 0.1, gamma = 0.05, C = .1, numReps = 100, verbose = TRUE) {
