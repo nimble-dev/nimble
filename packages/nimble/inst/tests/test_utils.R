@@ -102,7 +102,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
         spec$removeSamplers(inds, print = FALSE)
         
         if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
-        if(length(var$target) == 1 || (var$type %in% c("RW_block", "RW_PFilter_block", "RW_llFunction_block") && !is.list(var$target))) 
+        if(length(var$target) == 1 || (var$type %in% c("RW_block", "RW_PF_block", "RW_llFunction_block") && !is.list(var$target))) 
             tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) spec$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
     }
     
@@ -145,7 +145,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       sapply(samplers, setSampler, mcmcspec)
       if(verbose) {
           cat("Setting samplers to:\n")
-          mcmcspec$getSamplers()
+          print(mcmcspec$getSamplers())
       }
   }
   
@@ -340,7 +340,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 test_filter <- function(example, model, data = NULL, inits = NULL,
                         verbose = TRUE, numItsR = 5, numItsC = 10000,
                         basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
-                        numItsC_results = numItsC, dims = NULL,
+                        numItsC_results = numItsC, 
                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
                         doubleCompare = FALSE, filterType2 = NULL,
                         doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
@@ -369,13 +369,12 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     # classic-bugs example specified by name
     dir = getBUGSexampleDir(example)
     if(missing(model)) model <- example
-    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
-                            check = FALSE)
+    Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE, check = FALSE)
   } else {
     # code, data and inits specified directly where 'model' contains the code
     example = deparse(substitute(model))
     if(missing(model)) stop("Neither BUGS example nor model code supplied.")
-    Rmodel <- nimbleModel(model, data = data, inits = inits, dimensions = dims, check = FALSE)
+    Rmodel <- readBUGSmodel(model, dir = "", data = data, inits = inits, useInits = TRUE, check = FALSE)
   }
   if(doCpp) {
     Cmodel <- compileNimble(Rmodel)
@@ -384,19 +383,19 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
   cat("Building filter\n")
   if(filterType == "bootstrap"){
     if(!is.null(filterControl))  Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = list(saveAll = T, thresh = 0))    
+    else Rfilter <- buildBootstrapFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE, thresh = 0))    
   } 
   if(filterType == "auxiliary"){
     if(!is.null(filterControl))  Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = list(saveAll = T))
+    else Rfilter <- buildAuxiliaryFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
   }  
   if(filterType == "LiuWest"){
     if(!is.null(filterControl))  Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = list(saveAll = T))
+    else Rfilter <- buildLiuWestFilter(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
   }  
   if(filterType == "ensembleKF"){
     if(!is.null(filterControl))  Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = filterControl)
-    else Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = list(saveAll = T))
+    else Rfilter <- buildEnsembleKF(Rmodel, nodes = latentNodes, control = list(saveAll = TRUE))
   }  
   
   if(doCpp) {
@@ -446,16 +445,16 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
       if(filterType == "ensembleKF"){
         try(
           test_that(paste0("test of equality of output from R and C versions of ", example," ", filterType, " filter"), {
-            expect_that(R_samples, equals(C_subSamples), info = paste("R and C posterior samples are not equal"))
+            expect_equal(R_samples, C_subSamples, info = paste("R and C posterior samples are not equal"))
           })
         )
       }
       else{
         try(
           test_that(paste0("test of equality of output from R and C versions of ", example," ", filterType, " filter"), {
-            expect_that(R_samples, equals(C_subSamples), info = paste("R and C weighted posterior samples are not equal"))
-            expect_that(R_samples2, equals(C_subSamples2), info = paste("R and C equally weighted posterior samples are not equal"))
-            expect_that(RfilterOut, equals(CfilterOut), info = paste("R and C log likelihood estimates are not equal"))
+            expect_equal(R_samples, C_subSamples, info = paste("R and C weighted posterior samples are not equal"))
+            expect_equal(R_samples2, C_subSamples2, info = paste("R and C equally weighted posterior samples are not equal"))
+            expect_equal(RfilterOut, CfilterOut, info = paste("R and C log likelihood estimates are not equal"))
           })
         )
       }
@@ -469,7 +468,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
         for(varName in names(exactSample))
           try(
             test_that(paste("Test of filter result against known samples for", example, ":", varName), {
-              expect_that(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), equals(round(exactSample[[varName]], 8))) })
+              expect_equal(round(C_samples[seq_along(exactSample[[varName]]), varName], 8), round(exactSample[[varName]], 8)) })
           )
       }
     }
@@ -537,7 +536,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
               strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
               try(
                 test_that(paste("Test of ", filterType, " filter posterior result against known posterior for", example, ":", weightedOutput,  metric, "(", varName, strInfo, ")"), {
-                  expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+                  expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
                 })
               )
             }
@@ -555,7 +554,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
               strInfo <- ifelse(length(diff) > 1, paste0("[", ind, "]"), "")
               try(
                 test_that(paste("Test of ", filterType, " filter posterior result against known posterior for", example, ":",  metric, "(", varName, ")", strInfo), {
-                  expect_that(diff[ind], is_less_than(resultsTolerance[[metric]][[varName]][ind]))
+                  expect_lt(diff[ind], resultsTolerance[[metric]][[varName]][ind])
                 })
               )
             }
@@ -565,7 +564,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
           diff <- abs(Cll - results[[metric]][[1]][1])
           try(
             test_that(paste("Test of ", filterType, " filter log-likelihood result against known log-likelihood for", example, ":",  metric), {
-              expect_that(diff, is_less_than(resultsTolerance[[metric]][[1]][1]))
+              expect_lt(diff, resultsTolerance[[metric]][[1]][1])
             })
           )
         }

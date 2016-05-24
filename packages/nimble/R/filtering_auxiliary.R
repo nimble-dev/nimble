@@ -230,7 +230,7 @@ buildAuxiliaryFilter <- nimbleFunction(
     if(is.null(silent)) silent <- TRUE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(smoothing)) smoothing <- FALSE
-    if(is.null(lookahead)) lookahead = 'simulate'
+    if(is.null(lookahead)) lookahead <- 'simulate'
     if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
     if(lookahead == "mean"){
       errors <- sapply(model$expandNodeNames(nodes), function(node){tryCatch(getParam(model, node, 'mean'), error=function(a){return("error")})})
@@ -268,7 +268,7 @@ buildAuxiliaryFilter <- nimbleFunction(
     
     # Create mv variables for x state and sampled x states.  If saveAll=TRUE, 
     # the sampled x states will be recorded at each time point. 
-    modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
+    modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[vars]
     if(saveAll){
       
       names <- sapply(modelSymbolObjects, function(x)return(x$name))

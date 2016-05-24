@@ -218,7 +218,7 @@ buildBootstrapFilter <- nimbleFunction(
     if(!saveAll & smoothing) stop("must have saveAll = TRUE for smoothing to work")
     # Create mv variables for x state and sampled x states.  If saveAll=TRUE, 
     # the sampled x states will be recorded at each time point.
-    modelSymbolObjects = model$getSymbolTable()$getSymbolObjects()[vars]
+    modelSymbolObjects <- model$getSymbolTable()$getSymbolObjects()[vars]
     if(saveAll){
       
       names <- sapply(modelSymbolObjects, function(x)return(x$name))
