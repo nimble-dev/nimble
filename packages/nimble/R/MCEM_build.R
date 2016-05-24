@@ -20,9 +20,7 @@ calc_asympVar = nimbleFunction(
         }
       }
       #as per Caffo, calculate both Q functions using the same samples from the latent variables
-      oldQ <- calc_E_llk(oldTheta) 
-      newQ <- calc_E_llk(theta)
-      svals[r] <- newQ - oldQ
+      svals[r]  <- calc_E_llk(theta, oldTheta, 1) 
     }
     svalsSD <- sd(svals)
     svalsVar <- svalsSD^2
@@ -32,7 +30,7 @@ calc_asympVar = nimbleFunction(
 )
     
 
-
+# Calculates Q function if diff = 0, calculates difference in Q functions if diff = 1.
 calc_E_llk_gen = nimbleFunction(
     setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
 	fixedCalcNodes <- model$getDependencies(fixedNodes)	
@@ -42,30 +40,42 @@ calc_E_llk_gen = nimbleFunction(
 	areFixedDetermNodes <- length(paramDepDetermNodes_fixed) > 0
 	areLatentDetermNodes <- length(paramDepDetermNodes_latent) >0
     },
-    run = function(paramValues = double(1)){
-        values(model, fixedNodes) <<- paramValues
+    run = function(paramValues = double(1), oldParamValues = double(1), diff = integer(0)){
+      nSamples = getsize(mvSample)
+      mean_LL <- 0
+      
+      for(i in (burnIn+1):nSamples){
+        nimCopy(from = mvSample, to = model, nodes = sampledNodes, row = i)
+        values(model, fixedNodes) <<- paramValues  #first use new params, then old ones
         if(areFixedDetermNodes){
-            simulate(model, paramDepDetermNodes_fixed)	#	Fills in the deterministic nodes
+          simulate(model, paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
         }
-        nSamples = getsize(mvSample)
-        mean_LL <- 0
-        for(i in (burnIn+1):nSamples){
-            nimCopy(from = mvSample, to = model, nodes = sampledNodes, row = i)
-            if(areLatentDetermNodes){
-                simulate(model, paramDepDetermNodes_latent)	#	Fills in the deterministic nodes
-            }
-            sample_LL = calculate(model, latentCalcNodes)
-            mean_LL = mean_LL + sample_LL
+        if(areLatentDetermNodes){
+          simulate(model, paramDepDetermNodes_latent)	#	Fills in the deterministic nodes
         }
-        mean_LL <- mean_LL / nSamples
-        if(is.nan(mean_LL)){
-            mean_LL = -Inf	
+        sample_LL = calculate(model, latentCalcNodes)
+        mean_LL = mean_LL + sample_LL
+        if(diff == 1){
+          values(model, fixedNodes) <<- oldParamValues #now old params
+          if(areFixedDetermNodes){
+            simulate(model, paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
+          }
+          if(areLatentDetermNodes){
+            simulate(model, paramDepDetermNodes_latent)  #	Fills in the deterministic nodes
+          }
+          sample_LL = calculate(model, latentCalcNodes)
+          mean_LL = mean_LL - sample_LL
         }
-        returnType(double())
-        return(mean_LL)
+      }
+      mean_LL <- mean_LL / nSamples
+      if(is.nan(mean_LL)){
+        mean_LL = -Inf	
+      }
+      returnType(double())
+      return(mean_LL)
     },where = getLoadingNamespace())
 
-                                      
+
 
 #' Builds an MCEM algorithm from a given NIMBLE model
 #' 
@@ -137,7 +147,7 @@ calc_E_llk_gen = nimbleFunction(
 #' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
 #' 
 buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20),
-                      boxConstraints = list(), buffer = 10^-6, alpha = 0.1, beta = 0.1, gamma = 0.05, C = .1, numReps = 100, verbose = T) {
+                      boxConstraints = list(), buffer = 10^-6, alpha = 0.05, beta = 0.05, gamma = 0.05, C = .01, numReps = 300, verbose = T) {
     latentNodes = model$expandNodeNames(latentNodes)
     latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
     allStochNonDataNodes = model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
@@ -221,7 +231,6 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         
         m <- initM 
         endCrit <- C+1 #ensure that first iteration runs
-        oldQ <- -1000 #ensure we accept first estimate
         sigSq <-0 #use initM as m value for first step
         diff <- 1 # any nonzero value can be used here, gets overwritten quickly in algo
         itNum <- 0
@@ -233,13 +242,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
           thetaPrev <- theta  #store previous theta value
           itNum <- itNum + 1
           while(acceptCrit == 0){
-            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
+            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
+                                diff = 0, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
             theta = optimOutput$par    
             #varOut has two elements: varOut[1] is the sample variance, varOut[2] is the number of samples used to ccalculate the varianve
             sigSq <- cvarCalc$run(m, theta, thetaPrev) 
             ase <- sqrt(sigSq/numReps) #asymptotic std. error
-            newQ <- cCalc_E_llk$run(theta)
-            diff <- newQ-oldQ
+            diff <- cCalc_E_llk$run(theta, thetaPrev, 1)
             if((diff - zAlpha*ase)<0){ #swamped by mc error
               mAdd <- ceiling(m/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
               cmcmc_Latent$run(mAdd, reset = FALSE)
@@ -248,8 +257,9 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
             else{
               acceptCrit <- 1
               endCrit <- diff + zGamma*ase #evaluate ending criterion
-              cmcmc_Latent$run(m, reset = TRUE) #get Q(theta^(t-1),theta^(t-1)) as in equation 6
-              oldQ <- cCalc_E_llk$run(theta) #save old q value 
+              if(itNum == 1)
+                endCrit <- C+1 #ensure that at least two iterations are run
+              
               if(verbose == T){
                 print(paste("Iteration Number:", itNum, sep = " "))
                 print(paste("Current number of MCMC iterations:", m, sep = " "))
