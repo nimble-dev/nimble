@@ -86,8 +86,8 @@ calc_E_llk_gen = nimbleFunction(
 #' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.
 #' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged.
 #' @param numReps number of bootstrap samples to use for asymptotic variance calculation
-
-
+#' @param verbose logical indicating whether to print additional logging information
+#' 
 #'  @author Clifford Anderson-Bergman and Nicholas Michaud
 #' @export
 #' @details \code{buildMCEM} calls the NIMBLE compiler to create the MCMC and objective function as nimbleFunctions.  If the given model has already been used in compiling other nimbleFunctions, it is possible you will need to create a new copy of the model for buildMCEM to use.
@@ -130,14 +130,14 @@ calc_E_llk_gen = nimbleFunction(
 #' # Want to maximize alpha and beta (both which must be positive) and integrate over theta
 #' box = list( list(c('alpha','beta'), c(0, Inf)))
 #'
-#' pumpMCEM <- buildAscentMCEM(model = pumpModel, latentNodes = 'theta[1:10]',
+#' pumpMCEM <- buildMCEM(model = pumpModel, latentNodes = 'theta[1:10]',
 #'                        boxConstraints = box)
 #' pumpMCEM(initM = 1000)
 #'
 #' # Could also use latentNodes = 'theta' and buildMCEM would figure out this means 'theta[1:10]'
 #' 
 buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20),
-                      boxConstraints = list(), buffer = 10^-6, alpha = 0.1, beta = 0.1, gamma = 0.05, C = .1, numReps = 100, verbose = T) {
+                      boxConstraints = list(), buffer = 10^-6, alpha = 0.1, beta = 0.1, gamma = 0.05, C = .1, numReps = 100, verbose = TRUE) {
     latentNodes = model$expandNodeNames(latentNodes)
     latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
     allStochNonDataNodes = model$getNodeNames(includeData = FALSE, stochOnly = TRUE)

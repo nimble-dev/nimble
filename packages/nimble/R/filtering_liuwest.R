@@ -330,7 +330,7 @@ LWparFunc <- nimbleFunction(
 #'  distribution of both the latent states and top-level parameters for a state space model.  
 #'  Each particle in the Liu and West filter contains values not only for latent states, 
 #'  but also for top level parameters.  Latent states are propogated via an auxiliary step, 
-#'  as in the auxiliary particle filter (\code{\link{buildAuxF}}).
+#'  as in the auxiliary particle filter (\code{\link{buildAuxiliaryFilter}}).
 #'  Top-level parameters are propagated from one 
 #'  time point to the next through a smoothed kernel density based on previous particle values.  
 #'        
@@ -429,8 +429,8 @@ buildLiuWestFilter <- nimbleFunction(
         if(identical(x$size, numeric(0))) return(1)
         return(x$size)})      
       mvEWSamples <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
       
       
       names <- c(names, "wts")
@@ -438,8 +438,8 @@ buildLiuWestFilter <- nimbleFunction(
       size$wts <- length(dims)
       
       mvWSamples  <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
       
     }
     else{
@@ -451,15 +451,15 @@ buildLiuWestFilter <- nimbleFunction(
       
       size[[latentVars]] <- as.numeric(dims[[1]])      
       mvEWSamples <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
       
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
       mvWSamples  <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
     }
     
     names <- names[1]

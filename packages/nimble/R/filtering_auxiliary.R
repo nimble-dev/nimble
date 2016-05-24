@@ -39,8 +39,8 @@ auxSimFunc = nimbleFunction(
 
 auxFStep <- nimbleFunction(
   contains = auxStepVirtual,
-  setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names, saveAll, smoothing,
-                   lookahead, silent = TRUE) {
+  setup = function(model, mvEWSamples, mvWSamples, nodes, iNode, names,
+                   saveAll, smoothing, lookahead, silent = TRUE) {
     notFirst <- iNode != 1
     prevNode <- nodes[if(notFirst) iNode-1 else iNode]
     prevDeterm <- model$getDependencies(prevNode, determOnly = TRUE)
@@ -184,7 +184,7 @@ return(0)
 #'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time. This need only be set if the number of time points is less than or equal to the size of the latent state at each time point.}
 #'  }
 #' 
-#' The auxiliary particle filter modifies the bootstrap filter (\code{\link{buildBootF}})
+#' The auxiliary particle filter modifies the bootstrap filter (\code{\link{buildBootstrapFilter}})
 #' by adding a lookahead step to the algorithm: before propagating particles from one time
 #' point to the next via the transition equation, the auxiliary filter calculates a weight
 #' for each pre-propogated particle by predicting how well the particle will agree with the
@@ -210,7 +210,8 @@ return(0)
 #' @examples
 #' \dontrun{
 #' model <- nimbleModel(code = ...)
-#' my_AuxF <- buildAuxiliaryFilter(model, 'x[1:100]', control = list(saveAll = TRUE, lookahead = 'mean'))
+#' my_AuxF <- buildAuxiliaryFilter(model, 'x[1:100]',
+#'    control = list(saveAll = TRUE, lookahead = 'mean'))
 #' Cmodel <- compileNimble(model)
 #' Cmy_AuxF <- compileNimble(my_AuxF, project = model)
 #' logLike <- Cmy_AuxF(m = 100000)
@@ -275,8 +276,8 @@ buildAuxiliaryFilter <- nimbleFunction(
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
       mvEWSamples <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
       
       names <- c(names, "wts")
       type <- c(type, "double")
@@ -285,8 +286,8 @@ buildAuxiliaryFilter <- nimbleFunction(
         size$wts <- 1 ##  only need one weight per particle (at time T) if smoothing == TRUE
       }
       mvWSamples  <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
       
     }
     else{
@@ -296,15 +297,15 @@ buildAuxiliaryFilter <- nimbleFunction(
       size[[1]] <- as.numeric(dims[[1]])
       
       mvEWSamples <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
       
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
       mvWSamples  <- modelValues(modelValuesSpec(vars = names,
-                                              type = type,
-                                              size = size))
+                                              types = type,
+                                              sizes = size))
     }
     
     names <- names[1]

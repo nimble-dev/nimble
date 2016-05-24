@@ -287,8 +287,8 @@ buildEnsembleKF <- nimbleFunction(
         return(x$size)})
       
       mvSamples <- modelValues(modelValuesSpec(vars = names,
-                                            type = type,
-                                            size = size))
+                                            types = type,
+                                            sizes = size))
     }
     else{
       names <- sapply(modelSymbolObjects, function(x)return(x$name))
@@ -300,8 +300,8 @@ buildEnsembleKF <- nimbleFunction(
       size[[1]] <- as.numeric(dims[[1]])
       
       mvSamples <- modelValues(modelValuesSpec(vars = names,
-                                            type = type,
-                                            size = size))
+                                            types = type,
+                                            sizes = size))
     }
     
     my_initializeModel <- initializeModel(model)
