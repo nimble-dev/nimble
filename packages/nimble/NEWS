@@ -1,15 +1,34 @@
                            CHANGES IN VERSION 0.5-1 (May 2016)
 
--- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still needed to change the size of an existing object. 
+USER LEVEL CHANGES
+
+-- Sequential Monte Carlo algorithms added: Bootstrap filter, Auxiliary particle filter, Ensemble Kalman filter, and Liu and West filter can be accessed by calls to buildBootstrapFilter(), buildAuxiliaryFilter, buildEnsembleKF(), and buildLiuWestFilter() respectively. buildPF() is no longer available, but that name will be re-used in a future version as a wrapper to some of the filter functions listed above.
+
+-- Particle MCMC (Particle Marginal Metropolis Hastings) samplers can be used as samplers within an MCMC.  'RW_PF' can be used to sample scalar parameters, and 'RW_PF_block' can be used for multivariate parameters or multiple parameters.
+
+-- A block sampler that uses user-specified likelihoods has been implemented and can be used as a sampler within an MCMC, by using 'RW_llFunction_block'.
+
+-- An ascent-based version of the EM algorithm has been added to buildMCEM().
+
+-- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still available to change the size of an existing object prior to assigning into specific elements, but another call to one of the new functions can also be used for that purpose.
 
 -- Added multivariate-t distribution for use in BUGS code and the DSL. 
-
 
 -- Added binary sampler for Gibbs sampling of discrete 0/1 nodes. This is the default sampler used for Bernoulli and Binomial(p, size=1) nodes.
 
 -- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
 
 -- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+
+-- Some steps of building and compiling models and algorithms are generally faster.
+
+-- forwardsolve(), backsolve() and solve() now work more flexibly than before and can be used in BUGS code.
+
+-- A variety of small bug fixes.
+
+DEVELOPER LEVEL CHANGES
+
+-- Testing has been added for SMC algorithms
 
                            CHANGES IN VERSION 0.5 (March 2016)
 

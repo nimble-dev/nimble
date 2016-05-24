@@ -221,43 +221,43 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
 
 // Begin multivariate t
 
-double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double df, double prec_param, int give_log ) { 
+double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<2, double> &chol, double df, double prec_param, int give_log ) { 
   
-  double *xptr, *meanptr, *cholptr;
-  NimArr<1, double> xCopy, meanCopy;
+  double *xptr, *muptr, *cholptr;
+  NimArr<1, double> xCopy, muCopy;
   NimArr<2, double> cholCopy;
   xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
   int n = x.size();
-  meanptr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
-  if(mean.size() != n) {std::cout<<"Error in nimArr_dmvt_chol: mean and x and different sizes.\n";}
+  muptr = nimArrCopyIfNeeded<1, double>(mu, muCopy).getPtr();
+  if(mu.size() != n) {std::cout<<"Error in nimArr_dmvt_chol: mu and x and different sizes.\n";}
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
   if((chol.dim()[0] != n) | (chol.dim()[1] != n)) {std::cout<<"Error in nimArr_dmvt_chol: chol does not match size size of x.\n";}
   
   double ans;
-  ans = dmvt_chol(xptr, meanptr, cholptr, df, n, prec_param, give_log);
+  ans = dmvt_chol(xptr, muptr, cholptr, df, n, prec_param, give_log);
   
   return(ans);
 }
 
 
-void nimArr_rmvt_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<2, double> &chol, double df, double prec_param) {
+void nimArr_rmvt_chol(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<2, double> &chol, double df, double prec_param) {
   
-  NimArr<1, double> ansCopy, meanCopy;
+  NimArr<1, double> ansCopy, muCopy;
   NimArr<2, double> cholCopy;
-  double *ansPtr, *meanPtr, *cholPtr;
+  double *ansPtr, *muPtr, *cholPtr;
   
-  int n = mean.size();
+  int n = mu.size();
   if(!ans.isMap()) {
     ans.setSize(n);
   } else {
     if(ans.size() != n) {
-      std::cout<<"Error in nimArr_rmvt_chol: answer size ("<< ans.size() <<") does not match mean size ("<<n<<").\n";
+      std::cout<<"Error in nimArr_rmvt_chol: answer size ("<< ans.size() <<") does not match mu size ("<<n<<").\n";
     }
   }
   ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();
-  meanPtr = nimArrCopyIfNeeded<1, double>(mean, meanCopy).getPtr();
+  muPtr = nimArrCopyIfNeeded<1, double>(mu, muCopy).getPtr();
   cholPtr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
-  rmvt_chol(ansPtr, meanPtr, cholPtr, df, n, prec_param);
+  rmvt_chol(ansPtr, muPtr, cholPtr, df, n, prec_param);
   
   if(ans.isMap()) {
     ans = ansCopy;

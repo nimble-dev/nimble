@@ -266,43 +266,43 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #' 
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
-#' @param mean vector of values giving the mean of the distribution.
-#' @param cholesky upper-triangular Cholesky factor of either the precision matrix (when \code{prec_param} is TRUE) or covariance matrix (otherwise).
+#' @param mu vector of values giving the location of the distribution.
+#' @param cholesky upper-triangular Cholesky factor of either the precision matrix (i.e., inverse scale matrix) (when \code{prec_param} is TRUE) or scale matrix (otherwise).
 #' @param df degrees of freedom.
-#' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the covariance matrix.
+#' @param prec_param logical; if TRUE the Cholesky factor is that of the precision matrix; otherwise, of the scale matrix.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Peter Sujan
 #' @export
-#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The rate matrix as used here is defined as the inverse of the scale matrix, \eqn{S^{-1}}, given in Gelman et al. 
+#' @details See Gelman et al., Appendix A or the BUGS manual for mathematical details. The 'precision' matrix as used here is defined as the inverse of the scale matrix, \eqn{\Sigma^{-1}}, given in Gelman et al. 
 #' @return \code{dmvt_chol} gives the density and \code{rmvt_chol} generates random deviates.
 #' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
-#' mean <- c(-10, 0, 10)
+#' mu <- c(-10, 0, 10)
 #' covmat <- matrix(c(1, .9, .3, .9, 1, -0.1, .3, -0.1, 1), 3)
 #' ch <- chol(covmat)
-#' x <- rmvt_chol(1, mean, ch, df = 1, prec_param = FALSE)
-#' dmvt_chol(x, mean, ch, df = 1, prec_param = FALSE)
+#' x <- rmvt_chol(1, mu, ch, df = 1, prec_param = FALSE)
+#' dmvt_chol(x, mu, ch, df = 1, prec_param = FALSE)
 #' 
 NULL
 
 #' @rdname Multivariate-t
 #' @export
-dmvt_chol <- function(x, mean, cholesky, df, prec_param = TRUE, log = FALSE) {
+dmvt_chol <- function(x, mu, cholesky, df, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-  .Call('C_dmvt_chol', as.double(x), as.double(mean), as.double(cholesky),
+  .Call('C_dmvt_chol', as.double(x), as.double(mu), as.double(cholesky),
         as.double(df), as.double(prec_param), as.logical(log))
 }
 
 #' @rdname Multivariate-t
 #' @export
-rmvt_chol <- function(n = 1, mean, cholesky, df, prec_param = TRUE) {
+rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
   ## cholesky should be upper triangular
   ## FIXME: allow cholesky to be lower tri
   if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-  .Call('C_rmvt_chol', as.double(mean), as.double(cholesky),
+  .Call('C_rmvt_chol', as.double(mu), as.double(cholesky),
         as.double(df), as.double(prec_param))
 }
 
