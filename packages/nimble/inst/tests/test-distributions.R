@@ -25,7 +25,7 @@ try(test_that("dmvt_chol calculates density correctly in R: ",
 
 nf <- nimbleFunction(
     run = function(x = double(1), mn = double(1),
-                   cov = double(2), df = double(0)) {
+                   scale = double(2), df = double(0)) {
         returnType(double(0))
         ch <- chol(cov)
         out <- dmvt_chol(x = x, mean = mn, cholesky = ch,
@@ -47,10 +47,10 @@ try(test_that("Test that dmvt_chol works correctly in compiled nimble function: 
 ## test use in model
 
 mvt_code <- nimbleCode({
-    x[1:3] ~ dmvt(mn[], cov = cov[,], df = df)
+    x[1:3] ~ dmvt(mn[], scale = cov[,], df = df)
 })
 
-mvt_model <- nimbleModel(mvt_code, constants = list(mn = mn, cov = cov, prec = FALSE, df = df))
+mvt_model <- nimbleModel(mvt_code, constants = list(mn = mn, scale = cov, prec = FALSE, df = df))
 
 mvt_model$x <- x
 

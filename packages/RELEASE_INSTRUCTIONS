@@ -35,7 +35,7 @@ run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 types="compareMCMCs copy declare distributions dsl_dists getParam math mcmc models size trunc user"
 for type in $types; do
-Rscript -e "library(nimble); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v0.5
+Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v0.5
 done
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
