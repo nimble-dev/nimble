@@ -198,11 +198,11 @@ testsMatrix = list(
   
 
 set.seed(0)
-##sapply(testsVaried, test_math)
-##sapply(testsBasicMath, test_math)
-##sapply(testsMoreMath, test_math)
-##sapply(testsReduction, test_math)
-##sapply(testsComparison, test_math)
+sapply(testsVaried, test_math)
+sapply(testsBasicMath, test_math)
+sapply(testsMoreMath, test_math)
+sapply(testsReduction, test_math)
+sapply(testsComparison, test_math)
 sapply(testsMatrix, test_math)
 
 

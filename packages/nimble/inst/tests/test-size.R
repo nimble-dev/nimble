@@ -179,7 +179,11 @@ testsDeterm <- list(
          knownProblem = TRUE,
          expr = quote({y <- a[1:2] %*% b[1:2]}),
          inits = list(a = vec2, b = vec2 )),
-    
+
+    ## Different from old devel to newNodeFxns for case of constants = input$inits:
+    ## In old system, a[1:2] %*% b[1:2] would be evaluated at model definition time so this would pass
+    ## In newNodeFxns, non-scalare constants are not baked in or evaluated, so this does not pass.
+    ## KNOWN ISSUE shows correctly as TRUE
     list(name = 'deterministic, non-scalar expression with LHS indexing', expectPass = FALSE, expectPassWithConst = TRUE,
          knownProblem = TRUE,
          expr = quote({y[1] <- a[1:2] %*% b[1:2]}),
@@ -240,8 +244,13 @@ testsDeterm <- list(
              for(i in 1:1)
                  y[1:2, i] <- a[1:2,1:2] %*% b[1:2, i]}),
          inits = list(a = mat2, b = mat2 )),
-    
+
+    ## difference from old devel to newNodeFxns:
+    ## This used to generate errors, so expectPass=FALSE was the correct expectation
+    ## On newNodeFxns it generates only warnings, so expect=FALSE is the incorrect expectation
+    ## It is still dubious in any case, so rather than change expectPass to TRUE I will add knownProblem = TRUE
     list(name = 'deterministic, nodes within multivar variables, size mismatch', expectPass = FALSE,
+         knownProblem = TRUE,
          expr = quote({
              for(i in 1:1)
                  y[1:3] <- a[1:2,1:2] %*% b[1:2, i]}),
@@ -252,7 +261,8 @@ testsDeterm <- list(
              for(i in 1:1)
                  y[1:2, i] <- a[1:2,1:2] %*% b[1:2, 1:2]}),
          inits = list(a = mat2, b = mat2 )),
-    
+
+    ## Used to generate KNOWN ISSUE, not any more
     list(name = 'deterministic, nodes within multivar variables, input wrong dimension', expectPass = FALSE,
          knownProblem = TRUE,
          expr = quote({

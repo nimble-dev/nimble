@@ -619,13 +619,13 @@ test_size <- function(input, verbose = TRUE) {
     result <- try(
         m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits)
     )    
-    try(test_that(paste0("Test of size/dimension check: ", input$name),
+    try(test_that(paste0("Test 1 of size/dimension check: ", input$name),
                   expect_equal(!is(result, "try-error"), input$expectPass,
                               info = errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
-        try(test_that(paste0("Test of size/dimension check: ", input$name),
+        try(test_that(paste0("Test 2 of size/dimension check: ", input$name),
                       expect_equal(!is(result, "try-error"), input$expectPass,
                                   info = errorMsg)))
     }
@@ -634,13 +634,13 @@ test_size <- function(input, verbose = TRUE) {
     result <- try(
         m <- nimbleModel(code = input$expr, data = input$data, constants = input$inits)
     )
-    try(test_that(paste0("Test of size/dimension check: ", input$name),
+    try(test_that(paste0("Test 3 of size/dimension check: ", input$name),
                   expect_equal(!is(result, "try-error"), input$expectPass,
                               info = errorMsg)))
     if(!is(result, "try-error")) {
         result <- try(
             { calculate(m); out <- calculate(m)} )          
-        try(test_that(paste0("Test of size/dimension check: ", input$name),
+        try(test_that(paste0("Test 4 of size/dimension check: ", input$name),
                       expect_equal(!is(result, "try-error"), input$expectPass,
                                   info = errorMsg)))
     }
