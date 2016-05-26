@@ -211,7 +211,7 @@ test_mcmc(model = code, name = 'scalar pmcmc, more data', inits = inits, data = 
   removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
   mean = list( sigma_x = sigma_x,
               sigma_y = sigma_y)),
-  resultsTolerance = list(mean = list(sigma_x = .08,
+  resultsTolerance = list(mean = list(sigma_x = .1,
                                       sigma_y = .1)))
 
 test_mcmc(model = code, name = 'block pmcmc, more data', inits = inits, data = c(testdata, consts), basic = FALSE, samplers = list(
@@ -219,5 +219,5 @@ test_mcmc(model = code, name = 'block pmcmc, more data', inits = inits, data = c
   removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
     mean = list(sigma_x = sigma_x,
                 sigma_y = sigma_y)),
-  resultsTolerance = list(mean = list(sigma_x = .05,
-                                      sigma_y = .15)))
+  resultsTolerance = list(mean = list(sigma_x = .1,
+                                      sigma_y = .1)))
