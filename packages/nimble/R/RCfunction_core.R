@@ -10,20 +10,27 @@ nimKeyWords <- list(copy = 'nimCopy',
                     array = 'nimArray',
                     round = 'nimRound')
 
+nfMethodRCinterface <- setRefClass(Class = 'nfMethodRCinterface',
+                                   fields = list(
+                                       argInfo    = 'ANY',
+                                       arguments  = 'ANY',
+                                       returnType = 'ANY',
+                                       uniqueName = 'character'))
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',
+                contains = 'nfMethodRCinterface',
                 fields  = list(
-                    argInfo    = 'ANY',
-                    arguments  = 'ANY',
+##                    argInfo    = 'ANY',
+##                    arguments  = 'ANY',
                     template   = 'ANY',
                     code       = 'ANY',
-                    returnType = 'ANY',
-                    uniqueName = 'character',
+##                    returnType = 'ANY',
+##                    uniqueName = 'character',
                     neededRCfuns = 'ANY'		#list
                 ),
                 methods = list(
-                    initialize = function(method, name) {
-                    	
+                    initialize = function(method, name, ...) {
+                    	callSuper(...)
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
                         neededRCfuns <<- list()	
                         argInfo <<- formals(method)

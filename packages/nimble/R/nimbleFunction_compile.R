@@ -100,6 +100,8 @@ nfProcessing <- setRefClass('nfProcessing',
                                   }
                               },
 
+                              getSymbolTable = function() setupSymTab,
+                              getMethodInterfaces = function() origMethods,
                               ##NEW PROCESSING TOOLS.   
                               processKeywords_all = function(){},
                               matchKeywords_all = function(){},

@@ -269,11 +269,11 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     nfName <- code$args[[1]]$name
     nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
     if(!inherits(nfSym, 'symbolNimbleFunction')) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction.'), call. = FALSE)
-    nfProc <- nfSym$nfProc
+    nfProc <- nfSym$nfProc ## Now more generally this should be an interface
     if(is.null(nfProc)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbols in this nimbleFunction generation function not set up.'), call. = FALSE)
     objName <- code$args[[2]]
     if(!is.character(objName)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Second argument must be a character string.'), call. = FALSE)
-    objSym <- nfProc$setupSymTab$getSymbolObject(objName)
+    objSym <- nfProc$getSymbolTable()$getSymbolObject(objName)  ##nfProc$setupSymTab$getSymbolObject(objName)
     if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
     code$nDim <- objSym$nDim
     code$type <- objSym$type
@@ -314,7 +314,7 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have on
         if(a11$isName) { ## e.g. in nfMethod(nf, 'foo'), a11 is nf
             sym <- symTab$getSymbolObject(a11$name, TRUE)
          
-            nfMethodRCobj <- sym$nfProc$origMethods[[methodName]]
+            nfMethodRCobj <- sym$nfProc$getMethodInterfaces()[[methodName]] ##sym$nfProc$origMethods[[methodName]]
         } else {
             if(a11$name != '[[') stop(exprClassProcessingErrorMsg(code, 'In sizeChainedCall. Expecting a nimbleFunction list or a nimFun as first arg of nfMethod.'), call. = FALSE)
             ## should look like nfMethod(nflist[[i]], 'foo')
@@ -379,13 +379,13 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
     sym <- symTab$getSymbolObject(code$name, TRUE)
     ok <- FALSE
     if(inherits(sym, 'symbolNimbleFunction')) {
-        nfMethodRCobj <- environment(sym$nfProc$nfGenerator)$methodList$run
+        nfMethodRCobj <- sym$nfProc$getMethodInterfaces()$run ##environment(sym$nfProc$nfGenerator)$methodList$run
         returnType <- nfMethodRCobj$returnType
         argInfo <- nfMethodRCobj$argInfo
         ok <- TRUE
     }
     if(inherits(sym, 'symbolMemberFunction')) {
-        returnType <- sym$nfMethodRCobj$returnType
+        returnType <- sym$nfMethodRCobj$returnType ## now nfMethodRCobj could be an interface
         argInfo <- sym$nfMethodRCobj$argInfo
         ok <- TRUE
     }
