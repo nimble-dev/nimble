@@ -146,8 +146,8 @@ calc_E_llk_gen = nimbleFunction(
 #' }
 #' # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 #' 
-buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20),
-                      boxConstraints = list(), buffer = 10^-6, alpha = 0.05, beta = 0.05, gamma = 0.05, C = .01, numReps = 300, verbose = T) {
+buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
+                      boxConstraints = list(), buffer = 10^-6, alpha = 0.01, beta = 0.01, gamma = 0.01, C = 0.001, numReps = 300, verbose = TRUE) {
     latentNodes = model$expandNodeNames(latentNodes)
     latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
     allStochNonDataNodes = model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
@@ -252,6 +252,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
               mAdd <- ceiling((m-burnIn)/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
               cmcmc_Latent$run(mAdd, reset = FALSE)
               m <- m + mAdd
+              print("Monte Carlo error too big: increasing MCMC sample size.")
             }
             else{
               acceptCrit <- 1
