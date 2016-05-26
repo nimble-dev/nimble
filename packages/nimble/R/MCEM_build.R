@@ -218,7 +218,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
     run <- function(initM = 1000){
         theta = rep(NA, nParams)
         if(burnIn >= initM)
-            stop('mcem quitting: burnIn > inital m value')
+            stop('mcem quitting: burnIn > initial m value')
         cmcmc_Latent$run(1, reset = TRUE)	# To get valid initial values 
         theta <- values(cModel, maxNodes)
         
@@ -247,7 +247,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
             theta = optimOutput$par    
             #varOut has two elements: varOut[1] is the sample variance, varOut[2] is the number of samples used to ccalculate the varianve
             sigSq <- cvarCalc$run(m, theta, thetaPrev) 
-            ase <- sqrt(sigSq/numReps) #asymptotic std. error
+            ase <- sqrt(sigSq) # /numReps) #asymptotic std. error
             diff <- cCalc_E_llk$run(theta, thetaPrev, 1)
             if((diff - zAlpha*ase)<0){ #swamped by mc error
               mAdd <- ceiling(m/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough

@@ -186,7 +186,8 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
                                       sigma_y = .5)))
 
 # test MCMC with longer runs and lower tolerance
-N <- 30
+set.seed(0)
+N <- 50
 sigma_x <- 1
 sigma_y <- .1
 x <- rep(NA, N)
@@ -205,16 +206,16 @@ testdata <- list(y=y)
 inits <- list(sigma_x=1, sigma_y=.1, x = x)
 
 test_mcmc(model = code, name = 'scalar pmcmc, more data', inits = inits, data = c(testdata, consts),  basic = FALSE, samplers = list(
-  list(type = 'RW_PF', target = 'sigma_x', control = list(latents = 'x', m = 1000, resample = F)),
-  list(type = 'RW_PF', target = 'sigma_y', control = list(latents = 'x', m = 1000, resample = F))),
+  list(type = 'RW_PF', target = 'sigma_x', control = list(latents = 'x', m = 1000, resample = FALSE)),
+  list(type = 'RW_PF', target = 'sigma_y', control = list(latents = 'x', m = 1000, resample = FALSE))),
   removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
   mean = list( sigma_x = sigma_x,
               sigma_y = sigma_y)),
-  resultsTolerance = list(mean = list(sigma_x = .05,
-                                      sigma_y = .15)))
+  resultsTolerance = list(mean = list(sigma_x = .08,
+                                      sigma_y = .1)))
 
 test_mcmc(model = code, name = 'block pmcmc, more data', inits = inits, data = c(testdata, consts), basic = FALSE, samplers = list(
-  list(type = 'RW_PF_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = F))),
+  list(type = 'RW_PF_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = FALSE))),
   removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
     mean = list(sigma_x = sigma_x,
                 sigma_y = sigma_y)),
