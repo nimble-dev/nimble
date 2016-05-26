@@ -3,20 +3,20 @@
 # by Mignani & Rosa, 2001 (p. 350)
 calc_asympVar = nimbleFunction(
   setup = function(model, fixedNodes, sampledNodes, mvBlock, mvSample, burnIn = 0, numReps){
-    calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = burnIn, mvSample = mvBlock)
+    calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = 0, mvSample = mvBlock)
   },
   run = function(nsamps = integer(0), theta = double(1), oldTheta = double(1)){
     declare(svals, double(1, numReps))
-    l <- ceiling(min(1000, nsamps/10)) #length of each block, ensures it's not too big
-    q <- nsamps - l + 1 #total number of blocks available to sample from
-    h <- ceiling(nsamps/l) #number of blocks to use for q function calculation
+    l <- ceiling(min(1000, (nsamps - burnIn)/20)) #length of each block, ensures it's not too big
+    q <- (nsamps - burnIn) - l + 1 #total number of blocks available to sample from
+    h <- ceiling((nsamps - burnIn)/l) #number of blocks to use for q function calculation
     resize(mvBlock, h*l) #size our model value object to be approximately of size m (number of mc samples)
     for(r in 1:numReps){
       for(i in 1:h){
         randNum <- rbeta(1,1,1)
-        randIndex <- ceiling(randNum*q) #random starting index for blocks
+        randIndex <- ceiling(randNum*q) #random starting index for blocks (post burn-in)
         for(j in 1:l){
-          copy(mvSample, mvBlock, sampledNodes, sampledNodes, randIndex-1+j,  (i-1)*l+j) #fill in mvBlock with chosen blocks
+          copy(mvSample, mvBlock, sampledNodes, sampledNodes, burnIn + randIndex-1+j,  (i-1)*l+j) #fill in mvBlock with chosen blocks
         }
       }
       #as per Caffo, calculate both Q functions using the same samples from the latent variables
@@ -237,7 +237,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         while(endCrit > C){ 
           acceptCrit <- 0
           #starting sample size calculation for this iteration
-          m <- ceiling(max(m, sigSq*((zAlpha + zBeta)^2)/((diff)^2)))
+          m <- burnIn + ceiling(max(m - burnIn, sigSq*((zAlpha + zBeta)^2)/((diff)^2)))
           cmcmc_Latent$run(m, reset = TRUE)   #initial mcmc run of size m
           thetaPrev <- theta  #store previous theta value
           itNum <- itNum + 1
@@ -245,12 +245,11 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
             optimOutput = optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
                                 diff = 0, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
             theta = optimOutput$par    
-            #varOut has two elements: varOut[1] is the sample variance, varOut[2] is the number of samples used to ccalculate the varianve
             sigSq <- cvarCalc$run(m, theta, thetaPrev) 
-            ase <- sqrt(sigSq) # /numReps) #asymptotic std. error
+            ase <- sqrt(sigSq) #asymptotic std. error
             diff <- cCalc_E_llk$run(theta, thetaPrev, 1)
             if((diff - zAlpha*ase)<0){ #swamped by mc error
-              mAdd <- ceiling(m/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
+              mAdd <- ceiling((m-burnIn)/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
               cmcmc_Latent$run(mAdd, reset = FALSE)
               m <- m + mAdd
             }
