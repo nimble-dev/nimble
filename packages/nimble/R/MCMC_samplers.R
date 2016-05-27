@@ -94,11 +94,12 @@ sampler_RW <- nimbleFunction(
         gamma1    <- 0
         range <- getDistribution(model$getNodeDistribution(target))$range
     },
-    
+
     run = function() {
         currentValue <- model[[target]]
         ##if(!logScale)    propValue <- rnorm(1, mean = currentValue,  sd = scale)
         ##else             propValue <- exp(rnorm(1, mean = log(currentValue), sd = scale))
+        propLogScale <- 0
         if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
                        propValue <- currentValue * exp(propLogScale)
         } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
@@ -106,18 +107,18 @@ sampler_RW <- nimbleFunction(
             if(propValue < range[1]) propValue <- 2*range[1] - propValue
             if(propValue > range[2]) propValue <- 2*range[2] - propValue    }
         model[[target]] <<- propValue
-        ##logMHR <- calculateDiff(model, calcNodes)
-        ##if(logScale)     logMHR <- logMHR + log(propValue) - log(currentValue)
-        if(logScale) logMHR <- calculateDiff(model, calcNodes) + propLogScale
-        else         logMHR <- calculateDiff(model, calcNodes)
+        logMHR <- calculateDiff(model, calcNodes) + propLogScale
+        ## Windows gave a compiler warning that propLogScale might not be initialized, so changing to above, from below
+        ## if(logScale) logMHR <- calculateDiff(model, calcNodes) + propLogScale
+        ## else         logMHR <- calculateDiff(model, calcNodes)
         jump <- decide(logMHR)
         if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
         else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
         if(adaptive)     adaptiveProcedure(jump)
     },
-    
+
     methods = list(
-        
+
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
@@ -136,7 +137,7 @@ sampler_RW <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
-        
+
         reset = function() {
             scale <<- scaleOriginal
             timesRan      <<- 0
@@ -189,22 +190,22 @@ sampler_RW_block <- nimbleFunction(
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
     },
-    
+
     run = function() {
         propValueVector <- generateProposalVector()
         lpMHR <- my_setAndCalculateDiff$run(propValueVector)
         jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
         if(adaptive)     adaptiveProcedure(jump)
     },
-    
+
     methods = list(
-        
+
         generateProposalVector = function() {
             propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
             returnType(double(1))
             return(propValueVector)
         },
-        
+
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
@@ -231,7 +232,7 @@ sampler_RW_block <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
-        
+
         reset = function() {
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
@@ -271,7 +272,7 @@ sampler_RW_llFunction <- nimbleFunction(
         my_setAndCalculateOne <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     },
-    
+
     run = function() {
         modelLP0 <- llFunction$run()
         if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
@@ -285,7 +286,7 @@ sampler_RW_llFunction <- nimbleFunction(
             scale <<- targetRWSamplerFunction$scale
         }
     },
-    
+
     methods = list(
         reset = function() {
             targetRWSamplerFunction$reset()
@@ -318,7 +319,7 @@ sampler_slice <- nimbleFunction(
         sumJumps      <- 0
         discrete      <- model$isDiscrete(target)
     },
-    
+
     run = function() {
         u <- getLogProb(model, calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
         x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
@@ -326,14 +327,14 @@ sampler_slice <- nimbleFunction(
         R <- L + width
         maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
         maxStepsR <- maxSteps - 1 - maxStepsL
-        
+
         lp <- setAndCalculateTarget(L)
         while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
             L <- L - width
             lp <- setAndCalculateTarget(L)
             maxStepsL <- maxStepsL - 1
         }
-        
+
         lp <- setAndCalculateTarget(R)
         while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
             R <- R + width
@@ -352,9 +353,9 @@ sampler_slice <- nimbleFunction(
         jumpDist <- abs(x1 - x0)
         if(adaptive)     adaptiveProcedure(jumpDist)
     },
-    
+
     methods = list(
-        
+
         setAndCalculateTarget = function(value = double()) {
             if(discrete)     value <- floor(value)
             model[[target]] <<- value
@@ -362,7 +363,7 @@ sampler_slice <- nimbleFunction(
             returnType(double())
             return(lp)
         },
-        
+
         adaptiveProcedure = function(jumpDist = double()) {
             timesRan <<- timesRan + 1
             sumJumps <<- sumJumps + jumpDist   # cumulative (absolute) distance between consecutive values
@@ -375,7 +376,7 @@ sampler_slice <- nimbleFunction(
                 sumJumps <<- 0
             }
         },
-    
+
         reset = function() {
             width        <<- widthOriginal
             timesRan     <<- 0
@@ -486,7 +487,7 @@ sampler_crossLevel <- nimbleFunction(
         my_setAndCalculateTop <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
     },
-    
+
     run = function() {
         modelLP0 <- getLogProb(model, calcNodes)
         propLP0 <- 0
@@ -502,11 +503,11 @@ sampler_crossLevel <- nimbleFunction(
             propLP1 <- 0
             for(iSF in seq_along(lowConjugateGetLogDensityFunctions))
                 propLP1 <- propLP1 + lowConjugateGetLogDensityFunctions[[iSF]]$run()
-            jump <- my_decideAndJump$run(modelLP1, modelLP0, propLP1, propLP0) 
-    	}    
+            jump <- my_decideAndJump$run(modelLP1, modelLP0, propLP1, propLP0)
+    	}
         if(adaptive)     topRWblockSamplerFunction$adaptiveProcedure(jump)
     },
-    
+
     methods = list(
         reset = function() {
             topRWblockSamplerFunction$reset()
@@ -529,10 +530,10 @@ sampler_RW_llFunction_block <- nimbleFunction(
     adaptScaleOnly <- control$adaptScaleOnly
     adaptInterval  <- control$adaptInterval
     scale          <- control$scale
-    propCov        <- control$propCov 
+    propCov        <- control$propCov
     llFunction     <- control$llFunction
     includesTarget <- control$includesTarget
-    
+
     ###  node list generation  ###
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     calcNodes <- model$getDependencies(target)
@@ -559,7 +560,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
     my_calcAdaptationFactor <- calcAdaptationFactor(d)
     storeLP0 <- -Inf
   },
-  
+
   run = function() {
     modelLP0 <- storeLP0
     if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
@@ -570,15 +571,15 @@ sampler_RW_llFunction_block <- nimbleFunction(
     if(adaptive)     adaptiveProcedure(jump)
     if(jump) storeLP0 <<- modelLP1
   },
-  
+
   methods = list(
-    
+
     generateProposalVector = function() {
       propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
       returnType(double(1))
       return(propValueVector)
     },
-    
+
     adaptiveProcedure = function(jump = logical()) {
       timesRan <<- timesRan + 1
       if(jump)     timesAccepted <<- timesAccepted + 1
@@ -605,7 +606,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
         timesAccepted <<- 0
       }
     },
-    
+
     reset = function() {
       scale   <<- scaleOriginal
       propCov <<- propCovOriginal
@@ -621,7 +622,7 @@ sampler_RW_llFunction_block <- nimbleFunction(
 )
 
 
-#######################################################################################  
+#######################################################################################
 ### RW_PF, does a univariate RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
@@ -638,22 +639,22 @@ sampler_RW_PF <- nimbleFunction(
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
     latents        <- control$latents
-   
+
     if(optimizeM){
-      m <- 3000  
+      m <- 3000
     }
-    
+
     latentSamp <- FALSE
-    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e) 
+    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e)
     if(identical(MCMCmonitors, TRUE))
       latentSamp <- TRUE
     else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
-      latentSamp <- TRUE  
-    
-    
+      latentSamp <- TRUE
+
+
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
     mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
-    
+
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
                                     topOnly=TRUE)
@@ -661,13 +662,13 @@ sampler_RW_PF <- nimbleFunction(
     if(any(target%in%model$expandNodeNames(latents))){
       stop("PMCMC 'target' argument cannot include latent states")
     }
-   
-    
+
+
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     if(length(targetAsScalar) > 1)     stop('more than one top-level target; cannot use RW_PF sampler, try RW_PF_block sampler')
-    d <- length(targetAsScalar) 
-    
-    ###  node list generation  ###  
+    d <- length(targetAsScalar)
+
+    ###  node list generation  ###
     calcNodes <- model$getDependencies(target)
     scaleHistory          <- c(0, 0)
     acceptanceRateHistory <- c(0, 0)
@@ -677,7 +678,7 @@ sampler_RW_PF <- nimbleFunction(
     timesAccepted <- 0
     timesAdapted  <- 0
     prevLL        <- 0
-    nVarEsts      <- 0 
+    nVarEsts      <- 0
     itCount       <- 0
     ## variables previously inside of nested functions:
     optimalAR <- 0.44
@@ -686,12 +687,12 @@ sampler_RW_PF <- nimbleFunction(
     ###  create a object which stores LP from previous iteration
     storeLP0 <- -Inf
     storeLLVar <- 0
-    
+
     ###  nested function and function list definitions  ###
     my_setAndCalculate <- setAndCalculate(model, target)
     my_calcAdaptationFactor <- calcAdaptationFactor(d)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
-    
+
     if(filterType == "auxiliary"){
       my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE,
                                                                     lookahead = lookahead))
@@ -704,7 +705,7 @@ sampler_RW_PF <- nimbleFunction(
     }
     particleMV <- my_particleFilter$mvEWSamples
   },
-    
+
   run = function() {
     if(resample){
       modelLP0 <- my_particleFilter$run(m)
@@ -718,9 +719,9 @@ sampler_RW_PF <- nimbleFunction(
     modelLP1 <- my_particleFilter$run(m)
     modelLP1 <- modelLP1 + getLogProb(model, target)
     jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
-    
-    if(jump & latentSamp){ 
-      ## if we jump, randomly sample latent nodes from pf output and put 
+
+    if(jump & latentSamp){
+      ## if we jump, randomly sample latent nodes from pf output and put
       ## into model so that they can be monitored
       index <- ceiling(runif(1, 0, m))
       copy(particleMV, model, latents, latents, index)
@@ -735,17 +736,17 @@ sampler_RW_PF <- nimbleFunction(
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
   },
-  
+
   methods = list(
-    
+
     optimM = function(){
       tempM <- 15000
       declare(LLEst, double(1, nVarReps))
       if(nVarEsts < mBurnIn){  # checks whether we have enough var estimates to get good approximation
-        for(i in 1:nVarReps){  
+        for(i in 1:nVarReps){
           LLEst[i] <- my_particleFilter$run(tempM)
         }
-        ## next, store average of var estimates 
+        ## next, store average of var estimates
         if(nVarEsts == 1)
           storeLLVar <<- var(LLEst)/mBurnIn
         else{
@@ -765,7 +766,7 @@ sampler_RW_PF <- nimbleFunction(
         optimizeM <<- 0
       }
     },
-    
+
     adaptiveProcedure = function(jump = logical()) {
       timesRan <<- timesRan + 1
       if(jump)     timesAccepted <<- timesAccepted + 1
@@ -784,7 +785,7 @@ sampler_RW_PF <- nimbleFunction(
         timesAccepted <<- 0
       }
     },
-    
+
     reset = function() {
       scale <<- scaleOriginal
       timesRan      <<- 0
@@ -799,40 +800,40 @@ sampler_RW_PF <- nimbleFunction(
 )
 
 
-#######################################################################################  
+#######################################################################################
 ### RW_PF_block, does a block RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
 sampler_RW_PF_block <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target,  control) {
-    ###  control list extraction  ###  
-    
+    ###  control list extraction  ###
+
     adaptive       <- control$adaptive
     adaptScaleOnly <- control$adaptScaleOnly
     adaptInterval  <- control$adaptInterval
     scale          <- control$scale
-    propCov        <- control$propCov 
+    propCov        <- control$propCov
     m              <- control$m
     resample       <- control$resample
     filterType     <- control$filterType
     lookahead      <- control$lookahead
     optimizeM      <- as.integer(control$optimizeM)
     latents        <- control$latents
-    
+
     latentSamp <- FALSE
-    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e) 
+    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e)
     if(identical(MCMCmonitors, TRUE))
       latentSamp <- TRUE
     else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
-      latentSamp <- TRUE    
-    
+      latentSamp <- TRUE
+
     if(optimizeM){
-      m <- 3000  
+      m <- 3000
     }
     nVarReps <- 7  # number of LL estimates to compute to get each LL variance estimate for m optimization
     mBurnIn <- 15   # number of LL variance estimates to compute before deciding optimal m
-    
+
     latentDep <- model$getDependencies(latents)
     topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE,
                                     topOnly=TRUE)
@@ -840,19 +841,19 @@ sampler_RW_PF_block <- nimbleFunction(
     if(any(target%in%model$expandNodeNames(latents))){
       stop("PMCMC 'target' argument cannot include latent states")
     }
-    
-    ###  node list generation  ### 
+
+    ###  node list generation  ###
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     if(length(targetAsScalar) < 2)     stop('less than two top-level targets; cannot use RW_PF_block sampler, try RW_PF sampler')
     calcNodes <- model$getDependencies(target)
-    
+
     ###  numeric value generation  ###
     scaleOriginal <- scale
     timesRan      <- 0
     timesAccepted <- 0
     timesAdapted  <- 0
     prevLL        <- 0
-    nVarEsts      <- 0 
+    nVarEsts      <- 0
     itCount       <- 0
     scaleHistory          <- c(0, 0)
     acceptanceRateHistory <- c(0, 0)
@@ -866,10 +867,10 @@ sampler_RW_PF_block <- nimbleFunction(
     chol_propCov <- chol(propCov)
     chol_propCov_scale <- scale * chol_propCov
     empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
-    
+
     storeLP0 <- -Inf
     storeLLVar <- 0
-    
+
     ###  nested function and function list definitions  ###
     my_setAndCalculate <- setAndCalculate(model, target)
     my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
@@ -880,7 +881,7 @@ sampler_RW_PF_block <- nimbleFunction(
     } else{
       saveAllVal <- FALSE
       smoothingVal <- FALSE
-    }  
+    }
     if(filterType == "auxiliary"){
       my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal,
                                                                     lookahead = lookahead))
@@ -893,7 +894,7 @@ sampler_RW_PF_block <- nimbleFunction(
     }
     particleMV <- my_particleFilter$mvEWSamples
   },
-  
+
   run = function() {
     if(resample){
       modelLP0 <- my_particleFilter$run(m)
@@ -907,8 +908,8 @@ sampler_RW_PF_block <- nimbleFunction(
     modelLP1 <- my_particleFilter$run(m)
     modelLP1 <- modelLP1 + getLogProb(model, target)
     jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
-    if(jump & latentSamp){ 
-      ## if we jump, randomly sample latent nodes from pf output and put 
+    if(jump & latentSamp){
+      ## if we jump, randomly sample latent nodes from pf output and put
       ## into model so that they can be monitored
       index <- ceiling(runif(1, 0, m))
       copy(particleMV, model, latents, latents, index)
@@ -922,19 +923,19 @@ sampler_RW_PF_block <- nimbleFunction(
     if(jump & !resample)  storeLP0 <<- modelLP1
     if(jump & optimizeM) optimM()
     if(adaptive)     adaptiveProcedure(jump)
-    
+
   },
-  
+
   methods = list(
-    
+
     optimM = function(){
       tempM <- 15000
       declare(LLEst, double(1, nVarReps))
       if(nVarEsts < mBurnIn){  # checks whether we have enough var estimates to get good approximation
-        for(i in 1:nVarReps){  
+        for(i in 1:nVarReps){
           LLEst[i] <- my_particleFilter$run(tempM)
         }
-        ## next, store average of var estimates 
+        ## next, store average of var estimates
         if(nVarEsts == 1)
           storeLLVar <<- var(LLEst)/mBurnIn
         else{
@@ -954,14 +955,14 @@ sampler_RW_PF_block <- nimbleFunction(
         optimizeM <<- 0
       }
     },
-    
-    
+
+
     generateProposalVector = function() {
       propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov_scale, 0)  ## last argument specifies prec_param = FALSE
       returnType(double(1))
       return(propValueVector)
     },
-    
+
     adaptiveProcedure = function(jump = logical()) {
       timesRan <<- timesRan + 1
       if(jump)     timesAccepted <<- timesAccepted + 1
@@ -988,8 +989,8 @@ sampler_RW_PF_block <- nimbleFunction(
         timesAccepted <<- 0
       }
     },
-    
-    
+
+
     reset = function() {
       scale   <<- scaleOriginal
       propCov <<- propCovOriginal
@@ -1013,20 +1014,20 @@ sampler_RW_PF_block <- nimbleFunction(
 #' The precise behavior NIMBLE's MCMC sampling algorithms may be customized using the control argument provided to \code{addSampler()}.  The usage syntax is:
 #'
 #' \code{mcmcConf$addSampler(target = targetnode, type = samplertype, control = controllist)}
-#' 
-#' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below. 
-#' 
+#'
+#' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below.
+#'
 #' @section binary sampler:
-#' 
+#'
 #' The binary sampler performs Gibbs sampling for binary-valued (discrete 0/1) nodes.  This can only be used for nodes following either a \code{dbern(p)} or \code{dbinom(p, size=1)} distribution.
-#' 
-#' The binary sampler accepts no control list arguments. 
-#' 
+#'
+#' The binary sampler accepts no control list arguments.
+#'
 #' @section RW sampler:
-#' 
+#'
 #' The RW sampler executes adaptive Metropolis-Hastings sampling with a normal proposal distribution (Metropolis, 1953), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler can be applied to any scalar continuous-valued stochastic node, and can optionally sample on a log scale.
-#' 
-#' The RW sampler accepts the following control list elements: 
+#'
+#' The RW sampler accepts the following control list elements:
 #' \itemize{
 #' \item log. A logical argument, specifying whether the sampler should operate on the log scale. (default = FALSE)
 #' \item reflective. A logical argument, specifying whether the normal proposal distribution should reflect to stay within the range of the target distribution. (default = FALSE)
@@ -1038,10 +1039,10 @@ sampler_RW_PF_block <- nimbleFunction(
 #' The RW sampler cannot be used with options log=TRUE and reflective=TRUE, i.e. it cannot do reflective sampling on a log scale.
 #'
 #' @section RW_block sampler:
-#' 
+#'
 #' The RW_block sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr
-#' 
-#' The RW_block sampler accepts the following control list elements: 
+#'
+#' The RW_block sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (a coefficient for the entire proposal covariance matrix) and propCov (the multivariate normal proposal covariance matrix) throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as TRUE. (default = TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
@@ -1049,12 +1050,12 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' }
-#' 
+#'
 #' @section RW_llFunction sampler:
-#' 
-#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010).  The RW_llFunction sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). 
-#' 
-#' The RW_llFunction sampler accepts the following control list elements: 
+#'
+#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010).  The RW_llFunction sampler handles this by using a Metropolis-Hastings algorithm with a normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
+#'
+#' The RW_llFunction sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
@@ -1062,44 +1063,44 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \item llFunction. A specialized nimbleFunction that accepts no arguments and returns a scalar double number.  The return value must be the total log-likelihood of all stochastic dependents of the target nodes -- and, if includesTarget = TRUE, of the target node(s) themselves --  or whatever surrogate is being used for the total log-likelihood.  This is a required element with no default.
 #' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
 #' }
-#' 
+#'
 #' @section slice sampler:
-#' 
-#' The slice sampler performs slice sampling of the scalar node to which it is applied (Neal, 2003).  This sampler can operate on either continuous-valued or discrete-valued scalar nodes.  The slice sampler performs a 'stepping out' procedure, in which the slice is iteratively expanded to the left or right by an amount sliceWidth.  This sampler is optionally adaptive, governed by a control list element, whereby the value of sliceWidth is adapted towards the observed absolute difference between successive samples. 
-#' 
-#' The slice sampler accepts the following control list elements: 
+#'
+#' The slice sampler performs slice sampling of the scalar node to which it is applied (Neal, 2003).  This sampler can operate on either continuous-valued or discrete-valued scalar nodes.  The slice sampler performs a 'stepping out' procedure, in which the slice is iteratively expanded to the left or right by an amount sliceWidth.  This sampler is optionally adaptive, governed by a control list element, whereby the value of sliceWidth is adapted towards the observed absolute difference between successive samples.
+#'
+#' The slice sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler will adapt the value of sliceWidth throughout the course of MCMC execution. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item sliceWidth. The initial value of the width of each slice, and also the width of the expansion during the iterative 'stepping out' procedure. (default = 1)
 #' \item sliceMaxSteps. The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
 #' }
-#' 
+#'
 #' @section ess sampler:
-#' 
-#' The ess sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to the multivariate normal context.  An auxilliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions. 
-#' 
-#' The ess sampler accepts no control list arguments. 
-#' 
+#'
+#' The ess sampler performs elliptical slice sampling of a single node, which must follow a multivariate normal distribution (Murray, 2010).  The algorithm is an extension of slice sampling (Neal, 2003), generalized to the multivariate normal context.  An auxilliary variable is used to identify points on an ellipse (which passes through the current node value) as candidate samples, which are accepted contingent upon a likelihood evaluation at that point.  This algorithm requires no tuning parameters and therefore no period of adaptation, and may result in very efficient sampling from multivariate Gaussian distributions.
+#'
+#' The ess sampler accepts no control list arguments.
+#'
 #' @section crossLevel sampler:
-#' 
-#' This sampler is constructed to perform simultaneous updates across two levels of stochastic dependence in the model structure.  This is possible when all stochastic descendents of node(s) at one level have conjugate relationships with their own stochastic descendents.  In this situation, a Metropolis-Hastings algorithm may be used, in which a multivariate normal proposal distribution is used for the higher-level nodes, and the corresponding proposals for the lower-level nodes undergo Gibbs (conjugate) sampling.  The joint proposal is either accepted or rejected for all nodes involved based upon the Metropolis-Hastings ratio. 
-#' 
-#' The requirement that all stochastic descendents of the target nodes must themselves have only conjugate descendents will be checked when the MCMC algorithm is built.  This sampler is useful when there is strong dependence across the levels of a model that causes problems with convergence or mixing. 
-#' 
-#' The crossLevel sampler accepts the following control list elements: 
+#'
+#' This sampler is constructed to perform simultaneous updates across two levels of stochastic dependence in the model structure.  This is possible when all stochastic descendents of node(s) at one level have conjugate relationships with their own stochastic descendents.  In this situation, a Metropolis-Hastings algorithm may be used, in which a multivariate normal proposal distribution is used for the higher-level nodes, and the corresponding proposals for the lower-level nodes undergo Gibbs (conjugate) sampling.  The joint proposal is either accepted or rejected for all nodes involved based upon the Metropolis-Hastings ratio.
+#'
+#' The requirement that all stochastic descendents of the target nodes must themselves have only conjugate descendents will be checked when the MCMC algorithm is built.  This sampler is useful when there is strong dependence across the levels of a model that causes problems with convergence or mixing.
+#'
+#' The crossLevel sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. Logical argument, specifying whether the multivariate normal proposal distribution for the target nodes should be adaptived. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for propCov. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity' or any positive definite matrix of the appropriate dimensions. (default = 'identity')
 #' }
-#' 
+#'
 #' @section RW_llFunction_block sampler:
-#' 
-#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010) (but see samplers listed below for NIMBLE's direct implementation of PMCMC).  The \code{RW_llFunctionBlock} sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise). 
-#' 
-#' The RW_llFunctionBlock sampler accepts the following control list elements: 
+#'
+#' Sometimes it is useful to control the log likelihood calculations used for an MCMC updater instead of simply using the model.  For example, one could use a sampler with a log likelihood that analytically (or numerically) integrates over latent model nodes.  Or one could use a sampler with a log likelihood that comes from a stochastic approximation such as a particle filter, allowing composition of a particle MCMC (PMCMC) algorithm (Andrieu et al., 2010) (but see samplers listed below for NIMBLE's direct implementation of PMCMC).  The \code{RW_llFunctionBlock} sampler handles this by using a Metropolis-Hastings algorithm with a multivariate normal proposal distribution and a user-provided log-likelihood function.  To allow compiled execution, the log-likelihood function must be provided as a specialized instance of a nimbleFunction.  The log-likelihood function may use the same model as the MCMC as a setup argument, but if so the state of the model should be unchanged during execution of the function (or you must understand the implications otherwise).
+#'
+#' The RW_llFunctionBlock sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default is TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
@@ -1109,76 +1110,76 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \item llFunction. A specialized nimbleFunction that accepts no arguments and returns a scalar double number.  The return value must be the total log-likelihood of all stochastic dependents of the target nodes -- and, if includesTarget = TRUE, of the target node(s) themselves --  or whatever surrogate is being used for the total log-likelihood.  This is a required element with no default.
 #' \item includesTarget. Logical variable indicating whether the return value of llFunction includes the log-likelihood associated with target.  This is a required element with no default.
 #' }
-#' 
-#' 
+#'
+#'
 #' @section RW_PF sampler:
-#' 
+#'
 #' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF} sampler uses a Metropolis Hastings algorithm with a univariate normal proposal distribution for a scalar parameter.  Note that latent states can be sampled as well, but the top-level parameter being sampled must be a scalar.   A bootstrap or auxiliary particle filter can be used to integrate over latent states.
-#'  
-#' The \code{RW_PF} sampler accepts the following control list elements: 
+#'
+#' The \code{RW_PF} sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation.  If \code{adaptive = FALSE}, scale will never change. (default = 1)
-#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
+#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
 #' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
 #' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{filterType} is set to \code{"auxiliary"}.
 #' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above. 
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above.
 #' }
-#' 
-#' 
+#'
+#'
 #' @section RW_PF_block sampler:
 #'
 #' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
-#'  
-#' The \code{RW_PF_block} sampler accepts the following control list elements: 
+#'
+#' The \code{RW_PF_block} sampler accepts the following control list elements:
 #' \itemize{
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
 #' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for \code{scale} (TRUE) or also for \code{provCov} (FALSE).  This argument is only relevant when \code{adaptive = TRUE}.  When \code{adaptScaleOnly = FALSE}, both \code{scale} and \code{propCov} undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When \code{adaptScaleOnly = FALSE}, only the proposal scale is adapted. (default = FALSE)
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for \code{propCov}.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the \code{'identity'}, in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default is \code{'identity'})
-#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).    
+#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function.
 #' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
 #' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
 #' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{filterType = "auxiliary"}.
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above. 
+#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above.
 #' }
-#' 
+#'
 #'
 #' @section posterior_predictive sampler:
-#' 
-#' The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE. 
-#' 
-#' The posterior_predictive sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of a posterior_predictive sampler to any non-terminal node will result in invalid posterior inferences.  The posterior_predictive sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler. 
-#' 
-#' The posterior_predictive sampler accepts no control list arguments. 
-#' 
+#'
+#' The posterior_predictive sampler is only appropriate for use on terminal stochastic nodes.  Note that such nodes play no role in inference but have often been included in BUGS models to accomplish posterior predictive checks.  NIMBLE allows posterior predictive values to be simulated independently of running MCMC, for example by writing a nimbleFunction to do so.  This means that in many cases where terminal stochastic nodes have been included in BUGS models, they are not needed when using NIMBLE.
+#'
+#' The posterior_predictive sampler functions by calling the simulate() method of relevant node, then updating model probabilities and deterministic dependent nodes.  The application of a posterior_predictive sampler to any non-terminal node will result in invalid posterior inferences.  The posterior_predictive sampler will automatically be assigned to all terminal, non-data stochastic nodes in a model by the default MCMC configuration, so it is uncommon to manually assign this sampler.
+#'
+#' The posterior_predictive sampler accepts no control list arguments.
+#'
 #' @name samplers
-#' 
+#'
 #' @aliases sampler posterior_predictive RW RW_block RW_llFunction slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_llFunction sampler_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block
 #'
 #' @seealso configureMCMC addSampler buildMCMC
 #'
 #' @references
 #'
-#' Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte Carlo Methods. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 72(3), 269-342. 
-#' 
-#' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092. 
-#' 
-#' Neal, Radford M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741. 
-#' 
-#' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175. 
-#' 
+#' Andrieu, C., Doucet, A., and Holenstein, R. (2010). Particle Markov Chain Monte Carlo Methods. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 72(3), 269-342.
+#'
+#' Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., and Teller, E. (1953). Equation of State Calculations by Fast Computing Machines. \emph{The Journal of Chemical Physics}, 21(6), 1087-1092.
+#'
+#' Neal, Radford M. (2003). Slice Sampling. \emph{The Annals of Statistics}, 31(3), 705-741.
+#'
+#' Murray, I., Prescott Adams, R., and MacKay, D. J. C. (2010). Elliptical Slice Sampling. \emph{arXiv e-prints}, arXiv:1001.0175.
+#'
 #' Pitt, M.K. and Shephard, N. (1999). Filtering via simulation: Auxiliary particle filters. \emph{Journal of the American Statistical Association} 94(446), 590-599.
-#' 
-#' Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317. 
-#' 
-#' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University. 
-#' 
+#'
+#' Roberts, G. O. and S. K. Sahu (1997). Updating Schemes, Correlation Structure, Blocking and Parameterization for the Gibbs Sampler. \emph{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}, 59(2), 291-317.
+#'
+#' Shaby, B. and M. Wells (2011). \emph{Exploring an Adaptive Metropolis Algorithm}. 2011-14. Department of Statistics, Duke University.
+#'
 NULL
 
 
