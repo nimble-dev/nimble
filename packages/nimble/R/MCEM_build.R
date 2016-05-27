@@ -84,17 +84,17 @@ calc_E_llk_gen = nimbleFunction(
 #' to enforce this. 
 #' The M-step is done by a nimble MCMC sampler. The E-step is done by a call to R's \code{optim} with \code{method = 'L-BFGS-B'}.
 #' 
-#' @param model 			A nimble model 
-#' @param latentNodes 		A character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
+#' @param model a nimble model 
+#' @param latentNodes character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
 #' \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}. 
-#' @param burnIn			burn-in used for MCMC sampler in E step
-#' @param mcmcControl		list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details
-#' @param boxConstraints	A list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.
+#' @param burnIn burn-in used for MCMC sampler in E step
+#' @param mcmcControl	list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details
+#' @param boxConstraints list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.
 #' @param buffer			A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount. 
-#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.1. 
-#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.1.
-#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.
-#' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged.
+#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.01. 
+#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.01.
+#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.01.
+#' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged. Default is 0.001.
 #' @param numReps number of bootstrap samples to use for asymptotic variance calculation
 #' @param verbose logical indicating whether to print additional logging information
 #' 
@@ -252,7 +252,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
               mAdd <- ceiling((m-burnIn)/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
               cmcmc_Latent$run(mAdd, reset = FALSE)
               m <- m + mAdd
-              print("Monte Carlo error too big: increasing MCMC sample size.")
+              cat("Monte Carlo error too big: increasing MCMC sample size.\n")
             }
             else{
               acceptCrit <- 1
@@ -261,13 +261,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
                 endCrit <- C+1 #ensure that at least two iterations are run
               
               if(verbose == T){
-                print(paste("Iteration Number:", itNum, sep = " "))
-                print(paste("Current number of MCMC iterations:", m, sep = " "))
+                cat("Iteration Number: ", itNum, ".\n", sep = "")
+                cat("Current number of MCMC iterations: ", m, ".\n", sep = "")
                 output = optimOutput$par
                 names(output) = maxNodes
-                print("Parameter Estimates:")
+                cat("Parameter Estimates: \n", sep = "")
                 print(output)
-                print(paste("Convergence Criterion:", endCrit, sep = " "))
+                cat("Convergence Criterion: ", endCrit, ".\n", sep = "")
               }
             }
           }

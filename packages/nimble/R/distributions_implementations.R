@@ -258,7 +258,7 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 
 #' The Multivariate t Distribution
 #'
-#' Density and random generation for the multivariate t distribution, using the Cholesky factor of either the precision matrix or the covariance matrix.
+#' Density and random generation for the multivariate t distribution, using the Cholesky factor of either the precision matrix (i.e., inverse scale matrix) or the scale matrix.
 #'
 #' @name Multivariate-t
 #'
@@ -280,8 +280,8 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
 #' 
 #' @examples
 #' mu <- c(-10, 0, 10)
-#' covmat <- matrix(c(1, .9, .3, .9, 1, -0.1, .3, -0.1, 1), 3)
-#' ch <- chol(covmat)
+#' scalemat <- matrix(c(1, .9, .3, .9, 1, -0.1, .3, -0.1, 1), 3)
+#' ch <- chol(scalemat)
 #' x <- rmvt_chol(1, mu, ch, df = 1, prec_param = FALSE)
 #' dmvt_chol(x, mu, ch, df = 1, prec_param = FALSE)
 #' 
