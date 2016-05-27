@@ -2,6 +2,7 @@
 #define __NIMARRBASE
 #include <vector>
 #include <string>
+#include <cstring>
 #include <R.h>
 #include <typeinfo>
 #include <iostream>
