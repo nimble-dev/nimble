@@ -36,7 +36,7 @@ in particular check exact results vs previous versions (ignore differences in co
 doing this test by test because of DLL unloading issue
 types="compareMCMCs copy declare distributions dsl_dists filtering getParam math mcem mcmc models size trunc user"
 for type in $types; do
-Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v0.5
+Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION}
 done
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
@@ -57,7 +57,7 @@ and change symlink to point to newest pdf
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
-(make sure post is set up as a blog entry)
+(make sure post is set up as a blog entry) (CJP not sure what this means...)
 
 add info on new release to release notes page
 
@@ -75,13 +75,13 @@ git checkout master
 git merge devel
 git commit -am'merged new version onto master'
 
-probably best at this poitn also to merge master onto devel
+probably best at this point also to merge master onto devel
 
-git tag -a v0.3 -m 'NIMBLE version 0.3 release, December 31, 2014'
+git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
 git push --tags    ## this is how you push *tags* to the remote
 
 # make tag for nimble-docs too
-git tag -a v0.5 -m 'NIMBLE version 0.5 release, April 6, 2016'
+git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
 git push --tags    ## this is how you push *tags* to the remote
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in

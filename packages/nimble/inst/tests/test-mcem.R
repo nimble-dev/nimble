@@ -35,7 +35,9 @@ pumpMCEM <- buildMCEM(model = pump,
                                                   limits = c(0, Inf) ) ), 
                       C = 0.001, alpha = .01, beta = .01, gamma = .01, buffer = 1e-6)
 
+set.seed(0)
 out <- pumpMCEM(initM = 1000)
+names(out) <- NULL
 
 mle <- c(0.82, 1.26)
 try(test_that("Test that MCEM finds the MLE: ",
