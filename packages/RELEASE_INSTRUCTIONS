@@ -9,6 +9,8 @@ update DESCRIPTION and INSTALL with current version number
 for version on nimble website, remove FLIBS from Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
+Make sure src/Makevars.win is present.
+
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
 # before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure)
