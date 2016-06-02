@@ -3,6 +3,7 @@ mapsClass <- setRefClass(
     
     fields = list(
         ## set directly from graphNodesList:
+        nimbleGraph = 'ANY', ##graphNodeClass
         nodeNames = 'ANY',  ## like vertexID_2_nodeNames
         graphIDs = 'ANY',
         types = 'ANY',
@@ -98,7 +99,14 @@ mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used a
         return(anyStochDep(deps))
     }
     boolAnyStochDep <- unlist(lapply(from2to, anyStochDep))
- 
+
+    boolAnyStochDep2 <- nimbleGraph$anyStochDependencies()
+
+    if(!identical(boolAnyStochDep, boolAnyStochDep2)) {
+        cat('caught a discrepancy for boolAnyStochDep')
+        browser()
+    }
+    
     ## determine who has any stochastic parents
     to2fromSplit <- split(edgesFrom, edgesTo)
     to2from <- vector('list', length = length(nodeNames))
@@ -111,6 +119,14 @@ mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used a
     }
     boolAnyStochParent <- unlist(lapply(to2from, anyStochParent))
 
+    boolAnyStochParent2 <- nimbleGraph$anyStochParents()
+
+    if(!identical(boolAnyStochParent, boolAnyStochParent2)) {
+        cat('caught a discrepancy for boolAnyStochParent')
+        browser()
+    }
+    
+    
     ## end nodes have no stochastic dependents
     ## top nodes have no stochastic ancestor
     ## latent nodes have a stochastic descendent and ancestor
