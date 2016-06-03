@@ -42,7 +42,7 @@ void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
       ans[i] = STOCH;
     else if(oneString == "determ")
       ans[i] = DETERM;
-    else if(oneString == "rhsonly")
+    else if(oneString == "RHSonly")
       ans[i] = RHSONLY;
     else if(oneString == "LHSinferred")
       ans[i] = LHSINFERRED;

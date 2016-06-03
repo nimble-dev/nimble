@@ -443,15 +443,14 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
                                       
-depIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
-depIDs2 <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
 
-if(!identical(as.numeric(depIDs), as.numeric(depIDs2))) {
-    cat('caught a discrepancy for depIDs')
-    browser()
-}
-
-
+depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+## Uncomment these lines to catch discrepancies between the old and new systems.
+##depIDsOld <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
+##     cat('caught a discrepancy for depIDs')
+##     browser()
+## }
 
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']

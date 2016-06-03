@@ -5,6 +5,7 @@ nimbleGraphClass <- setRefClass(
     ),
     methods = list(
         setGraph = function(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, types, names, numNodes) {
+            edgesFrom2ParentExprIDs[ is.na(edgesFrom2ParentExprIDs) ] <- 0
             for(i in list(edgesFrom, edgesTo, edgesFrom2ParentExprIDs, numNodes)) {
                 if(length(i) > 0) {
                     if(any(abs(i - round(i)) > 0.1)) {
