@@ -25,6 +25,7 @@ install:
   - R CMD INSTALL packages/nimble
 
 script:
+    - Rscript packages/nimble/inst/tests/test_utils.R  2>&1 | tee out
 ##  - Rscript packages/nimble/inst/tests/test-all.R    2>&1 | tee out
 ##                                                                
 ##  - Rscript packages/nimble/inst/tests/test-mcmc.R   2>&1 | tee out
