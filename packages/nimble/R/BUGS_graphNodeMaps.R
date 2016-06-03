@@ -3,6 +3,7 @@ mapsClass <- setRefClass(
     
     fields = list(
         ## set directly from graphNodesList:
+        nimbleGraph = 'ANY', ##graphNodeClass
         nodeNames = 'ANY',  ## like vertexID_2_nodeNames
         graphIDs = 'ANY',
         types = 'ANY',
@@ -89,29 +90,42 @@ mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used a
     ## new version to work with XXX3 system from modelDefClass
 
     ## determine who has any stochastic dependents (descendents)
-    from2toSplit <- split(edgesTo, edgesFrom)
-    from2to <- vector('list', length = length(nodeNames))
-    from2to[as.integer(names(from2toSplit))] <- from2toSplit
-    anyStochDep <- function(IDs) { ## needs to go through nodeID
-        if(any(types[IDs]=='stoch')) return(TRUE)
-        deps <- unlist(from2to[IDs])
-        if(length(deps)==0) return(FALSE)
-        return(anyStochDep(deps))
-    }
-    boolAnyStochDep <- unlist(lapply(from2to, anyStochDep))
- 
-    ## determine who has any stochastic parents
-    to2fromSplit <- split(edgesFrom, edgesTo)
-    to2from <- vector('list', length = length(nodeNames))
-    to2from[as.integer(names(to2fromSplit))] <- to2fromSplit
-    anyStochParent <- function(IDs) {
-        if(any(types[IDs]=='stoch')) return(TRUE)
-        parents <- unlist(to2from[IDs])
-        if(length(parents)==0) return(FALSE)
-        return(anyStochParent(parents))
-    }
-    boolAnyStochParent <- unlist(lapply(to2from, anyStochParent))
 
+    boolAnyStochDep <- nimbleGraph$anyStochDependencies()
+    ## uncomment these lines to catch discrepancies between old and new system
+    ## from2toSplit <- split(edgesTo, edgesFrom)
+    ## from2to <- vector('list', length = length(nodeNames))
+    ## from2to[as.integer(names(from2toSplit))] <- from2toSplit
+    ## anyStochDep <- function(IDs) { ## needs to go through nodeID
+    ##     if(any(types[IDs]=='stoch')) return(TRUE)
+    ##     deps <- unlist(from2to[IDs])
+    ##     if(length(deps)==0) return(FALSE)
+    ##     return(anyStochDep(deps))
+    ## }
+    ## boolAnyStochDepOld <- unlist(lapply(from2to, anyStochDep))
+    ## if(!identical(boolAnyStochDep, boolAnyStochDepOld)) {
+    ##     cat('caught a discrepancy for boolAnyStochDep')
+    ##     browser()
+    ## }
+
+    boolAnyStochParent <- nimbleGraph$anyStochParents()
+    ## ## uncomment these lines to catch discrepancies between old and new system
+    ## ## determine who has any stochastic parents
+    ## to2fromSplit <- split(edgesFrom, edgesTo)
+    ## to2from <- vector('list', length = length(nodeNames))
+    ## to2from[as.integer(names(to2fromSplit))] <- to2fromSplit
+    ## anyStochParent <- function(IDs) {
+    ##     if(any(types[IDs]=='stoch')) return(TRUE)
+    ##     parents <- unlist(to2from[IDs])
+    ##     if(length(parents)==0) return(FALSE)
+    ##     return(anyStochParent(parents))
+    ## }
+    ## boolAnyStochParentOld <- unlist(lapply(to2from, anyStochParent))
+    ## if(!identical(boolAnyStochParent, boolAnyStochParentOld)) {
+    ##     cat('caught a discrepancy for boolAnyStochParent')
+    ##     browser()
+    ## }
+        
     ## end nodes have no stochastic dependents
     ## top nodes have no stochastic ancestor
     ## latent nodes have a stochastic descendent and ancestor
@@ -120,10 +134,8 @@ mapsClass$methods(setPositions3 = function(graph) { ## graph not actually used a
     end_IDs <<- which(!boolAnyStochDep)
     latent_IDs <<- which(boolAnyStochParent & boolAnyStochDep)
 
-
-	isEndNode_byGID <<- rep(FALSE, length(nodeNames))
-	isEndNode_byGID[end_IDs] <<- TRUE
-
+    isEndNode_byGID <<- rep(FALSE, length(nodeNames))
+    isEndNode_byGID[end_IDs] <<- TRUE
 
     NULL
     
