@@ -33,6 +33,7 @@ Collate:
     distributions_implementations.R
     BUGS_BUGSdecl.R
     BUGS_contexts.R
+    BUGS_nimbleGraph.R
     BUGS_modelDef.R
     BUGS_model.R
     BUGS_graphNodeMaps.R

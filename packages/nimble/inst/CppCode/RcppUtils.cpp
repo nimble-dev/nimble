@@ -221,6 +221,26 @@ SEXP vectorInt_2_SEXP(const vector<int> &v) {
   return(Sans);
 }
 
+struct opIntegerShift {
+public:
+  int c;
+  opIntegerShift(int inputc) : c(inputc) {};
+  int operator()(int x) {return(x + c);}
+};
+
+SEXP vectorInt_2_SEXP(const vector<int> &v, int offset) {
+  SEXP Sans;
+  int nn = v.size();
+  PROTECT(Sans = allocVector(INTSXP, nn));
+  if(nn > 0) {
+    if(offset == 0)
+      copy(v.begin(), v.end(), INTEGER(Sans));
+    else
+      std::transform(v.begin(), v.end(), INTEGER(Sans), opIntegerShift(offset));
+  }
+  UNPROTECT(1);
+  return(Sans);
+}
 
 vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorInt called for SEXP that is not a numeric or logica!\n");
@@ -228,7 +248,10 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   vector<int> ans(nn);
   if(isInteger(Sn) || isLogical(Sn)) {
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    copy(iSn, iSn + nn, ans.begin());
+    if(offset == 0) copy(iSn, iSn + nn, ans.begin());
+    else {
+      std::transform(iSn, iSn + nn, ans.begin(), opIntegerShift(offset)); 
+    }
   } else {
     if(isReal(Sn)) {
       double *dSn = REAL(Sn);
