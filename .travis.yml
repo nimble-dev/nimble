@@ -7,7 +7,7 @@ warnings_are_errors: true
 notifications:
   email:
     recipients:
-      - dturek@berkeley.edu
+      - dbt1@williams.edu
     on_success: always
     on_failure: always
 
