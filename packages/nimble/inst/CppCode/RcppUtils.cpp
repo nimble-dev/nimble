@@ -4,6 +4,7 @@
 #include "nimble/Utils.h"
 #include<iostream>
 #include<sstream>
+#include<algorithm>
 
 std::ostringstream _nimble_global_output;
 
