@@ -1,3 +1,5 @@
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+
 allModels <- c(# vol1
                'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                # vol2
