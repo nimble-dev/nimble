@@ -21,7 +21,9 @@ extern "C" {
 
   // NIMBLE C wrappers called from R
   SEXP C_dmnorm_chol(SEXP, SEXP, SEXP, SEXP, SEXP); 
-  SEXP C_rmnorm_chol(SEXP, SEXP, SEXP); 
+  SEXP C_rmnorm_chol(SEXP, SEXP, SEXP);
+  SEXP C_dmvt_chol(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP); 
+  SEXP C_rmvt_chol(SEXP, SEXP, SEXP, SEXP); 
   SEXP C_dwish_chol(SEXP, SEXP, SEXP, SEXP, SEXP);
   SEXP C_rwish_chol(SEXP, SEXP, SEXP);
   SEXP C_dcat(SEXP, SEXP, SEXP);
@@ -51,6 +53,8 @@ void rdirch(double*, double*, int);
 
 double dmnorm_chol(double*, double*, double*, int, double, int);
 void rmnorm_chol(double *, double*, double*, int, double);
+double dmvt_chol(double*, double*, double*, double, int, double, int);
+void rmvt_chol(double *, double*, double*, double, int, double);
 double dwish_chol(double*, double*, double, int, double, int);
 void rwish_chol(double*, double*, double, int, double);
 

@@ -27,7 +27,6 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   graph = 'ANY',        
                                   defaultModelValues = 'ANY',
                                   name = 'ANY', 		#character  
-                                  ##.ModelValuesLookUpName = 'character',
                                   isDataVars = 'ANY', #list           ## list with the dimensions of isData_vars
                                   isDataEnv = 'ANY',	#environment      ## environment holding 'logical' objects, with isData flags
                                   classEnvironment = 'ANY', # environment in which the reference classes will be defined
@@ -430,17 +429,10 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       }
                                       else if(inherits(nodes, 'numeric'))
                                           nodeIDs <- nodes
-                                      ## else if(inherits(nodes, 'nodeVector')){ 
-                                      ##     if(!returnScalarComponenets)
-                                      ##         nodeIDs <- nodes$getOrigIDs_functions()
-                                      ##     else
-                                      ##         nodeIDs <- nodes$getOrigIDs_values()
-                                      ## }
                                       
                                       if(inherits(omit, 'character')) {
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
                                           if(returnScalarComponents)
-#                                              omitIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],
                                               omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
                                                                    FALSE,
                                                                    FALSE,
@@ -450,14 +442,16 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       }
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
-                                      ## else if(inherits(omit, 'nodeVector')){ 
-                                      ##     if(!returnScalarComponenets)
-                                      ##         omitIDs <- omit$getOrigIDs_functions()
-                                      ##     else
-                                      ##         omitIDs <- omit$getOrigIDs_values()
-                                      ## }
                                       
-                                      depIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+
+depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+## Uncomment these lines to catch discrepancies between the old and new systems.
+##depIDsOld <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
+##     cat('caught a discrepancy for depIDs')
+##     browser()
+## }
+
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
@@ -476,7 +470,6 @@ Details: The downward search for dependent nodes propagates through deterministi
                                           if(returnScalarComponents)
                                               return(modelDef$maps$elementNames[depIDs])
                                           retVal <- modelDef$maps$nodeNames[depIDs]
-                                          ##attr(retVal, 'nodeName') <- TRUE
                                           return(retVal)
                                       }
                                       if(!(returnType %in% c('ids', 'names')))

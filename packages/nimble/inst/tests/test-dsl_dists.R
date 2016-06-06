@@ -13,10 +13,10 @@ nf <- nimbleFunction(
 cnf <- compileNimble(nf)
 
 try(test_that("Test that keyword processing for qbeta works in R: ",
-                  expect_that(nf(log(0.5)), equals(0.5), 
+                  expect_equal(nf(log(0.5)), 0.5, 
                   info = paste0("incorrect processing of qbeta in R"))))
 try(test_that("Test that keyword processing for qbeta works in C: ",
-                  expect_that(cnf(log(0.5)), equals(0.5), 
+                  expect_equal(cnf(log(0.5)), 0.5, 
                   info = paste0("incorrect processing of qbeta in C"))))
 
 
@@ -41,11 +41,11 @@ attributes(truth) <- NULL  # otherwise compare matrix and vec
 
 set.seed(0)
 try(test_that("Test that keyword processing for rmnorm works in R: ",
-                  expect_that(nf(mn, cov), equals(truth), 
+                  expect_equal(nf(mn, cov), truth, 
                   info = paste0("incorrect processing of rmnorm in R"))))
 set.seed(0)
 try(test_that("Test that keyword processing for rmnorm works in C: ",
-                  expect_that(cnf(mn, cov), equals(truth), 
+                  expect_equal(cnf(mn, cov), truth, 
                   info = paste0("incorrect processing of rmnorm in C"))))
 
 # test pweibull as check of p to q names
@@ -64,11 +64,11 @@ q <- 0.5
 truth <- pweibull(q, 3, 1.5, lower.tail = FALSE)
 
 try(test_that("Test that keyword processing for pweibull works in R: ",
-                  expect_that(nf(q), equals(truth), 
+                  expect_equal(nf(q), truth, 
                   info = paste0("incorrect processing of pweibull in R"))))
 
 try(test_that("Test that keyword processing for pweibull works in C: ",
-                  expect_that(cnf(q), equals(truth), 
+                  expect_equal(cnf(q), truth, 
                   info = paste0("incorrect processing of pweibull in C"))))
 
 # dgamma involves special processing so check
@@ -87,11 +87,11 @@ q <- 0.5
 truth <- pgamma(q, rate = 10, shape = 2, lower.tail = FALSE)
 
 try(test_that("Test that keyword processing for pgamma works in R: ",
-                  expect_that(nf(q), equals(truth), 
+                  expect_equal(nf(q), truth, 
                   info = paste0("incorrect processing of pgamma in R"))))
 
 try(test_that("Test that keyword processing for pgamma works in C: ",
-                  expect_that(cnf(q), equals(truth), 
+                  expect_equal(cnf(q), truth, 
                   info = paste0("incorrect processing of pgamma in C"))))
 
 
@@ -109,11 +109,11 @@ q <- 0.5
 truth <- pgamma(q, scale = 0.1, shape = 2, lower.tail = FALSE)
 
 try(test_that("Test that keyword processing for pgamma works in R: ",
-                  expect_that(nf(q), equals(truth), 
+                  expect_equal(nf(q), truth, 
                   info = paste0("incorrect processing of pgamma in R"))))
 
 try(test_that("Test that keyword processing for pgamma works in C: ",
-                  expect_that(cnf(q), equals(truth), 
+                  expect_equal(cnf(q), truth, 
                   info = paste0("incorrect processing of pgamma in C"))))
 
 
@@ -133,11 +133,11 @@ q <- 0.5
 truth <- pexp_nimble(q, rate = 10, lower.tail = FALSE)
 
 try(test_that("Test that keyword processing for pexp works in R: ",
-                  expect_that(nf(q), equals(truth), 
+                  expect_equal(nf(q), truth, 
                   info = paste0("incorrect processing of pexp in R"))))
 
 try(test_that("Test that keyword processing for pexp works in C: ",
-                  expect_that(cnf(q), equals(truth), 
+                  expect_equal(cnf(q), truth, 
                   info = paste0("incorrect processing of pexp in C"))))
 
 
@@ -155,11 +155,11 @@ q <- 0.5
 truth <- pexp_nimble(q, rate = 10, lower.tail = FALSE)
 
 try(test_that("Test that keyword processing for pexp_nimble works in R: ",
-                  expect_that(nf(q), equals(truth), 
+                  expect_equal(nf(q), truth, 
                   info = paste0("incorrect processing of pexp_nimble in R"))))
 
 try(test_that("Test that keyword processing for pexp_nimble works in C: ",
-                  expect_that(cnf(q), equals(truth), 
+                  expect_equal(cnf(q), truth, 
                   info = paste0("incorrect processing of pexp_nimble in C"))))
 
 nf <- nimbleFunction(
@@ -176,9 +176,9 @@ q <- 0.5
 truth <- pexp_nimble(q, scale = 0.1, lower.tail = FALSE)
 
 try(test_that("Test that keyword processing for pexp_nimble with scale works in R: ",
-                  expect_that(nf(q), equals(truth), 
+                  expect_equal(nf(q), truth, 
                   info = paste0("incorrect processing of pexp_nimble with scale in R"))))
 
 try(test_that("Test that keyword processing for pexp_nimble with scale works in C: ",
-                  expect_that(cnf(q), equals(truth), 
+                  expect_equal(cnf(q), truth, 
                   info = paste0("incorrect processing of pexp_nimble with scale in C"))))

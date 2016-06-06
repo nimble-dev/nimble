@@ -201,10 +201,6 @@ values_keywordInfo <- keywordInfoClass(
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
       
-      ## accessLengthArgList <- list(accessName = accessName)
-      ## accessLengthName <- accessorVectorLength_setupCodeTemplate$makeName(accessLengthArgList)
-      ## addNecessarySetupCode(accessLengthName, accessLengthArgList, accessorVectorLength_setupCodeTemplate, nfProc)
-
       newRunCode <- substitute(values(accessor = ACCESS_NAME), 
                                list(ACCESS_NAME = as.name(accessName)))
       return(newRunCode)
@@ -637,6 +633,10 @@ keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
+matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimInteger']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimMatrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
+matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['getParam']] <- getParam
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
@@ -884,15 +884,6 @@ accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not
            ACCESSLENGTH = as.name(resultName),
            ACCESSLENGTHNAME = resultName)
   })
-
-## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## NEW ACCESSORS
-##   #Note to programmer: required fields of argList are accessName 
-##   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-##   codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
-##   makeCodeSubList = function(resultName, argList){
-##   	list(ACCESSNAME = as.name(argList$accessName),
-##   		ACCESSLENGTH = as.name(resultName) )
-##   	})
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
@@ -1231,10 +1222,12 @@ matchKeywords_recurse <- function(code, nfProc = NULL) {
     cl = length(code)
     if(cl == 1){ ## There are no arguments
         if(is.call(code)){  
-            if(length(code[[1]]) > 1)
+            if(length(code[[1]]) > 1) {
                 if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc)
                 else
                     code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
+            } else
+                code <- matchKeywordCode(code, nfProc)
         }
         return(code)
     }
@@ -1304,14 +1297,10 @@ determineNdimFromOneCase <- function(model, varAndIndices) {
 ## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
 
 varAndIndices2mapParts <- function(varAndIndices, sizes, nDim) {
-    ##varName <- varAndIndices$name
     indices <- varAndIndices$indices
     ## put together offsetExpr, sizeExprs, strideExprs
     ## need sizes to get strides
     if(length(sizes) == 0) sizes <- 1
-##    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
-##    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
-##        nDim <- varInfo$nDim
     if(nDim > 0 & length(indices)==0) {
         blockBool <- rep(TRUE, nDim)
         firstIndexRexprs <- rep(list(1), nDim)

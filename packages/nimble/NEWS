@@ -1,10 +1,36 @@
-¯                        CHANGES IN VERSION 0.5 (March 2016)
+                           CHANGES IN VERSION 0.5-1 (May 2016)
+
+USER LEVEL CHANGES
+
+-- Sequential Monte Carlo algorithms added: Bootstrap filter, Auxiliary particle filter, Ensemble Kalman filter, and Liu and West filter can be accessed by calls to buildBootstrapFilter(), buildAuxiliaryFilter, buildEnsembleKF(), and buildLiuWestFilter() respectively. buildPF() is no longer available, but that name will be re-used in a future version as a wrapper to some of the filter functions listed above.
+
+-- Particle MCMC (Particle Marginal Metropolis Hastings) samplers can be used as samplers within an MCMC.  'RW_PF' can be used to sample scalar parameters, and 'RW_PF_block' can be used for multivariate parameters or multiple parameters.
+
+-- An ascent-based version of the MCEM algorithm has been added to buildMCEM(), providing automated convergence assessment and stopping.
+
+-- A block sampler that uses user-specified likelihoods has been implemented and can be used as a sampler within an MCMC, by using 'RW_llFunction_block'.
+
+-- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still available to change the size of an existing object prior to assigning into specific elements, but another call to one of the new functions can also be used for that purpose.
+
+-- Added multivariate-t distribution for use in BUGS code and the DSL. 
 
 -- Added binary sampler for Gibbs sampling of discrete 0/1 nodes. This is the default sampler used for Bernoulli and Binomial(p, size=1) nodes.
 
 -- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
 
 -- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+
+-- Some steps of building and compiling models and algorithms are generally faster.
+
+-- forwardsolve(), backsolve() and solve() now work more flexibly than before and can be used in BUGS code.
+
+-- A variety of small bug fixes.
+
+DEVELOPER LEVEL CHANGES
+
+-- Testing has been added for SMC algorithms.
+
+                           CHANGES IN VERSION 0.5 (March 2016)
 
 USER LEVEL CHANGES
 
@@ -16,13 +42,13 @@ USER LEVEL CHANGES
 
 -- API created for modifying samplerSpec objects: setName(), setSamplerFunction(), setTarget(), setControl().
 
--- MCMC conjugate sampling efficiency improved by ~33%
+-- MCMC conjugate sampling efficiency improved by ~33%.
 
 -- new system for automating the comparison of different MCMCs and generating html results pages: the main function is compareMCMCs.
 
--- enhanced checking of model to check for size and dimension mismatch in BUGS code
+-- enhanced checking of model to check for size and dimension mismatch in BUGS code.
 
--- some steps of building models and determining dependencies (e.g. getDependencies method for model classes) are faster and use less memory
+-- some steps of building models and determining dependencies (e.g. getDependencies method for model classes) are faster and use less memory.
 
 -- models have a new method, getDependenciesList, that provides a list of neighbor relationships in the model graph.
 
@@ -32,7 +58,7 @@ USER LEVEL CHANGES
 
 -- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
 
--- added ability to use any of the methods for R's optim function in MCEM optimization step
+-- added ability to use any of the methods for R's optim function in MCEM optimization step.
 
 -- There are more flexible ways to provide arguments to declare and setSize.
 

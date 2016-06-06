@@ -179,6 +179,17 @@ testsMatrix = list(
     list(name = 'forwardsolve matrix-matrix', expr = quote(out <- forwardsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
     list(name = 'backsolve matrix-vector', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 1), outputDim = 1),
     list(name = 'backsolve matrix-matrix', expr = quote(out <- backsolve(arg1, arg2)), inputDim = c(2, 2), outputDim = 2),
+
+    list(name = 'forwardsolve matrix-vector with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'forwardsolve matrix-matrix with indices', expr = quote(out <- forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'backsolve matrix-vector with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'backsolve matrix-matrix with indices', expr = quote(out <- backsolve(arg1[1:2,1:2], arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+
+    list(name = 'forwardsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'forwardsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + forwardsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+    list(name = 'backsolve matrix-vector amid expr', expr = quote(out <- arg2[1:2] + backsolve(arg1[1:2,1:2], arg2[1:2] + arg2[1:2])), inputDim = c(2, 1), outputDim = 1),
+    list(name = 'backsolve matrix-matrix amid expr', expr = quote(out <- arg2[1:2,1:2] + backsolve(arg1[1:2,1:2], arg2[1:2,1:2] + arg2[1:2,1:2])), inputDim = c(2, 2), outputDim = 2),
+
     list(name = 'chol', expr = quote({ A <- arg1; for(i in 1:dim(A)[1]) A[i,i] <- A[i,i] + 10; out <- chol(A) }), inputDim = c(2), outputDim = 2),
     list(name = 'matrix-vector multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 1), outputDim = 2),
     list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2),
@@ -187,11 +198,11 @@ testsMatrix = list(
   
 
 set.seed(0)
-sapply(testsVaried, test_math)
-sapply(testsBasicMath, test_math)
-sapply(testsMoreMath, test_math)
-sapply(testsReduction, test_math)
-sapply(testsComparison, test_math)
+##sapply(testsVaried, test_math)
+##sapply(testsBasicMath, test_math)
+##sapply(testsMoreMath, test_math)
+##sapply(testsReduction, test_math)
+##sapply(testsComparison, test_math)
 sapply(testsMatrix, test_math)
 
 

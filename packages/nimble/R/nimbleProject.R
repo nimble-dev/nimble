@@ -61,7 +61,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  modelCppInterfaces =  'ANY',		#'list',
                                  models             =  'ANY',		#'list',
                                  nimbleFunctions    =  'ANY',		#'list',
-                                 ##nimbleFunctionCppInterfaces =  'ANY',		#'list',
                                  nfCompInfos        =  'ANY',		#'list', ## list of nfCompilationInfoClass objects
                                  cppProjects        =  'ANY',		#'list', ## list of cppProjectClass objects, 1 for each dll to be produced
                                  dirName            =  'ANY',		#'character',
@@ -81,7 +80,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  	modelCppInterfaces <<- new.env()				# list()
                                  	models <<- new.env()							# list()
                                  	nimbleFunctions <<- new.env()					# list()	
-                                 	##nimbleFunctionCppInterfaces <<- new.env()		# list()
                                  	nfCompInfos <<- list()							# list()
                                  	cppProjects <<- list()							#new.env()						#list()
                                  	refClassDefsEnv <<- new.env()
@@ -119,7 +117,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                      if(exists('name', envir = thisRCO, inherits = FALSE)) {
                                                          thisname <- thisRCO$name
                                                          nimbleFunctions[[ thisname ]] <<- NULL
-                                                         ##nimbleFunctionCppInterfaces[[ thisname ]] <<- NULL
                                                          rm('name', envir = thisRCO)
                                                      }
                                                      thisRCO[['nimbleProject']] <- NULL
@@ -203,7 +200,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          
                                          newEnvs <- lapply(seq_along(newLabels), new.env)
                                          names(newEnvs) <- newLabels
-                                         ## list2env(newEnvs, envir = nimbleFunctionCppInterfaces)
                                          CppNewLabels <- Rname2CppName(newLabels)
                                          for(j in seq_along(newLabels)) {
                                              funList[[genIDs[j]]][['Cname']] <- CppNewLabels[j]
@@ -237,7 +233,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                      nimbleFunctions[[ nf_getRefClassObject(fun)$name ]] <<- fun
                                      nfCompInfos[[generatorName]]$addRinstance(fun)
-                                     ##nimbleFunctionCppInterfaces[[ nf_getRefClassObject(fun)$name ]] <<- new.env()		#list(NULL)
                                     
                                      if(!exists('Cname', envir = nf_getRefClassObject(fun), inherits = FALSE)) {
                                          assign('Cname', Rname2CppName(nf_getRefClassObject(fun)$name), envir = nf_getRefClassObject(fun))
@@ -395,7 +390,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          if(is.null(generatorName)) stop('Invalid generatorName', call. = FALSE)
                                      }
                                      if(is.null(nfCompInfos[[generatorName]])){
-                                    # 	cat('note: cppDef missing for nimble function. Generator name = ', generatorName ,' If error occurs, try compileNimble with option resetFunctions = TRUE\n')
                                      	 return(NULL)
                                     }
                                      ans <- nfCompInfos[[generatorName]]$cppDef
@@ -496,12 +490,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          
                                      }
                                      if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
-                                     
-                                     ## if(asTopLevel) {
-                                     ##     ans <- getNimbleFunctionCppDef(generatorName = generatorName)$Rgenerator(nf, dll = dll, project = .self)
-                                     ## } else {
-                                     ##     ans <- getNimbleFunctionCppDef(generatorName = generatorName)$CmultiInterface$addInstance(nf, dll = dll)
-                                     ## }
 
                                      ans
                                  },
@@ -525,7 +513,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorFunNames = NULL, alreadyAdded = FALSE) {
                                      if(!is.list(funList)) stop('funList in compileNimbleFunctionMulti should be a list', call. = FALSE)
                                      allGeneratorNames <- if(is.null(generatorFunNames)) lapply(funList, nfGetDefVar, 'name') else generatorFunNames
-                                     ##if(inherits(allGeneratorNames, 'try-error')) stop('Problem getting generatorNames in compileNimbleFunctionMulti.', call. = FALSE)
                                      uniqueGeneratorNames <- unique(allGeneratorNames)
                                      if(initialTypeInferenceOnly || returnCppClass) {
                                          ans <- list()
@@ -559,8 +546,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)
                                          if(reset) {
                                              nf_getRefClassObject(tmp)$.CobjectInterface <- NULL
-                                             ## if(exists('.CobjectInterface', envir = environment(tmp), inherits = FALSE))
-                                             ## rm('.CobjectInterface', envir = environment(tmp))
                                          }
                                          fun <- tmp
                                          funList <- list(fun)
@@ -569,7 +554,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      } else {
                                          if(is.list(fun)) {
                                              if(length(fun) == 0) stop('Empty list provided to compileNimbleFunction', call. = FALSE)
-                                             ## if(!all(unlist(lapply(fun, function(x) is.nf(x) ) ) ) ) stop('Not all elements in fun list for compileNimbleFunction are specialized nimbleFunctions', call. = FALSE) ## good check but slow, so we could wrap a try() instead 
                                              if(is.null(generatorName)) generatorName <- unique(unlist(lapply(fun, nfGetDefVar, 'name')))
                                              if(length(generatorName) != 1) stop(paste0('Not all elements in the fun list for compileNimbleFunction are specialized from the same nimbleFunction.  The generator names include:', paste(generatorName, collapse = ' ')), call. = FALSE)
                                              if(reset) nfCompInfos[[generatorName]] <<- NULL
@@ -617,7 +601,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      } else {
                                          if(!control$writeFiles) return(cppProj)
                                          cppProj <- cppProjects[[ generatorName ]]
-                                   #      writeLines('Using previously generated C++ code.  This will not work if the current nimbleFunction specializations use types of modelValues or other nimbleFunctions that have not already been compiled in this project.  If that is the case, you should include these specializiations in the first compilation of the nimbleFunction.  You can compile all the specializations of this nimbleFunction together with reset = TRUE.')
                                      }
                                      if(!nfCompInfos[[generatorName]]$cppCompiled && control$compileCpp) {
                                          if(control$compileCpp) {
@@ -634,7 +617,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
 
                                      for(i in seq_along(funList)) {
                                          ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll, asTopLevel = TRUE)
-                                         ##nimbleFunctionCppInterfaces[[ nf_getRefClassObject(funList[[i]])$name ]] <<- ans[[i]]
                                      }
                                      if(length(ans) == 1) ans[[1]] else ans
                                  }
@@ -688,7 +670,6 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     dotsDeparses[origIsList] <- ''
     names(origList)[boolNoName] <- dotsDeparses[boolNoName]
     units <- do.call('c', origList)
-##    units <- do.call('c', list(...)) ## combines any elements that are themselves lists
     unitTypes <- getNimbleTypes(units)
     if(length(grep('unknown', unitTypes)) > 0) stop(paste0('Some items provided for compilation do not have types that can be compiled.  The types provided were: ', paste0(unitTypes, collapse = ' '), '. Be sure only specialized nimbleFunctions are provided, not nimbleFunction generators.'), call. = FALSE)
     if(is.null(names(units))) names(units) <- rep('', length(units))
@@ -700,7 +681,6 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         project <- nimbleProjectClass(dirName, name = projectName)
     } else {
         project <- getNimbleProject(project, TRUE)
-#        if(is.null(project)) stop("Invalid project argument", call. = FALSE)  # CJP altered 6/30/15
         if(!inherits(project, 'nimbleProjectClass'))
             stop("Invalid project argument; note that models and nimbleFunctions need to be compiled before they can be used to specify a project. Once compiled you can use an R model or nimbleFunction to specify the project.", call. = FALSE)
     }

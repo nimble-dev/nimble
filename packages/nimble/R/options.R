@@ -43,7 +43,12 @@ nimbleUserNamespace <- as.environment(list())
             scale = 1,
             propCov = 'identity',
             sliceWidth = 1,
-            sliceMaxSteps = 100
+            sliceMaxSteps = 100,
+            m = 1000,
+            resample = F,
+            optimizeM = F,
+            filterType = "bootstrap",
+            lookahead = "simulate"
         )
     )
 )

@@ -1,5 +1,6 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
+
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
                makeCallList(binaryOrUnaryOperators, 'sizeBinaryUnaryCwise'),
@@ -41,6 +42,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimPrint = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
+                    nimArrayGeneral = 'sizeNimArrayGeneral',
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
@@ -48,8 +50,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(paste0(c('d','r','q','p'), 't'), 'sizeScalarRecurse'),
                makeCallList(paste0(c('d','r','q','p'), 'exp'), 'sizeScalarRecurse'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
-               makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
+               makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
+               makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
                makeCallList(c('calculate', 'calculateDiff', 'getLogProb', 'decide', 'size', 'getsize'), 'sizeScalar'),
                makeCallList(c('simulate', 'blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
                )
@@ -92,20 +94,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$sizeExprs <- info$sizeExprs
                     code$nDim <- info$nDim
                     code$toEigenize <- 'maybe'
-
-                    ## If it is a vector of known length 1 and it has no indexing, insert a [1] after it
-                    ## This introduced permanently inconsistent semantic corners, so I am disabling it
-                    ## if(code$nDim == 1) {
-                    ##     if(code$sizeExprs[[1]] == 1) {
-                    ##         if(lengthOneToScalar & code$caller$name != '[') {
-                    ##             insertIndexingBracket(code$caller, code$callerArgID, 1)
-                    ##             code$caller$nDim <- 0
-                    ##             code$caller$sizeExprs <- list()
-                    ##             code$caller$toEigenize <- 'maybe'
-                    ##             code$caller$type <- code$type
-                    ##         }
-                    ##     }
-                    ## }
                 }
             }
             ## Note that generation of a symbol for LHS of an assignment is done in the sizeAssign function, which is the handler for assignments
@@ -180,6 +168,37 @@ sizemap <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'maybe'
     invisible(NULL)
 }
+
+## size handler for nimArrayGeneral()
+## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
+## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
+sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, FALSE, FALSE, TRUE, TRUE))  ## recurse on initialValue and initialLogical only
+    cSizeExprs <- code$args[[3]]
+    if(!inherits(cSizeExprs, 'exprClass'))        stop('something wrong 1')
+    if(cSizeExprs$name != 'c')                    stop('something wrong 2')
+    if(code$args[[2]] != length(cSizeExprs$args)) stop('something wrong 3')
+    asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
+    type <- code$args[[1]]    ## args[[1]]: 'type' argument
+    nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
+    if(!(type %in% c('double', 'integer')))       stop('unknown type in nimArrayGeneral')
+    code$name <- 'initialize'
+    code$args <- c(code$args[4:5], cSizeExprs$args)  ##  args: initialize(initializeValue, initializeLogical, sizeExpr1, sizeExpr2, etc...)
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            code$args[[i]]$callerArgID <- i
+            code$args[[i]]$caller <- code
+        }
+    }
+    code$type <- type
+    code$nDim <- nDim
+    code$sizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse)
+    code$toEigenize <- 'no'
+    return(asserts)
+}
+
+
+
 
 sizeGetParam <- function(code, symTab, typeEnv) {
     paramInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
@@ -320,8 +339,6 @@ sizeValues <- function(code, symTab, typeEnv) {
             LHS <- code$caller$args[[1]]
             if(LHS$isName) { ## It is a little awkward to insert setSize here, but this is different from other cases in sizeAssignAfterRecursing
                 assertSS <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
-                ##sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
-                ## assertSS[[1]][[3]] <- as.name(sym$lengthName) ## this is from when we used to have a separate setup output with the size
                 assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
                 asserts <- c(assertSS, asserts)
             }
@@ -955,9 +972,6 @@ sizeTranspose <- function(code, symTab, typeEnv) {
         code$sizeExprs <- c(code$sizeExprs[2], code$sizeExprs[1])
     } else if(length(code$sizeExprs) == 1) {
         if(code$nDim != 1) warning(paste0('In sizeTranspose, there is 1 sizeExpr but nDim != 1'), call. = FALSE)
-        ##setAsRowOrCol(code, 1, 'asRow', code$args[[1]]$type)
-        ##code <- removeExprClassLayer(code, 1)
-        ##code$toEigenize <- 'yes'
         code$name <- 'asRow'
         code$sizeExprs <- c(list(1), code$sizeExprs[[1]])
         code$nDim <- 2
@@ -1133,7 +1147,7 @@ sizeReturn <- function(code, symTab, typeEnv) {
         if(!code$args[[1]]$isName) {
 ##            if(code$args[[1]]$toEigenize == 'yes') {
             if(anyNonScalar(code$args[[1]])) {
-                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv, forceAssign = TRUE))
             }
             ##            }
         }
@@ -1458,6 +1472,8 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
 
 mvFirstArgCheckLists <- list(nimArr_rmnorm_chol = list(c(1, 2, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), prec_param(scalar)
                                  1, 'double'), ## 1 = argument from which to take answer size, double = answer type
+                             nimArr_rmvt_chol = list(c(1, 2, 0, 0), ## dimensionality of ordered arguments AFTER the first, which is for the return value.  e.g. mean (1D), chol(2D), df(scalar), prec_param(scalar)
+                                                       1, 'double'), ## 1 = argument from which to take answer size, double = answer type
                              nimArr_rwish_chol = list(c(2, 0, 0), ## chol, df, prec_param
                                  1, 'double'),
                              nimArr_rmulti = list(c(0, 1), ## size, probs

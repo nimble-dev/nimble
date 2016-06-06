@@ -2,6 +2,7 @@
 #define __NIMARRBASE
 #include <vector>
 #include <string>
+#include <cstring>
 #include <R.h>
 #include <typeinfo>
 #include <iostream>
@@ -52,6 +53,7 @@ class NimArrBase: public NimArrType {
   virtual int calculateIndex(vector<int> &i)=0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
+  void fillAllValues(T value) { std::fill(v.begin(), v.end(), value); }
   void setLength(int l) {NAlength = l; v.resize(l); } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
   void setMyType() {
     myType = UNDEFINED;
@@ -91,16 +93,15 @@ class VecNimArrBase : public NimVecType {
    	return(static_cast<NimArrType *> (getBasePtr(row) )  );	
    }
 
-//  virtual int size()=0;
-    VecNimArrBase() {
-      myType = UNDEFINED;
-      if(typeid(T) == typeid(int) )
-    	myType = INT;
-      if(typeid(T) == typeid(double) )
-    	myType = DOUBLE;
-    }
-
-    ~VecNimArrBase(){};
+  VecNimArrBase() {
+    myType = UNDEFINED;
+    if(typeid(T) == typeid(int) )
+      myType = INT;
+    if(typeid(T) == typeid(double) )
+      myType = DOUBLE;
+  }
+  
+  ~VecNimArrBase(){};
 };
 
 

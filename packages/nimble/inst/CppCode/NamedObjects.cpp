@@ -127,12 +127,3 @@ SEXP newNumberedObjects(){
 	return(rPtr);
 }
 
-/*		This is an example of a finalizer for the templated numbered objects
-		They must be written by hand
-		for each template
-void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
-	SpecialNumberedObjects<SingleModelValuesAccess>* np 
-	= static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
-	delete np;
-}
-*/

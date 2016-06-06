@@ -310,9 +310,6 @@ getValuesAccess <- function(access) {
     sourceFromObject <- access[[1]]
     unlist(lapply(fromCode, function(i) eval(i)))
 
-##    if(access$numAccessors==0) return(numeric()) ## NEW ACCESSORS
-##    unlist(lapply(1:access$numAccessors, function(i) access$getValues(i)))
-
 }
 
 
@@ -332,19 +329,6 @@ setValuesAccess <- function(input, access) {
     }
     invisible(NULL)
 
-    ## if(access$numAccessors==0) return(NULL) ## NEW ACCESSORS
-    ## nextIndex <- 0
-    ## if(access$getLength() != length(input)) {
-    ##     writeLines('Length of input does not match accessor')
-    ##     if(access$getLength() > length(input)) stop('Bailing out because not enough values were provided for accessor')
-    ##     writeLines('Too many input values provided.  Continuing anyway')
-    ## }
-    ## for(i in 1:length(access$code)) {
-    ##     nextLength <- access$getLength(i)
-    ##     access$setValues(i, input[nextIndex + (1:nextLength)])
-    ##     nextIndex <- nextIndex + nextLength
-    ## }
-    ## invisible(NULL)
 }
 
 
@@ -668,6 +652,84 @@ nimPrint <- function(...) {
     for(i in seq_along(items)) {if(is.array(items[[i]])) print(items[[i]]) else cat(items[[i]])}
     cat('\n')
 }
+
+
+#' creates a numeric vector
+#'
+#' @param length the length of the vector (default = 0)
+#' @param value the initial value for each element of the vector (default = 0)
+#' @param init logical, whether to initialize elements of the vector (default = TRUE)
+#'
+#' @author Daniel Turek
+#' @aliases numeric
+#' @seealso \link{integer} \link{matrix} \link{array}
+#' @export
+nimNumeric <- function(length = 0, value = 0, init = TRUE) {
+    fillValue <- makeFillValue(value, 'double', init)
+    rep(fillValue, length)
+}
+
+
+#' creates an integer vector
+#'
+#' @param length the length of the vector (default = 0)
+#' @param value the initial value for each element of the vector (default = 0L)
+#' @param init logical, whether to initialize elements of the vector (default = TRUE)
+#'
+#' @author Daniel Turek
+#' @aliases integer
+#' @seealso \link{numeric} \link{matrix} \link{array}
+#' @export
+nimInteger <- function(length = 0, value = 0, init = TRUE) {
+    fillValue <- makeFillValue(value, 'integer', init)
+    rep(fillValue, length)
+}
+
+
+#' creates a matrix
+#' 
+#' @param value the initial value for each element of the matrix (default = 0)
+#' @param nrow the number of rows in the matrix (default = 1)
+#' @param ncol the number of columns in the matrix (default = 1)
+#' @param init logical, whether to initialize elements of the matrix (default = TRUE)
+#' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
+#'
+#' @author Daniel Turek#' @author Daniel Turek
+#' @aliases matrix
+#' @seealso \link{numeric} \link{integer} \link{array}
+#' @export
+nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
+    fillValue <- makeFillValue(value, type, init)
+    base::matrix(fillValue, nrow, ncol)
+}
+
+
+#' creates an array
+#'
+#' @param value the initial value for each element of the array (default = 0)
+#' @param dim a vector specifying the dimensionality and sizes of the array, provided as c(size1, ...) (default = c(1, 1))
+#' @param init logical, whether to initialize elements of the matrix (default = TRUE)
+#' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
+#'
+#' @author Daniel Turek
+#' @aliases array
+#' @seealso \link{numeric} \link{integer} \link{matrix}
+#' @export
+nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
+    fillValue <- makeFillValue(value, type, init)
+    base::array(fillValue, dim)
+}
+
+makeFillValue <- function(value, type, init) {
+    fillValue <- if(init) value else 0
+    fillValueTyped <- switch(type,
+                             double = as.numeric(fillValue),
+                             integer = as.integer(fillValue),
+                             ##logical = as.logical(fillValue),
+                             stop('unknown type argument'))
+    return(fillValueTyped)
+}
+
 
 #' Explicitly declare a variable in run-time code of a nimbleFunction
 #'

@@ -1,5 +1,4 @@
 
-
 ## moved controlDefaultList to be a NIMBLE system option (as a single list: MCMCcontrolDefaultList)
 ## controlDefaultList <- list(
 ##     adaptive = TRUE,
@@ -10,7 +9,6 @@
 ##     sliceWidth = 1,
 ##     sliceMaxSteps = 100
 ## )
-
 
 samplerSpec <- setRefClass(
     Class = 'samplerSpec',
@@ -170,6 +168,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
             isNodeEnd <- model$isNodeEnd(nodes)
+
 
             if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy2(nodes)
 
