@@ -1,5 +1,7 @@
 ### Functions for testing math, called from test_math.R
 require(testthat)
+require(methods)
+require(nimble)
 
 gen_runFun <- function(input) {
   runFun <- function() {}
