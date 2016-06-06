@@ -187,9 +187,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
 cppPermList = c()                                       
                                        includes <- if(!.useLib) {
 	                                              if(isWindows) {
-                                                         
                                                          shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir(), cppPermList[1])))
-stop("need to fix this on windows")                                                         
 		    			                 sprintf("%s/%s", shortDirname, cppPermList)
                                                       } else
                                                          sprintf("%s/%s", normalizePath(NimbleCodeDir(), winslash = '/'), cppPermList) 
