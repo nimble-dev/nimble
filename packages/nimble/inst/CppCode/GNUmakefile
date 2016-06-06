@@ -5,7 +5,8 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
-include $(R_HOME)/etc$(R_ARCH)/Makeconf
+# Don't have to succeed in including this if we are calling cleanup in the nimble package directory.
+-include $(R_HOME)/etc$(R_ARCH)/Makeconf
 
 OS=$(shell uname)
 ifeq ($(OS), Darwin)
@@ -27,4 +28,9 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 
 
 clean:
-	-rm *.o libnimble$(DYLIB_EXT)
+	-rm *.o libnimble$(DYLIB_EXT) libnimble.a
+
+
+libnimble.a:  $(OBJECTS)
+	@echo "Making libnimble.a"      
+	$(AR) rcs $@ $(OBJECTS)
