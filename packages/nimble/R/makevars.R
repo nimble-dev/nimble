@@ -63,6 +63,7 @@ function(target, vars = character(), .useLib = UseLibraryMakevars)
 
     vars = c(EIGEN_INC = AutoconfInfo$eigenInc,
              NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
+             NIMBLE_LIB_DIR =  system.file("CppCode", package = "nimble"),        
              NIMBLE_DIR =  system.file(package = "nimble"),
              RPATH = sprintf("-rpath %s", system.file("CppCode", package = "nimble")),
              vars)
