@@ -1,3 +1,7 @@
+#FIX
+# Looks like we could probably use just Makevars.in now as we are linking against
+# a libnimble in either case.
+
 # lib=TRUE
 # from=Makevars_lib.in
 
