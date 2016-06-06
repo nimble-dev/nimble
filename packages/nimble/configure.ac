@@ -18,7 +18,7 @@ dnl or by setting the environment variable EIGEN_DIR
 AC_ARG_WITH(eigen, [  --with-eigen            path for the directory containing Eigen/ directory with all of the #include files], EIGEN_DIR="${withval}")
 
 AC_ARG_ENABLE(lib, [  --enable-lib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
-                         ENABLE_LIB=${enableval}, ENABLE_LIB=true)
+                         ENABLE_LIB=${enableval}, ENABLE_LIB=false)
 
 
 if test -n "${NO_LIBNIMBLE}" ; then
@@ -92,6 +92,11 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
+
+NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+AC_SUBST(NIMBLE_LIB_DIR)
+
+
 R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
@@ -104,7 +109,9 @@ fi
 AC_SUBST(RPATH)
 
 if test "${ENABLE_LIB}" != "false" ; then
-  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
+  #XX
+  #PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
+  PKG_LIBS="-L. -lnimble $RPATH"
 fi
 AC_SUBST(PKG_LIBS)
 
@@ -118,7 +125,12 @@ AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars)
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
  (cd inst/CppCode ; ${MAKE} )
+ cp inst/CppCode/libnimble.dylib src
+ if ! test -e $R_PACKAGE_DIR/libs/ ; then
+    mkdir -p $R_PACKAGE_DIR/libs/
+ fi
+ cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib 
 else 
-#  mkdir inst/CppCode
   cp inst/CppCode/*.cpp src
+  (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi
