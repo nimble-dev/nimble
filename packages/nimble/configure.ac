@@ -18,12 +18,17 @@ dnl or by setting the environment variable EIGEN_DIR
 AC_ARG_WITH(eigen, [  --with-eigen            path for the directory containing Eigen/ directory with all of the #include files], EIGEN_DIR="${withval}")
 
 AC_ARG_ENABLE(lib, [  --enable-lib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
-                         ENABLE_LIB=${enableval}, ENABLE_LIB=false)
+                         ENABLE_LIB=${enableval}, ENABLE_LIB=true)
 
 
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false
   echo "Disabling libnimble."
+fi
+
+if test -n "${LIBNIMBLE}" ; then
+  ENABLE_LIB=true
+  echo "Enabling libnimble."
 fi
 
 
