@@ -39,7 +39,7 @@ copyNimbleDylib =
     #
 function(dir = getOption("LibNimbleDir", tempdir()))
 {
-    NimbleSessionInfo$soDir = tmpdir
+    NimbleSessionInfo$soDir = dir
     f = sprintf("%s/%s", dir, basename(libnimbleDLL()))
     cat("Copying .so\n")       
     file.copy(libnimbleDLL(), dir)
