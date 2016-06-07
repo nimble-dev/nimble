@@ -14,7 +14,7 @@
 function(...)
 {
    if(!sameDir(system.file(package = "nimble"), AutoconfInfo$rpkg_install_dir)) {
-       message("Package was moved after installation")
+#      packageStartupMessage("Package was moved after installation")
        NimbleSessionInfo$soDir = system.file("CppCode", package = "nimble")
        NimbleSessionInfo$pkgMoved = TRUE
        if(FALSE && UseLibraryMakevars && Sys.info()["sysname"] == "Darwin")
