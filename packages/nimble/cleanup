@@ -9,14 +9,9 @@ for f in $FILES ; do
  fi
 done
 
-#cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib 
-
 (cd inst/CppCode ; make clean)
-(cd src ; rm *.o ; rm *.so )
+(cd src ; rm *.o)
 
-# We may want to be careful about doing this, i.e.
-# when we are packaging up a release  where we want to clean up
-# and then ensure that there is a copy of Eigen in the directory structure.
 if test -d inst/include/Eigen ; then
   rm -fr inst/include/Eigen
 fi

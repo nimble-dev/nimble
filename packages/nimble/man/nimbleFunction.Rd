@@ -5,7 +5,7 @@
 \title{create a nimbleFunction}
 \usage{
 nimbleFunction(setup = NULL, run = function() { }, methods = list(),
-  globalSetup = function() { }, contains = NULL, name = NA,
+  globalSetup = NULL, contains = NULL, name = NA,
   where = getNimbleFunctionEnvironment())
 }
 \arguments{
