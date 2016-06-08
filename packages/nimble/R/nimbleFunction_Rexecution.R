@@ -13,6 +13,10 @@ nimStop <- function(msg) stop(msg, call. = FALSE)
 # we use call.=FALSE because otherwise the error msg indicates the
 # error itself occurs in nimStop() and not in the calling frame
 
+run.time <- function(code) {
+    as.numeric(system.time(code)[3])
+}
+
 #' Check for interrupt (e.g. Ctrl-C) during nimbleFunction execution. Part of the NIMBLE language.
 #'
 #' @author Perry de Valpine
