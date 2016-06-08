@@ -202,7 +202,7 @@ bool nimbleGraph::anyStochDependenciesOneNode(vector<int> &anyStochDependencies,
 
 vector<int> nimbleGraph::anyStochParents() {
   vector<int> ans(numNodes, 0);
-  for(unsigned int i = numNodes - 1; i >= 0; i--) {
+  for(int i = static_cast<int>(numNodes - 1); i >= 0; i--) {
     anyStochParentsOneNode(ans, i);
   }
   return(ans);
