@@ -125,8 +125,8 @@ AC_SUBST(RPATH)
 
 if test "${ENABLE_LIB}" != "false" ; then
   #XX
-  #PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
-  PKG_LIBS="-L. -lnimble $RPATH"
+  PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
+#  PKG_LIBS="-L. -lnimble $RPATH"
 fi
 AC_SUBST(PKG_LIBS)
 
