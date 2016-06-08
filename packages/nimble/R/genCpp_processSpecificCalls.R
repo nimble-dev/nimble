@@ -37,7 +37,8 @@ specificCallHandlers = c(
          declare = 'declareHandler',
          nfMethod = 'nfMethodErrorHandler',
          min = 'minMaxHandler',
-         max = 'minMaxHandler'),
+         max = 'minMaxHandler',
+         run.time = 'runTimeHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
@@ -78,6 +79,28 @@ seqAlongHandler <- function(code, symTab) {
     code$args[[1]] <- 1
     setArg(code, 2, oldArg)
     NULL
+}
+
+runTimeHandler <- function(code, symTab) {
+    ## expecting x <- run.time(arbitrary expression).  if we have foo(run.time(arbitrary exprssion)) we lift run.time(arbitrary expression)
+    browser()
+    if(!code$caller$name %in% assignmentOperators) { ## must build intermediate
+        intermCode <- buildSimpleIntermCall(code)
+        newExpr <- newBracketExpr(args = c(list(intermCode), code))
+        setArg(code$caller, code$callerArgID, newExpr)
+        code <- newExpr
+    }
+    lhsName <- code$caller$args[[1]]$name
+    timerName <- paste0(lhsName,'_TIMER_')
+    ## add timeName to symTab
+    newSym <- symbolNimbleTimer(name = timerName, type = 'symbolNimbleTimer')
+    symTab$addSymbol(newSym)
+    ##
+    startExpr <- RparseTree2ExprClasses(substitute(startNimbleTimer(TIMERNAME), list(TIMERNAME = as.name(timerName))))
+    endExpr <- RparseTree2ExprClasses(substitute(endNimbleTimer(TIMERNAME), list(TIMERNAME = as.name(timerName))))
+    newExpr <- newBracketExpr(args = c(startExpr, code$args[1], endExpr))
+    setArg(code$caller, code$callerArgID, newExpr)
+    
 }
 
 ## processes something like declare(Z, double(1, c(3, 4))) where the first argument to double is the number of dimensions and next (optional)

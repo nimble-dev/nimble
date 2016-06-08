@@ -52,8 +52,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
-               makeCallList(c('calculate', 'calculateDiff', 'getLogProb', 'decide', 'size', 'getsize'), 'sizeScalar'),
-               makeCallList(c('simulate', 'blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
+               makeCallList(c('calculate', 'calculateDiff', 'getLogProb', 'decide', 'size', 'getsize', 'endNimbleTimer'), 'sizeScalar'),
+               makeCallList(c('simulate', 'blank', 'nfMethod', 'nimFunListAccess', 'getPtr', 'startNimbleTimer'), 'sizeUndefined')
                )
 
 scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical') # , nimArr_rcat = 'double', nimArr_rinterval = 'double')
