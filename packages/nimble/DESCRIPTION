@@ -109,3 +109,5 @@ Collate:
     registration.R
     nimble-package.r
     zzz.R
+    binaryInstallCode.R
+
