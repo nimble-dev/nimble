@@ -91,7 +91,7 @@ SEXP anyStochDependencies(SEXP SgraphExtPtr) {
   SEXP Sans;
   PROTECT(Sans = allocVector(LGLSXP, ans.size()));
   int *SansPtr = INTEGER(Sans);
-  for(int i = 0; i < ans.size(); i++) {
+  for(unsigned int i = 0; i < ans.size(); i++) {
     if(ans[i] == 0) PRINTF("Element %i was not processed\n", i);
     SansPtr[i] = ans[i]==2 ? 1 : 0;
   }
@@ -114,7 +114,7 @@ SEXP anyStochParents(SEXP SgraphExtPtr) {
   SEXP Sans;
   PROTECT(Sans = allocVector(LGLSXP, ans.size()));
   int *SansPtr = INTEGER(Sans);
-  for(int i = 0; i < ans.size(); i++) {
+  for(unsigned int i = 0; i < ans.size(); i++) {
     if(ans[i] == 0) PRINTF("Element %i was not processed\n", i);
     SansPtr[i] = ans[i]==2 ? 1 : 0;
   }
@@ -127,29 +127,31 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
 		     const vector<NODETYPE> &types,
 		     const vector<string> &names,
 		     int inputNumNodes) {
-  numNodes = inputNumNodes;
-  int numEdges = edgesFrom.size();
+  if(inputNumNodes < 0) PRINTF("Problem in nimbleGraph::setNodes: inputNumNodes <0\n");
+  numNodes = static_cast<unsigned int>(inputNumNodes);
+  unsigned int numEdges = edgesFrom.size();
 
 #ifdef _DEBUGNIMGRAPH
   PRINTF("numNodes %i\n", numNodes);
   PRINTF("numEdges %i\n", numEdges);
 #endif
-  if(numEdges != edgesTo.size() | numEdges != edgesFrom2ParentExprIDs.size() | numNodes != types.size() | numNodes != names.size()) {
+
+  if((numEdges != edgesTo.size()) | (numEdges != edgesFrom2ParentExprIDs.size()) | (numNodes != types.size()) | (numNodes != names.size())) {
     PRINTF("Something is not the right size\n");
     return;
   }
   graphNodeVec.resize(numNodes);
-  for(int iNode = 0; iNode < numNodes; iNode++) {
+  for(unsigned int iNode = 0; iNode < numNodes; iNode++) {
     graphNodeVec[iNode] = new graphNode(iNode, types[iNode], names[iNode]);
   }
-  for(int iEdge = 0; iEdge < numEdges; iEdge++) {
+  for(unsigned int iEdge = 0; iEdge < numEdges; iEdge++) {
     graphNodeVec[ edgesFrom[iEdge]]->addChild( graphNodeVec[edgesTo[iEdge]], edgesFrom2ParentExprIDs[iEdge] );
   }
 }
 
 vector<int> nimbleGraph::anyStochDependencies() {
   vector<int> ans(numNodes, 0);
-  for(int i = 0; i < numNodes; i++) {
+  for(unsigned int i = 0; i < numNodes; i++) {
     anyStochDependenciesOneNode(ans, i); 
   }
   return(ans);
@@ -161,13 +163,13 @@ bool nimbleGraph::anyStochDependenciesOneNode(vector<int> &anyStochDependencies,
   bool thisHasAstochDep(false);
   graphNode *thisGraphNode = graphNodeVec[CgraphID];
   graphNode *thisChildNode;
-  int numChildren = thisGraphNode->numChildren;
+  unsigned int numChildren = thisGraphNode->numChildren;
   /* If no children, answer is false */
   if(numChildren == 0) {
     anyStochDependencies[CgraphID] = 1;
     return(false);
   }
-  int i(0);
+  unsigned int i(0);
   /* Check type of children without recursing.  If any are STOCH, answer is true */
   while((i < numChildren) & (!thisHasAstochDep)) {
     if(thisGraphNode->children[i]->type == STOCH) {
@@ -200,7 +202,7 @@ bool nimbleGraph::anyStochDependenciesOneNode(vector<int> &anyStochDependencies,
 
 vector<int> nimbleGraph::anyStochParents() {
   vector<int> ans(numNodes, 0);
-  for(int i = numNodes - 1; i >= 0; i--) {
+  for(unsigned int i = numNodes - 1; i >= 0; i--) {
     anyStochParentsOneNode(ans, i);
   }
   return(ans);
@@ -249,8 +251,8 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents, int Cgrap
 vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream) {
   // assume on entry that touched = false on all nodes
   // Cnodes and Comit are C-indices (meaning they start at 0)
-  int n = Comit.size();
-  int i;
+  unsigned int n = Comit.size();
+  unsigned int i;
   vector<int> ans;
   // touch omit nodes
 #ifdef _DEBUG_GETDEPS
@@ -299,7 +301,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   return(ans);
 }
 
-void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, int recursionDepth) {
+void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth) {
   if(recursionDepth > graphNodeVec.size()) {
     PRINTF("ERROR: getDependencies has recursed too far.  Something must be wrong.\n");
     return;
@@ -308,8 +310,8 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool d
   PRINTF("    Entering recursion for node %i\n", CgraphID);
 #endif
   graphNode *thisGraphNode = graphNodeVec[CgraphID];
-  int numChildren = thisGraphNode->numChildren;
-  int i(0);
+  unsigned int numChildren = thisGraphNode->numChildren;
+  unsigned int i(0);
   graphNode *thisChildNode;
   int thisChildCgraphID;
 #ifdef _DEBUG_GETDEPS
