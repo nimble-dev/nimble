@@ -577,7 +577,20 @@ singleBracket_keywordInfo <- keywordInfoClass(
     }
 )    
 
-
+length_char_keywordInfo <- keywordInfoClass(
+    keyword = 'length',
+    processor = function(code, nfProc) {
+        if(is.null(nfProc)) return(code)
+        if(length(code) < 2) stop('length() used without an argument')
+        class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
+        if(class == "symbolString") {
+            length_char_ArgList <- list(code = code, string = code[[2]])
+            accessName <- length_char_SetupTemplate$makeName(length_char_ArgList)
+            addNecessarySetupCode(accessName, length_char_ArgList, length_char_SetupTemplate, nfProc)
+            return(substitute(LENGTHNAME, list(LENGTHNAME = as.name(accessName))))
+        }
+        return(code)
+    })
 
 #	KeywordList
 keywordList <- new.env()
@@ -606,6 +619,8 @@ keywordList[['dexp_nimble']] <- d_exp_nimble_keywordInfo
 keywordList[['pexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
+
+keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
@@ -820,10 +835,14 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 #		singleModelIndexAccess_SetupTemplate
 #		map_SetupTemplate
 #       singleModelValuesAccessor_SetupTemplate
-        
-        
-        
-                                         
+
+length_char_SetupTemplate <- setupCodeTemplateClass(
+    makeName = function(argList) {Rname2CppName(paste0(paste("length", deparse(argList$string), sep='_'), '_KNOWN_'))},
+    codeTemplate = quote(LENGTHNAME <- CODE),
+    makeCodeSubList = function(resultName, argList) {
+        list(LENGTHNAME = as.name(resultName),
+             CODE = argList$code)
+    })
 
 optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 	makeName = function(argList){Rname2CppName(deparse(argList$name))},
@@ -873,17 +892,17 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 
     
-accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
-  #Note to programmer: required fields of argList are accessName
+## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
+##   #Note to programmer: required fields of argList are accessName
  
-  makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-    codeTemplate = quote({ACCESSLENGTH <- 0;
-        ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
-  makeCodeSubList = function(resultName, argList){
-      list(ACCESSNAME = as.name(argList$accessName),
-           ACCESSLENGTH = as.name(resultName),
-           ACCESSLENGTHNAME = resultName)
-  })
+##   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
+##     codeTemplate = quote({ACCESSLENGTH <- 0;
+##         ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
+##   makeCodeSubList = function(resultName, argList){
+##       list(ACCESSNAME = as.name(argList$accessName),
+##            ACCESSLENGTH = as.name(resultName),
+##            ACCESSLENGTHNAME = resultName)
+##   })
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
