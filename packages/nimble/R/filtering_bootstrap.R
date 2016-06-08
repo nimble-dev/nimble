@@ -45,10 +45,13 @@ bootFStep <- nimbleFunction(
   },
   run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
     returnType(double(1))
-    declare(wts, double(1, m))
+    ##declare(wts, double(1, m))
+    wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
-    declare(llEst, double(1,m))
-    declare(out, double(1,2))
+    ##declare(llEst, double(1,m))
+    llEst <- numeric(m, init=FALSE)
+    ##declare(out, double(1,2))
+    out <- numeric(2, init=FALSE)
     
     for(i in 1:m) {
       if(notFirst) {  
