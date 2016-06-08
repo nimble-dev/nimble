@@ -9,5 +9,6 @@ ModelClassUtils.cpp
 NFxnUtils.cpp
 Node.cpp
 Utils.cpp
+nimbleGraph.cpp
 Makevars
 

@@ -184,14 +184,14 @@ public:
   }
 
   void initialize(T value, bool init, int is1) {
-    setSize(is1);
+    setSize(is1, false, false);
     if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
-  void setSize(int is1) {
+  void setSize(int is1, bool copyValues = true, bool fillZeros = true) {
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
-    NimArrBase<T>::setLength(size1);
+    NimArrBase<T>::setLength(size1, copyValues, fillZeros);
   }
   virtual void setSize(vector<int> sizeVec) {setSize(sizeVec[0]);}
   virtual int numDims() const {return(1);}
@@ -409,14 +409,14 @@ public:
   }
 
   void initialize(T value, bool init, int is1, int is2) {
-    setSize(is1, is2);
+    setSize(is1, is2, false, false);
     if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
-    void setSize(int is1, int is2) {
+  void setSize(int is1, int is2, bool copyValues = true, bool fillZeros = true) {
       NimArrBase<T>::NAdims[0] = size1 = is1; 
       NimArrBase<T>::NAdims[1] = size2 = is2;
-      NimArrBase<T>::setLength(size1 * size2);
+      NimArrBase<T>::setLength(size1 * size2, copyValues, fillZeros);
       NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
       NimArrBase<T>::NAstrides[1] = stride2 = is1;
     }
@@ -668,18 +668,18 @@ class NimArr<3, T> : public NimArrBase<T> {
   }
 
   void initialize(T value, bool init, int is1, int is2, int is3) {
-    setSize(is1, is2, is3);
+    setSize(is1, is2, is3, false, false);
     if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
-  void setSize(int is1, int is2, int is3) {
+  void setSize(int is1, int is2, int is3, bool copyValues = true, bool fillZeros = true) {
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAdims[1] = size2 = is2;
     NimArrBase<T>::NAdims[2] = size3 = is3;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
     NimArrBase<T>::NAstrides[1] = stride2 = is1;    
     NimArrBase<T>::NAstrides[2] = stride3 = is1*is2;
-    NimArrBase<T>::setLength(stride3 * size3);
+    NimArrBase<T>::setLength(stride3 * size3, copyValues, fillZeros);
   }
 
   
@@ -959,11 +959,11 @@ class NimArr<4, T> : public NimArrBase<T> {
   }
 
   void initialize(T value, bool init, int is1, int is2, int is3, int is4) {
-    setSize(is1, is2, is3, is4);
+    setSize(is1, is2, is3, is4, false, false);
     if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
-  void setSize(int is1, int is2, int is3, int is4) {
+  void setSize(int is1, int is2, int is3, int is4, bool copyValues = true, bool fillZeros = true) {
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAdims[1] = size2 = is2;
     NimArrBase<T>::NAdims[2] = size3 = is3;
@@ -972,10 +972,9 @@ class NimArr<4, T> : public NimArrBase<T> {
     NimArrBase<T>::NAstrides[1] = stride2 = is1;    
     NimArrBase<T>::NAstrides[2] = stride3 = is1*is2;
     NimArrBase<T>::NAstrides[3] = stride4 = is1 * is2 * is3;
-    NimArrBase<T>::setLength(stride4 * size4);
+    NimArrBase<T>::setLength(stride4 * size4, copyValues, fillZeros);
   }
 
-  
   virtual void setSize(vector<int> sizeVec) {setSize(sizeVec[0], sizeVec[1], sizeVec[2], sizeVec[3]);}
   virtual int numDims() const {return(4);}
   virtual int dimSize(int i) const {

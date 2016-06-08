@@ -64,12 +64,22 @@ class NimArrBase: public NimArrType {
   virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
-  void setLength(int l) {
-    if(NAlength==l) return;
+  void setLength(int l, bool copyValues = true, bool fillZeros = true) {
+    if(NAlength==l) {
+      if((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0)); 
+      return;
+    }
     T *new_v = new T[l];
     if(own_v) {
-      if(l < NAlength) std::copy(v, v + l, new_v);
-      else std::copy(v, v + NAlength, new_v);
+      if(copyValues) {
+	if(l < NAlength) std::copy(v, v + l, new_v);
+	else {
+	  std::copy(v, v + NAlength, new_v);
+	  if(fillZeros) {
+	    std::fill(new_v + NAlength, new_v + l, static_cast<T>(0));
+	  }
+	}
+      }
       delete[] v;
     }
     NAlength = l;
