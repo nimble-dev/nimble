@@ -66,9 +66,10 @@ buildMCMC <- nimbleFunction(
         mvSamples2Spec <- mcmcspec$getMvSamplesSpec(2)
         mvSamples <- modelValues(mvSamplesSpec)
         mvSamples2 <- modelValues(mvSamples2Spec)
+        samplerTimes <- c(0,0) ## establish as a vector
     },
 
-    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE)) {
+    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE)) {
         if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
         my_initializeModel$run()
         if(reset) {
@@ -86,16 +87,31 @@ buildMCMC <- nimbleFunction(
             resize(mvSamples2, mvSamples2_offset + niter/thin2)
         }
 
+        ## This does not have "if(time)" so that getTimes will return zeros if timing was not run.
+        ## e.g. if time = TRUE on first all the the mcmc but time=FALSE on the second call, we want the times set to 0 after second call,
+        ## not with their values leftover from the first call
+        samplerTimes <<- numeric(length(samplerFunctions)) ## rely upon default init to 0
+        
         for(iter in 1:niter) {
             checkInterrupt()
-            for(i in seq_along(samplerFunctions))
-                samplerFunctions[[i]]$run()
+            if(time)
+                for(i in seq_along(samplerFunctions))
+                    samplerTimes[i] <<- samplerTimes[i] + run.time(samplerFunctions[[i]]$run())
+            else 
+                for(i in seq_along(samplerFunctions))
+                    samplerFunctions[[i]]$run()
             if(iter %% thin  == 0)
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors)
             if(iter %% thin2 == 0)
                 nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thin2, nodes = monitors2)
         }
-    },  where = getLoadingNamespace()
+    },
+    methods = list(
+        getTimes = function() {
+            returnType(double(1))
+            return(samplerTimes)
+        }),
+    where = getLoadingNamespace()
 )
 
 
