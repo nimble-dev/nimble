@@ -80,17 +80,15 @@ buildMCMC <- nimbleFunction(
             mvSamples2_offset <- 0
             resize(mvSamples,  niter/thin)
             resize(mvSamples2, niter/thin2)
+            samplerTimes <<- numeric(length(samplerFunctions))       ## default inititialization to zero
         } else {
             mvSamples_offset  <- getsize(mvSamples)
             mvSamples2_offset <- getsize(mvSamples2)
             resize(mvSamples,  mvSamples_offset  + niter/thin)
             resize(mvSamples2, mvSamples2_offset + niter/thin2)
+            if(dim(samplerTimes)[1] != length(samplerFunctions))
+                samplerTimes <<- numeric(length(samplerFunctions))   ## first run: default inititialization to zero
         }
-
-        ## This does not have "if(time)" so that getTimes will return zeros if timing was not run.
-        ## e.g. if time = TRUE on first all the the mcmc but time=FALSE on the second call, we want the times set to 0 after second call,
-        ## not with their values leftover from the first call
-        samplerTimes <<- numeric(length(samplerFunctions)) ## rely upon default init to 0
         
         for(iter in 1:niter) {
             checkInterrupt()
