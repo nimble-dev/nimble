@@ -59,7 +59,12 @@ genLocalMakevars =
 function(target, vars = character(), .useLib = UseLibraryMakevars)
 {
     cat("creating local makeVars in", target, "\n")
-    inc.make = system.file("make", if(.useLib) "Makevars_lib" else "Makevars", package = "nimble")
+    inc.make = system.file("make", if(.useLib) 
+                                     "Makevars_lib" 
+                                   else if(.Platform$OS.type == "windows")
+                                     "Makevars.win"
+                                   else
+                                     "Makevars", package = "nimble")
 
     vars = c(EIGEN_INC = AutoconfInfo$eigenInc,
              NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
