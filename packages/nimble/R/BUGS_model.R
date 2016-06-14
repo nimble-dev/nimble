@@ -290,10 +290,20 @@ Sets the \'data\' flag for specified nodes to TRUE, and also sets the value of t
 
 Arguments:
 
-data: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.  These numeric scalars, vectors, arrays, etc, may only contain numeric data, or NAs.
+data: There are two possible types for the data argument.  The first is a named list of numeric elements.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.  These numeric scalars, vectors, arrays, etc, may only contain numeric data, or NAs.  Providing data as a named list in this manner sets the values of model variables according to the numeric list elements, and also designates these variables (non-NA values only) as being data.  The second possibility is a character vector of model variable names.  Specifying data in this manner does not change the values of any variables in the model, but only designates the specified model variables (those which already contain non-NA values) as being data.
 
 Details: If a list element contains some number of NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) will resilt in an error; multivariate nodes must be entirely data, or entirely non-data.
 '
+                                      ## new functionality for setData():
+                                      ## 'data' argument can be a character vector of variable names.
+                                      ## intention is to flag these variables as 'data', and not change any model values.
+                                      ## some inefficiency here (accesses model values, then re-sets the same model values),
+                                      ## but this simplifies the addition without changing exisiting code.
+                                      if(is.character(data)) {
+                                          dataNames <- data
+                                          data <- lapply(data, function(x) get(x))
+                                          names(data) <- dataNames
+                                      }
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
