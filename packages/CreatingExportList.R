@@ -80,7 +80,8 @@ individualExportNames = c(
  'reshape_comparison_results',
  'make_MCMC_comparison_pages',
  'updateMCMCcomparisonWithHighOrderESS',
- 'insertSingleIndexBrackets'
+ 'insertSingleIndexBrackets',
+ 'nimArray', 'nimInteger', 'nimNumeric', 'nimMatrix'
 )
 
 individualMaskedFunctions = c(
