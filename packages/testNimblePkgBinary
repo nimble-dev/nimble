@@ -22,7 +22,7 @@ R CMD INSTALL -lRTempLib --configure-args="$CONFIG_ARGS" --build ../nimble
 
 GZ=`ls nimble_*gz`
 echo "** Installing nimble binary package $GZ"
-R CMD INSTALL $GZ
+R CMD INSTALL -l RTempLib $GZ
 
 echo "Running testBUGSmodel()"
-Rscript -e 'library(methods); library("nimble"); testBUGSmodel("pump")'
+Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); testBUGSmodel("pump")'
