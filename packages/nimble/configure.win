@@ -9,7 +9,7 @@ if test -r src/Makevars.win ; then
 fi
 
 echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"
-#export BOB="$R_PACKAGE_DIR"
+
 sed -e "s!@NIMBLE_HOME@!${R_PACKAGE_DIR}!" inst/make/Makevars.win.in > inst/make/Makevars.win
 
 
@@ -25,12 +25,9 @@ sed -e "s|@NIMBLE_INC_DIR@|$R_PACKAGE_DIR/include|" |
 sed -e "s|@NIMBLE_LIB_DIR@|$R_PACKAGE_DIR/CppCode|"  > inst/Make/Makevars.win
 
 
-#echo "UseLibraryMakevars = FALSE" > R/config.R
-#echo ".NimbleUseRegistration = TRUE" >> R/config.R
-#echo "NeedMakevarsFile = TRUE" >> R/config.R
-
 echo "R_HOME = $R_HOME, R_ARCH=$R_ARCH"
 echo "Creating inst/CppCode/libnimble.a"
 (cd inst/CppCode ; make libnimble.a OS=Windows R_ARCH=$R_ARCH)
+
 
 
