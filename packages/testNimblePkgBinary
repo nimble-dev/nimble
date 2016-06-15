@@ -16,7 +16,10 @@
 (cd ../nimble ; ./cleanup)
 
 echo "** Building nimble binary package"
-mkdir RTempLib
+if ! test -d RTempLib ; then
+  mkdir RTempLib
+fi
+
 CONFIG_ARGS="'--enable-lib=false'"
 R CMD INSTALL -lRTempLib --configure-args="$CONFIG_ARGS" --build ../nimble
 
@@ -25,4 +28,4 @@ echo "** Installing nimble binary package $GZ"
 R CMD INSTALL -l RTempLib $GZ
 
 echo "Running testBUGSmodel()"
-Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); testBUGSmodel("pump")'
+Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
