@@ -73,7 +73,10 @@ function(target, vars = character(), .useLib = UseLibraryMakevars)
              RPATH = sprintf("-rpath %s", system.file("CppCode", package = "nimble")),
              vars)
     varDefs = mapply(function(id, val) paste(id, val, sep = "="), names(vars), vars)
-    content = c(varDefs, "", sprintf('include "%s"', inc.make))
+
+       # replace any spaces in the path with \<space>, but need \\\\ to get the single \ 
+    inc.make = gsub(" ", "\\\\ ", inc.make)
+    content = c(varDefs, "", sprintf('include %s', inc.make))
 
     cat(content, file = target, sep = "\n")
 }
