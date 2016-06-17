@@ -44,7 +44,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     as.numeric = 'sizeUnaryCwise',
                     nimArrayGeneral = 'sizeNimArrayGeneral',
                     setAll = 'sizeOneEigenCommand',
-                    voidPtr = 'sizeVoidPtr'),
+                    voidPtr = 'sizeVoidPtr',
+                    run.time = 'sizeRunTime'),
                makeCallList(distributionFuns, 'sizeScalarRecurse'),
                # R dist functions that are not used by NIMBLE but we allow in DSL
                makeCallList(paste0(c('d','r','q','p'), 't'), 'sizeScalarRecurse'),
@@ -52,13 +53,13 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(c('isnan','ISNAN','!','ISNA'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch'), 'sizeScalarRecurse'),
                makeCallList(c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch'), 'sizeRmultivarFirstArg'),
-               makeCallList(c('decide', 'size', 'getsize','getNodeFunctionIndexedInfo'), 'sizeScalar'),
+               makeCallList(c('decide', 'size', 'getsize','getNodeFunctionIndexedInfo', 'endNimbleTimer'), 'sizeScalar'),
                makeCallList(c('calculate','calculateDiff', 'getLogProb'), 'sizeScalarModelOp'),
                simulate = 'sizeSimulate',
-               makeCallList(c('blank', 'nfMethod', 'nimFunListAccess', 'getPtr'), 'sizeUndefined')
+               makeCallList(c('blank', 'nfMethod', 'nimFunListAccess', 'getPtr', 'startNimbleTimer'), 'sizeUndefined')
                )
 
-scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical', getNodeFunctionIndexedInfo = 'integer') # , nimArr_rcat = 'double', nimArr_rinterval = 'double')
+scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical', ISNA = 'logical', '!' = 'logical', getNodeFunctionIndexedInfo = 'integer', endNimbleTimer = 'double') # , nimArr_rcat = 'double', nimArr_rinterval = 'double')
 
 ## exprClasses_setSizes fills in the type information of exprClass code
 ## code is an exprClas object
@@ -199,8 +200,34 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
+sizeRunTime <- function(code, symTab, typeEnv) {
+    if(length(code$args) != 1) stop(exprClassProcessingErrorMsg(code, paste0('run.time must take exactly 1 argument')), call. = FALSE)
+    origCaller <- code$caller
+    origCallerArgID <- code$callerArgID
 
+    if(!code$caller$isAssign) { ## e.g. a + run.time({foo(y)}), should have already been lifted by buildIntermediates
+        message('Problem in sizeRunTime: run.time is not in a simple assignment at this stage of processing.')
+    }
 
+    ## this is the case ans <- run.time({foo(y)})
+    lhsName <- code$caller$args[[1]]$name
+    timerName <- paste0(lhsName,'_TIMER_')
+    newSym <- symbolNimbleTimer(name = timerName, type = 'symbolNimbleTimer')
+    symTab$addSymbol(newSym)
+    startTimerAssert <- RparseTree2ExprClasses(substitute(startNimbleTimer(TIMERNAME), list(TIMERNAME = as.name(timerName))))
+    recurseAsserts <- recurseSetSizes(code, symTab, typeEnv) ## arg to run.time should be in {} so any nested asserts should be done by the time this finishes and this should return NULL
+    if(!is.null(recurseAsserts)) {
+        message('issue in sizeRunTime: recurseAsserts is not NULL')
+    }
+    asserts <- list(startTimerAssert, code$args[[1]])
+    newCode <- RparseTree2ExprClasses(substitute(endNimbleTimer(TIMERNAME), list(TIMERNAME = as.name(timerName))))
+    newCode$type <- 'double'
+    newCode$nDim <- 0
+    newCode$sizeExprs <- list()
+    newCode$toEigenize <- 'no'
+    setArg(origCaller, origCallerArgID, newCode)
+    return(asserts)
+}
 
 sizeGetParam <- function(code, symTab, typeEnv) {
     if(length(code$args) > 3) {

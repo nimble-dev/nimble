@@ -103,7 +103,9 @@ fi
 AC_SUBST(RPATH)
 
 if test "${ENABLE_LIB}" != "false" ; then
+  #XX
   PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
+#  PKG_LIBS="-L. -lnimble $RPATH"
 fi
 AC_SUBST(PKG_LIBS)
 
@@ -117,6 +119,11 @@ AC_OUTPUT(inst/make/Makevars inst/make/Makevars_lib R/config.R src/Makevars)
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
  (cd inst/CppCode ; ${MAKE} )
+# cp inst/CppCode/libnimble.dylib src
+# if ! test -e $R_PACKAGE_DIR/libs/ ; then
+#    mkdir -p $R_PACKAGE_DIR/libs/
+# fi
+ #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib 
 else 
 #  mkdir inst/CppCode
   cp inst/CppCode/*.cpp src
