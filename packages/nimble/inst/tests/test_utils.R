@@ -90,22 +90,22 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
     
-    setSampler <- function(var, spec) {
-        currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
+    setSampler <- function(var, conf) {
+        currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
                                         # remove already defined scalar samplers
         inds <- which(unlist(var$target) %in% currentTargets)
-        spec$removeSamplers(inds, print = FALSE)
+        conf$removeSamplers(inds, print = FALSE)
                                         # look for cases where one is adding a blocked sampler specified on a variable and should remove scalar samplers for constituent nodes
-        currentTargets <- sapply(spec$samplerSpecs, function(x) x$target)
+        currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
         inds <- which(sapply(unlist(var$target), function(x) Rmodel$expandNodeNames(x)) %in% currentTargets)
-                                        #      inds <- which(sapply(spec$samplerSpecs, function(x)
+                                        #      inds <- which(sapply(conf$samplerConfs, function(x)
                                         #          gsub("\\[[0-9]+\\]", "", x$target))
                                         #                         %in% var$target)
-        spec$removeSamplers(inds, print = FALSE)
+        conf$removeSamplers(inds, print = FALSE)
         
         if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
         if(length(var$target) == 1 || (var$type %in% c("RW_block", "RW_PF_block", "RW_llFunction_block") && !is.list(var$target))) 
-            tmp <- spec$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) spec$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
+            tmp <- conf$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) conf$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
     }
     
     if(is.null(name)) {
@@ -140,22 +140,22 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
       Cmodel <- compileNimble(Rmodel)
       cat('done compiling model\n')
   }
-  if(!is.null(mcmcControl)) mcmcspec <- configureMCMC(Rmodel, control = mcmcControl) else mcmcspec <- configureMCMC(Rmodel)
-  if(removeAllDefaultSamplers) mcmcspec$removeSamplers()
+  if(!is.null(mcmcControl)) mcmcConf <- configureMCMC(Rmodel, control = mcmcControl) else mcmcConf <- configureMCMC(Rmodel)
+  if(removeAllDefaultSamplers) mcmcConf$removeSamplers()
   
   if(!is.null(samplers)) {
-      sapply(samplers, setSampler, mcmcspec)
+      sapply(samplers, setSampler, mcmcConf)
       if(verbose) {
           cat("Setting samplers to:\n")
-          print(mcmcspec$getSamplers())
+          print(mcmcConf$getSamplers())
       }
   }
   
   vars <- Rmodel$getDependencies(Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE), stochOnly = TRUE, includeData = FALSE, downstream = TRUE)
   vars <- unique(removeIndexing(vars))
-  mcmcspec$addMonitors(vars, print = FALSE)
+  mcmcConf$addMonitors(vars, print = FALSE)
   
-  Rmcmc <- buildMCMC(mcmcspec)
+  Rmcmc <- buildMCMC(mcmcConf)
   if(doCpp) {
       Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
   }

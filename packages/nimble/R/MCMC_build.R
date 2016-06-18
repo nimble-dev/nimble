@@ -1,17 +1,17 @@
 
-#' Create an MCMC function, from an MCMCspec object
+#' Create an MCMC function, from an MCMCconf object
 #'
-#' Accepts a single required argument, which may be of class MCMCspec, or inherit from class modelBaseClass (a NIMBLE model obejct).  Returns an MCMC function; see details section.
+#' Accepts a single required argument, which may be of class MCMCconf, or inherit from class modelBaseClass (a NIMBLE model object).  Returns an MCMC function; see details section.
 #'
-#' @param mcmcspec An object of class MCMCspec that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCspec objects.  Alternatively, \code{mcmcspec} may a NIMBLE model object, in which case an MCMC function corresponding to the defult MCMC specification for this model is returned.
-#' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{mcmcspec} is a NIMBLE model object
+#' @param MCMCconf An object of class MCMCconf that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCconf objects.  Alternatively, \code{MCMCconf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.
+#' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{MCMCconf} is a NIMBLE model object
 #'
 #' @author Daniel Turek
 #' @export
 #' @details
-#' Calling buildMCMC(mcmcspec) will produce an R mcmc function object, say 'Rmcmc'.
+#' Calling buildMCMC(MCMCconf) will produce an uncompiled (R) R mcmc function object, say 'Rmcmc'.
 #'
-#' The Rmcmc function will have arguments:
+#' The uncompiled MCMC function will have arguments:
 #'
 #' \code{niter}: The number of iterations to run the MCMC.
 #'
@@ -23,49 +23,49 @@
 #'
 #' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes.
 #'
-#' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCspec are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
+#' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
 #' These may be accessed via:
 #' \code{Rmcmc$mvSamples}
 #' \code{Rmcmc$mvSamples2}
 #'
-#' The Rmcmc function may be compiled to a C MCMC object, taking care to compile in the same project as the R model object, using:
+#' The uncompiled (R) MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
 #' \code{Cmcmc <- compileNimble(Rmcmc, project=Rmodel)}
 #'
-#' The Cmcmc function will function identically to the Rmcmc object, except acting on the C model object.
+#' The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
 #' @examples
 #' code <- nimbleCode({
 #'  mu ~ dnorm(0, 1)
 #'  x ~ dnorm(mu, 1)
 #' })
 #' Rmodel <- nimbleModel(code)
-#' spec <- configureMCMC(Rmodel)
-#' Rmcmc <- buildMCMC(spec)
+#' conf <- configureMCMC(Rmodel)
+#' Rmcmc <- buildMCMC(conf)
 #' Rmcmc$run(10)
 #' samples <- Rmcmc$mvSamples
 #' samples[['x']]
 #' Rmcmc$run(100, reset = FALSE)
 buildMCMC <- nimbleFunction(
-    setup = function(mcmcspec, ...) {
-    	if(inherits(mcmcspec, 'modelBaseClass'))
-    		mcmcspec <- configureMCMC(mcmcspec, ...)
+    setup = function(conf, ...) {
+    	if(inherits(conf, 'modelBaseClass'))
+    		conf <- configureMCMC(conf, ...)
 
-    	else if(!inherits(mcmcspec, 'MCMCspec')) stop('mcmcspec must either be a nimbleModel or a MCMCspec object (created by configureMCMC(...) )')
+    	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
 
-        model <- mcmcspec$model
+        model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        for(i in seq_along(mcmcspec$samplerSpecs))
-            samplerFunctions[[i]] <- mcmcspec$samplerSpecs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+        for(i in seq_along(conf$samplerConfs))
+            samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
 
-        monitors  <- processMonitorNames(model, mcmcspec$monitors)
-        monitors2 <- processMonitorNames(model, mcmcspec$monitors2)
-        thin  <- mcmcspec$thin
-        thin2 <- mcmcspec$thin2
-        mvSamplesSpec  <- mcmcspec$getMvSamplesSpec(1)
-        mvSamples2Spec <- mcmcspec$getMvSamplesSpec(2)
-        mvSamples <- modelValues(mvSamplesSpec)
-        mvSamples2 <- modelValues(mvSamples2Spec)
+        monitors  <- processMonitorNames(model, conf$monitors)
+        monitors2 <- processMonitorNames(model, conf$monitors2)
+        thin  <- conf$thin
+        thin2 <- conf$thin2
+        mvSamplesConf  <- conf$getMvSamplesConf(1)
+        mvSamples2Conf <- conf$getMvSamplesConf(2)
+        mvSamples <- modelValues(mvSamplesConf)
+        mvSamples2 <- modelValues(mvSamples2Conf)
         samplerTimes <- c(0,0) ## establish as a vector
     },
 

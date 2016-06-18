@@ -89,7 +89,7 @@ Collate:
     nimbleProject.R
     initializeModel.R
     MCMC_utils.R
-    MCMC_spec.R
+    MCMC_conf.R
     MCMC_build.R
     MCMC_samplers.R
     MCMC_conjugacy.R

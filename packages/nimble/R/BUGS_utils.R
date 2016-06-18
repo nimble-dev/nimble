@@ -6,7 +6,7 @@ makeLogProbName <- function(name) paste0('logProb_', name)
 makeLogProbEnvName <- function(name) makeEnvName(makeLogProbName(name))
 
 makeVecName <- function(name){
-	if(length(name) == 0)	return(name)		#This was causing a problem when we have blank modelValues (i.e. MCMCspec if we have no thinning monitors)
+	if(length(name) == 0)	return(name)		#This was causing a problem when we have blank modelValues (i.e. MCMCconf if we have no thinning monitors)
 	paste0(name,'_Vec')
 }
 removeLogProbName <- function(name)  sub('^logProb_', '', name)

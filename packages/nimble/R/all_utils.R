@@ -77,10 +77,10 @@ getNimbleFunctionEnvironment <- function() {
 #' See the User Manual or \code{help(modelValuesBaseClass)} for infomation about modelValues objects
 #'
 #' @examples
-#' mvSpec <- modelValuesSpec(vars = c('a', 'b'),
+#' mvConf <- modelValuesConf(vars = c('a', 'b'),
 #'              types = c('double', 'double'),
 #'              sizes = list(a = 1, b = c(2,2) ) ) 
-#' mv <- modelValues(mvSpec)
+#' mv <- modelValues(mvConf)
 #' as.matrix(mv)
 #' resize(mv, 3)
 #' as.matrix(mv)
@@ -99,8 +99,8 @@ resize <- function(container, k) {
 #' See the User Manual or \code{help(modelValuesBaseClass)} for information about modelValues objects 
 #'
 #' @examples
-#'	mvSpec <- modelValuesSpec(vars = 'a', types = 'double', sizes = list(a = 1) )
-#'	mv <- modelValues(mvSpec)
+#'	mvConf <- modelValuesConf(vars = 'a', types = 'double', sizes = list(a = 1) )
+#'	mv <- modelValues(mvConf)
 #'  resize(mv, 10)
 #'	getsize(mv)
 getsize <- function(container) {

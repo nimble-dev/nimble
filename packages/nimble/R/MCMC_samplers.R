@@ -480,8 +480,8 @@ sampler_crossLevel <- nimbleFunction(
             if(is.null(conjugacyResult))     stop('non-conjugate lowNode \'', lowNode, '\' in crossLevel updater')
             samplerType <- conjugacyResult$type
             samplerFunction <- eval(as.name(paste0('sampler_',samplerType)))
-            conjugateSamplerSpec <- samplerSpec(name = samplerType, samplerFunction = samplerFunction, target = lowNode, control = conjugacyResult$control, model = model)
-            lowConjugateSamplerFunctions[[iLN]] <- conjugateSamplerSpec$buildSampler(model, mvInternal)
+            conjugateSamplerConf <- samplerConf(name = samplerType, samplerFunction = samplerFunction, target = lowNode, control = conjugacyResult$control, model = model)
+            lowConjugateSamplerFunctions[[iLN]] <- conjugateSamplerConf$buildSampler(model, mvInternal)
             lowConjugateGetLogDensityFunctions[[iLN]] <- getPosteriorDensityFromConjSampler(lowConjugateSamplerFunctions[[iLN]])
         }
         my_setAndCalculateTop <- setAndCalculate(model, target)
@@ -645,7 +645,7 @@ sampler_RW_PF <- nimbleFunction(
     }
 
     latentSamp <- FALSE
-    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e)
+    MCMCmonitors <- tryCatch(parent.frame(2)$MCMCconf$monitors, error = function(e) e)
     if(identical(MCMCmonitors, TRUE))
       latentSamp <- TRUE
     else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
@@ -822,7 +822,7 @@ sampler_RW_PF_block <- nimbleFunction(
     latents        <- control$latents
 
     latentSamp <- FALSE
-    MCMCmonitors <- tryCatch(parent.frame(2)$mcmcspec$monitors, error = function(e) e)
+    MCMCmonitors <- tryCatch(parent.frame(2)$MCMCconf$monitors, error = function(e) e)
     if(identical(MCMCmonitors, TRUE))
       latentSamp <- TRUE
     else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))

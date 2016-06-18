@@ -5,10 +5,10 @@
 
 #' Create a NIMBLE modelValues Object
 #' 
-#' Builds modelValues object from a model values specification object, which can include a NIMBLE model
+#' Builds modelValues object from a model values configuration object, which can include a NIMBLE model
 #' 
-#' @param spec An object which includes information for building modelValues. Can either be a NIMBLE model (see \code{help(modelBaseClass)}) 
-#' or the object returned from \code{modelValuesSpec}
+#' @param conf An object which includes information for building modelValues. Can either be a NIMBLE model (see \code{help(modelBaseClass)}) 
+#' or the object returned from \code{modelValuesConf}
 #' @param m	The number of rows to create in the modelValues object.  Can later be changed with \code{resize}
 #' @author NIMBLE development team
 #' @export
@@ -27,16 +27,16 @@
 #' Rmodel <- nimbleModel(code)
 #' Rmodel_mv <- modelValues(Rmodel, m = 2)
 #'	#Custom modelValues object:
-#' mvSpec <- modelValuesSpec(vars = c('x', 'y'),
+#' mvConf <- modelValuesConf(vars = c('x', 'y'),
 #'              types = c('double', 'int'),
 #'              sizes = list(x = 3, y = c(2,2)))
-#' custom_mv <- modelValues(mvSpec, m = 2)
+#' custom_mv <- modelValues(mvConf, m = 2)
 #' custom_mv['y',]
-modelValues <- function(spec, m = 1) {
-    if(inherits(spec, 'RmodelBaseClass')) return(spec$modelDef$modelValuesClass(m))
-    if(isModelValuesSpec(spec)) return(spec(m))
-    if(inherits(spec, 'symbolTable')) {
-        mvClass <- modelValuesSpec(spec) 
+modelValues <- function(conf, m = 1) {
+    if(inherits(conf, 'RmodelBaseClass')) return(conf$modelDef$modelValuesClass(m))
+    if(isModelValuesConf(conf)) return(conf(m))
+    if(inherits(conf, 'symbolTable')) {
+        mvClass <- modelValuesConf(conf) 
         return(mvClass(m))
     }
 }	
@@ -45,17 +45,17 @@ modelValues <- function(spec, m = 1) {
 #' @export
 #' @description
 #'	modelValues are NIMBLE containers built to store values from models. They can either be built directly from 
-#' a model or be custom built via the \code{modelValuesSpec} function. They consist of rows, where each
+#' a model or be custom built via the \code{modelValuesConf} function. They consist of rows, where each
 #' row can be thought of as a set of values from a model. Like most nimble objects, and unlike most
 #' R objects, they are passed by reference instead of by value. 
 #'
 #'See user manual for more details.
 #' @aliases [,CmodelValues-method [<-,CmodelValues-method [[,CmodelValues-method [[<-,CmodelValues-method [,CmodelValues-method,character,missing [,modelValuesBaseClass-method [<-,modelValuesBaseClass-method [,CmodelValues-method,character,missing,ANY-method [,CmodelValues-method,ANY,ANY [,CmodelValues-method,ANY,ANY
 #' @examples
-#'mvSpec <- modelValuesSpec(vars = c('a', 'b'), 
+#'mvConf <- modelValuesConf(vars = c('a', 'b'), 
 #'		types = c('double', 'double'), 
 #'		sizes = list(a = 1, b = c(2,2) ) )
-#'mv <- modelValues(mvSpec)
+#'mv <- modelValues(mvConf)
 #'as.matrix(mv)
 #'resize(mv, 2)
 #'as.matrix(mv)
@@ -81,7 +81,7 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                         sizes = 'ANY',
                                         nrow = 'numeric',  ## nrow is the actually the length of the lists for each variable
                                         CobjectInterface = 'ANY',
-                                        mvSpec = 'ANY', 
+                                        mvConf = 'ANY', 
                                         modelDef = 'ANY', 
                                         GID_map = 'ANY'),
                                     methods = list(
@@ -156,9 +156,9 @@ setMethod('[<-', 'modelValuesBaseClass',
 			})
 
 
-#' Create the specs for a custom NIMBLE modelValues object
+#' Create the confs for a custom NIMBLE modelValues object
 #' 
-#' Builds an R-based modelValues spec object
+#' Builds an R-based modelValues conf object
 #' 
 #' @param vars	A vector of character strings naming each variable in the modelValues object
 #' @param types	A vector of character strings describing the type of data for the modelValues object.
@@ -175,13 +175,13 @@ setMethod('[<-', 'modelValuesBaseClass',
 #'
 #' @examples
 #'	#Custom modelValues object:
-#' mvSpec <- modelValuesSpec(vars = c('x', 'y'), 
+#' mvConf <- modelValuesConf(vars = c('x', 'y'), 
 #' 				types = c('double', 'int'), 
 #'				sizes = list(x = 3, y = c(2,2)))
-#' custom_mv <- modelValues(mvSpec, m = 2)
+#' custom_mv <- modelValues(mvConf, m = 2)
 #' custom_mv['y',]
-modelValuesSpec <- function( symTab, className, vars, types, sizes, modelDef = NA, where = globalenv() ) {
-    if(missing(className)) className <- 'modelValuesSpec' ## uniqueID will be appended
+modelValuesConf <- function( symTab, className, vars, types, sizes, modelDef = NA, where = globalenv() ) {
+    if(missing(className)) className <- 'modelValuesConf' ## uniqueID will be appended
     makeCustomModelValuesClass(symTab, className, vars, types, sizes, modelDef = modelDef, where)
 }
 
@@ -250,17 +250,17 @@ makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, mo
                                 className = className
                                 )))
 
-    .isModelValuesSpec <- TRUE ## will be looked in the environment of the returned function
+    .isModelValuesConf <- TRUE ## will be looked in the environment of the returned function
     ans <- function(nrow = 1L) {
         res <- newClass(symTab, vars, sizes, nrow = nrow, modelDef = modelDef)
-        res$mvSpec <- ans
+        res$mvConf <- ans
         res
     }
     ans
 }
 
-getModelValuesSpec <- function(mv) {if(!inherits(mv, 'modelValuesBaseClass')) stop('Bad mv in getModelValuesSpec', call. = FALSE); return(mv$mvSpec)}
-isModelValuesSpec <- function(x) return(if(is.function(x)) exists('.isModelValuesSpec', envir = environment(x), inherits = FALSE) else FALSE)
+getModelValuesConf <- function(mv) {if(!inherits(mv, 'modelValuesBaseClass')) stop('Bad mv in getModelValuesConf', call. = FALSE); return(mv$mvConf)}
+isModelValuesConf <- function(x) return(if(is.function(x)) exists('.isModelValuesConf', envir = environment(x), inherits = FALSE) else FALSE)
 
 ## Generates unevaluated code for field definitions for a derived modelValues class
 makeModelValuesClassFields <- function(vars) {

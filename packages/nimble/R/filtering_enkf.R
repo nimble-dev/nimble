@@ -286,7 +286,7 @@ buildEnsembleKF <- nimbleFunction(
         if(identical(x$size, numeric(0))) return(1)
         return(x$size)})
       
-      mvSamples <- modelValues(modelValuesSpec(vars = names,
+      mvSamples <- modelValues(modelValuesConf(vars = names,
                                             types = type,
                                             sizes = size))
     }
@@ -299,7 +299,7 @@ buildEnsembleKF <- nimbleFunction(
       
       size[[1]] <- as.numeric(dims[[1]])
       
-      mvSamples <- modelValues(modelValuesSpec(vars = names,
+      mvSamples <- modelValues(modelValuesConf(vars = names,
                                             types = type,
                                             sizes = size))
     }

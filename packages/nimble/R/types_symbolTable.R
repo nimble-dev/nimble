@@ -234,7 +234,7 @@ symbolModel <-
 symbolModelValues <- 
     setRefClass(Class = 'symbolModelValues',
                 contains = 'symbolBase',
-                fields = list(mvSpec = 'ANY'), 
+                fields = list(mvConf = 'ANY'), 
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)

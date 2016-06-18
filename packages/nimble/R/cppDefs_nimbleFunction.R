@@ -77,10 +77,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           next
                                                       }
                                                       if(inherits(neededType, 'symbolModelValues')) {
-                                                          thisCppDef <- nimbleProject$getModelValuesCppDef(neededType$mvSpec, NULLok = TRUE)
+                                                          thisCppDef <- nimbleProject$getModelValuesCppDef(neededType$mvConf, NULLok = TRUE)
                                                           if(is.null(thisCppDef)) {
-                                                              thisCppDef <- nimbleProject$needModelValuesCppClass(neededType$mvSpec, fromModel = fromModel)
-                                                              mvClassName <- environment(neededType$mvSpec)$className
+                                                              thisCppDef <- nimbleProject$needModelValuesCppClass(neededType$mvConf, fromModel = fromModel)
+                                                              mvClassName <- environment(neededType$mvConf)$className
                                                               neededTypeDefs[[mvClassName]] <<- thisCppDef
                                                           } else {
                                                               Hincludes <<- c(Hincludes, thisCppDef)

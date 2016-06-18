@@ -88,7 +88,7 @@ calc_E_llk_gen = nimbleFunction(
 #' @param latentNodes character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
 #' \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}. 
 #' @param burnIn burn-in used for MCMC sampler in E step
-#' @param mcmcControl	list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details
+#' @param mcmcControl	list passed to \code{configureMCMC}, which builds the MCMC sampler. See \code{help(configureMCMC)} for more details
 #' @param boxConstraints list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.
 #' @param buffer			A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount. 
 #' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.01. 
@@ -204,8 +204,8 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
     
 
 
-    mcmc_Latent_Spec <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
-    Rmcmc_Latent <- buildMCMC(mcmc_Latent_Spec)
+    mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
+    Rmcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
     sampledMV = Rmcmc_Latent$mvSamples
     mvBlock <- modelValues(Rmodel)
     Rcalc_E_llk <- calc_E_llk_gen(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)

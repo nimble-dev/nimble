@@ -225,7 +225,7 @@ buildBootstrapFilter <- nimbleFunction(
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
       
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -234,7 +234,7 @@ buildBootstrapFilter <- nimbleFunction(
       size$wts <- length(dims)
       if(smoothing == TRUE)
         size$wts <- 1  ##  only need one weight per particle (at time T) if smoothing == TRUE
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -245,14 +245,14 @@ buildBootstrapFilter <- nimbleFunction(
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
       size[[1]] <- as.numeric(dims[[1]])
       
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       names <- names[1]
