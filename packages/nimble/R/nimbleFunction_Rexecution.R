@@ -13,6 +13,7 @@ nimStop <- function(msg) stop(msg, call. = FALSE)
 # we use call.=FALSE because otherwise the error msg indicates the
 # error itself occurs in nimStop() and not in the calling frame
 
+#' @export
 run.time <- function(code) {
     as.numeric(system.time(code)[3])
 }
@@ -46,6 +47,8 @@ asRow <- function(x) {
 }
 
 ## Aliased in asRow
+#' @rdname asRow
+#' @export
 asCol <- function(x) {
     matrix(x, ncol = 1)
 }
@@ -385,8 +388,6 @@ simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector, nodeFunct
 # These functions work in R and in NIMBLE run-time code that can be compiled.
 #
 # @return NULL, but this function works by the side-effect of modifying P in the calling environment.
-
-
 getValues <- function(vals, model, nodes, envir = parent.frame()) {
     valsExp = substitute(vals)
     access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
@@ -452,8 +453,6 @@ setValuesAccess <- function(input, access) {
 # These functions work in R and in NIMBLE run-time code that can be compiled.
 #
 # @return NULL, but this function works by the side-effect of modifying the model.
-
-
 setValues <- function(input, model, nodes){
 	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
 	setValuesAccess(input, access)
@@ -491,6 +490,8 @@ values <- function(model, nodes){
 	ans
 }
 
+#' @rdname values
+#' @export
 `values<-` <- function(model, nodes, value){
 	setValues(value, model, nodes)
 	return(model)

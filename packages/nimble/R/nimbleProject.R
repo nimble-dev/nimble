@@ -735,6 +735,7 @@ getNimbleTypes <- function(units) {
 }
 
 # return the nimble project, if any, associated with a model or nimbleFunction object.
+#' @export
 getNimbleProject <- function(project, stopOnNull = FALSE) {
     if(inherits(project, 'nimbleProjectClass')) return(project)
     if(is.nf(project)) return(nfVar(project, 'nimbleProject'))

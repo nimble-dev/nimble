@@ -242,14 +242,6 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
     return(out)
   }
 
-  dimOrLengthAlt <- function(x) {
-  # returns sizes of vectors/matrices/arrays with difference from dimOrLength that the value for a scalar is 1
-    tmp <- dimOrLength(x)
-    if(!length(tmp)) tmp <- 1
-    return(tmp)
-  }
-
-
   # process model information
 
   modelFileOutput <- modelName <- NULL
