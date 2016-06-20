@@ -53,7 +53,7 @@ nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels)
 nndf_createSetupFunction <- function() {
     setup <- function(model, BUGSdecl) {
         indexedNodeInfoTable <- indexedNodeInfoTableClass(BUGSdecl)
-        setupOutputs(indexedNodeInfoTable)
+        nimble:::setupOutputs(indexedNodeInfoTable)
         invisible(NULL)
     }
     return(setup)

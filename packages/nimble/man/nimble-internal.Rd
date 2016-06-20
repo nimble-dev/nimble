@@ -940,6 +940,7 @@
 \alias{[[,nimPointerList-method}
 \alias{[[<-,nimPointerList-method}
 \alias{[[<-,nimbleFunctionList-method}
+\alias{[,distributionsClass-method}
 \alias{[[,distributionsClass-method}
 \alias{[[,conjugacyRelationshipsClass-method}
 \alias{as.matrix.modelValuesBaseClass-Class}
