@@ -1,4 +1,10 @@
-                           CHANGES IN VERSION 0.5-1 (May 2016)
+                            CHANGES IN VERSION 0.6
+
+USER LEVEL CHANGES
+
+-- MCMC and modelValues configuration syntax now uses 'conf' rather than 'spec' in its naming throughout NIMBLE. 
+
+                          CHANGES IN VERSION 0.5-1 (May 2016)
 
 USER LEVEL CHANGES
 
