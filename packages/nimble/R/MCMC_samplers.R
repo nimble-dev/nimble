@@ -1024,8 +1024,8 @@ RW_multinomial <- nimbleFunction(
         ## Control List ##
         adaptive              <- control$adaptive
         adaptInterval         <- control$adaptInterval
-        ENSwapMatrix          <- matrix(1, lTarget, lTarget)
-        ENSwapDeltaMatrix     <- matrix(1, lTarget, lTarget)
+        ENSwapMatrix          <- matrix(1, lTarget, lTarget) ## Expected number densities for iFrom -> iTo proposals  
+        ENSwapDeltaMatrix     <- matrix(1, lTarget, lTarget) ## Increment sizes for adapting proposals
         timesRan              <- matrix(0, lTarget, lTarget)
         timesAccepted         <- matrix(0, lTarget, lTarget)
         totalAdapted          <- matrix(0, lTarget, lTarget)
