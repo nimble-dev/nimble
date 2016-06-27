@@ -13,5 +13,5 @@ ignoreWork
 *.tar.gz
 TEMP*
 MyMakevars
-#*.R
+*.R
 .Rproj.user
