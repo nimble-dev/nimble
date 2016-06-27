@@ -1021,8 +1021,6 @@ RW_multinomial <- nimbleFunction(
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target) 
         lTarget        <- length(targetAsScalar)
-        lTargetSq      <- lTarget * lTarget
-        Ntotal         <- sum(values(model,target))
         ## Control List ##
         adaptive              <- control$adaptive
         adaptInterval         <- control$adaptInterval
