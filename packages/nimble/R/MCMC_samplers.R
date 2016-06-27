@@ -1008,6 +1008,145 @@ sampler_RW_PF_block <- nimbleFunction(
 )
 
 
+
+##########################################
+## Sampler for multinomial distribution ##
+##########################################
+RW_multinomial <- nimbleFunction( 
+    ## All sampler functions must contain 'sampler_BASE'
+    contains = sampler_BASE,
+    ## Setup for samplers must have: model, mvSaved, target, control
+    setup = function(model, mvSaved, target, control) {
+        ## Node List ##
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes      <- model$getDependencies(target) 
+        lTarget        <- length(targetAsScalar)
+        ## Control List ##
+        adaptive              <- control$adaptive
+        adaptInterval         <- control$adaptInterval
+        ENSwapMatrix          <- matrix(1, lTarget, lTarget) ## Expected number densities for iFrom -> iTo proposals  
+        ENSwapDeltaMatrix     <- matrix(1, lTarget, lTarget) ## Increment sizes for adapting proposals
+        timesRan              <- matrix(0, lTarget, lTarget)
+        timesAccepted         <- matrix(0, lTarget, lTarget)
+        totalAdapted          <- matrix(0, lTarget, lTarget)
+        timesRanOriginal      <- timesRan 
+        ENSwapMatrixOriginal  <- ENSwapMatrix
+        totalAdaptedOriginal  <- totalAdapted
+        timesAcceptedOriginal <- timesAccepted 
+        ## Checks ##
+        if(class(ENSwapMatrix) != 'matrix')
+            stop('ENSwapMatrix must be a matrix\n')
+        if(class(ENSwapMatrix[1,1]) != 'numeric')
+            stop('ENSwapMatrix must be numeric\n')
+        if(!all(dim(ENSwapMatrix) == lTarget))
+            stop('ENSwapMatrix must have dimension ', lTarget, 'x', lTarget, '\n')
+        if(min(ENSwapMatrix) < 0 | max(ENSwapMatrix) > 1)
+            stop('Incorrect bounds for ENSwapMatrix\n')
+        if(model$getNodeDistribution(target) != 'dmulti')
+            stop('sampler_RW_multinomial is for sampling multinomial distributions only\n')
+        ## Sampling & Adaptation Parameters ##
+        lpProp        <- 0
+        lpRev         <- 0
+        ## Nested Function and Function List Definitions ##
+        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+        my_decideAndJump       <- decideAndJump(model, mvSaved, calcNodes)
+    },
+    ## Run function for samplers takes no arguments & returns no value.
+    run = function() {
+        u <- runif(1)
+        for (iFROM in 1:lTarget) {            
+            for (iTO in 1:(lTarget-1)) {
+                ## Flip coin                
+                if (u > 0.5) {
+                    iFrom <- iFROM
+                    iTo   <- iTO
+                    if (iFrom == iTo)
+                        iTo <- lTarget
+                    ## Recycle u
+                    u <- 2 * (u - 0.5)
+                } else {
+                    iFrom <- iTO
+                    iTo   <- iFROM
+                    if (iFrom == iTo)
+                        iFrom <- lTarget
+                    ## Recycle u
+                    u <- 2 * (0.5 - u)
+                }
+                ## Copied from sampler_RW_block
+                propValueVector <- generateProposalVector(iFrom, iTo)
+                lpMHR <- my_setAndCalculateDiff$run(propValueVector) + lpRev - lpProp 
+                jump  <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## returns lpMHR + 0 - 0 + 0
+                if (adaptive) adaptiveProcedure(jump=jump, iFrom=iFrom, iTo=iTo)
+            }
+        }
+    },
+    ##
+    methods = list(
+        ## 
+        generateProposalVector = function(iFrom = integer(0), iTo = integer(0)) { 
+            propVector <- values(model,target) 
+            pSwap      <- min(1, max(1, ENSwapMatrix[iFrom,iTo]) / propVector[iFrom]) 
+            nSwap      <- rbinom(n=1,   size=propVector[iFrom], prob=pSwap) 
+            lpProp    <<- dbinom(nSwap, size=propVector[iFrom], prob=pSwap, log=TRUE) 
+            propVector[iFrom] <- propVector[iFrom] - nSwap 
+            propVector[iTo]   <- propVector[iTo]   + nSwap 
+            pRevSwap   <- min(1, max(1, ENSwapMatrix[iTo,iFrom]) / (propVector[iTo] + nSwap)) 
+            lpRev     <<- dbinom(nSwap, size=propVector[iTo], prob=pRevSwap, log=TRUE) 
+            returnType(double(1)) 
+            return(propVector) 
+        }, 
+        ## 
+        adaptiveProcedure = function(jump=logical(), iFrom=integer(0), iTo=integer(0)) {
+            NVector <- values(model,target) 
+            timesRan[iFrom, iTo] <<- timesRan[iFrom, iTo] + 1
+            if(jump)
+                timesAccepted[iFrom, iTo] <<- timesAccepted[iFrom, iTo] + 1
+            if (timesRan[iFrom, iTo] %% adaptInterval == 0) {
+                totalAdapted[iFrom, iTo] <<- totalAdapted[iFrom, iTo] + 1
+                accRate                   <- timesAccepted[iFrom, iTo] / timesRan[iFrom, iTo]
+                if (accRate > 0.5) {
+                    ENSwapMatrix[iFrom, iTo] <<- min(
+                        ENSwapMatrix[iFrom,iTo] + ENSwapDeltaMatrix[iFrom, iTo] / totalAdapted[iFrom,iTo],
+                        min(NVector[iFrom], NVector[iTo]))
+                } else {
+                    ENSwapMatrix[iFrom, iTo] <<- max(
+                        1, min(ENSwapMatrix[iFrom,iTo] - ENSwapDeltaMatrix[iFrom, iTo] / totalAdapted[iFrom,iTo], 
+                               min(NVector[iFrom], NVector[iTo])))
+                }                 
+                if (accRate<0.2 | accRate>0.8) {
+                    if (ENSwapMatrix[iFrom, iTo] != 1 |
+                        ENSwapMatrix[iFrom, iTo] != NVector[iFrom] | 
+                        ENSwapMatrix[iFrom, iTo] != NVector[iTo]) {
+                        ENSwapDeltaMatrix[iFrom, iTo] <<- min(ENSwapDeltaMatrix[iFrom, iTo] * 10,
+                                                              min(NVector[iFrom], NVector[iTo]))
+                        ENSwapDeltaMatrix[iTo, iFrom] <<- ENSwapDeltaMatrix[iFrom, iTo] 
+                    }
+                }
+                ## Lower Bound 
+                if (ENSwapMatrix[iFrom, iTo] < 1)
+                    ENSwapMatrix[iFrom, iTo] <<- 1                
+                ## For symmetry 
+                ENSwapMatrix[iTo,iFrom] <<- ENSwapMatrix[iFrom,iTo]
+                ## 
+                timesRan[iFrom, iTo]      <<- 0
+                timesAccepted[iFrom, iTo] <<- 0
+            }
+        },
+        ##
+        reset = function() {
+            timesRan          <<- timesRanOriginal
+            ENSwapMatrix      <<- ENSwapMatrixOriginal
+            totalAdapted      <<- totalAdaptedOriginal
+            timesAccepted     <<- timesAcceptedOriginal 
+            ENSwapDeltaMatrix <<- ENSwapMatrixOriginal
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
+
+
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
