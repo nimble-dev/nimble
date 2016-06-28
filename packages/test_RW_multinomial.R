@@ -1,13 +1,20 @@
 ########################################################
 ## Missing data problem with multinomial distribution ##
 ########################################################
+rm(list=ls())
 
-## source("/home/david/nimbleProject/examples/multinomial_simple_MH.R")
+## source("~/nimbleProject/multinomial/multinomial_simple_MH.R")
 
 library(nimble)
 library(coda)
-rm(list=ls())
 
+## For accessing "persistent member variables"
+nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE) 
+nimbleOptions()
+
+############################
+## Model in BUGS language ## 
+############################
 codeTest <- nimbleCode ({
     X[1:nGroups] ~ dmultinom(size=N, prob=pVecX[1:nGroups])
     Y[1:nGroups] ~ dmultinom(size=N, prob=pVecY[1:nGroups])
@@ -18,19 +25,20 @@ codeTest <- nimbleCode ({
 
 ## CONSTANTS, INITS & DATA 
 nGroups   <- 5
-N         <- 10000
+N         <- 1E6
 pVecX     <- rdirch(1, rep(1, nGroups)) ## rep(1/nGroups, nGroups)
 pVecY     <- rdirch(1, rep(1, nGroups)) ## rep(1/nGroups, nGroups)
 X         <- rmultinom(1, N, pVecX)[,1]
 Y         <- rmultinom(1, N, pVecY)[,1]
 Z         <- rbeta(nGroups, 1+X, 1+Y)
-# Resample X and Y to make the MCMC more challenging
+                                        # Resample X and Y to make the MCMC more challenging
 Xini      <- rmultinom(1, N, sample(pVecX))[,1]
 Yini      <- rmultinom(1, N, sample(pVecY))[,1]
 ## Lists for nimbleModel
-Constants <- list(nGroups=nGroups, N=N, pVecX=pVecX, pVecY=pVecY)
+Constants <- list(nGroups=nGroups)                     ## Can't modify after compilation
 Inits     <- list(X=Xini, Y=Yini)
-Data      <- list(Z=Z)
+Data      <- list(Z=Z, pVecX=pVecX, pVecY=pVecY, N=N)  ## Can modify after compilation
+
 
 ## ASSEMBLE NIMBLE MODEL
 modelTest <- nimbleModel(codeTest, constants=Constants, inits=Inits, data=Data, check=TRUE) ## FALSE
@@ -42,7 +50,7 @@ modelTest$Y
 modelTest$Z
 if (FALSE) ## TRUE
     plot(modelTest$graph)
- 
+
 ## TO COMPILE THE MCMC YOU MUST FIRST DO THIS...
 cModelTest <- compileNimble(modelTest)
 
@@ -63,6 +71,17 @@ mcmcTestConfig$printSamplers()
 mcmcTest  <- buildMCMC(mcmcTestConfig) 
 cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
 
+## Optionally resample data
+cModelTest$N <- N <- 1E3
+(cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups)))) ## rep(1/nGroups, nGroups)
+(cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups)))) ## rep(1/nGroups, nGroups)
+simulate(cModelTest, "X", includeData=TRUE); cModelTest$X
+simulate(cModelTest, "Y", includeData=TRUE); cModelTest$Y
+simulate(cModelTest, "Z", includeData=TRUE); cModelTest$Z
+
+###########################
+## Reset Adative Sampler ##
+###########################
 RESET <- TRUE
 
 ##############
@@ -80,7 +99,7 @@ iColsY <- iColsX + nGroups
 ##############
 ## ACF Plot ##
 ##############
-if (FALSE) { ## TRUE
+if (FALSE) { ## TRUE ## 
     par(mfrow=c(1,1))
     mcSamples <- as.mcmc(samples)
     acfplot(mcSamples)
@@ -88,7 +107,8 @@ if (FALSE) { ## TRUE
 ##################################
 ## Trajectory Plots & Histogram ##
 ##################################
-par(mfrow=c(2,2))
+plotHistograms <- N <= 1E4 ## FALSE ## TRUE
+par(mfrow=c(2,1+plotHistograms))
 ##
 for (ii in 1:2) {
     if (ii == 1) {
@@ -100,26 +120,55 @@ for (ii in 1:2) {
     for (ii in iColsX)
         lines(samples[,ii], col=rainbow(10,alpha=0.75)[ii])
     ##
-    hist(samples[,1], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples):max(samples), prob=TRUE, ylim=c(0,yMaxX))
-    for (ii in iColsX) {
-        h <- hist(samples[,ii], prob=TRUE, 
-                  col=rainbow(2*nGroups, alpha=0.1)[ii],
-                  border=rainbow(2*nGroups, alpha=0.1)[ii],
-                  breaks=min(samples[,iColsX]):max(samples[,iColsX]), add=TRUE)
-        yMaxX <- max(yMaxX, h$density)
+    if (plotHistograms) {
+        hist(samples[,1], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples):max(samples), prob=TRUE, ylim=c(0,yMaxX))
+        for (ii in iColsX) {
+            h <- hist(samples[,ii], prob=TRUE, 
+                      col=rainbow(2*nGroups, alpha=0.1)[ii],
+                      border=rainbow(2*nGroups, alpha=0.1)[ii],
+                      breaks=min(samples[,iColsX]):max(samples[,iColsX]), add=TRUE)
+            yMaxX <- max(yMaxX, h$density)
+        }
     }
     ## 
     plot (samples[,1],ylim=range(samples[,iColsY]), typ="n")
     for (ii in iColsY)
         lines(samples[,ii], col=rainbow(10,alpha=0.75)[ii])
     ##
-    hist(samples[,1+nGroups], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples[,iColsY]):max(samples[,iColsY]), prob=TRUE, ylim=c(0,yMaxY))
-    for (ii in iColsY) {
-        h <- hist(samples[,ii], prob=TRUE, 
-                  col=rainbow(2*nGroups, alpha=0.1)[ii],
-                  border=rainbow(2*nGroups, alpha=0.1)[ii],
-                  breaks=min(samples[,iColsY]):max(samples[,iColsY]), add=TRUE)
-        yMaxY <- max(yMaxY, h$density)
+    if (plotHistograms) {
+        hist(samples[,1+nGroups], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples[,iColsY]):max(samples[,iColsY]), prob=TRUE, ylim=c(0,yMaxY))
+        for (ii in iColsY) {
+            h <- hist(samples[,ii], prob=TRUE, 
+                      col=rainbow(2*nGroups, alpha=0.1)[ii],
+                      border=rainbow(2*nGroups, alpha=0.1)[ii],
+                      breaks=min(samples[,iColsY]):max(samples[,iColsY]), add=TRUE)
+            yMaxY <- max(yMaxY, h$density)
+        }
     }
 }
 print(Tail)
+
+cMcmcTest$samplerFunctions$contentsList[[1]]$AcceptRates
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted / cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan
+cMcmcTest$samplerFunctions$contentsList[[1]]$RescaleThreshold
+cMcmcTest$samplerFunctions$contentsList[[1]]$ScaleShifts
+cMcmcTest$samplerFunctions$contentsList[[1]]$ENSwapDeltaMatrix
+cMcmcTest$samplerFunctions$contentsList[[1]]$totalAdapted
+cMcmcTest$samplerFunctions$contentsList[[1]]$ENSwapDeltaMatrix / cMcmcTest$samplerFunctions$contentsList[[1]]$totalAdapted
+cMcmcTest$samplerFunctions$contentsList[[1]]$ENSwapMatrix
+cMcmcTest$samplerFunctions$contentsList[[1]]$totalAdapted
+cMcmcTest$samplerFunctions$contentsList[[1]]$ScaleShifts
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted 
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan
+
+cMcmcTest$samplerFunctions$contentsList[[2]]$AcceptRates
+cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted / cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
+cMcmcTest$samplerFunctions$contentsList[[2]]$RescaleThreshold
+cMcmcTest$samplerFunctions$contentsList[[2]]$ScaleShifts
+cMcmcTest$samplerFunctions$contentsList[[2]]$ENSwapDeltaMatrix
+cMcmcTest$samplerFunctions$contentsList[[2]]$totalAdapted
+cMcmcTest$samplerFunctions$contentsList[[2]]$ENSwapDeltaMatrix / cMcmcTest$samplerFunctions$contentsList[[2]]$totalAdapted
+cMcmcTest$samplerFunctions$contentsList[[2]]$ENSwapMatrix
+cMcmcTest$samplerFunctions$contentsList[[2]]$totalAdapted
+cMcmcTest$samplerFunctions$contentsList[[2]]$ScaleShifts
+
