@@ -127,7 +127,7 @@ conjugacyRelationshipsClass <- setRefClass(
                 if(is.null(conjugacyObj)) next
                 
                 depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
-                depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, is.null))]
+                depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, function(x) is.null(x) || (length(x)==0)))]
                 depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
                     unlist(lapply(z,
                                   function(x)
