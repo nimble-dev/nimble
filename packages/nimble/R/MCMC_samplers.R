@@ -1027,21 +1027,17 @@ RW_multinomial <- nimbleFunction(
         ## Control List ##
         adaptive              <- control$adaptive
         adaptInterval         <- control$adaptInterval
-        RescaleThreshold      <- matrix(0.2, lTarget, lTarget)
-        AcceptRates           <- matrix(0, lTarget, lTarget)
-        ScaleShifts           <- matrix(0, lTarget, lTarget)
-        ENSwapMatrix          <- matrix(1, lTarget, lTarget)
-        ENSwapDeltaMatrix     <- matrix(1, lTarget, lTarget)
-        timesRan              <- matrix(0, lTarget, lTarget)
-        timesAccepted         <- matrix(0, lTarget, lTarget)
-        totalAdapted          <- matrix(0, lTarget, lTarget)
-        timesRanOriginal      <- timesRan 
-        ENSwapMatrixOriginal  <- ENSwapMatrix
-        totalAdaptedOriginal  <- totalAdapted
-        timesAcceptedOriginal <- timesAccepted 
-        RescaleThreshOriginal <- RescaleThreshold
-        AcceptRatesOriginal   <- AcceptRates
-        ScaleShiftsOriginal   <- ScaleShifts
+        ## Matrices ##
+        Zeros                 <- matrix(0, lTarget, lTarget)
+        Ones                  <- matrix(1, lTarget, lTarget)
+        timesRan              <- Zeros
+        AcceptRates           <- Zeros
+        ScaleShifts           <- Zeros
+        totalAdapted          <- Zeros
+        timesAccepted         <- Zeros
+        ENSwapMatrix          <- Ones
+        ENSwapDeltaMatrix     <- Ones
+        RescaleThreshold      <- 0.2 * Ones
         ## Checks ##
         if(class(ENSwapMatrix) != 'matrix')
             stop('ENSwapMatrix must be a matrix\n')
@@ -1124,6 +1120,7 @@ RW_multinomial <- nimbleFunction(
                             ENSwapMatrix[iFrom,iTo] - ENSwapDeltaMatrix[iFrom,iTo] / totalAdapted[iFrom,iTo])
                 } 
                 if (accRate<RescaleThreshold[iFrom,iTo] | accRate>(1-RescaleThreshold[iFrom,iTo])) {
+                    ## Rescale iff ENSwapMatrix[iFrom, iTo] is not set to an upper or lower bound 
                     if (ENSwapMatrix[iFrom, iTo] > 1 & ENSwapMatrix[iFrom, iTo] < Ntotal) {
                         ScaleShifts[iFrom, iTo]       <<- ScaleShifts[iFrom, iTo] + 1 
                         ENSwapDeltaMatrix[iFrom, iTo] <<- min(NOverL, ENSwapDeltaMatrix[iFrom, iTo] * totalAdapted[iFrom,iTo] / 10)
@@ -1134,7 +1131,7 @@ RW_multinomial <- nimbleFunction(
                 ## Lower Bound 
                 if (ENSwapMatrix[iFrom, iTo] < 1)
                     ENSwapMatrix[iFrom, iTo] <<- 1                
-                ## For symmetry 
+                ## Symmetry in ENSwapMatrix helps maintain good acceptance rates
                 ENSwapMatrix[iTo,iFrom] <<- ENSwapMatrix[iFrom,iTo]
                 ## 
                 timesRan[iFrom, iTo]      <<- 0
@@ -1143,14 +1140,14 @@ RW_multinomial <- nimbleFunction(
         },
         ##
         reset = function() {
-            timesRan          <<- timesRanOriginal
-            ENSwapMatrix      <<- ENSwapMatrixOriginal
-            totalAdapted      <<- totalAdaptedOriginal
-            timesAccepted     <<- timesAcceptedOriginal 
-            ENSwapDeltaMatrix <<- ENSwapMatrixOriginal
-            RescaleThreshold  <<- RescaleThreshOriginal
-            AcceptRates       <<- AcceptRatesOriginal
-            ScaleShifts       <<- ScaleShiftsOriginal
+            timesRan          <<- Zeros
+            AcceptRates       <<- Zeros
+            ScaleShifts       <<- Zeros
+            totalAdapted      <<- Zeros
+            timesAccepted     <<- Zeros
+            ENSwapMatrix      <<- Ones
+            ENSwapDeltaMatrix <<- Ones
+            RescaleThreshold  <<- 0.2 * Ones
         }
     ), where = getLoadingNamespace()
 )

@@ -1,12 +1,11 @@
 ########################################################
 ## Missing data problem with multinomial distribution ##
 ########################################################
-rm(list=ls())
-
-## source("~/nimbleProject/multinomial/multinomial_simple_MH.R")
-
 library(nimble)
 library(coda)
+
+## rm(list=ls())
+## source("~/nimbleProject/multinomial/sampler.R"); source("~/nimbleProject/multinomial/test_RW_multinomial.R")
 
 ## For accessing "persistent member variables"
 nimbleOptions(buildInterfacesForCompiledNestedNimbleFunctions = TRUE) 
@@ -51,6 +50,7 @@ modelTest$Z
 if (FALSE) ## TRUE
     plot(modelTest$graph)
 
+
 ## TO COMPILE THE MCMC YOU MUST FIRST DO THIS...
 cModelTest <- compileNimble(modelTest)
 
@@ -72,12 +72,13 @@ mcmcTest  <- buildMCMC(mcmcTestConfig)
 cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
 
 ## Optionally resample data
-cModelTest$N <- N <- 1E3
-(cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups)))) ## rep(1/nGroups, nGroups)
-(cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups)))) ## rep(1/nGroups, nGroups)
-simulate(cModelTest, "X", includeData=TRUE); cModelTest$X
-simulate(cModelTest, "Y", includeData=TRUE); cModelTest$Y
-simulate(cModelTest, "Z", includeData=TRUE); cModelTest$Z
+cModelTest$N      <- N <- 1E6
+(cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups)))) 
+(cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups)))) 
+simulate(cModelTest, "X", includeData=TRUE); (X <- cModelTest$X)
+simulate(cModelTest, "Y", includeData=TRUE); (Y <- cModelTest$Y)
+simulate(cModelTest, "Z", includeData=TRUE); (Z <- cModelTest$Z)
+
 
 ###########################
 ## Reset Adative Sampler ##
@@ -87,7 +88,7 @@ RESET <- TRUE
 ##############
 ## Run MCMC ##
 ##############
-niter  <- 5000
+niter  <- 10000
 print(sysT <- system.time(cMcmcTest$run(niter, reset = RESET))) ## FALSE ## About 2.16 seconds for 10000 iterations
 Tail   <- tail(samples <- as.matrix(cMcmcTest$mvSamples), 25)
 if (nrow(samples)>niter)
