@@ -52,7 +52,6 @@ modelTest$Z
 if (FALSE) ## TRUE
     plot(modelTest$graph)
 
-
 ## TO COMPILE THE MCMC YOU MUST FIRST DO THIS...
 cModelTest <- compileNimble(modelTest)
 
@@ -74,7 +73,7 @@ mcmcTest  <- buildMCMC(mcmcTestConfig)
 cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
 
 ## Optionally resample data
-cModelTest$N      <- N <- 1E4
+cModelTest$N      <- N <- 1E3
 (cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups)))) 
 (cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups)))) 
 simulate(cModelTest, "X", includeData=TRUE); (X <- cModelTest$X)
@@ -85,13 +84,29 @@ simulate(cModelTest, "Z", includeData=TRUE); (Z <- cModelTest$Z)
 ###########################
 ## Reset Adative Sampler ##
 ###########################
-RESET <- TRUE
+RS <- .Random.seed
+## set.seed(RS)
 
+RESET <- TRUE
 ##############
 ## Run MCMC ##
 ##############
-niter  <- 10000
+niter  <- 1000
 print(sysT <- system.time(cMcmcTest$run(niter, reset = RESET))) ## FALSE ## About 2.16 seconds for 10000 iterations
+#print(sysT <- system.time(mcmcTest$run(niter, reset = RESET))) ## FALSE ## About 2.16 seconds for 10000 iterations
+
+testMat <- cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted /
+           cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan +
+           cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted /
+           cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
+testMat
+
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan
+cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted
+cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
+
+
 Tail   <- tail(samples <- as.matrix(cMcmcTest$mvSamples), 25)
 if (nrow(samples)>niter)
     samples <- samples[-(1:niter),]
@@ -151,8 +166,20 @@ for (ii in 1:2) {
 }
 print(Tail)
 
+testMat <- cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted /
+           cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan +
+           cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted /
+           cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
+testMat
+
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan
+cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted
+cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
+
+
 cMcmcTest$samplerFunctions$contentsList[[1]]$AcceptRates
-cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted / cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan
+cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted / cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan ## Some NaNs here are normal.
 cMcmcTest$samplerFunctions$contentsList[[1]]$RescaleThreshold
 cMcmcTest$samplerFunctions$contentsList[[1]]$ScaleShifts
 cMcmcTest$samplerFunctions$contentsList[[1]]$ENSwapDeltaMatrix
@@ -165,7 +192,7 @@ cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted
 cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan
 
 cMcmcTest$samplerFunctions$contentsList[[2]]$AcceptRates
-cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted / cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
+cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted / cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan  ## Some NaNs here are normal.
 cMcmcTest$samplerFunctions$contentsList[[2]]$RescaleThreshold
 cMcmcTest$samplerFunctions$contentsList[[2]]$ScaleShifts
 cMcmcTest$samplerFunctions$contentsList[[2]]$ENSwapDeltaMatrix

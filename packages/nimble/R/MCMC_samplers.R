@@ -1021,7 +1021,6 @@ RW_multinomial <- nimbleFunction(
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target) 
         lTarget        <- length(targetAsScalar)
-        lTargetSq      <- lTarget * lTarget
         Ntotal         <- sum(values(model,target))
         NOverL         <- Ntotal / lTarget
         ## Control List ##
@@ -1144,7 +1143,6 @@ RW_multinomial <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
-
 
 
 
