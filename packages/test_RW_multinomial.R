@@ -1,10 +1,12 @@
 ########################################################
 ## Missing data problem with multinomial distribution ##
 ########################################################
+
+## rm(list=ls())
+
 library(nimble)
 library(coda)
 
-## rm(list=ls())
 ## source("~/nimbleProject/multinomial/sampler.R"); source("~/nimbleProject/multinomial/test_RW_multinomial.R")
 
 ## For accessing "persistent member variables"
@@ -35,8 +37,8 @@ Xini      <- rmultinom(1, N, sample(pVecX))[,1]
 Yini      <- rmultinom(1, N, sample(pVecY))[,1]
 ## Lists for nimbleModel
 Constants <- list(nGroups=nGroups)                     ## Can't modify after compilation
-Inits     <- list(X=Xini, Y=Yini)
-Data      <- list(Z=Z, pVecX=pVecX, pVecY=pVecY, N=N)  ## Can modify after compilation
+Inits     <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N) ## Can modify after compilation
+Data      <- list(Z=Z)                                           ## Can modify after compilation
 
 
 ## ASSEMBLE NIMBLE MODEL
@@ -64,15 +66,15 @@ mcmcTestConfig$removeSamplers()
 mcmcTestConfig$printSamplers()
 ## Add our custom-built random walk sampler on node 'x', with a fixed proposal standard deviation = 0.1
 mcmcTestConfig$removeSamplers()
-mcmcTestConfig$addSampler(target = 'X', type = 'RW_multinomial', control = list(adaptive=TRUE, adaptInterval=100)) ## , pSwap=1/sqrt(N))) ## N
-mcmcTestConfig$addSampler(target = 'Y', type = 'RW_multinomial', control = list(adaptive=TRUE, adaptInterval=100)) ## , pSwap=1/sqrt(N)))
+mcmcTestConfig$addSampler(target = 'X', type = 'RW_multinomial', control = list(adaptive=TRUE, adaptInterval=100)) 
+mcmcTestConfig$addSampler(target = 'Y', type = 'RW_multinomial', control = list(adaptive=TRUE, adaptInterval=100)) 
 mcmcTestConfig$printSamplers()
 ## BUILD & COMPILE MCMC
 mcmcTest  <- buildMCMC(mcmcTestConfig) 
 cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
 
 ## Optionally resample data
-cModelTest$N      <- N <- 1E6
+cModelTest$N      <- N <- 1E4
 (cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups)))) 
 (cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups)))) 
 simulate(cModelTest, "X", includeData=TRUE); (X <- cModelTest$X)

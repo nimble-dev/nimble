@@ -1039,43 +1039,36 @@ RW_multinomial <- nimbleFunction(
         ENSwapDeltaMatrix     <- Ones
         RescaleThreshold      <- 0.2 * Ones
         ## Checks ##
-        if(class(ENSwapMatrix) != 'matrix')
-            stop('ENSwapMatrix must be a matrix\n')
-        if(class(ENSwapMatrix[1,1]) != 'numeric')
-            stop('ENSwapMatrix must be numeric\n')
-        if(!all(dim(ENSwapMatrix) == lTarget))
-            stop('ENSwapMatrix must have dimension ', lTarget, 'x', lTarget, '\n')
-        if(min(ENSwapMatrix) < 0 | max(ENSwapMatrix) > 1)
-            stop('Incorrect bounds for ENSwapMatrix\n')
         if(model$getNodeDistribution(target) != 'dmulti')
             stop('sampler_RW_multinomial is for sampling multinomial distributions only\n')
-        ## Sampling & Adaptation Parameters ##
+        ## Sampling, Adaptation & Recycling Parameters ##
         lpProp        <- 0
         lpRev         <- 0
+        Pi      <- pi 
+        PiOver2 <- Pi / 2 ## Irrational number prevents recycling becoming degenerate
+        u       <- runif(1, 0, Pi)
         ## Nested Function and Function List Definitions ##
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         my_decideAndJump       <- decideAndJump(model, mvSaved, calcNodes)
     },
     ## Run function for samplers takes no arguments & returns no value.
     run = function() {
-        u <- runif(1)
         for (iFROM in 1:lTarget) {            
             for (iTO in 1:(lTarget-1)) {
-                ## Flip coin                
-                if (u > 0.5) {
+                if (u > PiOver2) {                
                     iFrom <- iFROM
                     iTo   <- iTO
                     if (iFrom == iTo)
                         iTo <- lTarget
                     ## Recycle u
-                    u <- 2 * (u - 0.5)
+                    u <<- 2 * (u - PiOver2)
                 } else {
                     iFrom <- iTO
                     iTo   <- iFROM
                     if (iFrom == iTo)
                         iFrom <- lTarget
                     ## Recycle u
-                    u <- 2 * (0.5 - u)
+                    u <<- 2 * (PiOver2 - u)
                 }
                 ## Copied from sampler_RW_block
                 propValueVector <- generateProposalVector(iFrom, iTo)
@@ -1151,7 +1144,6 @@ RW_multinomial <- nimbleFunction(
         }
     ), where = getLoadingNamespace()
 )
-
 
 
 
