@@ -166,18 +166,6 @@ for (ii in 1:2) {
 }
 print(Tail)
 
-testMat <- cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted /
-           cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan +
-           cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted /
-           cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
-testMat
-
-cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted
-cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan
-cMcmcTest$samplerFunctions$contentsList[[2]]$timesAccepted
-cMcmcTest$samplerFunctions$contentsList[[2]]$timesRan
-
-
 cMcmcTest$samplerFunctions$contentsList[[1]]$AcceptRates
 cMcmcTest$samplerFunctions$contentsList[[1]]$timesAccepted / cMcmcTest$samplerFunctions$contentsList[[1]]$timesRan ## Some NaNs here are normal.
 cMcmcTest$samplerFunctions$contentsList[[1]]$RescaleThreshold
