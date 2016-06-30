@@ -88,7 +88,7 @@ RESET <- TRUE
 ##############
 ## Run MCMC ##
 ##############
-niter  <- 1000
+niter  <- 1E4
 print(sysT <- system.time(cMcmcTest$run(niter, reset = RESET))) 
 Tail   <- tail(samples <- as.matrix(cMcmcTest$mvSamples), 25)
 if (nrow(samples)>niter)
