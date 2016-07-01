@@ -1038,6 +1038,8 @@ RW_multinomial <- nimbleFunction(
         ENSwapDeltaMatrix     <- Ones
         RescaleThreshold      <- 0.2 * Ones
         ## Checks ##
+        if (adaptive & adaptInterval < 100)
+            stop('adaptInterval < 100 is not recommended for sampler_RW_multinomial\n')
         if(model$getNodeDistribution(target) != 'dmulti')
             stop('sampler_RW_multinomial is for sampling multinomial distributions only\n')
         ## Sampling, Adaptation & Recycling Parameters ##
