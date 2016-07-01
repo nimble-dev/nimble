@@ -1269,9 +1269,8 @@ RW_multinomial <- nimbleFunction(
 #' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above.
 #' }
-#'
-#'
-#' @section RW_PF_block sampler:
+#' 
+#'#' @section RW_PF_block sampler:
 #'
 #' The particle filter sampler allows the user to perform PMCMC (Andrieu et al., 2010), integrating over latent nodes in the model to sample top-level parameters.  The \code{RW_PF_block} sampler uses a Metropolis Hastings algorithm with a multivariate normal proposal distribution.  A bootstrap or auxiliary particle filter can be used to integrate over latent states.
 #'
@@ -1290,6 +1289,16 @@ RW_multinomial <- nimbleFunction(
 #' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above.
 #' }
 #'
+#'#'
+#' @section RW_multinomial sampler:
+#'
+#' This sampler is designed for sampling multinomial target distributions. The sampler performs a series of Metropolis Hastings steps between pairs of groups. Proposals are generated via a draw from a binomial distribution, whereafter the proposed number density is moved from one group to another group. Acceptance / rejection of these proposals follows a standard Metropolis Hastings procedure. Probabilities for the random binomial proposals are adapted to target (where possible) a 0.5 acceptance rate. 
+#'
+#' The \code{RW_multinomial} sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the proposal covariance throughout the course of MCMC execution. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation. A minimum value of 100 is required. (default = 200). 
+#' }
 #'
 #' @section posterior_predictive sampler:
 #'
