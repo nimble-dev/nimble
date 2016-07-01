@@ -130,11 +130,13 @@ cat(paste(text, collapse = "\n"), file = file.path("nimble", "man", "nimble-inte
 #for(i in exportClasses)
 #    cat(paste(paste0("\\name{nimble-internal}\n", "\\title{Functions and Classes Internal to NIMBLE}\n", "\\alias{", i, "}\n", "\\alias{", i, "-Class}\n"), internalDesc, collapse = "\n"), file = file.path("nimble", "man", paste0(i, ".Rd")))
 
-
-   
-
+system(paste("rm -rf ", file.path("nimble", "NAMESPACE")))
+roxygenize('nimble', 'namespace')
+system(paste("mv", file.path("nimble", "NAMESPACE"), file.path("/tmp", "NAMESPACE2")))
 # now create real NAMESPACE file
 
 #cat(paste(imports, "\n", importFroms, "\n", dynLibLine, "\n", exportText, "\n", collapse = ''),
 cat(paste(imports, importFroms, dynLibLine, S3methods, exportText, collapse = '\n', sep = '\n'),
-    file = file.path("nimble", "NAMESPACE"))
+    file = file.path("/tmp", "NAMESPACE"))
+
+system(paste("cat", file.path("/tmp", "NAMESPACE"), file.path("/tmp", "NAMESPACE2"), " > ", file.path("nimble", "NAMESPACE"))) 

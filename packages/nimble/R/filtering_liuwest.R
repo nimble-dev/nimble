@@ -437,7 +437,7 @@ buildLiuWestFilter <- nimbleFunction(
       size <- lapply(modelSymbolObjects, function(x){
         if(identical(x$size, numeric(0))) return(1)
         return(x$size)})      
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -446,7 +446,7 @@ buildLiuWestFilter <- nimbleFunction(
       type <- c(type, "double")
       size$wts <- length(dims)
       
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -459,14 +459,14 @@ buildLiuWestFilter <- nimbleFunction(
         return(x$size)})
       
       size[[latentVars]] <- as.numeric(dims[[1]])      
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
     }

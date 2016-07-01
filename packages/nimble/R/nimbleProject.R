@@ -25,7 +25,7 @@ nfCompilationInfoClass <- setRefClass('nfCompilationInfoClass',
 
 mvInfoClass <- setRefClass('mvInfoClass',
                            fields = list(
-                               mvSpec = 'ANY', ## a custom modelValues class
+                               mvConf = 'ANY', ## a custom modelValues class
                                cppClassName =  'ANY',		#'character',
                                cppClass = 'ANY', ## a cppModelValuesClass object,
                                fromModel =  'ANY',		#'logical',
@@ -129,13 +129,13 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                  },
                                      
-                                 addModelValuesClass = function(mvSpec, fromModel = FALSE) {
-                                     mvClassName <- environment(mvSpec)$className
+                                 addModelValuesClass = function(mvConf, fromModel = FALSE) {
+                                     mvClassName <- environment(mvConf)$className
                                      if(!is.null(mvInfos[[mvClassName]])) stop('Trying to add a modelValues class with the same name as one already in this project', call. = FALSE)
-                                     mvInfos[[mvClassName]] <<-  mvInfoClass(cppClassName = mvClassName, cppClass = NULL, mvSpec = mvSpec, fromModel = fromModel)
+                                     mvInfos[[mvClassName]] <<-  mvInfoClass(cppClassName = mvClassName, cppClass = NULL, mvConf = mvConf, fromModel = fromModel)
                                  },
-                                 getModelValuesCppDef = function(mvSpec, NULLok = FALSE) {
-                                     mvClassName <- environment(mvSpec)$className
+                                 getModelValuesCppDef = function(mvConf, NULLok = FALSE) {
+                                     mvClassName <- environment(mvConf)$className
                                      if(is.null(mvInfos[[mvClassName]])) {
                                          if(!NULLok) stop('Project does not know about this modelValues class but the cppDef is being requested', call. = FALSE)
                                          else return(NULL)
@@ -300,15 +300,15 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      RCfunCppInterfaces[[className]] <<- cppClass$buildRwrapperFunCode(includeLHS = FALSE, eval = TRUE, returnArgsAsList = control$returnAsList, dll = cppProj$dll)
                                      RCfunCppInterfaces[[className]]
                                  },
-                                 needModelValuesCppClass = function(mvSpec, fromModel = FALSE) {
-                                     if(!isModelValuesSpec(mvSpec)) stop("Can't compileModelValues: mvSpec is not a modelValuesSpec", call. = FALSE)
-                                     mvClassName <- environment(mvSpec)$className
+                                 needModelValuesCppClass = function(mvConf, fromModel = FALSE) {
+                                     if(!isModelValuesConf(mvConf)) stop("Can't compileModelValues: mvConf is not a modelValuesConf", call. = FALSE)
+                                     mvClassName <- environment(mvConf)$className
                                      mvInfo <- mvInfos[[mvClassName]]
-                                     if(is.null(mvInfo)) addModelValuesClass(mvSpec, fromModel)
+                                     if(is.null(mvInfo)) addModelValuesClass(mvConf, fromModel)
                                      cppClass <- mvInfos[[mvClassName]]$cppClass
                                      if(is.null(cppClass)) {
                                          cppClass <- cppModelValuesClass(name = mvClassName,
-                                                                            vars = environment(mvSpec)$symTab,
+                                                                            vars = environment(mvConf)$symTab,
                                                                             project = .self)
                                          cppClass$buildAll()
                                           mvInfos[[mvClassName]]$cppClass <<- cppClass

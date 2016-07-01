@@ -34,7 +34,7 @@ nimbleUserNamespace <- as.environment(list())
         ##useDynamicConjugacy = TRUE,
         
         ## default settings for MCMC samplers
-        ## (formerly controlDefaultList appearing in MCMCspec.R)
+        ## (formerly controlDefaultList appearing in MCMC_conf.R)
         MCMCcontrolDefaultList = list(
             log = FALSE,
             reflective = FALSE,

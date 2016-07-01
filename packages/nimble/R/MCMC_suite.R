@@ -70,9 +70,9 @@ MCMCsuite <- function(...) {
 #' Default value is \code{'nimble'}, which specifies NIMBLE's default MCMC algorithm.
 #' 
 #' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \code{MCMCs} argument.
-#' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
+#' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC configuration object, 
 #' specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \code{Rmodel},
-#' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalone \code{mcmcspec}, to return this object.
+#' and must *return* the MCMC configuration object.  Therefore, the final line of such a code block would frequently be a standalone \code{MCMCconf}, to return this object.
 #' 
 #' @param winbugs_directory A character string giving the directory of the executable WinBUGS program for the WinBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
@@ -460,10 +460,10 @@ MCMCsuiteClass <- setRefClass(
             for(iMCMC in seq_along(nimbleMCMCs)) {
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 mcmcDef <- MCMCdefs[[mcmcTag]]
-                mcmcspec <- eval(mcmcDef)
-                mcmcspec$addMonitors(monitorVars, print = FALSE)
-                mcmcspec$setThin(thin, print = FALSE)
-                RmcmcFunctionList[[mcmcTag]] <<- buildMCMC(mcmcspec)
+                mcmcConf <- eval(mcmcDef)
+                mcmcConf$addMonitors(monitorVars, print = FALSE)
+                mcmcConf$setThin(thin, print = FALSE)
+                RmcmcFunctionList[[mcmcTag]] <<- buildMCMC(mcmcConf)
             }
             timeResult <- system.time({
                 Cmodel <<- compileNimble(Rmodel)
