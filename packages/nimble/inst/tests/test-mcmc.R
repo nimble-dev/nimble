@@ -221,7 +221,11 @@ test_mcmc(model = gapCode, seed = 0, numItsC = 100000,
 				samplers = list(list(type = 'RW', target = 'a[2]'))
 				)
 
-
+if(.Platform$OS.type == 'windows') {
+    message("Stopping tests now in Windows to avoid crashing until we can unload compiled projects")
+    message("To continue testing use 'mcmc2' tests")
+    q("no")
+}
 
 ### Daniel's world's simplest MCMC demo
 

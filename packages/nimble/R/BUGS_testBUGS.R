@@ -54,27 +54,22 @@ testBUGSmodel <- function(example = NULL, dir = NULL, model = NULL, data = NULL,
     Rmodel <- readBUGSmodel(model = model, data = data, inits = inits, dir = dir, useInits = useInits, debug = debug, check = FALSE)
     # setting check to FALSE because check() in some cases (e.g., kidney) causes initialization of values such that inits as passed in do not match values in R or C model and failure of test of whether initial values are maintained
 
+    skip.file.path <- is.null(dir) || (!is.null(dir) && dir == "") ## previously we could have file.path(NULL, ...) and file.path("",...) cases.  Modifications from here down follow those in readBUGSmodel for Windows compatibility
+
     if(useInits) {
                                         # kludgey as this code is in readBUGSmodel() but no nice way to get it out if I want readBUGSmodel to return the R model; one possibility is to have the inits be embedded in the R model...
       initsFile <- NULL
       if(is.character(inits)) {
-        initsFile <- file.path(dir, inits)
+        initsFile <- if(skip.file.path) inits else file.path(dir, inits)
         if(!file.exists(initsFile))
           stop("testBUGSmodel: 'inits' input does not reference an existing file.")
       }
       if(is.null(inits)) {
         modelName <- gsub("\\..*", "", model)
-        possibleNames <- c(
-                           file.path(dir, paste0(modelName, "-init.R")),
-                           file.path(dir, paste0(modelName, "-inits.R")),
-                           file.path(dir, paste0(modelName, "-init.txt")),
-                           file.path(dir, paste0(modelName, "-inits.txt")),
-                           file.path(dir, paste0(modelName, "-init")),
-                           file.path(dir, paste0(modelName, "-inits")))
+        possibleNames <- paste0(modelName, c("-init.R", "-inits.R", "-init.txt", "-inits.txt", "-init", "inits"))
         if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
-          possibleNames <- c(possibleNames,
-                             file.path(dir, paste0(modelName, "-init.r")),
-                             file.path(dir, paste0(modelName, "-inits.r")))
+            possibleNames <- c(possibleNames, paste0(modelName, c('-init.r','-inits.r')))
+        if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
         fileExistence <- file.exists(possibleNames)
         if(!sum(fileExistence)) {
           stop("testBUGSmodel: 'inits' argument does not reference an existing file.")
