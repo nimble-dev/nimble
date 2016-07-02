@@ -26,7 +26,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     }
     if(nimbleOptions('verbose')) message("building model...")
     model <- md$newModel(data=data, inits=inits, where=where, check=check, debug = debug)
-    if(nimbleOptions('verbose')) message("model building finished")
+    if(nimbleOptions('verbose')) message("model building finished.")
     return(model)
 }
 

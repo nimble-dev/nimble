@@ -2095,10 +2095,13 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
         warning("newModel: ", paste(names(inits)[nonVarIndices], collapse = ','),
                 " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
-    ## model checking
-    ## added by DT, June 2015
+    ## basic size/dimension, NA checking
+    if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
+    model$checkBasics()
+    message("")  # appends newline   
+    ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
-        if(nimbleOptions('verbose')) message("checking model...   (use nimbleModel(..., check = FALSE) to skip model check)")
+        if(nimbleOptions('verbose')) message("checking model calculations...")
         model$check()
     }
     fixRStudioHanging(model)

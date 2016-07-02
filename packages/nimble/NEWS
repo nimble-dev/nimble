@@ -2,6 +2,8 @@
 
 USER LEVEL CHANGES
 
+-- model checking modified so that only size/dimension and NA checking is done by default. Extended checking of ability to calculate all model nodes is now invoked via model$check() only at user request.
+
 -- MCMC and modelValues configuration syntax now uses 'conf' rather than 'spec' in its naming throughout NIMBLE. 
 
                           CHANGES IN VERSION 0.5-1 (May 2016)

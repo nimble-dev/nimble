@@ -525,11 +525,11 @@ Details: The return value is a named list, with an element corresponding to each
                                       nodeIDs <- expandNodeNames(nodeVector, returnType = 'ids')
                                       conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
-                                  check = function() {
+                                  checkBasics = function() {
                                       '
-Checks for common errors in model specification, including missing values, inability to calculate/simulate on a node, and dimension/size mismatches
+Checks for size/dimension mismatches and for presence of NAs in model variables (the latter is not an error but a note of this is given to the user)
 '
-                                      # first do size checking; do before check of calculate/simulate so LHS of deterministic expressions are not filled in
+                                      # first do size checking; note that LHS of deterministic expressions are not necessarily filled in
 
                                       for(j in seq_along(.self$modelDef$declInfo)) {
                                               declInfo <- .self$modelDef$declInfo[[j]]
@@ -626,6 +626,18 @@ Checks for common errors in model specification, including missing values, inabi
                                               }
                                       }
 
+                                      varsWithNAs <- NULL
+                                      for(v in .self$getVarNames()) 
+                                          if(!isValid(.self[[v]]))
+                                              varsWithNAs <- c(varsWithNAs, v)
+                                      if(!is.null(varsWithNAs))
+                                          message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
+                                  },
+
+                                  check = function() {
+                                      '
+Checks for errors in model specification and for missing values that prevent use of calculate/simulate on any nodes
+'
                                       # check for missing values and inability to calculate/simulate
                                       lp <- try(nimble:::calculate(.self))
                                       if(!isValid(lp)) {
@@ -671,7 +683,7 @@ Checks for common errors in model specification, including missing values, inabi
 
                                   },
 
-                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
+newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
