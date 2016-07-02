@@ -598,6 +598,7 @@ Details: See the initialize() function
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
 #'@param ... Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
 #'@author Daniel Turek
+#'@export 
 #'@details See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,

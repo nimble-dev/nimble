@@ -5,6 +5,8 @@
 ### virtual nimbleFunction template, included for ALL samplers #####
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_BASE <- nimbleFunctionVirtual(
     methods = list(
         reset = function() { }
@@ -17,6 +19,8 @@ sampler_BASE <- nimbleFunctionVirtual(
 ### posterior_predictive sampler for trailing stoch. nodes #########
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_posterior_predictive <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -39,6 +43,8 @@ sampler_posterior_predictive <- nimbleFunction(
 ### binary Gibbs sampler ###########################################
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_binary <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -69,6 +75,8 @@ sampler_binary <- nimbleFunction(
 ### scalar RW sampler with normal proposal distribution ############
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_RW <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -157,6 +165,8 @@ sampler_RW <- nimbleFunction(
 ### block RW sampler with multi-variate normal proposal distribution ###
 ########################################################################
 
+#' @rdname samplers
+#' @export
 sampler_RW_block <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -255,6 +265,8 @@ sampler_RW_block <- nimbleFunction(
 ### RW_llFunction, does a RW, but using a generic log-likelihood function ###
 #############################################################################
 
+#' @rdname samplers
+#' @export
 sampler_RW_llFunction <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -301,6 +313,8 @@ sampler_RW_llFunction <- nimbleFunction(
 ### slice sampler (discrete or continuous) #########################
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_slice <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -396,6 +410,8 @@ sampler_slice <- nimbleFunction(
 ####################################################################
 
 
+#' @rdname samplers
+#' @export
 sampler_ess <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -455,6 +471,8 @@ getPosteriorDensityFromConjSampler <- nimbleFunction(
     where = getLoadingNamespace()
 )
 
+#' @rdname samplers
+#' @export
 sampler_crossLevel <- nimbleFunction(
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -523,6 +541,8 @@ sampler_crossLevel <- nimbleFunction(
 ### RW_llFunctionBlock, does a block RW, but using a generic log-likelihood function ###
 ########################################################################################
 
+#' @rdname samplers
+#' @export
 sampler_RW_llFunction_block <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
@@ -627,6 +647,8 @@ sampler_RW_llFunction_block <- nimbleFunction(
 ### RW_PF, does a univariate RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
+#' @rdname samplers
+#' @export
 sampler_RW_PF <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
@@ -805,6 +827,8 @@ sampler_RW_PF <- nimbleFunction(
 ### RW_PF_block, does a block RW, but using a particle filter likelihood function ###@@
 #######################################################################################
 
+#' @rdname samplers
+#' @export
 sampler_RW_PF_block <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target,  control) {
@@ -1017,6 +1041,10 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \code{mcmcConf$addSampler(target = targetnode, type = samplertype, control = controllist)}
 #'
 #' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below.
+#'
+#' @section \code{sampler_base}: base class for new samplers
+#'
+#' When you write a new sampler for use in a NIMBLE MCMC (see User Manual), you must include \code{contains = sampler_BASE}.
 #'
 #' @section binary sampler:
 #'

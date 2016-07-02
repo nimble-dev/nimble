@@ -41,11 +41,20 @@ dimOrLength <- function(obj, scalarize = FALSE) {
 #' y <- matrix(x, nrow = 2)
 #' dim(y)
 #' nimDim(y)
+#'
+#' @export
 nimDim <- function(obj) {
     if(is.null(dim(obj))) return(length(obj))
     return(dim(obj))
 }
 
+#' return the namespace in which a nimbleFunction is being loaded
+#'
+#' \code{nimbleFunction} constructs and evals a reference class definition.  When \code{nimbleFunction} is used in package source code, this can lead to problems finding things due to namespace issues.  Using \code{where = getLoadingNamespace()} in a \code{nimbleFunction} in package source code should solve this problem.
+#'
+#' @details \code{nimbleFunction}s defined in the NIMBLE source code use \code{where = getLoadingNamespace()}.  Please let the NIMBLE developers know if you encounter problems with this.
+#' 
+#' @export
 getLoadingNamespace <- function() {
     if(!is.null(nimbleOptions()$notUsingPackage)) if(nimbleOptions()$notUsingPackage) return(globalenv())
     if(system.file(package = "nimble") == "")
@@ -84,6 +93,8 @@ getNimbleFunctionEnvironment <- function() {
 #' as.matrix(mv)
 #' resize(mv, 3)
 #' as.matrix(mv)
+#' 
+#' @export
 resize <- function(container, k) {
     container$resize( as.integer(k) ) 
 }

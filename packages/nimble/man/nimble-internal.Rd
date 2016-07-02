@@ -1,6 +1,65 @@
 \name{nimble-internal}
 \title{Functions and Classes Internal to NIMBLE}
-\alias{accessorVectorLength_setupCodeTemplate}
+\alias{BUGScode}
+\alias{BUGScontextClass}
+\alias{BUGSdistToRdist}
+\alias{BUGSmodel}
+\alias{BUGSsingleContextClass}
+\alias{CNumericList}
+\alias{C_dcat}
+\alias{C_ddirch}
+\alias{C_dinterval}
+\alias{C_dmnorm_chol}
+\alias{C_dmulti}
+\alias{C_dt_nonstandard}
+\alias{C_dwish_chol}
+\alias{C_rcat}
+\alias{C_rdirch}
+\alias{C_rinterval}
+\alias{C_rmnorm_chol}
+\alias{C_rmulti}
+\alias{C_rt_nonstandard}
+\alias{C_rwish_chol}
+\alias{Cmatrix2mvOneVar}
+\alias{CmodelValues}
+\alias{CmultiNimbleFunctionClass}
+\alias{CppBinaryOperators2}
+\alias{ENKFFuncVirtual}
+\alias{ENKFStep}
+\alias{ENKFStepVirtual}
+\alias{ETentriesFromExternalUnaries}
+\alias{EigenNewExpr}
+\alias{IncludeCodeDir}
+\alias{IntermLabelMaker}
+\alias{LWSetMeanVirtual}
+\alias{LWSetParVirtual}
+\alias{LWStep}
+\alias{LWStepVirtual}
+\alias{LWparFunc}
+\alias{MCMCefficiencyHO}
+\alias{MCMCefficiencyHOlist}
+\alias{MakeCustomModelClass}
+\alias{NeedMakevarsFile}
+\alias{NimbleCodeDir}
+\alias{NumericListBase}
+\alias{OptimFun_argDefs}
+\alias{OptimReadyFunction}
+\alias{RCfunInfoClass}
+\alias{RCfunProcessing}
+\alias{RCfunction}
+\alias{RCfunctionCompileClass}
+\alias{RCfunctionDef}
+\alias{RCvirtualFunProcessing}
+\alias{RMakeCustomModelClass}
+\alias{RNumericList}
+\alias{R_setDoublePtrFromSinglePtr}
+\alias{R_setOnePtrVectorOfPtrs}
+\alias{R_setPtrVectorOfPtrs}
+\alias{Rmatrix2mvOneVar}
+\alias{Rname2CppName}
+\alias{RparseTree2ExprClasses}
+\alias{SEXPscalarConvertFunctions}
+\alias{UseLibraryMakevars}
 \alias{activeBindingTemplate}
 \alias{activeBindingTemplateLength1NonScalar}
 \alias{addArg}
@@ -32,10 +91,10 @@
 \alias{as.matrix.CmodelValues}
 \alias{as.matrix.modelValuesBaseClass}
 \alias{assignLogProbName}
+\alias{assignNumberedObject}
 \alias{assignmentAsFirstArgFuns}
 \alias{assignmentOperators}
 \alias{assignmentTypeWarn}
-\alias{assignNumberedObject}
 \alias{autoBlockClass}
 \alias{autoBlockModel}
 \alias{autoBlockParamDefaults}
@@ -52,11 +111,14 @@
 \alias{bootFStep}
 \alias{bootStepVirtual}
 \alias{brackOperators}
+<<<<<<< HEAD
 \alias{BUGScode}
 \alias{BUGScontextClass}
 \alias{BUGSdistToRdist}
 \alias{BUGSmodel}
 \alias{BUGSsingleContextClass}
+=======
+>>>>>>> reduceExport
 \alias{buildCopyLineFromSEXP}
 \alias{buildCopyLineToSEXP}
 \alias{buildIntermCalls}
@@ -81,6 +143,7 @@
 \alias{C_rt_nonstandard}
 \alias{C_rwish_chol}
 \alias{cAddBlank}
+<<<<<<< HEAD
 \alias{calc_asympVar}
 \alias{calc_dmnormAltParams}
 \alias{calc_dmnormConjugacyContributions}
@@ -89,8 +152,20 @@
 \alias{calculate_keywordInfo}
 \alias{calculateDiff_keywordInfo}
 \alias{callsFromExternalUnaries}
+=======
+\alias{cCopyVariableRows}
+\alias{cGetNRow}
+\alias{calcAdaptationFactor}
+\alias{calc_E_llk_gen}
+\alias{calc_asympVar}
+\alias{calc_dmnormAltParams}
+\alias{calc_dmnormConjugacyContributions}
+\alias{calculateDiff_keywordInfo}
+\alias{calculate_keywordInfo}
+>>>>>>> reduceExport
 \alias{callToPackVPtrs}
 \alias{callToSkipInEigenization}
+\alias{callsFromExternalUnaries}
 \alias{cc_checkLinearity}
 \alias{cc_combineExprsAddition}
 \alias{cc_combineExprsDivision}
@@ -108,8 +183,11 @@
 \alias{cc_otherParamsCheck}
 \alias{cc_structureExprName}
 \alias{cc_vectorizedComponentCheck}
+<<<<<<< HEAD
 \alias{cCopyVariableRows}
 \alias{cGetNRow}
+=======
+>>>>>>> reduceExport
 \alias{character2index}
 \alias{checkDistributionsFunctions}
 \alias{checkDistributionsInput}
@@ -120,10 +198,6 @@
 \alias{checkRHSonlyInit}
 \alias{cleanWhite}
 \alias{cloglog}
-\alias{Cmatrix2mvOneVar}
-\alias{CmodelValues}
-\alias{CmultiNimbleFunctionClass}
-\alias{CNumericList}
 \alias{code2Name_fromArgList}
 \alias{codeProcessIfThenElse}
 \alias{codeSubstitute}
@@ -143,13 +217,12 @@
 \alias{copyFromRobject}
 \alias{copyFromRobjectViaActiveBindings}
 \alias{copyModelValuesElements}
-\alias{CppBinaryOperators2}
 \alias{cppBUGSmodelClass}
+\alias{cppCPPfileClass}
 \alias{cppCasts}
 \alias{cppClassDef}
 \alias{cppCodeBlock}
 \alias{cppCodeFileClass}
-\alias{cppCPPfileClass}
 \alias{cppDefinition}
 \alias{cppDouble}
 \alias{cppEigenMap}
@@ -177,18 +250,18 @@
 \alias{cppOutputBracket}
 \alias{cppOutputCall}
 \alias{cppOutputCallAsIs}
-\alias{cppOutputCalls}
 \alias{cppOutputCallWithName}
+\alias{cppOutputCalls}
 \alias{cppOutputCast}
 \alias{cppOutputChainedCall}
 \alias{cppOutputCout}
 \alias{cppOutputDereference}
 \alias{cppOutputDoubleBracket}
 \alias{cppOutputEigBlank}
-\alias{cppOutputEigenMapAssign}
 \alias{cppOutputEigExternalUnaryFunction}
 \alias{cppOutputEigMemberFunction}
 \alias{cppOutputEigMemberFunctionNoTranslate}
+\alias{cppOutputEigenMapAssign}
 \alias{cppOutputFor}
 \alias{cppOutputGetNodeFunctionIndexedInfo}
 \alias{cppOutputGetParam}
@@ -219,8 +292,12 @@
 \alias{cppVecVoidPtr}
 \alias{cppVirtualNimbleFunctionClass}
 \alias{cppVoid}
+<<<<<<< HEAD
 \alias{createDefault_isDataObj}
+=======
+>>>>>>> reduceExport
 \alias{createDFfromABlist}
+\alias{createDefault_isDataObj}
 \alias{createDynamicConjugateSamplerName}
 \alias{createMakevars}
 \alias{createNamedObjectsFromList}
@@ -238,6 +315,11 @@
 \alias{dimOrLength}
 \alias{distClass}
 \alias{distfun}
+<<<<<<< HEAD
+=======
+\alias{distributionAliases}
+\alias{distributionFuns}
+>>>>>>> reduceExport
 \alias{distribution_dFuns}
 \alias{distribution_pFuns}
 \alias{distribution_qFuns}
@@ -248,8 +330,8 @@
 \alias{distributionsClass}
 \alias{distributionsInputList}
 \alias{dmFunHandler}
-\alias{dollarSign_keywordInfo}
 \alias{doPars}
+\alias{dollarSign_keywordInfo}
 \alias{double}
 \alias{doubleBracket_keywordInfo}
 \alias{dropSingleSizes}
@@ -263,9 +345,26 @@
 \alias{effectiveSizeStan}
 \alias{efficiencyDetailsComparisonComponent}
 \alias{eigCalls}
+<<<<<<< HEAD
 \alias{eigenize_asRowOrCol}
 \alias{eigenize_assign_before_recurse}
 \alias{eigenize_chainedCall}
+=======
+\alias{eigOtherMemberFunctionCalls}
+\alias{eigProxyCalls}
+\alias{eigProxyCallsExternalUnary}
+\alias{eigProxyTranslate}
+\alias{eigProxyTranslateExternalUnary}
+\alias{eigenizeArrayize}
+\alias{eigenizeCalls}
+\alias{eigenizeCallsBeforeRecursing}
+\alias{eigenizeMatricize}
+\alias{eigenizeName}
+\alias{eigenizeNameStrided}
+\alias{eigenizeTranslate}
+\alias{eigenize_asRowOrCol}
+\alias{eigenize_assign_before_recurse}
+>>>>>>> reduceExport
 \alias{eigenize_cWiseAddSub}
 \alias{eigenize_cWiseBinaryArray}
 \alias{eigenize_cWiseBinaryEitherMatch}
@@ -275,12 +374,14 @@
 \alias{eigenize_cWiseUnaryArray}
 \alias{eigenize_cWiseUnaryEither}
 \alias{eigenize_cWiseUnaryMatrix}
+\alias{eigenize_chainedCall}
 \alias{eigenize_doNotRecurse}
 \alias{eigenize_matrixOps}
 \alias{eigenize_nfVar}
 \alias{eigenize_reductionArray}
 \alias{eigenize_reductionBinaryEither}
 \alias{eigenize_reductionEither}
+<<<<<<< HEAD
 \alias{eigenizeArrayize}
 \alias{eigenizeCalls}
 \alias{eigenizeCallsBeforeRecursing}
@@ -294,15 +395,13 @@
 \alias{eigProxyCallsExternalUnary}
 \alias{eigProxyTranslate}
 \alias{eigProxyTranslateExternalUnary}
+=======
+>>>>>>> reduceExport
 \alias{embedInRbracket}
 \alias{embedListInRbracket}
 \alias{emptyTypeInfo}
-\alias{ENKFFuncVirtual}
 \alias{enkfMultFunc}
 \alias{enkfScalFunc}
-\alias{ENKFStep}
-\alias{ENKFStepVirtual}
-\alias{ETentriesFromExternalUnaries}
 \alias{evalBracketArgs}
 \alias{evalBracketArgsKnownBracket}
 \alias{evalInDistsMatchCallEnv}
@@ -315,6 +414,7 @@
 \alias{expit}
 \alias{exprAsListDrop2}
 \alias{exprClass}
+\alias{exprClassProcessingErrorMsg}
 \alias{exprClasses_addDebugMarks}
 \alias{exprClasses_buildInterms}
 \alias{exprClasses_eigenize}
@@ -324,7 +424,6 @@
 \alias{exprClasses_liftMaps}
 \alias{exprClasses_processSpecificCalls}
 \alias{exprClasses_setSizes}
-\alias{exprClassProcessingErrorMsg}
 \alias{exprName2Cpp}
 \alias{exprTypeInfoClass}
 \alias{extractAnyVectorizedIndexExprs}
@@ -332,26 +431,25 @@
 \alias{funName2OptimFunName}
 \alias{gd_allNeighbors}
 \alias{gd_getDependencies_IDs}
+\alias{genIndexVarValues_recurse}
+\alias{genLogProbNodeExprAndReplacements}
+\alias{genName2}
+\alias{genReplacementsAndCodeRecurse}
 \alias{generalFunSizeHandler}
 \alias{generateAll}
 \alias{generateClassHeader}
 \alias{generateFunctionHeader}
 \alias{generateObjectDefs}
-\alias{genIndexVarValues_recurse}
-\alias{genLogProbNodeExprAndReplacements}
-\alias{genName2}
-\alias{genReplacementsAndCodeRecurse}
 \alias{getAdditonalArgsListForOptim}
 \alias{getArgInfoFromNFSym}
 \alias{getArgsFromOptimCallForTargetFun}
 \alias{getAvailableNames}
 \alias{getBoolValue}
-\alias{getBUGSexampleDir}
+\alias{getCNumericListValue}
+\alias{getCRows}
 \alias{getCallText}
 \alias{getCharacterValue}
 \alias{getCharacterVectorValue}
-\alias{getCNumericListValue}
-\alias{getCRows}
 \alias{getDependencyPaths}
 \alias{getDistribution}
 \alias{getDistribution2}
@@ -361,24 +459,29 @@
 \alias{getFunctionEnvVar}
 \alias{getFxnVectorPtr}
 \alias{getIntValue}
-\alias{getLoadingNamespace}
 \alias{getLogProb_keywordInfo}
+\alias{getMVElement}
+\alias{getMVName}
+\alias{getMVptr}
 \alias{getMaxDim}
 \alias{getModelAccessorValues}
 \alias{getModelObjectPtr}
 \alias{getModelValuesAccessorValues}
 \alias{getModelValuesPtrFromModel}
 \alias{getModelValuesSpec}
-\alias{getMVElement}
-\alias{getMVName}
-\alias{getMVptr}
+\alias{getNRow}
 \alias{getNamedObjected}
+\alias{getNimValues}
 \alias{getNimbleFunctionEnvironment}
 \alias{getNimbleProject}
 \alias{getNimbleTypes}
+<<<<<<< HEAD
 \alias{getNimValues}
 \alias{getNodeFunctionIndexedInfo}
 \alias{getNRow}
+=======
+\alias{getNodeFunctionIndexedInfo}
+>>>>>>> reduceExport
 \alias{getNumberedObject}
 \alias{getParam_keywordInfo}
 \alias{getPosteriorDensityFromConjSampler}
@@ -391,8 +494,8 @@
 \alias{getSetModelValues}
 \alias{getSetModelValuesPtr}
 \alias{getSetModelVarPtr}
-\alias{getSetNimbleFunction}
 \alias{getSetNimPtrList}
+\alias{getSetNimbleFunction}
 \alias{getSetNumericVector}
 \alias{getSize_NumberedObjects}
 \alias{getSymbolicParentNodes}
@@ -409,7 +512,10 @@
 \alias{identityAssert}
 \alias{ifOrWhile}
 \alias{ilogit}
+<<<<<<< HEAD
 \alias{IncludeCodeDir}
+=======
+>>>>>>> reduceExport
 \alias{indexedNodeInfoTableClass}
 \alias{inner_populateNodeFxnVec}
 \alias{inprod}
@@ -417,11 +523,13 @@
 \alias{insertIndexingBracket}
 \alias{insertSingleIndexBrackets}
 \alias{insertSubIndexExpr}
-\alias{IntermLabelMaker}
 \alias{inverse}
 \alias{iprobit}
-\alias{is.blank}
 \alias{is.Cnf}
+<<<<<<< HEAD
+=======
+\alias{is.blank}
+>>>>>>> reduceExport
 \alias{is.indexed}
 \alias{is.na.vec}
 \alias{is.nan.vec}
@@ -446,11 +554,14 @@
 \alias{keywordOnlyMatchDistList}
 \alias{labelFunctionCreator}
 \alias{length.nimPointerList}
+\alias{length_char_SetupTemplate}
+\alias{length_char_keywordInfo}
 \alias{linkInverses}
 \alias{logdet}
 \alias{logfact}
 \alias{loggam}
 \alias{logit}
+<<<<<<< HEAD
 \alias{LWparFunc}
 \alias{LWSetMeanVirtual}
 \alias{LWSetParVirtual}
@@ -458,30 +569,34 @@
 \alias{LWStepVirtual}
 \alias{make_example_html}
 \alias{make_main}
+=======
+>>>>>>> reduceExport
 \alias{makeBUGSactiveBindingDef}
 \alias{makeBUGSclassFields}
-\alias{makeCallList}
 \alias{makeCNumericListPtr}
-\alias{makeCppNIMBLEfunction}
 \alias{makeCSingleModelValuesAccessor}
 \alias{makeCSingleVariableAccessor}
-\alias{MakeCustomModelClass}
+\alias{makeCallList}
+\alias{makeCppNIMBLEfunction}
 \alias{makeCustomModelValuesClass}
+\alias{makeDSLCallforVoidPtr_fromArgInfAndCall}
 \alias{makeDeclareSizeField}
 \alias{makeDefaultDirName}
-\alias{makeDSLCallforVoidPtr_fromArgInfAndCall}
 \alias{makeEigenArgsMatch}
 \alias{makeEigenName}
 \alias{makeEigenTypeLabel}
 \alias{makeEnvName}
 \alias{makeFillValue}
 \alias{makeFixedParameterCallCodeForOptim}
-\alias{makefnScaleLine}
 \alias{makeGetCodeFromAccessorVector}
-\alias{makeIndexedVariable}
 \alias{makeIndexNamePieces}
+\alias{makeIndexedVariable}
 \alias{makeLogProbEnvName}
 \alias{makeLogProbName}
+<<<<<<< HEAD
+=======
+\alias{makeMV_GID_Map}
+>>>>>>> reduceExport
 \alias{makeMapAccessExpr}
 \alias{makeMapExprFromBrackets}
 \alias{makeMapInfoFromAccessorVector}
@@ -490,11 +605,10 @@
 \alias{makeModelBindingFields}
 \alias{makeModelCppCopyTypes}
 \alias{makeModelValuesClassFields}
-\alias{makeMV_GID_Map}
+\alias{makeNFBindingFields}
 \alias{makeNameName}
 \alias{makeNewParsCharCopyLine}
 \alias{makeNewSpecFromOldSpec}
-\alias{makeNFBindingFields}
 \alias{makeNimbleFxnCppCopyTypes}
 \alias{makeNimbleFxnInterfaceCallMethodCode}
 \alias{makeNumericList}
@@ -512,6 +626,12 @@
 \alias{makeVertexNamesFromIndexArray}
 \alias{makeVertexNamesFromIndexArray2}
 \alias{makeVoidPointerName_fromObjName}
+<<<<<<< HEAD
+=======
+\alias{make_example_html}
+\alias{make_main}
+\alias{makefnScaleLine}
+>>>>>>> reduceExport
 \alias{map_SetupTemplate}
 \alias{mapsClass}
 \alias{matchAndFill.call}
@@ -560,7 +680,6 @@
 \alias{ndf_createVirtualNodeFunctionDefinitionsList}
 \alias{ndf_generateGetParamFunction}
 \alias{ndf_generateGetParamSwitchFunction}
-\alias{NeedMakevarsFile}
 \alias{neverReplaceable}
 \alias{newAssignmentExpression}
 \alias{newBracketExpr}
@@ -570,6 +689,16 @@
 \alias{newNumberedObjects}
 \alias{newObjElementPtr}
 \alias{newSpacesFunction}
+<<<<<<< HEAD
+=======
+\alias{nfBuildCInterface}
+\alias{nfCompilationInfoClass}
+\alias{nfGetDefVar}
+\alias{nfMethodErrorHandler}
+\alias{nfMethodRC}
+\alias{nfProcessing}
+\alias{nfWriteCompileAndLoadSO}
+>>>>>>> reduceExport
 \alias{nf_assignmentLHSvars}
 \alias{nf_changeNimKeywords}
 \alias{nf_changeNimKeywordsOne}
@@ -592,6 +721,7 @@
 \alias{nf_processSetupFunctionBody}
 \alias{nf_refClassLabelMaker}
 \alias{nf_substituteExceptFunctionsAndDollarSigns}
+<<<<<<< HEAD
 \alias{nfBuildCInterface}
 \alias{nfCompilationInfoClass}
 \alias{nfGetDefVar}
@@ -610,6 +740,10 @@
 \alias{nimbleProjectClass}
 \alias{nimbleUniqueID}
 \alias{nimbleUserNamespace}
+=======
+\alias{nimArrMapExpr}
+\alias{nimArrayGeneralHandler}
+>>>>>>> reduceExport
 \alias{nimCopy_keywordInfo}
 \alias{nimCppKeywordsThatFillSemicolon}
 \alias{nimDeparse}
@@ -622,6 +756,14 @@
 \alias{nimRound}
 \alias{nimStep}
 \alias{nimSwitch}
+\alias{nimbleFunctionList}
+\alias{nimbleGeneralParseDeparse}
+\alias{nimbleGraphClass}
+\alias{nimbleIncludeFile}
+\alias{nimbleOrRfunctionNames}
+\alias{nimbleProjectClass}
+\alias{nimbleUniqueID}
+\alias{nimbleUserNamespace}
 \alias{nl_addIndicesToVariables}
 \alias{nl_aggregateConsecutiveBlocks}
 \alias{nl_checkNodeNamesInModel}
@@ -644,6 +786,14 @@
 \alias{nndf_makeNodeFunctionIndexAccessCall}
 \alias{nndf_makeNodeFunctionIndexLabels}
 \alias{nndf_replaceSetupOutputsWithIndexedNodeInfo}
+<<<<<<< HEAD
+=======
+\alias{nodeFunction}
+\alias{nodeFunctionNew}
+\alias{nodeFunctionVector}
+\alias{nodeFunctionVector_SetupTemplate}
+\alias{nodeInit_virtual}
+>>>>>>> reduceExport
 \alias{node_determ}
 \alias{node_stoch_dbern}
 \alias{node_stoch_dbeta}
@@ -678,10 +828,12 @@
 \alias{numberedModelVariableAccessors}
 \alias{numberedObjects}
 \alias{numericList}
-\alias{NumericListBase}
 \alias{operatorRank}
 \alias{operatorsAllowedBeforeIndexBracketsWithoutLifting}
+<<<<<<< HEAD
 \alias{OptimFun_argDefs}
+=======
+>>>>>>> reduceExport
 \alias{optimReadyFun_setupCodeTemplate}
 \alias{OptimReadyFunction}
 \alias{outputCppArrayIndex2}
@@ -748,13 +900,10 @@
 \alias{R_setPtrVectorOfPtrs}
 \alias{rCalcDiffNodes}
 \alias{rCalcNodes}
-\alias{RCfunction}
-\alias{RCfunctionCompileClass}
-\alias{RCfunctionDef}
-\alias{RCfunInfoClass}
+\alias{rFunHandler}
+\alias{rGetLogProbsNodes}
+\alias{rSimNodes}
 \alias{rcFunLabelMaker}
-\alias{RCfunProcessing}
-\alias{RCvirtualFunProcessing}
 \alias{recurseSetSizes}
 \alias{reduceDF}
 \alias{reductionBinaryOperators}
@@ -768,65 +917,60 @@
 \alias{removeLayerHandler}
 \alias{removeLogProbName}
 \alias{removeNonScalarElementsFromList}
-\alias{removeSingleModelValuesAccess}
-\alias{removeSingleVarAccess}
-\alias{removeVariableFromEnv}
 \alias{replaceAllCodeSuccessfully}
 \alias{replaceConstantsRecurse}
 \alias{replaceDistributionAliases}
 \alias{replaceDistributionAliasesNameOnly}
-\alias{replacementHandler}
 \alias{replaceWhatWeCan}
+\alias{replacementHandler}
 \alias{reprioritizeColonOperator}
 \alias{resize_NumberedObjects}
 \alias{resizeManyModelValuesAccessor}
 \alias{resizeManyModelVarAccessor}
+<<<<<<< HEAD
+=======
+\alias{resize_NumberedObjects}
+>>>>>>> reduceExport
 \alias{rexp_nimble_keywordInfo}
-\alias{rFunHandler}
 \alias{rgamma_keywordInfo}
-\alias{rGetLogProbsNodes}
-\alias{RMakeCustomModelClass}
-\alias{Rmatrix2mvOneVar}
 \alias{rmFunHandler}
-\alias{Rname2CppName}
-\alias{RNumericList}
 \alias{rop}
+<<<<<<< HEAD
 \alias{RparseTree2ExprClasses}
 \alias{rSimNodes}
 \alias{sampler_BASE}
 \alias{sampler_binary}
 \alias{sampler_ess}
+=======
+\alias{run.time}
+>>>>>>> reduceExport
 \alias{samplerSpec}
 \alias{scalarOutputTypes}
 \alias{seqAlongHandler}
-\alias{setAndCalculateDiff}
 \alias{setArg}
 \alias{setAsRowOrCol}
 \alias{setBoolValue}
+\alias{setCNumericListValue}
 \alias{setCaller}
 \alias{setCharacterValue}
 \alias{setCharacterVectorValue}
-\alias{setCNumericListValue}
 \alias{setDoublePtrFromSinglePtr}
 \alias{setDoubleValue}
 \alias{setIntValue}
 \alias{setMVElement}
-\alias{setNimbleOption}
 \alias{setNimValues}
+\alias{setNimbleOption}
 \alias{setOnePtrVectorOfPtrs}
 \alias{setPtrVectorOfPtrs}
-\alias{setupCodeTemplateClass}
 \alias{setValues}
 \alias{setValuesAccess}
-\alias{SEXPscalarConvertFunctions}
+\alias{setupCodeTemplateClass}
 \alias{simulate_keywordInfo}
 \alias{singleBracket_keywordInfo}
 \alias{singleModelIndexAccess_SetupTemplate}
-\alias{singleModelValuesAccess}
 \alias{singleModelValuesAccessor_SetupTemplate}
 \alias{singleVarAccess}
 \alias{singleVarAccess_SetupTemplate}
-\alias{sizeasDoublePtr}
 \alias{sizeAsRowOrCol}
 \alias{sizeAssign}
 \alias{sizeAssignAfterRecursing}
@@ -834,29 +978,26 @@
 \alias{sizeBinaryCwiseLogical}
 \alias{sizeBinaryReduction}
 \alias{sizeBinaryUnaryCwise}
-\alias{sizecallC}
 \alias{sizeCalls}
 \alias{sizeChainedCall}
 \alias{sizeColonOperator}
 \alias{sizeDimOperator}
 \alias{sizeFor}
-\alias{sizeforceEigenize}
 \alias{sizeGetParam}
 \alias{sizeIndexingBracket}
 \alias{sizeInsertIntermediate}
-\alias{sizemap}
 \alias{sizeMatrixMult}
 \alias{sizeMatrixSquareReduction}
-\alias{sizemvAccessBracket}
 \alias{sizeNFvar}
 \alias{sizeNimArrayGeneral}
 \alias{sizeNimbleFunction}
 \alias{sizeOneEigenCommand}
 \alias{sizeRCfunction}
+\alias{sizeRMVNorm}
 \alias{sizeResizeNoPtr}
 \alias{sizeReturn}
 \alias{sizeRmultivarFirstArg}
-\alias{sizeRMVNorm}
+\alias{sizeRunTime}
 \alias{sizeScalar}
 \alias{sizeScalarModelOp}
 \alias{sizeScalarRecurse}
@@ -872,6 +1013,11 @@
 \alias{sizeUndefined}
 \alias{sizeValues}
 \alias{sizeVoidPtr}
+\alias{sizeasDoublePtr}
+\alias{sizecallC}
+\alias{sizeforceEigenize}
+\alias{sizemap}
+\alias{sizemvAccessBracket}
 \alias{specificCallHandlers}
 \alias{specificCallReplacements}
 \alias{spectrum0.ar.big}
@@ -881,6 +1027,7 @@
 \alias{stochNodeInit}
 \alias{stripArgs}
 \alias{stripPrefix}
+\alias{symTypeFromSymTab}
 \alias{symbolBase}
 \alias{symbolBasic}
 \alias{symbolCopierVector}
@@ -896,9 +1043,10 @@
 \alias{symbolModelValuesAccessorVector}
 \alias{symbolModelVariableAccessorVector}
 \alias{symbolNimArrDoublePtr}
+\alias{symbolNimPtrList}
 \alias{symbolNimbleFunction}
 \alias{symbolNimbleFunctionList}
-\alias{symbolNimPtrList}
+\alias{symbolNimbleTimer}
 \alias{symbolNodeFunctionVector}
 \alias{symbolNumericList}
 \alias{symbolOptimReadyFunction}
@@ -908,14 +1056,16 @@
 \alias{symbolTable2cppVars}
 \alias{symbolVecNimArrPtr}
 \alias{symbolVoidPtr}
-\alias{symTypeFromSymTab}
 \alias{timeComparisonComponent}
 \alias{toSEXPscalarConvertFunctions}
 \alias{unaryOperators}
 \alias{unaryOrNonaryOperators}
-\alias{UseLibraryMakevars}
 \alias{v}
+<<<<<<< HEAD
 \alias{valueInCompiledNimbleFunction}
+=======
+\alias{valuesAccessorVector}
+>>>>>>> reduceExport
 \alias{values_keywordInfo}
 \alias{valuesAccessorVector}
 \alias{varAndIndices2flatIndex}
@@ -938,18 +1088,23 @@
 \alias{[[,nimPointerList-method}
 \alias{[[<-,nimPointerList-method}
 \alias{[[<-,nimbleFunctionList-method}
+\alias{[,distributionsClass-method}
 \alias{[[,distributionsClass-method}
 \alias{[[,conjugacyRelationshipsClass-method}
-\alias{as.matrix.modelValuesBaseClass-Class}
-\alias{autoBlockClass-Class}
 \alias{BUGScontextClass-Class}
 \alias{BUGSsingleContextClass-Class}
 \alias{CmultiNimbleFunctionClass-Class}
+\alias{MakeCustomModelClass-Class}
+\alias{RCfunInfoClass-Class}
+\alias{RCfunctionCompileClass-Class}
+\alias{RMakeCustomModelClass-Class}
+\alias{as.matrix.modelValuesBaseClass-Class}
+\alias{autoBlockClass-Class}
 \alias{conjugacyClass-Class}
 \alias{conjugacyRelationshipsClass-Class}
 \alias{cppBUGSmodelClass-Class}
-\alias{cppCodeFileClass-Class}
 \alias{cppCPPfileClass-Class}
+\alias{cppCodeFileClass-Class}
 \alias{cppHfileClass-Class}
 \alias{cppModelValuesClass-Class}
 \alias{cppNamedObjectsClass-Class}
@@ -963,7 +1118,6 @@
 \alias{exprTypeInfoClass-Class}
 \alias{indexedNodeInfoTableClass-Class}
 \alias{keywordInfoClass-Class}
-\alias{MakeCustomModelClass-Class}
 \alias{makeCustomModelValuesClass-Class}
 \alias{mapsClass-Class}
 \alias{modelDefInfoClass-Class}
@@ -972,12 +1126,9 @@
 \alias{nimbleGraphClass-Class}
 \alias{nimbleProjectClass-Class}
 \alias{posteriorClass-Class}
-\alias{RCfunctionCompileClass-Class}
-\alias{RCfunInfoClass-Class}
-\alias{RMakeCustomModelClass-Class}
 \alias{setupCodeTemplateClass-Class}
 \alias{varInfoClass-Class}
 \description{
-Functions and classes used internally in NIMBLE and not expected to be called directly by users. For the moment many functions and classes not intended for direct use are exported because they are used within Reference Class methods for classes programmatically generated by NIMBLE.
+Functions and classes used internally in NIMBLE and not expected to be called directly by users. Many functions and classes not intended for direct use are documented and/or exported because they are used within Reference Class methods for classes programmatically generated by NIMBLE.
 }
 \author{NIMBLE Development Team}

@@ -1,6 +1,21 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+#' Explicitly declare objects created in setup code to be preserved and compiled as member data
+#'
+#' Normally a \code{nimbleFunction} determines what objects from \code{setup} code need to be preserved for \code{run} code or other member functions.  \code{setupOuputs} allows explicit declaration for cases when an object created in setup output is not use in member functions.
+#' 
+#' @name setupOutputs
+#'
+#' @param ... An arbitrary set of names
+#'
+#' @details
+#' Normally any object created in \code{setup} code whose name appears in \code{run} or another member function is included in the save results of setup code.  When the nimbleFunction is compiled, such objects will become member data of the resulting C++ class.  If it is desired to force an object to become member data even if it does not appaer in a member function, delcare it using \code{setupOutputs}.  E.g. \code{setupOutputs(a, b)} declares that \code{a} and \code{b} should be preserved.
+#'
+#' The \code{setupOutputs} line will be removed from the setup code.  It is really a marker during nimbleFunction creation of what should be preserved.
+#' 
+NULL
+
 #' Halt execution of a nimbleFunction function method.  Part of the NIMBLE language
 #'
 #' @param msg Character object to be output as an error message
@@ -13,6 +28,7 @@ nimStop <- function(msg) stop(msg, call. = FALSE)
 # we use call.=FALSE because otherwise the error msg indicates the
 # error itself occurs in nimStop() and not in the calling frame
 
+#' @export
 run.time <- function(code) {
     as.numeric(system.time(code)[3])
 }
@@ -46,6 +62,8 @@ asRow <- function(x) {
 }
 
 ## Aliased in asRow
+#' @rdname asRow
+#' @export
 asCol <- function(x) {
     matrix(x, ncol = 1)
 }
@@ -385,8 +403,6 @@ simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector, nodeFunct
 # These functions work in R and in NIMBLE run-time code that can be compiled.
 #
 # @return NULL, but this function works by the side-effect of modifying P in the calling environment.
-
-
 getValues <- function(vals, model, nodes, envir = parent.frame()) {
     valsExp = substitute(vals)
     access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
@@ -452,8 +468,6 @@ setValuesAccess <- function(input, access) {
 # These functions work in R and in NIMBLE run-time code that can be compiled.
 #
 # @return NULL, but this function works by the side-effect of modifying the model.
-
-
 setValues <- function(input, model, nodes){
 	access = modelVariableAccessorVector(model, nodes, logProb = FALSE)
 	setValuesAccess(input, access)
@@ -491,6 +505,10 @@ values <- function(model, nodes){
 	ans
 }
 
+## # @rdname values
+
+ 
+#' @export
 `values<-` <- function(model, nodes, value){
 	setValues(value, model, nodes)
 	return(model)
@@ -653,6 +671,7 @@ nfVar <- function(nf, varName) {
     return(v)
 }
 
+#' @export
 `nfVar<-` <- function(nf, varName, value) {
     refClassObj <- nf_getRefClassObject(nf)
     refClassObj[[varName]] <- value
@@ -746,6 +765,8 @@ rankSample <- function(weights, size, output, silent = FALSE) {
 #' @examples
 #' ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code
 #' nimPrint('Answer is ', ans, '\n') ## would work in R or NIMBLE
+#'
+#' @export
 nimPrint <- function(...) {
     items <- list(...)
     for(i in seq_along(items)) {if(is.array(items[[i]])) print(items[[i]]) else cat(items[[i]])}
@@ -763,6 +784,9 @@ nimPrint <- function(...) {
 #' @param value the initial value for each element of the vector (default = 0)
 #' @param init logical, whether to initialize elements of the vector (default = TRUE)
 #'
+#' @details
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{integer} is a synonym for \code{nimInteger}.  When used with only the \code{length} argument, this behaves similarly to R's \code{integer} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
+#' 
 #' @author Daniel Turek
 #' @aliases numeric
 #' @seealso \link{integer} \link{matrix} \link{array}
@@ -780,9 +804,12 @@ nimNumeric <- function(length = 0, value = 0, init = TRUE) {
 #' See the User Manual for usage examples.
 #'
 #' @param length the length of the vector (default = 0)
-#' @param value the initial value for each element of the vector (default = 0L)
-#' @param init logical, whether to initialize elements of the vector (default = TRUE)
+#' @param value the initial value for each element of the vector (default = 0L).  Only used if \code{init} is \code{TRUE}.
+#' @param init logical, whether to initialize elements of the vector (default = TRUE).
 #'
+#' @details
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{integer} is a synonym for \code{nimInteger}.  When used with only the \code{length} argument, this behaves similarly to R's \code{integer} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
+#' 
 #' @author Daniel Turek
 #' @aliases integer
 #' @seealso \link{numeric} \link{matrix} \link{array}
@@ -805,6 +832,8 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 #' @param init logical, whether to initialize elements of the matrix (default = TRUE)
 #' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
 #'
+#' @details
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{matrix} is a synonym for \code{nimMatrix}.  When used with only the first three arguments, this behaves similarly to R's \code{matrix} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
 #' @author Daniel Turek
 #' @aliases matrix
 #' @seealso \link{numeric} \link{integer} \link{array}
@@ -826,6 +855,9 @@ nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double
 #' @param init logical, whether to initialize elements of the matrix (default = TRUE)
 #' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
 #'
+#' @details
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{array} is a synonym for \code{nimArray}.  When used with only the first two arguments, this behaves similarly to R's \code{array} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
+#' 
 #' @author Daniel Turek
 #' @aliases array
 #' @seealso \link{numeric} \link{integer} \link{matrix}

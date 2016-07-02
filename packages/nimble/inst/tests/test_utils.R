@@ -32,7 +32,7 @@ test_math <- function(input, verbose = TRUE, size = 3) {
       #       setup = TRUE,
              run = runFun)
   #nfR <- nfGen()
-  project <- nimbleProjectClass(NULL, name = 'foo')
+  project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
   nfC <- compileNimble(nfR, project = project)
 
   nArgs <- length(input$inputDim)
@@ -124,7 +124,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     
     if(!missing(example)) {
                                         # classic-bugs example specified by name
-  	dir = getBUGSexampleDir(example)
+  	dir = nimble:::getBUGSexampleDir(example)
         if(missing(model)) model <- example
         Rmodel <- readBUGSmodel(model, dir = dir, data = data, inits = inits, useInits = TRUE,
                                 check = FALSE)
@@ -152,7 +152,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   }
   
   vars <- Rmodel$getDependencies(Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE), stochOnly = TRUE, includeData = FALSE, downstream = TRUE)
-  vars <- unique(removeIndexing(vars))
+  vars <- unique(nimble:::removeIndexing(vars))
   mcmcConf$addMonitors(vars, print = FALSE)
   
   Rmcmc <- buildMCMC(mcmcConf)
@@ -289,7 +289,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     nontopNodes <- Rmodel$getDependencies(topNodes, self = FALSE, includeData = TRUE, downstream = TRUE, stochOnly = FALSE)
     # nonDataNodes <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE)
     nonDataNodesElements <- Rmodel$getDependencies(topNodes, self = TRUE, includeData = FALSE, downstream = TRUE, stochOnly = TRUE, returnScalarComponents = TRUE)
-    dataVars <- unique(removeIndexing(Rmodel$getDependencies(topNodes, dataOnly = TRUE, downstream = TRUE)))
+    dataVars <- unique(nimble:::removeIndexing(Rmodel$getDependencies(topNodes, dataOnly = TRUE, downstream = TRUE)))
     set.seed(seed)
     Cmodel$resetData()
     simulate(Cmodel, nontopNodes)
