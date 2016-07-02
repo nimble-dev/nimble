@@ -1,6 +1,6 @@
 context("Testing of MCEM")
 
-pumpCode <- nimbleCode({ 
+pumpCode <- nimbleCode({
   for (i in 1:N){
       theta[i] ~ dgamma(alpha,beta)
       lambda[i] <- theta[i]*t[i]
@@ -21,7 +21,7 @@ pumpInits <- list(alpha = 1, beta = 1,
 
 pump <- nimbleModel(code = pumpCode, name = 'pump',
                        constants = pumpConsts,
-                       data = pumpData, 
+                       data = pumpData,
                        inits = pumpInits,
                        check = FALSE)
 
@@ -31,14 +31,15 @@ compileNimble(pump)
 pumpMCEM <- buildMCEM(model = pump,
                       latentNodes = 'theta', burnIn = 300,
                       mcmcControl = list(adaptInterval = 100),
-                      boxConstraints = list( list( c('alpha', 'beta'), 
-                                                  limits = c(0, Inf) ) ), 
-                      C = 0.001, alpha = .01, beta = .01, gamma = .01, buffer = 1e-6)
-
+                      boxConstraints = list( list( c('alpha', 'beta'),
+                                                  limits = c(0, Inf) ) ),
+                      C = 0.01, alpha = .01, beta = .01, gamma = .01, buffer = 1e-6)
+## C changed from .001 to .01 to make the test run faster
+## Correspondingly changed tolerance below from 0.01 to 0.04
 set.seed(0)
 out <- pumpMCEM(initM = 1000)
 names(out) <- NULL
 
 mle <- c(0.82, 1.26)
 try(test_that("Test that MCEM finds the MLE: ",
-              expect_equal(out, mle, tolerance = 0.01)))
+              expect_equal(out, mle, tolerance = 0.04)))

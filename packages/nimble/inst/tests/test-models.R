@@ -51,13 +51,13 @@ testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data =
 # salm: need dimensionality of logx
 writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
 ##system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug")))
-system(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), system.file('classic-bugs','vol1','salm', package = 'nimble'))
+system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
 ##system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
 #system(paste("sed -i -e 's/logx\\[\\]/logx\\[1:doses\\]/g'", file.path(tempdir(), "salm.bug"))) # alternative way to get size info in there
 testBUGSmodel('salm', dir = "", model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'),  useInits = TRUE)
 
 file.copy(system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), file.path(tempdir(), "air.bug"), overwrite=TRUE)
-system.in.dir(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
+system.in.dir("sed -i -e 's/mean(X)/mean(X\\[\\])/g' air.bug", dir = tempdir())
 ##system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
 ##system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
 testBUGSmodel('air', dir = "", model = file.path(tempdir(), "air.bug"), data = system.file('classic-bugs','vol2','air','air-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol2','air','air-inits.R', package = 'nimble'),  useInits = TRUE)
