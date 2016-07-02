@@ -49,8 +49,8 @@ modelDefInfoClass <- setRefClass('modelDefInfoClass',
                                      ))
 
 
-removeVariableFromEnv <- function(name, env)
-	eval(substitute(remove(VAR, envir = env), list(VAR = name)))
+## removeVariableFromEnv <- function(name, env)
+## 	eval(substitute(remove(VAR, envir = env), list(VAR = name)))
 
 nimbleProjectClass <- setRefClass('nimbleProjectClass',
                              fields = list(

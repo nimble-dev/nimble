@@ -1,4 +1,4 @@
-#!/usr/local/bin/Rscript
+#!/usr/bin/Rscript
 
 # this script creates the Rd files from the roxygen info in the R files
 # and creates the NAMESPACE file

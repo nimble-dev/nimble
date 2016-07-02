@@ -777,9 +777,6 @@
 \alias{removeLayerHandler}
 \alias{removeLogProbName}
 \alias{removeNonScalarElementsFromList}
-\alias{removeSingleModelValuesAccess}
-\alias{removeSingleVarAccess}
-\alias{removeVariableFromEnv}
 \alias{replaceAllCodeSuccessfully}
 \alias{replaceConstantsRecurse}
 \alias{replaceDistributionAliases}
