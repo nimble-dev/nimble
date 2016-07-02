@@ -33,7 +33,6 @@ nimbleUserNamespace <- as.environment(list())
         useDynamicConjugacy = TRUE,
         
         ## default settings for MCMC samplers
-        ## (formerly controlDefaultList appearing in MCMC_conf.R)
         MCMCcontrolDefaultList = list(
             log = FALSE,
             reflective = FALSE,
@@ -45,10 +44,10 @@ nimbleUserNamespace <- as.environment(list())
             sliceWidth = 1,
             sliceMaxSteps = 100,
             m = 1000,
-            resample = F,
-            optimizeM = F,
-            filterType = "bootstrap",
-            lookahead = "simulate"
+            resample = FALSE,
+            optimizeM = FALSE,
+            filterType = 'bootstrap',
+            lookahead = 'simulate'
         )
     )
 )
