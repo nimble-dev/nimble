@@ -482,6 +482,9 @@ addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
         conf$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {
+        if(Rmodel$getNodeDistribution(nodeGroup) == 'dmulti') {
+            conf$addSampler(target = nodeGroup, type = 'RW_multinomial', print = FALSE); return()
+        }
         conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
     }
     conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
