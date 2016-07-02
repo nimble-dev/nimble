@@ -1,5 +1,7 @@
-# aliased in MCMCsuiteClass
+#' @rdname MCMCsuiteClass-class
+#' @export
 MCMCsuite <- function(...) {
+    ## aliased in MCMCsuiteClass
     suite <- MCMCsuiteClass(...)
     return(suite$output)
 }

@@ -4,6 +4,8 @@
 ### virtual nimbleFunction template, included for ALL samplers #####
 ####################################################################
 
+#' @rdname samplers
+#' @export
 sampler_BASE <- nimbleFunctionVirtual(
     methods = list(
         reset = function() { }
@@ -1038,6 +1040,10 @@ sampler_RW_PF_block <- nimbleFunction(
 #' \code{mcmcConf$addSampler(target = targetnode, type = samplertype, control = controllist)}
 #'
 #' where \code{controllist} is a named list, with elements specific to \code{samplertype}.  The default values for control list elements are determined by the NIMBLE system option \code{'MCMCcontrolDefaultList'}.  Descriptions of each sampling algorithm, and the possible customizations for each sampler (using the control argument) appear below.
+#'
+#' @section \code{sampler_base}: base class for new samplers
+#'
+#' When you write a new sampler for use in a NIMBLE MCMC (see User Manual), you must include \code{contains = sampler_BASE}.
 #'
 #' @section binary sampler:
 #'

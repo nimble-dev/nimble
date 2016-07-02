@@ -424,8 +424,17 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
 
 
-### Function for finding directory with examples
-
+#' Get the directory path to one of the classic BUGS examples installed with NIMBLE package
+#'
+#' NIMBLE comes with some of the classic BUGS examples.  \code{getBUGSexampleDir} looks up the location of an example from its name.
+#'
+#' @param example The name of the classic BUGS example.
+#'
+#' @author Christopher Paciorek
+#'
+#' @return Character string of the fully pathed directory of the BUGS example.
+#'
+#' @export
 getBUGSexampleDir <- function(example){
 	dir <- system.file("classic-bugs", package = "nimble")
     vol <- NULL

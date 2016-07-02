@@ -490,7 +490,9 @@ values <- function(model, nodes){
 	ans
 }
 
-#' @rdname values
+## # @rdname values
+
+ 
 #' @export
 `values<-` <- function(model, nodes, value){
 	setValues(value, model, nodes)
@@ -654,6 +656,7 @@ nfVar <- function(nf, varName) {
     return(v)
 }
 
+#' @export
 `nfVar<-` <- function(nf, varName, value) {
     refClassObj <- nf_getRefClassObject(nf)
     refClassObj[[varName]] <- value
@@ -747,6 +750,8 @@ rankSample <- function(weights, size, output, silent = FALSE) {
 #' @examples
 #' ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code
 #' nimPrint('Answer is ', ans, '\n') ## would work in R or NIMBLE
+#'
+#' @export
 nimPrint <- function(...) {
     items <- list(...)
     for(i in seq_along(items)) {if(is.array(items[[i]])) print(items[[i]]) else cat(items[[i]])}
