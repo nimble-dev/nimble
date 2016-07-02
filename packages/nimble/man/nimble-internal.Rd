@@ -73,7 +73,7 @@
 \alias{addNecessaryIndexingToNewNode}
 \alias{addNecessarySetupCode}
 \alias{addNewCode}
-\alias{addSamplerToSpec}
+\alias{addSamplerToConf}
 \alias{addSetupCodeNames}
 \alias{addSingleModelValuesAccess}
 \alias{addSingleVarAccess}
@@ -111,14 +111,6 @@
 \alias{bootFStep}
 \alias{bootStepVirtual}
 \alias{brackOperators}
-<<<<<<< HEAD
-\alias{BUGScode}
-\alias{BUGScontextClass}
-\alias{BUGSdistToRdist}
-\alias{BUGSmodel}
-\alias{BUGSsingleContextClass}
-=======
->>>>>>> reduceExport
 \alias{buildCopyLineFromSEXP}
 \alias{buildCopyLineToSEXP}
 \alias{buildIntermCalls}
@@ -128,31 +120,7 @@
 \alias{buildNimbleFxnInterface}
 \alias{buildSimpleIntermCall}
 \alias{buildSymbolTable}
-\alias{C_dcat}
-\alias{C_ddirch}
-\alias{C_dinterval}
-\alias{C_dmnorm_chol}
-\alias{C_dmulti}
-\alias{C_dt_nonstandard}
-\alias{C_dwish_chol}
-\alias{C_rcat}
-\alias{C_rdirch}
-\alias{C_rinterval}
-\alias{C_rmnorm_chol}
-\alias{C_rmulti}
-\alias{C_rt_nonstandard}
-\alias{C_rwish_chol}
 \alias{cAddBlank}
-<<<<<<< HEAD
-\alias{calc_asympVar}
-\alias{calc_dmnormAltParams}
-\alias{calc_dmnormConjugacyContributions}
-\alias{calc_E_llk_gen}
-\alias{calcAdaptationFactor}
-\alias{calculate_keywordInfo}
-\alias{calculateDiff_keywordInfo}
-\alias{callsFromExternalUnaries}
-=======
 \alias{cCopyVariableRows}
 \alias{cGetNRow}
 \alias{calcAdaptationFactor}
@@ -162,7 +130,6 @@
 \alias{calc_dmnormConjugacyContributions}
 \alias{calculateDiff_keywordInfo}
 \alias{calculate_keywordInfo}
->>>>>>> reduceExport
 \alias{callToPackVPtrs}
 \alias{callToSkipInEigenization}
 \alias{callsFromExternalUnaries}
@@ -183,11 +150,6 @@
 \alias{cc_otherParamsCheck}
 \alias{cc_structureExprName}
 \alias{cc_vectorizedComponentCheck}
-<<<<<<< HEAD
-\alias{cCopyVariableRows}
-\alias{cGetNRow}
-=======
->>>>>>> reduceExport
 \alias{character2index}
 \alias{checkDistributionsFunctions}
 \alias{checkDistributionsInput}
@@ -292,10 +254,6 @@
 \alias{cppVecVoidPtr}
 \alias{cppVirtualNimbleFunctionClass}
 \alias{cppVoid}
-<<<<<<< HEAD
-\alias{createDefault_isDataObj}
-=======
->>>>>>> reduceExport
 \alias{createDFfromABlist}
 \alias{createDefault_isDataObj}
 \alias{createDynamicConjugateSamplerName}
@@ -315,17 +273,12 @@
 \alias{dimOrLength}
 \alias{distClass}
 \alias{distfun}
-<<<<<<< HEAD
-=======
 \alias{distributionAliases}
 \alias{distributionFuns}
->>>>>>> reduceExport
 \alias{distribution_dFuns}
 \alias{distribution_pFuns}
 \alias{distribution_qFuns}
 \alias{distribution_rFuns}
-\alias{distributionAliases}
-\alias{distributionFuns}
 \alias{distributions}
 \alias{distributionsClass}
 \alias{distributionsInputList}
@@ -345,11 +298,6 @@
 \alias{effectiveSizeStan}
 \alias{efficiencyDetailsComparisonComponent}
 \alias{eigCalls}
-<<<<<<< HEAD
-\alias{eigenize_asRowOrCol}
-\alias{eigenize_assign_before_recurse}
-\alias{eigenize_chainedCall}
-=======
 \alias{eigOtherMemberFunctionCalls}
 \alias{eigProxyCalls}
 \alias{eigProxyCallsExternalUnary}
@@ -364,7 +312,6 @@
 \alias{eigenizeTranslate}
 \alias{eigenize_asRowOrCol}
 \alias{eigenize_assign_before_recurse}
->>>>>>> reduceExport
 \alias{eigenize_cWiseAddSub}
 \alias{eigenize_cWiseBinaryArray}
 \alias{eigenize_cWiseBinaryEitherMatch}
@@ -381,22 +328,6 @@
 \alias{eigenize_reductionArray}
 \alias{eigenize_reductionBinaryEither}
 \alias{eigenize_reductionEither}
-<<<<<<< HEAD
-\alias{eigenizeArrayize}
-\alias{eigenizeCalls}
-\alias{eigenizeCallsBeforeRecursing}
-\alias{eigenizeMatricize}
-\alias{eigenizeName}
-\alias{eigenizeNameStrided}
-\alias{eigenizeTranslate}
-\alias{EigenNewExpr}
-\alias{eigOtherMemberFunctionCalls}
-\alias{eigProxyCalls}
-\alias{eigProxyCallsExternalUnary}
-\alias{eigProxyTranslate}
-\alias{eigProxyTranslateExternalUnary}
-=======
->>>>>>> reduceExport
 \alias{embedInRbracket}
 \alias{embedListInRbracket}
 \alias{emptyTypeInfo}
@@ -467,21 +398,15 @@
 \alias{getModelAccessorValues}
 \alias{getModelObjectPtr}
 \alias{getModelValuesAccessorValues}
+\alias{getModelValuesConf}
 \alias{getModelValuesPtrFromModel}
-\alias{getModelValuesSpec}
 \alias{getNRow}
 \alias{getNamedObjected}
 \alias{getNimValues}
 \alias{getNimbleFunctionEnvironment}
 \alias{getNimbleProject}
 \alias{getNimbleTypes}
-<<<<<<< HEAD
-\alias{getNimValues}
 \alias{getNodeFunctionIndexedInfo}
-\alias{getNRow}
-=======
-\alias{getNodeFunctionIndexedInfo}
->>>>>>> reduceExport
 \alias{getNumberedObject}
 \alias{getParam_keywordInfo}
 \alias{getPosteriorDensityFromConjSampler}
@@ -512,10 +437,6 @@
 \alias{identityAssert}
 \alias{ifOrWhile}
 \alias{ilogit}
-<<<<<<< HEAD
-\alias{IncludeCodeDir}
-=======
->>>>>>> reduceExport
 \alias{indexedNodeInfoTableClass}
 \alias{inner_populateNodeFxnVec}
 \alias{inprod}
@@ -526,10 +447,7 @@
 \alias{inverse}
 \alias{iprobit}
 \alias{is.Cnf}
-<<<<<<< HEAD
-=======
 \alias{is.blank}
->>>>>>> reduceExport
 \alias{is.indexed}
 \alias{is.na.vec}
 \alias{is.nan.vec}
@@ -541,7 +459,7 @@
 \alias{isCodeScalar}
 \alias{isEigScalar}
 \alias{isExprLiftable}
-\alias{isModelValuesSpec}
+\alias{isModelValuesConf}
 \alias{isNameInExpr}
 \alias{isNameInExprList}
 \alias{isRbracket}
@@ -561,16 +479,6 @@
 \alias{logfact}
 \alias{loggam}
 \alias{logit}
-<<<<<<< HEAD
-\alias{LWparFunc}
-\alias{LWSetMeanVirtual}
-\alias{LWSetParVirtual}
-\alias{LWStep}
-\alias{LWStepVirtual}
-\alias{make_example_html}
-\alias{make_main}
-=======
->>>>>>> reduceExport
 \alias{makeBUGSactiveBindingDef}
 \alias{makeBUGSclassFields}
 \alias{makeCNumericListPtr}
@@ -593,10 +501,7 @@
 \alias{makeIndexedVariable}
 \alias{makeLogProbEnvName}
 \alias{makeLogProbName}
-<<<<<<< HEAD
-=======
 \alias{makeMV_GID_Map}
->>>>>>> reduceExport
 \alias{makeMapAccessExpr}
 \alias{makeMapExprFromBrackets}
 \alias{makeMapInfoFromAccessorVector}
@@ -607,8 +512,8 @@
 \alias{makeModelValuesClassFields}
 \alias{makeNFBindingFields}
 \alias{makeNameName}
+\alias{makeNewConfFromOldConf}
 \alias{makeNewParsCharCopyLine}
-\alias{makeNewSpecFromOldSpec}
 \alias{makeNimbleFxnCppCopyTypes}
 \alias{makeNimbleFxnInterfaceCallMethodCode}
 \alias{makeNumericList}
@@ -626,12 +531,9 @@
 \alias{makeVertexNamesFromIndexArray}
 \alias{makeVertexNamesFromIndexArray2}
 \alias{makeVoidPointerName_fromObjName}
-<<<<<<< HEAD
-=======
 \alias{make_example_html}
 \alias{make_main}
 \alias{makefnScaleLine}
->>>>>>> reduceExport
 \alias{map_SetupTemplate}
 \alias{mapsClass}
 \alias{matchAndFill.call}
@@ -650,8 +552,6 @@
 \alias{matrixSquareReductionOperators}
 \alias{mcmc_findControlListNamesInCode}
 \alias{mcmc_listContentsToStr}
-\alias{MCMCefficiencyHO}
-\alias{MCMCefficiencyHOlist}
 \alias{mergeMultiLineStatements}
 \alias{midOperators}
 \alias{minMaxHandler}
@@ -689,8 +589,6 @@
 \alias{newNumberedObjects}
 \alias{newObjElementPtr}
 \alias{newSpacesFunction}
-<<<<<<< HEAD
-=======
 \alias{nfBuildCInterface}
 \alias{nfCompilationInfoClass}
 \alias{nfGetDefVar}
@@ -698,7 +596,6 @@
 \alias{nfMethodRC}
 \alias{nfProcessing}
 \alias{nfWriteCompileAndLoadSO}
->>>>>>> reduceExport
 \alias{nf_assignmentLHSvars}
 \alias{nf_changeNimKeywords}
 \alias{nf_changeNimKeywordsOne}
@@ -721,29 +618,8 @@
 \alias{nf_processSetupFunctionBody}
 \alias{nf_refClassLabelMaker}
 \alias{nf_substituteExceptFunctionsAndDollarSigns}
-<<<<<<< HEAD
-\alias{nfBuildCInterface}
-\alias{nfCompilationInfoClass}
-\alias{nfGetDefVar}
-\alias{nfMethodErrorHandler}
-\alias{nfMethodRC}
-\alias{nfProcessing}
-\alias{nfWriteCompileAndLoadSO}
-\alias{nimArrayGeneralHandler}
-\alias{nimArrMapExpr}
-\alias{NimbleCodeDir}
-\alias{nimbleFunctionList}
-\alias{nimbleGeneralParseDeparse}
-\alias{nimbleGraphClass}
-\alias{nimbleIncludeFile}
-\alias{nimbleOrRfunctionNames}
-\alias{nimbleProjectClass}
-\alias{nimbleUniqueID}
-\alias{nimbleUserNamespace}
-=======
 \alias{nimArrMapExpr}
 \alias{nimArrayGeneralHandler}
->>>>>>> reduceExport
 \alias{nimCopy_keywordInfo}
 \alias{nimCppKeywordsThatFillSemicolon}
 \alias{nimDeparse}
@@ -786,14 +662,11 @@
 \alias{nndf_makeNodeFunctionIndexAccessCall}
 \alias{nndf_makeNodeFunctionIndexLabels}
 \alias{nndf_replaceSetupOutputsWithIndexedNodeInfo}
-<<<<<<< HEAD
-=======
 \alias{nodeFunction}
 \alias{nodeFunctionNew}
 \alias{nodeFunctionVector}
 \alias{nodeFunctionVector_SetupTemplate}
 \alias{nodeInit_virtual}
->>>>>>> reduceExport
 \alias{node_determ}
 \alias{node_stoch_dbern}
 \alias{node_stoch_dbeta}
@@ -817,11 +690,6 @@
 \alias{node_stoch_dunif}
 \alias{node_stoch_dweib}
 \alias{node_stoch_dwish}
-\alias{nodeFunction}
-\alias{nodeFunctionNew}
-\alias{nodeFunctionVector}
-\alias{nodeFunctionVector_SetupTemplate}
-\alias{nodeInit_virtual}
 \alias{nonNativeEigenCalls}
 \alias{nonNativeEigenProxyCalls}
 \alias{numberedModelValuesAccessors}
@@ -830,12 +698,7 @@
 \alias{numericList}
 \alias{operatorRank}
 \alias{operatorsAllowedBeforeIndexBracketsWithoutLifting}
-<<<<<<< HEAD
-\alias{OptimFun_argDefs}
-=======
->>>>>>> reduceExport
 \alias{optimReadyFun_setupCodeTemplate}
-\alias{OptimReadyFunction}
 \alias{outputCppArrayIndex2}
 \alias{outputCppBinaryOperation2}
 \alias{outputCppCommentBlock2}
@@ -878,10 +741,10 @@
 \alias{posteriorClass}
 \alias{posteriorSummaryComparisonComponent}
 \alias{pow}
-\alias{pq_exp_nimble_keywordInfo}
-\alias{pq_gamma_keywordInfo}
 \alias{pqAvail}
 \alias{pqDists}
+\alias{pq_exp_nimble_keywordInfo}
+\alias{pq_gamma_keywordInfo}
 \alias{printMinTimeABS}
 \alias{probit}
 \alias{processDistributionAliases}
@@ -895,9 +758,6 @@
 \alias{projectNameCreator}
 \alias{putCodeLinesInBrackets}
 \alias{qp_dist_keywordInfo}
-\alias{R_setDoublePtrFromSinglePtr}
-\alias{R_setOnePtrVectorOfPtrs}
-\alias{R_setPtrVectorOfPtrs}
 \alias{rCalcDiffNodes}
 \alias{rCalcNodes}
 \alias{rFunHandler}
@@ -924,27 +784,15 @@
 \alias{replaceWhatWeCan}
 \alias{replacementHandler}
 \alias{reprioritizeColonOperator}
-\alias{resize_NumberedObjects}
 \alias{resizeManyModelValuesAccessor}
 \alias{resizeManyModelVarAccessor}
-<<<<<<< HEAD
-=======
 \alias{resize_NumberedObjects}
->>>>>>> reduceExport
 \alias{rexp_nimble_keywordInfo}
 \alias{rgamma_keywordInfo}
 \alias{rmFunHandler}
 \alias{rop}
-<<<<<<< HEAD
-\alias{RparseTree2ExprClasses}
-\alias{rSimNodes}
-\alias{sampler_BASE}
-\alias{sampler_binary}
-\alias{sampler_ess}
-=======
 \alias{run.time}
->>>>>>> reduceExport
-\alias{samplerSpec}
+\alias{samplerConf}
 \alias{scalarOutputTypes}
 \alias{seqAlongHandler}
 \alias{setArg}
@@ -1061,13 +909,8 @@
 \alias{unaryOperators}
 \alias{unaryOrNonaryOperators}
 \alias{v}
-<<<<<<< HEAD
-\alias{valueInCompiledNimbleFunction}
-=======
 \alias{valuesAccessorVector}
->>>>>>> reduceExport
 \alias{values_keywordInfo}
-\alias{valuesAccessorVector}
 \alias{varAndIndices2flatIndex}
 \alias{varAndIndices2mapParts}
 \alias{varInfoClass}

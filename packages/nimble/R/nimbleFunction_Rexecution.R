@@ -776,7 +776,7 @@ nimPrint <- function(...) {
 
 #' Creates a numeric vector for use in NIMBLE DSL functions
 #'
-#' This function can be used in the NIMBLE DSL, i.e. in the run function or other member methods of nimbleFunctions, to create a vector (1-dimensional object) of numeric elements.  This object can later have its elements be modified, be used in algebraic expressions, have its size (length) changed, or be used as a return object.  Either \code{numeric} or \code{nimNumeric} may be used.  The default usage is the same as the standard \code{numeric} function in R, however the NIMBLE version can take additional arguments to specifiy an initial value for all elements, and whether or not to initialize the elements (skipping initialization can give a small performance improvement).
+#' In a \code{nimbleFunction}, \code{numeric} is identical to \code{nimNumeric}
 #'
 #' See the User Manual for usage examples.
 #'
@@ -785,7 +785,7 @@ nimPrint <- function(...) {
 #' @param init logical, whether to initialize elements of the vector (default = TRUE)
 #'
 #' @details
-#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{integer} is a synonym for \code{nimInteger}.  When used with only the \code{length} argument, this behaves similarly to R's \code{integer} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric} is a synonym for \code{nimNumeric}.  When used with only the \code{length} argument, this behaves similarly to R's \code{integer} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
 #' 
 #' @author Daniel Turek
 #' @aliases numeric
@@ -799,7 +799,7 @@ nimNumeric <- function(length = 0, value = 0, init = TRUE) {
 
 #' Creates an integer vector for use in NIMBLE DSL functions
 #'
-#' This function can be used in the NIMBLE DSL, i.e. in the run function or other member methods of nimbleFunctions, to create a vector (1-dimensional object) of integer elements.  This object can later have its elements be modified, be used in algebraic expressions, have its size (length) changed, or be used as a return object.  Either \code{integer} or \code{nimInteger} may be used.  The default usage is the same as the standard \code{integer} function in R, however the NIMBLE version can take additional arguments to specifiy an initial value for all elements, and whether or not to initialize the elements (skipping initialization can give a small performance improvement).
+#' In a \code{nimbleFunction}, \code{integer} is identical to \code{nimInteger}
 #'
 #' See the User Manual for usage examples.
 #'
@@ -822,7 +822,7 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 
 #' Creates a matrix object for use in NIMBLE DSL functions
 #' 
-#' This function can be used in the NIMBLE DSL, i.e. in the run function or other member methods of nimbleFunctions, to create a matrix (2-dimensional object) of either numeric or integer elements.  This object can later have its elements be modified, be used in algebraic expressions, have its sizes (number of rows or number of columns) changed, or be used as a return object.  Either \code{matrix} or \code{nimMatrix} may be used.  The default usage is the same as the standard \code{matrix} function in R, however the NIMBLE version can take additional arguments to specifiy whether or not to initialize the elements (skipping initialization can give a small performance improvement), and whether the matrix will contain numeric or integer elements.
+#' In a \code{nimbleFunction}, \code{matrix} is identical to \code{nimMatrix}
 #'
 #' See the User Manual for usage examples.
 #'
@@ -846,7 +846,7 @@ nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double
 
 #' Creates a array object of arbitrary dimension for use in NIMBLE DSL functions
 #'
-#' This function can be used in the NIMBLE DSL, i.e. in the run function or other member methods of nimbleFunctions, to create a vector (1-dimensional object), a matrix (2-dimenaional object), or a higher dimensional object of either numeric or integer elements.  This object can later have its elements be modified, be used in algebraic expressions, have its size in any dimension changed, or be used as a return object.  Either \code{array} or \code{nimArray} may be used.  The default usage is the same as the standard \code{array} function in R, however the NIMBLE version can take additional arguments to specifiy whether or not to initialize the elements (skipping initialization can give a small performance improvement), and whether the matrix will contain numeric or integer elements.
+#' In a \code{nimbleFunction}, \code{array} is identical to \code{nimArray}
 #'
 #' See the User Manual for usage examples.
 #'
