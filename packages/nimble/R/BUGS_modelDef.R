@@ -201,7 +201,7 @@ modelDefClass$methods(assignConstants = function(constants) {
         constantLengths <- unlist(lapply(constants, length))
         if(any(constantLengths > 1)) {
             iLong <- which(constantLengths > 1)
-            message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and may be handled as data if necessary.'))
+            ## message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and may be handled as data if necessary.'))
             ## note some of the processing behind this message occurs in BUGSmodel between making the model def and the model
             constantsScalarNamesList <<- constantsNamesList[-iLong]
         } else
