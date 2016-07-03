@@ -896,6 +896,7 @@ sampler_RW_multinomial <- nimbleFunction(
         adaptInterval <- control$adaptInterval
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        targetAllNodes <- unique(model$expandNodeNames(target))
         calcNodes      <- model$getDependencies(target) 
         lTarget        <- length(targetAsScalar)
         Ntotal         <- sum(values(model,target))
@@ -920,8 +921,9 @@ sampler_RW_multinomial <- nimbleFunction(
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         my_decideAndJump       <- decideAndJump(model, mvSaved, calcNodes)
         ## checks
-        if(adaptive & adaptInterval < 100)                  stop('adaptInterval < 100 is not recommended for sampler_RW_multinomial\n')
-        if(model$getNodeDistribution(target) != 'dmulti')   stop('sampler_RW_multinomial is for sampling multinomial distributions only\n')
+        if(model$getNodeDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
+        if(length(targetAllNodes) > 1)                      stop('cannot use RW_multinomial sampler on more than one target')
+        if(adaptive & adaptInterval < 100)                  stop('adaptInterval < 100 is not recommended for RW_multinomial sampler')
     },
     run = function() {
         for(iFROM in 1:lTarget) {            
