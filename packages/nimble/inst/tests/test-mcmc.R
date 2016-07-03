@@ -883,3 +883,41 @@ test_that('exact results of RW_multinomial sampler', expect_identical(as.numeric
 ##    }
 ##}
 
+## testing the RW_multinomial sampler on distribution of size 2
+
+code <- nimbleCode({
+    prob[1] <- p
+    prob[2] <- 1-p
+    x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
+    y      ~ dbinom(   size = N, prob = p)
+})
+
+set.seed(0)
+N <- 100
+p <- 0.3
+x1 <- rbinom(1, size=N, prob=p)
+x2 <- N - x1
+inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
+Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
+Cmodel <- compileNimble(Rmodel)
+
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$removeSamplers()
+conf$printSamplers()
+conf$addSampler(target = 'x', type = 'RW_multinomial')
+conf$addSampler(target = 'y', type = 'slice')
+conf$printSamplers()
+Rmcmc  <- buildMCMC(conf)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+Cmcmc$run(100000)
+
+samples <- as.matrix(Cmcmc$mvSamples)
+fracs <- apply(samples, 2, mean) / N
+test_that('RW_multinomial sampler results within tolerance', expect_true(all(abs(as.numeric(fracs[c(1,3)]) - p) < 0.01)))
+
+
+
+
+
