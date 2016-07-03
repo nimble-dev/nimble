@@ -11,10 +11,10 @@ sapply(allModels, testBUGSmodel, useInits = TRUE)
 
 # Problem cases
 # dinterval, I(), T(), random indexing:
-# kidney, litters, lsat, mice 
+# kidney, litters, lsat, mice
 
 # data preparation issue in data block: inhaler (has (k+):(k) style indexing
-               
+
 # various cases where we need to refer to a differently-named .bug file:
 
 testBUGSmodel('epil', model = 'epil2.bug', inits = 'epil-inits.R',
@@ -39,28 +39,35 @@ testBUGSmodel('birats', model = 'birats2.bug', inits = 'birats-inits.R',
 # various cases where we need to modify the BUGS code, generally the indexing
 
 # test of leuk; needs var info on Y and dN since these are used in data block
-system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
-system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
+writeLines(c("var", "Y[N,T],", "dN[N,T];"), con = file.path(tempdir(), "leuk.bug"))
+##system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
+system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk', package = 'nimble'))
+##system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
 # need nimStep in data block as we no longer have step
-system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug"))) 
+system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
+##system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'),  useInits = TRUE)
 
 # salm: need dimensionality of logx
-system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug"))) 
-system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
+writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
+##system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug")))
+system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
+##system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
 #system(paste("sed -i -e 's/logx\\[\\]/logx\\[1:doses\\]/g'", file.path(tempdir(), "salm.bug"))) # alternative way to get size info in there
 testBUGSmodel('salm', dir = "", model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'),  useInits = TRUE)
 
-
-system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
-system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug"))) 
+file.copy(system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), file.path(tempdir(), "air.bug"), overwrite=TRUE)
+system.in.dir("sed -i -e 's/mean(X)/mean(X\\[\\])/g' air.bug", dir = tempdir())
+##system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
+##system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
 testBUGSmodel('air', dir = "", model = file.path(tempdir(), "air.bug"), data = system.file('classic-bugs','vol2','air','air-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol2','air','air-inits.R', package = 'nimble'),  useInits = TRUE)
 
 
 # need the next line or gives error:
 #1: In replaceConstantsRecurse(x, constEnv, constNames) :
 #  Code age was given as known but evaluates to a non-scalar.  This is probably # not what you want.
-system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
+system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
+##system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 testBUGSmodel('jaw', dir = "", model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), useInits = TRUE)
 
 
@@ -85,7 +92,7 @@ model <- function() {
   Omega[2,2] <- .01
   Omega[1,2] <- 0
   Omega[2,1] <- 0
-  
+
   mu[1:K] ~ dmnorm(mu0[1:K], Omega[1:K,1:K])
   prec[1:K,1:K] ~ dwish(R[1:K,1:K], 5)
 }
@@ -96,7 +103,7 @@ data <- list(K = K, y = y)
 testBUGSmodel(example = 'testN', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
-  
+
 # test multi/Dirichlet
 
 set.seed(0)
@@ -177,7 +184,7 @@ if(require(nimble)) {
   rmulti <- rmultinom
 }
 
-for(i in seq_len(g)) 
+for(i in seq_len(g))
   for(j in seq_len(m))
     y[j, i, ] <- rmulti(1, n, p[i, ])
 
@@ -290,7 +297,7 @@ m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
 expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
 expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
 expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x' appears incorrectly in nodes in second test")
-    
+
 code <- nimbleCode({
     y[1] ~ dnorm(beta*x[1], 1)
     y[2] ~ dnorm(beta*x[2], 1)
@@ -314,7 +321,7 @@ expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable 
 expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
 expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
 expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
-    
+
 })
 
 
@@ -324,7 +331,7 @@ model <- function() {
   y ~ dnbinom(p, n)
   p ~ dbeta(3,3)
   yalt ~ dnegbin(p, n)
-  
+
   y2 ~ dbin(p2, n)
   p2 ~ dbeta(3,3)
   yalt2 ~ dbinom(p2, n)

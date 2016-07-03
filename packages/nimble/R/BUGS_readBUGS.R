@@ -27,7 +27,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
     dataVarIndices <- names(constants) %in% vars & !names(constants) %in% names(data)  # don't overwrite anything in 'data'
     if(sum(names(constants) %in% names(data)))
         warning("BUGSmodel: found the same variable(s) in both 'data' and 'constants'; using variable(s) from 'data'.\n")
-    if(sum(dataVarIndices)) {   
+    if(sum(dataVarIndices)) {
         data <- c(data, constants[dataVarIndices])
         cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
     }
@@ -38,10 +38,10 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 }
 
 
-#' Create a NIMBLE mode from BUGS code 
-#' 
+#' Create a NIMBLE mode from BUGS code
+#'
 #' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition
-#' 
+#'
 #' @param code code for the model in the form returned by \link{nimbleCode} or (equivalently) \code{quote}
 #' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
 #' @param data named list of values for the data nodes.  Data values can be subsequently modified.  Providing this argument also flags nodes as having data for purposes of algorithms that inspect model structure. Values that are NA will not be flagged as data.
@@ -49,7 +49,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
-#' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user. 
+#' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user.
 #' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
 #' @author NIMBLE development team
@@ -76,8 +76,8 @@ nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimen
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
 #' Simply keeps model code as an R call object, the form needed by \link{nimbleModel} and optionally usable by \link{readBUGSmodel}
-#' 
-#' @param code expression providing the code for the model 
+#'
+#' @param code expression providing the code for the model
 #' @author Daniel Turek
 #' @export
 #' @details It is equivalent to use the R function \code{quote}.  \code{nimbleCode} is simply provided as a more readable alternative for NIMBLE users not familiar with \code{quote}.
@@ -103,7 +103,7 @@ processVarBlock <- function(lines) {
     if(length(vec) > 1)
       return(length(strsplit(vec[2], ";")[[1]])) else return(0)
   }
-  
+
   getSize <- function(vec) {
     if(length(vec) > 1)
       return(strsplit(vec[2], ";"))  else return("0")
@@ -125,7 +125,7 @@ processVarBlock <- function(lines) {
   }
   lines <- paste(chars, collapse = "")
   lines <- gsub("\\]", "", lines)
-  
+
   pieces <- unlist(strsplit(lines, ","))
   pieces <- strsplit(pieces, "\\[")
   # variable names are in front of '[' (if there is an '[')
@@ -139,7 +139,7 @@ processVarBlock <- function(lines) {
 
 processModelFile <- function(fileName) {
   # processes a BUGS model file (.bug), splitting into var, data, and code blocks
-  
+
   codeLines <- readLines(fileName)
   # extract lines corresponding to var, data, code blocks
   # var used for dimension info and data lines sourced in environment of the data input file objects
@@ -170,7 +170,7 @@ processModelFile <- function(fileName) {
 mergeMultiLineStatements <- function(text) {
     # deals with BUGS syntax that allows multi-line statements where first line appears
     # to be valid full statement (e.g., where '+' starts the 2nd line)
-    text <- unlist( strsplit(text, "\n") )  
+    text <- unlist( strsplit(text, "\n") )
     firstNonWhiteSpaceIndex <- regexpr("[^[:blank:]]", text)
     firstNonWhiteSpaceChar <- substr(text, firstNonWhiteSpaceIndex, firstNonWhiteSpaceIndex)
     mergeUpward <- firstNonWhiteSpaceChar %in% c('+', '-', '*', '/')
@@ -194,21 +194,21 @@ processNonParseableCode <- function(text) {
 }
 
 #' Create a NIMBLE BUGS model from a variety of input formats, including BUGS model files
-#' 
+#'
 #' \code{readBUGSmodel} processes inputs providing the model and values for constants, data, initial values of the model in a variety of forms, returning a NIMBLE BUGS R model
-#' 
+#'
 #' @param model one of (1) a character string giving the file name containing the BUGS model code, with relative or absolute path, (2) an R function whose body is the BUGS model code, or (3) the output of \code{nimbleCode}. If a file name, the file can contain a 'var' block and 'data' block in the manner of the JAGS versions of the BUGS examples but should not contain references to other input data files nor a const block. The '.bug' or '.txt' extension can be excluded.
-#' 
+#'
 #' @param data (optional) (1) character string giving the file name for an R file providing the input constants and data as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the input constants and data. If neither is provided, the function will look for a file named 'name_of_model-data' including extensions .R, .r, or .txt.
-#' 
+#'
 #' @param inits (optional) (1) character string giving the file name for an R file providing starting values as R code [assigning individual objects or as a named list], with relative or absolute path, or (2) a named list providing the starting values. Unlike JAGS, this should provide a single set of starting values, and therefore if provided as a list should be a simple list and not a list of lists.
-#' 
+#'
 #' @param dir (optional) character string giving the directory where the (optional) files are located
-#' 
-#' @param useInits boolean indicating whether to set the initial values, either based on \code{inits} or by finding the '-inits' file corresponding to the input model file  
+#'
+#' @param useInits boolean indicating whether to set the initial values, either based on \code{inits} or by finding the '-inits' file corresponding to the input model file
 #'
 #' @param debug logical indicating whether to put the user in a browser for debugging when \code{readBUGSmodel} calls \code{nimbleModel}.  Intended for developer use.
-#' 
+#'
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #'
 #' @param returnModelComponentsOnly logical intended primarily for use with \code{MCMCsuite} to return pieces of the model object without building the model. Default is FALSE.
@@ -244,11 +244,13 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   # process model information
 
+  skip.file.path <- is.null(dir) || (!is.null(dir) && dir == "") ## previously we could have file.path(NULL, ...) and file.path("",...) cases
+
   modelFileOutput <- modelName <- NULL
   if(is.function(model) || is.character(model)) {
       if(is.function(model)) modelText <- mergeMultiLineStatements(deparse(body(model)))
       if(is.character(model)) {
-          if(!is.null(dir) && dir == "") modelFile <- model else modelFile <- file.path(dir, model)  # check for "" avoids having "/model.bug" when user provides ""
+          if(skip.file.path) modelFile <- model else modelFile <- file.path(dir, model)  # check for "" avoids having "/model.bug" when user provides ""
           modelName <- gsub("\\..*", "", basename(model))
           if(!file.exists(modelFile)) {
               possibleNames <- c(paste0(modelFile, '.bug'), paste0(modelFile, '.txt'))
@@ -264,7 +266,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
           modelFileOutput <- processModelFile(modelFile)
           modelText <- mergeMultiLineStatements(modelFileOutput$modelLines)
       }
-      
+
       # deal with T() and I() unparseable syntax
       modelText <- processNonParseableCode(modelText)
       model <- parse(text = modelText)[[1]]
@@ -273,33 +275,36 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   if(! class(model) == "{")
     stop("readBUGSmodel: cannot process 'model' input.")
-    
+
   # process initial values
 
   if(useInits) {
     initsFile <-  NULL
     if(is.character(inits)) {
-      initsFile <- file.path(dir, inits)
-      if(!file.exists(initsFile)) 
+      initsFile <- if(skip.file.path) inits else file.path(dir, inits)
+      if(!file.exists(initsFile))
         stop("readBUGSmodel: 'inits' input does not reference an existing file.")
     }
     if(is.null(inits)) {
-      possibleNames <- c(
-                         file.path(dir, paste0(modelName, "-init.R")),
-                         file.path(dir, paste0(modelName, "-inits.R")),
-                         file.path(dir, paste0(modelName, "-init.txt")),
-                         file.path(dir, paste0(modelName, "-inits.txt")),
-                         file.path(dir, paste0(modelName, "-init")),
-                         file.path(dir, paste0(modelName, "-inits")))
-      if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
-        possibleNames <- c(possibleNames,
-                           file.path(dir, paste0(modelName, "-init.r")),
-                           file.path(dir, paste0(modelName, "-inits.r")))
-      fileExistence <- file.exists(possibleNames)
-      if(sum(fileExistence) > 1)
-        stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'inits' argument.")
-      if(sum(fileExistence))
-        initsFile <- possibleNames[which(fileExistence)[1]]
+        possibleNames <- paste0(modelName, c("-init.R", "-inits.R", "-init.txt", "-inits.txt", "-init", "inits"))
+            ##c(
+            ## file.path(dir, paste0(modelName, "-init.R")),
+            ## file.path(dir, paste0(modelName, "-inits.R")),
+            ## file.path(dir, paste0(modelName, "-init.txt")),
+            ## file.path(dir, paste0(modelName, "-inits.txt")),
+            ## file.path(dir, paste0(modelName, "-init")),
+            ## file.path(dir, paste0(modelName, "-inits")))
+        if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
+            possibleNames <- c(possibleNames, paste0(modelName, c('-init.r','-inits.r')))
+                      ## possibleNames <- c(possibleNames,
+                      ##          file.path(dir, paste0(modelName, "-init.r")),
+                      ##          file.path(dir, paste0(modelName, "-inits.r")))
+        if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
+        fileExistence <- file.exists(possibleNames)
+        if(sum(fileExistence) > 1)
+            stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'inits' argument.")
+        if(sum(fileExistence))
+            initsFile <- possibleNames[which(fileExistence)[1]]
     }
     if(!is.null(initsFile)) {
       inits <- new.env()
@@ -322,23 +327,26 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   dataFile <-  NULL
   if(is.character(data)) {
-    dataFile <- file.path(dir, data)
-    if(!file.exists(dataFile)) 
+    dataFile <- if(skip.file.path) data else file.path(dir, data)
+    if(!file.exists(dataFile))
       stop("readBUGSmodel: 'data' input does not reference an existing file.")
   }
   if(is.null(data)) {
-    possibleNames <- c(
-                       file.path(dir, paste0(modelName, "-data.R")),
-                       file.path(dir, paste0(modelName, "-data.txt")),
-                       file.path(dir, paste0(modelName, "-data")))
+      possibleNames <- paste0(modelName, c("-data.R", "-data.txt", "data"))
+          ## c(
+          ##              file.path(dir, paste0(modelName, "-data.R")),
+          ##              file.path(dir, paste0(modelName, "-data.txt")),
+          ##              file.path(dir, paste0(modelName, "-data")))
     if(!Sys.info()['sysname'] %in% c("Darwin", "Windows")) # UNIX-like is case-sensitive
-      possibleNames <- c(possibleNames,
-                         file.path(dir, paste0(modelName, "-data.r")))
-    fileExistence <- file.exists(possibleNames)
-    if(sum(fileExistence) > 1)
-      stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'data' argument.")
-    if(sum(fileExistence))
-      dataFile <- possibleNames[which(fileExistence)[1]]
+        possibleNames <- c(possibleNames,
+                           paste0(modelName, "-data.r"))
+##                         file.path(dir, paste0(modelName, "-data.r")))
+      if(!skip.file.path) possibleNames <- file.path(dir, possibleNames)
+      fileExistence <- file.exists(possibleNames)
+      if(sum(fileExistence) > 1)
+          stop("readBUGSmodel: multiple possible initial value files; please pass as explicit 'data' argument.")
+      if(sum(fileExistence))
+          dataFile <- possibleNames[which(fileExistence)[1]]
   }
   if(!is.null(dataFile)) {
     data <- new.env()
@@ -347,9 +355,9 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
   if(is.list(data)) {
     if(length(data) && sum(names(data) == ""))
       stop("readBUGSmodel: 'data' must be a named list")
-    data <- list2env(data)  # need as environment for later use 
+    data <- list2env(data)  # need as environment for later use
   }
-  
+
   if(!(is.null(data) || is.environment(data)))
     stop("readBUGSmodel: invalid input for 'data'.")
 
@@ -359,7 +367,7 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       data = new.env()
 
     origVars <- ls(data)
-    
+
     # create vectors/matrices/arrays for all objects in var block in case data block tries to fill objects
     vars <- varInfo$varNames[varInfo$dim > 0]
     vars <- vars[!(vars %in% ls(data))]
@@ -408,13 +416,13 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
       data <- data[dataNodes]
       names(data) <- dataNodes
       Rmodel$setData(data)
-      
+
       if(!is.null(inits)) {
           varNames <- names(inits)[names(inits) %in% Rmodel$getVarNames()]
           for(varName in varNames) {
           # check for isData in case a node is a mix of data and non-data and inits are supplied such
           # that they would overwrite the data nodes without this check
-              Rmodel[[varName]][!Rmodel$isData(varName)] <- inits[[varName]][!Rmodel$isData(varName)] 
+              Rmodel[[varName]][!Rmodel$isData(varName)] <- inits[[varName]][!Rmodel$isData(varName)]
           }
       }
   }

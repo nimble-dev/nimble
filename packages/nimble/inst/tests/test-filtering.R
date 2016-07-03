@@ -56,7 +56,7 @@ test_filter(model = code, name = 'basic auxiliary w/ mean lookahead', data = tes
                                      var = list(x = rep(.2,3)),
                                      ll = list(2)))
 
-test_filter(model = code, name = 'basic ensembleKF', data = testdata, filterType = "ensembleKF", latentNodes = "x", 
+test_filter(model = code, name = 'basic ensembleKF', data = testdata, filterType = "ensembleKF", latentNodes = "x",
              inits = inits,
              results = list(mean = list(x = c(0,0.454,1.209)),
                             var = list(x = c(.667, .909, .977))),
@@ -79,7 +79,7 @@ code <- nimbleCode({
   }
 })
 testdata = list(y = matrix(c(0, 1,
-                         1, 2, 
+                         1, 2,
                          2, 3), nrow = 3, byrow = TRUE),
             obsMat = matrix(c(1,0,0,
                            0,1,1), nrow = 2, byrow = TRUE),
@@ -111,6 +111,14 @@ test_filter(model = code, name = 'multivariate auxiliary', data = testdata, filt
                             ll = list(ActualLL)),
              resultsTolerance = list(mean = list(x = xFilterTol),
                                      ll = list(2)))
+
+## On Windows the next test can create a DLL name conflict and look
+## up the wrong C++ class, from a previous DLL.  Hence this will be the break
+## into two windows test units
+if(.Platform$OS.type == 'windows') {
+    message("Stopping filtering test here on Windows to avoid multiple DLL problems. Run test-filtering2 to continue")
+    stop()
+}
 
 test_filter(model = code, name = 'multivariate auxiliary mean lookahead', data = testdata, filterType = "auxiliary", latentNodes = "x",
              filterControl = list(saveAll = TRUE, timeIndex = 1, lookahead = "mean"),
@@ -185,39 +193,40 @@ test_mcmc(model = code, name = 'block pmcmc', inits = inits, data = c(testdata, 
   resultsTolerance = list(mean = list(sigma_x = .5,
                                       sigma_y = .5)))
 
-# test MCMC with longer runs and lower tolerance
-set.seed(0)
-N <- 50
-sigma_x <- 1
-sigma_y <- .1
-x <- rep(NA, N)
-y <- x
-x[1] <- rnorm(1,0,sigma_x)
-y[1] <- rnorm(1,x[1], sigma_y)
-for(i in 2:N){
-  x[i] <- rnorm(1,x[i-1], sigma_x)
-  y[i] <- rnorm(1,x[i], sigma_y)
-}
+## Let's stop here to save testing time
+## # test MCMC with longer runs and lower tolerance
+## set.seed(0)
+## N <- 50
+## sigma_x <- 1
+## sigma_y <- .1
+## x <- rep(NA, N)
+## y <- x
+## x[1] <- rnorm(1,0,sigma_x)
+## y[1] <- rnorm(1,x[1], sigma_y)
+## for(i in 2:N){
+##   x[i] <- rnorm(1,x[i-1], sigma_x)
+##   y[i] <- rnorm(1,x[i], sigma_y)
+## }
 
-consts <- list(N=N)
+## consts <- list(N=N)
 
-testdata <- list(y=y)
+## testdata <- list(y=y)
 
-inits <- list(sigma_x=1, sigma_y=.1, x = x)
+## inits <- list(sigma_x=1, sigma_y=.1, x = x)
 
-test_mcmc(model = code, name = 'scalar pmcmc, more data', inits = inits, data = c(testdata, consts),  basic = FALSE, samplers = list(
-  list(type = 'RW_PF', target = 'sigma_x', control = list(latents = 'x', m = 1000, resample = FALSE)),
-  list(type = 'RW_PF', target = 'sigma_y', control = list(latents = 'x', m = 1000, resample = FALSE))),
-  removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
-  mean = list( sigma_x = sigma_x,
-              sigma_y = sigma_y)),
-  resultsTolerance = list(mean = list(sigma_x = .1,
-                                      sigma_y = .1)))
+## test_mcmc(model = code, name = 'scalar pmcmc, more data', inits = inits, data = c(testdata, consts),  basic = FALSE, samplers = list(
+##   list(type = 'RW_PF', target = 'sigma_x', control = list(latents = 'x', m = 1000, resample = FALSE)),
+##   list(type = 'RW_PF', target = 'sigma_y', control = list(latents = 'x', m = 1000, resample = FALSE))),
+##   removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
+##   mean = list( sigma_x = sigma_x,
+##               sigma_y = sigma_y)),
+##   resultsTolerance = list(mean = list(sigma_x = .1,
+##                                       sigma_y = .1)))
 
-test_mcmc(model = code, name = 'block pmcmc, more data', inits = inits, data = c(testdata, consts), basic = FALSE, samplers = list(
-  list(type = 'RW_PF_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = FALSE))),
-  removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
-    mean = list(sigma_x = sigma_x,
-                sigma_y = sigma_y)),
-  resultsTolerance = list(mean = list(sigma_x = .1,
-                                      sigma_y = .1)))
+## test_mcmc(model = code, name = 'block pmcmc, more data', inits = inits, data = c(testdata, consts), basic = FALSE, samplers = list(
+##   list(type = 'RW_PF_block', target = c('sigma_x', 'sigma_y'), control = list(latents = 'x', m = 1000, resample = FALSE))),
+##   removeAllDefaultSamplers = TRUE, numItsC = 1000, numItsC_results = 5000, results = list(
+##     mean = list(sigma_x = sigma_x,
+##                 sigma_y = sigma_y)),
+##   resultsTolerance = list(mean = list(sigma_x = .1,
+##                                       sigma_y = .1)))

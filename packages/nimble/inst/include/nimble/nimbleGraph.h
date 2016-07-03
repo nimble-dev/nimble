@@ -22,7 +22,7 @@ struct graphNode {
   int CgraphID; // always RgraphID-1
   string name;
   bool touched; /* This is for arbitrary use by graph-traversing algorithms.  By convention it should be left at false for all nodes after completion of an algorithm. */
-  int numChildren;
+  unsigned int numChildren;
   vector<graphNode*> children; /* pointers to child nodes */
   vector<int> childrenParentExpressionIDs; /* integer labels of how this node is used by child nodes. */
   vector<graphNode*> parents; /* pointers to parent nodes*/
@@ -34,7 +34,7 @@ struct graphNode {
 struct nimbleGraph {
 public:
   vector<graphNode*> graphNodeVec;
-  int numNodes;
+  unsigned int numNodes;
   void setNodes(const vector<int> &edgesFrom, const vector<int> &edgesTo,
 		const vector<int> &edgesFrom2ParentExprIDs,
 		const vector<NODETYPE> &types,
@@ -45,14 +45,14 @@ public:
   vector<int> anyStochParents();
   bool anyStochParentsOneNode(vector<int> &anyStochParents, int CgraphID);
   vector<int> getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream);
-  void getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, int recursionDepth);
+  void getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth);
   ~nimbleGraph();
 };
 
 void nimbleGraphFinalizer(SEXP SgraphExtPtr);
 
 extern "C" {
-  SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes); 
+  SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes);
   SEXP anyStochDependencies(SEXP SextPtr);
   SEXP anyStochParents(SEXP SextPtr);
   SEXP getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);

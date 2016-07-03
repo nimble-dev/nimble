@@ -75,7 +75,7 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
                 calculateDiff = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {simulate(INDEXEDNODEINFO_ = INDEXEDNODEINFO_);  returnType(double());   return(invisible(0)) },
                 getLogProb = function(INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {                returnType(double());   return(0)            }
             ),
-            list(LHS=LHS, 
+            list(LHS=LHS,
                  RHS=RHS)))
     }
     if(type == 'stoch') {
@@ -129,8 +129,8 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
             boolThisCase <- typesNDims == nDimSupported ## & typesTypes == 'double' ## until (if ever) we have separate handling of integer params, these should be folded in with doubles.  We don't normally have any integer params, because we handle integers as doubles
             paramNamesToUse <- names(typesListAllParams)[boolThisCase]
             caseName <- paste0("getParam_",nDimSupported,"D_double")
-            if(length(paramNamesToUse) > 0) 
-                methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported) 
+            if(length(paramNamesToUse) > 0)
+                methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported)
         }
     }
     ## add model$ in front of all names, except the setupOutputs
@@ -150,14 +150,28 @@ nndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nD
     paramIDs <- as.integer(paramIDs)
     answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
     switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))
-    ans <- try(eval(substitute(
-        function(PARAMID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
-            returnType(TYPE(NDIM))
-            SWITCHCODE
-            return(PARAMANSWER_)
-        },
-        list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
-    )))
+    if(nDim == 0) {
+        answerInitCode <- quote(PARAMANSWER_ <- 0)  ## this avoids a Windows compiler warning about a possibly unassigned return variable
+
+        ans <- try(eval(substitute(
+            function(PARAMID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
+                returnType(TYPE(NDIM))
+                ANSWERINITCODE
+                SWITCHCODE
+                return(PARAMANSWER_)
+            },
+            list(TYPE = as.name(type), NDIM=nDim, ANSWERINITCODE = answerInitCode, SWITCHCODE = switchCode)
+        )))
+    } else {
+        ans <- try(eval(substitute(
+            function(PARAMID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
+                returnType(TYPE(NDIM))
+                SWITCHCODE
+                return(PARAMANSWER_)
+            },
+            list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
+        )))
+    }
     if(inherits(ans, 'try-error')) browser()
     attr(ans, 'srcref') <- NULL
     ans
