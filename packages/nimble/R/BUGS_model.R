@@ -313,7 +313,9 @@ Details: If a provided value (or the current value in the model when only a name
 
                                            data = list(...)
                                            ## Check if a single list or character vector was provided
+                                           if(length(data)==0) return()
                                            if(length(data)==1)
+                                               if(is.null(data[[1]])) return()
                                                if(is.character(data[[1]])) {
                                                    data <- as.list(data[[1]])
                                                } else {
@@ -321,7 +323,7 @@ Details: If a provided value (or the current value in the model when only a name
                                                        data <- data[[1]]
                                                    }
                                                }
-
+                                           if(length(data)==0) return()
                                            ## When a variable name was provided, make it the list name and put the model's value for that variable as the list element
                                            dataNames <- names(data)
                                            if(is.null(dataNames)) dataNames <- rep("", length(data))

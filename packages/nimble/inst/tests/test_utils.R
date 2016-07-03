@@ -15,7 +15,7 @@ system.in.dir <- function(cmd, dir = '.') {
     if(.Platform$OS.type == "windows")
         shell(shQuote(cmd))
     else
-        system(shQuote(cmd))
+        system(cmd)
 }
 
 gen_runFun <- function(input) {
