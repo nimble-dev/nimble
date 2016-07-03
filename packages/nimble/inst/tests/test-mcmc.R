@@ -876,3 +876,134 @@ Cmcmc$run(100)
 Csamples <- as.matrix(Cmcmc$mvSamples)
 test_that('binary sampler out-of-bounds', expect_true(all(as.numeric(Csamples) == 1)))
 
+
+## testing the RW_multinomial sampler
+
+codeTest <- nimbleCode ({
+    X[1:nGroups] ~ dmultinom(size=N, prob=pVecX[1:nGroups])
+    Y[1:nGroups] ~ dmultinom(size=N, prob=pVecY[1:nGroups])
+    for (ii in 1:nGroups) {
+        Z[ii] ~ dbeta(1 + X[ii], 1 + Y[ii])
+    }
+})
+
+set.seed(0)
+nGroups   <- 5
+N         <- 1E6
+pVecX     <- rdirch(1, rep(1, nGroups))
+pVecY     <- rdirch(1, rep(1, nGroups))
+X         <- rmultinom(1, N, pVecX)[,1]
+Y         <- rmultinom(1, N, pVecY)[,1]
+Z         <- rbeta(nGroups, 1+X, 1+Y)
+Xini      <- rmultinom(1, N, sample(pVecX))[,1]
+Yini      <- rmultinom(1, N, sample(pVecY))[,1]
+Constants <- list(nGroups=nGroups)
+Inits     <- list(X=Xini, Y=Yini, pVecX=pVecX, pVecY=pVecY, N=N)
+Data      <- list(Z=Z)
+modelTest <- nimbleModel(codeTest, constants=Constants, inits=Inits, data=Data, check=TRUE)
+cModelTest <- compileNimble(modelTest)
+
+mcmcTestConfig <- configureMCMC(cModelTest, print = TRUE)
+samplers <- mcmcTestConfig$getSamplers()
+test_that('assign RW_multinomial sampler', expect_equal(samplers[[1]]$name, 'RW_multinomial'))
+test_that('assign RW_multinomial sampler', expect_equal(samplers[[2]]$name, 'RW_multinomial'))
+mcmcTest  <- buildMCMC(mcmcTestConfig)
+cMcmcTest <- compileNimble(mcmcTest, project=modelTest)
+
+## Optionally resample data
+cModelTest$N      <- N <- 1E3
+(cModelTest$pVecX <- sort(rdirch(1, rep(1, nGroups))))
+(cModelTest$pVecY <- sort(rdirch(1, rep(1, nGroups))))
+simulate(cModelTest, "X", includeData=TRUE); (X <- cModelTest$X)
+simulate(cModelTest, "Y", includeData=TRUE); (Y <- cModelTest$Y)
+simulate(cModelTest, "Z", includeData=TRUE); (Z <- cModelTest$Z)
+
+niter  <- 1E4
+cMcmcTest$run(niter)
+samples <- as.matrix(cMcmcTest$mvSamples)
+
+test_that('exact results of RW_multinomial sampler', expect_identical(as.numeric(samples[10000,]), c(8, 25, 31, 115, 821, 25,19, 84, 510, 362)))
+
+##################################
+## Trajectory Plots & Histogram ##
+##################################
+##iColsX <- 1:nGroups
+##iColsY <- iColsX + nGroups
+##plotHistograms <- N <= 1E4 ## FALSE ## TRUE
+##par(mfrow=c(2,1+plotHistograms))
+####
+##for (ii in 1:2) {
+##    if (ii == 1) {
+##        yMaxX <- 0
+##        yMaxY <- 0
+##    }
+##    ##
+##    plot (samples[,1],ylim=range(samples[,iColsX]), typ="n")
+##    for (ii in iColsX)
+##        lines(samples[,ii], col=rainbow(10,alpha=0.75)[ii])
+##    ##
+##    if (plotHistograms) {
+##        hist(samples[,1], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples):max(samples), prob=TRUE, ylim=c(0,yMaxX))
+##        for (ii in iColsX) {
+##            h <- hist(samples[,ii], prob=TRUE, 
+##                      col=rainbow(2*nGroups, alpha=0.1)[ii],
+##                      border=rainbow(2*nGroups, alpha=0.1)[ii],
+##                      breaks=min(samples[,iColsX]):max(samples[,iColsX]), add=TRUE)
+##            yMaxX <- max(yMaxX, h$density)
+##        }
+##    }
+##    ## 
+##    plot (samples[,1],ylim=range(samples[,iColsY]), typ="n")
+##    for (ii in iColsY)
+##        lines(samples[,ii], col=rainbow(10,alpha=0.75)[ii])
+##    ##
+##    if (plotHistograms) {
+##        hist(samples[,1+nGroups], col=rainbow(2*nGroups, alpha=0.1)[1], breaks=min(samples[,iColsY]):max(samples[,iColsY]), prob=TRUE, ylim=c(0,yMaxY))
+##        for (ii in iColsY) {
+##            h <- hist(samples[,ii], prob=TRUE, 
+##                      col=rainbow(2*nGroups, alpha=0.1)[ii],
+##                      border=rainbow(2*nGroups, alpha=0.1)[ii],
+##                      breaks=min(samples[,iColsY]):max(samples[,iColsY]), add=TRUE)
+##            yMaxY <- max(yMaxY, h$density)
+##        }
+##    }
+##}
+
+## testing the RW_multinomial sampler on distribution of size 2
+
+code <- nimbleCode({
+    prob[1] <- p
+    prob[2] <- 1-p
+    x[1:2] ~ dmultinom(size = N, prob = prob[1:2])
+    y      ~ dbinom(   size = N, prob = p)
+})
+
+set.seed(0)
+N <- 100
+p <- 0.3
+x1 <- rbinom(1, size=N, prob=p)
+x2 <- N - x1
+inits <- list(N = N, p = p, x = c(x1, x2), y = x1)
+Rmodel <- nimbleModel(code, constants=list(), data=list(), inits=inits)
+Cmodel <- compileNimble(Rmodel)
+
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$removeSamplers()
+conf$printSamplers()
+conf$addSampler(target = 'x', type = 'RW_multinomial')
+conf$addSampler(target = 'y', type = 'slice')
+conf$printSamplers()
+Rmcmc  <- buildMCMC(conf)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+Cmcmc$run(100000)
+
+samples <- as.matrix(Cmcmc$mvSamples)
+fracs <- apply(samples, 2, mean) / N
+test_that('RW_multinomial sampler results within tolerance', expect_true(all(abs(as.numeric(fracs[c(1,3)]) - p) < 0.01)))
+
+
+
+
+

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
                            CHANGES IN VERSION 0.6 (June 2016)
 
 USER LEVEL CHANGES
@@ -12,6 +11,8 @@ USER LEVEL CHANGES
 -- compileNimble can handle model operation functions that use a vector of node names with a scalar index, e.g., model$calculate(nodes[i]).  Index ranges are not supported.
 
 -- The computation time spent in each sampler of an MCMC can be obtained by mcmc$run(niter, time = TRUE) and then mcmc$getTimes(). 
+
+-- New RW_multinomial sampler incorporated into MCMC engine, for sampling nodes following a dmulti() distribution.
 
 -- MCMC and modelValues configuration syntax now uses 'conf' rather than 'spec' in its naming throughout NIMBLE. 
 
