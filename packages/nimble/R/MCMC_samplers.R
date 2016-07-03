@@ -888,7 +888,7 @@ sampler_RW_PF_block <- nimbleFunction(
 ### RW_multinomial sampler for multinomial distributions ##############################
 #######################################################################################
 
-RW_multinomial <- nimbleFunction( 
+sampler_RW_multinomial <- nimbleFunction( 
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
