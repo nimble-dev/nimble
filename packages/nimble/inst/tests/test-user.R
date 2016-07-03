@@ -194,7 +194,7 @@ registerDistributions(list(
     )
                       
 
-code1 <- BUGScode({
+code1 <- nimbleCode({
     for(i in 1:n1) {
         y1[i] ~ dmyexp(rate = r1)
         y2[i] ~ dmyexp(scale = s2)
@@ -204,14 +204,14 @@ code1 <- BUGScode({
     s2 ~ dunif(0, 100)
 })
 
-code2 <- BUGScode({
+code2 <- nimbleCode({
     for(i in 1:n2) {
         y3[i] ~ dpois(lambda)
     }
     lambda ~ T(dmyexp(scale = 5), 0, upper)
 })
 
-code3 <- BUGScode({
+code3 <- nimbleCode({
     for(i in 1:m) {
         y[i, 1:P] ~ ddirchmulti(alpha[1:P], sz)
     }

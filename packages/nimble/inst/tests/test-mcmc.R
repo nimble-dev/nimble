@@ -282,7 +282,7 @@ test_mcmc(model = code, name = 'basic block sampler on vector', data = data, res
 
 ### slice sampler example
 
-code <- BUGScode({
+code <- nimbleCode({
     z ~ dnorm(0, 1)
     normal5_10 ~ dnorm(5, sd = 10)
     beta1_1 ~ dbeta(1, 1)
@@ -347,7 +347,7 @@ test_mcmc(model = ESScode, data = c(ESSconstants, ESSdata), inits = ESSinits,
 
 ### demo2 of check conjugacy
 
-code <- BUGScode({
+code <- nimbleCode({
     x ~ dbeta(3, 13)
     y[1] ~ dbin(x, 10)
     y[2] ~ dbin(x, 20)
@@ -358,7 +358,7 @@ test_mcmc(model = code, name = 'check of beta-binom conjugacy', data = data, exa
 
 ### checkConjugacy_demo3_run.R - various conjugacies
 
-code <- BUGScode({
+code <- nimbleCode({
     x ~ dgamma(1, 1)       # should satisfy 'gamma' conjugacy class
     a  ~ dnorm(0, x)     # should satisfy 'norm' conjugacy class
     a2 ~ dnorm(0, tau = 3*x+0)
