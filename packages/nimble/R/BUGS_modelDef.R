@@ -34,6 +34,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  constantsEnv = 'ANY', ## environment with constants, set in assignConstants()
                                  constantsList = 'ANY',  ## named list with constants, set in assignConstants()
                                  constantsNamesList = 'ANY', ## list of constants name objects, set in assignConstants()
+                                 constantsScalarNamesList = 'ANY', ## could eventually replace constantsNamesList. added for newNodeFxns
                                  dimensionsList = 'ANY',		#list		   ## list of provided dimension information, set in assignDimensions()
                                  contexts = 'ANY',				#list 			 ## list of BUGScontextClass objects
                                  declInfo = 'ANY',				#list				 ## list of BUGSdeclInfo objects
@@ -109,6 +110,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  
                                  #These functions are NOT run inside of setupModel
                                  nodeName2GraphIDs = function(){},
+                                 graphIDs2indexedNodeInfo = function(){},
                                  nodeName2LogProbName = function(){}
                              ))
 
@@ -196,10 +198,19 @@ modelDefClass$methods(assignConstants = function(constants) {
         list2env(constants, constantsEnv)
         constantsList <<- constants
         constantsNamesList <<- lapply(ls(constants), as.name)
+        constantLengths <- unlist(lapply(constants, length))
+        if(any(constantLengths > 1)) {
+            iLong <- which(constantLengths > 1)
+            ## message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and may be handled as data if necessary.'))
+            ## note some of the processing behind this message occurs in BUGSmodel between making the model def and the model
+            constantsScalarNamesList <<- constantsNamesList[-iLong]
+        } else
+            constantsScalarNamesList <<- constantsNamesList 
     } else {
         constantsList <<- list()
         names(constantsList) <<- character(0)
         constantsNamesList <<- list()
+        constantsScalarNamesList <<- list()
     }
 })
 modelDefClass$methods(assignDimensions = function(dimensions) {
@@ -213,7 +224,7 @@ modelDefClass$methods(assignDimensions = function(dimensions) {
     for(i in seq_along(constantsList)) {
         constName <- names(constantsList)[i]
         ## constDim <- if(is.null(dim(constantsList[[i]]))) length(constantsList[[i]]) else dim(constantsList[[i]])
-        constDim <- dimOrLength(constantsList[[i]], scalarize = TRUE)
+        constDim <- nimble:::dimOrLength(constantsList[[i]], scalarize = TRUE)
         if(constName %in% names(dL)) {
             if(!identical(as.numeric(dL[[constName]]), as.numeric(constDim))) {
                 stop('inconsistent dimensions between constants and dimensions arguments')
@@ -333,6 +344,7 @@ modelDefClass$methods(splitConstantsAndData = function() {
         if(length(newDataVars)) {
             if(nimbleOptions('verbose')) cat("Detected", paste(newDataVars, collapse = ','), "as data within 'constants'.\n")
             constantsNamesList <<- constantsNamesList[!constantsNames %in% vars]
+            constantsScalarNamesList <<- constantsScalarNamesList[ !(as.character(constantsScalarNamesList) %in% newDataVars) ]
             constantsList[newDataVars] <<- NULL
             for(varName in newDataVars) eval(substitute(rm(varName, envir = constantsEnv), list(varName = varName)))
         }
@@ -1898,7 +1910,24 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     maps$nimbleGraph$setGraph(maps$edgesFrom, maps$edgesTo, maps$edgesParentExprID, maps$types, maps$graphID_2_nodeName, length(maps$graphID_2_nodeName))
 ##    maps$nodeName_2_graphID <<- list2env( nodeName2GraphIDs(maps$nodeNames) )
 ##    maps$nodeName_2_logProbName <<- list2env( nodeName2LogProbName(maps$nodeNames) )
-    
+
+    ## A new need for new node function system:
+    graphID_2_unrolledIndicesMatrixRow <- rep(-1L, (length(maps$graphIDs)))
+    for(iDI in seq_along(declInfo)) {
+        BUGSdecl <- declInfo[[iDI]]
+        unrolledRows <- nrow(BUGSdecl$unrolledIndicesMatrix)
+        if(unrolledRows == 0) {
+            if(BUGSdecl$numUnrolledNodes == 1) ## a singleton declaration
+                graphID_2_unrolledIndicesMatrixRow[BUGSdecl$graphIDs] <- 0
+            else
+                stop(paste('confused assigning unrolledIndicesMatrixRow in case with no unrolledRows by numUnrolledNodes != 1 for code', deparse(BUGSdecl$code)))
+        } else {
+            theseGraphIDs <- BUGSdecl$graphIDs
+            graphID_2_unrolledIndicesMatrixRow[theseGraphIDs] <- 1:length(theseGraphIDs)
+        }
+    }
+    graphID_2_unrolledIndicesMatrixRow[graphID_2_unrolledIndicesMatrixRow==-1] <- NA
+    maps$graphID_2_unrolledIndicesMatrixRow <<- graphID_2_unrolledIndicesMatrixRow
     NULL
 })
 
@@ -2136,7 +2165,11 @@ modelDefClass$methods(printDI = function() {
     }
 })
 
-
+modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
+    declIDs <- maps$graphID_2_declID[graphIDs]
+    rowIndices <- maps$graphID_2_unrolledIndicesMatrixRow[graphIDs]
+    list(declIDs = declIDs, unrolledIndicesMatrixRows = rowIndices)
+})
 
 modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
     if(length(nodeName) == 0)

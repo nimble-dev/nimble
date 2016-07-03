@@ -92,7 +92,7 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                             for(vN in varNames) {
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
-                                            GID_map <<- makeMV_GID_Map(.self)
+                                            GID_map <<- nimble:::makeMV_GID_Map(.self)
                                         },
                                         getSymbolTable = function() {
                                             return(symTab)
@@ -230,7 +230,7 @@ makeCustomModelValuesClass <- function(symTab, className, vars, types, sizes, mo
                 }	
                 else if(nrow < rows){
                     for(vN in varNames){
-                        dims = dimOrLength(.self[[vN]][[1]])	#nimDim(.self[[vN]][[1]])
+                        dims = nimble:::dimOrLength(.self[[vN]][[1]])	#nimDim(.self[[vN]][[1]])
                         if(length(dims) == 0) dims = 1
                         for(i in (nrow+1):rows){
                             .self[[vN]][[i]] <- array(NA, dim = dims)

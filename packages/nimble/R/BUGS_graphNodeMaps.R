@@ -27,6 +27,7 @@ mapsClass <- setRefClass(
         graphID_2_logProbName =       'ANY',
         graphID_2_nodeFunctionName ='ANY',      ## vector of character nodeFunctionNames
         graphID_2_declID   =  'ANY',
+        graphID_2_unrolledIndicesMatrixRow = 'ANY',
         
         ## varName2GraphID maps
         vars2GraphID_values = 		'ANY',

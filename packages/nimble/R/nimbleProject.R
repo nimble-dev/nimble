@@ -49,8 +49,8 @@ modelDefInfoClass <- setRefClass('modelDefInfoClass',
                                      ))
 
 
-removeVariableFromEnv <- function(name, env)
-	eval(substitute(remove(VAR, envir = env), list(VAR = name)))
+## removeVariableFromEnv <- function(name, env)
+## 	eval(substitute(remove(VAR, envir = env), list(VAR = name)))
 
 nimbleProjectClass <- setRefClass('nimbleProjectClass',
                              fields = list(
@@ -442,7 +442,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          Cname <- nf_getRefClassObject(funList[[1]])$Cname
                                          if(is.null(nfCompInfos[[generatorName]])) stop("Requested buildNimbleFunctionCompilationInfo for a generator for which no specialized NF has been added to the project", call. = FALSE)
                                          if(inherits(nfCompInfos[[generatorName]]$nfProc, 'uninitializedField')) 
-                                             nfCompInfos[[generatorName]]$nfProc <<- nfProcessing(funList, generatorName, fromModel = fromModel, project = .self)
+                                             nfCompInfos[[generatorName]]$nfProc <<- nfProcessing(funList, generatorName, fromModel = fromModel, project = .self, isNode = isNode)
                                      } else {
                                          if(missing(generatorName)) stop("If funList is omitted, a generator name must be provided to buildNimbleFunctionCompilationInfo", call. = FALSE)
                                          if(inherits(nfCompInfos[[generatorName]]$nfProc, 'uninitializedField')) stop("buildNimbleFunctionCompilationInfo was called with only a generatorName (probably from genNeededTypes), but the nfProc is missing.", call. = FALSE)
@@ -735,6 +735,7 @@ getNimbleTypes <- function(units) {
 }
 
 # return the nimble project, if any, associated with a model or nimbleFunction object.
+#' @export
 getNimbleProject <- function(project, stopOnNull = FALSE) {
     if(inherits(project, 'nimbleProjectClass')) return(project)
     if(is.nf(project)) return(nfVar(project, 'nimbleProject'))

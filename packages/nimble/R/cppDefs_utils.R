@@ -23,11 +23,11 @@ putCodeLinesInBrackets <- function(codeLines) {
 }
 
 # This is the location of the RcppUtils.cpp, etc. files.
-IncludeCodeDir = function() character()
-NimbleCodeDir = function() system.file("CppCode", package = "nimble")
+IncludeCodeDir = character()
+NimbleCodeDir = system.file("CppCode", package = "nimble")
 
 nimbleIncludeFile =
-function(file, path = IncludeCodeDir())
+function(file, path = IncludeCodeDir)
 {
   if(length(path)) 
      sprintf('"%s"', normalizePath(sprintf("%s/%s", sub("/$", "", path), file)))

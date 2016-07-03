@@ -117,11 +117,14 @@ setAndCalculateOne <- nimbleFunction(
 #' @param model An uncompiled or compiled NIMBLE model.  This argument is required.
 #' @param targetNodes A character vector containing the names of one or more nodes or variables in the model.  This argument is required.
 #' @author Daniel Turek
+#' @aliases setAndCalculateDiff
 #' @export
-#' @details Calling setAndCalculate(model, targetNodes) will return a function with a single, required argument:
+#' @details Calling \code{setAndCalculate(model, targetNodes)} or \code{setAndCalculate(model, targetNodes)} will return a nimbleFunction object whose \code{run} function takes a single, required argument:
 #' 
 #' targetValues: A vector of numeric values which will be put into the target nodes in the specified model object.  The length of this numeric vector much exactly match the number of target nodes.
 #'
+#' The difference between \code{setAndCalculate} and \code{setAndCalculateDiff} is the return value of their \code{run} functions.  In the former, \code{run} returns the sum of the log probabilities of the \code{targetNodes} with the provided \code{targetValues}, while the latter returns the difference between that sum with the new \code{targetValues} and the previous values in the \code{model}.
+#' 
 #' @examples
 #' code <- nimbleCode({ for(i in 1:3) { x[i] ~ dnorm(0,1); y[i] ~ dnorm(0, 1)}})
 #' Rmodel <- nimbleModel(code)
@@ -140,6 +143,8 @@ setAndCalculate <- nimbleFunction(
     }, where = getLoadingNamespace()
 )
 
+#' @rdname setAndCalculate
+#' @export
 setAndCalculateDiff <- nimbleFunction(
     setup = function(model, targetNodes) {
         targetNodesAsScalar <- model$expandNodeNames(targetNodes, returnScalarComponents = TRUE)

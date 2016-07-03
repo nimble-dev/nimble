@@ -385,7 +385,8 @@ SEXP getVec(SEXP Sextptr) {
   SEXP Sans;  
   
   PROTECT(Sans = allocVector(REALSXP, len));
-	std::copy(vecPtr->v.begin(), vecPtr->v.end() , REAL(Sans) );
+  //std::copy(vecPtr->v.begin(), vecPtr->v.end() , REAL(Sans) );
+  std::copy(vecPtr->v, vecPtr->v + len , REAL(Sans) );
   
   int numDims = vecPtr->numDims();
   if(numDims > 1) {
@@ -410,7 +411,8 @@ SEXP getVec_Integer(SEXP Sextptr) {
   int len = vecPtr->size();
   
   PROTECT(Sans = allocVector(REALSXP, len));
-  std::copy(vecPtr->v.begin(), vecPtr->v.end(), INTEGER(Sans) );  
+  //  std::copy(vecPtr->v.begin(), vecPtr->v.end(), INTEGER(Sans) );
+  std::copy(vecPtr->v, vecPtr->v + len, INTEGER(Sans) );  
   
   int numDims = vecPtr->numDims();
   if(numDims > 1) {
@@ -919,14 +921,15 @@ SEXP NimArrDouble_2_SEXP(NimArrBase<double> &nimArrDbl){
 		int len = nimArrDbl.size();
 		SEXP Sans;  
 		PROTECT(Sans = allocVector(REALSXP, len));
-		std::copy(nimArrDbl.v.begin(), nimArrDbl.v.end() , REAL(Sans) );  
+		//		std::copy(nimArrDbl.v.begin(), nimArrDbl.v.end() , REAL(Sans) );
+		std::copy(nimArrDbl.v, nimArrDbl.v + len , REAL(Sans) );  
   		int numDims = nimArrDbl.numDims();
   		if(numDims > 1) {
-    		SEXP Sdim;
-    		PROTECT(Sdim = allocVector(INTSXP, numDims));
-    		for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrDbl.dimSize(idim);
-			setAttrib(Sans, R_DimSymbol, Sdim);
-		    UNPROTECT(2);
+		  SEXP Sdim;
+		  PROTECT(Sdim = allocVector(INTSXP, numDims));
+		  for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrDbl.dimSize(idim);
+		  setAttrib(Sans, R_DimSymbol, Sdim);
+		  UNPROTECT(2);
   		}
   		else {
     		UNPROTECT(1);
@@ -938,7 +941,8 @@ SEXP NimArrInt_2_SEXP(NimArrBase<int> &nimArrInt){
 		int len = nimArrInt.size();
 		SEXP Sans;  
 		PROTECT(Sans = allocVector(INTSXP, len));
-		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );  
+		//		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
+		std::copy(nimArrInt.v, nimArrInt.v + len , INTEGER(Sans) );  
   		int numDims = nimArrInt.numDims();
   		if(numDims > 1) {
     		SEXP Sdim;
@@ -1075,7 +1079,8 @@ void cNimArr_2_NimArr(NimArrBase<T> &nimFrom, NimArrBase<T> &nimTo){
 	PRINTF("Warning: NimArr's of different sizes!\n");
 	return;
 	}
-	copy(nimFrom.v.begin(), nimFrom.v.end(), nimTo.v.begin() );
+	//	copy(nimFrom.v.begin(), nimFrom.v.end(), nimTo.v.begin() );
+	copy(nimFrom.v, nimFrom.v + nimFrom.size(), nimTo.v );
 	return;
 }
 
@@ -1085,7 +1090,8 @@ void cNimArr_2_NimArr_Index(NimArrBase<T1> &nimFrom, int fromBegin, NimArrBase<T
 	PRINTF("Warning: NimArr's of different sizes!\n");
 	return;
 	}
-	copy(nimFrom.v.begin() + fromBegin, nimFrom.v.end() + length - 1, nimTo.v.begin() + toBegin);
+	//	copy(nimFrom.v.begin() + fromBegin, nimFrom.v.end() + length - 1, nimTo.v.begin() + toBegin); // was this a bug?
+	copy(nimFrom.v + fromBegin, nimFrom.v + fromBegin + length, nimTo.v + toBegin);
 	return;
 }
 

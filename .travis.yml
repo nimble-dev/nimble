@@ -8,7 +8,6 @@ notifications:
   email:
     recipients:
       - dbt1@williams.edu
-      - dtemplelang@ucdavis.edu  
     on_success: always
     on_failure: always
 

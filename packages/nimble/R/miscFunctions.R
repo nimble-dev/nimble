@@ -23,15 +23,17 @@ calc_dmnormAltParams <- nimbleFunction(
 ## avoids unnecessary matrix multiplications, when 'coeff' is identity matrix
 calc_dmnormConjugacyContributions <- nimbleFunction(
     run = function(coeff = double(2), prec = double(2), order = double()) {
-        d <- dim(coeff)[1]
-        total <- 0
-        for(i in 1:d) {
-            for(j in 1:d) {
-                if(i == j) { total <- total + abs(coeff[i,j] - 1)
-                } else     { total <- total + abs(coeff[i,j])     }
+        if(dim(coeff)[1] == dim(coeff)[2]) {
+            d <- dim(coeff)[1]
+            total <- 0
+            for(i in 1:d) {
+                for(j in 1:d) {
+                    if(i == j) { total <- total + abs(coeff[i,j] - 1)
+                             } else     { total <- total + abs(coeff[i,j])     }
+                }
             }
+            if(total < d * 1E-15) return(prec)
         }
-        if(total < d * 1E-15) return(prec)
         if(order == 1) ans <- t(coeff) %*% prec
         if(order == 2) ans <- t(coeff) %*% prec %*% coeff
         return(ans)

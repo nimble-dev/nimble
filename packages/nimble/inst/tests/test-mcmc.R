@@ -107,7 +107,8 @@ test_mcmc('ice', model = 'icear.bug', inits = 'ice-inits.R',
 # are simulated from their priors to have large magnitude values
 
 # rework ice example so that beta[1] and beta[2] will be top nodes
-system(paste("sed 's/tau\\*1.0E-6/1.0E-6/g'", system.file('classic-bugs','vol2','ice','icear.bug', package = 'nimble'), ">", file.path(tempdir(), "icear.bug"))) 
+##system(paste("sed 's/tau\\*1.0E-6/1.0E-6/g'", system.file('classic-bugs','vol2','ice','icear.bug', package = 'nimble'), ">", file.path(tempdir(), "icear.bug")))
+system.in.dir(paste("sed 's/tau\\*1.0E-6/1.0E-6/g' icear.bug > ", file.path(tempdir(), "icear.bug")), dir = system.file('classic-bugs','vol2','ice', package = 'nimble'))
 test_mcmc(model = file.path(tempdir(), "icear.bug"), inits = system.file('classic-bugs', 'vol2', 'ice','ice-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'ice','ice-data.R', package = 'nimble'), numItsC = 1000, resampleData = TRUE)
 # looks fine, but alpha and beta values shifted a bit (systematically) relative to JAGS results - on further inspection this is because mixing for this model is poor in both NIMBLE and JAGS - with longer runs they seem to agree (as best as one can tell given the mixing without doing a super long run)
 
@@ -117,25 +118,34 @@ test_mcmc('beetles', model = 'beetles-logit.bug', inits = 'beetles-inits.R',
 # weirdness with llike.sat[8] being NaN on init (actually that makes sense), and with weird lifting of RHS of llike.sat
 
 
-system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
-system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
+##system.in.dir(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
+writeLines(c("var","Y[N,T],","dN[N,T];"), con = file.path(tempdir(), "leuk.bug")) ## echo doesn't seem to work on Windows
+##system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
 # need nimStep in data block as we no longer have step
-system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug"))) 
+##system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
+system.in.dir(paste("cat leuk.bug >> ", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk',package = 'nimble'))
+# need nimStep in data block as we no longer have step
+system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
+
 test_mcmc(model = file.path(tempdir(), "leuk.bug"), name = 'leuk', inits = system.file('classic-bugs', 'vol1', 'leuk','leuk-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'leuk','leuk-data.R', package = 'nimble'), numItsC = 1000,
           results = list(mean = list(beta = 1.58), sd = list(beta = 0.43)),
           resultsTolerance = list(mean = list(beta = 0.02), sd = list(beta = 0.02)))
 
-system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug"))) 
-system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
+writeLines(paste("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
+##system.in.dir(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug")))
+##system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
+system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
 test_mcmc(model = file.path(tempdir(), "salm.bug"), name = 'salm', inits = system.file('classic-bugs', 'vol1', 'salm','salm-init.R', package = 'nimble'), data = system.file('classic-bugs', 'vol1', 'salm','salm-data.R', package = 'nimble'), numItsC = 1000)
 # looks good compared to JAGS
 
-system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
-system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug"))) 
+##system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
+file.copy(system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), file.path(tempdir(), "air.bug"), overwrite=TRUE)
+system.in.dir(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
 test_mcmc(model = file.path(tempdir(), "air.bug"), name = 'air', inits = system.file('classic-bugs', 'vol2', 'air','air-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'air','air-data.R', package = 'nimble'), numItsC = 1000)
 # theta[2] posterior is a bit off from JAGS - would be worth more investigation
 
-system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
+##system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
+system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
 test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), numItsC = 1000)
 # C MCMC runs and seems fine; R MCMC fails as can't do Cholesky of 0 matrix in 2-point method
 
@@ -144,41 +154,41 @@ test_mcmc(model = file.path(tempdir(), "jaw-linear.bug"), name = 'jaw-linear', i
 if(FALSE) {
 model <- function() {
   for (i in 1:N) {
-     Y[i,1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);  # The 4 measurements for each  
+     Y[i,1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);  # The 4 measurements for each
   }                                   # boy are multivariate normal
 
   mu[1:M] <- beta0 * ones[1:M] + beta1 * (age[1:4] - mean(age[1:4]));
   beta0.uncentred <- beta0 - beta1 * mean(age[1:4]);
 
-  beta0 ~ dnorm(0.0, 0.001); 
-  beta1 ~ dnorm(0.0, 0.001); 
-  Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);	# between-child variance in length at each age	
+  beta0 ~ dnorm(0.0, 0.001);
+  beta1 ~ dnorm(0.0, 0.001);
+  Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);	# between-child variance in length at each age
   #Sigma2[1:M,1:M] <- inverse(Omega[1:M,1:M]);
 
   for (i in 1:N) {
      for  (j in 1:M) {
         resid[i,j] <- Y[i,j] - mu[j];         # residuals
         resid2[i,j] <- resid[i,j]^2;     # squared residuals
-     } 
+     }
   }
   RSS <- sum(resid2[1:N,1:M]);                    # Residual Sum of Squares
 }
- 
+
 inits = list(beta0 = 40, beta1 = 0)
-data =list(M=4,N=20, Y = matrix(c(47.8, 46.4, 46.3, 45.1, 47.6, 52.5, 51.2, 49.8, 48.1, 
-45, 51.2, 48.5, 52.1, 48.2, 49.6, 50.7, 47.2, 53.3, 46.2, 46.3, 
-48.8, 47.3, 46.8, 45.3, 48.5, 53.2, 53, 50, 50.8, 47, 51.4, 49.2, 
-52.8, 48.9, 50.4, 51.7, 47.7, 54.6, 47.5, 47.6, 49, 47.7, 47.8, 
-46.1, 48.9, 53.3, 54.3, 50.3, 52.3, 47.3, 51.6, 53, 53.7, 49.3, 
-51.2, 52.7, 48.4, 55.1, 48.1, 51.3, 49.7, 48.4, 48.5, 47.2, 49.3, 
-53.7, 54.5, 52.7, 54.4, 48.3, 51.9, 55.5, 55, 49.8, 51.8, 53.3, 
+data =list(M=4,N=20, Y = matrix(c(47.8, 46.4, 46.3, 45.1, 47.6, 52.5, 51.2, 49.8, 48.1,
+45, 51.2, 48.5, 52.1, 48.2, 49.6, 50.7, 47.2, 53.3, 46.2, 46.3,
+48.8, 47.3, 46.8, 45.3, 48.5, 53.2, 53, 50, 50.8, 47, 51.4, 49.2,
+52.8, 48.9, 50.4, 51.7, 47.7, 54.6, 47.5, 47.6, 49, 47.7, 47.8,
+46.1, 48.9, 53.3, 54.3, 50.3, 52.3, 47.3, 51.6, 53, 53.7, 49.3,
+51.2, 52.7, 48.4, 55.1, 48.1, 51.3, 49.7, 48.4, 48.5, 47.2, 49.3,
+53.7, 54.5, 52.7, 54.4, 48.3, 51.9, 55.5, 55, 49.8, 51.8, 53.3,
 49.5, 55.3, 48.4, 51.8)  , 20, 4), age = c(8, 8.5, 9, 9.5),
   R = matrix(c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1), 4 ,4),
   ones = rep(1, 4))
 test_mcmc(model = model, name = 'dmnorm-dwish example', data = data, inits = inits, numItsC = 1000)
 }
 
-  
+
 test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
                     "theta[1]" = 0.06,
                     "theta[2]" = 0.10,
@@ -198,7 +208,7 @@ test_mcmc('pump', resampleData = TRUE, results = list(mean = list(
 ## LogProb gap: bug fixed in after v0.3
 ## Problem that occurred in v0.3: because of gap in logProb_a (i.e. logProb_a[2]
 ## is defined but logProb_a[1] is not)
-## Because logProbs get scrambled, the random walk sampler would always accept, 
+## Because logProbs get scrambled, the random walk sampler would always accept,
 ## meaning the sd of proposal steps approaches Inf
 gapCode <- nimbleCode({
 	a[1] <- 1
@@ -211,7 +221,11 @@ test_mcmc(model = gapCode, seed = 0, numItsC = 100000,
 				samplers = list(list(type = 'RW', target = 'a[2]'))
 				)
 
-
+if(.Platform$OS.type == 'windows') {
+    message("Stopping tests now in Windows to avoid crashing until we can unload compiled projects")
+    message("To continue testing use 'mcmc2' tests")
+    q("no")
+}
 
 ### Daniel's world's simplest MCMC demo
 
@@ -326,7 +340,7 @@ test_mcmc(model = ESScode, data = c(ESSconstants, ESSdata), inits = ESSinits,
           name = 'results to tolerance of elliptical slice sampler',
           results = list(mean = list(x = c(1.0216463, -0.4007247, 1.1416904))),
           resultsTolerance = list(mean = list(x = c(0.01, 0.01, 0.01))),
-          numItsC = 100000, 
+          numItsC = 100000,
           samplers = list(list(type = 'ess', target = 'x')))
 
 
@@ -440,7 +454,7 @@ code <- nimbleCode({
     mu[1] <- 10
     mu[2] <- 20
     mu[3] <- 30
-    x[1:3] ~ dmnorm(mu[1:3], prec = Q[1:3,1:3])    
+    x[1:3] ~ dmnorm(mu[1:3], prec = Q[1:3,1:3])
 })
 
 Q = matrix(c(1.0,0.2,-1.0,0.2,4.04,1.6,-1.0,1.6,10.81), nrow=3)
@@ -473,7 +487,7 @@ if(FALSE) {
     propCov <- nfVar(Cmcmc, 'samplerFunctions')[[1]]$propCov
     scale <- nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
     propCov * scale^2
-    
+
     nfVar(Cmcmc, 'samplerFunctions')[[1]]$scaleHistory
     nfVar(Cmcmc, 'samplerFunctions')[[1]]$acceptanceRateHistory
     nfVar(Cmcmc, 'samplerFunctions')[[1]]$scale
@@ -672,7 +686,7 @@ code <- nimbleCode( {
   for(i in 1:n) {
     Y[i, 1:M] ~ dmnorm(mu[1:M], Omega[1:M,1:M]);
   }
-  Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);	
+  Omega[1:M,1:M] ~ dwish(R[1:M,1:M], 4);
 })
 
 newDf = 4 + n
@@ -692,6 +706,78 @@ test_mcmc(model = code, name = 'conjugate Wishart', data = data, seed = 0, numIt
           resultsTolerance = list(mean = list(Omega = matrix(.05, M,M)),
             sd = list(Omega = matrix(0.06, M, M))))
 # issue with Chol in R MCMC - probably same issue as in jaw-linear
+
+
+
+## testing conjugate MVN updating with ragged dependencies;
+## that is, dmnorm dependents of different lengths from the target node
+code <- nimbleCode({
+    x[1:3] ~ dmnorm(mu0[1:3], prec = ident[1:3,1:3])
+    mu_y2[1:2] <- asCol(a[1:2]) + B[1:2,1:3] %*% asCol(x[1:3])
+    mu_y3[1:3] <- asCol(a[1:3]) + B[1:3,1:3] %*% asCol(x[1:3])
+    mu_y5[1:5] <- asCol(a[1:5]) + B[1:5,1:3] %*% asCol(x[1:3])
+    y2[1:2] ~ dmnorm(mu_y2[1:2], prec = prec_y[1:2,1:2])
+    y3[1:3] ~ dmnorm(mu_y3[1:3], prec = prec_y[1:3,1:3])
+    y5[1:5] ~ dmnorm(mu_y5[1:5], prec = prec_y[1:5,1:5])
+})
+
+mu0 <- rep(0,3)
+ident <- diag(3)
+a <- 11:15
+B <- matrix(1:15, nrow=5, ncol=3, byrow=TRUE)
+prec_y <- diag(1:5)
+
+constants <- list(mu0=mu0, ident=ident, a=a, B=B, prec_y=prec_y)
+data <- list(y2=1:2, y3=1:3, y5=1:5)
+inits <- list(x=rep(0,3))
+
+Rmodel <- nimbleModel(code, constants, data, inits)
+
+spec <- configureMCMC(Rmodel)
+Rmcmc <- buildMCMC(spec)
+
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+set.seed(0)
+Rmcmc$run(10)
+
+set.seed(0)
+Cmcmc$run(10)
+
+Rsamples <- as.matrix(Rmcmc$mvSamples)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+
+test_that('correct samples for ragged dmnorm conjugate update', expect_true(all(abs(as.numeric(Rsamples[,]) - c(4.96686874, 3.94112676, 4.55975130, 4.01930176, 4.47744412, 4.12927167, 4.91242131, 4.62837537, 4.54227859, 4.97237602, -1.12524733, 1.24545265, -0.13454814, 0.82755276, 0.08252775, 0.71187071, -0.31322184, -0.57462284, -0.64800963, -0.52885823, -3.92276916, -5.23904995, -4.53535941, -4.89919931, -4.66995650, -4.94181562, -4.63558011, -4.16385294, -4.03469945, -4.51128205)) < 1E-8)))
+
+dif <- Rsamples - Csamples
+
+test_that('R and C samples same for ragged dmnorm conjugate update', expect_true(all(abs(dif) < 1E-13)))
+
+set.seed(0)
+Cmcmc$run(200000)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+
+obsmean <- apply(Csamples, 2, mean)
+
+obsprec <- inverse(cov(Csamples))
+
+pprec <- ident +
+    t(B[1:2,1:3]) %*% prec_y[1:2,1:2] %*% B[1:2,1:3] +
+    t(B[1:3,1:3]) %*% prec_y[1:3,1:3] %*% B[1:3,1:3] +
+    t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% B[1:5,1:3]
+
+
+pmean <- inverse(pprec) %*% (ident %*% mu0 +
+             t(B[1:2,1:3]) %*% prec_y[1:2,1:2] %*% (1:2 - a[1:2]) +
+             t(B[1:3,1:3]) %*% prec_y[1:3,1:3] %*% (1:3 - a[1:3]) +
+             t(B[1:5,1:3]) %*% prec_y[1:5,1:5] %*% (1:5 - a[1:5])   )
+
+
+test_that('ragged dmnorm conjugate posterior mean', expect_true(all(abs(pmean - obsmean) / pmean < 0.01)))
+
+
+test_that('ragged dmnorm conjugate posterior precision', expect_true(all(abs(pprec - obsprec) / pprec < 0.005)))
 
 
 

@@ -46,7 +46,8 @@ cppVarFull <- setRefClass('cppVarFull',
                           static = 'ANY', 	#'logical',
                           arraySizes = 'ANY', 	#'integer',
                           constructor = 'ANY', 	#'character',
-                          selfDereference = 'ANY'	#'logical'
+                          selfDereference = 'ANY',	#'logical'
+                          silent = 'ANY'
                           ),
                       methods = list(
                           initialize = function(...) {
@@ -58,7 +59,7 @@ cppVarFull <- setRefClass('cppVarFull',
                           	  static <<- logical()
                           	  arraySizes <<- integer()   
                           	  constructor <<- character()
-
+                                  silent <<- FALSE
                               selfDereference <<- FALSE
                               callSuper(...)
                           },
@@ -72,6 +73,7 @@ cppVarFull <- setRefClass('cppVarFull',
                               }
                           },
                           generate = function(printName = .self$name, ...) {
+                              if(silent) return(character())
                               bCP <- if(length(baseConst) > 0) { 
                                   if(length(baseConstPtr) > 0) paste(paste(rep('*', baseConstPtr), collapse = ''), 'const')
                                   else 'const'
@@ -150,7 +152,8 @@ cppVecNimArrPtr <- function(name = character(0), nDim = 1, type = 'double', ptr 
 
 cppSEXP <- function(name = character(0), ...) cppVar(name = name, baseType = 'SEXP', ptr = 0, ...)
 
-cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClass', ptr = 0, ...) 
+cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClass', ptr = 0, ...)
+cppNodeFunctionVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'NodeVectorClassNew', ptr = 0, ...) 
 
 ## to be defunct
 cppModelVariableAccessorVector <- function(name = character(0), ...) cppVar(name = name, baseType = 'ManyVariablesAccessor', ptr = 0, ...) 

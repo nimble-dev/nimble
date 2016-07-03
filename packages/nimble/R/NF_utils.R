@@ -30,7 +30,8 @@ simNodes <- nimbleFunction(
     },
     where = getLoadingNamespace())
 
-
+#' @rdname simNodes
+#' @export
 calcNodes <- nimbleFunction(
 	setup = function(model, nodes){
 		if(missing(nodes) )
@@ -45,6 +46,8 @@ calcNodes <- nimbleFunction(
 	},	
     where = getLoadingNamespace())
 
+#' @rdname simNodes
+#' @export
 getLogProbNodes <- nimbleFunction(
 	setup = function(model, nodes) {
 		if(missing(nodes) )
@@ -136,52 +139,9 @@ simNodesMV <- nimbleFunction(
     },
     where = getLoadingNamespace())
 
-## ### Basic nimble functions for simulating from a nimble model
-## ###
-## ### \code{calcNodes} computes the log probabilities of the stored node values in \code{mv} and returns a 
-## ### a vector of computed log probabilities. 
-## ###
-## ### @param model		A nimble model. Must have nodes provided by \code{node} argument
-## ### @param nodes		A set of nodes. If none are provided, default is all \code{model$getNodeNames}
-## ### @param mv		A modelValues object to which the simulated values are saved (\code{simNodes}), 
-## ### log probabilities are calculated (\code{calcNodes})
-## ### or log probabilities are retreaved (\code{getLogProbNodes}). It is very important that the modelValues objects must have the nodes provided
-## ### by \code{node} argument, along with the corresponding \code{'logProb_(nodeName)'}. 
-## ### @author Clifford Anderson-Bergman
-## ### @export
-## ### @details
-## ### Basic nimble functions that manipulate nimble models. \code{simNodes} simulates over the given nodes. \code{calcNodes} calculates the log probability 
-## ### of these nodes and \code{getLogProbNodes} retreaves the stored log probabilities WITHOUT recomputing the log probabilities. \code{getLogProbNodes} saves
-## ### time if the log probabilities have already been calculated.
-## ### @section Run time arguments:
-## ### \itemize{
-## ###	\item{\code{saveLP}}{
-## ###	
-## ###	(\code{calcNodes} only) logical scalar. Whether log probabilities should be saved in model values after being calculated}
-## ###	}
-## ###	
-## ### @examples
-## ### code <- nimbleCode({
-## ###	for(i in 1:5)
-## ###	x[i] ~ dnorm(0,1)
-## ### })
-## ###
-## ### myModel <- nimbleModel(code)
-## ### myMV <- modelValues(myModel)
-## ### cModel <- compileNimble(myModel)
-## ###
-## ### Rsim <- simNodes(myModel, myMV)
-## ### Rcalc <- calcNodes(myModel, myMV)
-## ### Rglp <- getLogProbNodes(myModel, myMV)
-## ### Csim <- compileNimble(Rsim, project = myModel)
-## ### Ccalc <- compileNimble(Rcalc, project = myModel)
-## ### Cglp <- compileNimble(Rglp, project = myModel)
-## ### Csim(10)
-## ### Ccalc(saveLP = TRUE)
-## ### Cglp()	#Gives identical answers to Ccalc because logProbs were saved
-## ### Csim(10)
-## ### Ccalc(saveLP = FALSE)
-## ### Cglp()	#Gives wrong answers because logProbs were not saved
+
+#' @rdname simNodesMV
+#' @export
 calcNodesMV <- nimbleFunction(
 	setup = function(model, mv, nodes) {
 		if(missing(nodes) )
@@ -205,50 +165,8 @@ calcNodesMV <- nimbleFunction(
 where = getLoadingNamespace())
 
 
-## ### Basic nimble functions for simulating from a nimble model
-## ###
-## ### \code{getLogProbNodes} simply extracts the saved log probabilities of the given nodes without calculating.
-## ### Note that using \code{getLogProbNodes} can save a lot of computation time, but requires the user to be very careful about always calling
-## ### making sure that the log probabilities have been correctly entered (see example)
-## ###
-## ### @param model		A nimble model. Must have nodes provided by \code{node} argument
-## ### @param nodes		A set of nodes. If none are provided, default is all \code{model$getNodeNames}
-## ### @param mv		A modelValues object to which the simulated values are saved (\code{simNodes}), 
-## ### log probabilities are calculated (\code{calcNodes})
-## ### or log probabilities are retreaved (\code{getLogProbNodes}). It is very important that the modelValues objects must have the nodes provided
-## ### by \code{node} argument, along with the corresponding \code{'logProb_(nodeName)'}. 
-## ### @author Clifford Anderson-Bergman
-## ### @export
-## ### @details
-## ### Basic nimble functions that manipulate nimble models. \code{simNodes} simulates over the given nodes. \code{calcNodes} calculates the log probability 
-## ### of these nodes and \code{getLogProbNodes} retreaves the stored log probabilities WITHOUT recomputing the log probabilities. \code{getLogProbNodes} saves
-## ### time if the log probabilities have already been calculated.
-## ### @section Run time arguments:
-## ### none
-## ###	
-## ### @examples
-## ### code <- nimbleCode({
-## ###     for(i in 1:5) {
-## ###         x[i] ~ dnorm(0,1)
-## ###     }
-## ### })
-## ###
-## ### myModel <- nimbleModel(code)
-## ### myMV <- modelValues(myModel)
-## ### cModel <- compileNimble(myModel)
-## ###
-## ### Rsim <- simNodes(myModel, myMV)
-## ### Rcalc <- calcNodes(myModel, myMV)
-## ### Rglp <- getLogProbNodes(myModel, myMV)
-## ### Csim <- compileNimble(Rsim, project = myModel)
-## ### Ccalc <- compileNimble(Rcalc, project = myModel)
-## ### Cglp <- compileNimble(Rglp, project = myModel)
-## ### Csim(10)
-## ### Ccalc(saveLP = TRUE)
-## ### Cglp()	#Gives identical answers to Ccalc because logProbs were saved
-## ### Csim(10)
-## ### Ccalc(saveLP = FALSE)
-## ### Cglp()	#Gives wrong answers because logProbs were not saved
+#' @rdname simNodesMV
+#' @export
 getLogProbNodesMV <- nimbleFunction(
 	setup = function(model, mv, nodes, expandNodes = TRUE, sortNodes = TRUE) {
 		if(missing(nodes) )

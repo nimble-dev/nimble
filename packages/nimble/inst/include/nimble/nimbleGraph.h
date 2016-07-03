@@ -18,7 +18,7 @@ struct graphNode {
  public:
   NODEROLE role;
   NODETYPE type;
-  int RgraphID; // should be signed because NAs are passed as 0s, then become -1 for CgraphID
+  int RgraphID;
   int CgraphID; // always RgraphID-1
   string name;
   bool touched; /* This is for arbitrary use by graph-traversing algorithms.  By convention it should be left at false for all nodes after completion of an algorithm. */
@@ -52,7 +52,7 @@ public:
 void nimbleGraphFinalizer(SEXP SgraphExtPtr);
 
 extern "C" {
-  SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes); 
+  SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEXP Stypes, SEXP Snames, SEXP SnumNodes);
   SEXP anyStochDependencies(SEXP SextPtr);
   SEXP anyStochParents(SEXP SextPtr);
   SEXP getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
