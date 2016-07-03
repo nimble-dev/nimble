@@ -295,16 +295,51 @@ Resets the \'data\' property of ALL model nodes to FALSE.  Subsequent to this ca
                                       return(invisible(NULL))
                                   },
                                   
-                                  setData = function(data, warnAboutMissingNames = TRUE) {
+                                  setData = function(..., warnAboutMissingNames = TRUE) {
 '
 Sets the \'data\' flag for specified nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
 
 Arguments:
 
-data: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.  These numeric scalars, vectors, arrays, etc, may only contain numeric data, or NAs.
+...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData(\'x\', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list(\'x\', y = 1:10)) is equivalent.  setData(c(\'x\',\'y\')) or setData(\'x\',\'y\') will mark both x and y as data.  
 
-Details: If a list element contains some number of NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) will resilt in an error; multivariate nodes must be entirely data, or entirely non-data.
+Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) will result in an error; multivariate nodes must be entirely data, or entirely non-data.
 '
+                                          ## new functionality for setData():
+                                          ## ... can be a list, a character vector of variable names, or a mix of both
+                                          ## intention is to flag these variables as 'data', and not change any model values.
+                                          ## some inefficiency here (accesses model values, then re-sets the same model values),
+                                          ## but this simplifies the addition without changing exisiting code.
+
+                                           data = list(...)
+                                           ## Check if a single list or character vector was provided
+                                           if(length(data)==1)
+                                               if(is.character(data[[1]])) {
+                                                   data <- as.list(data[[1]])
+                                               } else {
+                                                   if(is.list(data[[1]])) {
+                                                       data <- data[[1]]
+                                                   }
+                                               }
+
+                                           ## When a variable name was provided, make it the list name and put the model's value for that variable as the list element
+                                           dataNames <- names(data)
+                                           if(is.null(dataNames)) dataNames <- rep("", length(data))
+                                           for(i in seq_along(data)) {
+                                               if(dataNames[i]=="") {
+                                                   dataNames[i] <- data[[i]]
+                                                   data[[i]] <- get(dataNames[i])
+                                               }
+                                           }
+                                           names(data) <- dataNames
+                                           data
+
+
+                                      ##  if(is.character(data)) {
+                                      ##     dataNames <- data
+                                      ##     data <- lapply(data, function(x) get(x))
+                                      ##     names(data) <- dataNames
+                                      ## }
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
