@@ -752,7 +752,7 @@ test_that('correct samples for ragged dmnorm conjugate update', expect_true(all(
 
 dif <- Rsamples - Csamples
 
-test_that('R and C samples same for ragged dmnorm conjugate update', expect_true(all(abs(dif) < 1E-13)))
+test_that('R and C samples same for ragged dmnorm conjugate update', expect_true(all(abs(dif) < 2E-13)))
 
 set.seed(0)
 Cmcmc$run(200000)
