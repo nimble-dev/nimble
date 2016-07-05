@@ -33,28 +33,61 @@ enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 template<class T>
 class NimArrBase: public NimArrType {
  public:
-  vector<T> v;
-  vector<T> *vPtr;
-  void setVptr() {vPtr = &v;}
-  vector<T> *getVptr() const {return(vPtr);}
-  vector<int> NAdims;
-  const vector<int> &dim() const {return(NAdims);}
-  vector<int> NAstrides;
+  //vector<T> v;
+  T *v;
+  //vector<T> *vPtr;
+  T **vPtr;
+  void setVptr() {vPtr = &v;} 
+  //  vector<T> *getVptr() const {return(vPtr);}
+  T **getVptr() const{return(vPtr);}
+  bool own_v;
+  //vector<int> NAdims;
+  //  int *NAdims;
+  int NAdims[4];
+  //  const vector<int> &dim() const {return(NAdims);}
+  const int* dim() const {return(NAdims);}    
+    //vector<int> NAstrides;
+  //  int *NAstrides;
+  int NAstrides[4];
   int stride1, offset; // everyone has a stride1, and the flat [] operator needs it, so it is here. 
   int getOffset() {return(offset);}
   bool boolMap;
   bool isMap() const {return(boolMap);}
-  const vector<int> &strides() const {return(NAstrides);}
+  //const vector<int> &strides() const {return(NAstrides);}
+  const int* strides() const {return(NAstrides);}
   int NAlength; // name length can cause problems if R headers have been #include'd, as they have #define length Rf_length
   int size() const {return(NAlength);}
   virtual int numDims() const = 0;
   virtual int dimSize(int i) const = 0;
-  T &operator[](int i) {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
-  virtual int calculateIndex(vector<int> &i)=0;
+  T &operator[](int i) const {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
+  //  T &operator[](int i) {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
+  virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
-  void fillAllValues(T value) { std::fill(v.begin(), v.end(), value); }
-  void setLength(int l) {NAlength = l; v.resize(l); } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
+  void setLength(int l, bool copyValues = true, bool fillZeros = true) {
+    if(NAlength==l) {
+      if((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0)); 
+      return;
+    }
+    T *new_v = new T[l];
+    if(own_v) {
+      if(copyValues) {
+	if(l < NAlength) std::copy(v, v + l, new_v);
+	else {
+	  std::copy(v, v + NAlength, new_v);
+	  if(fillZeros) {
+	    std::fill(new_v + NAlength, new_v + l, static_cast<T>(0));
+	  }
+	}
+      }
+      delete[] v;
+    }
+    NAlength = l;
+    //v.resize(l);
+    v = new_v;
+    own_v = true;
+  } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
+  void fillAllValues(T value) { std::fill(v, v + NAlength, value); }
   void setMyType() {
     myType = UNDEFINED;
     if(typeid(T) == typeid(int) )
@@ -62,22 +95,29 @@ class NimArrBase: public NimArrType {
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
   }
-  ~NimArrBase(){};
- NimArrBase(const NimArrBase<T> &other) :
-  NAdims(other.dim()),
-    offset(0),
-    boolMap(false),
+  virtual ~NimArrBase(){
+    //delete[] NAdims;
+    //delete[] NAstrides;
+    if(own_v) delete [] v;
+  };
+ NimArrBase(const NimArrBase<T> &other) : // do we ever use this case?
+  //NAdims(other.dim()),
+    own_v(false), // isn't a map but we'll only set to true when giving it values.
+      offset(0),
+      boolMap(false),
     NAlength(other.size())
       {
+	//	NAdims = new int[other.numDims()];
+	std::memcpy(NAdims, other.dim(), other.numDims()*sizeof(int));
 	// std::cout<<"Using copy constructor for a NimArrBase<T>\n";
    	myType = other.getNimType();
       };
 
- NimArrBase() : v(), vPtr(&v), offset(0), boolMap(false), NAlength(0) {
+ NimArrBase() : v(), vPtr(&v), own_v(false), offset(0), boolMap(false), NAlength(0) {
     //  std::cout<<"Creating a NimArr with &v = "<<&v<<" and "<<" vPtr = "<<vPtr<<"\n";
     setMyType();
   }
- NimArrBase(const vector<T> &vm, int off) : vPtr(&vm), offset(off), boolMap(true) {
+ NimArrBase(const T* &vm, int off) : vPtr(&vm), own_v(false), offset(off), boolMap(true) {
     setMyType();
   }
   template<class Tfrom>

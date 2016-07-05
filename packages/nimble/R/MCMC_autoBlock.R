@@ -101,15 +101,17 @@ autoBlockModel <- setRefClass(
             scalarNodeVectorCont <<- scalarNodeVector[!discreteInd]   ## making work with discrete nodes
             scalarNodeVectorDisc <<- scalarNodeVector[ discreteInd]   ## making work with discrete nodes
             if(length(scalarNodeVectorCont) == 0) stop('autoBlocking only works with one or more continuous-valued model nodes')   ## making work with discrete nodes
-            nodeGroupScalars <<- lapply(scalarNodeVector, function(x) x)
+            nodeGroupScalars <<- c(unique(lapply(scalarNodeVectorDisc, Rmodel$expandNodeNames)), scalarNodeVectorCont)   ## making work with discrete nodes, and also with dmulti distributions
             ##nodeGroupAllBlocked <<- list(scalarNodeVector)   ## making work with discrete nodes
-            nodeGroupAllBlocked <<- c(lapply(scalarNodeVectorDisc, function(x) x), list(scalarNodeVectorCont))   ## making work with discrete nodes
+            ##nodeGroupAllBlocked <<- c(lapply(scalarNodeVectorDisc, function(x) x), list(scalarNodeVectorCont))   ## making work with discrete nodes
+            nodeGroupAllBlocked <<- c(unique(lapply(scalarNodeVectorDisc, Rmodel$expandNodeNames)), list(scalarNodeVectorCont))   ## making work with discrete nodes, and also with dmulti distributions
             monitorsVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE)
         },
         ## here is where the initial MCMC conf is created, for re-use -- for new version
         createInitialMCMCconf = function(runList) {
             initialMCMCconf <<- configureMCMC(Rmodel)
             nInitialSamplers <- length(initialMCMCconf$samplerConfs)
+            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'slice',    print=FALSE)  ## add one slice sampler
             initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
             initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
             addCustomizedSamplersToInitialMCMCconf(runList)
@@ -230,7 +232,8 @@ autoBlockClass <- setRefClass(
                                    ## in order to always standardize the ordering of samplers;
                                    ## even though this might result in a different sampler ordering
                                    ## than the true NIMBLE 'default' MCMC conf
-                                   groups <- determineGroupsFromConf(abModel$initialMCMCconf)
+                                   ##groups <- determineGroupsFromConf(abModel$initialMCMCconf)
+                                   groups <- lapply(determineGroupsFromConf(abModel$initialMCMCconf), function(nodes) unique(abModel$Rmodel$expandNodeNames(nodes)))  ## making work with dmulti distribution
                                    confList <- list(createConfFromGroups(groups))
                                    runConfListAndSaveBest(confList, 'default') },
 
@@ -276,7 +279,8 @@ autoBlockClass <- setRefClass(
         
         determineGroupsFromCutree = function(ct) {
             groupsContOnly <- lapply(unique(ct), function(x) names(ct)[ct==x])   ## making work with discrete nodes
-            groupsAllNodes <- c(lapply(abModel$scalarNodeVectorDisc, function(x) x), groupsContOnly)   ## making work with discrete nodes
+            ##groupsAllNodes <- c(lapply(abModel$scalarNodeVectorDisc, function(x) x), groupsContOnly)   ## making work with discrete nodes
+            groupsAllNodes <- c(unique(lapply(abModel$scalarNodeVectorDisc, abModel$Rmodel$expandNodeNames)), groupsContOnly)   ## making work with discrete nodes and dmulti distribution
             return(groupsAllNodes)   ## making work with discrete nodes
         },
         
@@ -464,7 +468,7 @@ addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
     if(length(nodeGroup) > 1) {
         conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
     }
-    if(!(nodeGroup %in% Rmodel$getNodeNames())) {
+    if(!(nodeGroup %in% Rmodel$getNodeNames()) && !Rmodel$isDiscrete(nodeGroup)) {
         conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
     }
     if(nodeGroup %in% Rmodel$getMaps('nodeNamesEnd')) {
@@ -479,6 +483,9 @@ addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
         conf$addSampler(target = nodeGroup, type = 'binary', print = FALSE); return()
     }
     if(Rmodel$isDiscrete(nodeGroup)) {
+        if(Rmodel$getNodeDistribution(nodeGroup) == 'dmulti') {
+            conf$addSampler(target = nodeGroup, type = 'RW_multinomial', print = FALSE); return()
+        }
         conf$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {

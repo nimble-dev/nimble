@@ -624,12 +624,9 @@ LIBOBJS
 USE_REGISTRATION
 PKG_LIBS
 RPATH
-FLIBS
 R_ENABLE_LIB
-NIMBLE_LIB_DIR
 NIMBLE_INC_DIR
 NIMBLE_DIR
-R_PACKAGE_DIR
 NEED_MAKEVARS_FILE
 EIGEN_INC
 EGREP
@@ -685,7 +682,6 @@ ac_user_opts='
 enable_option_checking
 with_eigen
 enable_lib
-enable_flibs
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1305,7 +1301,6 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-lib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code
-  --enable-flibs        include FLIBS flags in Makevars, which is not really necessary but is expected by CRAN
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2514,22 +2509,10 @@ else
 fi
 
 
-# Check whether --enable-flibs was given.
-if test "${enable_flibs+set}" = set; then :
-  enableval=$enable_flibs; ENABLE_FLIBS=${enableval}
-else
-  ENABLE_FLIBS=false
-fi
-
 
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false
   echo "Disabling libnimble."
-fi
-
-if test -n "${LIBNIMBLE}" ; then
-  ENABLE_LIB=true
-  echo "Enabling libnimble."
 fi
 
 
@@ -2993,7 +2976,6 @@ fi
 
 
 
-
 NIMBLE_DIR=${R_PACKAGE_DIR}
 echo "NIMBLE_DIR = ${NIMBLE_DIR}"
 
@@ -3007,23 +2989,10 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
-
-NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
-
-
-
 R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "a-z" "A-Z"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 
 
-ENABLE_FLIBS=`echo "${ENABLE_FLIBS}" | tr "a-z" "A-Z"`
-if test "${ENABLE_FLIBS}" = "TRUE"; then
-  echo "including FLIBS in Makevars as expected for CRAN"
-  FLIBS="\$(FLIBS)"
-else
-  echo "not including FLIBS in Makevars.  use --configure-args=\'--enable-flibs=true\' when testing for CRAN."
-  FLIBS=""
-fi
 
 
 if ! test `uname` = "Darwin" ; then
@@ -4213,6 +4182,6 @@ if test "${ENABLE_LIB}" != "false" ; then
 # fi
  #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib
 else
+#  mkdir inst/CppCode
   cp inst/CppCode/*.cpp src
-  (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi

@@ -1,12 +1,34 @@
-                            CHANGES IN VERSION 0.6
+                           CHANGES IN VERSION 0.6 (June 2016)
 
 USER LEVEL CHANGES
+
+-- Building models is faster and uses less memory for the building steps themselves.
+
+-- The new model implementation uses less memory and seems to have faster compiled execution in many cases.
+
+-- Compiling nimbleFunctions is generally faster.
+
+-- compileNimble can handle model operation functions that use a vector of node names with a scalar index, e.g., model$calculate(nodes[i]).  Index ranges are not supported.
+
+-- The computation time spent in each sampler of an MCMC can be obtained by mcmc$run(niter, time = TRUE) and then mcmc$getTimes(). 
+
+-- New RW_multinomial sampler incorporated into MCMC engine, for sampling nodes following a dmulti() distribution.
 
 -- model checking modified so that only size/dimension and NA checking is done by default. Extended checking of ability to calculate all model nodes is now invoked via model$check() only at user request.
 
 -- MCMC and modelValues configuration syntax now uses 'conf' rather than 'spec' in its naming throughout NIMBLE. 
 
-                          CHANGES IN VERSION 0.5-1 (May 2016)
+DEVELOPER LEVEL CHANGES
+
+-- New C++ nimbleGraph system for some steps of processing graphs.
+
+-- New design of models, specifically nodeFunctions.  This is a major implementation change.
+
+-- New C++ memory allocation system using new double[] instead of vector<double>.  This is notably more efficient since it can avoid unnecessary initialization upon allocation of local variables in otherwise fast, heavily used nimbleFunctions.
+
+-- New installation system for Windows and for binary builds on Linux or OS X.
+
+                           CHANGES IN VERSION 0.5-1 (May 2016)
 
 USER LEVEL CHANGES
 

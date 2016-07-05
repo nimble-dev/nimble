@@ -62,6 +62,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  buildFunction = function(RCfun, parentST = NULL) {
                                      RCfunProc <<- RCfun
                                      name <<- RCfunProc$name
+                                     const <<- RCfunProc$const
                                      argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames() ## this has only the original arguments
                                      args <<- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = argNames, parentST = parentST)
                                      allNames <- RCfunProc$compileInfo$newLocalSymTab$getSymbolNames() ## this has had local variables added
@@ -259,6 +260,16 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
         }
         return(ans)
     }
+    if(inherits(toSym, 'symbolInternalType')) {
+        thisInternalType <- as.character(toSym[['argList']][[1]])
+        if(thisInternalType == 'indexedNodeInfoClass') {            
+            ans <- substitute(TO <- indexedNodeInfo(SEXP_2_vectorDouble(FROM)), list(TO = as.name(toSym$name),
+                                                                                     FROM = as.name(fromSym$name)))
+            return(ans)
+        } else{
+            stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
+        }
+    }
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 
@@ -279,6 +290,16 @@ buildCopyLineToSEXP <- function(fromSym, toSym) {
             }
         }
         return(ans)
+    }
+    if(inherits(fromSym, 'symbolInternalType')) {
+        thisInternalType <- as.character(fromSym[['argList']][[1]])
+        if(thisInternalType == 'indexedNodeInfoClass') {
+            ans <- substitute(PROTECT(TO <- (vectorDouble_2_SEXP(FROM))), list(TO = as.name(toSym$name),
+                                                                            FROM = as.name(fromSym$name) ) )
+            return(ans)
+        } else {
+            stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
+        }
     }
     stop(paste("Error, don't know how to make a copy line to SEXP for something of class", class(fromSym)))
 }

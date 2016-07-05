@@ -167,7 +167,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               buildFunctionDefs = function() {
                                                   for(i in seq_along(nfProc$RCfunProcs)) {
                                                       RCname <- names(nfProc$RCfunProcs)[i]
-                                                      functionDefs[[RCname]] <<- RCfunctionDef$new()
+                                                      functionDefs[[RCname]] <<- RCfunctionDef$new() ## all nodeFunction members are const f
                                                       functionDefs[[RCname]]$buildFunction(nfProc$RCfunProcs[[RCname]])
                                                       functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nfProc$name)
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]

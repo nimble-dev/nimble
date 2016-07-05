@@ -180,20 +180,19 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                         'ModelClassUtils.cpp', 
                                                         'accessorClasses.cpp'
                                                         )
-                                       if(nimbleOptions()$includeCPPdists)
-                                          cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
+                                       if(nimbleOptions()$includeCPPdists) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
 
                                        isWindows = (.Platform$OS.type == "windows")
-cppPermList = c()                                       
+
                                        includes <- if(!.useLib) {
 	                                              if(isWindows) {
-                                                         shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir(), cppPermList[1])))
+                                                         shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
 		    			                 sprintf("%s/%s", shortDirname, cppPermList)
                                                       } else
-                                                         sprintf("%s/%s", normalizePath(NimbleCodeDir(), winslash = '/'), cppPermList) 
+                                                         sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
                                        	            } else
                                                        character()
-
+                                       
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
                                       

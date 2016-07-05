@@ -86,12 +86,16 @@ auxFStep <- nimbleFunction(
   },
   run = function(m = integer()) {
     returnType(double())
-    declare(auxll, double(1,m))
-    declare(auxWts, double(1,m))
-    declare(wts, double(1,m))
+    ##declare(auxll, double(1,m))
+    auxll <- numeric(m, init=FALSE)
+    ##declare(auxWts, double(1,m))
+    auxWts <- numeric(m, init=FALSE)
+    ##declare(wts, double(1,m))
+    wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
-    declare(ll, double(1,m))
-
+    ##declare(ll, double(1,m))
+    ll <- numeric(m, init=FALSE)
+    
     ## This is the look-ahead step, not conducted for first time-point
     if(notFirst){ 
       for(i in 1:m) {

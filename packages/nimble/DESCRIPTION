@@ -60,6 +60,7 @@ Collate:
     nimbleFunction_util.R
     nimbleFunction_core.R
     nimbleFunction_nodeFunction.R
+    nimbleFunction_nodeFunctionNew.R
     nimbleFunction_Rexecution.R
     nimbleFunction_compile.R
     nimbleFunction_keywordProcessing.R
@@ -108,5 +109,4 @@ Collate:
     registration.R
     nimble-package.r
     zzz.R
-    binaryInstallCode.R
-
+RoxygenNote: 5.0.1

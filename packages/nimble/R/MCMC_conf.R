@@ -176,19 +176,21 @@ print: A logical argument, specifying whether to print the ordered list of defau
             	node <- nodes[i]
                 discrete <- model$isDiscrete(node)
                 binary <- model$isBinary(node)
+                nodeDist <- model$getNodeDistribution(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
                 if(isNodeEnd[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
                 
-                ## for multivariate nodes, either add a conjugate sampler, or RW_block sampler
+                ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                 if(nodeLength > 1) {
                     if(useConjugacy) {
                         conjugacyResult <- conjugacyResultsAll[[node]]
                         if(!is.null(conjugacyResult)) {
                             addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                     }
+                    if(nodeDist == 'dmulti')   { addSampler(target = node, type = 'RW_multinomial');     next }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
                             addSampler(target = scalarNode, type = 'RW') };     next }
@@ -219,10 +221,11 @@ print: A logical argument, specifying whether to print the ordered list of defau
         },
 
         addConjugateSampler = function(conjugacyResult) {
-            if(!getNimbleOption('useDynamicConjugacy')) {
-                addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
-                return(NULL)
-            }
+            ## update May 2016: old (non-dynamic) system is no longer supported -DT
+            ##if(!getNimbleOption('useDynamicConjugacy')) {
+            ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
+            ##    return(NULL)
+            ##}
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
@@ -597,6 +600,7 @@ Details: See the initialize() function
 #'@param oldConf An optional MCMCconf object to modify rather than creating a new MCMCconf from scratch
 #'@param ... Additional arguments to be passed to the \code{autoBlock()} function when \code{autoBlock = TRUE}
 #'@author Daniel Turek
+#'@export 
 #'@details See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,

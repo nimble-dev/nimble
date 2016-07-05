@@ -30,7 +30,7 @@ void graphNode::addParent(graphNode *fromNode) {
 void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
   //  enum NODETYPE {UNKNOWNTYPE, STOCH, DETERM, RHSONLY};
   if(!isString(Stypes)) {
-    PRINTF("Error:  called for SEXP that is not a string!\n"); 
+    PRINTF("Error:  called for SEXP that is not a string!\n");
     return;
   }
   int nn = LENGTH(Stypes);
@@ -86,7 +86,7 @@ nimbleGraph::~nimbleGraph() {
 }
 
 SEXP anyStochDependencies(SEXP SgraphExtPtr) {
-  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr)); 
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> ans(graphPtr->anyStochDependencies());
   SEXP Sans;
   PROTECT(Sans = allocVector(LGLSXP, ans.size()));
@@ -100,7 +100,7 @@ SEXP anyStochDependencies(SEXP SgraphExtPtr) {
 }
 
 SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream) {
-  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr)); 
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> nodes = SEXP_2_vectorInt(Snodes, -1); // subtract 1 index for C
   vector<int> omit = SEXP_2_vectorInt(Somit, -1);
   bool downstream = SEXP_2_bool(Sdownstream);
@@ -109,7 +109,7 @@ SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstrea
 }
 
 SEXP anyStochParents(SEXP SgraphExtPtr) {
-  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr)); 
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> ans(graphPtr->anyStochParents());
   SEXP Sans;
   PROTECT(Sans = allocVector(LGLSXP, ans.size()));
@@ -127,7 +127,7 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
 		     const vector<NODETYPE> &types,
 		     const vector<string> &names,
 		     int inputNumNodes) {
-  if(inputNumNodes < 0) PRINTF("Problem in nimbleGraph::setNodes: inputNumNodes <0\n");
+  if(inputNumNodes < 0) PRINTF("Error in setNodes: inputNumNodes < 0\n");
   numNodes = static_cast<unsigned int>(inputNumNodes);
   unsigned int numEdges = edgesFrom.size();
 
@@ -135,7 +135,6 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
   PRINTF("numNodes %i\n", numNodes);
   PRINTF("numEdges %i\n", numEdges);
 #endif
-
   if((numEdges != edgesTo.size()) | (numEdges != edgesFrom2ParentExprIDs.size()) | (numNodes != types.size()) | (numNodes != names.size())) {
     PRINTF("Something is not the right size\n");
     return;
@@ -152,24 +151,24 @@ void nimbleGraph::setNodes(const vector<int> &edgesFrom, const vector<int> &edge
 vector<int> nimbleGraph::anyStochDependencies() {
   vector<int> ans(numNodes, 0);
   for(unsigned int i = 0; i < numNodes; i++) {
-    anyStochDependenciesOneNode(ans, i); 
+    anyStochDependenciesOneNode(ans, i);
   }
   return(ans);
 }
 
-bool nimbleGraph::anyStochDependenciesOneNode(vector<int> &anyStochDependencies, int CgraphID) {
+bool nimbleGraph::anyStochDependenciesOneNode(vector<int> &anyStochDependencies,  int CgraphID) {
   // 0 = untouched, 1 = false, 2 = true
   if(anyStochDependencies[CgraphID] != 0) return(anyStochDependencies[CgraphID] == 2);
   bool thisHasAstochDep(false);
   graphNode *thisGraphNode = graphNodeVec[CgraphID];
   graphNode *thisChildNode;
-  unsigned int numChildren = thisGraphNode->numChildren;
+  int numChildren = thisGraphNode->numChildren;
   /* If no children, answer is false */
   if(numChildren == 0) {
     anyStochDependencies[CgraphID] = 1;
     return(false);
   }
-  unsigned int i(0);
+  int i(0);
   /* Check type of children without recursing.  If any are STOCH, answer is true */
   while((i < numChildren) & (!thisHasAstochDep)) {
     if(thisGraphNode->children[i]->type == STOCH) {
@@ -208,7 +207,7 @@ vector<int> nimbleGraph::anyStochParents() {
   return(ans);
 }
 
-bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents, int CgraphID) {
+bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int CgraphID) {
   // 0 = untouched, 1 = false, 2 = true
   if(anyStochParents[CgraphID] != 0) return(anyStochParents[CgraphID] == 2);
   bool thisHasAstochParent(false);
@@ -251,8 +250,8 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents, int Cgrap
 vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream) {
   // assume on entry that touched = false on all nodes
   // Cnodes and Comit are C-indices (meaning they start at 0)
-  unsigned int n = Comit.size();
-  unsigned int i;
+  int n = Comit.size();
+  int i;
   vector<int> ans;
   // touch omit nodes
 #ifdef _DEBUG_GETDEPS
@@ -280,7 +279,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 #endif
       ans.push_back(thisGraphNodeID);
       thisGraphNode->touched = true;
-      getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);      
+      getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
     } else {
 #ifdef _DEBUG_GETDEPS
       PRINTF("  Node %i was already touched\n", thisGraphNodeID);
@@ -310,8 +309,8 @@ void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool d
   PRINTF("    Entering recursion for node %i\n", CgraphID);
 #endif
   graphNode *thisGraphNode = graphNodeVec[CgraphID];
-  unsigned int numChildren = thisGraphNode->numChildren;
-  unsigned int i(0);
+  int numChildren = thisGraphNode->numChildren;
+  int i(0);
   graphNode *thisChildNode;
   int thisChildCgraphID;
 #ifdef _DEBUG_GETDEPS
