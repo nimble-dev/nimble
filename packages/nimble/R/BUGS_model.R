@@ -679,7 +679,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
 
                                       varsWithNAs <- NULL
                                       for(v in .self$getVarNames()) 
-                                          if(!isValid(.self[[v]]))
+                                          if(!nimble:::isValid(.self[[v]]))
                                               varsWithNAs <- c(varsWithNAs, v)
                                       if(!is.null(varsWithNAs))
                                           message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
