@@ -23,27 +23,31 @@
 #'
 #' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes.
 #'
+#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \cd{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \cd{mcmc$getTimes()}.
+#'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
-#' These may be accessed via:
-#' \code{Rmcmc$mvSamples}
-#' \code{Rmcmc$mvSamples2}
+#' These may be accessed and converted into R matrix objects via:
+#' \code{as.matrix(mcmc$mvSamples)}
+#' \code{as.matrix(mcmc$mvSamples2)}
 #'
 #' The uncompiled (R) MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
 #' \code{Cmcmc <- compileNimble(Rmcmc, project=Rmodel)}
 #'
 #' The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
+#' 
 #' @examples
 #' code <- nimbleCode({
-#'  mu ~ dnorm(0, 1)
-#'  x ~ dnorm(mu, 1)
+#'     mu ~ dnorm(0, 1)
+#'     x ~ dnorm(mu, 1)
 #' })
 #' Rmodel <- nimbleModel(code)
 #' conf <- configureMCMC(Rmodel)
 #' Rmcmc <- buildMCMC(conf)
-#' Rmcmc$run(10)
-#' samples <- Rmcmc$mvSamples
-#' samples[['x']]
-#' Rmcmc$run(100, reset = FALSE)
+#' Cmodel <- compileNimble(Rmodel)
+#' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
+#' Cmcmc$run(10000)
+#' samples <- as.matrix(Cmcmc$mvSamples)
+#' head(samples)
 buildMCMC <- nimbleFunction(
     setup = function(conf, ...) {
     	if(inherits(conf, 'modelBaseClass'))
