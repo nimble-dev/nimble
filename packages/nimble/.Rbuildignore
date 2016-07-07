@@ -1,7 +1,10 @@
 .*\\.o$
 .*\\.so$
 .*\\.a$
+\.dylib$
 \\.git
 \\.gitignore$
 src/Makevars$
+inst/Makevars$
+
 
