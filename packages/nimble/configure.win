@@ -26,8 +26,25 @@ sed -e "s|@NIMBLE_LIB_DIR@|$R_PACKAGE_DIR/CppCode|"  > inst/Make/Makevars.win
 
 
 echo "R_HOME = $R_HOME, R_ARCH=$R_ARCH"
-echo "Creating inst/CppCode/libnimble.a"
-(cd inst/CppCode ; make libnimble.a OS=Windows R_ARCH=$R_ARCH)
 
+
+ARCH_SUFFIX=`echo ${R_ARCH} | sed -e s!/!_!`
+#if test "$R_ARCH" = "/x64" ; then
+#  ARCH_SUFFIX="64"
+#elif test "$R_ARCH" = "/i386" ; then
+#  ARCH_SUFFIX="32"
+#fi
+
+echo "Creating inst/CppCode/libnimble${ARCH_SUFFIX}.a"
+
+(cd inst/CppCode ; make libnimble${ARCH_SUFFIX}.a ARCH_SUFFIX=${ARCH_SUFFIX} OS=Windows R_ARCH=$R_ARCH)
+
+if test -d "$R_PACKAGE_DIR/CppCode" ; then
+  echo "Package CppCode directory exists"
+  ls "$R_PACKAGE_DIR"
+  cp inst/CppCode/libnimble${ARCH_SUFFIX}.a "$R_PACKAGE_DIR/CppCode/"
+else
+   echo "The R package directory has not been created yet"
+fi
 
 

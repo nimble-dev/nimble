@@ -31,10 +31,12 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 #	$(R_HOME)/bin$(R_ARCH)/Rcmd COMPILE $<
 # Was R CMD COMPILE
 
-clean:
-	-rm *.o libnimble$(DYLIB_EXT) libnimble.a
+#clean:
+#	-rm $(OBJECTS) libnimble$(DYLIB_EXT) libnimble$(ARCH_SUFFIX).a
 
 
-libnimble.a:  $(OBJECTS)
-	@echo "Making libnimble.a"      
+libnimble32.a libnimble64.a libnimble_x64.a libnimble_i386.a: $(OBJECTS)
+	echo "Making nimble $@"      
+	echo "$(OBJECTS)"
 	$(AR) rcs $@ $(OBJECTS)
+	-rm $(OBJECTS)
