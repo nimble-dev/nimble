@@ -766,11 +766,33 @@ rankSample <- function(weights, size, output, silent = FALSE) {
 #' ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code
 #' nimPrint('Answer is ', ans, '\n') ## would work in R or NIMBLE
 #'
+#' @seealso \link{cat}
 #' @export
 nimPrint <- function(...) {
     items <- list(...)
     for(i in seq_along(items)) {if(is.array(items[[i]])) print(items[[i]]) else cat(items[[i]])}
     cat('\n')
+}
+
+#' cat function for use in nimbleFunctions, where it is identical to \code{cat}, but not R's \code{cat}.
+#'
+#' cat function for use in nimbleFunctions, where it is identical to \code{cat}.  Works in R or NIMBLE, not quite identically.
+#'
+#' @param ...  an abitrary set of arguments that will be printed in sequence.  Identical to nimPrint, except no newline character at the end.
+#'
+#' @details The keyword \code{cat} in nimbleFunction run-time code will be automatically turned into \code{nimCat}.  This is a function that prints its arguments int order using \code{cat} in R, or using \code{std::cout} in C++ code generated from compiling nimbleFunctions.
+#' Non-scalar numeric objects can be included, although their output will be formatted slightly different in uncompiled and compiled nimbleFunctions.
+#'
+#'
+#' @examples
+#' ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code
+#' nimCat('Answer is ', ans, '\n') ## would work in R or NIMBLE
+#'
+#' @seealso \link{print}
+#' @export
+nimCat <- function(...) {
+    items <- list(...)
+    for(i in seq_along(items)) {if(is.array(items[[i]])) print(items[[i]]) else cat(items[[i]])}
 }
 
 
