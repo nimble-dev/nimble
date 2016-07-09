@@ -89,6 +89,10 @@ git push --tags    ## this is how you push *tags* to the remote
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in
 and comment out rstan usage as in cran_0.5 branch on CJP machine
 
+### building binaries
+
+make sure there is no libnimble.{a,dylib,so} in inst/CppCode or it will be copied over and interfere with the libnimble created during the build process
+
 ### Building of Windows version (instructions from DT)
 
 put this in build.bat:
