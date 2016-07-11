@@ -473,7 +473,10 @@ setValues <- function(input, model, nodes){
 	setValuesAccess(input, access)
 }
 
-#' Access values for a set of nodes in a model
+
+#' Access or set values for a set of nodes in a model
+#'
+#' Access or set values for a set of nodes in a NIMBLE model. 
 #'
 #' @aliases values values<-
 #' 
@@ -507,7 +510,7 @@ values <- function(model, nodes){
 
 ## # @rdname values
 
- 
+#' @rdname values 
 #' @export
 `values<-` <- function(model, nodes, value){
 	setValues(value, model, nodes)
@@ -620,7 +623,8 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
     ## }
 }
 
-
+#' Access or set a member variable of a nimbleFunction
+#' 
 #' Internal way to access or set a member variable of a nimbleFunction created during \code{setup}.  Normally in NIMBLE code you would use \code{nf$var} instead of \code{nfVar(nf, var)}. 
 #'
 #' @aliases nfVar nfVar<-
@@ -671,6 +675,7 @@ nfVar <- function(nf, varName) {
     return(v)
 }
 
+#' @rdname nfVar
 #' @export
 `nfVar<-` <- function(nf, varName, value) {
     refClassObj <- nf_getRefClassObject(nf)
@@ -678,9 +683,9 @@ nfVar <- function(nf, varName) {
     return(nf)
 }
 
+#' access (call) a member function of a nimbleFunction
+#' 
 #' Internal function for accessing a member function (method) of a nimbleFunction.  Normally a user will write \code{nf$method(x)} instead of \code{nfMethod(nf, method)(x)}.
-#'
-#' access (call) a member function of a nimbleFunction, including \code{run}.
 #'
 #' @param nf          a specialized nimbleFunction, i.e. one that has already had setup parameters processed
 #' @param methodName  a character string giving the name of the member function to call

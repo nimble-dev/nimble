@@ -23,7 +23,7 @@
 #'
 #' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes.
 #'
-#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \cd{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \cd{mcmc$getTimes()}.
+#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()}.
 #'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
 #' These may be accessed and converted into R matrix objects via:
