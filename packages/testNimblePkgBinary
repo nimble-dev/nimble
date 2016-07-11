@@ -21,7 +21,7 @@ if ! test -d RTempLib ; then
 fi
 
 CONFIG_ARGS="'--enable-lib=false'"
-R CMD INSTALL -lRTempLib --configure-args="$CONFIG_ARGS" --build ../nimble
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" --build ../nimble
 
 GZ=`ls nimble_*gz`
 echo "** Installing nimble binary package $GZ"
