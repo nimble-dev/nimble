@@ -684,7 +684,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_eigen
-enable_lib
+enable_dylib
 enable_flibs
 '
       ac_precious_vars='build_alias
@@ -2506,9 +2506,9 @@ if test "${with_eigen+set}" = set; then :
 fi
 
 
-# Check whether --enable-lib was given.
-if test "${enable_lib+set}" = set; then :
-  enableval=$enable_lib; ENABLE_LIB=${enableval}
+# Check whether --enable-dylib was given.
+if test "${enable_dylib+set}" = set; then :
+  enableval=$enable_dylib; ENABLE_LIB=${enableval}
 else
   ENABLE_LIB=true
 fi
