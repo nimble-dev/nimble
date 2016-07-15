@@ -18,12 +18,19 @@ dnl or by setting the environment variable EIGEN_DIR
 AC_ARG_WITH(eigen, [  --with-eigen            path for the directory containing Eigen/ directory with all of the #include files], EIGEN_DIR="${withval}")
 
 AC_ARG_ENABLE(dylib, [  --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
-                         ENABLE_LIB=${enableval}, ENABLE_LIB=true)
+                         ENABLE_LIB=${enableval}, ENABLE_LIB=false)
 
+AC_ARG_ENABLE(flibs, [  --enable-flibs        include FLIBS flags in Makevars, which is not really necessary but is expected by CRAN],
+                         ENABLE_FLIBS=${enableval}, ENABLE_FLIBS=true)
 
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false
   echo "Disabling libnimble."
+fi
+
+if test -n "${LIBNIMBLE}" ; then
+  ENABLE_LIB=true
+  echo "Enabling libnimble."
 fi
 
 
@@ -78,6 +85,7 @@ fi
 
 AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
+AC_SUBST(R_PACKAGE_DIR)
 
 NIMBLE_DIR=${R_PACKAGE_DIR}
 echo "NIMBLE_DIR = ${NIMBLE_DIR}"
@@ -92,11 +100,24 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
+
+NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+AC_SUBST(NIMBLE_LIB_DIR)
+
+
 R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
 
-
+ENABLE_FLIBS=`echo "${ENABLE_FLIBS}" | tr "[a-z]" "[A-Z]"`
+if test "${ENABLE_FLIBS}" = "TRUE"; then
+  echo "including FLIBS in Makevars as expected for CRAN"
+  FLIBS="\$(FLIBS)"
+else
+  echo "not including FLIBS in Makevars.  use --configure-args=\'--enable-flibs=true\' when testing for CRAN."
+  FLIBS=""
+fi
+AC_SUBST(FLIBS)
 
 if ! test `uname` = "Darwin" ; then
 RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
@@ -126,6 +147,6 @@ if test "${ENABLE_LIB}" != "false" ; then
 # fi
  #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib 
 else 
-#  mkdir inst/CppCode
   cp inst/CppCode/*.cpp src
+  (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi

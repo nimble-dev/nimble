@@ -41,7 +41,7 @@ for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION}
 done
 
-for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure; cd nimble; ./configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran.
+for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure; cd nimble; ./configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran. (note that ./configure will give error in building libnimble.a and that it will put config.R in nimble/R and a bunch of extra files in nimble/src (which should only have Makevars.in, Makevars.win, nimble.cpp) and in nimble/inst/make (which should only have *.in files).
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
