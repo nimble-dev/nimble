@@ -13,7 +13,7 @@ Make sure src/Makevars.win is present.
 
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
-# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure)
+# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 ./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
 (in general you'll need to run prep_pkg twice as first time will generate errors when writing Rd files; also will often need to remove 00LOCK files)
 
@@ -41,7 +41,7 @@ for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION}
 done
 
-for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure; cd nimble; ./configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran. (note that ./configure will give error in building libnimble.a and that it will put config.R in nimble/R and a bunch of extra files in nimble/src (which should only have Makevars.in, Makevars.win, nimble.cpp) and in nimble/inst/make (which should only have *.in files).
+for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran. 
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib

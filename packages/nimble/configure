@@ -2510,7 +2510,12 @@ fi
 if test "${enable_dylib+set}" = set; then :
   enableval=$enable_dylib; ENABLE_LIB=${enableval}
 else
-  ENABLE_LIB=false
+  if ! test `uname` = "Linux" ; then
+   ENABLE_LIB=false
+else
+   ENABLE_LIB=true
+fi
+
 fi
 
 
