@@ -227,10 +227,10 @@ processNonParseableCode <- function(text) {
 #'     mu ~ dnorm(0, sd = prior_sd)
 #' })
 #' data = list(prior_sd = 1, x = 4)
-#' Rmodel <- readBUGSmodel(code, data = data, inits = list(mu = 0))
-#' Rmodel$setData(data['x'])
-#' Rmodel[['mu']]
-#' Rmodel$nodes[['x']]$calculate()
+#' model <- readBUGSmodel(code, data = data, inits = list(mu = 0))
+#' model$x
+#' model[['mu']]
+#' model$calculate('x')
 readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = getNimbleOption('checkModel')) {
 
   # helper function

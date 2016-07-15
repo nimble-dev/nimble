@@ -35,11 +35,11 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   nimbleProject = 'ANY'
                                   ),
                               methods = list(
-                                  calculate = function(nodes) nimble:::calculate(.self, nodes),
-                                  calculateDiff = function(nodes) nimble:::calculateDiff(.self, nodes),
-                                  getLogProb = function(nodes) nimble:::getLogProb(.self, nodes),
-                                  simulate = function(nodes, includeData = FALSE) nimble:::simulate(.self, nodes, includeData),
-                                  getParam = function(node, param) nimble:::getParam(.self, node, param),
+                                  calculate = function(nodes) nimble::calculate(.self, nodes),
+                                  calculateDiff = function(nodes) nimble::calculateDiff(.self, nodes),
+                                  getLogProb = function(nodes) nimble::getLogProb(.self, nodes),
+                                  simulate = function(nodes, includeData = FALSE) nimble::simulate(.self, nodes, includeData),
+                                  getParam = function(node, param) nimble::getParam(.self, node, param),
                                   
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
@@ -690,11 +690,11 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
 Checks for errors in model specification and for missing values that prevent use of calculate/simulate on any nodes
 '
                                       # check for missing values and inability to calculate/simulate
-                                      lp <- try(nimble:::calculate(.self))
+                                      lp <- try(calculate())
                                       if(!nimble:::isValid(lp)) {
                                           varsToCheck <- character()
                                           for(v in .self$getVarNames())
-                                              if(!nimble:::isValid(.self[[v]]) || !nimble:::isValid(nimble:::getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
+                                              if(!nimble:::isValid(.self[[v]]) || !nimble:::isValid(getLogProb(setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
                                                   varsToCheck <- c(varsToCheck, v)
                                           badVars <- list(na=character(), nan=character(), inf=character())
                                       ##nns <- getNodeNames(includeRHSonly = TRUE)
@@ -707,14 +707,14 @@ Checks for errors in model specification and for missing values that prevent use
                                               if(type == 'RHSonly') {
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'determ') {
-                                                  test <- try(nimble:::calculate(.self, nn))
+                                                  test <- try(calculate(nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   val <- .self[[nn]]
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'stoch') {
                                                   if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
-                                                  test <- try(val <- nimble:::calculate(.self, nn))
+                                                  test <- try(val <- calculate(.self, nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   
