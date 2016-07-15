@@ -17,7 +17,7 @@ dnl    --configure-args='--with-eigen=/home/bob/local'
 dnl or by setting the environment variable EIGEN_DIR
 AC_ARG_WITH(eigen, [  --with-eigen            path for the directory containing Eigen/ directory with all of the #include files], EIGEN_DIR="${withval}")
 
-AC_ARG_ENABLE(lib, [  --enable-lib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
+AC_ARG_ENABLE(dylib, [  --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code],
                          ENABLE_LIB=${enableval}, ENABLE_LIB=true)
 
 
@@ -59,12 +59,13 @@ dnl  AC_LANG_PUSH([C++]);
 
 AC_CHECK_HEADERS([Eigen/Dense], 
                  [echo "Found Eigen/Dense";
-                  rm -rf inst/Eigen_local], 
+dnl                rm -rf inst/Eigen_local
+                 ], 
                  [echo "Cannot find Eigen/Dense include file.";
                   echo "Using the version of Eigen provided locally with the R package";
                   echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
                   echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR"; 
-                  mv inst/Eigen_local inst/include/Eigen ;
+                  cp -r inst/Eigen_local inst/include/Eigen ;
                   EIGEN_DIR=""
                   ])
 

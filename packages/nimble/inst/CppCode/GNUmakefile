@@ -5,11 +5,17 @@ ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share
 endif
 
-include $(R_HOME)/etc$(R_ARCH)/Makeconf
+# Don't have to succeed in including this if we are calling cleanup in the nimble package directory.
+-include $(R_HOME)/etc$(R_ARCH)/Makeconf
+include ./Makevars
 
-OS=$(shell uname)
+ifndef OS
+ OS=$(shell uname)
+endif
+
 ifeq ($(OS), Darwin)
 INSTALL_NAME=-install_name "$(R_PACKAGE_DIR)/CppCode/libnimble$(DYLIB_EXT)"
+#Relative paths don't work on OSX. "../CppCode/libnimble$(DYLIB_EXT)"
 endif
 
 libnimble$(DYLIB_EXT): $(OBJECTS)
@@ -18,9 +24,19 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 	$(CXX) $(SHLIB_CXXLDFLAGS) -o $@  $(OBJECTS) $(INSTALL_NAME)
 	-rm *.o
 
-%.o: %.cpp
-	$(R_HOME)/bin/R CMD COMPILE $<
+#	cp libnimble$(DYLIB_EXT) ../../src
 
+#%.o: %.cpp
+#	$(R_HOME)/bin$(R_ARCH)/Rcmd COMPILE $<
+# Was R CMD COMPILE
 
 clean:
-	-rm *.o libnimble$(DYLIB_EXT)
+	-rm $(OBJECTS) libnimble$(DYLIB_EXT) libnimble$(ARCH_SUFFIX).a
+
+# libnimble32.a libnimble64.a
+libnimble.a  libnimble_x64.a libnimble_i386.a: $(OBJECTS)
+	echo "Making nimble $@"      
+	echo "$(OBJECTS)"
+	$(AR) rcs $@ $(OBJECTS)
+	-rm $(OBJECTS)
+
