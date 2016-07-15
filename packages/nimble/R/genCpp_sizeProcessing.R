@@ -40,6 +40,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimArr_rcat = 'sizeScalarRecurse',
                     nimArr_rinterval = 'sizeScalarRecurse',
                     nimPrint = 'sizeforceEigenize',
+                    nimCat = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
                     nimArrayGeneral = 'sizeNimArrayGeneral',
@@ -469,7 +470,7 @@ sizeOneEigenCommand <- function(code, symTab, typeEnv) {
     invisible(NULL)
 }
 
-## This is used for nimPrint
+## This is used for nimPrint and nimCat
 ## If anything has toEigenize == "maybe", the whole expression gets "yes"
 ## That way cout<<X;  will use an eigen map for X
 sizeforceEigenize <- function(code, symTab, typeEnv) {

@@ -14,6 +14,8 @@ USER LEVEL CHANGES
 
 -- New RW_multinomial sampler incorporated into MCMC engine, for sampling nodes following a dmulti() distribution.
 
+-- Progress bar added to MCMC.
+
 -- model checking modified so that only size/dimension and NA checking is done by default. Extended checking of ability to calculate all model nodes is now invoked via model$check() only at user request.
 
 -- MCMC and modelValues configuration syntax now uses 'conf' rather than 'spec' in its naming throughout NIMBLE. 

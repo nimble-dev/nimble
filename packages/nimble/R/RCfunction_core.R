@@ -1,5 +1,6 @@
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
+                    cat = 'nimCat',
                     step = 'nimStep',
                     equals = 'nimEquals',
                     dim = 'nimDim',

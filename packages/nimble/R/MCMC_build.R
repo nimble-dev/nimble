@@ -15,15 +15,13 @@
 #'
 #' \code{niter}: The number of iterations to run the MCMC.
 #'
-#' \code{reset}: Boolean specifying whether to reset the model and stored samples.  This will simulate into any stochastic nodes with value NA,
-#' propagate values through any deterministic nodes, and calculate all model probabilities.
-#' This will also reset the internal stored MCMC samples.
-#' Specifying \code{reset=FALSE} allows the MCMC algorithm to continue running from where it left off.
-#' Generally, \code{reset=FALSE} should only be used when the MCMC has already been run.  See examples.
+#' \code{reset}: Boolean specifying whether to reset the model and stored samples.  This will simulate into any stochastic nodes with value NA, propagate values through any deterministic nodes, and calculate all model probabilities. This will also reset the internal stored MCMC samples. Specifying \code{reset=FALSE} allows the MCMC algorithm to continue running from where it left off. Generally, \code{reset=FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
-#' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes.
+#' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
 #'
-#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()}.
+#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
+#'
+#' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).
 #'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
 #' These may be accessed and converted into R matrix objects via:
@@ -71,9 +69,10 @@ buildMCMC <- nimbleFunction(
         mvSamples <- modelValues(mvSamplesConf)
         mvSamples2 <- modelValues(mvSamples2Conf)
         samplerTimes <- c(0,0) ## establish as a vector
+        progressBarLength <- 52  ## multiples of 4 only
     },
 
-    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE)) {
+    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
         if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
         my_initializeModel$run()
         if(reset) {
@@ -93,7 +92,11 @@ buildMCMC <- nimbleFunction(
             if(dim(samplerTimes)[1] != length(samplerFunctions))
                 samplerTimes <<- numeric(length(samplerFunctions))   ## first run: default inititialization to zero
         }
-        
+        if(niter < progressBarLength+3) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
+        if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }
+        progressBarIncrement <- niter/(progressBarLength+3)
+        progressBarNext <- progressBarIncrement
+        progressBarNextFloor <- floor(progressBarNext)
         for(iter in 1:niter) {
             checkInterrupt()
             if(time)
@@ -106,7 +109,11 @@ buildMCMC <- nimbleFunction(
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors)
             if(iter %% thin2 == 0)
                 nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thin2, nodes = monitors2)
+            if(progressBar & (iter == progressBarNextFloor)) { cat('-')
+                                                               progressBarNext <- progressBarNext + progressBarIncrement
+                                                               progressBarNextFloor <- floor(progressBarNext) }
         }
+        if(progressBar) print('|')
     },
     methods = list(
         getTimes = function() {
