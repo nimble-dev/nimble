@@ -72,14 +72,14 @@ asCol <- function(x) {
 #'
 #' Creates a simple getParam_info object, which has a list with a paramID and a type
 #'
-#' @param model A model such as returned by \link{nimbleModel}.
+#' @param model A model such as returned by \code{\link{nimbleModel}}.
 #'
 #' @param node A character string naming a stochastic node, such as "mu", "beta[2]", or "eta[1:3, 2]"
 #'
 #' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
 #'
 #' @export
-#' @details This is used internally by \link{getParam}.  It is not intended for direct use by a user or even a nimbleFunction programmer. 
+#' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 makeParamInfo <- function(model, nodes, param) {
     ## updating to allow nodes to be a vector
     distInfo <- getDistributionList(model$getNodeDistribution(nodes))
@@ -225,7 +225,7 @@ rCalcDiffNodes <- function(model, nfv){
 #' @param model        A NIMBLE model, either the compiled or uncompiled version
 #' @param nodes        A character vector of node names, with index blocks allowed, such as 'x', 'y[2]', or 'z[1:3, 2:4]'
 #' @param nodeFxnVector An optional vector of nodeFunctions on which to operate, in lieu of \code{model} and \code{nodes}
-#' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \link{simulate}
+#' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \code{\link{simulate}})
 #' @author NIMBLE development team
 #' @export
 #' @details
@@ -640,7 +640,7 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #' When \code{nimbleFunction} is called and a \code{setup} function is provided, then \code{nimbleFunction} returns a function.  That function is a generator that should be called with arguments to the \code{setup} function and returns another function with \code{run} and possibly other member functions.  The member functions can use objects created or passed to \code{setup}.  During internal processing, the NIMBLE compiler turns some cases of \code{nf$var} into \code{nfVar(nf, var)}. These provide direct access to setup variables (member data).  \code{nfVar} is not typically called by a NIMBLE user or programmer.
 #'
 #'
-#' For internal access to methods of \code{nf}, see \link{nfMethod}.
+#' For internal access to methods of \code{nf}, see \code{\link{nfMethod}}.
 #' 
 #' For more information, see \code{?nimbleFunction} and the NIMBLE User Manual.
 #'
@@ -757,21 +757,18 @@ rankSample <- function(weights, size, output, silent = FALSE) {
     assign(as.character(substitute(output)), .Call('rankSample', as.numeric(weights), as.integer(size), as.integer(output), as.logical(silent)), envir = parent.frame())
 }
 
-#' print function for use in nimbleFunctions, where it is identical to \code{print}, but not R's \code{print}.
+#' print function for use in nimbleFunctions
 #'
-#' print function for use in nimbleFunctions, where it is identical to \code{print}.  Works in R or NIMBLE, not quite identically.
-#'
-#' @param ...  an abitrary set of arguments that will be printed in sequence
+#' @param ...  an abitrary set of arguments that will be printed in sequence.
 #'
 #' @details The keyword \code{print} in nimbleFunction run-time code will be automatically turned into \code{nimPrint}.  This is a function that prints its arguments int order using \code{cat} in R, or using \code{std::cout} in C++ code generated from compiling nimbleFunctions.
 #' Non-scalar numeric objects can be included, although their output will be formatted slightly different in uncompiled and compiled nimbleFunctions.
-#'
 #'
 #' @examples
 #' ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code
 #' nimPrint('Answer is ', ans, '\n') ## would work in R or NIMBLE
 #'
-#' @seealso \link{cat}
+#' @seealso \code{\link{cat}}
 #' @export
 nimPrint <- function(...) {
     items <- list(...)
@@ -779,21 +776,25 @@ nimPrint <- function(...) {
     cat('\n')
 }
 
-#' cat function for use in nimbleFunctions, where it is identical to \code{cat}, but not R's \code{cat}.
+#' cat function for use in nimbleFunctions
 #'
-#' cat function for use in nimbleFunctions, where it is identical to \code{cat}.  Works in R or NIMBLE, not quite identically.
+#' @param ...  an abitrary set of arguments that will be printed in sequence.
 #'
-#' @param ...  an abitrary set of arguments that will be printed in sequence.  Identical to nimPrint, except no newline character at the end.
+#' @details
 #'
-#' @details The keyword \code{cat} in nimbleFunction run-time code will be automatically turned into \code{nimCat}.  This is a function that prints its arguments int order using \code{cat} in R, or using \code{std::cout} in C++ code generated from compiling nimbleFunctions.
-#' Non-scalar numeric objects can be included, although their output will be formatted slightly different in uncompiled and compiled nimbleFunctions.
+#' \code{cat} in nimbleFunction run-code imitates the R function \code{\link{cat}}.  It prints its arguments in order.  No newline is inserted, so include "\n" if one is desired.
 #'
+#' When an uncompiled nimbleFunction is executed, R's \code{cat} is used.  In a compiled nimbleFunction, a C++ output stream is used that will generally format output similarly to R's \code{cat}. Non-scalar numeric objects can be included, although their output will be formatted slightly different in uncompiled and compiled nimbleFunctions.
+#'
+#' In nimbleFunction run-time code, \code{cat} is identical to \code{print} except the latter appends a newline at the end.
+#'
+#' \code{nimCat} is the same as \code{cat}, and the latter is converted to the former when a nimbleFunction is defined.
 #'
 #' @examples
 #' ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code
 #' nimCat('Answer is ', ans, '\n') ## would work in R or NIMBLE
 #'
-#' @seealso \link{print}
+#' @seealso \code{\link{print}}
 #' @export
 nimCat <- function(...) {
     items <- list(...)
@@ -816,7 +817,7 @@ nimCat <- function(...) {
 #' 
 #' @author Daniel Turek
 #' @aliases numeric
-#' @seealso \link{integer} \link{matrix} \link{array}
+#' @seealso \code{\link{integer}} \code{\link{matrix}} \code{\link{array}}
 #' @export
 nimNumeric <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'double', init)
@@ -839,7 +840,7 @@ nimNumeric <- function(length = 0, value = 0, init = TRUE) {
 #' 
 #' @author Daniel Turek
 #' @aliases integer
-#' @seealso \link{numeric} \link{matrix} \link{array}
+#' @seealso \code{\link{numeric}} \code{\link{matrix}} \code{\link{array}}
 #' @export
 nimInteger <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'integer', init)
@@ -863,7 +864,7 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{matrix} is a synonym for \code{nimMatrix}.  When used with only the first three arguments, this behaves similarly to R's \code{matrix} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
 #' @author Daniel Turek
 #' @aliases matrix
-#' @seealso \link{numeric} \link{integer} \link{array}
+#' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{array}}
 #' @export
 nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
     fillValue <- makeFillValue(value, type, init)
@@ -887,7 +888,7 @@ nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double
 #' 
 #' @author Daniel Turek
 #' @aliases array
-#' @seealso \link{numeric} \link{integer} \link{matrix}
+#' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{matrix}}
 #' @export
 nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
     fillValue <- makeFillValue(value, type, init)
