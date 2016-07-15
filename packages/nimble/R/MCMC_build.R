@@ -19,7 +19,7 @@
 #'
 #' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
 #'
-#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \cd{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \cd{mcmc$getTimes()} (default = FALSE).
+#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
 #' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).
 #'

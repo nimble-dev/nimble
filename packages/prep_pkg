@@ -141,6 +141,7 @@ namespace <- readLines(file.path('nimble','NAMESPACE'))
 #namespace <- namespace[-rmLines]
 exportNames <- gsub("(export|exportClasses)", "", namespace)
 exportNames <- gsub("[()]", "", exportNames)
+exportNames <- gsub("\"", "", exportNames)
 keep <- exportNames %in% funs
 
 exportText <- namespace[keep]
