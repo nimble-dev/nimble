@@ -131,12 +131,10 @@ cppOutputReturn <- function(code, symTab) {
 }
 
 cppOutputCout <- function(code, symTab) {
-    paste0('std::cout <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"')
     paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
 }
 
 cppOutputCoutNoNewline <- function(code, symTab) {
-    paste0('std::cout <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'))
     paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '; nimble_print_to_R(_nimble_global_output)')
 }
 
