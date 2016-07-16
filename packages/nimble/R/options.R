@@ -44,11 +44,11 @@ nimbleUserNamespace <- as.environment(list())
             propCov = 'identity',
             sliceWidth = 1,
             sliceMaxSteps = 100,
-            m = 1000,
-            resample = FALSE,
-            optimizeM = FALSE,
-            filterType = 'bootstrap',
-            lookahead = 'simulate'
+            pfNparticles = 1000,
+            pfResample = FALSE,
+            pfOptimizeNparticles = FALSE,
+            pfType = 'bootstrap',
+            pfLookahead = 'simulate'
         )
     )
 )
