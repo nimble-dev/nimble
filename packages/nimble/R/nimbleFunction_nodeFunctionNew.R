@@ -49,6 +49,10 @@ nndf_replaceSetupOutputsWithIndexedNodeInfo <- function(code, setupOutputLabels)
     return(code)
 }
 
+# need function to be defined to pass CRAN but setupOutputs is
+# never called - it is processed out of nimbleFunction setup code
+setupOutputs <- function(...) NULL
+
 ## creates a function object for use as setup argument to nimbleFunction()
 nndf_createSetupFunction <- function() {
     setup <- function(model, BUGSdecl) {

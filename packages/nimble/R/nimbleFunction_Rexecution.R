@@ -74,7 +74,7 @@ asCol <- function(x) {
 #'
 #' @param model A model such as returned by \code{\link{nimbleModel}}.
 #'
-#' @param node A character string naming a stochastic node, such as "mu", "beta[2]", or "eta[1:3, 2]"
+#' @param nodes A character string naming one or more stochastic nodes, such as "mu", "c('mu', 'beta[2]')", or "eta[1:3, 2]"
 #'
 #' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
 #'
@@ -102,7 +102,7 @@ makeParamInfo <- function(model, nodes, param) {
 #' @param node  The name of a stochastic node in the model
 #'
 #' @param param The name of a parameter for the node
-#' 
+#'
 #' @export
 #' @details For example, suppose node 'x[1:5]' follows a multivariate
 #' normal distribution (dmnorm) in a model declared by BUGS code.
@@ -113,7 +113,7 @@ makeParamInfo <- function(model, nodes, param) {
 #' parameter known to the distribution.  For example, one can request
 #' the scale or rate parameter of a gamma distribution, regardless of
 #' which one was used to declare the node.
-getParam <- function(model, node, param, nodeFunctionIndex) {
+getParam <- function(model, node, param) {
     if(missing(param)) { ## already converted by keyword conversion
         stop('This case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
         nodeFunction <- model
@@ -252,7 +252,7 @@ NULL
 
 #' @rdname nodeFunctions
 #' @export
-calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)	
+calculate <- function(model, nodes, nodeFxnVector)	
 {
     if(!missing(nodeFxnVector)){
         return(rCalcNodes(model, nodeFxnVector))
@@ -283,7 +283,7 @@ calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)
 
 #' @rdname nodeFunctions
 #' @export
-calculateDiff <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)		
+calculateDiff <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
         return(rCalcDiffNodes(model, nodeFxnVector))
@@ -325,7 +325,7 @@ rGetLogProbsNodes <- function(model, nfv){
 
 #' @rdname nodeFunctions
 #' @export
-getLogProb <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)		
+getLogProb <- function(model, nodes, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
         return(rGetLogProbsNodes(model, nodeFxnVector))
@@ -368,7 +368,7 @@ rSimNodes <- function(model, nfv){
 
 #' @rdname nodeFunctions
 #' @export
-simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector, nodeFunctionIndex)		
+simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
 {
     if(!missing(nodeFxnVector)){
         rSimNodes(model, nodeFxnVector)
@@ -485,7 +485,8 @@ setValues <- function(input, model, nodes){
 #'
 #' @param model       a NIMBLE model object, either compiled or uncompiled
 #' @param nodes       a vector of node names, allowing index blocks that will be expanded
-#'
+#' @param value       value to set the node(s) to
+#' 
 #' @author NIMBLE development team
 #' @export
 #' @details
@@ -632,8 +633,9 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #' @description
 #' Access or set a member variable of a specialized nimbleFunction, i.e. a variable passed to or created during the \code{setup} function that is used in run code or preserved by \code{setupOutputs}.  Works in R for any variable and in NIMBLE for numeric variables.
 #'
-#' @param nf      A specialized nimbleFunction, i.e. a function returned by executing a function returned from \code{nimbleFunction} with \code{setup} arguments
-#' @param varName A character string naming a variable in the \code{setup} function.
+#' @param nf      a specialized nimbleFunction, i.e. a function returned by executing a function returned from \code{nimbleFunction} with \code{setup} arguments
+#' @param varName a character string naming a variable in the \code{setup} function.
+#' @param value value to set the variable to.
 #' @author NIMBLE development team
 #' @export
 #' @details
@@ -782,7 +784,7 @@ nimPrint <- function(...) {
 #'
 #' @details
 #'
-#' \code{cat} in nimbleFunction run-code imitates the R function \code{\link{cat}}.  It prints its arguments in order.  No newline is inserted, so include "\n" if one is desired.
+#' \code{cat} in nimbleFunction run-code imitates the R function \code{\link{cat}}.  It prints its arguments in order.  No newline is inserted, so include \code{"\n"} if one is desired.
 #'
 #' When an uncompiled nimbleFunction is executed, R's \code{cat} is used.  In a compiled nimbleFunction, a C++ output stream is used that will generally format output similarly to R's \code{cat}. Non-scalar numeric objects can be included, although their output will be formatted slightly different in uncompiled and compiled nimbleFunctions.
 #'
@@ -792,7 +794,7 @@ nimPrint <- function(...) {
 #'
 #' @examples
 #' ans <- matrix(1:4, nrow = 2) ## R code, not NIMBLE code
-#' nimCat('Answer is ', ans, '\n') ## would work in R or NIMBLE
+#' nimCat('Answer is ', ans) ## would work in R or NIMBLE
 #'
 #' @seealso \code{\link{print}}
 #' @export

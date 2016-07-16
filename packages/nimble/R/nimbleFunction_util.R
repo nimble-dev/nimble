@@ -10,6 +10,14 @@ nfGetDefVar <- function(f, var) {
     return(environment(nf_getGeneratorFunction(f))[[var]])
 }
 
+#' check if a nimbleFunction
+#'
+#' Checks an object to determine if it is a nimbleFunction (i.e., a function created by \code{nimbleFunction} using setup code).
+#'
+#' @param f object to be tested
+#'
+#' @seealso \link{nimbleFunction} for how to create a nimbleFunction
+#' @export
 is.nf <- function(f) {
     if(inherits(f, 'nimbleFunctionBase')) return(TRUE)
     return(is.function(f) && 

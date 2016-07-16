@@ -112,7 +112,7 @@ undocFuns <- c(undocFuns, paste0(undocFunsClasses, "-Class", sep = ''))
 
 # need the following additional exports that need to be doc'ed by CRAN rules
 
-additionalExports <- c("is.nf", "calc_dmnormConjugacyContributions", "calc_dmnormAltParams", "getNodeFunctionIndexedInfo", "MCMCsuite")
+additionalExports <- c("calc_dmnormConjugacyContributions", "calc_dmnormAltParams", "getNodeFunctionIndexedInfo", "singleModelValuesAccess")
 # write out nimble-internals.Rd
 
 text <- rep("", length(undocFuns))

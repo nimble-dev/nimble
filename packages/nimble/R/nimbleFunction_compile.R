@@ -650,18 +650,12 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
 }
 
 
-#' Class \code{singleModelValuesAccessClass}
-#' @aliases singleModelValuesAccess
-#' @export
-#' @description
-#' Classes used internally in NIMBLE and not expected to be called directly by users.
+# singleModelValuesAccessClass and singleModelValuesAccess are exported (and 'documented' in nimble-internals.Rd) based on prep_pkg; doing it here causes R CMD check issues with argument names
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
                                      methods = list(
                                            initialize = function() cat('Oops: building a singleModelValuesAccessClass refClass -- should be defunct\n')
                                      ))
 
-#' @rdname singleModelValuesAccessClass-class
-#' @export
 singleModelValuesAccess <- function(modelValues, var) {
     ans <- list(modelValues = modelValues, var = var)
     class(ans) <- 'singleModelValuesAccessClass'

@@ -308,7 +308,7 @@ getValueDim <- function(distObject)
 #'               Rdist = "dmyexp(rate = 1/scale)",
 #'               altParams = "scale = 1/rate",
 #'               pqAvail = FALSE)))
-#' code <- BUGScode({
+#' code <- nimbleCode({
 #'     y ~ dmyexp(rate = r)
 #'     r ~ dunif(0, 100)
 #' })

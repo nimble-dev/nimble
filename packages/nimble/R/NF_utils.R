@@ -168,7 +168,7 @@ where = getLoadingNamespace())
 #' @rdname simNodesMV
 #' @export
 getLogProbNodesMV <- nimbleFunction(
-	setup = function(model, mv, nodes, expandNodes = TRUE, sortNodes = TRUE) {
+	setup = function(model, mv, nodes) {
 		if(missing(nodes) )
                     nodes <- depNodes <- model$getNodeNames()
                 else

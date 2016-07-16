@@ -34,6 +34,7 @@
 #' The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
 #' 
 #' @examples
+#' \dontrun{
 #' code <- nimbleCode({
 #'     mu ~ dnorm(0, 1)
 #'     x ~ dnorm(mu, 1)
@@ -46,6 +47,7 @@
 #' Cmcmc$run(10000)
 #' samples <- as.matrix(Cmcmc$mvSamples)
 #' head(samples)
+#' }
 buildMCMC <- nimbleFunction(
     setup = function(conf, ...) {
     	if(inherits(conf, 'modelBaseClass'))
