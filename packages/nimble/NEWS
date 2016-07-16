@@ -1,4 +1,4 @@
-                           CHANGES IN VERSION 0.6 (June 2016)
+                           CHANGES IN VERSION 0.6 (July 2016)
 
 USER LEVEL CHANGES
 
@@ -28,7 +28,15 @@ DEVELOPER LEVEL CHANGES
 
 -- New C++ memory allocation system using new double[] instead of vector<double>.  This is notably more efficient since it can avoid unnecessary initialization upon allocation of local variables in otherwise fast, heavily used nimbleFunctions.
 
--- New installation system for Windows and for binary builds on Linux or OS X.
+-- New installation system for Windows and for binary builds on OS X. For non-Linux we now by default build a static library, libnimble.a, that is linked into compiled code for models or nimbleFunctions. 
+
+-- We now export many fewer functions, though some non-user facing functions are still exported.
+
+-- Test suite now works in Windows.
+
+-- Reduced Windows compiler warnings.
+
+-- Various modifications to packaging to align with CRAN rules.
 
                            CHANGES IN VERSION 0.5-1 (May 2016)
 

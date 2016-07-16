@@ -28,6 +28,13 @@ nimStop <- function(msg) stop(msg, call. = FALSE)
 # we use call.=FALSE because otherwise the error msg indicates the
 # error itself occurs in nimStop() and not in the calling frame
 
+#' Time execution of NIMBLE code
+#'
+#' @param code code to be timed
+#'
+#' @author NIMBLE Development Team
+#' @details
+#' Function for use in nimbleFunction run code; when nimbleFunctions are run in R, this simply wraps \code{system.time}.
 #' @export
 run.time <- function(code) {
     as.numeric(system.time(code)[3])
