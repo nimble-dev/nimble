@@ -26,8 +26,9 @@ else
 fi
 )
 
+dnl This was a nice addition by Perry, but R CMD check looks at src/Makevars.in directly so we need to put $(FLIBS) in src/Makevars.in so don't need --enable-flibs 
 AC_ARG_ENABLE(flibs, [  --enable-flibs        include FLIBS flags in Makevars, which is not really necessary but is expected by CRAN],
-                         ENABLE_FLIBS=${enableval}, ENABLE_FLIBS=true)
+                         ENABLE_FLIBS=${enableval}, ENABLE_FLIBS=false)
 
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false

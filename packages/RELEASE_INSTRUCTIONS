@@ -41,7 +41,6 @@ for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION}
 done
 
-for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran. 
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
@@ -91,11 +90,24 @@ git push --tags    ## this is how you push *tags* to the remote
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in
 and comment out rstan usage as in cran_0.5 branch on CJP machine
 
+[[This doesn't work because it modifies what Makevars is created and CRAN looks directly at Makevars.in: 
+for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran.]] 
+
+
 ### building binaries
 
 make sure there is no libnimble.{a,dylib,so} in inst/CppCode or it will be copied over and interfere with the libnimble created during the build process
 
-### Building of Windows version (instructions from DT)
+For Mac: 
+R CMD INSTALL -l location --build nimble # you should be in nimble/packages when invoking this
+# don't use --merge-multiarch for Mac as it provides only one architecture for R
+
+For Windows
+R CMD build nimble  # to build tar.gz
+R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
+(--merge-multiarch only applies to a single tarball, so need this as two steps)
+
+### Building of Windows version (instructions from DT (old; use DTL instructions above))
 
 put this in build.bat:
 =====
@@ -110,9 +122,4 @@ type "command" and press enter, to open a dos prompt.  (PowerShell is better, bu
 if you're in the directory with the batch file (build.bat), then just type "build" at the prompt.
 
 Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
-
-# Or, Duncan's instructions to Dao
-
-R CMD build nimble  # to build tar.gz
-R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
 
