@@ -1,18 +1,12 @@
-#' @rdname MCMCsuiteClass-class
-#' @export
-MCMCsuite <- function(...) {
-    ## aliased in MCMCsuiteClass
-    suite <- MCMCsuiteClass(...)
-    return(suite$output)
-}
-
 #' Executes multiple MCMC algorithms and organizes results.
 #'
 #' Creates, runs, and organizes output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
 #' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
-#' @aliases MCMCsuite
+#' @name MCMCsuiteClass
+#'
+#' @aliases MCMCsuite MCMCsuiteClass-class
 #' 
 #' @details
 #' Creates and runs an MCMC Suite.
@@ -128,6 +122,8 @@ MCMCsuite <- function(...) {
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
 #'
+#' @param ... For internal use only
+#'
 #' @return Returns a named list containing elements:
 #' samples: A 3-dimensional array containing samples from each MCMC algorithm.
 #' summary: A 3-dimensional array containing summary statistics for each variable and algorithm.
@@ -153,6 +149,70 @@ MCMCsuite <- function(...) {
 #' 
 #' @author Daniel Turek
 #' @export
+MCMCsuite <- function(
+                      code,
+            constants           = list(),
+            data                = list(),
+            inits               = list(),
+            monitors            = character(),
+            niter               = 10000,
+            burnin              = 2000,
+            thin                = 1,
+            summaryStats        = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
+            calculateEfficiency = FALSE,
+            MCMCs               = 'nimble',
+            MCMCdefs            = list(),
+            winbugs_directory   = 'C:/WinBUGS14',
+            winbugs_program     = 'WinBUGS',
+            openbugs_directory  = 'C:/OpenBUGS323',
+            openbugs_program    = 'OpenBUGS',
+            stan_model          = '',
+            stan_inits          = NULL,
+            stan_data           = NULL,
+            stanNameMaps        = list(),
+            makePlot            = TRUE,
+            savePlot            = TRUE,
+            plotName            = 'MCMCsuite',
+            setSeed             = TRUE,
+            check               = getNimbleOption('checkModel'),
+            debug               = FALSE) {
+    ## aliased in MCMCsuiteClass
+    suite <- MCMCsuiteClass(code, constants, data, inits, monitors, niter, burnin, thin, summaryStats, calculateEfficiency,
+                            MCMCs, MCMCdefs, winbugs_directory, winbugs_program, openbugs_directory, openbugs_program,
+                            stan_model, stan_inits, stan_data, stanNameMaps, makePlot, savePlot, plotName, setSeed,
+                            check, debug)
+    return(suite$output)
+}
+
+#' Class \code{MCMCsuiteClass}
+#'
+#' @aliases MCMCsuiteClass-class
+#'
+#' @description
+#' Objects of this class create, run, and organize output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
+#' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
+#' Trace plots and density plots for the MCMC samples may also be generated and saved.
+#'
+#' @seealso \link{MCMCsuite}
+#' 
+#' @author Daniel Turek
+#' @export
+#' @examples
+#' \dontrun{
+#' code <- nimbleCode({
+#'     mu ~ dnorm(0, 1)
+#'     x ~ dnorm(mu, 1)
+#' })
+#' output <- MCMCsuite(code,
+#'                     data = list(x=3),
+#'                     inits = list(mu=0),
+#'                     niter = 10000,
+#'                     monitors = 'mu',
+#'                     MCMCs = c('nimble', 'nimble_RW'),
+#'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
+#'                     makePlot = FALSE)
+#' }
+#' 
 MCMCsuiteClass <- setRefClass(
 
     Class = 'MCMCsuiteClass',

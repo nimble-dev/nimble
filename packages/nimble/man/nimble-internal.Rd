@@ -174,6 +174,7 @@
 \alias{cppOutputCast}
 \alias{cppOutputChainedCall}
 \alias{cppOutputCout}
+\alias{cppOutputCoutNoNewline}
 \alias{cppOutputDereference}
 \alias{cppOutputDoubleBracket}
 \alias{cppOutputEigBlank}
@@ -338,6 +339,7 @@
 \alias{generateFunctionHeader}
 \alias{generateObjectDefs}
 \alias{genIndexVarValues_recurse}
+\alias{genLocalMakevars}
 \alias{genLogProbNodeExprAndReplacements}
 \alias{genName2}
 \alias{genReplacementsAndCodeRecurse}
@@ -792,6 +794,7 @@
 \alias{R_setPtrVectorOfPtrs}
 \alias{rSimNodes}
 \alias{run.time}
+\alias{sameDir}
 \alias{samplerConf}
 \alias{scalarOutputTypes}
 \alias{seqAlongHandler}
