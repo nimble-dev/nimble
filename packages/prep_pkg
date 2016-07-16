@@ -8,15 +8,8 @@
 # seems to be because we are loading in nimble and we are sourcing code files in global,
 # so class definitions are in two places
 
-# when run this check that package loading occurs midway through and dont get issue with 00LOCK file
-# also check that don't get issues with nimble objects (e.g. distributionFuns, cppInt) not being found when .Rd files are being created (rerunning or running code in prep_pkg manually within R seems to work)
-
 require(roxygen2)
 require(methods)
-
-# do this first as it empties the global env
-#source("CreatingExportList.R")
-# (I tried to do the sourcing into a new.env() but had weird errors when sourcing some of the files)
 
 
 # need to document all S4 methods
@@ -69,12 +62,6 @@ setwd(cur)
 
 require(nimble)
 
-# warning: sometimes get a lot of errors like this:
-#Error in .walkClassGraph(classDef, "subclasses", where) : 
-#  the 'subClass' list for class “envRefClass”, includes an undefined class “nfRefClass21”
-#Error in .walkClassGraph(classDef, "subclasses", where) : 
-
-# not sure the issue, but rerunning prep_pkg usually fixes things
 Rpath <- file.path("nimble", "R")
 files <- list.files(Rpath, pattern = "*R$")  # omit config.R.in
 roclet = rd_roclet()
