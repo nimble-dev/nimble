@@ -606,11 +606,11 @@ sampler_RW_PF <- nimbleFunction(
         adaptive       <- control$adaptive
         adaptInterval  <- control$adaptInterval
         scale          <- control$scale
-        m              <- control$m
-        resample       <- control$resample
-        filterType     <- control$filterType
-        lookahead      <- control$lookahead
-        optimizeM      <- as.integer(control$optimizeM)
+        m              <- control$pfNparticles
+        resample       <- control$pfResample
+        filterType     <- control$pfType
+        lookahead      <- control$pfLookahead
+        optimizeM      <- as.integer(control$pfOptimizeNparticles)
         latents        <- control$latents
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -750,11 +750,11 @@ sampler_RW_PF_block <- nimbleFunction(
         adaptInterval  <- control$adaptInterval
         scale          <- control$scale
         propCov        <- control$propCov
-        m              <- control$m
-        resample       <- control$resample
-        filterType     <- control$filterType
-        lookahead      <- control$lookahead
-        optimizeM      <- as.integer(control$optimizeM)
+        m              <- control$pfNparticles
+        resample       <- control$pfResample
+        filterType     <- control$pfType
+        lookahead      <- control$pfLookahead
+        optimizeM      <- as.integer(control$pfOptimizeNparticles)
         latents        <- control$latents
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
@@ -1157,12 +1157,12 @@ sampler_RW_multinomial <- nimbleFunction(
 #' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (proposal standard deviation) throughout the course of MCMC execution to achieve a theoretically desirable acceptance rate. (default = TRUE)
 #' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW sampler will perform its adaptation procedure.  This updates the scale variable, based upon the sampler's achieved acceptance rate over the past adaptInterval iterations. (default = 200)
 #' \item scale. The initial value of the normal proposal standard deviation.  If \code{adaptive = FALSE}, scale will never change. (default = 1)
-#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
+#' \item pfNparticles.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate over to estimate the log-likelihood function.
-#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
-#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{filterType} is set to \code{"auxiliary"}.
-#' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above.
+#' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
+#' \item pfLookahead. Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{pfType} is set to \code{"auxiliary"}.
+#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each MCMC step, or whether to use log likelihood from previous step.
+#' \item pfOptimizeNparticles.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #' 
 #' @section RW_PF_block sampler:
@@ -1176,12 +1176,12 @@ sampler_RW_multinomial <- nimbleFunction(
 #' \item adaptInterval. The interval on which to perform adaptation. (default = 200)
 #' \item scale. The initial value of the scalar multiplier for \code{propCov}.  If \code{adaptive = FALSE}, \code{scale} will never change. (default = 1)
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the \code{'identity'}, in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default is \code{'identity'})
-#' \item m.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
+#' \item pfNparticles.  The number of particles to use in the approximation to the log likelihood of the data (default = 1000).
 #' \item latents.  Character vector specifying the latent model nodes over which the particle filter will stochastically integrate to estimate the log-likelihood function.
-#' \item resample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
-#' \item filterType  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
-#' \item lookahead Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{filterType = "auxiliary"}.
-#' \item optimizeM.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{m} specified above.
+#' \item pfResample.  A logical argument, specifying whether to resample log likelihood given current parameters at beginning of each mcmc step, or whether to use log likelihood from previous step.
+#' \item pfType.  Character argument specifying the type of particle filter that should be used for likelihood approximation.  Choose from \code{"bootstrap"} and \code{"auxiliary"}.  Defaults to \code{"bootstrap"}.
+#' \item pfLookahead. Optional character argument specifying the lookahead function for the auxiliary particle filter.  Choose from \code{"simulate"} and \code{"mean"}.  Only applicable if \code{pfType = "auxiliary"}.
+#' \item pfOptimizeNparticles.  A logical argument, specifying whether to automatically determine the optimal number of particles to use, based on Pitt and Shephard (2011).  This will override any value of \code{pfNparticles} specified above.
 #' }
 #'
 #'
