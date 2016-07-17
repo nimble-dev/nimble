@@ -459,7 +459,6 @@ sampler_crossLevel <- nimbleFunction(
             lowNode <- lowNodes[iLN]
             conjugacyResult <- model$checkConjugacy2(lowNode)[[lowNode]]
             if(is.null(conjugacyResult))     stop('non-conjugate lowNode \'', lowNode, '\' in crossLevel updater')
-
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
             names(dependentCounts) <- gsub('^dep_', '', names(dependentCounts))
