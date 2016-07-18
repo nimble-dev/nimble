@@ -402,13 +402,13 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
 
   #returning BUGS parts if we don't want to build model, i.e. rather we want to provide info to MCMCsuite
   if(returnComponents){
-  	return( list(modelName = modelName, code = code, dims = dims, data = data, inits = inits) )
+  	return( list(modelName = modelName, code = model, dims = dims, data = data, inits = inits) )
   }
 
   # create R model
   # 'data' will have constants and data, but BUGSmodel is written to be ok with this
   # we can't separate them before building model as we don't know names of nodes in model
-  Rmodel <- nimbleModel(model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug, check = check)
+  Rmodel <- nimbleModel(code = model, name = ifelse(is.null(modelName), 'model', modelName), constants = data, dimensions = dims, inits = inits, debug = debug, check = check)
 
   # now provide values for data nodes from 'data' list
   if(FALSE) { # now handled within nimbleModel
