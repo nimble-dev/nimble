@@ -19,7 +19,7 @@ ifndef NIMBLE_LIB_DIR
 NIMBLE_LIB_DIR=@NIMBLE_LIB_DIR@
 endif
 
-ifndef
+ifndef ARCH_SUFFIX
 ARCH_SUFFIX=$(patsubst /%,_%, $(R_ARCH))
 endif
 
