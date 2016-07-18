@@ -211,7 +211,7 @@ processNonParseableCode <- function(text) {
 #'
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #'
-#' @param returnModelComponentsOnly logical intended primarily for use with \code{MCMCsuite} to return pieces of the model object without building the model. Default is FALSE.
+#' @param returnComponents logical indicating whether to return pieces of model  object without building the model. Default is FALSE.
 #'
 #' @author Christopher Paciorek
 #'
@@ -231,7 +231,7 @@ processNonParseableCode <- function(text) {
 #' model$x
 #' model[['mu']]
 #' model$calculate('x')
-readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = getNimbleOption('checkModel')) {
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel')) {
 
   # helper function
   doEval <- function(vec, env) {
@@ -401,8 +401,8 @@ readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits
     stop("readBUGSmodel: something is wrong; 'dims' object is not a named list")
 
   #returning BUGS parts if we don't want to build model, i.e. rather we want to provide info to MCMCsuite
-  if(returnModelComponentsOnly == TRUE){
-  	return( list(modelName = modelName, model = model, dims = dims, data = data, inits = inits) )
+  if(returnComponents){
+  	return( list(modelName = modelName, code = code, dims = dims, data = data, inits = inits) )
   }
 
   # create R model
