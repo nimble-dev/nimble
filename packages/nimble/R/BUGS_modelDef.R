@@ -2126,12 +2126,12 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     model$setInits(inits[!nonVarIndices])
     ## basic size/dimension, NA checking
     if(calculate) {
-        model$calculate()
-        if(nimbleOptions('verbose')) message("running calculate on model...")
+        if(nimbleOptions('verbose')) message("running calculate on model (any error reports that follow may simply reflect missing values in model variables) ... ", appendLF = FALSE)
+        try(model$calculate())
     }
     if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
     model$checkBasics()
-    message("")  # appends newline   
+    if(nimbleOptions('verbose')) message("")  # appends newline   
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
         if(nimbleOptions('verbose')) message("checking model calculations...")
