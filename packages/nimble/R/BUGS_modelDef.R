@@ -2127,7 +2127,10 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## basic size/dimension, NA checking
     if(calculate) {
         if(nimbleOptions('verbose')) message("running calculate on model (any error reports that follow may simply reflect missing values in model variables) ... ", appendLF = FALSE)
-        try(model$calculate())
+        result <- try(model$calculate(), silent = TRUE)
+        if(nimbleOptions('verbose')) 
+            if(is(result, 'try-error')) 
+                message(geterrmessage()) else message("")  # this ensures a single newline is included
     }
     if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
     model$checkBasics()
