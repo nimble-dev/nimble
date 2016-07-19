@@ -2125,12 +2125,12 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
                 " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
     ## basic size/dimension, NA checking
-    if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
-    model$checkBasics()
     if(calculate) {
         model$calculate()
-        message("running calculate on model...")
+        if(nimbleOptions('verbose')) message("running calculate on model...")
     }
+    if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
+    model$checkBasics()
     message("")  # appends newline   
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
