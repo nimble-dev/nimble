@@ -2070,7 +2070,7 @@ modelDefClass$methods(buildSymbolTable = function() {
 })
 
 
-modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), debug = FALSE) {
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), calculate = TRUE, debug = FALSE) {
     if(debug) browser()
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')
@@ -2127,6 +2127,10 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     ## basic size/dimension, NA checking
     if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
     model$checkBasics()
+    if(calculate) {
+        model$calculate()
+        message("running calculate on model...")
+    }
     message("")  # appends newline   
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {

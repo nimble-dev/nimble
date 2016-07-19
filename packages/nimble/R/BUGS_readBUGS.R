@@ -1,7 +1,7 @@
 # code for creating BUGS model from a variety of input formats
 # pieces written by Daniel Turek and Christopher Paciorek
 
-BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel')) {
+BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE) {
     if(missing(name)) name <- deparse(substitute(code))
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
@@ -32,7 +32,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
         cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
     }
     if(nimbleOptions('verbose')) message("building model...")
-    model <- md$newModel(data=data, inits=inits, where=where, check=check, debug = debug)
+    model <- md$newModel(data=data, inits=inits, where=where, check=check, calculate = calculate, debug = debug)
     if(nimbleOptions('verbose')) message("model building finished.")
     return(model)
 }
@@ -48,9 +48,10 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).
-#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user.
 #' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
+#' @param calculate logical indicating whether to run \code{calculate} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
 #' @author NIMBLE development team
 #' @export
@@ -70,8 +71,8 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' constants = list(prior_sd = 1)
 #' data = list(x = 4)
 #' Rmodel <- nimbleModel(code, constants = constants, data = data)
-nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), name)
-    BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check)
+nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE, name)
+    BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check, calculate)
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
