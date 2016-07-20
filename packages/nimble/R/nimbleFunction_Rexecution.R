@@ -110,8 +110,11 @@ makeParamInfo <- function(model, nodes, param) {
 #'
 #' @param param The name of a parameter for the node
 #'
+<<<<<<< HEAD
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #'
+=======
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 #' @export
 #' @details For example, suppose node 'x[1:5]' follows a multivariate
 #' normal distribution (dmnorm) in a model declared by BUGS code.
@@ -122,7 +125,11 @@ makeParamInfo <- function(model, nodes, param) {
 #' parameter known to the distribution.  For example, one can request
 #' the scale or rate parameter of a gamma distribution, regardless of
 #' which one was used to declare the node.
+<<<<<<< HEAD
 getParam <- function(model, node, param, nodeFunctionIndex) {
+=======
+getParam <- function(model, node, param) {
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     if(missing(param)) { ## already converted by keyword conversion
         stop('This case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
         nodeFunction <- model
@@ -234,7 +241,10 @@ rCalcDiffNodes <- function(model, nfv){
 #' @param model        A NIMBLE model, either the compiled or uncompiled version
 #' @param nodes        A character vector of node names, with index blocks allowed, such as 'x', 'y[2]', or 'z[1:3, 2:4]'
 #' @param nodeFxnVector An optional vector of nodeFunctions on which to operate, in lieu of \code{model} and \code{nodes}
+<<<<<<< HEAD
 #' @param nodeFunctionIndex For internal NIMBLE use only
+=======
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 #' @param includeData  A logical argument specifying whether \code{data} nodes should be simulated into (only relevant for \code{\link{simulate}})
 #' @author NIMBLE development team
 #' @export
@@ -262,7 +272,11 @@ NULL
 
 #' @rdname nodeFunctions
 #' @export
+<<<<<<< HEAD
 calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)	
+=======
+calculate <- function(model, nodes, nodeFxnVector)	
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 {
     if(!missing(nodeFxnVector)){
         return(rCalcNodes(model, nodeFxnVector))
@@ -293,7 +307,11 @@ calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)
 
 #' @rdname nodeFunctions
 #' @export
+<<<<<<< HEAD
 calculateDiff <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)		
+=======
+calculateDiff <- function(model, nodes, nodeFxnVector)		
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 {
     if(!missing(nodeFxnVector)){
         return(rCalcDiffNodes(model, nodeFxnVector))
@@ -335,7 +353,11 @@ rGetLogProbsNodes <- function(model, nfv){
 
 #' @rdname nodeFunctions
 #' @export
+<<<<<<< HEAD
 getLogProb <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)		
+=======
+getLogProb <- function(model, nodes, nodeFxnVector)		
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 {
     if(!missing(nodeFxnVector)){
         return(rGetLogProbsNodes(model, nodeFxnVector))
@@ -378,7 +400,11 @@ rSimNodes <- function(model, nfv){
 
 #' @rdname nodeFunctions
 #' @export
+<<<<<<< HEAD
 simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector, nodeFunctionIndex)		
+=======
+simulate <- function(model, nodes, includeData = FALSE, nodeFxnVector)		
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 {
     if(!missing(nodeFxnVector)){
         rSimNodes(model, nodeFxnVector)

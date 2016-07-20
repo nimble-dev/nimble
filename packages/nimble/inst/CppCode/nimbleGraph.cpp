@@ -282,6 +282,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
       getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
     } else {
 #ifdef _DEBUG_GETDEPS
+<<<<<<< HEAD
       PRINTF("  Node %i was already touched.\n", thisGraphNodeID);
 #endif
       if((thisGraphNode->type == STOCH) & !downstream) {
@@ -294,6 +295,10 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
 #endif
 	getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
       }
+=======
+      PRINTF("  Node %i was already touched\n", thisGraphNodeID);
+#endif
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     }
   }
 

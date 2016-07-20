@@ -145,7 +145,7 @@
 #' 
 #' @author Daniel Turek
 #' @export
-MCMCsuite <- function(
+MCMC_CODESS <- function(
                       code,
             constants           = list(),
             data                = list(),
@@ -158,6 +158,7 @@ MCMCsuite <- function(
             calculateEfficiency = FALSE,
             MCMCs               = 'nimble',
             MCMCdefs            = list(),
+	    targetNames        =list(),
             winbugs_directory   = 'C:/WinBUGS14',
             winbugs_program     = 'WinBUGS',
             openbugs_directory  = 'C:/OpenBUGS323',
@@ -168,17 +169,42 @@ MCMCsuite <- function(
             stanNameMaps        = list(),
             makePlot            = TRUE,
             savePlot            = TRUE,
-            plotName            = 'MCMCsuite',
+            plotName            = 'MCMC_CODESS',
             setSeed             = TRUE,
             check               = getNimbleOption('checkModel'),
             debug               = FALSE) {
-    ## aliased in MCMCsuiteClass
-    suite <- MCMCsuiteClass(code, constants, data, inits, monitors, niter, burnin, thin, summaryStats, calculateEfficiency,
-                            MCMCs, MCMCdefs, winbugs_directory, winbugs_program, openbugs_directory, openbugs_program,
+    ## aliased in MCMC_CODESSClass
+    CODESS <- MCMC_CODESSClass(code, constants, data, inits, monitors, niter, burnin, thin, summaryStats, calculateEfficiency,
+                            MCMCs, MCMCdefs, targetNames, winbugs_directory, winbugs_program, openbugs_directory, openbugs_program,
                             stan_model, stan_inits, stan_data, stanNameMaps, makePlot, savePlot, plotName, setSeed,
                             check, debug)
-    return(suite$output)
+    return(CODESS$output)
 }
+
+codess<-function(x, bandwidth, gridsize, range.x){
+          Nchain = round(length(x)/2)
+          N <- gridsize[1]
+          est <- bkde2D(x, bandwidth=bandwidth, gridsize = gridsize, range.x = range.x)
+          K <- est$fhat
+          K <- t(K) 
+          for(j in 1:N) K[,j] <- K[,j] / sum(K[,j])
+          
+          ### Generating a chain for the discrete kernel
+          x <- est$x1
+          
+          discreteChainIndices <- integer(Nchain)
+          discreteChainIndices[1] <- round(length(x)/2)
+          for(i in 2:Nchain) {
+            discreteChainIndices[i] <- sample(1:N, 1,
+                                              prob = K[,discreteChainIndices[i-1]])
+          }
+          discreteChain <- x[discreteChainIndices]
+          effectiveSize(discreteChain)
+	  #spectrum0.ar(discreteChain)$spec
+          
+}
+
+
 
 #' Class \code{MCMCsuiteClass}
 #'
@@ -209,26 +235,28 @@ MCMCsuite <- function(
 #'                     makePlot = FALSE)
 #' }
 #' 
-MCMCsuiteClass <- setRefClass(
+MCMC_CODESSClass <- setRefClass(
 
-    Class = 'MCMCsuiteClass',
+    Class = 'MCMC_CODESSClass',
     
     fields = list(
         ## set in initialize()
         code = 'ANY',   ## parsed expression for the model code; must be contained in { ... }    --- ORIGINAL ARGUMENT
         constants = 'list',   ## list of the constants (ORIGINAL ARGUMENT)
-        data = 'list',   ## list of the data    --- ORIGINAL ARGUMENT
+	data = 'list',   ## list of the data    --- ORIGINAL ARGUMENT
         inits = 'list',  ## named list of initial values used for all MCMC algorithms    --- ORIGINAL ARGUMENT
         constantsAndData = 'list',   ## data list used for WinBUGS, OpenBUGS, JAGS.  is equal to c(constantList, dataList)
         Rmodel = 'ANY',   ## Rmodel object
         
         ## setMonitors()
         monitors = 'character',    ## the original character vector argument to initialize()    --- ORIGINAL ARGUMENT --- SLIGHTLY MODIFIED
-        monitorVars = 'character',    ## character vector of VARIABLE names of parameters to save
+        
+	monitorVars = 'character',    ## character vector of VARIABLE names of parameters to save
         monitorNodesNIMBLE = 'character',  ## character vector of the monitor node names, with spaces as in nimble: 'y[1, 1]'
         monitorNodesBUGS = 'character',    ## same as monitorNodes, except for WinBUGS and OpenBUGS: no spaces in node names: 'y[1,1]'
         nMonitorNodes = 'numeric',   ## number of monitorNodes
-        
+        targetNames = 'list',        
+	
         ## set in initialize()
         niter = 'numeric',    ## number of MCMC iterations to run    --- ORIGINAL ARGUMENT
         burnin = 'numeric',   ## burn-in period, the number of initial samples to discard, prior to thinning    --- ORIGINAL ARGUMENT
@@ -277,6 +305,7 @@ MCMCsuiteClass <- setRefClass(
         
         ## set in run()
         Cmodel = 'ANY',   ## compiled Cmodel object
+	RmcmcTargetList = 'list',    ## list of the R (nimble) MCMC functions
         RmcmcFunctionList = 'list',    ## list of the R (nimble) MCMC functions
         CmcmcFunctionList = 'list',    ## list of the C (nimble) MCMC functions
         output = 'list'   ## list of numeric outputs: samples, summary, timing
@@ -287,7 +316,7 @@ MCMCsuiteClass <- setRefClass(
         initialize = function(
             code,
             constants           = list(),
-            data                = list(),
+	    data                = list(),
             inits               = list(),
             monitors            = character(),
             niter               = 10000,
@@ -297,7 +326,9 @@ MCMCsuiteClass <- setRefClass(
             calculateEfficiency = FALSE,
             MCMCs               = 'nimble',
             MCMCdefs            = list(),
-            winbugs_directory   = 'C:/WinBUGS14',
+	    targetNames		= list(),
+            
+	    winbugs_directory   = 'C:/WinBUGS14',
             winbugs_program     = 'WinBUGS',
             openbugs_directory  = 'C:/OpenBUGS323',
             openbugs_program    = 'OpenBUGS',
@@ -307,7 +338,7 @@ MCMCsuiteClass <- setRefClass(
             stanNameMaps        = list(),
             makePlot            = TRUE,
             savePlot            = TRUE,
-            plotName            = 'MCMCsuite',
+            plotName            = 'MCMC_CODESS',
             setSeed             = TRUE,
             check               = getNimbleOption('checkModel'),
             debug               = FALSE) {
@@ -325,6 +356,7 @@ MCMCsuiteClass <- setRefClass(
             nkeep <<- floor(niter/thin) - burnin
             burninFraction <<- burnin / (nkeep + burnin)
             setMonitors(monitors)
+	    targetNames <<-targetNames
             setSummaryStats(summaryStats, calculateEfficiency)
             setMCMCs(MCMCs)
             setMCMCdefs(MCMCdefs)
@@ -374,6 +406,7 @@ MCMCsuiteClass <- setRefClass(
             if(calculateEfficiency) {
                 n <- length
                 ess <- effectiveSize
+		#codess <- codess
                 efficiency <- function(x) return(0)   ## placeholder; calculation done in addToOutput()
                 summaryStats_arg <- c(summaryStats_arg, 'n', 'ess', 'efficiency')
             }
@@ -520,6 +553,7 @@ MCMCsuiteClass <- setRefClass(
                 mcmcDef <- MCMCdefs[[mcmcTag]]
                 mcmcConf <- eval(mcmcDef)
                 mcmcConf$addMonitors(monitorVars, print = FALSE)
+		RmcmcTargetList[[iMCMC]] <<- mcmcConf$findSamplersOnNodes(targetNames[[1]])
                 mcmcConf$setThin(thin, print = FALSE)
                 RmcmcFunctionList[[mcmcTag]] <<- buildMCMC(mcmcConf)
             }
@@ -530,15 +564,34 @@ MCMCsuiteClass <- setRefClass(
                 } else                { CmcmcFunctionList                   <<- CmcmcFunctionList_temp }
             })
             addTimeResult('nimble_compile', timeResult)
-            
+            bd = 0.05
+	    N=70
+	    bandwidth=c(bd, bd)
+	    gridsize = c(N,N)
+	    range.x = list(c(0,12), c(0,12))
+	    output$targetNames<<-targetNames
+            output$TargetList <<- RmcmcTargetList
             for(iMCMC in seq_along(nimbleMCMCs)) {
-                Cmodel$setInits(inits);     calculate(Cmodel)
+                #Cmodel$setInits(inits);     calculate(Cmodel)
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 Cmcmc <- CmcmcFunctionList[[mcmcTag]]
                 if(setSeed) set.seed(0)
-                timeResult <- system.time({ Cmcmc$run(niter) })
-		output$Cmcmc <<-Cmcmc                
-		CmvSamples <- Cmcmc$mvSamples
+                Cmcmc$run(niter, time = TRUE)
+		timeResults <-Cmcmc$getTimes()
+		output$number <<-length(Cmcmc$samplerFunctions$contentsList)
+		output$Cmcmc <<-Cmcmc
+		if (length(RmcmcTargetList[[1]])>0){
+		    for (i in 1 : length(RmcmcTargetList[[1]])){
+
+			#output$beforeSamples <<- Cmcmc$samplerFunctions$contentsList[[output$number]]$before
+			#output$afterSamples <<- Cmcmc$samplerFunctions$contentsList[[output$number]]$after
+          		#x = cbind(beforeSamples, afterSamples)
+			#output$test <<- Cmcmc$samplerFunctions$contentsList[[1]]$before			
+			#codess(x=x, bandwidth=bandwidth, gridsize=gridsize, range.x =range.x)
+		    }
+		}
+		
+                CmvSamples <- Cmcmc$mvSamples
                 samplesArray <- as.matrix(CmvSamples, varNames = monitorVars)
                 samplesArray <- samplesArray[(burnin+1):floor(niter/thin), monitorNodesNIMBLE, drop=FALSE]
                 addToOutput(mcmcTag, samplesArray, timeResult)
@@ -554,15 +607,16 @@ MCMCsuiteClass <- setRefClass(
             }
             if(calculateEfficiency) {
                 essDim <- which(summaryStatDimNames == 'ess')
-                effDim <- which(summaryStatDimNames == 'efficiency')
+		effDim <- which(summaryStatDimNames == 'efficiency')
                 thisTime <- output$timing[[MCMCtag]]
                 summaryArray[effDim, ] <- summaryArray[essDim, ] / thisTime
+		
             }
             output$summary[MCMCtag, , ] <<- summaryArray
             if(calculateEfficiency) {
                 output$efficiency$min  <<- apply(output$summary[, 'efficiency', , drop=FALSE], 1, min)
                 output$efficiency$mean <<- apply(output$summary[, 'efficiency', , drop=FALSE], 1, mean)
-            }
+	    }
         },
         
         addTimeResult = function(MCMCtag, timeResult) {
@@ -625,7 +679,7 @@ MCMCsuiteClass <- setRefClass(
         },
         
         show = function() {
-            cat(paste0('MCMCsuite object\n',
+            cat(paste0('MCMC_CODESS object\n',
                        'algorithms:  ', paste0(MCMCs, collapse=', '), '\n',
                        'monitors:  ', paste0(monitorNodesNIMBLE, collapse=', '), '\n',
                        'model code:\n',

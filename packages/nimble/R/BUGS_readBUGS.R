@@ -1,7 +1,11 @@
 # code for creating BUGS model from a variety of input formats
 # pieces written by Daniel Turek and Christopher Paciorek
 
+<<<<<<< HEAD
 BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE) {
+=======
+BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list(), inits=list(), returnModel=FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel')) {
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     if(missing(name)) name <- deparse(substitute(code))
     if(length(constants) && sum(names(constants) == ""))
       stop("BUGSmodel: 'constants' must be a named list")
@@ -32,7 +36,11 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
         cat("Adding", paste(names(constants)[dataVarIndices], collapse = ','), "as data for building model.\n")
     }
     if(nimbleOptions('verbose')) message("building model...")
+<<<<<<< HEAD
     model <- md$newModel(data=data, inits=inits, where=where, check=check, calculate = calculate, debug = debug)
+=======
+    model <- md$newModel(data=data, inits=inits, where=where, check=check, debug = debug)
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     if(nimbleOptions('verbose')) message("model building finished.")
     return(model)
 }
@@ -48,6 +56,10 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' @param inits named list of starting values for model variables. Unlike JAGS, should only be a single list, not a list of lists.
 #' @param dimensions named list of dimensions for variables.  Only needed for variables used with empty indices in model code that are not provided in constants or data.
 #' @param returnDef logical indicating whether the model should be returned (FALSE) or just the model definition (TRUE).
+<<<<<<< HEAD
+=======
+#' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 #' @param where argument passed to \code{setRefClass}, indicating the environment in which the reference class definitions generated for the model and its modelValues should be created.  This is needed for managing package namespace issues during package loading and does not normally need to be provided by a user.
 #' @param debug logical indicating whether to put the user in a browser for debugging.  Intended for developer use.
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
@@ -71,8 +83,13 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' constants = list(prior_sd = 1)
 #' data = list(x = 4)
 #' Rmodel <- nimbleModel(code, constants = constants, data = data)
+<<<<<<< HEAD
 nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), calculate = TRUE, name)
     BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check, calculate)
+=======
+nimbleModel <- function(code, constants=list(), data=list(), inits=list(), dimensions=list(), returnDef = FALSE, where=globalenv(), debug=FALSE, check=getNimbleOption('checkModel'), name)
+    BUGSmodel(code, name, constants, dimensions, data, inits, returnModel = !returnDef, where, debug, check)
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 
 #' Turn BUGS model code into an object for use in \code{nimbleModel} or \code{readBUGSmodel}
 #'
@@ -212,7 +229,11 @@ processNonParseableCode <- function(text) {
 #'
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #'
+<<<<<<< HEAD
 #' @param returnComponents logical indicating whether to return pieces of model  object without building the model. Default is FALSE.
+=======
+#' @param returnModelComponentsOnly logical intended primarily for use with \code{MCMCsuite} to return pieces of the model object without building the model. Default is FALSE.
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 #'
 #' @author Christopher Paciorek
 #'
@@ -232,7 +253,11 @@ processNonParseableCode <- function(text) {
 #' model$x
 #' model[['mu']]
 #' model$calculate('x')
+<<<<<<< HEAD
 readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnComponents = FALSE, check = getNimbleOption('checkModel'), calculate = TRUE) {
+=======
+readBUGSmodel <- function(model, data = NULL, inits = NULL, dir = NULL, useInits = TRUE, debug = FALSE, returnModelComponentsOnly = FALSE, check = getNimbleOption('checkModel')) {
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 
   # helper function
   doEval <- function(vec, env) {

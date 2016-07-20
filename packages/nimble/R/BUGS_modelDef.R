@@ -2070,7 +2070,11 @@ modelDefClass$methods(buildSymbolTable = function() {
 })
 
 
+<<<<<<< HEAD
 modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), calculate = TRUE, debug = FALSE) {
+=======
+modelDefClass$methods(newModel = function(data = list(), inits = list(), where = globalenv(), modelName = character(), check = getNimbleOption('checkModel'), debug = FALSE) {
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     if(debug) browser()
     if(inherits(modelClass, 'uninitializedField')) {
         vars <- lapply(varInfo, `[[`, 'maxs')
@@ -2125,6 +2129,7 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
                 " ", ifelse(sum(nonVarIndices) > 1, "are", "is"), " not ", ifelse(sum(nonVarIndices) > 1, "variables", "a variable"), " in the model; initial value ignored.")
     model$setInits(inits[!nonVarIndices])
     ## basic size/dimension, NA checking
+<<<<<<< HEAD
     if(calculate) {
         if(nimbleOptions('verbose')) message("running calculate on model (any error reports that follow may simply reflect missing values in model variables) ... ", appendLF = FALSE)
         result <- try(model$calculate(), silent = TRUE)
@@ -2135,6 +2140,11 @@ modelDefClass$methods(newModel = function(data = list(), inits = list(), where =
     if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
     model$checkBasics()
     if(nimbleOptions('verbose')) message("")  # appends newline   
+=======
+    if(nimbleOptions('verbose')) message("checking model sizes and dimensions...", appendLF = FALSE)
+    model$checkBasics()
+    message("")  # appends newline   
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     ## extended model checking via calculate; disabled by default as of July 2016
     if(check) {
         if(nimbleOptions('verbose')) message("checking model calculations...")

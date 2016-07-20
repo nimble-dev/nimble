@@ -1,6 +1,12 @@
 import(methods)
 import(igraph)
+<<<<<<< HEAD
 importFrom(coda, effectiveSize, as.mcmc, is.mcmc.list)
+=======
+import(mcmc)
+importFrom(coda, effectiveSize, as.mcmc, is.mcmc.list)
+importFrom(KernSmooth, bkde2D)
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 importFrom(grDevices, dev.off, jpeg)
 importFrom(graphics, lines, plot, text)
 importFrom(stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var)
@@ -16,6 +22,11 @@ export(getNimbleProject)
 export("nfVar<-")
 export("values<-")
 export(MCMCsuite)
+<<<<<<< HEAD
+=======
+export(MCMC_CODESS)
+export(codess)
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 export(asCol)
 export(asRow)
 export(autoBlock)
@@ -147,9 +158,17 @@ exportClasses(CmodelBaseClass)
 exportClasses(CnimbleFunctionBase)
 exportClasses(MCMCconf)
 exportClasses(MCMCsuiteClass)
+<<<<<<< HEAD
+=======
+exportClasses(MCMC_CODESSClass)
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 exportClasses(RmodelBaseClass)
 exportClasses(codeBlockClass)
 exportClasses(modelBaseClass)
 exportClasses(modelValuesBaseClass)
 exportClasses(nimbleFunctionBase)
+<<<<<<< HEAD
 exportClasses(singleVarAccessClass)
+=======
+exportClasses(singleVarAccessClass)
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409

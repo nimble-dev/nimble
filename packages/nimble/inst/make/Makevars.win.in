@@ -19,7 +19,11 @@ ifndef NIMBLE_LIB_DIR
 NIMBLE_LIB_DIR=@NIMBLE_LIB_DIR@
 endif
 
+<<<<<<< HEAD
 ifndef ARCH_SUFFIX
+=======
+ifndef
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
 ARCH_SUFFIX=$(patsubst /%,_%, $(R_ARCH))
 endif
 

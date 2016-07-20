@@ -90,11 +90,19 @@ Collate:
     nimbleProject.R
     initializeModel.R
     MCMC_utils.R
+<<<<<<< HEAD
     MCMC_configuration.R
+=======
+    MCMC_conf.R
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     MCMC_build.R
     MCMC_samplers.R
     MCMC_conjugacy.R
     MCMC_suite.R
+<<<<<<< HEAD
+=======
+    MCMC_CODESS.R
+>>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
     MCMC_comparisons.R
     MCMC_autoBlock.R
     MCEM_build.R
