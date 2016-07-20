@@ -1,0 +1,27 @@
+#FIX
+# Looks like we could probably use just Makevars.in now as we are linking against
+# a libnimble in either case.
+
+# lib=TRUE
+# from=Makevars_lib.in
+
+ifndef EIGEN_INC
+EIGEN_INC=@EIGEN_INC@
+endif
+
+ifndef NIMBLE_INC_DIR
+NIMBLE_INC_DIR=@NIMBLE_INC_DIR@
+endif
+
+ifndef NIMBLE_DIR
+NIMBLE_DIR="@NIMBLE_DIR@"
+endif
+
+ifndef RPATH
+RPATH=@RPATH@
+endif
+
+PKG_CPPFLAGS=$(EIGEN_INC) -DEIGEN_MPL2_ONLY=1 -I"$(NIMBLE_INC_DIR)"
+NIMBLE_LIB_DIR="$(NIMBLE_DIR)/CppCode"
+PKG_LIBS=-L"$(NIMBLE_LIB_DIR)"  -lnimble $(RPATH) $(LAPACK_LIBS) $(BLAS_LIBS) 
+

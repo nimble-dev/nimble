@@ -1,0 +1,31 @@
+#!/bin/sh -xe
+
+# 
+# This builds a binary version of the package from source and hence creates a .gz file (.tar.gz or .tgz depending on the platform) 
+# Then it installs this binary version of the package and runs a test of nimble using that installed version.
+# This will have to find libnimble.a when compiling the DLL for the model generated in the test.
+
+
+# This is to be run from a directory parallel to the nimble/ directory containing the package.
+# mkdir Temp
+# cd Temp
+# ../testNimblePkgBinary
+#
+#
+
+(cd ../nimble ; ./cleanup)
+
+echo "** Building nimble binary package"
+if ! test -d RTempLib ; then
+  mkdir RTempLib
+fi
+
+CONFIG_ARGS="'--enable-lib=false'"
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" --build ../nimble
+
+GZ=`ls nimble_*gz`
+echo "** Installing nimble binary package $GZ"
+R CMD INSTALL -l RTempLib $GZ
+
+echo "Running testBUGSmodel()"
+Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); print(system.file(package = "nimble")); testBUGSmodel("pump")'

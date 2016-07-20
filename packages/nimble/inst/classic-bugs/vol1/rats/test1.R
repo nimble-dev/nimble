@@ -1,0 +1,8 @@
+source("../../R/Rcheck.R")
+d <- read.jagsdata("rats-data.R")
+inits <- read.jagsdata("rats-init.R")
+m <- jags.model("rats.bug", d, inits, n.chains=2)
+update(m, 1000)
+x <- coda.samples(m, c("alpha0","beta.c"), n.iter=10000)
+source("bench-test1.R")
+check.fun()

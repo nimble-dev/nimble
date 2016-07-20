@@ -1,0 +1,3 @@
+NIMBLE_PKG_DIR=C:/Users/duncantl/Nimble Windows/nimble/packages
+PKG_CPPFLAGS=-I"$(NIMBLE_PKG_DIR)/nimble/inst/include" -I"$(NIMBLE_PKG_DIR)/nimble" 
+PKG_LIBS=-lRlapack -lRblas

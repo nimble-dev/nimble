@@ -1,0 +1,17 @@
+# Change point model with very poor parameterization
+var
+    x[N], mu[N], Y[N], punif[N], J[N],
+    k, alpha, beta[2], tau, sigma, N;
+model {
+   k  ~ dcat(punif[]);    # uniform prior over changepoint observation
+   for (i in 1:N) {
+      J[i] <- 1 + step(i - (k+0.5));     # J[i]=1 if i<=k; 2 if i>k
+      mu[i]      <- alpha + beta[J[i]]*(x[i] - x[k]);
+      Y[i]        ~ dnorm(mu[i],tau)
+      punif[i] <- 1/N
+   }
+   alpha  ~ dnorm(0,1.0E-6);
+   for (j in 1:2) { beta[j] ~ dnorm(0,1.0E-6)}
+   tau    ~ dgamma(1.0E-3,1.0E-3);
+   sigma <- 1.0/sqrt(tau);
+}

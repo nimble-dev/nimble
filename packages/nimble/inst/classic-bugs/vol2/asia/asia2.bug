@@ -1,0 +1,21 @@
+var
+   asia[N], smoking[N], tuberculosis[N], lung.cancer[N],
+   bronchitis[N], either[N], xray[N], dyspnoea[N],
+   p.asia[2], p.smoking[2], p.tuberculosis[2,2], theta.b[2,2],
+   p.lung.cancer[2,2], p.xray[2,2], p.dyspnoea[2,2,2], prior[2];
+model {
+   for (i in 1:N) {
+      smoking[i]      ~  dcat(p.smoking[]);
+      tuberculosis[i] ~  dcat(p.tuberculosis[asia[i],]);
+      lung.cancer[i]  ~  dcat(p.lung.cancer[smoking[i],]);
+      bronchitis[i]   ~  dcat(theta.b[smoking[i],]);
+      either[i]       <- max(tuberculosis[i],lung.cancer[i]);
+      xray[i]         ~  dcat(p.xray[either[i],]);
+      dyspnoea[i]     ~  dcat(p.dyspnoea[either[i],bronchitis[i],])
+   }
+   #  priors for unknown probabilities
+   for (j in 1:2) {
+      theta.b[j,] ~ ddirch(prior[]);   # theta.b = p(bronchitis | smoking)
+      prior[j] <- 1;
+   }    
+}

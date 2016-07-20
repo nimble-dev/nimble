@@ -1,0 +1,17 @@
+# emacs backup files
+*~
+.Rhistory
+.Rapp.history
+.Rdata
+ignoreWork
+.DS*
+*.o
+*.so
+*.dll
+*.dylib
+*.lnk
+*.tar.gz
+TEMP*
+MyMakevars
+#*.R
+.Rproj.user

@@ -1,0 +1,124 @@
+no visible binding issues:
+http://stackoverflow.com/questions/8096313/no-visible-binding-for-global-variable-note-in-r-cmd-check
+http://stackoverflow.com/questions/9439256/how-can-i-handle-r-cmd-check-no-visible-binding-for-global-variable-notes-when
+
+make sure NEWS is updated with info on changes in latest release
+
+update DESCRIPTION and INSTALL with current version number
+
+for version on nimble website, remove FLIBS from Makevars.in
+for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
+
+Make sure src/Makevars.win is present.
+
+R CMD build nimble
+R CMD INSTALL nimble_${VERSION}.tar.gz
+# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
+./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
+
+(this may be obviated by new prep_pkg... as of v0.6)
+warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
+This also should work:
+for file in `ls nimble/man`; do
+    if [ -e /tmp/tmp.Rd ]; then
+       rm -rf /tmp/tmp.Rd
+    fi
+     /bin/cp -i nimble/man/$file /tmp/tmp.Rd 
+     sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
+done
+
+
+R CMD build nimble
+R CMD check --as-cran nimble_${VERSION}.tar.gz
+# officially this should be done on a development build of R, such as in a BCE or docker instance; for Chris, easiest to do via installing R-devel on SCF
+
+run tests:
+in particular check exact results vs previous versions (ignore differences in compilation log info)
+doing this test by test because of DLL unloading issue
+types="compareMCMCs copy declare distributions dsl_dists filtering getParam math mcem mcmc models setData size trunc user"
+for type in $types; do
+Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION}
+done
+
+
+login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
+cd /web/R-nimble/wordpress/src/contrib
+
+cp new .tar.gz there
+
+chmod go+w nimble_${VERSION}.tar.gz
+
+./writePackages
+
+go to website: R-nimble.org/login and login 
+
+change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
+
+put new user manual in /web/R-nimble/wordpress/manuals
+and change symlink to point to newest pdf
+
+make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
+
+(make sure post is set up as a blog entry) (CJP not sure what this means...)
+
+add info on new release to release notes page
+
+update NEWS info on webpage as high-level summary of NEWS in package
+
+update version numbering on license and citation page and 'What is Nimble' page
+
+rebuild and post manual and put new version of manual in inst/doc
+git tag the manual repository
+
+send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
+
+make sure to merge devel into master branch and create a branch for the new version
+git checkout master
+git merge devel
+git commit -am'merged new version onto master'
+
+probably best at this point also to merge master onto devel
+
+git tag -a v$VERSION -m "NIMBLE version $VERSION release, December 31, 2014"
+git push --tags    ## this is how you push *tags* to the remote
+
+# make tag for nimble-docs too
+git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
+git push --tags    ## this is how you push *tags* to the remote
+
+before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in
+and comment out rstan usage as in cran_0.5 branch on CJP machine
+
+[[This doesn't work because it modifies what Makevars is created and CRAN looks directly at Makevars.in: 
+for version on website, go to nimble/packages; change default for enable-flibs to false in configure.ac; run 'make configure'. This creates version that doesn't use FLIBS when building nimble.so so that Mac users can build from source without needing gfortran.]] 
+
+
+### building binaries
+
+make sure there is no libnimble.{a,dylib,so} in inst/CppCode or it will be copied over and interfere with the libnimble created during the build process
+
+For Mac: 
+R CMD INSTALL -l location --build nimble # you should be in nimble/packages when invoking this
+# don't use --merge-multiarch for Mac as it provides only one architecture for R
+
+For Windows (should one use the -l flag here too to avoid mucking up source repo?)
+R CMD build nimble  # to build tar.gz
+R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
+(--merge-multiarch only applies to a single tarball, so need this as two steps)
+
+### Building of Windows version (instructions from DT (old; use DTL instructions above))
+
+put this in build.bat:
+=====
+@echo off
+cd Documents\GitHub\nimble\packages
+R CMD INSTALL --build nimble
+=====
+
+Then:
+press WindowsButton-R, which opens the "Run" dialogue.
+type "command" and press enter, to open a dos prompt.  (PowerShell is better, but don't need it for this).
+if you're in the directory with the batch file (build.bat), then just type "build" at the prompt.
+
+Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
+

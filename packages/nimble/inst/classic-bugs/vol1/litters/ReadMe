@@ -1,0 +1,14 @@
+The original version of the LITTERS example exhibits extremely poor
+mixing.  This version uses a different parameterization in terms of
+the mean mu and a parameter theta that is, approximately, the shrinkage
+(It is only equal to the shrinkage when the litter sizes are all equal).
+
+A uniform prior is given to both theta and mu. The uniform shrinkage
+prior has been suggested as a reference prior in GLMMs by Natarajan,
+J and Kass, RE. Reference Bayesian methods for generalized linear mixed
+models, JASA, vol 95, 227-237 (2000).
+
+The approximate uniform shrinkage prior is quite revealing in this
+example.  The posterior of theta[2] is not very different from its
+prior, indicating that there is very little information in the data
+about this parameter.

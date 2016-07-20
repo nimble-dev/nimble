@@ -1,0 +1,10 @@
+source("../../R/Rcheck.R")
+load.module("glm")
+d <- read.jagsdata("seeds-data.R")
+inits <- read.jagsdata("seeds-init.R")
+m <- jags.model("seedszro.bug", d, inits, n.chains=2, n.adapt=2500)
+update(m, 2500)
+x <- coda.samples(m, c("alpha0", "alpha1","alpha2","alpha12","sigma"),
+                  n.iter=10000, thin=10)
+source("bench-test2.R")
+check.fun()

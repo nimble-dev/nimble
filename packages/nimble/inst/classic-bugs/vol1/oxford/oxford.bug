@@ -1,0 +1,17 @@
+model {
+  for (i in 1:K) {
+       r0[i]         ~ dbin(p0[i],n0[i]);
+       r1[i]         ~ dbin(p1[i],n1[i]);
+       logit(p0[i]) <- mu[i];
+       logit(p1[i]) <- mu[i] + logPsi[i];
+       logPsi[i]    <- alpha + beta1 * year[i] 
+                       + beta2 * (year[i]^2 - 22) + sigma * b[i];
+       b[i]          ~ dnorm(0,1);
+       mu[i]         ~ dnorm(0.0,1.0E-6);
+  }
+
+  alpha  ~ dnorm(0.0,1.0E-6);
+  beta1  ~ dnorm(0.0,1.0E-6);
+  beta2  ~ dnorm(0.0,1.0E-6);
+  sigma  ~ dunif(0,3);
+}

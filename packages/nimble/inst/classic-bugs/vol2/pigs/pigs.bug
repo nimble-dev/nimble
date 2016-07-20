@@ -1,0 +1,41 @@
+var
+   Ann,Ann1,A1, Brian,Brian1,B1, Clare,C1, Diane,D1, Eric,Eric1,E1,
+   Fred,F1, Gene,G1, Henry,Henry1,H1, Ian,I1, Jane,J1,
+   a,b,c,d,e,f,g,h,i[3],p,q, p.mendelian[3,3,3], p.recessive[3,2];
+model {
+   q ~ dunif(0,1);                            # prevalence of a1
+   p <- 1 - q;                                # prevalence of a2
+   Ann1   ~ dbin(q,2);   Ann <- Ann1 + 1;     # geno. dist. for founder
+   Brian1 ~ dbin(q,2);   Brian <- Brian1 + 1;
+   Clare  ~ dcat(p.mendelian[Ann,Brian,]);    # geno. dist. for child
+   Diane  ~ dcat(p.mendelian[Ann,Brian,]);
+   Eric1  ~ dbin(q,2);   Eric <- Eric1 + 1;
+   Fred   ~ dcat(p.mendelian[Diane,Eric,]);
+   Gene   ~ dcat(p.mendelian[Diane,Eric,]);
+   Henry1 ~ dbin(q,2);   Henry <- Henry1 + 1;
+   Ian    ~ dcat(p.mendelian[Clare,Fred,]);
+   Jane   ~ dcat(p.mendelian[Gene,Henry,]);
+   A1 ~ dcat(p.recessive[Ann,]);              # phenotype distribution
+   B1 ~ dcat(p.recessive[Brian,]);
+   C1 ~ dcat(p.recessive[Clare,]);
+   D1 ~ dcat(p.recessive[Diane,]);
+   E1 ~ dcat(p.recessive[Eric,]);
+   F1 ~ dcat(p.recessive[Fred,]);
+   G1 ~ dcat(p.recessive[Gene,]);
+   H1 ~ dcat(p.recessive[Henry,]);
+   I1 ~ dcat(p.recessive[Ian,]);
+   J1 ~ dcat(p.recessive[Jane,]);
+   a <- Ann == 2;                       # event that Ann is carrier
+   b <- Brian == 2;
+   c <- Clare == 2;
+   d <- Diane == 2;
+   e <- Eric == 2;
+   f <- Fred == 2;
+   g <- Gene == 2;
+   h <- Henry == 2;
+   for (J in 1:3) {
+          i[J] <- Ian == J      # i[1] = a1 a1
+                                # i[2] = a1 a2
+                                # i[3] = a2 a2 (i.e. Ian affected)
+   }                     
+}

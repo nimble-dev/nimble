@@ -1,0 +1,26 @@
+var
+   x[T],mu[N,T],Y[N,T],beta[N,2],mu.beta[2],Omega.beta[2,2],
+   Sigma2.beta[2,2],sigma.beta[2],tau.c,sigma,R[2,2],r,alpha0;
+model {
+   for (i in 1:N) {
+      for (j in 1:T) {
+         Y[i,j] ~ dnorm(mu[i,j],tau.c);  #
+         mu[i,j] <- beta[i,1] + beta[i,2]*(x[j]-mean(x[])); 
+      }
+      beta[i,] ~ dmnorm(mu.beta[],Omega.beta[,]);  # bivariate Normal
+   }
+   tau.c  ~ dgamma(1.0E-3,1.0E-3);
+   # intercept at zero for centred model
+   alpha0 <- mu.beta[1] - mu.beta[2]* mean(x[]); 
+
+   # parameters considered MVN
+   Omega.beta[,]  ~ dwish(R[,],2);    # Wishart prior on precision matrix
+   Sigma2.beta[,] <- inverse(Omega.beta[,]);
+   sigma.beta[1]  <- sqrt(Sigma2.beta[1,1]);
+   sigma.beta[2]  <- sqrt(Sigma2.beta[2,2]);
+   r <- Sigma2.beta[1,2] / (sqrt(Sigma2.beta[1,1])
+                           *sqrt(Sigma2.beta[2,2]));  # correlation
+
+   mu.beta[1] ~ dnorm(0,.00001);   # `flat' univariate Normal prior on mean
+   mu.beta[2] ~ dnorm(0,.00001);   # `flat' univariate Normal prior on mean
+}

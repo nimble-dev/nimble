@@ -1,0 +1,18 @@
+# This is the WinBUGS version of the DUGONGS  model, without discretization
+# of the variable gamma (This was done due to a technical limitation of
+# classic BUGS: it could only sample from log concave distributions)
+#
+var
+   x[N],Y[N],mu[N],alpha,beta,gamma,tau,sigma,p[M],U1,U2,U3;
+model {
+   for (i in 1:N) {
+      mu[i] <- alpha - beta * gamma^x[i]
+      Y[i] ~ dnorm(mu[i], tau)
+   }
+   alpha ~ dnorm(0.0, 1.0E-6) 
+   beta ~ dnorm(0.0, 1.0E-6) 
+   gamma ~ dunif(0.5, 1)
+   tau ~ dgamma(1.0E-3, 1.0E-3)
+   sigma <- 1.0/sqrt(tau)
+   U3 <- logit(gamma)
+}

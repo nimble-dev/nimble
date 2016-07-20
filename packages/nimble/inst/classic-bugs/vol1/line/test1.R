@@ -1,0 +1,7 @@
+source("../../R/Rcheck.R")
+source("line-data.R")
+m <- jags.model("line.bug", n.chains=2)
+update(m, 1000)
+x <- coda.samples(m, c("alpha","beta","sigma","tau"), n.iter=10000)
+source("bench-test1.R")
+check.fun()

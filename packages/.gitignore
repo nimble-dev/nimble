@@ -1,0 +1,13 @@
+# don't include built package
+*.tar.gz
+*.zip
+*.tgz
+
+# don't include object files
+*.o
+*.so
+
+MyMakevars
+Eigen*
+
+config.*

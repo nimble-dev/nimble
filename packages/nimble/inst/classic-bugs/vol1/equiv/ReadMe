@@ -1,0 +1,8 @@
+It is not currently possible to do the tranformed version of the EQUIV
+model in JAGS, since it uses a symmetric order constraint, namely
+
+tau[1] ~ dgamma(0.001, 0.001) I(tau[3],);
+tau[3] ~ dgamma(0.001, 0.001) I(,tau[1]);
+
+This construction is not allowed in JAGS because it creates a directed
+cycle in the model.

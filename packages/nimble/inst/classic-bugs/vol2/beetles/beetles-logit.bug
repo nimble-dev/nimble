@@ -1,0 +1,17 @@
+var  r[N], p[N], x[N], n[N], alpha, alpha.star, beta, r.hat[N], llike[N], 
+	llike.sat[N], D;
+model {
+   for (i in 1:N) {
+      r[i] ~ dbin(p[i], n[i]);
+      logit(p[i])   <- alpha.star + beta*(x[i]-mean(x[])); 
+      # log likelihood for sample i & saturated log-likelihood:
+      llike[i]     <- r[i]*log(p[i]) + (n[i]-r[i])*log(1-p[i]);  
+      llike.sat[i] <- r[i]*log(r[i]/n[i]) + (n[i]-r[i])*log(1-r[i]/n[i]);
+      r.hat[i] <- p[i]*n[i];  # fitted values
+    }
+    alpha.star ~ dnorm(0.0, 1.0E-3);
+    beta      ~ dnorm(0.0, 1.0E-3);
+    alpha     <- alpha.star - beta*mean(x[]);
+
+    D <- 2 * (sum(llike.sat[]) - sum(llike[]));
+}

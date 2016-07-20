@@ -1,0 +1,19 @@
+var
+    biopsies[ns,4], #  grades observed in ith session (multinomial)
+    nbiops[ns],     # total number of biopsies in ith session
+    true[ns],       # true state in ith session
+    error[4,4],     # error matrix in taking biopsies
+    prior[4,4],     # prior parameters for rows of error[,]
+    p[4];           # underlying   incidence of true  states
+model {
+   for (i in 1:ns){
+      true[i]       ~ dcat(p[]);
+      biopsies[i,]  ~ dmulti(error[true[i],],nbiops[i]); 
+   }
+
+   for (j in 1:4) {
+      error[j,]     ~ ddirch(prior[j,]);
+   }
+
+   p[]       ~ ddirch(prior[4,]);     # prior for p
+}

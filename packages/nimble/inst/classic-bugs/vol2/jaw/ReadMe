@@ -1,0 +1,6 @@
+In the linear and quadratic models, age has been centred to improve
+autocorrelation.  In the quadratic model, the posterior distribution
+of beta2 is much broader than the results reported in the BUGS manual.
+Consequently, there is poor agreement with the estimates of beta0,
+beta1 and beta2. However, the linear predictors mu[1] .. mu[4] are
+in good agreement.

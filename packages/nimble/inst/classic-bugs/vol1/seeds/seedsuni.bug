@@ -1,0 +1,19 @@
+/*
+  SEEDS example with uniform prior on the standard error of the random
+  effects.  This version uses the hidden covariate paramaterization with
+  a uniform prior (instead of a gamma prior) on sigma.
+*/
+model {
+   alpha0 ~ dnorm(0.0,1.0E-6);  # intercept
+   alpha1 ~ dnorm(0.0,1.0E-6);  # seed coeff
+   alpha2 ~ dnorm(0.0,1.0E-6);  # extract coeff
+   alpha12 ~ dnorm(0.0,1.0E-6);
+   sigma ~ dunif(0,10);
+   for (i in 1:N) {
+      b[i] ~ dnorm(0.0,1.0);
+      logit(p[i]) <- alpha0 + alpha1*x1[i] + alpha2*x2[i] +
+                     alpha12*x1[i]*x2[i] + sigma * b[i];
+      r[i] ~ dbin(p[i],n[i]);
+   }
+}
+

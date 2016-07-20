@@ -1,0 +1,14 @@
+model {
+   for (i in 1:Num) {
+      rt[i] ~ dbin(pt[i], nt[i]);
+      rc[i] ~ dbin(pc[i], nc[i]);
+      logit(pc[i]) <- mu[i];
+      logit(pt[i]) <- mu[i] + delta[i];
+      delta[i] ~ dt(d, tau, 4);
+      mu[i] ~ dnorm(0.0, 1.0E-5);
+   }
+   d ~ dnorm(0.0, 1.0E-6);
+   delta.new ~ dt(d, tau, 4);
+   tau ~ dgamma(1.0E-3, 1.0E-3);
+   sigma <- sqrt(1/(tau*2)); # SD of t distribution on 4 degrees of freedom
+}

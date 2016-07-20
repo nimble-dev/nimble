@@ -1,0 +1,17 @@
+model {
+   for (i in 1:BATCHES) {
+      for (j in 1:SAMPLES) {
+         y[i,j] ~ dnorm(mu[i], tau.within);
+      }
+      mu[i] ~ dnorm(theta, tau.between);
+   }
+
+   theta ~ dnorm(0.0, 1.0E-10);
+   tau.within ~ dgamma(0.001, 0.001);  sigma2.within <- 1/tau.within;
+   tau.between ~ dgamma(0.001, 0.001);  sigma2.between <- 1/tau.between;
+   
+   sigma2.total <- sigma2.within + sigma2.between;
+   f.within <- sigma2.within/sigma2.total;     
+   f.between <- sigma2.between/sigma2.total;     
+}
+

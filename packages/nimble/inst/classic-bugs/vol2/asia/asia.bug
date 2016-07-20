@@ -1,0 +1,14 @@
+var
+   asia,smoking,tuberculosis,lung.cancer,bronchitis,either,xray,dyspnoea,
+   p.asia[2],p.smoking[2],p.tuberculosis[2,2],p.bronchitis[2,2],
+   p.lung.cancer[2,2],p.xray[2,2],p.dyspnoea[2,2,2];
+model {
+   smoking ~ dcat(p.smoking[]);
+   tuberculosis ~ dcat(p.tuberculosis[asia,]);
+   lung.cancer ~ dcat(p.lung.cancer[smoking,]);
+   bronchitis ~ dcat(p.bronchitis[smoking,]);
+   either <- max(tuberculosis,lung.cancer);
+   xray ~ dcat(p.xray[either,]);
+   dyspnoea ~ dcat(p.dyspnoea[either,bronchitis,])
+}
+

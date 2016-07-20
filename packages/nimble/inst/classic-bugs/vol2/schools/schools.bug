@@ -1,0 +1,46 @@
+var
+   Y[N], pupil[N], school[N], LRT[N], LRT2[N], VR[N,2], Gender[N],  
+   School.gender[N,2], School.denom[N,3], alpha[M,3], beta[8], mu[N], 
+   tau[N], sigma2[N], theta, phi, min.var, max.var, gamma[3], T[3,3], 
+   Sigma[3,3], mn[3], prec[3,3], R[3,3], rank[M], greater.than[M,M];
+model {
+   for(p in 1:N) {
+
+      Y[p] ~ dnorm(mu[p], tau[p]);
+      mu[p] <- alpha[school[p],1] + alpha[school[p],2]*LRT[p] 
+               + alpha[school[p],3]*VR[p,1] + beta[1]*LRT2[p] 
+               + beta[2]*VR[p,2] + beta[3]*Gender[p] 
+               + beta[4]*School.gender[p,1] + beta[5]*School.gender[p,2]
+               + beta[6]*School.denom[p,1] + beta[7]*School.denom[p,2]
+               + beta[8]*School.denom[p,3];
+      log(tau[p]) <- theta + phi*LRT[p];
+      sigma2[p] <- 1/tau[p];
+      LRT2[p] <- LRT[p]^2;
+
+   }
+   min.var <- exp(-(theta + phi * (-34.6193))); # lowest LRT score = -34.6193
+   max.var <- exp(-(theta + phi * (37.3807)));  # highest LRT score = 37.3807
+
+   # Priors for fixed effects:
+   for (k in 1:8) {  beta[k] ~ dnorm(0.0, 0.0001);   }
+   theta ~ dnorm(0.0, 0.0001); phi ~ dnorm(0.0, 0.0001);
+
+   # Priors for random coefficients:
+   for (j in 1:M) {
+      alpha[j,] ~ dmnorm(gamma[], T[,]); 
+   }
+ 
+   # Hyper-priors:
+   gamma[] ~ dmnorm(mn[], prec[,]);
+
+   T[,] ~ dwish(R[,],3);
+   Sigma[,] <- inverse(T[,]);
+
+   # Compute ranks:
+   #for (j in 1:M) {
+   #   for (k in 1:M) {
+   #      greater.than[j,k] <- step(alpha[k,1] - alpha[j,1]);
+   #   }
+   #   rank[j] <- sum(greater.than[j,]);  # rank of school j
+   #}
+}

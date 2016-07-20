@@ -1,0 +1,38 @@
+/* A version of the EYES problem using the dnormix function defined in the
+ * mix module.  With the mix module loaded, the  NormMix sampling method will
+ * be used to sample l0, P0, and tau.  The NormMix method uses tempered
+ * transitions to jump between distinct modes of the posteriod distribution,
+ * resulting in switching of the group labels.
+ * 
+ * A fairly strong Dirichlet prior on P0 is required to avoid one of P0[1]
+ * or P[0] going to near zero. This results in a wide excursion of the
+ * lambda parameters as the prior dominates the density calculations.
+ */
+var
+    y[N],        # observations
+    T[N],        # true groups (labelled 1,2)
+    lambda[2],   # means of two groups
+    theta,       # scaled positive shift between groups
+    tau,         # sampling precision
+    sigma,       # sampling standard deviation
+    P[2],        # proportion in first group
+    alpha[2];    # prior parameters for proportions
+model {
+   for (i in 1:N){
+       y[i]  ~ dnormmix(l0, tau1, P0);       
+   }
+   sigma     <- 1/sqrt(tau);
+   tau       ~ dgamma(0.01,0.01);
+   P0        ~ ddirch(alpha[]);    # prior for mixing proportion
+   for (i in 1:2) {
+      l0[i]  ~ dnorm(0, 1.0E-6); 
+      alpha[i]  <- 4              
+      tau1[i] <- tau
+   }
+   
+   ##Post processing to restore identifiable groups
+   P[1] <- P0[1] * (l0[1] < l0[2]) + P0[2] * (l0[2] < l0[1])
+   P[2] <- P0[1] * (l0[1] > l0[2]) + P0[2] * (l0[2] > l0[1])
+   lambda[1] <- l0[1] * (l0[1] < l0[2]) + l0[2] * (l0[2] < l0[1])
+   lambda[2] <- l0[1] * (l0[1] > l0[2]) + l0[2] * (l0[2] > l0[1])
+} 

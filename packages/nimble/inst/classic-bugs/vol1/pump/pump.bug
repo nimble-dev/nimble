@@ -1,0 +1,12 @@
+model {
+   
+  for (i in 1:N){
+      theta[i] ~ dgamma(alpha,beta);
+      lambda[i] <- theta[i]*t[i];
+      x[i] ~ dpois(lambda[i])
+  }
+
+  alpha ~ dexp(1.0);
+  beta ~ dgamma(0.1,1.0);
+
+}

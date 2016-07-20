@@ -1,0 +1,10 @@
+source("../../R/Rcheck.R")
+load.module("glm")
+d <- read.jagsdata("oxford-data.R")
+inits <- read.jagsdata("oxford-init.R")
+m <- jags.model("oxford.bug", d, inits, n.chains=2, n.adapt=500)
+update(m, 500)
+x <- coda.samples(m, c("alpha","beta1","beta2","sigma"), 
+                  n.iter=20000, thin=10)
+source("bench-test1.R")
+check.fun()

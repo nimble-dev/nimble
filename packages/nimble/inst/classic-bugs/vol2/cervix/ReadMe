@@ -1,0 +1,5 @@
+The epidemiology in this example is a little out of date. It is now known
+that Human Papillomavirus (HPV) is a necessary cause of cervical cancer.
+Although HSV-2 may have a role as a cofactor in some cases, trying to
+model its effect on cervical cancer without taking into account HPV is
+rather pointless.

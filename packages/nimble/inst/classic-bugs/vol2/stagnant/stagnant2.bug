@@ -1,0 +1,18 @@
+# Change point model with improved parameterization
+var
+    x[N], mu[N], Y[N], J[N],
+    alpha, beta[2], tau, sigma, x.change;
+model {
+   for(i in 1 : N) {
+      Y[i] ~ dnorm(mu[i], tau)
+      mu[i] <- alpha + beta[J[i]] * (x[i] - x.change)		
+      J[i] <- 1 + step(x[i] - x.change)
+   }
+   tau ~ dgamma(0.001, 0.001)
+   alpha ~ dnorm(0.0,1.0E-6)
+   for(j in 1 : 2) {
+      beta[j] ~ dnorm(0.0,1.0E-6)
+   }
+   sigma <- 1 / sqrt(tau)
+   x.change ~ dunif(-1.3,1.1)
+}

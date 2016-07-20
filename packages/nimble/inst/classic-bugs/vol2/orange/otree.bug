@@ -1,0 +1,25 @@
+var
+   tauC,mu[3],tau[3], Y[K,n],mean[K,n],phi[K,3],theta[K,3],
+   lower[3],upper[3],sigmaC,sigma[3],x[n];
+model {
+   for (i in 1:K) {
+      for (j in 1:n) {
+         Y[i, j] ~ dnorm(mean[i, j], tauC)
+         mean[i, j] <- phi[i, 1] / (1 + phi[i, 2] * exp(phi[i, 3] * x[j]))
+      }
+      phi[i, 1] <- exp(theta[i, 1])
+      phi[i, 2] <- exp(theta[i, 2]) - 1
+      phi[i, 3] <- -exp(theta[i, 3])
+      for (k in 1:3) {
+         theta[i, k] ~ dnorm(mu[k], tau[k]) 
+      }
+   }
+   tauC ~ dgamma(1.0E-3, 1.0E-3)
+   sigmaC <- 1 / sqrt(tauC)
+   for (k in 1:3) {
+      mu[k] ~ dnorm(0, 1.0E-4)
+      tau[k] ~ dgamma(1.0E-3, 1.0E-3)
+      sigma[k] <- 1 / sqrt(tau[k])
+   }
+}
+

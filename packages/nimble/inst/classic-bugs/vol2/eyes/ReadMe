@@ -1,0 +1,8 @@
+EYES.BUG
+The chain can get stuck in a state where all of the observations are in
+one group, even with the parameterization suggested by Robert. 
+
+EYES2.BUG
+Illustrates a technique for getting rid of the sticky state of
+the Gibbs sampler.  We condition on their being at least one
+observation in each state using the dinterval distribution.

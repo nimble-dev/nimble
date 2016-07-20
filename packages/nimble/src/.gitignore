@@ -1,0 +1,14 @@
+# ignore all standard code files, since these should be copied over from inst/CppCode, but can't use *.cpp because do need nimble.cpp
+accessorClasses.cpp
+NamedObjects.cpp
+nimDists.cpp
+RcppUtils.cpp
+Values.cpp
+dists.cpp
+ModelClassUtils.cpp
+NFxnUtils.cpp
+Node.cpp
+Utils.cpp
+nimbleGraph.cpp
+Makevars
+

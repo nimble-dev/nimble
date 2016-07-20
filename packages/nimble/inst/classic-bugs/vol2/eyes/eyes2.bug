@@ -1,0 +1,33 @@
+var
+    y[N],        # observations
+    T[N],        # true groups (labelled 1,2)
+    lambda[2],   # means of two groups
+    theta,       # scaled positive shift between groups
+    tau,         # sampling precision
+    sigma,       # sampling standard deviation
+    P[2],        # proportion in first group
+    alpha[2],    # prior parameters for proportions
+    ind[N,2],    # indicator function for group membership
+    tot[2],      # total number of observations in each group
+    Itot[2];     # Censored indicator for tot (1 if tot[i] > 0; 0 otherwise)
+model {
+   for (i in 1:N){
+       y[i]  ~ dnorm(lambda[T[i]],tau);       
+       T[i]  ~ dcat(P[])
+       for (j in 1:2) {
+          ind[i,j] <- T[i] == j;
+       }
+   }
+   for (j in 1:2) {
+       tot[j] <- sum(ind[,j]);
+       Itot[j] ~ dinterval(tot[j], 0);
+   }
+   sigma     <- 1/sqrt(tau);
+   tau        ~ dgamma(0.01, 0.01);
+   lambda[1]  ~ dnorm(0, 1.0E-6); 
+   lambda[2] <- lambda[1] + theta;
+   theta      ~ dnorm(0, 1.0E-6) T(0,);
+   P[]        ~ ddirch(alpha[]);    # prior for mixing proportion
+   alpha[1]  <- 1;                  # uniform prior   
+   alpha[2]  <- 1;
+} 

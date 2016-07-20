@@ -1,0 +1,22 @@
+var 
+  x[N],y[N],t[N],     # pre-drug, post-drug and total PVC count
+  state[N],state1[N], # binary indicator of whether patient is cured
+  theta,              # probability of cure (prob of state = 1)
+  p, beta,            # p = binomial probability = beta/(1+beta)
+  P[2],               # `pick' variable used to select appropriate
+                      # value for the binomial probability depending
+                      # on whether state1 = 1 or 2 (not cured or cured)
+  alpha, delta;       # p and theta transformed to logit scale for normality
+model {
+# MODEL
+   for (i in 1:N) {
+      y[i] ~ dbin(P[state1[i]], t[i]);
+      state[i] ~ dbern(theta);
+      state1[i] <- state[i]+1;   # state[i] takes values 0 or 1, so need to
+                                 # add 1 to get values for use as index on P
+   }
+   P[1] <- p; P[2] <- 0;
+   logit(p) <- alpha; alpha ~ dnorm(0,1.0E-4); 
+   beta <- exp(alpha);  # beta measures change in rate of PVCs after treatment
+   logit(theta) <- delta; delta ~ dnorm(0,1.0E-4)
+}

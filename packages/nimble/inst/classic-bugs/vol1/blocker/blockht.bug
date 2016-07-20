@@ -1,0 +1,20 @@
+model {
+   for (i in 1:Num) {
+      rt[i] ~ dbin(pt[i],nt[i]);
+      rc[i] ~ dbin(pc[i],nc[i]);
+      logit(pc[i]) <- mu[i];
+      logit(pt[i]) <- mu[i] + delta[i];
+      delta[i] ~ dt(d,tau,v);
+      mu[i] ~ dnorm(0.0, 1.0E-5);
+   }
+   delta.new ~ dt(d,tau,v);
+   d ~ dnorm(0.0,1.0E-6);
+   tau ~ dgamma(1.0E-3,1.0E-3);
+   sigma <- 1/sqrt(tau);
+
+   for (n in 1:Nbins) {
+      prior[n] <- 1/Nbins;   # Uniform prior on v
+   }
+   k ~ dcat(prior[]);               
+   v <- eta[k];           # degrees of freedom for t
+}
