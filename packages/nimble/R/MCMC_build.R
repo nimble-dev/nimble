@@ -1,74 +1,80 @@
 
-#' Create an MCMC function, from an MCMCspec object
-#' 
-#' Accepts a single required argument, which may be of class MCMCspec, or inherit from class modelBaseClass (a NIMBLE model obejct).  Returns an MCMC function; see details section.
-#' 
-#' @param obj An object of class MCMCspec, which specifys the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCspec objects.  Alternatively, \code{obj} may a NIMBLE model object, in which case an MCMC function corresponding to the defult MCMC specification for this model is returned.
-#' 
+#' Create an MCMC function, from an MCMCconf object
+#'
+#' Accepts a single required argument, which may be of class MCMCconf, or inherit from class modelBaseClass (a NIMBLE model object).  Returns an MCMC function; see details section.
+#'
+#' @param conf An object of class MCMCconf that specifies the model, samplers, monitors, and thinning intervals for the resulting MCMC function.  See \code{configureMCMC} for details of creating MCMCconf objects.  Alternatively, \code{MCMCconf} may a NIMBLE model object, in which case an MCMC function corresponding to the default MCMC configuration for this model is returned.
+#' @param ... Additional arguments to be passed to \code{configureMCMC} if \code{conf} is a NIMBLE model object
+#'
 #' @author Daniel Turek
 #' @export
 #' @details
-#' Calling buildMCMC(obj) will produce an R mcmc function object, say 'Rmcmc'.
+#' Calling buildMCMC(conf) will produce an uncompiled (R) R mcmc function object, say 'Rmcmc'.
 #'
-#' The Rmcmc function will have arguments:
+#' The uncompiled MCMC function will have arguments:
 #'
-#' niter: The number of iterations to run the MCMC.
+#' \code{niter}: The number of iterations to run the MCMC.
 #'
-#' reset: Boolean specifying whether to reset the model and stored samples.  This will simulate into any stochastic nodes with value NA,
-#' propagate values through any deterministic nodes, and calculate all model probabilities.
-#' This will also reset the internal stored MCMC samples.
-#' Specifying reset=FALSE allows the MCMC algorithm to continue running from where it left off.
-#' Generally, reset=FALSE should only be used when the MCMC has already been run.  See examples.
+#' \code{reset}: Boolean specifying whether to reset the model and stored samples.  This will simulate into any stochastic nodes with value NA, propagate values through any deterministic nodes, and calculate all model probabilities. This will also reset the internal stored MCMC samples. Specifying \code{reset=FALSE} allows the MCMC algorithm to continue running from where it left off. Generally, \code{reset=FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
-#' simulateAll: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes.
+#' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
+#'
+#' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
+#'
+#' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).
+#'
+#' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
+#' These may be accessed and converted into R matrix objects via:
+#' \code{as.matrix(mcmc$mvSamples)}
+#' \code{as.matrix(mcmc$mvSamples2)}
+#'
+#' The uncompiled (R) MCMC function may be compiled to a compiled MCMC object, taking care to compile in the same project as the R model object, using:
+#' \code{Cmcmc <- compileNimble(Rmcmc, project=Rmodel)}
+#'
+#' The compiled function will function identically to the uncompiled object, except acting on the compiled model object.
 #' 
-#' Samples corresponding to the 'monitors' and 'monitors2' from the MCMCspec are stored into the interval variables 'mvSamples' and 'mvSamples2', respectively.
-#' These may be accessed via:
-#' Rmcmc$mvSamples
-#' Rmcmc$mvSamples2
-#' 
-#' The Rmcmc function may be compiled to a C MCMC object, taking care to compile in the same project as the R model object, using:
-#' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
-#' 
-#' The Cmcmc function will function identically to the Rmcmc object, except acting on the C model object.
 #' @examples
+#' \dontrun{
 #' code <- nimbleCode({
-#'  mu ~ dnorm(0, 1)
-#'  x ~ dnorm(mu, 1)
+#'     mu ~ dnorm(0, 1)
+#'     x ~ dnorm(mu, 1)
 #' })
 #' Rmodel <- nimbleModel(code)
-#' spec <- configureMCMC(Rmodel)
-#' Rmcmc <- buildMCMC(spec)
-#' Rmcmc$run(10)
-#' samples <- Rmcmc$mvSamples
-#' samples[['x']]
-#' Rmcmc$run(100, reset = FALSE)
+#' conf <- configureMCMC(Rmodel)
+#' Rmcmc <- buildMCMC(conf)
+#' Cmodel <- compileNimble(Rmodel)
+#' Cmcmc <- compileNimble(Rmcmc, project=Rmodel)
+#' Cmcmc$run(10000)
+#' samples <- as.matrix(Cmcmc$mvSamples)
+#' head(samples)
+#' }
 buildMCMC <- nimbleFunction(
-    
-    setup = function(mcmcspec, ...) {
-    	if(inherits(mcmcspec, 'modelBaseClass'))
-    		mcmcspec <- configureMCMC(mcmcspec, ...)
-    	
-    	else if(!inherits(mcmcspec, 'MCMCspec')) stop('mcmcspec must either be a nimbleModel or a MCMCspec object (created by configureMCMC(...) )')
-        
-        model <- mcmcspec$model
+    setup = function(conf, ...) {
+    	if(inherits(conf, 'modelBaseClass'))
+    		conf <- configureMCMC(conf, ...)
+
+    	else if(!inherits(conf, 'MCMCconf')) stop('conf must either be a nimbleModel or a MCMCconf object (created by configureMCMC(...) )')
+
+        model <- conf$model
         my_initializeModel <- initializeModel(model)
         mvSaved <- modelValues(model)
         samplerFunctions <- nimbleFunctionList(sampler_BASE)
-        for(i in seq_along(mcmcspec$samplerSpecs))
-            samplerFunctions[[i]] <- mcmcspec$samplerSpecs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
-        
-        monitors  <- processMonitorNames(model, mcmcspec$monitors)
-        monitors2 <- processMonitorNames(model, mcmcspec$monitors2)
-        thin  <- mcmcspec$thin
-        thin2 <- mcmcspec$thin2
-        mvSamplesSpec  <- mcmcspec$getMvSamplesSpec(1)
-        mvSamples2Spec <- mcmcspec$getMvSamplesSpec(2)
-        mvSamples <- modelValues(mvSamplesSpec)
-        mvSamples2 <- modelValues(mvSamples2Spec)
+        for(i in seq_along(conf$samplerConfs))
+            samplerFunctions[[i]] <- conf$samplerConfs[[i]]$buildSampler(model=model, mvSaved=mvSaved)
+
+        monitors  <- processMonitorNames(model, conf$monitors)
+        monitors2 <- processMonitorNames(model, conf$monitors2)
+        thin  <- conf$thin
+        thin2 <- conf$thin2
+        mvSamplesConf  <- conf$getMvSamplesConf(1)
+        mvSamples2Conf <- conf$getMvSamplesConf(2)
+        mvSamples <- modelValues(mvSamplesConf)
+        mvSamples2 <- modelValues(mvSamples2Conf)
+        samplerTimes <- c(0,0) ## establish as a vector
+        progressBarLength <- 52  ## multiples of 4 only
     },
-    
-    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE)) {
+
+    run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
         if(simulateAll)     simulate(model)    ## default behavior excludes data nodes
         my_initializeModel$run()
         if(reset) {
@@ -79,22 +85,44 @@ buildMCMC <- nimbleFunction(
             mvSamples2_offset <- 0
             resize(mvSamples,  niter/thin)
             resize(mvSamples2, niter/thin2)
+            samplerTimes <<- numeric(length(samplerFunctions))       ## default inititialization to zero
         } else {
             mvSamples_offset  <- getsize(mvSamples)
             mvSamples2_offset <- getsize(mvSamples2)
             resize(mvSamples,  mvSamples_offset  + niter/thin)
             resize(mvSamples2, mvSamples2_offset + niter/thin2)
+            if(dim(samplerTimes)[1] != length(samplerFunctions))
+                samplerTimes <<- numeric(length(samplerFunctions))   ## first run: default inititialization to zero
         }
-        
+        if(niter < progressBarLength+3) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
+        if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }
+        progressBarIncrement <- niter/(progressBarLength+3)
+        progressBarNext <- progressBarIncrement
+        progressBarNextFloor <- floor(progressBarNext)
         for(iter in 1:niter) {
-            for(i in seq_along(samplerFunctions))
-                samplerFunctions[[i]]$run()
+            checkInterrupt()
+            if(time)
+                for(i in seq_along(samplerFunctions))
+                    samplerTimes[i] <<- samplerTimes[i] + run.time(samplerFunctions[[i]]$run())
+            else 
+                for(i in seq_along(samplerFunctions))
+                    samplerFunctions[[i]]$run()
             if(iter %% thin  == 0)
                 nimCopy(from = model, to = mvSamples,  row = mvSamples_offset  + iter/thin,  nodes = monitors)
             if(iter %% thin2 == 0)
                 nimCopy(from = model, to = mvSamples2, row = mvSamples2_offset + iter/thin2, nodes = monitors2)
+            if(progressBar & (iter == progressBarNextFloor)) { cat('-')
+                                                               progressBarNext <- progressBarNext + progressBarIncrement
+                                                               progressBarNextFloor <- floor(progressBarNext) }
         }
-    },  where = getLoadingNamespace()
+        if(progressBar) print('|')
+    },
+    methods = list(
+        getTimes = function() {
+            returnType(double(1))
+            return(samplerTimes)
+        }),
+    where = getLoadingNamespace()
 )
 
 

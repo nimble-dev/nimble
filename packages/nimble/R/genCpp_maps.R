@@ -62,7 +62,7 @@ makeOffsetRexpr <- function(firstIndexRexprs, sourceStrideRexprs) {
 }
 
 ## this is used by sizeIndexingBracket when it hits a need for a map
-makeMapExprFromBrackets <- function(code) {
+makeMapExprFromBrackets <- function(code, drop = TRUE) {
     ## code nDim, type and sizeExprs have already been set, and toEigenize will be set to 'maybe'
     if(code$args[[1]]$name == 'map') {
         sourceVarName <- code$args[[1]]$args[[1]]
@@ -104,7 +104,12 @@ makeMapExprFromBrackets <- function(code) {
             } else {
                 ## It is a ":"
                 blockBool[im1] <- TRUE
-                firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]$args[[1]]), keep.source = FALSE)[[1]] 
+                if(!is.null(code$args[[i]]$sizeExprs))
+                    if(length(code$args[[i]]$sizeExprs[[1]])==1)
+                        if(is.numeric(code$args[[i]]$sizeExprs[[1]]))
+                            if(code$args[[i]]$sizeExprs[[1]]==1)
+                                blockBool[im1] <- FALSE
+                firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]$args[[1]]), keep.source = FALSE)[[1]]
             }
         } else {
             firstIndexRexprs[[im1]] <- code$args[[i]]
@@ -118,7 +123,7 @@ makeMapExprFromBrackets <- function(code) {
         targetOffsetRexpr <- substitute(A + B, list(A = sourceOffsetRexpr, B = makeOffsetRexpr(firstIndexRexprs, sourceStrideRexprs)))
     }
     targetSizeExprs <- code$sizeExprs
-    targetStrideRexprs <- sourceStrideRexprs[blockBool]
+    targetStrideRexprs <- if(drop) sourceStrideRexprs[blockBool] else sourceStrideRexprs
     targetNdim <- length(targetSizeExprs)
 
     ## this is an unusual exprClass object because args is just a regular list.  Its elements are not exprClass objects

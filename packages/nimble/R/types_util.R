@@ -78,18 +78,6 @@ nl_checkVarNamesInModel <- function(model, varNames) {
     if(!all(varNames %in% model$getVarNames(includeLogProb = TRUE)))      stop('all variable names are not in model')
 }
 
-#nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
-#	expandedNames <- model$expandNodeNames(nodeNames)
-#	sortedNames = model$topologicallySortNodes(expandedNames)
-#	if(!includeData){
-#		keepNodes = rep(NA, length(sortedNames) ) 
-#		for(i in seq_along(keepNodes) ) 
-#			keepNodes[i] <- !(model$isData(sortedNames[i]) )
-#		sortedNames <- sortedNames[keepNodes]
-#	}
-#	return(sortedNames)
-#}
-
 nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
 	GIDs <- model$modelDef$nodeName2GraphIDs(nodeNames)
 	sortedIDs <- sort(GIDs)
@@ -136,7 +124,6 @@ nl_determineFlatIndex = function(ind, maxs) {
 ## If anyone has an implementation which beats O(n) linear time, then let's use it.
 nl_aggregateConsecutiveBlocks <- function(ind) {
     if(length(ind) == 0)     return(list())
-#    ind <- unique(sort(ind))
     indDiffLogical <- c(TRUE, diff(ind) != 1)
     aggregated <- list()
     for(i in seq_along(indDiffLogical)) {
@@ -187,36 +174,32 @@ expandMVNames <- function(mv, varNames){
 	return(nodeNames)
 }
 
-as.matrix.modelValuesBaseClass <- function(mv, varNames){
+as.matrix.modelValuesBaseClass <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- mv$varNames
-	nrows = getsize(mv)
-	flatNames = expandMVNames(mv, varNames)
+			varNames <- x$varNames
+	nrows = getsize(x)
+	flatNames = expandMVNames(x, varNames)
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		#ans[1:nrows, colIndex + 1:prod(mv$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(mv, varNames[i])
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(mv, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
-		#This method is faster than the commented out method, especially if there are a lot of variables (as apposed to nodes)
-		colIndex = colIndex + prod(mv$sizes[[varNames[i] ]])
+		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
 	return(ans)
 
 }
 
-as.matrix.CmodelValues <- function(mv, varNames){
+as.matrix.CmodelValues <- function(x, varNames, ...){
 	if(missing(varNames))
-			varNames <- mv$varNames
-	nrows = getsize(mv)
-	flatNames = expandMVNames(mv, varNames)
+			varNames <- x$varNames
+	nrows = getsize(x)
+	flatNames = expandMVNames(x, varNames)
 	ans <- matrix(0.1, nrow = nrows, ncol = length(flatNames))
 	colIndex = 1
 	for(i in seq_along(varNames)){
-		#ans[1:nrows, colIndex + 1:prod(mv$sizes[[varNames[i] ]]) ] <- modelValuesElement2Matrix(mv, varNames[i])
-		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(mv, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
-		#This method is faster than the commented out method, especially if there are a lot of variables (as apposed to nodes)
-		colIndex = colIndex + prod(mv$sizes[[varNames[i] ]])
+		.Call('fastMatrixInsert', ans, modelValuesElement2Matrix(x, varNames[i]) , as.integer(1), as.integer(colIndex) ) 		
+		colIndex = colIndex + prod(x$sizes[[varNames[i] ]])
 		}
 	colnames(ans) <- flatNames
 	return(ans)

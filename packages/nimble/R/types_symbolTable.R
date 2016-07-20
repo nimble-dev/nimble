@@ -29,6 +29,9 @@ argType2symbol <- function(AT, name = character()) {
 	
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
+    if(type == "internalType") {
+        return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
+    }
     nDim <- if(length(AT)==1) 0 else AT[[2]]
     size <- if(nDim == 0) 1 else {
         if(length(AT) < 3)
@@ -40,7 +43,7 @@ argType2symbol <- function(AT, name = character()) {
         if(nDim > 1) {
             warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
             nDim <- 1
-            size <- if(any(is.na(size))) as.numeric(NA) else product(size)
+            size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
         }
         symbolString(name = name, type = "character", nDim = nDim, size = size) 
     } else {
@@ -88,7 +91,11 @@ symbolBasic <-
                                 size = 'ANY'), 		#'numeric'),
                 methods = list(
                     show = function() {
-                        writeLines(paste0(name,': ', type, ' sizes = (', paste(size, collapse = ', '), '), nDim = ', nDim))
+                        if(inherits(size, 'uninitializedField')) {
+                            writeLines(paste0(name,': ', type, ' sizes = (uninitializedField), nDim = ', nDim))
+                        } else {
+                            writeLines(paste0(name,': ', type, ' sizes = (', paste(size, collapse = ', '), '), nDim = ', nDim))
+                        }
                     },
                     genCppVar = function(functionArg = FALSE) {
                         if(type == 'void') return(cppVoid())
@@ -146,6 +153,15 @@ symbolString <- setRefClass(
             }
         })
     )
+
+symbolNimbleTimer <- setRefClass(
+    Class = "symbolNimbleTimer",
+    contains = "symbolBase",
+    methods = list(
+        show = function() writeLines(paste('symbolNimbleTimer', name)),
+        genCppVar = function(...) {
+            cppVar(name = name, baseType = "nimbleTimerClass_")
+        }))
 
 symbolNimArrDoublePtr <- 
     setRefClass(Class    = 'symbolNimArrDoublePtr',
@@ -221,7 +237,7 @@ symbolModel <-
 symbolModelValues <- 
     setRefClass(Class = 'symbolModelValues',
                 contains = 'symbolBase',
-                fields = list(mvSpec = 'ANY'), 
+                fields = list(mvConf = 'ANY'), 
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)
@@ -315,6 +331,20 @@ symbolModelValuesAccessorVector <-
                     )
                 )
 
+symbolGetParamInfo <-
+    setRefClass(Class = 'symbolGetParamInfo',
+                contains = 'symbolBase',
+                fields = list(paramInfo = 'ANY'), ## getParam_info, i.e. simple list
+                methods = list(
+                    initialize = function(paramInfo, ...) {
+                        callSuper(...)
+                        paramInfo <<- paramInfo
+                        type <<- 'Ronly'
+                    },
+                    show = function() writeLines(paste('symbolGetParamInfo', name)),
+                    genCppVar = function(...) {
+                        stop(paste('Error, you should not be generating a cppVar for symbolGetParamInfo', name))
+                    } ))
 
 symbolNumericList <- 
     setRefClass(Class = 'symbolNumericList',
@@ -405,7 +435,37 @@ symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               )
                               )
 
-                                     
+symbolIndexedNodeInfoTable <-
+    setRefClass(Class = "symbolIndexedNodeInfoTable",
+                contains = "symbolBase",
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolIndexedNodeInfoTable', name)),
+                    ## We need this to be copied, but it must be copied to a variable already declared in the nodeFun base class,
+                    ## so we don't want any genCppVar.
+                    genCppVar = function(...)  {
+                        cppVarFull(name = name, silent = TRUE) ## this symbol exists to get a base class member data copied, so it shouldn't be declared
+                        ##stop(paste('Error, you should not be generating a cppVar for symbolIndexedNodeInfoTable', name))
+                        ## looks like if a copy type is created in makeNimbleFxnCppCopyTypes (based on the symbolXXXclass then it will be copied
+                        ## and if the type is Ronly then it will not be turned into a cppVar.  So that bit of design worked out well
+                       ## it's in the nodeFun base class as vector<indexedNodeInfo>
+                    }))
+
+symbolInternalType <-
+    setRefClass(Class = "symbolInternalType",
+                contains = "symbolBase",
+                fields = list(argList = 'ANY'),
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolInternalType', name)),
+                    genCppVar = function(functionArg = FALSE) {
+                        if(length(argList) == 0) stop(paste('No information for outputting C++ type of', name))
+                        if(argList[[1]] == 'indexedNodeInfoClass'){
+                            if(functionArg) return(cppVarFull(name = name, baseType = "indexedNodeInfo", const = TRUE, ref = TRUE))
+                            return(cppVar(name = name, baseType = "indexedNodeInfo"))
+                        }
+                    })
+                )
 
 ## nDim is set to length(size) unless provided, which is how scalar (nDim = 0) must be set
 symbolDouble <- function(name, size = numeric(), nDim = length(size)) {
@@ -427,7 +487,9 @@ symbolInt <- function(name, size = numeric(), nDim = length(size)) {
 symbolTable <- 
     setRefClass(Class   = 'symbolTable',
                 fields  = list(symbols  = 'ANY', 		#'list',
-                               parentST = 'ANY'),
+                    parentST = 'ANY',
+                    dimAndSizeList = 'ANY',
+                    dimAndSizeListMade = 'ANY'),
                 methods = list(
                     initialize = function(parentST = NULL, ...) {
                         symbols  <<- list()
@@ -441,15 +503,20 @@ symbolTable <-
                                 }
                             } else stop('Error: symbols provided must be a list')
                         }
-                        parentST <<- parentST },
+                        parentST <<- parentST
+                        dimAndSizeListMade <<- FALSE
+                    },
                     
                     ## add a symbol RC object to this symbolTable; checks for valid symbolRC object, and duplicate symbol names
                     addSymbol  = function(symbolRCobject) {
                       ##  if(!is(symbolRCobject, 'symbolBase'))   stop('adding non-symbol object to symbolTable')
                         name <- symbolRCobject$name
                         if(name %in% getSymbolNames())            warning(paste0('duplicate symbol name: ', name))
-                        symbols[[name]] <<- symbolRCobject },
-                    
+                        symbols[[name]] <<- symbolRCobject
+                        if(dimAndSizeListMade) {
+                            dimAndSizeList[[name]] <<- {ans <- try(list(symbolRCobject$size, symbolRCobject$nDim)); if(inherits(ans, 'try-error')) NULL else ans}
+                        }
+                    },
                     ## remove a symbol RC object from this symbolTable; gives warning if symbol isn't in table
                     removeSymbol = function(name) {
                         if(!(name %in% getSymbolNames()))         warning(paste0('removing non-existant symbol name: ', name))
@@ -461,11 +528,22 @@ symbolTable <-
                     getSymbolNames   = function()      if(is.null(names(symbols))) return(character(0)) else return(names(symbols)),
                     getSymbolObject  = function(name, inherits = FALSE) {
                         ans <- symbols[[name]]
-                        if(is.null(ans) & inherits & !is.null(parentST)) ans <- parentST$getSymbolObject(name, TRUE)
+                        if(is.null(ans)) if(inherits) if(!is.null(parentST)) ans <- parentST$getSymbolObject(name, TRUE)
                         return(ans)
                     },
                     symbolExists = function(name, inherits = FALSE) {
                         return(!is.null(getSymbolObject(name, inherits)))
+                    },
+                    initDimAndSizeList = function() {
+                        dimAndSizeList <<- lapply(symbols, function(x) {
+                            ans <- try(list(x$size, x$nDim))
+                            if(inherits(ans, 'try-error')) NULL else ans
+                        })
+                        dimAndSizeListMade <<- TRUE
+                    },
+                    makeDimAndSizeList = function(names) {
+                        if(!dimAndSizeListMade) initDimAndSizeList()
+                        dimAndSizeList[names]
                     },
                     getSymbolType    = function(name)               return(symbols[[name]]$type),
                     getSymbolField   = function(name, field)        return(symbols[[name]][[field]]),

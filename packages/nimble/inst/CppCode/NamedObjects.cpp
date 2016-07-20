@@ -11,9 +11,10 @@ void* NamedObjects::getObjectPtr( string &name ) {
   if(iMO == namedObjects.end()) {
     //std::cout<<"Error, could not find "<<name<<"\n";
     PRINTF("Error, could not find name\n");
-    cout << "Name = " << name << "\n";
+    //    cout << "Name = " << name << "\n";
+    _nimble_global_output << "Name = " << name << "\n"; nimble_print_to_R( _nimble_global_output);
     iMO = namedObjects.begin();
-    cout << "Available Name 1 = " << iMO->first << "\n";
+    _nimble_global_output << "Available Name 1 = " << iMO->first << "\n"; nimble_print_to_R( _nimble_global_output);
     return(0);
   }
   return(	(iMO->second) ) ;
@@ -126,12 +127,3 @@ SEXP newNumberedObjects(){
 	return(rPtr);
 }
 
-/*		This is an example of a finalizer for the templated numbered objects
-		They must be written by hand
-		for each template
-void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
-	SpecialNumberedObjects<SingleModelValuesAccess>* np 
-	= static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
-	delete np;
-}
-*/

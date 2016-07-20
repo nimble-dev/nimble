@@ -1,14 +1,15 @@
 ## The BUGSdeclClass contains the pulled-apart content of a BUGS declaration line
 
 ## nimbleOrRfunctionNames is used to determine what can be evaluated in R if every argument is known OR in C++ (nimble) if arguments are other nodes
-nimbleOrRfunctionNames <- c('+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
+nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','%*%','t',
                             'equals','inprod','nimEquals',
-                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'chol', 'step', 'nimStep', 'inverse',
+                            'sqrt', 'logit', 'expit', 'ilogit', 'probit', 'iprobit', 'phi', 'cloglog', 'icloglog', 'step', 'nimStep',
                             'sin','cos','tan','asin','acos','atan','cosh','sinh','tanh', 'asinh', 'acosh', 'atanh',
                             'cube', 'abs', 'lgamma', 'loggam', 'log1p', 'lfactorial', ##'factorial', 'gamma',
                             'ceiling', 'floor', 'round', 'trunc',
                             'mean','sum','max','min','prod',
                             'asRow', 'asCol',
+                            'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve',   ## removed these from BUGS functions, pending problems with Eigen
                             '>', '<', '>=', '<=', '==', '!=', '&', '|',
                             distributionFuns,
                             # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
@@ -24,6 +25,7 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  sourceLineNumber = 'ANY',
                                  code = 'ANY',        ## original BUGS code line
                                  type = 'ANY',
+                                 distributionName = 'ANY',
                                  targetExpr = 'ANY',   ## LHS of code
                                  valueExpr = 'ANY',    ## RHS of code
                                  transExpr = 'ANY',
@@ -114,7 +116,8 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                  },
                                  getDistributionName = function() {
                                      if(type != 'stoch')  stop('getting distribution of non-stochastic node')
-                                     return(as.character(valueExprReplaced[[1]]))
+                                     return(distributionName)
+                                     ##return(as.character(valueExprReplaced[[1]]))
                                  }
                              )
 )
@@ -222,10 +225,11 @@ makeIndexNamePieces <- function(indexCode) {
 
 BUGSdeclClass$methods(genReplacedTargetValueAndParentInfo = function(constantsNamesList, context, nimFunNames) { ## assuming codeReplaced is there
     ## generate hasBracket info
-    
     targetExprReplaced <<- codeReplaced[[2]] ## shouldn't have any link functions at this point
     valueExprReplaced <<- codeReplaced[[3]]
-
+    if(type == 'stoch') distributionName <<- as.character(valueExprReplaced[[1]])
+    else distributionName <<- NA
+    
     symbolicParentNodesReplaced <<- unique(getSymbolicParentNodes(valueExprReplaced, constantsNamesList, c(context$indexVarExprs, replacementNameExprs), nimFunNames))
     rhsVars <<- unlist(lapply(symbolicParentNodesReplaced,  function(x) if(length(x) == 1) as.character(x) else as.character(x[[2]])))
 
@@ -264,24 +268,15 @@ BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
     
     if(type == 'stoch') {
         RHSreplaced <- codeReplaced[[3]]
-        paramNamesAll <- names(RHSreplaced)
-        paramNamesDotLogicalVector <- grepl('^\\.', paramNamesAll)
-        RHSreplacedWithoutDotParams <- RHSreplaced[!paramNamesDotLogicalVector]    ## removes all parameters whose name begins with '.' from distribution
-        codeReplaced[[3]] <<- RHSreplacedWithoutDotParams
-        
-        altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
-        names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
-#         dotParamNames <- names(dotParamExprs)
-#         distRuleAltParamExprs <- getDistribution(as.character(RHSreplaced[[1]]))$altParams
-#         for(altParam in names(distRuleAltParamExprs)) {
-#             if(altParam %in% dotParamNames) {
-#                 altParamExprs[[altParam]] <<- dotParamExprs[[altParam]]
-#             } else {
-#                 defaultParamExpr <- getDistributions(as.character(RHSreplaced[[1]]))$altParams[[altParam]]
-#                 subParamExpr <- eval(substitute(substitute(EXPR, as.list(RHSreplaced)[-1]), list(EXPR=defaultParamExpr)))
-#                 altParamExprs[[altParam]] <<- subParamExpr
-#             }
-#         }
+        if(length(RHSreplaced) > 1) { ## It actually has argument(s)
+            paramNamesAll <- names(RHSreplaced)
+            paramNamesDotLogicalVector <- grepl('^\\.', paramNamesAll)
+            RHSreplacedWithoutDotParams <- RHSreplaced[!paramNamesDotLogicalVector]    ## removes all parameters whose name begins with '.' from distribution
+            codeReplaced[[3]] <<- RHSreplacedWithoutDotParams
+            
+            altParamExprs <<- if(any(paramNamesDotLogicalVector)) as.list(RHSreplaced[paramNamesDotLogicalVector]) else list()
+            names(altParamExprs) <<- gsub('^\\.', '', names(altParamExprs))    ## removes the '.' from each name
+        }
     }
 })
 
@@ -319,7 +314,11 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     }
 
     if(is.call(code)) {
-        if(code[[1]] == '[') {
+        indexingBracket <- code[[1]] == '['
+        if(indexingBracket) {
+            if(is.call(code[[2]])) indexingBracket <- FALSE ## treat like any other function
+        }
+        if(indexingBracket) { ##if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
             contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
             contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
@@ -327,16 +326,24 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             variable <- getSymbolicParentNodesRecurse(code[[2]], constNames, indexNames, nimbleFunctionNames)
             
             if(variable$hasIndex) stop('Error: Variable', deparse(code[[2]]), 'on outside of [ contains a BUGS code index.')
-            if(variable$replaceable) {
-                return(list(code = contentsCode,
-                            replaceable = all(contentsReplaceable),
-                            hasIndex = any(contentsHasIndex)))
+            if(variable$replaceable) { ## recheck from devel. right here decide if there are any indexing blocks. ## don't want that recursed due to foo(1:3) possibility
+
+                boolIndexingBlock <- unlist(lapply(code[-c(1,2)], function(x) if(length(x) > 1) if(x[[1]] == ':') TRUE else FALSE else FALSE))
+                if(any(boolIndexingBlock)) {
+                    return(list(code = c(contentsCode, code),
+                                replaceable = FALSE,
+                                hasIndex = any(contentsHasIndex)))
+                } else {
+                    return(list(code = contentsCode, ## old behavior 
+                                replaceable = all(contentsReplaceable),
+                                hasIndex = any(contentsHasIndex)))
+                }
             } else {
                 if(all(contentsReplaceable)) {
                     return(list(code = c(contentsCode, list(code)),
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
-                } else {
+                } else { ## this case shouldn't be operational for now because non-replaceable indices are dynamic indices
                     return(list(code = c(contentsCode, list(code[[2]])),
                                 replaceable = FALSE,
                                 hasIndex = any(contentsHasIndex)))
@@ -347,6 +354,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
                 contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
                 contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
+                ## if(code[[1]] == ':') return(list(code = contentsCode, ## need a new part of the list for hasIndexingBlock, or can I set hasIndex = TRUE
+                ##            replaceable = FALSE ,
+                ##            hasIndex = any(contentsHasIndex)))
                 contentsReplaceable <- unlist(lapply(contents, function(x) x$replaceable))
                 allContentsReplaceable <- all(contentsReplaceable)
             } else {
@@ -358,14 +368,12 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
                 !checkNimbleOrRfunctionNames(funName)
-#                !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")
                 unreplaceable <- sapply(contents[!contentsReplaceable], function(x) as.character(x$code))
                 stop("R function '", funName,"' has arguments that cannot be evaluated; either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ", paste(unreplaceable, collapse = ","), ".")
             }
-            # old text:  non-replaceable node values as arguments.  Must be a nimble function.
 
             return(list(code = contentsCode,
                         replaceable = allContentsReplaceable & isRfunction,
@@ -394,7 +402,11 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         }
     }
     if(is.call(code)) {
-        if(code[[1]] == '[') {
+        indexingBracket <- code[[1]] == '['
+        if(indexingBracket) {
+            if(is.call(code[[2]])) indexingBracket <- FALSE ## treat like any other function
+        }
+        if(indexingBracket) { ##if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) genReplacementsAndCodeRecurse(x, constAndIndexNames, nimbleFunctionNames, debug = debug))
             contentsCodeReplaced <- lapply(contents, function(x) x$codeReplaced)
             contentsReplacements <- lapply(contents, function(x) x$replacements)
@@ -424,10 +436,9 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
             contentsReplaceable  <- list()
             allContentsReplaceable <- TRUE
         }
-        if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2, replaceable=allContentsReplaceable))
+        if(code[[1]] == ':')   return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2)) ## for newNodeFxns, use default replaceable = FALSE for any ':' expression.  old: , replaceable=allContentsReplaceable))
         if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
-#        isRonly <- isRfunction & !any(deparse(code[[1]]) == nimbleOrRfunctionNames)
         isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
         if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))

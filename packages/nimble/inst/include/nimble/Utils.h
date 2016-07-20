@@ -5,10 +5,18 @@
 #include "R.h"
 #include<Rinternals.h>
 #include<Rmath.h>
-#include <string>
+#include<string>
+#include<time.h>
 using std::string;
 
 //using namespace std;
+
+class nimbleTimerClass_ {
+ public:
+  clock_t t_start;
+  void startNimbleTimer() {t_start = clock();}
+  double endNimbleTimer() { return(((double)(clock() - t_start))/CLOCKS_PER_SEC); }
+};
 
 #define PRINTF Rprintf
 #define NIMERROR error
@@ -90,6 +98,11 @@ using std::string;
 	MATHLIB_WARNING("non-integer x = %f", x);	\
 	return R_D__0;					\
    }
+
+#define EIGEN_CHOL(x)       (x).selfadjointView<Eigen::Upper>().llt().matrixU()
+//#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)
+//#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
+//#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
 
 bool decide(double lMHr);
 //void allocate(vector< vector <double> > *vv, int sampleSize, int variableSize);

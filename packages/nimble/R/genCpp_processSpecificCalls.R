@@ -39,10 +39,12 @@ specificCallHandlers = c(
          min = 'minMaxHandler',
          max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
+    makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
-    makeCallList(c('dmnorm_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
+    makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
+specificCallHandlers[['rmvt_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rwish_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rmulti']] <- 'rmFunHandler'
 specificCallHandlers[['rcat']] <- 'rmFunHandler' ## not really multivar, but same processing
@@ -85,7 +87,7 @@ seqAlongHandler <- function(code, symTab) {
 declareHandler <- function(code, symTab) {
     if(code$args[[1]]$isName) {
         newNames <- code$args[[1]]$name
-    } else {
+    } else { ## case of declaring multiple names at once.  This is not documented in User Manual and not supported by R declare() 
         if(code$args[[1]]$name == 'c') {
             newNames <- unlist(lapply(code$args[[1]]$args, `[[`, 'name'))
             if(length(newNames) == 0) stop('Error: no names provided to declare')
@@ -95,6 +97,8 @@ declareHandler <- function(code, symTab) {
         if(symTab$symbolExists(newNames[i])) stop(paste0('Error: declaring ',newNames[i],' which already exists.'))
     }
     typeDeclExpr <- code$args[[2]]
+    ## a very patchy solution: go inside declare's processSpecificCalls handler and switch nimInteger back to integer
+    if(typeDeclExpr$name == 'nimInteger') typeDeclExpr$name <- 'integer'
     type <- typeDeclExpr$name
     if(length(typeDeclExpr$args) == 0) {
         nDim <- 0
@@ -102,11 +106,26 @@ declareHandler <- function(code, symTab) {
     } else {
         nDim <- typeDeclExpr$args[[1]]
         newSizes <- rep(as.numeric(NA), nDim)
-        if(length(typeDeclExpr$args) > 1) {
+        if(length(typeDeclExpr$args) > 1) { ## sizes were provided
             typeSizeExpr <- typeDeclExpr$args[[2]]
-            if(is.numeric(typeSizeExpr) & nDim == 1) sizeExprs <- list(typeSizeExpr)
-            else if(nDim ==1 & typeSizeExpr$name != 'c') sizeExprs <- list(typeSizeExpr)
-            else sizeExprs <- typeSizeExpr$args
+            if(inherits(typeSizeExpr, 'exprClass')) { ## first size are is an expression
+                if(typeSizeExpr$name == 'c')  ## it's a concatenation
+                    sizeExprs <- typeSizeExpr$args ## record the args
+                else { ## it's not a concatenation
+                    if(nDim != 1) stop('confused in declareHandler')
+                    sizeExprs <- list(typeSizeExpr) ## take single expression
+                }
+            } else { ## it better be numeric
+                if(!is.numeric(typeSizeExpr)) stop('confused 2 in declareHandler')
+                if(length(typeDeclExpr$args) != 1 + nDim) stop('confused 3 in declareHandler')
+                sizeExprs <- list()
+                for(i in 1:nDim)
+                    sizeExprs[[i]] <- typeDeclExpr$args[[i+1]]
+            }
+            
+            ## if(is.numeric(typeSizeExpr) & nDim == 1) sizeExprs <- list(typeSizeExpr)
+            ## else if(nDim ==1 & typeSizeExpr$name != 'c') sizeExprs <- list(typeSizeExpr)
+            ## else sizeExprs <- typeSizeExpr$args
             if(length(sizeExprs) != nDim) stop(paste('Error in declare for', paste(newNames, collapse = ','), ': wrong number of dimensions provided'))
             for(i in 1:nDim) {
                 if(is.numeric(sizeExprs[[i]])) newSizes[i] <- sizeExprs[[i]]
@@ -118,7 +137,7 @@ declareHandler <- function(code, symTab) {
         newSym <- symbolBasic(name = newNames[i], type = type, nDim = nDim, size = newSizes)
         symTab$addSymbol(newSym)
     }
-    ## If sizeExprs have been provided, then, we generate a sizeSize call.  This will then over-ride the typeEnv entry
+    ## If sizeExprs have been provided, then, we generate a setSize call.  This will then over-ride the typeEnv entry
     if(length(typeDeclExpr$args) > 1) {
         newExprs <- vector('list', length(newNames))
         for(i in seq_along(newNames)) {
@@ -140,6 +159,74 @@ declareHandler <- function(code, symTab) {
                                                           caller = code$caller, callerArgID = code$callerArgID)
     }
 }
+
+
+## process specific calls handler for nimArrayGeneral()
+## the resulting function nimArrayGeneral() looks like:
+## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
+## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
+nimArrayGeneralHandler <- function(code, symTab) {
+    ## check to see if we're inside a declare statement()
+    if(code$caller$name == 'declare') {
+        if(code$name != 'nimInteger') stop('something going wrong with backwards compatibility fix for declare(..., integer())')
+        code$name <- 'integer'
+        code$args <- if(code$args[[2]] == 0) code$args[1] else code$args[1:2]
+        return()
+    }
+    switch(code$name,
+           ##nimNumeric(length = 0, value = 0, init = TRUE)
+           nimNumeric = {
+               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('numeric doesnt handle c() in length')
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[1], caller=code, callerArgID=3)
+               newArgs <- list('double', 1, sizeExprs, code$args[[2]], code$args[[3]])
+           },
+           ##nimInteger(length = 0, value = 0, init = TRUE)
+           nimInteger = {
+               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[1], caller=code, callerArgID=3)
+               newArgs <- list('integer', 1, sizeExprs, code$args[[2]], code$args[[3]])
+           },
+           ##nimVector(type = 'double', length = 0, value = 0, init = TRUE)
+           ##nimVector = {},
+           ##nimMatrix(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double')
+           nimMatrix = {
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[2:3], caller=code, callerArgID=3)
+               newArgs <- list(code$args[[5]], 2, sizeExprs, code$args[[1]], code$args[[4]])
+           },
+           ##nimArray(value = 0, dim = c(1, 1), init = TRUE, type = 'double')
+           nimArray = {
+               ## nimArray will handle dim=c(...), and also dim=EXPR
+               if(inherits(code$args[[2]], 'exprClass') && code$args[[2]]$isCall && code$args[[2]]$name == 'c') {
+                   ## dim argument is c(...)
+                   newArgs <- list(code$args[[4]], length(code$args[[2]]$args), code$args[[2]], code$args[[1]], code$args[[3]])
+               } else {
+                   ## dim argument is a single number or expression
+                   sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[2], caller=code, callerArgID=3)
+                   newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
+               }
+           },
+           stop('should never get here')
+           )
+    code$name <- 'nimArrayGeneral'
+    code$args <- newArgs
+    ## set caller / callerArgID for the new nimArraryGeneral() call arguments
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            code$args[[i]]$callerArgID <- i
+            code$args[[i]]$caller <- code
+        }
+    }
+    ## set caller / callerArgID for the c(size expressions...) call
+    for(i in seq_along(code$args[[3]]$args)) {
+        if(inherits(code$args[[3]]$args[[i]], 'exprClass')) {
+            code$args[[3]]$args[[i]]$callerArgID <- i
+            code$args[[3]]$args[[i]]$caller <- code$args[[3]]
+        }
+    }
+    if(!(code$args[[1]] %in% c('double', 'integer'))) stop('unknown type in nimArrayGeneral')
+    if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
+}
+
 
 ## for min(V), no change.  for min(v1, v2), change to pairmin(v1, v2)
 minMaxHandler <- function(code, symTab) {

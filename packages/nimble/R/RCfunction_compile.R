@@ -9,7 +9,7 @@ RCfunctionCompileClass <- setRefClass('RCfunctionCompileClass',
                                           newRcode = 'ANY',
                                           typeEnv = 'ANY'	#environment
                                           ),
-                                          methods = list(initialize <- function(...){typeEnv <<- new.env(); callSuper(...)}
+                                          methods = list(initialize = function(...){typeEnv <<- new.env(); callSuper(...)}
                                           ))
 
 RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
@@ -17,10 +17,12 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                           name = 'ANY',		#character
                                           RCfun = 'ANY', ##nfMethodRC
                                           nameSubList = 'ANY',
-                                          compileInfo = 'ANY' ## RCfunctionCompileClass``
+                                          compileInfo = 'ANY', ## RCfunctionCompileClass``
+                                          const = 'ANY'
                                           ),
                                       methods = list(
-                                          initialize = function(f = NULL, funName) {
+                                          initialize = function(f = NULL, funName, const = FALSE) {
+                                              const <<- const
                                               if(!is.null(f)) {
                                                   if(missing(funName)) {
                                                       sf <- substitute(f)
@@ -54,13 +56,18 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
-                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, "returnValues")
+                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, "return")
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
                                                   setupSymbolTables()
                                               }
-                                          }))
+                                          },
+                                          printCode = function() {
+                                              writeCode(nimDeparse(compileInfo$nimExpr))
+                                          }
+                                      )
+                                      )
 
 RCfunction <- function(f, name = NA, returnCallable = TRUE) {
     if(is.na(name)) name <- rcFunLabelMaker()
@@ -165,6 +172,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        
                                        ## build intermediate variables
                                        exprClasses_buildInterms(compileInfo$nimExpr)
+
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
@@ -174,14 +182,14 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
                                        
-                                       compileInfo$typeEnv <<- exprClasses_initSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab)
+                                       compileInfo$typeEnv <<- exprClasses_initSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, returnSymbol = compileInfo$returnSymbol)
                                        if(debug) {
                                            print('ls(compileInfo$typeEnv)')
                                            print(ls(compileInfo$typeEnv))
                                            print('lapply(compileInfo$typeEnv, function(x) x$show())')
                                            lapply(compileInfo$typeEnv, function(x) x$show())
                                            writeLines('***** READY FOR setSizes *****')
-                                      browser()
+                                           browser()
                                        }
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
@@ -190,19 +198,23 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  
   
-                                       exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       tryResult <- try(exprClasses_setSizes(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv))
+                                       if(inherits(tryResult, 'try-error')) {
+                                           stop(paste('There is some problem at the setSizes processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
+                                       }
                                        neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
                                        
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
-                                          ## print(compileInfo$nimExpr$show(showType = TRUE))
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')
-                                           ## print(compileInfo$nimExpr$show(showAssertions = TRUE))
                                            writeLines('***** READY FOR insertAssertions *****')
                                            browser()
                                        }
                                        
-                                       exprClasses_insertAssertions(compileInfo$nimExpr)
+                                       tryResult <- try(exprClasses_insertAssertions(compileInfo$nimExpr))
+                                       if(inherits(tryResult, 'try-error')) {
+                                           stop(paste('There is some problem at the insertAdditions processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
+                                       }
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE)')
                                            compileInfo$nimExpr$show(showAssertions = TRUE)
@@ -214,8 +226,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
                                        
-                                       exprClasses_labelForEigenization(compileInfo$nimExpr)
-                                       
+                                       tryResult <- try(exprClasses_labelForEigenization(compileInfo$nimExpr))
+                                       if(inherits(tryResult, 'try-error')) {
+                                           stop(paste('There is some problem at the Eigen labeling processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
+                                       }
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
@@ -223,7 +237,10 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            browser()
                                        }
 
-                                       exprClasses_eigenize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv)
+                                       tryResult <- try(exprClasses_eigenize(compileInfo$nimExpr, compileInfo$newLocalSymTab, compileInfo$typeEnv))
+                                       if(inherits(tryResult, 'try-error')) {
+                                           stop(paste('There is some problem at the Eigen processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
+                                       }
                                        if(debug) {
                                            print('nimDeparse(compileInfo$nimExpr)')
                                            writeCode(nimDeparse(compileInfo$nimExpr))
@@ -262,58 +279,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                    processKeywords = function(nfProc = NULL) {
                                        compileInfo$newRcode <<- processKeywords_recurse(compileInfo$origRcode, nfProc)
                                    },
-                                   processKeywords_recurse = function(code, nfProc = NULL){
-                                       cl = length(code)
-                                       if(cl == 1) {
-                                           if(is.call(code)) {
-                                               if(length(code[[1]]) > 1) code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
-                                           }
-                                           return(code)
-                                       }
-                                       
-                                       if(length(code[[1]]) == 1) {
-                                           code <- processKeyword(code, nfProc)
-                                       }
-    
-                                       cl = length(code)
-    
-                                       if(is.call(code)) {
-                                           if(length(code[[1]]) > 1) code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
-                                           if(cl >= 2) {
-                                               for(i in 2:cl) {
-                                                   code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
-                                               }
-                                           }
-                                       }
-                                       return(code)
-                                   },
                                    matchKeywords = function(nfProc = NULL) {
                                        compileInfo$origRcode <<- matchKeywords_recurse(compileInfo$origRcode, nfProc) ## nfProc needed for member functions of nf objects
-                                   },
-                                   matchKeywords_recurse = function(code, nfProc = NULL) {
-                                       cl = length(code)
-                                       if(cl == 1){ ## There are no arguments
-                                           if(is.call(code)){  
-                                               if(length(code[[1]]) > 1) code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
-                                           }
-                                           return(code)
-                                       }
-                                       if(length(code[[1]]) == 1) ## a simple call like a(b,c), not a$b(c)
-                                           code <- matchKeywordCode(code, nfProc)
-                                       
-                                       if(is.call(code)) {
-                                           if(length(code[[1]]) > 1) {
-                                               if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc) ## handle a$b(c) as one unit
-                                               else code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## handle "a(b)" part of a(b)(c), which is probably *never* triggered
-                                           }
-                                           if(cl >= 2) { ## recurse through arguments
-                                               for(i in 2:cl) {
-                                                   code[[i]] <- matchKeywords_recurse(code[[i]], nfProc)
-                                               }
-                                           }
-                                       }
-                                       return(code)
                                    }
-
                                    )
                                )

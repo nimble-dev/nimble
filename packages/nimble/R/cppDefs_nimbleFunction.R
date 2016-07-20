@@ -77,10 +77,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           next
                                                       }
                                                       if(inherits(neededType, 'symbolModelValues')) {
-                                                          thisCppDef <- nimbleProject$getModelValuesCppDef(neededType$mvSpec, NULLok = TRUE)
+                                                          thisCppDef <- nimbleProject$getModelValuesCppDef(neededType$mvConf, NULLok = TRUE)
                                                           if(is.null(thisCppDef)) {
-                                                              thisCppDef <- nimbleProject$needModelValuesCppClass(neededType$mvSpec, fromModel = fromModel)
-                                                              mvClassName <- environment(neededType$mvSpec)$className
+                                                              thisCppDef <- nimbleProject$needModelValuesCppClass(neededType$mvConf, fromModel = fromModel)
+                                                              mvClassName <- environment(neededType$mvConf)$className
                                                               neededTypeDefs[[mvClassName]] <<- thisCppDef
                                                           } else {
                                                               Hincludes <<- c(Hincludes, thisCppDef)
@@ -167,7 +167,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               buildFunctionDefs = function() {
                                                   for(i in seq_along(nfProc$RCfunProcs)) {
                                                       RCname <- names(nfProc$RCfunProcs)[i]
-                                                      functionDefs[[RCname]] <<- RCfunctionDef$new()
+                                                      functionDefs[[RCname]] <<- RCfunctionDef$new() ## all nodeFunction members are const f
                                                       functionDefs[[RCname]]$buildFunction(nfProc$RCfunProcs[[RCname]])
                                                       functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nfProc$name)
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
@@ -334,6 +334,6 @@ nfWriteCompileAndLoadSO <- function(RFun, dirName, name = deparse(substitute(RFu
     return(cppProj)
 }
 
-nfBuildCInterface <- function(cppProj, instance, name = deparse(subsitute(RFun) ))
+nfBuildCInterface <- function(cppProj, instance, name = deparse(substitute(RFun) ))
 	return( cppProj$cppDefs[[name]]$buildCallable(instance, cppProj$dll ) )
 

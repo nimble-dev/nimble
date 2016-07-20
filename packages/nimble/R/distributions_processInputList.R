@@ -63,6 +63,11 @@ setMethod('[[',   'distributionsClass',
           }
 )
 
+setMethod('[',   'distributionsClass',
+          function(x, i) {
+              return(x$distObjects[i])
+          }
+)
 
 
 distClass <- setRefClass(
@@ -82,8 +87,9 @@ distClass <- setRefClass(
         discrete = 'ANY',	#'logical',   ## logical, if the distribution is discrete
         pqAvail = 'ANY',        #'logical', ## if the p (CDF) and q (inverse CDF/quantile) functions are available
         range = 'ANY',          #'numeric',  ## lower and upper limits of distribution domain
-        types = 'ANY'		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
-        ### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
+        types = 'ANY',		#'list',     ## named list (names are 'node', ALL reqdArgs, and ALL altParams), each element is a named list: list(type = 'double', nDim = 0) <- default values
+        paramIDs = 'ANY'        #'integer'   ## named vector of unique integer ID for each parameter
+### typesForVirtualNodeFunction = 'ANY'		#'list'  ## version of 'types' for making the virtualNodeFunction definiton.  same as above, except without 'value'
     ),
     
     methods = list(
@@ -106,6 +112,7 @@ distClass <- setRefClass(
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
             range <<- if(is.null(distInputList$range))    c(-Inf, Inf)    else    distInputList$range
             init_types(distInputList)
+            init_paramIDs()
         },
         
         init_altsExprsReqdArgs = function() {
@@ -164,7 +171,12 @@ distClass <- setRefClass(
                 if(!(typeList$type %in% c('double', 'integer', 'logical')))     stop(paste0('unknown type specified in distribution: ', typeList$type))
                 if(!(typeList$nDim %in% 0:1000))     stop(paste0('unknown nDim specified in distribution: ', typeList$nDim))  ## yes, specificying maximum dimension of 1000
                 types[[typeName]] <<- typeList
-            }
+            }            
+        },
+
+        init_paramIDs = function() {
+            paramIDs <<- seq_along(types)
+            names(paramIDs) <<- names(types)
         },
         
         init_types_makeArgList = function(typeArgCharVector) {
@@ -196,7 +208,7 @@ distClass <- setRefClass(
 #####################################################################################################
 
 checkDistributionsInput <- function(distributionsInput) {
-    allowedFields <- unique(unlist(sapply(nimble:::distributionsInputList, names)))
+    allowedFields <- unique(unlist(sapply(distributionsInputList, names)))
     if(sum(!names(distributionsInput) %in% allowedFields)) 
         stop(paste0(names(distributionsInput), " has unknown field."))
     if(!sum(is.character(distributionsInput$BUGSdist))) stop(paste0(distributionsInput$BUGSdist, ": field 'BUGSdist' is not of type character."))
@@ -244,7 +256,7 @@ getValueDim <- function(distObject)
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInputList a list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. See Details for more information. If only one distribution is supplied it may be a list rather than a list containing a list.
+#' @param distributionsInputList a list of lists in the form of that shown in \code{distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. See Details for more information. If only one distribution is supplied it may be a list rather than a list containing a list.
 #' @author Christopher Paciorek
 #' @export
 #' @details
@@ -282,7 +294,6 @@ getValueDim <- function(distObject)
 #'            return(exp(logProb))
 #'        }
 #'    })
-
 #' rmyexp <- nimbleFunction(
 #'    run = function(n = integer(0), rate = double(0)) {
 #'        returnType(double(0))
@@ -296,8 +307,8 @@ getValueDim <- function(distObject)
 #'               BUGSdist = "dmyexp(rate, scale)",
 #'               Rdist = "dmyexp(rate = 1/scale)",
 #'               altParams = "scale = 1/rate",
-#'               pqAvail = FALSE),
-#' code <- BUGScode({
+#'               pqAvail = FALSE)))
+#' code <- nimbleCode({
 #'     y ~ dmyexp(rate = r)
 #'     r ~ dunif(0, 100)
 #' })
@@ -382,6 +393,25 @@ deregisterDistributions <- function(distributionsNames) {
 # this is a hack because having trouble calling getDistribution() from within nodeInfoClass$isDiscrete; (as of 5/8/15 doesn't seem to be needed)
 getDistribution2 <- function(distName) {
     getDistribution(distName)
+}
+
+getDistributionList <- function(distNames) {
+    boolNative <- distNames %in% distributions$namesVector
+    if(all(boolNative)) return(distributions[distNames])
+    missingDists <- distNames[!boolNative]
+    allFound <- FALSE
+    if(exists('distributions', nimbleUserNamespace)) {
+        if(all(missingDists %in% nimbleUserNamespace$distributions$namesVector))
+            allFound <- TRUE
+    }
+    if(allFound) {
+        ans <- vector('list', length(distNames))
+        ans[boolNative] <- distributions[distNames[boolNative]]
+        ans[!boolNative] <- nimbleUserNamespace$distributions[missingDists]
+        return(ans)
+    }
+    notFound <- missingDists[ !(missingDists %in% nimbleUserNamespace$distributions$namesVector) ]
+    stop(paste0('In getDistributions, distributions named ', paste(notFound, sep = ',', collapse = ","), ' could not be found.')) 
 }
 
 getDistribution <- function(distName) {

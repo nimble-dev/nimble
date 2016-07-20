@@ -1,15 +1,50 @@
-#!/bin/sh
+#!/bin/sh +x
 
 cp inst/CppCode/*.cpp src
 
-cp -r Eigen_local inst/include/Eigen
+cp -r inst/Eigen_local inst/include/Eigen
 
+if test -r src/Makevars.win ; then
+    cp src/Makevars.win src/Makevars
+fi
 
 echo "R_PACKAGE_DIR: $R_PACKAGE_DIR"
-#export BOB="$R_PACKAGE_DIR"
+
 sed -e "s!@NIMBLE_HOME@!${R_PACKAGE_DIR}!" inst/make/Makevars.win.in > inst/make/Makevars.win
 
-#sed -e s!@R_ENABLE_LIB@!FALSE! R/config.R.in > R/config.R
-echo "UseLibraryMakevars = FALSE" > R/config.R
-echo ".NimbleUseRegistration = TRUE" >> R/config.R
-echo "NeedMakevarsFile = TRUE" >> R/config.R
+
+sed -e 's!@NEED_MAKEVARS_FILE@!TRUE!' R/config.R.in | 
+ sed -e 's|@R_ENABLE_LIB@|FALSE|' |
+ sed -e 's|@EIGEN_INC@||' |
+ sed -e "s|@R_PACKAGE_DIR@|${R_PACKAGE_DIR}|" |
+ sed -e 's|@RPATH@||' |
+ sed -e 's|@USE_REGISTRATION@||' > R/config.R
+
+sed -e "s|@EIGEN_INC@|$R_PACKAGE_DIR/include|" inst/make/Makevars.win.in |
+sed -e "s|@NIMBLE_INC_DIR@|$R_PACKAGE_DIR/include|" |
+sed -e "s|@NIMBLE_LIB_DIR@|$R_PACKAGE_DIR/CppCode|"  > inst/Make/Makevars.win
+
+
+echo "R_HOME = $R_HOME, R_ARCH=$R_ARCH"
+
+
+ARCH_SUFFIX=`echo ${R_ARCH} | sed -e s!/!_!`
+#if test "$R_ARCH" = "/x64" ; then
+#  ARCH_SUFFIX="64"
+#elif test "$R_ARCH" = "/i386" ; then
+#  ARCH_SUFFIX="32"
+#fi
+
+echo "Creating inst/CppCode/libnimble${ARCH_SUFFIX}.a"
+
+(cd inst/CppCode ; make libnimble${ARCH_SUFFIX}.a ARCH_SUFFIX=${ARCH_SUFFIX} OS=Windows R_ARCH=$R_ARCH)
+
+if test -d "$R_PACKAGE_DIR/CppCode" ; then
+  echo "Package CppCode directory exists"
+  ls "$R_PACKAGE_DIR"
+  cp inst/CppCode/libnimble${ARCH_SUFFIX}.a "$R_PACKAGE_DIR/CppCode/"
+else
+   echo "The R package directory has not been created yet"
+fi
+
+

@@ -51,8 +51,8 @@ setMethod('[[<-', 'RNumericList',
           {
               if(i > x$nRow)
                   stop("Index is higher than max row of numericList")
-              rowDims <- dimOrLength(x[[i]])
-              inputDims <- dimOrLength(value)
+              rowDims <- nimble:::dimOrLength(x[[i]])
+              inputDims <- nimble:::dimOrLength(value)
               if(length(rowDims) != length(inputDims) )
                   stop("Incorrect number of dimensions for numericList")
               if(any(rowDims != inputDims) ) 
@@ -82,35 +82,19 @@ numericList <- function(type = double(2), length = 1, buildType = 'R', extPtr = 
 #' set the size of a numeric variable in NIMBLE.  This works in R and NIMBLE, but in R it usually has no effect.
 #'
 #' @param numObj   This is the object to be resized
-#' @param row      Optional argument that is not currently used
 #' @param ...      sizes, provided as scalars, in order, with exactly as many as needed for the object
+#' @param row      Optional argument that is not currently used
 #'
 #' @author NIMBLE development team
 #' @export
 #' @details
-#' This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 4 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, if the object is not already an appropriate size for the assignment.
+#' This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 4 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, if the object is not already an appropriate size for the assignment.  E.g. prior to \code{Y[5:10] <- A \%*\% B}, one can use setSize to ensure that \code{Y} has a size (length) of at least 10.
 #'
-#' This does work in uncompiled (R) and well as compiled execution, but it is really only necessary for compiled execution. During uncompiled execution, it may not catch bugs due to resizing because R objects will be dynamically resized during assignments anyway.
+#' This does work in uncompiled (R) and well as compiled execution, but in some cases it is only necessary for compiled execution. During uncompiled execution, it may not catch bugs due to resizing because some R objects will be dynamically resized during assignments anyway.
 setSize <- function(numObj, ..., row){
     thisCall <- as.list(match.call()[-1])
     if(length(thisCall) < 2) stop("No information provided to setSize")
     newDims <- unlist(list(...))
-    ## newDims <- if("row" %in% names(thisCall)) {
-    ##     ## this case is currently never used. 7/31/15.
-    ##     ## if it comes back into use, we would need to include eval()s, but it is moot due to using list(...) above
-    ##     if(length(thisCall) < 3) stop("Insufficient information provided to setSize")
-    ##     as.numeric(thisCall[2:(length(thisCall) - 1)])
-    ## } else {
-    ##     ## change made by DT to fix R execution of MCMC sampling in July 2015.
-    ##     ## I think this code (R function setSize) is still probably buggy,
-    ##     ## and should be reviewed in great detail.
-    ##     ## 7/31/15: DT's fix wasn't right, all moot by use list(...)
-    ##     ##as.numeric(thisCall[-1]) ## this was the buggy cod
-    ##     ##as.numeric(eval(thisCall[[-1]], envir = parent.frame())) ## this was DT's fix but it assumes the ... is one argument giving a vector of sizes.
-    ##     ## It should instead handle multiple ... args, each giving a scalar size for one dimension
-    ## next line is correct but moot by using list(...) above
-    ##     as.numeric(unlist(lapply(thisCall[-1], eval, envir = parent.frame())))
-    ## }
     if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
     if(is.numeric(numObj)) {
         oldDims <- nimDim(numObj)

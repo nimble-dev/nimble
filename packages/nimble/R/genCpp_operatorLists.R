@@ -25,7 +25,7 @@ nonNativeEigenCalls <- c('logdet','sd','var','inprod')
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
-matrixSolveOperators <- c('solve','forwardsolve')
+matrixSolveOperators <- c('solve','forwardsolve','backsolve')
 matrixEigenOperators <- c('eigen')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')
@@ -36,7 +36,7 @@ midOperators <- c(midOperators, list('$' = '$', '%*%' = ' %*% ', ':' = ':', '%o%
 
 brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
 
-callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals')
+callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals', 'startNimbleTimer', 'endNimbleTimer')
 
 ## This takes a character vector as the first argument and length-1 character vector as the second argument.
 ## It returns a list with the first vector as names and the second argument as the value of each element.
@@ -122,15 +122,14 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
 eigOtherMemberFunctionCalls <- c('cwiseSqrt', 'cwiseAbs')
-eigCalls <- c('llt','matrixU','matrix','array')
-cppCasts = list(as.numeric = 'double',
-    as.integer = 'int')
+eigCalls <- c('matrix', 'array')
+cppCasts = list(as.numeric = 'double', as.integer = 'int')
 
 ##http://en.cppreference.com/w/cpp/language/operator_precedence
 
 ## Used to decide when to put parentheses around LHS or RHS based on operator precendence.
 operatorRank <- c(
-    list('<-' = 100, '^' = 4, llt = 3),
+    list('<-' = 100, '^' = 4),
     makeCallList(c('*','/','%*%', '%%'), 5),
     makeCallList(c('+', '-'), 6),
     makeCallList(c('>','<','<=', '>='), 7),

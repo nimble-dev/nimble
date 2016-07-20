@@ -21,6 +21,13 @@ exprClasses_addDebugMarks <- function(code, label = '', counterEnv = NULL) {
             if(length(code$args) == 3) setArg(code, 3, exprClasses_addDebugMarks(code$args[[3]], label, counterEnv))
             return(code)
         }
+        if(code$name == 'nimSwitch') {
+            if(length(code$args) > 2) 
+                for(iSwitch in 3:length(code$args)) 
+                    setArg(code, iSwitch, exprClasses_addDebugMarks(code$args[[3]], label, counterEnv))
+            return(code)
+        }
+
         ## ditto for if
         ## return bracketed with PRINTF
         newLine <- RparseTree2ExprClasses(substitute(Rprintf(MSG), list(MSG = paste(label, counterEnv$count, "\\n"))))

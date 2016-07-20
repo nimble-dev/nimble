@@ -1,3 +1,125 @@
+                           CHANGES IN VERSION 0.6 (July 2016)
+
+USER LEVEL CHANGES
+
+-- Building models is faster and uses less memory for the building steps themselves.
+
+-- The new model implementation uses less memory and seems to have faster compiled execution in many cases.
+
+-- Compiling nimbleFunctions is generally faster.
+
+-- compileNimble can handle model operation functions that use a vector of node names with a scalar index, e.g., model$calculate(nodes[i]).  Index ranges are not supported.
+
+-- The computation time spent in each sampler of an MCMC can be obtained by mcmc$run(niter, time = TRUE) and then mcmc$getTimes(). 
+
+-- New RW_multinomial sampler incorporated into MCMC engine, for sampling nodes following a dmulti() distribution.
+
+-- Progress bar added to MCMC.
+
+-- model checking modified so that only size/dimension and NA checking is done by default. Extended checking of ability to calculate all model nodes is now invoked via model$check() only at user request.
+
+-- MCMC and modelValues configuration syntax now uses 'conf' rather than 'spec' in its naming throughout NIMBLE. 
+
+DEVELOPER LEVEL CHANGES
+
+-- New C++ nimbleGraph system for some steps of processing graphs.
+
+-- New design of models, specifically nodeFunctions.  This is a major implementation change.
+
+-- New C++ memory allocation system using new double[] instead of vector<double>.  This is notably more efficient since it can avoid unnecessary initialization upon allocation of local variables in otherwise fast, heavily used nimbleFunctions.
+
+-- New installation system for Windows and for binary builds on OS X. For non-Linux we now by default build a static library, libnimble.a, that is linked into compiled code for models or nimbleFunctions. 
+
+-- We now export many fewer functions, though some non-user facing functions are still exported.
+
+-- Test suite now works in Windows.
+
+-- Reduced Windows compiler warnings.
+
+-- Various modifications to packaging to align with CRAN rules.
+
+                           CHANGES IN VERSION 0.5-1 (May 2016)
+
+USER LEVEL CHANGES
+
+-- Sequential Monte Carlo algorithms added: Bootstrap filter, Auxiliary particle filter, Ensemble Kalman filter, and Liu and West filter can be accessed by calls to buildBootstrapFilter(), buildAuxiliaryFilter, buildEnsembleKF(), and buildLiuWestFilter() respectively. buildPF() is no longer available, but that name will be re-used in a future version as a wrapper to some of the filter functions listed above.
+
+-- Particle MCMC (Particle Marginal Metropolis Hastings) samplers can be used as samplers within an MCMC.  'RW_PF' can be used to sample scalar parameters, and 'RW_PF_block' can be used for multivariate parameters or multiple parameters.
+
+-- An ascent-based version of the MCEM algorithm has been added to buildMCEM(), providing automated convergence assessment and stopping.
+
+-- A block sampler that uses user-specified likelihoods has been implemented and can be used as a sampler within an MCMC, by using 'RW_llFunction_block'.
+
+-- Added functions numeric(), integer(), matrix(), and array() to the NIMBLE DSL, for creating non-scalar variables in nimbleFunctions. These are intended to replace usage of declare(), with declare() being deprecated but still currently functional. setSize() is still available to change the size of an existing object prior to assigning into specific elements, but another call to one of the new functions can also be used for that purpose.
+
+-- Added multivariate-t distribution for use in BUGS code and the DSL. 
+
+-- Added binary sampler for Gibbs sampling of discrete 0/1 nodes. This is the default sampler used for Bernoulli and Binomial(p, size=1) nodes.
+
+-- New options for Metropolis-Hastings RW sampler: log=TRUE to sample on a log scale, and reflective=TRUE to reflect normal proposal distribution to stay within the range of the target distribution.
+
+-- Improved printing in printSamplers() and getSamplers() methods of MCMC configuration objects.
+
+-- Some steps of building and compiling models and algorithms are generally faster.
+
+-- forwardsolve(), backsolve() and solve() now work more flexibly than before and can be used in BUGS code.
+
+-- A variety of small bug fixes.
+
+DEVELOPER LEVEL CHANGES
+
+-- Testing has been added for SMC algorithms.
+
+                           CHANGES IN VERSION 0.5 (March 2016)
+
+USER LEVEL CHANGES
+
+-- Added support for solve(), forwardsolve(), and backsolve() to the NIMBLE DSL, with the same functionality as in R.
+
+-- Improved performance of conjugate multivariate-normal - multivariate-normal sampling.
+
+-- API changes for MCMCspec objects: new method printSamplers() prints the current samplers (replacing the old getSamplers() method); new functionality for getSamplers(), which now returns a list of samplerSpec objects; new overloaded functionality of setSamplers(), which can accept a list of samplerSpec objects, replacing the current set of samplers; new method getSamplerDefinition(), which returns the nimbleFunction definition of a sampler.
+
+-- API created for modifying samplerSpec objects: setName(), setSamplerFunction(), setTarget(), setControl().
+
+-- MCMC conjugate sampling efficiency improved by ~33%.
+
+-- new system for automating the comparison of different MCMCs and generating html results pages: the main function is compareMCMCs.
+
+-- enhanced checking of model to check for size and dimension mismatch in BUGS code.
+
+-- some steps of building models and determining dependencies (e.g. getDependencies method for model classes) are faster and use less memory.
+
+-- models have a new method, getDependenciesList, that provides a list of neighbor relationships in the model graph.
+
+-- There is a new function, getParam(model, node, parameter), that returns the value of a parameter of a stochastic node.  It works in R and in the NIMBLE DSL (compilable run code).
+
+-- Models now have member functions for calculate, simulate, getLogProb, calculateDiff, and getParam.  model$calculate(nodes) is equivalent to calculate(model, nodes), etc.
+
+-- The NIMBLE DSL now allows drop=FALSE as the last argument for indices.  e.g. x[1,,drop=FALSE].  This mimics R.
+
+-- added ability to use any of the methods for R's optim function in MCEM optimization step.
+
+-- There are more flexible ways to provide arguments to declare and setSize.
+
+-- The random walk block sampler is a bit more efficient.
+
+-- There is better error trapping during some compilation steps.
+
+DEVELOPER LEVEL CHANGES
+
+-- various modifications to conform to CRAN rules 
+
+BUG FIXES
+
+-- Compilation of BUGS function inprod is fixed
+
+-- some cases of handling multivariate variables of length one (e.g. a 1x1 matrix) have been fixed.
+
+-- added warning when 'size' in multinomial is not sum of values
+
+-- added missing terms (involving only the data values) in 'ddirchmulti' in test-user.R and in manual
+
                         CHANGES IN VERSION 0.4-1 (Oct. 3, 2015)
 
 USER LEVEL CHANGES

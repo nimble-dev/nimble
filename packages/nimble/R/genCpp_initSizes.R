@@ -35,9 +35,46 @@ makeSizeExpressions <- function(sizeVec, name) {
     sizeExprs
 }
 
+addToTypeEnv <- function(sym, typeEnv, name) {
+    ## If it came from symbolTable:
+    if(inherits(sym, 'symbolBase')) {
+        if(inherits(sym, 'symbolBasic')) {
+            sizeVec <- sym$size
+            type <- sym$type
+            nDim <- sym$nDim
+        } else {
+            ##assign(code$name, NULL, envir = typeEnv)
+            return(typeEnv) ## symbol exists but it is something without numeric type info
+        }
+    } else {
+        ## If it came from sizeList
+        sizeVec <- sym[[2]]
+        type <- sym[[1]]
+        nDim <- length(sizeVec)
+    }
+    
+    if(nDim == 0)  {
+        ## If nDim == 0, set sizes to 1
+        sizeExprs <- list()
+    } else {
+        ## Otherwise iterate over sizes and build a list
+        ## with expressions like dim(A)[2] for unknown second size
+        ## or numbers for known sizes.
+        if(length(sizeVec)==0) sizeVec <- rep(NA, nDim)
+        sizeExprs <- makeSizeExpressions(sizeVec, name)
+    }
+    
+    ## Put the new object in the typeEnv
+    assign(name, exprTypeInfoClass$new(nDim = nDim, sizeExprs = sizeExprs, type = type), envir = typeEnv)
+    return(typeEnv)
+}
 
-exprClasses_initSizes <- function(code, symTab = NULL, sizeList = NULL, typeEnv = new.env()) {
+exprClasses_initSizes <- function(code, symTab = NULL, sizeList = NULL, typeEnv = new.env(), returnSymbol = NULL) {
     ## If it is a name
+    if(!is.null(returnSymbol)) {
+        addToTypeEnv(returnSymbol, typeEnv, "return")
+    }
+
     if(code$isName) {
         ## If it is not already in typeEnv
         if(code$name != "") { ## in A[i,], the second index has name == "".  exists() will not accept ""
@@ -49,38 +86,8 @@ exprClasses_initSizes <- function(code, symTab = NULL, sizeList = NULL, typeEnv 
                 
                 ## If not there, nothing to do (it may be in need of type inference) 
                 if(is.null(sym)) return(typeEnv) ## No size info available
-                
-                ## If it came from symbolTable:
-                if(inherits(sym, 'symbolBase')) {
-                    if(inherits(sym, 'symbolBasic')) {
-                        sizeVec <- sym$size
-                        type <- sym$type
-                        nDim <- sym$nDim
-                    } else {
-                        ##assign(code$name, NULL, envir = typeEnv)
-                        return(typeEnv) ## symbol exists but it is something without numeric type info
-                    }
-                } else {
-                    ## If it came from sizeList
-                    sizeVec <- sym[[2]]
-                    type <- sym[[1]]
-                    nDim <- length(sizeVec)
-                }
-                
-                if(nDim == 0)  {
-                    ## If nDim == 0, set sizes to 1
-                    sizeExprs <- list()
-                } else {
-                    ## Otherwise iterate over sizes and build a list
-                    ## with expressions like dim(A)[2] for unknown second size
-                    ## or numbers for known sizes.
-                    if(length(sizeVec)==0) sizeVec <- rep(NA, nDim)
 
-                    sizeExprs <- makeSizeExpressions(sizeVec, code$name)
-                }
-            
-                ## Put the new object in the typeEnv
-                assign(code$name, exprTypeInfoClass$new(nDim = nDim, sizeExprs = sizeExprs, type = type), envir = typeEnv)
+                return(addToTypeEnv(sym, typeEnv, code$name))
             }
         }
     }

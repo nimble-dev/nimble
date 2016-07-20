@@ -84,26 +84,13 @@ cppBUGSmodelClass <- setRefClass('cppBUGSmodelClass',
                                      },
 
                                      buildNodes = function(where = globalenv(), debugCpp = FALSE) {
-                                         ## for(i in names(model$nodeFunctions)) {
-                                         ##     nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
-                                         ## }
                                          nimbleProject$addNimbleFunctionMulti(model$nodeFunctions, fromModel = TRUE, model$nodeFunctionGeneratorNames)
-                                         
-                                         ##for(i in seq_along(model$nodeFunctions)) {
-                                         ##    nimbleProject$addNimbleFunction(model$nodeFunctions[[i]], fromModel = TRUE)
-                                         ##}
                                          
                                          nodeFuns <<- nimbleProject$compileNimbleFunctionMulti(model$nodeFunctions, isNode = TRUE,
                                                                                                returnCppClass = TRUE,
                                                                                                fromModel = TRUE,
                                                                                                generatorFunNames = model$nodeFunctionGeneratorNames,
                                                                                                alreadyAdded = TRUE) ## fromModel is redundant here
-                                         ##for(i in names(model$nodeGenerators)) {
-                                             ##nfName <- paste0('nf',i)
-                                          
-                                             ## nodeFuns[[i]] <<- makeCppNIMBLEfunction(model$nodeGenerators[[i]], nfName, isNode = TRUE, where = where, debugCpp = debugCpp)
-                                         ##   nimbleProject$buildNimbleFunctionCompilationInfo(generatorName = generatorName)
-                                         ##}
                                      },
                                      buildAll = function(buildNodeDefs = TRUE, where = globalenv(), ...) {
                                          makeCppNames() 
@@ -125,10 +112,9 @@ compileBUGSmodel <- function(model, name, fileName, dirName, compileNodes = TRUE
     if(missing(name)) name <- model$getModelDef()$name
     Cname <- Rname2CppName(name)
     if(missing(fileName)) fileName <- Cname
-    # if(missing(dirName)) dirName <- fileName
     if(missing(dirName))    dirName <- makeDefaultDirName()
 
-    if(inherits(model, 'RModelBaseClass')) {
+    if(inherits(model, 'RmodelBaseClass')) {
         modelDef <- model$getModelDef()
         modelDefCpp <- cppBUGSmodelClass$new(modelDef = modelDef, model = model, name = Cname) ## model is needed for nodeFunctions
         modelDefCpp$buildAll(buildNodeDefs = compileNodes, where = where, debugCpp = debugCpp)

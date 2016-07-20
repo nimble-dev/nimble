@@ -18,25 +18,37 @@ nimbleUserNamespace <- as.environment(list())
         prioritizeColonLikeBUGS = TRUE, ## if FALSE, 1:2 + 1 evaluates to 2:3, consistent with R.  If TRUE, it evalutes to 1:3, consistent with BUGS 
         useNewNimCopy = TRUE, ## for development purposes.  FALSE will give 0.3-1 behavior
         compileOnly = FALSE,
-        useMultiInterfaceForNestedNimbleFunctions = TRUE,
+        buildInterfacesForCompiledNestedNimbleFunctions = FALSE,   ## provides interfaces, i.e. named access in R, to all variables in nested compiled nimbleFunctions
         clearNimbleFunctionsAfterCompiling = FALSE,
+        checkModel = FALSE,
         verbose = TRUE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
         ## if this option is changed, then congugate sampler functions can be rebuilt using:
         ## buildConjugateSamplerFunctions()
         verifyConjugatePosteriors = FALSE,
+
+        ## uses the 'new' system for dynamically generated conjugate samplers (DT, March 2016),
+        ## rather than the older 'static' system.
+        ## update May 2016: old (non-dynamic) system is no longer supported -DT
+        ##useDynamicConjugacy = TRUE,
         
         ## default settings for MCMC samplers
-        ## (formerly controlDefaultList appearing in MCMCspec.R)
         MCMCcontrolDefaultList = list(
+            log = FALSE,
+            reflective = FALSE,
             adaptive = TRUE,
             adaptScaleOnly = FALSE,
             adaptInterval = 200,
             scale = 1,
             propCov = 'identity',
             sliceWidth = 1,
-            sliceMaxSteps = 100
+            sliceMaxSteps = 100,
+            pfNparticles = 1000,
+            pfResample = FALSE,
+            pfOptimizeNparticles = FALSE,
+            pfType = 'bootstrap',
+            pfLookahead = 'simulate'
         )
     )
 )

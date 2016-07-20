@@ -28,8 +28,13 @@ getMVptr <- function(rPtr)
 getMVName <- function(modelValuePtr)
   .Call("getMVBuildName", modelValuePtr)
 
+# for now export this as R<3.1.2 give warnings if don't
 
-
+#' Class \code{CmodelBaseClass}
+#' @aliases CmodelBaseClass 
+#' @export
+#' @description
+#' Classes used internally in NIMBLE and not expected to be called directly by users.
 CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                contains = 'modelBaseClass',
                                fields = list(
@@ -38,9 +43,11 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
                                    ##CnodeFunClasses = 'list',
                                    compiledModel = 'ANY',
-                                   .nodeFxnPointers_byGID = 'ANY',
-                                   .nodeValPointers_byGID = 'ANY',
-                                   .nodeLogProbPointers_byGID = 'ANY'
+                                   ##.nodeFxnPointers_byGID = 'ANY',
+                                   .nodeFxnPointers_byDeclID = 'ANY', ## Added for newNodeFxns
+                                   ##.nodeValPointers_byGID = 'ANY',
+                                   ##.nodeLogProbPointers_byGID = 'ANY',
+                                   nodeFunctions = 'ANY' ## Added for newNodeFxns, so we can access nodeFunctions by declID. Could be migrated up to modelBaseClass.
                                    ),
                                methods = list(
                                    show = function() {
@@ -67,44 +74,62 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        ## 1. generate CnodeFunClasses
                                        ##     - by iterating through the nodeGenerators in the Rmodel
                                        nodesEnv <- new.env()
-                                       asTopLevel <- !getNimbleOption('useMultiInterfaceForNestedNimbleFunctions')
-                                       for(i in names(Rmodel$nodeFunctions)) {
-                                           nodesEnv[[i]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[i]], dll = dll, asTopLevel = asTopLevel)
+                                       asTopLevel <- getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
+                                       nodeFunctions <<- vector('list', length(Rmodel$nodeFunctions))
+                                       for(i in seq_along(Rmodel$nodeFunctions)) {
+                                           thisNodeFunName <- names(Rmodel$nodeFunctions)[i]
+                                           nodesEnv[[thisNodeFunName]] <- nimbleProject$instantiateNimbleFunction(Rmodel$nodes[[thisNodeFunName]], dll = dll, asTopLevel = asTopLevel)
+                                           nodeFunctions[[i]] <<- nodesEnv[[thisNodeFunName]]
                                        }
                                        nodes <<- nodesEnv
+                                       names(nodeFunctions) <<- names(Rmodel$nodeFunctions)
                                        
-                                       .nodeFxnPointers_byGID <<- new('numberedObjects') 
-                                       maxID = max(modelDef$maps$graphIDs)
-                                       .nodeFxnPointers_byGID$resize(maxID)
-                                       for(nodeName in ls(nodes)) {
-                                           gID <- modelDef$nodeName2GraphIDs(nodeName)
-                                           basePtr <- if(is.list(nodes[[nodeName]])) nodes[[nodeName]][[1]]$basePtrList[[ nodes[[nodeName]][[2]] ]] else nodes[[nodeName]]$.basePtr
-                                           .self$.nodeFxnPointers_byGID[gID] <- basePtr ## nodes[[nodeName]]$.basePtr
+                                       ##.nodeFxnPointers_byGID <<- new('numberedObjects')
+                                       .nodeFxnPointers_byDeclID <<- new('numberedObjects') 
+                                       ##maxID = length(modelDef$maps$graphIDs)
+                                       maxID = length(modelDef$declInfo)
+                                       ##.nodeFxnPointers_byGID$resize(maxID)
+                                       .nodeFxnPointers_byDeclID$resize(maxID)
+                                       ## for(nodeName in ls(nodes)) {
+                                       ##     gID <- modelDef$nodeName2GraphIDs(nodeName)
+                                       ##     basePtr <- if(is.list(nodes[[nodeName]])) nodes[[nodeName]][[1]]$basePtrList[[ nodes[[nodeName]][[2]] ]] else nodes[[nodeName]]$.basePtr
+                                       ##     .self$.nodeFxnPointers_byGID[gID] <- basePtr ## nodes[[nodeName]]$.basePtr
+                                       ## }
+
+                                       for(declID in seq_along(nodes)) {
+                                           thisNodeFunctionName <- names(Rmodel$nodeFunctions)[declID]
+                                           basePtr <- if(is.list(nodes[[thisNodeFunctionName]])) ## it's a multiInterface
+                                                          nodes[[thisNodeFunctionName]][[1]]$basePtrList[[ nodes[[thisNodeFunctionName]][[2]] ]]
+                                                      else ## it's a direct interface
+                                                          nodes[[thisNodeFunctionName]]$.basePtr
+                                           .self$.nodeFxnPointers_byDeclID[declID] <- basePtr ## nodes[[nodeName]]$.basePtr
                                        }
+
+                                       ## maxGraphID <- length(modelDef$maps$graphIDs)
+                                       ## .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
+                                       ## .nodeValPointers_byGID$resize(maxGraphID)
+                                       ## .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
+                                       ## .nodeLogProbPointers_byGID$resize(maxGraphID)
+                                
+                                       ## for(vName in Rmodel$getVarNames()){
+                                       ## 		flatIndices = 1
+                                       ## 		if(length(vars[vName]) > 0)
+	                               ##         		flatIndices = 1:prod(unlist(vars[vName]))
                                        		
-                                       .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       .nodeValPointers_byGID$resize(maxID)
-                                       .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       .nodeLogProbPointers_byGID$resize(maxID)
-                                       for(vName in Rmodel$getVarNames()){
-                                       		flatIndices = 1
-                                       		if(length(vars[vName]) > 0)
-	                                       		flatIndices = 1:prod(unlist(vars[vName]))
-                                       		
-                                       		gIDs_withNAs = unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2GraphID_values, USE.NAMES = FALSE))
-                                       		validIndices = which(!is.na(gIDs_withNAs))
-                                       		gIDs = gIDs_withNAs[validIndices] 
+                                       ## 		gIDs_withNAs = unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2GraphID_values, USE.NAMES = FALSE))
+                                       ## 		validIndices = which(!is.na(gIDs_withNAs))
+                                       ## 		gIDs = gIDs_withNAs[validIndices] 
 											
-                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr , vName, as.integer(gIDs), as.integer(validIndices), .nodeValPointers_byGID$.ptr)
-                                       		logVNames <- modelDef$nodeName2LogProbName(vName)
-                                       		if(length(logVNames) > 0){
-                                       			logVName <- nl_getVarNameFromNodeName(logVNames[1])
-                                       			LP_gIDs_withNAs =  unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
-	                                       		validIndices = which(!is.na(LP_gIDs_withNAs) ) 
-	                                       		l_gIDs = Rmodel$modelDef$nodeName2LogProbID(vName)
-	                                       		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), as.integer(validIndices), .nodeLogProbPointers_byGID$.ptr)
-	                                       		}
-                                       }
+                                       ## 		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr , vName, as.integer(gIDs), as.integer(validIndices), .nodeValPointers_byGID$.ptr)
+                                       ## 		logVNames <- modelDef$nodeName2LogProbName(vName)
+                                   ##    		if(length(logVNames) > 0){
+                                  ##     			logVName <- nl_getVarNameFromNodeName(logVNames[1])
+                                  ##     			LP_gIDs_withNAs =  unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
+	                          ##             		validIndices = which(!is.na(LP_gIDs_withNAs) ) 
+	                          ##             		l_gIDs = Rmodel$modelDef$nodeName2LogProbID(vName)
+	                           ##            		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), as.integer(validIndices), .nodeLogProbPointers_byGID$.ptr)
+                                                    ##	                                       		}
+                                   ##}
                                    }
                                    )
                                )
@@ -127,9 +152,9 @@ makeModelBindingFields <- function(symTab) {
     fieldList[[ptrName]] <- "ANY"
     eval(substitute( fieldList$VARNAME <- function(x){
       if(missing(x) ) 
-        getNimValues(VPTR, 2)
+        nimble:::getNimValues(VPTR, 2)
       else
-        setNimValues(VPTR, x, 2, allowResize = FALSE)
+        nimble:::setNimValues(VPTR, x, 2, allowResize = FALSE)
     }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
   }
   return(fieldList)
@@ -154,18 +179,22 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
   else
      warning("creating an initialization method that calls a C routine without any DLL information")
 
-  eval(substitute( newClass <-  setRefClass(refName,
+    # add basePtrCall as arg for initialize and substitute on parsed text string to avoid CRAN issues with .Call registration
+  eval(substitute(      newClass <-  setRefClass(refName,
                                             fields = FIELDS,
-                                            contains = 'CmodelBaseClass',
-                                            methods = list(initialize = function(model, defaults, ..., dll = NULL) { ## model is an optional R model
+                                            contains = "CmodelBaseClass",
+                                            methods = list(initialize = function(model, defaults, basePtrCall, ..., dll = NULL) { ## model is an optional R model
                                                 nodes <<- list()
                                                 isDataEnv <<- new.env()
                                                 classEnvironment <<- new.env()
                                                 
                                                 callSuper()
-                                                .basePtr <<- .Call(BPTRCALL)
-                                                .modelValues_Ptr <<- getMVptr(.basePtr)
-                                                defaultModelValues <<- CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = getMVName(.modelValues_Ptr), initialized = TRUE )
+
+                                                # avoid R CMD check problem with registration
+                                                .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+                                                # .basePtr <<- .Call(BPTRCALL)
+                                                .modelValues_Ptr <<- nimble:::getMVptr(.basePtr)
+                                                defaultModelValues <<- nimble:::CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimble:::getMVName(.modelValues_Ptr), initialized = TRUE )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
                                                 vars <<- model$vars
@@ -179,7 +208,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 for(vn in cppNames)
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
-                                                     	.self[[vPtrName]] <<- newObjElementPtr(.basePtr, vn)
+                                                     	.self[[vPtrName]] <<- nimble:::newObjElementPtr(.basePtr, vn)
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)
@@ -191,10 +220,10 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                     writeLines(paste0("Derived CmodelBaseClass created by buildModelInterface for model ", modelDef$name))
                                                 }),
                                             where = where
-  ), list(BPTRCALL = basePtrCall, FIELDS = makeModelBindingFields(symTab), where = where ) ) )
+  ), list(FIELDS = makeModelBindingFields(symTab), where = where ) ) )
 
     ans <- function(model, where = globalenv(), dll = NULL, ...) {
-        newClass$new(model, defaults, classEnvironment = where, dll = dll, ...) ## this means defaults will be in the closure of this function and hence found
+        newClass$new(model, defaults, basePtrCall, classEnvironment = where, dll = dll, ...) ## this means defaults will be in the closure of this function and hence found
     } 
     formals(ans)$where = where
     formals(ans)$dll = dll

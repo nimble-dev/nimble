@@ -187,8 +187,8 @@ nimOptim_keywordInfo <- keywordInfoClass(
 		return(newRunCode)
 	}
 )
-                            
-                                    
+
+
 values_keywordInfo <- keywordInfoClass(
     keyword = 'values',
     processor = function(code, nfProc){
@@ -201,105 +201,220 @@ values_keywordInfo <- keywordInfoClass(
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
       
-      ## accessLengthArgList <- list(accessName = accessName)
-      ## accessLengthName <- accessorVectorLength_setupCodeTemplate$makeName(accessLengthArgList)
-      ## addNecessarySetupCode(accessLengthName, accessLengthArgList, accessorVectorLength_setupCodeTemplate, nfProc)
-
       newRunCode <- substitute(values(accessor = ACCESS_NAME), 
                                list(ACCESS_NAME = as.name(accessName)))
       return(newRunCode)
     })                                    
- 
+
+getParam_keywordInfo <- keywordInfoClass(
+    keyword = 'getParam',
+    processor = function(code, nfProc) {
+        if(!isCodeArgBlank(code, 'nodeFunction'))
+            return(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE)
+        if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
+            if(!isCodeArgBlank(code, 'nodes'))
+                stop('nodes argument cannot be provided to getParam if nodeFunctionIndex is specified')
+            return(code) ## no modification needed!
+        }
+
+        if(isCodeArgBlank(code, 'model'))
+            stop('model argument missing from getParam, with no accessor argument supplied')
+        if(isCodeArgBlank(code, 'node'))
+            stop('node argument missing from getParam, with no accessor argument supplied')
+
+        useNodeFunctionVectorByIndex <- FALSE
+        if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
+            useNodeFunctionVectorByIndex <- TRUE
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
+            nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+        }
+
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
+
+        if(isCodeArgBlank(code, 'param'))
+            stop('param argument missing from getParam, with no accessor argument supplied')
+        paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
+        paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
+        paramIDname <- paramInfo_SetupTemplate$makeOtherNames(paramInfoName, paramInfo_ArgList)
+
+        addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+        addNecessarySetupCode(paramInfoName, paramInfo_ArgList, paramInfo_SetupTemplate, nfProc)
+        if(!useNodeFunctionVectorByIndex)
+            newRunCode <- substitute(getParam(nodeFunction = NODEFUNVEC_NAME, paramID = PARAMID_NAME, paramInfo = PARAMINFO_NAME),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName), PARAMID_NAME = as.name(paramIDname), PARAMINFO_NAME = as.name(paramInfoName)))
+        else
+            newRunCode <- substitute(getParam(nodeFunction = NODEFUNVEC_NAME, paramID = PARAMID_NAME, paramInfo = PARAMINFO_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName), PARAMID_NAME = as.name(paramIDname), PARAMINFO_NAME = as.name(paramInfoName), NODEFUNVECINDEX = nodesIndexExpr))
+        
+        return(newRunCode)
+    }
+)
+
 calculate_keywordInfo <- keywordInfoClass(
-	keyword = 'calculate',
-	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFxnVector'))
-			return(code)
-		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
-		if(isCodeArgBlank(code, 'model'))
-			stop('model argument missing from calculate, with no accessor argument supplied')
-		if(isCodeArgBlank(code, 'nodes')){
-			LHSnodes_ArgList <- list(model = code$model)
-			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
-			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
-			}
-		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
-		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
-		newRunCode <- substitute(calculate(nodeFunctionVector = NODEFUNVEC_NAME),
-											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-		return(newRunCode)	
-		}
-	)
+    keyword = 'calculate',
+    processor = function(code, nfProc){
+        if(!isCodeArgBlank(code, 'nodeFxnVector'))
+            return(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+        
+        if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
+            if(!isCodeArgBlank(code, 'nodes'))
+                stop('nodes argument cannot be provided to calculate if nodeFunctionIndex is specified')
+            return(code) ## no modification needed!
+        }
+        if(isCodeArgBlank(code, 'model'))
+            stop('model argument missing from calculate, with no accessor argument supplied')
+        if(isCodeArgBlank(code, 'nodes')){
+            LHSnodes_ArgList <- list(model = code$model)
+            LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
+            addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
+            nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
+        }
+        useNodeFunctionVectorByIndex <- FALSE
+        if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
+            useNodeFunctionVectorByIndex <- TRUE
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
+            nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+        }
+
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+        addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+        if(!useNodeFunctionVectorByIndex)
+            newRunCode <- substitute(calculate(nodeFxnVector = NODEFUNVEC_NAME),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+        else
+            newRunCode <- substitute(calculate(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
+                                 list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
+        return(newRunCode)	
+    }
+)
 
 calculateDiff_keywordInfo <- keywordInfoClass(
-	keyword = 'calculateDiff',
-	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFxnVector'))
-			return(code)
-		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
-		if(isCodeArgBlank(code, 'model'))
-			stop('model argument missing from calculateDiff, with no accessor argument supplied')
-		if(isCodeArgBlank(code, 'nodes')){
-			LHSnodes_ArgList <- list(model = code$model)
-			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
-			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
-			}
-		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
-		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
-		newRunCode <- substitute(calculateDiff(nodeFunctionVector = NODEFUNVEC_NAME),
-											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-		return(newRunCode)	
-		}
-	)
+    keyword = 'calculateDiff',
+    processor = function(code, nfProc){
+        if(!isCodeArgBlank(code, 'nodeFxnVector'))
+            return(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+        if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
+            if(!isCodeArgBlank(code, 'nodes'))
+                stop('nodes argument cannot be provided to calculateDiff if nodeFunctionIndex is specified')
+            return(code) ## no modification needed!
+        }
+        
+        if(isCodeArgBlank(code, 'model'))
+            stop('model argument missing from calculateDiff, with no accessor argument supplied')
+        if(isCodeArgBlank(code, 'nodes')){
+            LHSnodes_ArgList <- list(model = code$model)
+            LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
+            addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
+            nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
+        }
+        useNodeFunctionVectorByIndex <- FALSE
+        if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
+            useNodeFunctionVectorByIndex <- TRUE
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
+            nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+        }
+        
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+        addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+        if(!useNodeFunctionVectorByIndex)
+            newRunCode <- substitute(calculateDiff(nodeFxnVector = NODEFUNVEC_NAME),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+        else
+            newRunCode <- substitute(calculateDiff(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
+                                 list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
+        return(newRunCode)	
+    }
+)
 
 
 simulate_keywordInfo <- keywordInfoClass(
-	keyword = 'simulate',
-	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFxnVector')){
-			return(substitute(simulate(nodeFxnVector = NODEFXNVECTOR), list(NODEFXNVECTOR = code$nodeFxnVector) ) )
-			}
-		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
-		if(isCodeArgBlank(code, 'model'))
-			stop('model argument missing from simulate, with no accessor argument supplied')
-		if(isCodeArgBlank(code, 'nodes')){
-			LHSnodes_ArgList <- list(model = code$model)
-			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
-			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
-			}
-		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
-		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
-		newRunCode <- substitute(simulate(nodeFunctionVector = NODEFUNVEC_NAME),
-											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-											
-		return(newRunCode)	
-		}
-	)
+    keyword = 'simulate',
+    processor = function(code, nfProc){
+        if(!isCodeArgBlank(code, 'nodeFxnVector')){
+            return(substitute(simulate(nodeFxnVector = NODEFXNVECTOR), list(NODEFXNVECTOR = code$nodeFxnVector) ) )
+        }
+        if(!isCodeArgBlank(code, 'INDEXEDNODEINFO_'))
+            return(code)
+
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
+        if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
+            if(!isCodeArgBlank(code, 'nodes'))
+                stop('nodes argument cannot be provided to simulate if nodeFunctionIndex is specified')
+            return(code) ## no modification needed!
+        }
+        if(isCodeArgBlank(code, 'model'))
+            stop('model argument missing from simulate, with no accessor argument supplied')
+        if(isCodeArgBlank(code, 'nodes')){
+            LHSnodes_ArgList <- list(model = code$model)
+            LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
+            addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
+            nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
+        }
+        useNodeFunctionVectorByIndex <- FALSE
+        if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
+            useNodeFunctionVectorByIndex <- TRUE
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
+            nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+        }
+  
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+        addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+        if(!useNodeFunctionVectorByIndex)
+            newRunCode <- substitute(simulate(nodeFxnVector = NODEFUNVEC_NAME),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+        else
+            newRunCode <- substitute(simulate(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
+                                 list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
+        
+        return(newRunCode)	
+    }
+)
 
 getLogProb_keywordInfo <- keywordInfoClass(
-	keyword = 'getLogProb',
-	processor = function(code, nfProc){
-		if(!isCodeArgBlank(code, 'nodeFxnVector'))
-			return(code)
-		nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
-		if(isCodeArgBlank(code, 'model'))
-			stop('model argument missing from getLogProb, with no accessor argument supplied')
-		if(isCodeArgBlank(code, 'nodes')){
-			LHSnodes_ArgList <- list(model = code$model)
-			LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
-			addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
-			nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
-			}
-		nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
-		addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
-		newRunCode <- substitute(getLogProb(nodeFunctionVector = NODEFUNVEC_NAME),
-											list(NODEFUNVEC_NAME = as.name(nodeFunName)))
-		return(newRunCode)	
-		}
-	)    
+    keyword = 'getLogProb',
+    processor = function(code, nfProc){
+        if(!isCodeArgBlank(code, 'nodeFxnVector'))
+            return(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+        if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
+            if(!isCodeArgBlank(code, 'nodes'))
+                stop('nodes argument cannot be provided to getLogProb if nodeFunctionIndex is specified')
+            return(code) ## no modification needed!
+        }
+        if(isCodeArgBlank(code, 'model'))
+            stop('model argument missing from getLogProb, with no accessor argument supplied')
+        if(isCodeArgBlank(code, 'nodes')){
+            LHSnodes_ArgList <- list(model = code$model)
+            LHSnodes_name <- allLHSNodes_SetupTemplate$makeName(LHSnodes_ArgList)
+            addNecessarySetupCode(LHSnodes_name, LHSnodes_ArgList, allLHSNodes_SetupTemplate, nfProc, allowToCpp = FALSE)
+            nodeFunVec_ArgList$nodes = as.name(LHSnodes_name)
+        }
+        useNodeFunctionVectorByIndex <- FALSE
+        if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
+            useNodeFunctionVectorByIndex <- TRUE
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
+            nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+        }
+
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
+        addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+        if(!useNodeFunctionVectorByIndex)
+            newRunCode <- substitute(getLogProb(nodeFxnVector = NODEFUNVEC_NAME),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName)))
+        else
+            newRunCode <- substitute(getLogProb(nodeFxnVector = NODEFUNVEC_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName), NODEFUNVECINDEX = nodesIndexExpr))
+        return(newRunCode)	
+    }
+)    
 
 nimCopy_keywordInfo <- keywordInfoClass(
 	keyword = 'nimCopy',
@@ -443,6 +558,19 @@ doubleBracket_keywordInfo <- keywordInfoClass(
         stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
     })
 
+modelMemberFun_keywordInfo <- keywordInfoClass(
+    keyword = 'multiple',
+    processor = function(code, nfProc) {
+        ## if we get here it must be model$member(args)
+        ## We will turn it into member(model, args)
+        newRunCode <- do.call("call",
+                              c(list(as.character(code[[1]][[3]]),
+                                     code[[1]][[2]]),
+                                as.list(code[-1])),
+                              quote = TRUE)
+        return(newRunCode)
+    })
+
 dollarSign_keywordInfo <- keywordInfoClass(
 	keyword = '$',
 	processor = function(code, nfProc){
@@ -473,13 +601,13 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				
 		if(class == 'symbolNimPtrList'){
 			return(code)
-			}
-		if(class == 'symbolModel'){
-			singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
-			accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
-			addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
-			return(as.name(accessName))
-		}
+                    }
+            if(class == 'symbolModel'){
+                singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
+                accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
+                addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
+                return(as.name(accessName))
+            }
 		if(class == 'symbolNimbleFunction'){
 			
 			#	Code is of the form myNimbleFunction$myMethod
@@ -540,10 +668,24 @@ singleBracket_keywordInfo <- keywordInfoClass(
     }
 )    
 
-
+length_char_keywordInfo <- keywordInfoClass(
+    keyword = 'length',
+    processor = function(code, nfProc) {
+        if(is.null(nfProc)) return(code)
+        if(length(code) < 2) stop('length() used without an argument')
+        class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
+        if(class == "symbolString") {
+            length_char_ArgList <- list(code = code, string = code[[2]])
+            accessName <- length_char_SetupTemplate$makeName(length_char_ArgList)
+            addNecessarySetupCode(accessName, length_char_ArgList, length_char_SetupTemplate, nfProc)
+            return(substitute(LENGTHNAME, list(LENGTHNAME = as.name(accessName))))
+        }
+        return(code)
+    })
 
 #	KeywordList
 keywordList <- new.env()
+keywordList[['getParam']] <- getParam_keywordInfo
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo
 keywordList[['calculateDiff']] <- calculateDiff_keywordInfo
@@ -569,6 +711,15 @@ keywordList[['pexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
+keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
+
+keywordListModelMemberFuns <- new.env()
+keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['simulate']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['calculateDiff']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['getLogProb']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
+
 # necessary keywords:
 #	calculate 	(done)
 #	simulate	(done)
@@ -588,14 +739,19 @@ keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
 
 
 matchFunctions <- new.env()
+matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimInteger']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimMatrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
+matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
+matchFunctions[['getParam']] <- getParam
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['calculateDiff']] <- calculateDiff		#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
 matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
-matchFunctions[['double']] <- function(dim, default){}
-matchFunctions[['int']] <- function(dim, default){}
+matchFunctions[['double']] <- function(nDim, dim, default, ...){}
+matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
@@ -609,6 +765,13 @@ matchFunctions[['dexp_nimble']] <- function(x, rate, scale = 1, log = FALSE){}
 matchFunctions[['rexp_nimble']] <- function(n, rate, scale = 1){}
 matchFunctions[['qexp_nimble']] <- function(p, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pexp_nimble']] <- function(q, rate, scale = 1, lower.tail = TRUE, log.p = FALSE){}
+
+matchModelMemberFunctions <- new.env()
+matchModelMemberFunctions[['calculate']] <- function(nodes) {}
+matchModelMemberFunctions[['calculateDiff']] <- function(nodes) {}
+matchModelMemberFunctions[['getLogProb']] <- function(nodes) {}
+matchModelMemberFunctions[['simulate']] <- function(nodes, includeData = FALSE) {}
+matchModelMemberFunctions[['getParam']] <- function(node, param) {}
 
 # remove ncp from signatures
 stripArgs <- function(fname, argNames) {
@@ -676,11 +839,77 @@ processKeyword <- function(code, nfProc){
   return(code)
 }
 
+processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b(c) as one unit
+    ## this includes nf$method()
+    ## nfList[[i]]$method
+    ## model$calculate(nodes)
+    dollarSignPart <- code[[1]]
+    objectPart <- dollarSignPart[[2]]
 
+    isModel <- FALSE
+    if(length(objectPart) != 1) isModel <- FALSE ## a case like a[[i]]$b(), which can only be a nimbleFunction list
+    else {
+        symObj <- nfProc$setupSymTab$getSymbolObject(as.character(objectPart))
+        if(is.null(symObj)) stop(paste0("In processKeywordCodeMemberFun: not sure what to do with ", deparse(code)))
+        if(inherits(symObj, 'symbolModel'))
+            isModel <- TRUE
+    }
+    if(isModel) {
+        thisKeywordInfo <- keywordListModelMemberFuns[[ as.character(dollarSignPart[[3]]) ]]
+        if(is.null(thisKeywordInfo)) stop(paste0("In processKeywordCodeMemberFun, don't know what do with: ", deparse(code)))
+        rearrangedCode <- thisKeywordInfo$processor(code, nfProc)
+        rearrangedCode <- matchKeywordCode(rearrangedCode, nfProc)
+        return(processKeywords_recurse(rearrangedCode, nfProc))
+    } else {
+        ## same as processKeywords_recurse
+        ## first line here creates something like nfMethod(model, method)(args)
+        ## which is handled as a chainedCall in later processing
+        code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        cl <- length(code)
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+        return(code)
+    }
+}
 
-
-
-
+processKeywords_recurse <- function(code, nfProc = NULL) {
+    cl = length(code)
+    if(cl == 1) {
+        if(is.call(code)) {
+            if(length(code[[1]]) > 1)
+                if(deparse(code[[1]][[1]] == '$'))
+                    code <- processKeywordCodeMemberFun(code, nfProc)
+                else
+                    code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        }
+        return(code)
+    }
+    
+    if(length(code[[1]]) == 1) {
+        code <- processKeyword(code, nfProc)
+    }
+    
+    cl = length(code)
+    
+    if(is.call(code)) {
+        if(length(code[[1]]) > 1) {
+            if(deparse(code[[1]][[1]] == '$')) {
+                code <- processKeywordCodeMemberFun(code, nfProc) ## case like model$calculate(nodes)
+                return(code) ## don't recurse on arguments of anything in this category
+            }
+            code[[1]] <- processKeywords_recurse(code[[1]], nfProc)
+        }
+        if(cl >= 2) {
+            for(i in 2:cl) {
+                code[[i]] <- processKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+    }
+    return(code)
+}
 
 #####	SETUPCODE TEMPLATES
 
@@ -697,10 +926,14 @@ processKeyword <- function(code, nfProc){
 #		singleModelIndexAccess_SetupTemplate
 #		map_SetupTemplate
 #       singleModelValuesAccessor_SetupTemplate
-        
-        
-        
-                                         
+
+length_char_SetupTemplate <- setupCodeTemplateClass(
+    makeName = function(argList) {Rname2CppName(paste0(paste("length", deparse(argList$string), sep='_'), '_KNOWN_'))},
+    codeTemplate = quote(LENGTHNAME <- CODE),
+    makeCodeSubList = function(resultName, argList) {
+        list(LENGTHNAME = as.name(resultName),
+             CODE = argList$code)
+    })
 
 optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 	makeName = function(argList){Rname2CppName(deparse(argList$name))},
@@ -716,7 +949,7 @@ optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
     makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
@@ -726,7 +959,7 @@ modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 copierVector_setupCodeTemplate <- setupCodeTemplateClass(
     makeName = function(argList) {Rname2CppName(paste0(argList$accessFrom_name, '_', argList$accessTo_name))},
-    codeTemplate = quote( COPIERNAME <- copierVector(ACCESS_FROM, ACCESS_TO, ISMVFROM, ISMVTO) ),
+    codeTemplate = quote( COPIERNAME <- nimble:::copierVector(ACCESS_FROM, ACCESS_TO, ISMVFROM, ISMVTO) ),
     makeCodeSubList = function(resultName, argList) {
         list(COPIERNAME = as.name(resultName),
              ACCESS_FROM = as.name(argList$accessFrom_name),
@@ -740,7 +973,7 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
 
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), deparse(argList$row), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
@@ -750,39 +983,46 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 
     
-accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
-  #Note to programmer: required fields of argList are accessName
+## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
+##   #Note to programmer: required fields of argList are accessName
  
-  makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-    codeTemplate = quote({ACCESSLENGTH <- 0;
-        ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
-  makeCodeSubList = function(resultName, argList){
-      list(ACCESSNAME = as.name(argList$accessName),
-           ACCESSLENGTH = as.name(resultName),
-           ACCESSLENGTHNAME = resultName)
-  })
-
-## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## NEW ACCESSORS
-##   #Note to programmer: required fields of argList are accessName 
 ##   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-##   codeTemplate = quote(ACCESSLENGTH <- ACCESSNAME$getLength()),
+##     codeTemplate = quote({ACCESSLENGTH <- 0;
+##         ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
 ##   makeCodeSubList = function(resultName, argList){
-##   	list(ACCESSNAME = as.name(argList$accessName),
-##   		ACCESSLENGTH = as.name(resultName) )
-##   	})
+##       list(ACCESSNAME = as.name(argList$accessName),
+##            ACCESSLENGTH = as.name(resultName),
+##            ACCESSLENGTHNAME = resultName)
+##   })
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and includeData
 	
 	makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), sep = '_'))},
-	codeTemplate = quote(NODEFXNVECNAME <- nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA)), 
+	codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA)), 
 	makeCodeSubList = function(resultName, argList){
 		list(NODEFXNVECNAME = as.name(resultName),
 			MODEL = argList$model,
 			NODES = argList$nodes,
 			EXCLUDEDATA = !argList$includeData)
 	})
+
+paramInfo_SetupTemplate <- setupCodeTemplateClass(
+    #Note to programmer: required fields of argList are model, node and param
+    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$node), deparse(argList$param), 'paramInfo', sep='_'))},
+    makeOtherNames = function(name,argList) {Rname2CppName(paste0(name,'_ID'))},
+    codeTemplate = quote({
+        PARAMINFONAME <- makeParamInfo(MODEL, NODE, PARAM)
+        PARAMIDNAME <- PARAMINFONAME$paramID
+       }),
+    makeCodeSubList = function(resultName, argList){
+        list(PARAMINFONAME = as.name(resultName),
+             PARAMIDNAME = as.name(paste0(resultName,'_ID')),
+             MODEL = argList$model,
+             NODE = argList$node,
+             PARAM = argList$param)
+    })
 
 allLHSNodes_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model
@@ -829,7 +1069,7 @@ singleVarAccess_SetupTemplate <- setupCodeTemplateClass(
 
 	makeName = code2Name_fromArgList,
 
-	codeTemplate = quote(SINGLEACCESSOR <- singleVarAccess(MODEL, VAR)),
+	codeTemplate = quote(SINGLEACCESSOR <- nimble:::singleVarAccess(MODEL, VAR)),
 
 	makeCodeSubList = function(resultName, argList){
 		list(SINGLEACCESSOR = as.name(resultName),
@@ -843,10 +1083,10 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 	makeName = code2Name_fromArgList,
 	
 	codeTemplate = quote({
-		VARANDINDICES <- getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimble:::getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
-		MFLATINDEX <- varAndIndices2flatIndex(VARANDINDICES, MODELVAREXPR$getVarInfo(NEWVARNAME))
-		VARACCESSOR <- singleVarAccess(MODELVAREXPR, NEWVARNAME, useSingleIndex = TRUE)
+		MFLATINDEX <- nimble:::varAndIndices2flatIndex(VARANDINDICES, MODELVAREXPR$getVarInfo(NEWVARNAME))
+		VARACCESSOR <- nimble:::singleVarAccess(MODELVAREXPR, NEWVARNAME, useSingleIndex = TRUE)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(VARACCESSOR = as.name(resultName),
@@ -868,14 +1108,14 @@ map_SetupTemplate <- setupCodeTemplateClass(
 		return(output)
 	},
 	codeTemplate = quote({
-		VARANDINDICES <- getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimble:::getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
                 map_SetupTemplate_vi <- MODEL$getVarInfo(NEWVARNAME)
-		map_SetupTemplate_mapParts <- varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
+		map_SetupTemplate_mapParts <- nimble:::varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
 		MSTRIDES <- map_SetupTemplate_mapParts$strides
 		MOFFSET <- map_SetupTemplate_mapParts$offset
 		MSIZES <- map_SetupTemplate_mapParts$sizes
-		VARACCESSOR <- singleVarAccess(model, NEWVARNAME)
+		VARACCESSOR <- nimble:::singleVarAccess(model, NEWVARNAME)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(VARACCESSOR = as.name(resultName),
@@ -955,29 +1195,43 @@ matchAndFill.call <- function(def, call){
   theseFormals <- formals(def)
   formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
   theseFormals <- theseFormals[nchar(theseFormals) > 0]
-  matchedCall <- match.call(def, call)
+  matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
   missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
-  for(ind in missingArgs){
+  for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
     name <- names(theseFormals)[ind]
     matchedCall[[name]] <- theseFormals[[name]]    
   }
     
   newCall <- matchedCall[1]
 
-  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly
+  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly, including anything omitted
   	thisArg <- matchedCall[[thisArgName]]
 	if(!is.null(thisArg))
 	  	newCall[[thisArgName]] <- thisArg
   }
   
-  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
+##  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
  		# i.e. are there any "..." args? if so, adds them on in the end
   		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
   		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
-  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
+##  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
 
-  for(thisArg in informalArgNames)
-  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+##  for(thisArg in informalArgNames)
+##  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+
+  ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
+  ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
+  ## tacked on even without a '...' in the def
+  indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+  for(thisIndex in indexAdditionalArgs) {
+      thisName <- names(matchedCall)[thisIndex+1]
+      if(thisName=="")
+          newCall[[thisIndex + 1]] <- matchedCall[[thisIndex + 1]]
+      else {
+          newCall[[thisName]] <- matchedCall[[thisName]]
+      }
+  }
+      
   return(newCall)
 }
 
@@ -992,7 +1246,7 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
             stop(paste0('Error, ', as.character(varOrNodeExpr), ' does not exist in an instance of this nimbleFunction.'))
         }
         lab <- eval(varOrNodeExpr, envir = x)
-        varAndIndices <- getVarAndIndices(lab)
+        varAndIndices <- nimble:::getVarAndIndices(lab)
         determineNdimFromOneCase(model, varAndIndices)
     } )
     return(allNDims)
@@ -1028,7 +1282,12 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
             if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
             thisFunctionMatch <- thisRCfunProc$RCfun$template
             return(matchAndFill.call(thisFunctionMatch, code ) )
-        } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
+        } else 
+            if(inherits(symObj, 'symbolModel')) {
+                thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
+                if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
+                return(matchAndFill.call(thisFunctionMatch, code) )
+            } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
     }
     ## then look in R
     if(exists(nfName)) {
@@ -1068,6 +1327,37 @@ matchKeywordCode <- function(code, nfProc){
         return(matchAndFill.call(thisFunctionMatch, code ) )
     return(code)
 }
+
+matchKeywords_recurse <- function(code, nfProc = NULL) {
+    cl = length(code)
+    if(cl == 1){ ## There are no arguments
+        if(is.call(code)){  
+            if(length(code[[1]]) > 1) {
+                if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc)
+                else
+                    code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## recurse on the "a$b" part of a$b() (or the "a(b)" part of a(b)()), etc
+            } else
+                code <- matchKeywordCode(code, nfProc)
+        }
+        return(code)
+    }
+    if(length(code[[1]]) == 1) ## a simple call like a(b,c), not a$b(c)
+        code <- matchKeywordCode(code, nfProc)
+    
+    if(is.call(code)) {
+        if(length(code[[1]]) > 1) {
+            if(deparse(code[[1]][[1]]) == '$') code <- matchKeywordCodeMemberFun(code, nfProc) ## handle a$b(c) as one unit
+            else code[[1]] <- matchKeywords_recurse(code[[1]], nfProc) ## handle "a(b)" part of a(b)(c), which is probably *never* triggered
+        }
+        if(cl >= 2) { ## recurse through arguments
+            for(i in 2:cl) {
+                code[[i]] <- matchKeywords_recurse(code[[i]], nfProc)
+            }
+        }
+    }
+    return(code)
+}
+
 
 makeSingleIndexAccessExpr <- function(newName, newNameExpr) {
     codeNames <- makeSingleIndexAccessCodeNames(newName)
@@ -1117,14 +1407,10 @@ determineNdimFromOneCase <- function(model, varAndIndices) {
 ## steps here are similar to makeMapExprFromBrackets, but that uses exprClasses
 
 varAndIndices2mapParts <- function(varAndIndices, sizes, nDim) {
-    ##varName <- varAndIndices$name
     indices <- varAndIndices$indices
     ## put together offsetExpr, sizeExprs, strideExprs
     ## need sizes to get strides
     if(length(sizes) == 0) sizes <- 1
-##    sizes <- if(length(varInfo$maxs) > 0) varInfo$maxs else 1 ## would be wierd to be mapping into something with length 1 anyway
-##    if(varInfo$nDim > 0 & length(indices)==0) { ## A case like model[[node]] where node == 'x', and we should treat like 'x[,]', e.g.
-##        nDim <- varInfo$nDim
     if(nDim > 0 & length(indices)==0) {
         blockBool <- rep(TRUE, nDim)
         firstIndexRexprs <- rep(list(1), nDim)

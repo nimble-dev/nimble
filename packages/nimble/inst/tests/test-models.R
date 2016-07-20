@@ -1,3 +1,5 @@
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+
 allModels <- c(# vol1
                'blocker', 'bones', 'dyes', 'equiv', 'line', 'oxford', 'pump', 'rats',
                # vol2
@@ -9,10 +11,10 @@ sapply(allModels, testBUGSmodel, useInits = TRUE)
 
 # Problem cases
 # dinterval, I(), T(), random indexing:
-# kidney, litters, lsat, mice 
+# kidney, litters, lsat, mice
 
 # data preparation issue in data block: inhaler (has (k+):(k) style indexing
-               
+
 # various cases where we need to refer to a differently-named .bug file:
 
 testBUGSmodel('epil', model = 'epil2.bug', inits = 'epil-inits.R',
@@ -37,28 +39,35 @@ testBUGSmodel('birats', model = 'birats2.bug', inits = 'birats-inits.R',
 # various cases where we need to modify the BUGS code, generally the indexing
 
 # test of leuk; needs var info on Y and dN since these are used in data block
-system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
-system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
+writeLines(c("var", "Y[N,T],", "dN[N,T];"), con = file.path(tempdir(), "leuk.bug"))
+##system(paste0("echo 'var\nY[N,T],\ndN[N,T];' >> ", file.path(tempdir(), "leuk.bug")))
+system.in.dir(paste("cat leuk.bug >>", file.path(tempdir(), "leuk.bug")), dir = system.file('classic-bugs','vol1','leuk', package = 'nimble'))
+##system(paste("cat", system.file('classic-bugs','vol1','leuk','leuk.bug', package = 'nimble'), ">>", file.path(tempdir(), "leuk.bug")))
 # need nimStep in data block as we no longer have step
-system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug"))) 
+system.in.dir(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
+##system(paste("sed -i -e 's/step/nimStep/g'", file.path(tempdir(), "leuk.bug")))
 testBUGSmodel('leuk', dir = "", model = file.path(tempdir(), "leuk.bug"), data = system.file('classic-bugs','vol1','leuk','leuk-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','leuk','leuk-init.R', package = 'nimble'),  useInits = TRUE)
 
 # salm: need dimensionality of logx
-system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug"))) 
-system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
+writeLines(c("var","logx[doses];"), con = file.path(tempdir(), "salm.bug"))
+##system(paste0("echo 'var\nlogx[doses];' >> ", file.path(tempdir(), "salm.bug")))
+system.in.dir(paste("cat salm.bug >>", file.path(tempdir(), "salm.bug")), dir = system.file('classic-bugs','vol1','salm', package = 'nimble'))
+##system(paste("cat", system.file('classic-bugs','vol1','salm','salm.bug', package = 'nimble'), ">>", file.path(tempdir(), "salm.bug")))
 #system(paste("sed -i -e 's/logx\\[\\]/logx\\[1:doses\\]/g'", file.path(tempdir(), "salm.bug"))) # alternative way to get size info in there
 testBUGSmodel('salm', dir = "", model = file.path(tempdir(), "salm.bug"), data = system.file('classic-bugs','vol1','salm','salm-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','salm','salm-init.R', package = 'nimble'),  useInits = TRUE)
 
-
-system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
-system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug"))) 
+file.copy(system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), file.path(tempdir(), "air.bug"), overwrite=TRUE)
+system.in.dir("sed -i -e 's/mean(X)/mean(X\\[\\])/g' air.bug", dir = tempdir())
+##system(paste("cat", system.file('classic-bugs','vol2','air','air.bug', package = 'nimble'), ">>", file.path(tempdir(), "air.bug")))
+##system(paste("sed -i -e 's/mean(X)/mean(X\\[\\])/g'", file.path(tempdir(), "air.bug")))
 testBUGSmodel('air', dir = "", model = file.path(tempdir(), "air.bug"), data = system.file('classic-bugs','vol2','air','air-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol2','air','air-inits.R', package = 'nimble'),  useInits = TRUE)
 
 
 # need the next line or gives error:
 #1: In replaceConstantsRecurse(x, constEnv, constNames) :
 #  Code age was given as known but evaluates to a non-scalar.  This is probably # not what you want.
-system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
+system.in.dir(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g' jaw-linear.bug > ", file.path(tempdir(), "jaw-linear.bug")), dir = system.file('classic-bugs','vol2','jaw', package = 'nimble')) # alternative way to get size info in there
+##system(paste("sed 's/mean(age)/mean(age\\[1:M\\])/g'", system.file('classic-bugs','vol2','jaw','jaw-linear.bug', package = 'nimble'), ">", file.path(tempdir(), "jaw-linear.bug"))) # alternative way to get size info in there
 testBUGSmodel('jaw', dir = "", model = file.path(tempdir(), "jaw-linear.bug"), inits = system.file('classic-bugs', 'vol2', 'jaw','jaw-inits.R', package = 'nimble'), data = system.file('classic-bugs', 'vol2', 'jaw','jaw-data.R', package = 'nimble'), useInits = TRUE)
 
 
@@ -83,7 +92,7 @@ model <- function() {
   Omega[2,2] <- .01
   Omega[1,2] <- 0
   Omega[2,1] <- 0
-  
+
   mu[1:K] ~ dmnorm(mu0[1:K], Omega[1:K,1:K])
   prec[1:K,1:K] ~ dwish(R[1:K,1:K], 5)
 }
@@ -94,7 +103,7 @@ data <- list(K = K, y = y)
 testBUGSmodel(example = 'testN', dir = "",
               model = model, data = data, inits = inits,
               useInits = TRUE)
-  
+
 # test multi/Dirichlet
 
 set.seed(0)
@@ -175,7 +184,7 @@ if(require(nimble)) {
   rmulti <- rmultinom
 }
 
-for(i in seq_len(g)) 
+for(i in seq_len(g))
   for(j in seq_len(m))
     y[j, i, ] <- rmulti(1, n, p[i, ])
 
@@ -210,25 +219,25 @@ code <- nimbleCode({
 })
 xVal <- 0.5
 m <- nimbleModel(code, constants = list(sig = 1, x = xVal, y = 0.1))
-expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in first test")
-expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in first test")
-expect_that('sig' %in% m$getVarNames(), equals(FALSE), info = "sig not set as constant in first test")
+expect_equal(m$isData('x'), TRUE, info = "'x' not set as data in first test")
+expect_equal(c(m$x), xVal, info = "value of 'x' not correctly set in first test")
+expect_equal('sig' %in% m$getVarNames(), FALSE, info = "sig not set as constant in first test")
 
 code <- nimbleCode({
     x ~ dnorm(mu,1)
     mu ~ dnorm(0, 1)
 })
 m <- nimbleModel(code, data = list(x = xVal))
-expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in second test")
-expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in second test")
+expect_equal(m$isData('x'), TRUE, info = "'x' not set as data in second test")
+expect_equal(c(m$x), xVal, info = "value of 'x' not correctly set in second test")
 
 code <- nimbleCode({
     x ~ dnorm(mu,1)
     mu ~ dnorm(0, 1)
 })
 m <- nimbleModel(code, constants = list(x = xVal))
-expect_that(m$isData('x'), equals(TRUE), info = "'x' not set as data in third test")
-expect_that(m$x, equals(xVal), info = "value of 'x' not correctly set in third test")
+expect_equal(m$isData('x'), TRUE, info = "'x' not set as data in third test")
+expect_equal(c(m$x), xVal, info = "value of 'x' not correctly set in third test")
 
 code <- nimbleCode({
     y[1] ~ dnorm(beta*x[1], 1)
@@ -236,9 +245,9 @@ code <- nimbleCode({
     beta ~ dnorm(0, 1)
  })
 m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, 5)))
-expect_that(m$isData('x'), equals(c(TRUE, TRUE)), info = "'x' not set as data in fourth test")
-expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in fourth test")
-expect_that(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), equals(0), info = "'x[1]' appears incorrectly in nodes in fourth test")
+expect_equal(m$isData('x'), c(TRUE, TRUE), info = "'x' not set as data in fourth test")
+expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in fourth test")
+expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in fourth test")
 
 
 })
@@ -253,9 +262,9 @@ code <- nimbleCode({
 xVal <- c(3, NA)
 xInit <- c(4, 4)
 m <- nimbleModel(code, constants = list(x = xVal), inits = list(x = xInit))
-try(expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flag is not set correctly in fourth test"))
-try(expect_that(m$x, equals(c(xVal[1], xInit[2])), info = "value of 'x' not correctly set in fourth test"))
-try(expect_that(c('x[1]','x[2]') %in% m$getNodeNames(), equals(c(TRUE, TRUE)), info = "'x' nodes note correctly set in fourth test"))
+try(expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fourth test"))
+try(expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fourth test"))
+try(expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fourth test"))
 
 code <- nimbleCode({
     x[1] ~ dnorm(mu,1)
@@ -263,9 +272,9 @@ code <- nimbleCode({
     mu ~ dnorm(0, 1)
 })
 m <- nimbleModel(code, data = list(x = xVal), inits = list(x = xInit))
-expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flag is not set correctly in fifth test")
-expect_that(m$x, equals(c(xVal[1], xInit[2])), info = "value of 'x' not correctly set in fifth test")
-expect_that(c('x[1]','x[2]') %in% m$getNodeNames(), equals(c(TRUE, TRUE)), info = "'x' nodes note correctly set in fifth test")
+expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flag is not set correctly in fifth test")
+expect_equal(m$x, c(xVal[1], xInit[2]), info = "value of 'x' not correctly set in fifth test")
+expect_equal(c('x[1]','x[2]') %in% m$getNodeNames(), c(TRUE, TRUE), info = "'x' nodes note correctly set in fifth test")
 
 })
 
@@ -277,7 +286,7 @@ test_that("test of the handling of missing covariates:", {
     beta ~ dnorm(0, 1)
 })
 m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
-expect_that('x' %in% m$getVarNames(), equals(FALSE), info = "'x' is not set as constant in first test")
+expect_equal('x' %in% m$getVarNames(), FALSE, info = "'x' is not set as constant in first test")
 
 code <- nimbleCode({
     y[1] ~ dnorm(beta*x[1], 1)
@@ -285,10 +294,10 @@ code <- nimbleCode({
     beta ~ dnorm(0, 1)
 })
 m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
-expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in second test")
-expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flags are not set correctly in second test")
-expect_that(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), equals(0), info = "'x' appears incorrectly in nodes in second test")
-    
+expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
+expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+expect_equal(sum(c("x[1]", "x[2]") %in% m$getNodeNames()), 0, info = "'x' appears incorrectly in nodes in second test")
+
 code <- nimbleCode({
     y[1] ~ dnorm(beta*x[1], 1)
     y[2] ~ dnorm(beta*x[2], 1)
@@ -296,10 +305,10 @@ code <- nimbleCode({
     x[2] ~ dnorm(0, 1)
 })
 m <- nimbleModel(code, data = list(y = c(1, 2)), constants = list(x = c(1, NA)))
-expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in second test")
-expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flags are not set correctly in second test")
-expect_that(sum("x[1]" %in% m$getNodeNames()), equals(0), info = "'x[1]' appears incorrectly in nodes in second test")
-expect_that(sum("x[2]" %in% m$getNodeNames()), equals(1), info = "'x[2]' does not appears in nodes in second test")
+expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
+expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
+expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
 
 code <- nimbleCode({
     y[1] ~ dnorm(beta*x[1], 1)
@@ -308,11 +317,11 @@ code <- nimbleCode({
     x[2] ~ dnorm(0, 1)
 })
 m <- nimbleModel(code, data = list(y = c(1, 2), x = c(1, NA)))
-expect_that('x' %in% m$getVarNames(), equals(TRUE), info = "'x' is not set as variable in second test")
-expect_that(m$isData('x'), equals(c(TRUE, FALSE)), info = "'x' data flags are not set correctly in second test")
-expect_that(sum("x[1]" %in% m$getNodeNames()), equals(0), info = "'x[1]' appears incorrectly in nodes in second test")
-expect_that(sum("x[2]" %in% m$getNodeNames()), equals(1), info = "'x[2]' does not appears in nodes in second test")
-    
+expect_equal('x' %in% m$getVarNames(), TRUE, info = "'x' is not set as variable in second test")
+expect_equal(m$isData('x'), c(TRUE, FALSE), info = "'x' data flags are not set correctly in second test")
+expect_equal(sum("x[1]" %in% m$getNodeNames()), 0, info = "'x[1]' appears incorrectly in nodes in second test")
+expect_equal(sum("x[2]" %in% m$getNodeNames()), 1, info = "'x[2]' does not appears in nodes in second test")
+
 })
 
 
@@ -322,7 +331,7 @@ model <- function() {
   y ~ dnbinom(p, n)
   p ~ dbeta(3,3)
   yalt ~ dnegbin(p, n)
-  
+
   y2 ~ dbin(p2, n)
   p2 ~ dbeta(3,3)
   yalt2 ~ dbinom(p2, n)
@@ -348,19 +357,19 @@ simulate(cm, c('y','y2'))
 set.seed(0)
 simulate(cm, c('yalt','yalt2'))
 
-try(test_that("dnegbin and dnbinom give same results in R model", expect_that(
-    m$y, equals(m$yalt), info = "simulate gives different results for dnegbin and dnbinom")))
-try(test_that("dnegbin and dnbinom give same results in R model", expect_that(
-    getLogProb(m, 'y'), equals(getLogProb(m, 'yalt')), info = "calculate gives different results for dnegbin and dnbinom")))
-try(test_that("dbin and dbinom give same results in R model", expect_that(
-    m$y2, equals(m$yalt2), info = "simulate gives different results for dbin and dbinom")))
-try(test_that("dbin and dbinom give same results in R model", expect_that(
-    getLogProb(m, 'y2'), equals(getLogProb(m, 'yalt2')), info = "calculate gives different results for dbin and dbinom")))
-try(test_that("dnegbin and dnbinom give same results in C model", expect_that(
-    cm$y, equals(cm$yalt), info = "simulate gives different results for dnegbin and dnbinom")))
-try(test_that("dnegbin and dnbinom give same results in C model", expect_that(
-    getLogProb(cm, 'y'), equals(getLogProb(cm, 'yalt')), info = "calculate gives different results for dnegbin and dnbinom")))
-try(test_that("dbin and dbinom give same results in C model", expect_that(
-    cm$y2, equals(cm$yalt2), info = "simulate gives different results for dbin and dbinom")))
-try(test_that("dbin and dbinom give same results in C model", expect_that(
-    getLogProb(cm, 'y2'), equals(getLogProb(cm, 'yalt2')), info = "calculate gives different results for dbin and dbinom")))
+try(test_that("dnegbin and dnbinom give same results in R model", expect_equal(
+    m$y, m$yalt, info = "simulate gives different results for dnegbin and dnbinom")))
+try(test_that("dnegbin and dnbinom give same results in R model", expect_equal(
+    getLogProb(m, 'y'), getLogProb(m, 'yalt'), info = "calculate gives different results for dnegbin and dnbinom")))
+try(test_that("dbin and dbinom give same results in R model", expect_equal(
+    m$y2, m$yalt2, info = "simulate gives different results for dbin and dbinom")))
+try(test_that("dbin and dbinom give same results in R model", expect_equal(
+    getLogProb(m, 'y2'), getLogProb(m, 'yalt2'), info = "calculate gives different results for dbin and dbinom")))
+try(test_that("dnegbin and dnbinom give same results in C model", expect_equal(
+    cm$y, cm$yalt, info = "simulate gives different results for dnegbin and dnbinom")))
+try(test_that("dnegbin and dnbinom give same results in C model", expect_equal(
+    getLogProb(cm, 'y'), getLogProb(cm, 'yalt'), info = "calculate gives different results for dnegbin and dnbinom")))
+try(test_that("dbin and dbinom give same results in C model", expect_equal(
+    cm$y2, cm$yalt2, info = "simulate gives different results for dbin and dbinom")))
+try(test_that("dbin and dbinom give same results in C model", expect_equal(
+    getLogProb(cm, 'y2'), getLogProb(cm, 'yalt2'), info = "calculate gives different results for dbin and dbinom")))

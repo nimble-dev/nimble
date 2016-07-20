@@ -82,20 +82,20 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName){ #
     .Call('populateValueMapAccessorsFromNodeNames', manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
 }
 
-addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
-    countInf$count <- countInf$count + 1
-    addNodeFxn(fxnVecPtr, nodes[[x]]$.basePtr, addAtEnd = FALSE, index = countInf$count)
-}
+## addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
+##     countInf$count <- countInf$count + 1
+##     addNodeFxn(fxnVecPtr, nodes[[x]]$.basePtr, addAtEnd = FALSE, index = countInf$count)
+## }
 
 getFxnVectorPtr <- function(fxnPtr, fxnVecName)
     .Call('getModelObjectPtr', fxnPtr, fxnVecName)
 
-populateNodeFxnVec_OLD <- function(fxnPtr, Robject, fxnVecName){
-    fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
-    resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes))	
-    nodePtrsEnv <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointersEnv
-    nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
-}
+## populateNodeFxnVec_OLD <- function(fxnPtr, Robject, fxnVecName){
+##     fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
+##     resizeNodeFxnVec(fxnVecPtr, length(Robject[[fxnVecName]]$nodes))	
+##     nodePtrsEnv <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointersEnv
+##     nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
+## }
 
 getNamedObjected <- function(objectPtr, fieldName)
     .Call('getModelObjectPtr', objectPtr, fieldName)
@@ -115,6 +115,25 @@ populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
     inner_populateNodeFxnVec(fxnVecPtr, gids, numberedPtrs)
 }
 
+populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName){
+    fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
+    indexingInfo <- Robject[[fxnVecName]]$indexingInfo
+    declIDs <- indexingInfo$declIDs
+    rowIndices <- indexingInfo$unrolledIndicesMatrixRows
+    numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byDeclID$.ptr
+    
+    ## This is not really the most efficient way to do things; eventually 
+    ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
+    ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
+	
+    .Call('populateNodeFxnVectorNew_byDeclID', fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices))
+}
+
+populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName) {
+    iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName)
+    iNITcontent <- Robject[[indexedNodeInfoTableName]]$unrolledIndicesMatrix
+    .Call('populateIndexedNodeInfoTable', iNITptr, iNITcontent)
+}
 
 # Currently requires: addSingleModelValuesAccess
 
@@ -138,9 +157,9 @@ getModelValuesAccessorValues <- function(modelAccessor)
     .Call("getMVAccessorValues", modelAccessor)
 #   Same as above, but for singleModelValuesAccessors
 
-	
-newNodeFxnVec <- function(size = 0) 
-    .Call("newNodeFxnVector", as.integer(size)  ) 
+
+## newNodeFxnVec <- function(size = 0) 
+##     .Call("newNodeFxnVector", as.integer(size)  ) 
     
 #   This creates a new NodeFunctionVector. We can declare the size of the vector of nodeFunctions upon building.
 #   The default size is 0, which leads to the simplest way to populate the nodeFunctionVector: by just adding on to the
@@ -149,19 +168,19 @@ newNodeFxnVec <- function(size = 0)
 #   The more efficient to populate this is to set the size in advance and populate by index. This is of O(n) complexity,
 #   but means we must keep track of the index as we populate and know number of indices necessary in advance
 
-resizeNodeFxnVec <- function(nodeFxnVecPtr, size)
-    nil <- .Call("resizeNodeFxnVector", nodeFxnVecPtr, as.integer(size) ) 
-#	Resizes a nodeFunctionPointer object
+## resizeNodeFxnVec <- function(nodeFxnVecPtr, size)
+##     nil <- .Call("resizeNodeFxnVector", nodeFxnVecPtr, as.integer(size) ) 
+## #	Resizes a nodeFunctionPointer object
 
-addNodeFxn <- function(NVecFxnPtr, NFxnPtr, addAtEnd = TRUE, index = -1)
-    nil <- .Call("addNodeFun", NVecFxnPtr, NFxnPtr, as.logical(addAtEnd), as.integer(index) ) 
-#   This function adds a nodeFunction pointer (NFxnPtr) to a vector of nodeFunctions (NVecFxnPtr)
-#   This can either add one on to the end of the vector (by setting addAtEnd = TRUE) or 
-#   can insert the a nodeFunction by index (by setting addAtEnd = FALSE and index = R-index of position)
+## addNodeFxn <- function(NVecFxnPtr, NFxnPtr, addAtEnd = TRUE, index = -1)
+##     nil <- .Call("addNodeFun", NVecFxnPtr, NFxnPtr, as.logical(addAtEnd), as.integer(index) ) 
+## #   This function adds a nodeFunction pointer (NFxnPtr) to a vector of nodeFunctions (NVecFxnPtr)
+## #   This can either add one on to the end of the vector (by setting addAtEnd = TRUE) or 
+## #   can insert the a nodeFunction by index (by setting addAtEnd = FALSE and index = R-index of position)
 
-removeNodeFxn <- function(NVecFxnPtr, index = 1, removeAll = FALSE)
-    nil <- .Call("removeNodeFun", NVecFxnPtr, as.integer(index), as.logical(removeAll) ) 
-#   This function removes either the nodeFunctionPointer at position index (R-index) or removes all if removeAll = TRUE
+## removeNodeFxn <- function(NVecFxnPtr, index = 1, removeAll = FALSE)
+##     nil <- .Call("removeNodeFun", NVecFxnPtr, as.integer(index), as.logical(removeAll) ) 
+## #   This function removes either the nodeFunctionPointer at position index (R-index) or removes all if removeAll = TRUE
 
 newManyVarAccess <- function(size = 0)
     .Call("newManyVariableAccessor", as.integer(size) ) 
@@ -172,8 +191,8 @@ addSingleVarAccess <- function(ManyVarAccessPtr, SingleVarAccessPtr, addAtEnd = 
 #   Same as addNodeFxn, but for adding a SingleModelVariableAccessor to a ManyModelVariablesAccessors
 
   
-removeSingleVarAccess <- function(ManyVarAccessPtr, index = 1, removeAll = FALSE)
-    nil <- .Call("removeModelVariableAccessor", ManyVarAccessPtr, as.integer(index), as.logical(removeAll) )
+## removeSingleVarAccess <- function(ManyVarAccessPtr, index = 1, removeAll = FALSE)
+##     nil <- .Call("removeModelVariableAccessor", ManyVarAccessPtr, as.integer(index), as.logical(removeAll) )
 #   Same as removeNodeFxn, but for SingleModelVariableAccessors
 
 newManyModelValuesAccess <- function(size)
@@ -184,8 +203,8 @@ addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValu
     nil <- .Call("addSingleModelValuesAccessor", ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, as.logical(addAtEnd), as.integer(index) ) 
 #   Same as addNodeFxn, but for adding singleModelValuesAccess to ManyModelValuesAccessor
 
-removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll = FALSE)
-    nil <- .Call("removeModelValuesAccessor", ManyModelValuesAccessPtr, as.integer(index), as.logical(removeAll) ) 
+## removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll = FALSE)
+##     nil <- .Call("removeModelValuesAccessor", ManyModelValuesAccessPtr, as.integer(index), as.logical(removeAll) ) 
 #   Same as removeNodeFxn, but for ManyModelValuessAccessor
 
 

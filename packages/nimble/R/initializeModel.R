@@ -1,8 +1,9 @@
 
 
-#' Performs initialization nimble model node values and log probabilities
+#' Performs initialization of nimble model node values and log probabilities
 #'
 #' @param model A setup argument, which specializes an instance of this nimble function to a particular model.
+#' @param silent logical indicating whether to suppress logging information
 #' @author Daniel Turek
 #' @details This nimbleFunction may be used at the beginning of nimble algorithms to perform model initialization.
 #' The intended usage is to specialize an instance of this nimbleFunction in the setup function of an algorithm,
@@ -26,6 +27,7 @@
 #'       ....
 #'    }
 #' )
+#' @export
 initializeModel <- nimbleFunction(
     setup = function(model, silent = FALSE) {
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)
@@ -33,7 +35,7 @@ initializeModel <- nimbleFunction(
 
         RHSonlyNodes <- model$getMaps('nodeNamesRHSonly')
         if(length(RHSonlyNodes) > 0) {
-            initFunctionList[[iter]] <- checkRSHonlyInit(model = model, nodes = RHSonlyNodes)
+            initFunctionList[[iter]] <- checkRHSonlyInit(model = model, nodes = RHSonlyNodes)
             iter <- iter + 1
         }
         
@@ -57,7 +59,7 @@ initializeModel <- nimbleFunction(
 
 nodeInit_virtual <- nimbleFunctionVirtual()
 
-checkRSHonlyInit <- nimbleFunction(
+checkRHSonlyInit <- nimbleFunction(
     contains = nodeInit_virtual,
     setup = function(model, nodes) {},
     run = function() {
@@ -75,7 +77,7 @@ stochNodeInit <- nimbleFunction(
         theseVals <- values(model, node)
         if(is.na.vec(theseVals)) print('warning: value of stochastic node is NA')
         lp <- calculate(model, node)
-        if(is.na(lp)) print('warning: problem initializing stochastic node, logProb is NA')
+        if(is.na(lp)) print('warning: problem initializing stochastic node ', node, ', logProb is NA')
         if(!is.na(lp)) {
             if(lp < -1e12) {
                 if(!silent) print('warning: problem initializing stochastic node, logProb less than -1e12')

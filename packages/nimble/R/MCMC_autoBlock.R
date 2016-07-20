@@ -1,12 +1,8 @@
-
-
-
-
 #' Automated parameter blocking procedure for efficient MCMC sampling
 #' 
-#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC specification, and custom-specified blockings of parameters.
-#'
-#' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intendend to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
+#' Runs NIMBLE's automated blocking procedure for a given model object, to dynamically determine a blocking scheme of the continuous-valued model nodes.  This blocking scheme is designed to produce efficient MCMC sampling (defined as number of effective samples generated per second of algorithm runtime).  See Turek, et al (2015) for details of this algorithm.  This also (optionally) compares this blocked MCMC against several static MCMC algorithms, including all univariate sampling, blocking of all continuous-valued nodes, NIMBLE's default MCMC configuration, and custom-specified blockings of parameters.
+#' 
+#' This method allows for fine-tuned usage of the automated blocking procedure.  However, the main entry point to the automatic blocking procedure is intended to be through either buildMCMC(..., autoBlock = TRUE), or configureMCMC(..., autoBlock = TRUE).
 #' 
 #' @author Daniel Turek
 #'
@@ -16,7 +12,7 @@
 #'
 #' @param autoIt The number of MCMC iterations to run intermediate MCMC algorithms, through the course of the procedure.  Default 20,000.
 #'
-#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC specification; a named list element consisting of a quoted code block, which when executed returns an MCMC specification object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
+#' @param run List of additional MCMC algorithms to compare against the automated blocking MCMC.  These may be specified as: the character string 'all' to denote blocking all continuous-valued nodes; the character string 'default' to denote NIMBLE's default MCMC configuration; a named list element consisting of a quoted code block, which when executed returns an MCMC configuration object for comparison; a custom-specificed blocking scheme, specified as a named list element which itself is a list of character vectors, where each character vector specifies the nodes in a particular block.  Default is c('all', 'default').
 #'
 #' @param verbose Logical specifying whether to output considerable details of the automated block procedure, through the course of execution.  Default FALSE.
 #' 
@@ -27,13 +23,15 @@
 #' @param round Logical specifying whether to round the final output results to two decimal places.  Default TRUE.
 #' 
 #' @return Returns a named list containing elements:
-#' summary: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
-#' autoGroups: A list specifying the parameter blockings converged on by the automated blocking procedure
-#' spec: A NIMBLE MCMC specification object corresponding to the results of the automated blocking procedure
+#' \itemize{
+#' \item \code{summary}: A data frame containing a numerical summary of the performance of all MCMC algorithms (including that from automated blocking)
+#' \item \code{autoGroups}: A list specifying the parameter blockings converged on by the automated blocking procedure
+#' \item \code{conf}: A NIMBLE MCMC configuration object corresponding to the results of the automated blocking procedure
+#' }
 #' 
 #' @references
 #'
-#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. \cr
+#' Turek, D., de Valpine, P., Paciorek, C., and Anderson-Bergman, C. (2015). Automated Parameter Blocking for Efficient Markov-Chain Monte Carlo Sampling. arXiv: 1503.05621. 
 #'
 #' @export
 autoBlock <- function(Rmodel,
@@ -67,10 +65,10 @@ autoBlock <- function(Rmodel,
         }
     } else cat('\nAuto-Blocking converged on all scalar (univariate) sampling\n')
     cat('\n')
-    ## create a new MCMC spec with the autoBlock groupings:
-    spec <- configureMCMC(Rmodel, nodes = NULL)
-    for(nodeGroup in lastAutoGrouping) addSamplerToSpec(Rmodel, spec, nodeGroup)
-    retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, spec=spec)
+## create a new MCMC conf with the autoBlock groupings:
+    conf <- configureMCMC(Rmodel, nodes = NULL)
+    for(nodeGroup in lastAutoGrouping) addSamplerToConf(Rmodel, conf, nodeGroup)
+    retList <- list(summary=dfmin, autoGroups=nonTrivialGroups, conf=conf)
     return(invisible(retList))
 }
 
@@ -89,13 +87,13 @@ autoBlockModel <- setRefClass(
         nodeGroupScalars = 'list',
         nodeGroupAllBlocked = 'list',
         monitorsVector = 'character',
-        initialMCMCspec = 'ANY'
-        ),
+        initialMCMCconf = 'ANY'
+    ),
     methods = list(
         initialize = function(Rmodel_orig) {
             Rmodel_orig <<- Rmodel_orig
             md <<- Rmodel_orig$modelDef
-            Rmodel <<- Rmodel_orig$newModel(replicate = TRUE)
+            Rmodel <<- Rmodel_orig$newModel(replicate = TRUE, check = FALSE)
             ##nimCopy(from = Rmodel_orig, to = Rmodel, logProb = TRUE)
             ##for(var in ls(Rmodel_orig$isDataEnv)) Rmodel$isDataEnv[[var]] <<- Rmodel_orig$isDataEnv[[var]]  ## copies data flags to the new model
             scalarNodeVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE, returnScalarComponents=TRUE)
@@ -103,33 +101,35 @@ autoBlockModel <- setRefClass(
             scalarNodeVectorCont <<- scalarNodeVector[!discreteInd]   ## making work with discrete nodes
             scalarNodeVectorDisc <<- scalarNodeVector[ discreteInd]   ## making work with discrete nodes
             if(length(scalarNodeVectorCont) == 0) stop('autoBlocking only works with one or more continuous-valued model nodes')   ## making work with discrete nodes
-            nodeGroupScalars <<- lapply(scalarNodeVector, function(x) x)
+            nodeGroupScalars <<- c(unique(lapply(scalarNodeVectorDisc, Rmodel$expandNodeNames)), scalarNodeVectorCont)   ## making work with discrete nodes, and also with dmulti distributions
             ##nodeGroupAllBlocked <<- list(scalarNodeVector)   ## making work with discrete nodes
-            nodeGroupAllBlocked <<- c(lapply(scalarNodeVectorDisc, function(x) x), list(scalarNodeVectorCont))   ## making work with discrete nodes
+            ##nodeGroupAllBlocked <<- c(lapply(scalarNodeVectorDisc, function(x) x), list(scalarNodeVectorCont))   ## making work with discrete nodes
+            nodeGroupAllBlocked <<- c(unique(lapply(scalarNodeVectorDisc, Rmodel$expandNodeNames)), list(scalarNodeVectorCont))   ## making work with discrete nodes, and also with dmulti distributions
             monitorsVector <<- Rmodel$getNodeNames(stochOnly=TRUE, includeData=FALSE)
         },
-        ## here is where the initial MCMC spec is created, for re-use -- for new version
-        createInitialMCMCspec = function(runList) {
-            initialMCMCspec <<- configureMCMC(Rmodel)
-            nInitialSamplers <- length(initialMCMCspec$samplerSpecs)
-            initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
-            initialMCMCspec$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
-            addCustomizedSamplersToInitialMCMCspec(runList)
-            initialMCMCspec$addMonitors(monitorsVector, print=FALSE)
-            RinitialMCMC <- buildMCMC(initialMCMCspec)
+        ## here is where the initial MCMC conf is created, for re-use -- for new version
+        createInitialMCMCconf = function(runList) {
+            initialMCMCconf <<- configureMCMC(Rmodel)
+            nInitialSamplers <- length(initialMCMCconf$samplerConfs)
+            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'slice',    print=FALSE)  ## add one slice sampler
+            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW',       print=FALSE)  ## add one RW sampler
+            initialMCMCconf$addSampler(target = scalarNodeVectorCont[1], type = 'RW_block', print=FALSE)  ## add one RW_block sampler
+            addCustomizedSamplersToInitialMCMCconf(runList)
+            initialMCMCconf$addMonitors(monitorsVector, print=FALSE)
+            RinitialMCMC <- buildMCMC(initialMCMCconf)
             Cmodel <<- compileNimble(Rmodel)
             CinitialMCMC <- compileNimble(RinitialMCMC, project = Rmodel)   ## (new version) yes, we need this compileNimble call -- this is the whole point!
-            initialMCMCspec$setSamplers(1:nInitialSamplers, print=FALSE)  ## important for new version: removes all news samplers added to initial MCMC spec
+            initialMCMCconf$setSamplers(1:nInitialSamplers, print=FALSE)  ## important for new version: removes all news samplers added to initial MCMC conf
         },
-        addCustomizedSamplersToInitialMCMCspec = function(runListCode) {
-            if(is.list(runListCode)) { lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCspec(el)); return() }
+        addCustomizedSamplersToInitialMCMCconf = function(runListCode) {
+            if(is.list(runListCode)) { lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCconf(el)); return() }
             if(is.call(runListCode)) {
                 if(is.call(runListCode[[1]]) && length(runListCode[[1]])==3 && runListCode[[1]][[3]]=='addSampler') {
-                    runListCode[[1]][[2]] <- as.name('initialMCMCspec')
+                    runListCode[[1]][[2]] <- as.name('initialMCMCconf')
                     eval(substitute(RUNLISTCODE, list(RUNLISTCODE=runListCode)))
                     return()
                 }
-                lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCspec(el))
+                lapply(runListCode, function(el) addCustomizedSamplersToInitialMCMCconf(el))
                 return()
             }
         },
@@ -152,11 +152,11 @@ autoBlockModel <- setRefClass(
 
 
 autoBlockParamDefaults <- function() {
-    list(
-        makePlots = FALSE,
-        niter = 20000,
-        setSeed = TRUE,
-        verbose = FALSE
+	list(
+            makePlots = FALSE,
+            niter = 20000,
+            setSeed = TRUE,
+            verbose = FALSE
         )
 }
 
@@ -164,19 +164,19 @@ autoBlockParamDefaults <- function() {
 autoBlockClass <- setRefClass(
 
     Class = 'autoBlockClass',
-
+    
     fields = list(
-        
+
         ## special
         abModel = 'ANY',
         it = 'numeric',
-
+        
         ## overall control
         makePlots = 'logical',
         niter = 'numeric',
         setSeed = 'logical',
         verbose = 'logical',
-
+        
         ## persistant lists of historical data
         naming = 'list',
         candidateGroups = 'list',
@@ -191,13 +191,11 @@ autoBlockClass <- setRefClass(
         empCor = 'list',
         distMatrix = 'list',
         hTree = 'list'
-        ),
-
+    ),
+    
     methods = list(
-
-        initialize = function(Rmodel, control=list()) {
-            require(lattice)
-            require(coda)
+        
+	initialize = function(Rmodel, control=list()) {
             abModel <<- autoBlockModel(Rmodel)
             defaultsList <- autoBlockParamDefaults()
             for(i in seq_along(defaultsList)) if(is.null(control[[names(defaultsList)[i]]])) control[[names(defaultsList)[i]]] <- defaultsList[[i]]
@@ -209,7 +207,7 @@ autoBlockClass <- setRefClass(
             if(!is.list(runList)) stop('runList argument should be a list')
             if(is.null(names(runList))) names(runList) <- rep('', length(runList))
 
-            abModel$createInitialMCMCspec(runList)  ## here is where the initial MCMC spec is created, for re-use -- for new version
+            abModel$createInitialMCMCconf(runList)  ## here is where the initial MCMC conf is created, for re-use -- for new version
             
             for(i in seq_along(runList)) {
                 runListElement <- runList[[i]]
@@ -219,39 +217,40 @@ autoBlockClass <- setRefClass(
                 } else if(is.list(runListElement)) {
                     type <- 'blocks'
                 } else if(class(runListElement) == '{') {
-                    type <- 'spec'
+                    type <- 'conf'
                 } else stop('don\'t understand element in run list')
                 switch(type,
                        
-                       none =    { specList <- list(createSpecFromGroups(abModel$nodeGroupScalars))
-                                   runSpecListAndSaveBest(specList, 'none') },
+                       none =    { confList <- list(createConfFromGroups(abModel$nodeGroupScalars))
+                                   runConfListAndSaveBest(confList, 'none') },
 
-                       all =     { specList <- list(createSpecFromGroups(abModel$nodeGroupAllBlocked))
-                                   runSpecListAndSaveBest(specList, 'all') },
+                       all =     { confList <- list(createConfFromGroups(abModel$nodeGroupAllBlocked))
+                                   runConfListAndSaveBest(confList, 'all') },
 
-                       default = { ##specList <- list(configureMCMC(oldSpec = abModel$initialMCMCspec))
-                                   ## forcing this processing through createSpecFromGroups()
+                       default = { ##confList <- list(configureMCMC(oldConf = abModel$initialMCMCconf))
+                                   ## forcing this processing through createConfFromGroups()
                                    ## in order to always standardize the ordering of samplers;
                                    ## even though this might result in a different sampler ordering
-                                   ## than the true NIMBLE 'default' MCMC spec
-                                   groups <- determineGroupsFromSpec(abModel$initialMCMCspec)
-                                   specList <- list(createSpecFromGroups(groups))
-                                   runSpecListAndSaveBest(specList, 'default') },
+                                   ## than the true NIMBLE 'default' MCMC conf
+                                   ##groups <- determineGroupsFromConf(abModel$initialMCMCconf)
+                                   groups <- lapply(determineGroupsFromConf(abModel$initialMCMCconf), function(nodes) unique(abModel$Rmodel$expandNodeNames(nodes)))  ## making work with dmulti distribution
+                                   confList <- list(createConfFromGroups(groups))
+                                   runConfListAndSaveBest(confList, 'default') },
 
-                       blocks =  { specList <- list(createSpecFromGroups(abModel$createGroups(runListElement)))
+                       blocks =  { confList <- list(createConfFromGroups(abModel$createGroups(runListElement)))
                                    name <- if(runListName == '') 'customBlocks' else runListName
-                                   runSpecListAndSaveBest(specList, name) },
+                                   runConfListAndSaveBest(confList, name) },
 
-                       spec =    { Rmodel <- abModel$Rmodel  ## just hoping that the customSpec will find this
-                                   specList <- list(eval(runListElement, envir=environment()))
-                                   name <- if(runListName == '') 'customSpec' else runListName
-                                   runSpecListAndSaveBest(specList, name) },
+                       conf =    { Rmodel <- abModel$Rmodel  ## just hoping that the customConf will find this
+                                   confList <- list(eval(runListElement, envir=environment()))
+                                   name <- if(runListName == '') 'customConf' else runListName
+                                   runConfListAndSaveBest(confList, name) },
 
                        auto =    { autoIt <- 0
                                    while((autoIt < 2) || ((!groupingsEquiv(grouping[[it]], grouping[[it-1]])) && (min(essPT[[it]]) > min(essPT[[it-1]])))) {
                                        candidateGroupsList <- if(autoIt==0) list(abModel$nodeGroupScalars)  else determineCandidateGroupsFromCurrentSample()
-                                       specList <- lapply(candidateGroupsList, function(groups) createSpecFromGroups(groups))
-                                       runSpecListAndSaveBest(specList, paste0('auto',autoIt), auto=TRUE)
+                                       confList <- lapply(candidateGroupsList, function(groups) createConfFromGroups(groups))
+                                       runConfListAndSaveBest(confList, paste0('auto',autoIt), auto=TRUE)
                                        autoIt <- autoIt + 1
                                    }
                                },
@@ -280,13 +279,14 @@ autoBlockClass <- setRefClass(
         
         determineGroupsFromCutree = function(ct) {
             groupsContOnly <- lapply(unique(ct), function(x) names(ct)[ct==x])   ## making work with discrete nodes
-            groupsAllNodes <- c(lapply(abModel$scalarNodeVectorDisc, function(x) x), groupsContOnly)   ## making work with discrete nodes
+            ##groupsAllNodes <- c(lapply(abModel$scalarNodeVectorDisc, function(x) x), groupsContOnly)   ## making work with discrete nodes
+            groupsAllNodes <- c(unique(lapply(abModel$scalarNodeVectorDisc, abModel$Rmodel$expandNodeNames)), groupsContOnly)   ## making work with discrete nodes and dmulti distribution
             return(groupsAllNodes)   ## making work with discrete nodes
         },
         
-        runSpecListAndSaveBest = function(specList, name, auto=FALSE) {
-            lapply(specList, function(spec) checkOverMCMCspec(spec))
-            RmcmcList <- lapply(specList, function(spec) buildMCMC(spec))
+        runConfListAndSaveBest = function(confList, name, auto=FALSE) {
+            lapply(confList, function(conf) checkOverMCMCconf(conf))
+            RmcmcList <- lapply(confList, function(conf) buildMCMC(conf))
             CmcmcList <- compileNimble(RmcmcList, project = abModel$Rmodel)
             if(!is.list(CmcmcList)) CmcmcList <- list(CmcmcList)  ## make sure compileNimble() returns a list...
             timingList <- essList <- essPTList <- essPTminList <- list()
@@ -302,15 +302,15 @@ autoBlockClass <- setRefClass(
             }
             bestInd <- as.numeric(which(unlist(essPTminList) == max(unlist(essPTminList))))
             if(length(bestInd) > 1) stop('there should never be an exact tie for the best...')
-            if(!is.null(names(specList))) name <- paste0(name, '-', names(specList)[bestInd])
+            if(!is.null(names(confList))) name <- paste0(name, '-', names(confList)[bestInd])
             
             it <<- it + 1
             naming[[it]] <<- name
-            candidateGroups[[it]] <<- lapply(specList, function(spec) determineGroupsFromSpec(spec))
+            candidateGroups[[it]] <<- lapply(confList, function(conf) determineGroupsFromConf(conf))
             grouping[[it]] <<- candidateGroups[[it]][[bestInd]]
             groupSizes[[it]] <<- determineNodeGroupSizesFromGroups(grouping[[it]])
             groupIDs[[it]] <<- determineNodeGroupIDsFromGroups(grouping[[it]])
-            samplers[[it]] <<- determineSamplersFromGroupsAndSpec(grouping[[it]], specList[[bestInd]])
+            samplers[[it]] <<- determineSamplersFromGroupsAndConf(grouping[[it]], confList[[bestInd]])
             timing[[it]] <<- timingList[[bestInd]]
             ess[[it]] <<- essList[[bestInd]]
             essPT[[it]] <<- sort(essPTList[[bestInd]])
@@ -318,13 +318,29 @@ autoBlockClass <- setRefClass(
             if(auto) {
                 burnedSamples <- extractAndBurnSamples(CmcmcList[[bestInd]])
                 burnedSamples <- burnedSamples[, abModel$scalarNodeVectorCont]   ## making work with discrete nodes
-                empCov[[it]] <<- cov(burnedSamples)
-                empCor[[it]] <<- cov2cor(empCov[[it]])
+
+                ##empCov[[it]] <<- cov(burnedSamples)
+                e <- try(cov(burnedSamples))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 1; 2
+                } else empCov[[it]] <<- e
+
+                ##empCor[[it]] <<- cov2cor(empCov[[it]])
+                e <- try(cov2cor(empCov[[it]]))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 3; 4
+                } else empCor[[it]] <<- e
+
                 distMatrix[[it]] <<- as.dist(1 - abs(empCor[[it]]))
-                hTree[[it]] <<- hclust(distMatrix[[it]])
+
+                ##hTree[[it]] <<- hclust(distMatrix[[it]])
+                e <- try(hclust(distMatrix[[it]]))
+                if(inherits(e, 'try-error')) {
+                    message('try-error, going into browser'); browser(); 5; 6
+                } else hTree[[it]] <<- e
             }
             
-            if(verbose) printCurrent(name, specList[[bestInd]])
+            if(verbose) printCurrent(name, confList[[bestInd]])
             if(makePlots && auto) makeCurrentPlots(name)
         },
 
@@ -336,17 +352,17 @@ autoBlockClass <- setRefClass(
             burnedSamples
         },
 
-        determineGroupsFromSpec = function(spec) {
+        determineGroupsFromConf = function(conf) {
             groups <- list()
-            for(ss in spec$samplerSpecs) {
+            for(ss in conf$samplerConfs) {
                 if(ss$name == 'crossLevel') {
                     topNodes <- ss$target
-                    lowNodes <- spec$model$getDependencies(topNodes, self=FALSE, stochOnly=TRUE, includeData=FALSE)
+                    lowNodes <- conf$model$getDependencies(topNodes, self=FALSE, stochOnly=TRUE, includeData=FALSE)
                     nodes <- c(topNodes, lowNodes)
                 } else {
                     nodes <- ss$target
                 }
-                groups[[length(groups)+1]] <- spec$model$expandNodeNames(nodes, returnScalarComponents=TRUE)
+                groups[[length(groups)+1]] <- conf$model$expandNodeNames(nodes, returnScalarComponents=TRUE)
             }
             return(groups)
         },
@@ -363,21 +379,21 @@ autoBlockClass <- setRefClass(
             return(groupIDvector)
         },
 
-        determineSamplersFromGroupsAndSpec = function(groups, spec) {
-            samplerSpecs <- spec$samplerSpecs
-            if(length(groups) != length(samplerSpecs)) stop('something wrong')
+        determineSamplersFromGroupsAndConf = function(groups, conf) {
+            samplerConfs <- conf$samplerConfs
+            if(length(groups) != length(samplerConfs)) stop('something wrong')
             samplerVector <- character(0)
-            for(i in seq_along(groups)) for(node in groups[[i]]) samplerVector[[node]] <- samplerSpecs[[i]]$name
+            for(i in seq_along(groups)) for(node in groups[[i]]) samplerVector[[node]] <- samplerConfs[[i]]$name
             return(samplerVector)
         },
         
-        createSpecFromGroups = function(groups) {
+        createConfFromGroups = function(groups) {
             groups <- sortGroups(groups)
-            ##spec <- configureMCMC(Rmodel, nodes=NULL, monitors=character(0)) ## original version
-            spec <- configureMCMC(oldSpec = abModel$initialMCMCspec)  ## new version
-            spec$setSamplers()  ## new version -- removes all the samplers from initalMCMCspec
-            for(nodeGroup in groups) addSamplerToSpec(abModel$Rmodel, spec, nodeGroup)
-            return(spec)
+            ##conf <- configureMCMC(Rmodel, nodes=NULL, monitors=character(0)) ## original version
+            conf <- configureMCMC(oldConf = abModel$initialMCMCconf)  ## new version
+            conf$setSamplers()  ## new version -- removes all the samplers from initalMCMCconf
+            for(nodeGroup in groups) addSamplerToConf(abModel$Rmodel, conf, nodeGroup)
+            return(conf)
         },
         
         sortGroups = function(groups) {
@@ -388,11 +404,11 @@ autoBlockClass <- setRefClass(
             return(sortedGroups)
         },
         
-        checkOverMCMCspec = function(spec) {
+        checkOverMCMCconf = function(conf) {
             warn <- FALSE
-            for(ss in spec$samplerSpecs) {
-                ## if(ss$name == 'end') {
-                ##     msg <- 'using \'end\' sampler may lead to results we don\'t want'
+            for(ss in conf$samplerConfs) {
+                ## if(ss$name == 'posterior_predictive') {
+                ##     msg <- 'using \'posterior_predictive\' sampler may lead to results we don\'t want'
                 ##     cat(paste0('\nWARNING: ', msg, '\n\n')); warning(msg)
                 ## }
                 if(grepl('^conjugate_', ss$name) && getNimbleOption('verifyConjugatePosteriors')) {
@@ -402,16 +418,16 @@ autoBlockClass <- setRefClass(
                 }
             }
             if(warn) {
-                msg <- 'Conjugate sampler functions in \'default\' spec are running slow due to verifying the posterior;\nThis behaviour can be changed using a NIMBLE package option.'
+                msg <- 'Conjugate sampler functions in \'default\' conf are running slow due to verifying the posterior;\nThis behaviour can be changed using a NIMBLE package option.'
                 warning(msg, call. = FALSE)
             }
         },
 
-        printCurrent = function(name, spec) {
+        printCurrent = function(name, conf) {
             cat(paste0('\n################################\nbegin iteration ', it, ': ', name, '\n################################\n'))
             if(length(candidateGroups[[it]]) > 1) { cat('\ncandidate groups:\n'); cg<-candidateGroups[[it]]; for(i in seq_along(cg)) { cat(paste0('\n',names(cg)[i],':\n')); printGrouping(cg[[i]]) } }
             cat('\ngroups:\n'); printGrouping(grouping[[it]])
-            cat('\nsamplers:\n'); spec$getSamplers()
+            cat('\nsamplers:\n'); conf$getSamplers()
             cat(paste0('\nMCMC runtime: ', round(timing[[it]], 1), ' seconds\n'))
             cat('\nESS:\n'); print(round(ess[[it]], 0))
             cat('\nESS/time:\n'); print(round(essPT[[it]], 1))
@@ -448,29 +464,34 @@ autoBlockClass <- setRefClass(
         )
 )
 
-addSamplerToSpec <- function(Rmodel, spec, nodeGroup) {
+addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
     if(length(nodeGroup) > 1) {
-        spec$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
+        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
     }
-    if(!(nodeGroup %in% Rmodel$getNodeNames())) {
-        spec$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
+    if(!(nodeGroup %in% Rmodel$getNodeNames()) && !Rmodel$isDiscrete(nodeGroup)) {
+        conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
     }
     if(nodeGroup %in% Rmodel$getMaps('nodeNamesEnd')) {
-        ##cat(paste0('warning: using \'end\' sampler for node ', nodeGroup, ' may lead to results we don\'t want\n\n'))
-        spec$addSampler(target = nodeGroup, type = 'end', print = FALSE); return()
+        ##cat(paste0('warning: using \'posterior_predictive\' sampler for node ', nodeGroup, ' may lead to results we don\'t want\n\n'))
+        conf$addSampler(target = nodeGroup, type = 'posterior_predictive', print = FALSE); return()
     }
     ## conjugacyResult <- Rmodel$checkConjugacy(nodeGroup)
     ## if((!is.null(conjugacyResult)) && conjOveride) {
-    ##     spec$addSampler(target = ??????, type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
+    ##     conf$addSampler(target = ??????, type = conjugacyResult$samplerType, control = conjugacyResult$control, print = FALSE); return()
     ## }
-    discrete <- Rmodel$isDiscrete(nodeGroup)
-    if(discrete) {
-        spec$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
+    if(Rmodel$isBinary(nodeGroup)) {
+        conf$addSampler(target = nodeGroup, type = 'binary', print = FALSE); return()
+    }
+    if(Rmodel$isDiscrete(nodeGroup)) {
+        if(Rmodel$getNodeDistribution(nodeGroup) == 'dmulti') {
+            conf$addSampler(target = nodeGroup, type = 'RW_multinomial', print = FALSE); return()
+        }
+        conf$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()
     }
     if(length(Rmodel$expandNodeNames(nodeGroup, returnScalarComponents = TRUE)) > 1) {
-        spec$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
+        conf$addSampler(target = nodeGroup, type = 'RW_block', print = FALSE); return()
     }
-    spec$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
+    conf$addSampler(target = nodeGroup, type = 'RW', print = FALSE); return()
 }
 
 createDFfromABlist <- function(lst, niter) {
@@ -516,9 +537,9 @@ plotABS <- function(df, xlimToMin=FALSE, together) {
     nVertPlots <- if(together) nModels*2 else nModels
     xVarNames <- c('ess', 'essPT')
     parCmd <- quote(par(mfrow=c(nVertPlots,1),mar=c(1,0,1,0),tcl=-.1,mgp=c(3,0,0),cex.axis=.7))
-    if(together) { quartz(); eval(parCmd) }
+    if(together) { eval(parCmd) }
     for(xVarName in xVarNames) {
-        if(!together) { quartz(); eval(parCmd) }
+        if(!together) { eval(parCmd) }
         maxMinXVar<-0; for(mod in models) {dfMod<-df[df$model==mod,]; blks<-unique(dfMod$blocking); for(blk in blks) {maxMinXVar<-max(maxMinXVar,min(dfMod[dfMod$blocking==blk,xVarName]))}}
         maxXVar <- if(xlimToMin) maxMinXVar else max(df[, xVarName])
         xlim <- c(maxXVar*-0.05, maxXVar)

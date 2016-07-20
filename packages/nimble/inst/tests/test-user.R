@@ -46,25 +46,28 @@ assign('mypow', mypow, envir = .GlobalEnv)
 code <- nimbleCode({
     x ~ dnorm(0, 1)
     dx ~ dnorm(dbl(x), sd = .01)
-    y[1:K] ~ dmnorm(vecdbl(mu[1:K]), cov = .0001*I[1:K, 1:K])
+    liftedmu[1:K] <- vecdbl(mu[1:K])
+    y[1:K] ~ dmnorm(liftedmu[1:K], cov = eps[1:K,1:K])
     mu[1:K] ~ dmnorm(zeros[1:K], cov = I[1:K, 1:K])
     z ~ dnorm(0, 1)
     dz ~ dnorm(dblSum(x, z), sd = .01)
 
     # use of args out of order
-    out <- mypow(y = 3, x = 2)
+    out <- mypow(y = yin, x = xin)
     
     # vectorized fun applied to scalar nodes-based variable
     for(i in 1:K) {
         theta[i] ~ dnorm(0, 1)
     }
-    w[1:K] ~ dmnorm(vecdbl(theta[1:K]), cov = .0001*I[1:K, 1:K])
+    liftedmu2[1:K] <- vecdbl(theta[1:K])
+    w[1:K] ~ dmnorm(liftedmu2[1:K], cov = eps[1:K, 1:K])
 })
 
 K <- 3
-m <- nimbleModel(code, inits = list(x = 0.25, y = 1:K, mu = 1:K,
+m <- nimbleModel(code, inits = list(yin = 3, xin = 2, x = 0.25, y = 1:K, mu = 1:K,
                            z = 0.5, theta = rep(.5, K), w = rep(1, K)),
-                 constants = list(K = K, zeros = rep(0, K), I = diag(K)))
+                 constants = list(K = K, zeros = rep(0, K), I = diag(K),
+                                  eps = diag(rep(.0001, K))))
 
 cm <- compileNimble(m)
 
@@ -73,29 +76,26 @@ simulate(m)
 set.seed(0)
 simulate(cm)
 
+# need c() in here because R nodes are arrays
 for(var in c('dx', 'y', 'dz', 'w')) {
     try(test_that("Test that R and C models agree with user-supplied functions: ",
-                  expect_that(get(var, m), equals(get(var, cm)),
+                  expect_equal(c(get(var, m)), (get(var, cm)),
                                              info = paste0(var, " values differ"))))
 }
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(abs(2*cm$x - cm$dx), is_less_than(.03),
-                          info = paste0("x and dx are not consistent"))))
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(max(abs(2*cm$mu - cm$y)), is_less_than(.03),
-                          info = paste0("mu and y are not consistent"))))
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(abs(2*(cm$x + cm$z) - cm$dz), is_less_than(.03),
-                          info = paste0("x plus z and dz are not consistent"))))
-try(test_that("Test that values based on user-supplied functions are correct: ",
-              expect_that(max(abs(2*cm$theta - cm$w)), is_less_than(.03),
-                          info = paste0("theta and w are not consistent"))))
+try(test_that("Test that values based on user-supplied functions are correct (x and dx consistent): ",
+              expect_lt(abs(2*cm$x - cm$dx), (.03))))
+try(test_that("Test that values based on user-supplied functions are correct (mu and y consistent): ",
+              expect_lt(max(abs(2*cm$mu - cm$y)), (.03))))
+try(test_that("Test that values based on user-supplied functions are correct (x plus z and dz consistent):",
+              expect_lt(abs(2*(cm$x + cm$z) - cm$dz), (.03))))
+try(test_that("Test that values based on user-supplied functions are correct (theta and w consistent):",
+              expect_lt(max(abs(2*cm$theta - cm$w)), (.03))))
 
 try(test_that("Test that arg matching by name is correct: ",
-              expect_that(m$out, is_identical_to(8),
+              expect_identical(c(m$out), (8),
                           info = paste0("incorrect arg matching by name in R model"))))
 try(test_that("Test that arg matching by name is correct: ",
-              expect_that(cm$out, is_identical_to(8),
+              expect_identical(cm$out, (8),
                           info = paste0("incorrect arg matching by name in C model"))))
 
 ## User-supplied distributions
@@ -163,7 +163,7 @@ assign('qmyexp', qmyexp, envir = .GlobalEnv)
 ddirchmulti <- nimbleFunction(
     run = function(x = double(1), alpha = double(1), size = double(0), log = integer(0)) {
         returnType(double(0))
-        logProb <- lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
+        logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) - sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + size)
         if(log) {
             return(logProb)
         } else {
@@ -194,7 +194,7 @@ registerDistributions(list(
     )
                       
 
-code1 <- BUGScode({
+code1 <- nimbleCode({
     for(i in 1:n1) {
         y1[i] ~ dmyexp(rate = r1)
         y2[i] ~ dmyexp(scale = s2)
@@ -204,14 +204,14 @@ code1 <- BUGScode({
     s2 ~ dunif(0, 100)
 })
 
-code2 <- BUGScode({
+code2 <- nimbleCode({
     for(i in 1:n2) {
         y3[i] ~ dpois(lambda)
     }
     lambda ~ T(dmyexp(scale = 5), 0, upper)
 })
 
-code3 <- BUGScode({
+code3 <- nimbleCode({
     for(i in 1:m) {
         y[i, 1:P] ~ ddirchmulti(alpha[1:P], sz)
     }
@@ -256,13 +256,11 @@ m2 <- nimbleModel(code2, data = data2['y3'], constants = data2[c('upper', 'n2')]
 cm2 <- compileNimble(m2)
 simulate(m2, 'lambda')
 simulate(cm2, 'lambda')
-try(test_that("Test that truncation works with simulate nodeFunction for user-supplied distribution: ",
-              expect_that(max(c(m2$lambda, cm2$lambda)), is_less_than(upper),
-                          info = paste0("parameter exceeds upper bound"))))
+try(test_that("Test that truncation works with simulate nodeFunction for user-supplied distribution (parameter not exceed upper bound): ",
+              expect_lt(max(c(m2$lambda, cm2$lambda)), (upper))))
 m2$lambda <- cm2$lambda <- upper + 1
-try(test_that("Test that truncation works with calculate nodeFunction for user-supplied distribution: ",
-              expect_that(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), is_identical_to(-Inf),
-                          info = paste0("calculate on out-of-bounds value does not return -Inf"))))
+try(test_that("Test that truncation works with calculate nodeFunction for user-supplied distribution (calculation on out-of-bounds not return -Inf): ",
+              expect_identical(max(c(calculate(m2, 'lambda'), calculate(cm2, 'lambda'))), (-Inf))))
 
 
 testBUGSmodel(code1, example = 'user1', dir = "", data = data1, inits = inits1, useInits = TRUE)
@@ -290,13 +288,12 @@ Cmcmc <- compileNimble(Rmcmc, project = m)
 Cmcmc$run(5000)
 smp <- as.matrix(Cmcmc$mvSamples)
 
-try(test_that("Test that truncation works with MCMC for user-supplied distribution: ",
-              expect_that(max(smp[ , 'lambda']), is_less_than(upper),
-                          info = paste0("parameter exceeds upper bound"))))
+try(test_that("Test that truncation works with MCMC for user-supplied distribution (parameter not exceed upper bound): ",
+              expect_lt(max(smp[ , 'lambda']), (upper))))
 
 
 deregisterDistributions('ddirchmulti')
 try(test_that("Test that deregistration of user-supplied distributions works: ",
-              expect_that(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), equals(TRUE),
+              expect_equal(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), (TRUE),
                           info = paste0("ddirchmulti has not been deregistered"))))
 

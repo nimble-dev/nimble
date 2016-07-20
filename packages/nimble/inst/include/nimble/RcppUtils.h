@@ -42,6 +42,7 @@ double SEXP_2_double(SEXP Sn, int i = 0); /* Ditto */
 SEXP double_2_SEXP(double v);
 SEXP vectorDouble_2_SEXP(const vector<double> &v);
 SEXP vectorInt_2_SEXP(const vector<int> &v);
+SEXP vectorInt_2_SEXP(const vector<int> &v, int offset);
 
 vector<int> SEXP_2_vectorInt(SEXP Sn, int offset = 0); /* Sn can be numeric or integer from R */ 
 /* Offset is added to every value, so if the vectors are indices, offset = -1 is useful */
@@ -402,6 +403,12 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 				 	NimArr<1, double> par, optimfn objFxn,
 				 	int numOtherArgs, ...);
 
+
+
+/* forwardsolve, backsolve */
+// 
+//NimArr<1, double> forwardsolve(NimArr<2, double> A, NimArr<1, double> b);
+//NimArr<2, double> forwardsolve(NimArr<2, double> A, NimArr<2, double> B);
 
 
 #endif

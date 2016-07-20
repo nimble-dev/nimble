@@ -1,4 +1,3 @@
-
 RCfunctionDef <- setRefClass('RCfunctionDef',
                              contains = 'cppFunctionDef',
                              fields = list(
@@ -63,6 +62,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                  buildFunction = function(RCfun, parentST = NULL) {
                                      RCfunProc <<- RCfun
                                      name <<- RCfunProc$name
+                                     const <<- RCfunProc$const
                                      argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames() ## this has only the original arguments
                                      args <<- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = argNames, parentST = parentST)
                                      allNames <- RCfunProc$compileInfo$newLocalSymTab$getSymbolNames() ## this has had local variables added
@@ -82,7 +82,19 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          warning("creating a .Call() expression with no DLL information")
                                          browser()                                     
                                      }
-                                     dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
+
+                                     # attempt to mimic cxxfunction in inline pkg
+                                     # dotCall <- quote( .Call( EXTERNALNAME ))
+                                     # dotCall[[1L]] <- .Call
+                                     # dotCall[[2L]] <- getNativeSymbolInfo(SEXPinterfaceCname, dll )$address
+                                     
+                                     
+                                     # avoid R CMD check problem with registration
+                                     txt <- ".Call(SEXPname)"
+                                     dotCall <- eval(substitute(substitute(txt1, list(SEXPname = SEXPinterfaceCname)), list(txt1 = parse(text = txt)[[1]])))
+                                     
+                                     # dotCall <- substitute(.Call(SEXPname), list(SEXPname = SEXPinterfaceCname))
+
                                      for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                      if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
                                      if(returnArgsAsList) {
@@ -248,6 +260,16 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
         }
         return(ans)
     }
+    if(inherits(toSym, 'symbolInternalType')) {
+        thisInternalType <- as.character(toSym[['argList']][[1]])
+        if(thisInternalType == 'indexedNodeInfoClass') {            
+            ans <- substitute(TO <- indexedNodeInfo(SEXP_2_vectorDouble(FROM)), list(TO = as.name(toSym$name),
+                                                                                     FROM = as.name(fromSym$name)))
+            return(ans)
+        } else{
+            stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
+        }
+    }
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 
@@ -268,6 +290,16 @@ buildCopyLineToSEXP <- function(fromSym, toSym) {
             }
         }
         return(ans)
+    }
+    if(inherits(fromSym, 'symbolInternalType')) {
+        thisInternalType <- as.character(fromSym[['argList']][[1]])
+        if(thisInternalType == 'indexedNodeInfoClass') {
+            ans <- substitute(PROTECT(TO <- (vectorDouble_2_SEXP(FROM))), list(TO = as.name(toSym$name),
+                                                                            FROM = as.name(fromSym$name) ) )
+            return(ans)
+        } else {
+            stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
+        }
     }
     stop(paste("Error, don't know how to make a copy line to SEXP for something of class", class(fromSym)))
 }

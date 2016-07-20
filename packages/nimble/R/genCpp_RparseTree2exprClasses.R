@@ -44,7 +44,14 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
                 if(!isRbracket(code[[4]])) code[[4]] <- embedInRbracket(code[[4]])
             }
         }
-
+        if(name == 'nimSwitch') {
+            if(length(code) > 3)
+                for(iSwitch in 4:length(code))
+                    if(!isRbracket(code[[iSwitch]])) code[[iSwitch]] <- embedInRbracket(code[[iSwitch]])
+        }
+        if(name == 'run.time') {
+            if(!isRbracket(code[[2]])) code[[2]] <- embedInRbracket(code[[2]])
+        }
         if(name == 'map') { ## special treatment. just stick the remaining arguments in as a list
             ans$args <- as.list(code[-1])
             return(ans)
@@ -53,8 +60,12 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
         ## populate args with recursive calls
         if(length(code) > 1) {
             for(i in 2:length(code)) ## Note for NULL this removes the list entry.  Not very general, but handles return(invisible(NULL))
-                if(is.logical(code[[i]])) ans$args[[i-1]] <- as.numeric(code[[i]])
-                else {
+                if(is.logical(code[[i]])) {
+                    if(name == '[' & i == length(code))
+                        ans$args[[i-1]] <- code[[i]]
+                    else ## cast logical to numeric unless it is last arg of a [, in which case it could be for drop.  This is not a very logical place for this step, but it works.
+                        ans$args[[i-1]] <- as.numeric(code[[i]])
+                } else {
                     ans$args[[i-1]] <- if(is.numeric(code[[i]]) | is.character(code[[i]]) | is.null(code[[i]])) code[[i]] else RparseTree2ExprClasses(code[[i]], caller = ans, callerArgID = i-1)
                 }
         }
