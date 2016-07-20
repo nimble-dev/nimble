@@ -1047,6 +1047,186 @@ sampler_RW_multinomial <- nimbleFunction(
 
 
 
+RW_record <- nimbleFunction(
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    ## these lines are new:
+    numSamples <- 0
+    before <- c(0, 0)
+    after <- c(0, 0)
+    if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
+    if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
+    ###  control list extraction  ###
+    logScale      <- control$log
+    reflective    <- control$reflective
+    adaptive      <- control$adaptive
+    adaptInterval <- control$adaptInterval
+    scale         <- control$scale
+    if(logScale & reflective)        stop('cannot use reflective RW sampler on a log scale (i.e. with options log=TRUE and reflective=TRUE')
+    ###  node list generation  ###
+    calcNodes  <- model$getDependencies(target)
+    ###  numeric value generation  ###
+    scaleOriginal <- scale
+    timesRan      <- 0
+    timesAccepted <- 0
+    timesAdapted  <- 0
+    scaleHistory          <- c(0, 0)
+    acceptanceRateHistory <- c(0, 0)
+    optimalAR <- 0.44
+    gamma1    <- 0
+    range <- getDistribution(model$getNodeDistribution(target))$range
+  },
+  
+  run = function() {
+    ## these lines are new:
+    numSamples <<- numSamples + 1
+    setSize(before, numSamples)
+    setSize(after, numSamples)
+    before[numSamples] <<- model[[target]]
+    ## back to the original sampler function code:
+    currentValue <- model[[target]]
+    if(!logScale)    propValue <-     rnorm(1, mean =     currentValue,  sd = scale)
+    else             propValue <- exp(rnorm(1, mean = log(currentValue), sd = scale))
+    if(reflective)   while(propValue < range[1] | propValue > range[2]) {
+      if(propValue < range[1]) propValue <- 2*range[1] - propValue
+      if(propValue > range[2]) propValue <- 2*range[2] - propValue    }
+    model[[target]] <<- propValue
+    logMHR <- calculateDiff(model, calcNodes)
+    if(logScale)     logMHR <- logMHR + log(propValue) - log(currentValue)
+    jump <- decide(logMHR)
+    if(jump) nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    else     nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+    if(adaptive)     adaptiveProcedure(jump)
+    ## this line new:
+    after[numSamples] <<- model[[target]]
+  },
+  
+  methods = list(
+    
+    adaptiveProcedure = function(jump = logical()) {
+      timesRan <<- timesRan + 1
+      if(jump)     timesAccepted <<- timesAccepted + 1
+      if(timesRan %% adaptInterval == 0) {
+        acceptanceRate <- timesAccepted / timesRan
+        timesAdapted <<- timesAdapted + 1
+        setSize(scaleHistory,          timesAdapted)
+        setSize(acceptanceRateHistory, timesAdapted)
+        scaleHistory[timesAdapted] <<- scale
+        acceptanceRateHistory[timesAdapted] <<- acceptanceRate
+        gamma1 <<- 1/((timesAdapted + 3)^0.8)
+        gamma2 <- 10 * gamma1
+        adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+        scale <<- scale * adaptFactor
+        timesRan <<- 0
+        timesAccepted <<- 0
+      }
+    },
+    
+    reset = function() {
+      scale <<- scaleOriginal
+      timesRan      <<- 0
+      timesAccepted <<- 0
+      timesAdapted  <<- 0
+      scaleHistory          <<- scaleHistory          * 0
+      acceptanceRateHistory <<- acceptanceRateHistory * 0
+      gamma1 <<- 0
+    }
+  ), where = getLoadingNamespace()
+)
+
+slice_record <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## these lines are new:
+        numSamples <- 0
+        before <- c(0, 0)
+        after <- c(0, 0)
+        ## control list extraction
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        width         <- control$sliceWidth
+        maxSteps      <- control$sliceMaxSteps
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        widthOriginal <- width
+        timesRan      <- 0
+        timesAdapted  <- 0
+        sumJumps      <- 0
+        discrete      <- model$isDiscrete(target)
+        ## checks
+        if(length(targetAsScalar) > 1)     stop('cannot use slice sampler on more than one target node')
+    },
+    run = function() {
+        ## these lines are new:
+        numSamples <<- numSamples + 1
+        setSize(before, numSamples)
+        setSize(after, numSamples)
+        before[numSamples] <<- model[[target]]
+        u <- getLogProb(model, calcNodes) - rexp(1, 1)    # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+        x0 <- model[[target]]    # create random interval (L,R), of width 'width', around current value of target
+        L <- x0 - runif(1, 0, 1) * width
+        R <- L + width
+        maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+        maxStepsR <- maxSteps - 1 - maxStepsL
+        lp <- setAndCalculateTarget(L)
+        while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+            L <- L - width
+            lp <- setAndCalculateTarget(L)
+            maxStepsL <- maxStepsL - 1
+        }
+        lp <- setAndCalculateTarget(R)
+        while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+            R <- R + width
+            lp <- setAndCalculateTarget(R)
+            maxStepsR <- maxStepsR - 1
+        }
+        x1 <- L + runif(1, 0, 1) * (R - L)
+        lp <- setAndCalculateTarget(x1)
+        while(is.nan(lp) | lp < u) {   # must be is.nan()
+            if(x1 < x0) { L <- x1
+                      } else      { R <- x1 }
+            x1 <- L + runif(1, 0, 1) * (R - L)           # sample uniformly from (L,R) until sample is inside of slice (with shrinkage)
+            lp <- setAndCalculateTarget(x1)
+        }
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        jumpDist <- abs(x1 - x0)
+        if(adaptive)     adaptiveProcedure(jumpDist)
+        ## this line new:
+        after[numSamples] <<- model[[target]]
+    },
+    methods = list(
+        setAndCalculateTarget = function(value = double()) {
+            if(discrete)     value <- floor(value)
+            model[[target]] <<- value
+            lp <- calculate(model, calcNodes)
+            returnType(double())
+            return(lp)
+        },
+        adaptiveProcedure = function(jumpDist = double()) {
+            timesRan <<- timesRan + 1
+            sumJumps <<- sumJumps + jumpDist   # cumulative (absolute) distance between consecutive values
+            if(timesRan %% adaptInterval == 0) {
+                adaptFactor <- (3/4) ^ timesAdapted
+                meanJump <- sumJumps / timesRan
+                width <<- width + (2*meanJump - width) * adaptFactor   # exponentially decaying adaptation of 'width' -> 2 * (avg. jump distance)
+                timesAdapted <<- timesAdapted + 1
+                timesRan <<- 0
+                sumJumps <<- 0
+            }
+        },
+        reset = function() {
+            width        <<- widthOriginal
+            timesRan     <<- 0
+            timesAdapted <<- 0
+            sumJumps     <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
