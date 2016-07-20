@@ -1051,6 +1051,7 @@ sampler_RW_multinomial <- nimbleFunction(
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 ########################################################################################
 ### RW_llFunctionBlock, does a block RW, but using a generic log-likelihood function ###
@@ -1592,6 +1593,8 @@ sampler_RW_multinomial <- nimbleFunction(
 
 
 
+=======
+>>>>>>> d82f20e436cfbb59d67757f0b145f1261a8d4a72
 RW_record <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
@@ -1772,7 +1775,10 @@ slice_record <- nimbleFunction(
 )
 
 
+<<<<<<< HEAD
 >>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
+=======
+>>>>>>> d82f20e436cfbb59d67757f0b145f1261a8d4a72
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine

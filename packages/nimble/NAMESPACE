@@ -1,12 +1,18 @@
 import(methods)
 import(igraph)
 <<<<<<< HEAD
+<<<<<<< HEAD
 importFrom(coda, effectiveSize, as.mcmc, is.mcmc.list)
 =======
 import(mcmc)
 importFrom(coda, effectiveSize, as.mcmc, is.mcmc.list)
 importFrom(KernSmooth, bkde2D)
 >>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
+=======
+import(mcmc)
+importFrom(coda, effectiveSize, as.mcmc, is.mcmc.list)
+importFrom(KernSmooth, bkde2D)
+>>>>>>> d82f20e436cfbb59d67757f0b145f1261a8d4a72
 importFrom(grDevices, dev.off, jpeg)
 importFrom(graphics, lines, plot, text)
 importFrom(stats, aggregate, ar, lm, optim, pnorm, qnorm, residuals, runif, sd, var)
@@ -23,10 +29,15 @@ export("nfVar<-")
 export("values<-")
 export(MCMCsuite)
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 export(MCMC_CODESS)
 export(codess)
 >>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
+=======
+export(MCMC_CODESS)
+export(codess)
+>>>>>>> d82f20e436cfbb59d67757f0b145f1261a8d4a72
 export(asCol)
 export(asRow)
 export(autoBlock)
@@ -132,6 +143,8 @@ export(run.time)
 export(rwish_chol)
 export(sampler_BASE)
 export(sampler_RW)
+export(RW_record)
+export(slice_record)
 export(sampler_RW_PF)
 export(sampler_RW_PF_block)
 export(sampler_RW_block)
@@ -159,16 +172,24 @@ exportClasses(CnimbleFunctionBase)
 exportClasses(MCMCconf)
 exportClasses(MCMCsuiteClass)
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 exportClasses(MCMC_CODESSClass)
 >>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
+=======
+exportClasses(MCMC_CODESSClass)
+>>>>>>> d82f20e436cfbb59d67757f0b145f1261a8d4a72
 exportClasses(RmodelBaseClass)
 exportClasses(codeBlockClass)
 exportClasses(modelBaseClass)
 exportClasses(modelValuesBaseClass)
 exportClasses(nimbleFunctionBase)
 <<<<<<< HEAD
+<<<<<<< HEAD
 exportClasses(singleVarAccessClass)
 =======
 exportClasses(singleVarAccessClass)
 >>>>>>> 8770584a6e115a69cc3a82007736b393b5f38409
+=======
+exportClasses(singleVarAccessClass)
+>>>>>>> d82f20e436cfbb59d67757f0b145f1261a8d4a72
