@@ -282,8 +282,18 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
       getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
     } else {
 #ifdef _DEBUG_GETDEPS
-      PRINTF("  Node %i was already touched\n", thisGraphNodeID);
+      PRINTF("  Node %i was already touched.\n", thisGraphNodeID);
 #endif
+      if((thisGraphNode->type == STOCH) & !downstream) {
+	/* In this case the input node was already touched, so it is a dependency */
+	/* of something earlier on the input list.  But since it was on the input list */
+	/* we still need to get its dependencies.  But if downstream is TRUE (==1), then */
+	/* its dependencies will have already been pursued so we don't need to */
+#ifdef _DEBUG_GETDEPS
+      PRINTF("  But is stochastic and downstream is false, so we are recursing into its dependencies.\n");
+#endif
+	getDependenciesOneNode(ans, thisGraphNodeID, downstream, 1);
+      }
     }
   }
 
