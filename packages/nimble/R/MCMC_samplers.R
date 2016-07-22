@@ -1215,7 +1215,9 @@ sampler_RW_multinomial <- nimbleFunction(
 #'
 #' @aliases sampler posterior_predictive RW RW_block RW_multinomial RW_llFunction slice crossLevel RW_llFunction_block RW_PF RW_PF_block sampler_posterior_predictive sampler_RW sampler_RW_block sampler_RW_multinomial sampler_RW_llFunction sampler_slice sampler_crossLevel sampler_RW_llFunction_block sampler_RW_PF sampler_RW_PF_block
 #'
-#' @seealso configureMCMC addSampler buildMCMC
+#' @seealso \code{\link{configureMCMC}} \code{\link{addSampler}} \code{\link{buildMCMC}} \code{\link{runMCMC}}
+#'
+#' @author Daniel Turek
 #'
 #' @references
 #'
