@@ -92,6 +92,7 @@ Collate:
     MCMC_utils.R
     MCMC_configuration.R
     MCMC_build.R
+    MCMC_run.R
     MCMC_samplers.R
     MCMC_conjugacy.R
     MCMC_suite.R
