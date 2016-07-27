@@ -218,7 +218,7 @@ calcAdaptationFactor_ETA <- nimbleFunction(
         gamma2         <- 10 * gamma1
         adaptFactor    <- exp(gamma2 * (acceptanceRate - optimalAR))
         ## nimPrint("timesAdapted = ", timesAdapted, " ETA = ", ETA, " w = ", w, " MaxLogProb = ", MaxLogProb, " adaptFactor = ", adaptFactor)
-        nimPrint("ETA = ", ETA)
+        ## nimPrint("ETA = ", ETA)
         returnType(double())
         return(adaptFactor)
     },
