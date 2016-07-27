@@ -232,6 +232,98 @@ sampler_RW_block <- nimbleFunction(
 )
 
 
+########################################################################
+### block RW sampler with multi-variate normal proposal distribution ###
+########################################################################
+sampler_RW_block_ETA <- nimbleFunction(
+    ## A modified version of sampler_RW_block
+    ## Designed to maintain greater flexibility during the hill-climbing phase of burn-in.
+    ## This extra flexibility makes it less suceptible to getting stuck facing the wrong way on a ridge when converging towards highly correlated target distributions.
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive       <- control$adaptive
+        adaptScaleOnly <- control$adaptScaleOnly
+        adaptInterval  <- control$adaptInterval
+        scale          <- control$scale
+        propCov        <- control$propCov
+        ## node list generation
+        targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        calcNodes <- model$getDependencies(target)
+        ## numeric value generation
+        scaleOriginal <- scale
+        timesRan      <- 0
+        timesAccepted <- 0
+        timesAdapted  <- 0
+        d <- length(targetAsScalar)
+        if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
+        propCovOriginal <- propCov
+        chol_propCov <- chol(propCov)
+        chol_propCov_scale <- scale * chol_propCov
+        empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
+        ## nested function and function list definitions
+        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        my_calcAdaptationFactor_ETA <- calcAdaptationFactor_ETA(d)
+        ## checks
+        if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
+        if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
+        if(!all(dim(propCov) == d)) stop('propCov matrix must have dimension ',d,'x',d,'\n')
+        if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
+    },
+    run = function() {
+        propValueVector <- generateProposalVector()
+        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
+        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+        if(adaptive)     adaptiveProcedure(jump)
+    },
+    methods = list(
+        generateProposalVector = function() {
+            ## Below, 0 indicates prec_param = FALSE
+            propValueVector <- rmnorm_chol(1, values(model,target), chol_propCov_scale, 0)
+            returnType(double(1))
+            return(propValueVector)
+        },
+        adaptiveProcedure = function(jump = logical()) {
+            timesRan <<- timesRan + 1
+            if(jump)     timesAccepted <<- timesAccepted + 1
+            if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRate <- timesAccepted / timesRan
+                timesAdapted  <<- timesAdapted + 1
+                LogProb        <- model$getLogProb()
+                adaptFactor    <- my_calcAdaptationFactor_ETA$run(acceptanceRate, LogProb)
+                scale         <<- scale * adaptFactor
+                ## calculate empirical covariance, and adapt proposal covariance
+                if(!adaptScaleOnly) {
+                    ## browser()
+                    gamma1 <- my_calcAdaptationFactor_ETA$gamma1
+                    for(i in 1:d)     empirSamp[,i] <<- empirSamp[,i] - mean(empirSamp[,i])
+                    empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
+                    propCov <<- propCov + gamma1 * (empirCov - propCov)
+                    chol_propCov <<- chol(propCov)
+                }
+                chol_propCov_scale <<- chol_propCov * scale
+                propCov[1:d,1:d] <<- t(chol_propCov_scale) %*% chol_propCov_scale ## DP : I added this to prevent propCov exploding
+                timesRan <<- 0
+                timesAccepted <<- 0
+            }
+        },
+        reset = function() {
+            scale   <<- scaleOriginal
+            propCov <<- propCovOriginal
+            chol_propCov <<- chol(propCov)
+            chol_propCov_scale <<- chol_propCov * scale
+            timesRan      <<- 0
+            timesAccepted <<- 0
+            timesAdapted  <<- 0
+            my_calcAdaptationFactor_ETA$reset()
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
 
 #############################################################################
 ### RW_llFunction, does a RW, but using a generic log-likelihood function ###
@@ -1085,6 +1177,19 @@ sampler_RW_multinomial <- nimbleFunction(
 #' @section RW_block sampler:
 #'
 #' The RW_block sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr
+#'
+#' The RW_block sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should adapt the scale (a coefficient for the entire proposal covariance matrix) and propCov (the multivariate normal proposal covariance matrix) throughout the course of MCMC execution.  If only the scale should undergo adaptation, this argument should be specified as TRUE. (default = TRUE)
+#' \item adaptScaleOnly. A logical argument, specifying whether adaption should be done only for scale (TRUE) or also for provCov (FALSE).  This argument is only relevant when adaptive = TRUE.  When adaptScaleOnly = FALSE, both scale and propCov undergo adaptation; the sampler tunes the scaling to achieve a theoretically good acceptance rate, and the proposal covariance to mimic that of the empirical samples.  When adaptScaleOnly = FALSE, only the proposal scale is adapted. (default = FALSE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the RW_block sampler will perform its adaptation procedure, based on the past adaptInterval iterations. (default = 200)
+#' \item scale. The initial value of the scalar multiplier for propCov.  If adaptive = FALSE, scale will never change. (default = 1)
+#' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
+#' }
+#'
+#' @section RW_block_ETA sampler:
+#'
+#' The RW_block_ETA is a variant of RW_block that maintains greater flexibility in adaptation during the hill-climbing phase of burn-in. The sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr
 #'
 #' The RW_block sampler accepts the following control list elements:
 #' \itemize{
