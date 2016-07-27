@@ -132,8 +132,8 @@ dev.set(dev.list()[1])
 plot(mc2)
 dev.set(dev.list()[2])
 plot(samples[,2],samples[,3], typ="l")
-cmvg2$y           ## -0.5164177 -0.6477722
-cmvg2$calculate() ## -0.480978
+cmvg2$y           ## 0.6248406 0.8214114
+cmvg2$calculate() ## -1.10813
 
 ## Let's examine the hill climbing a bit closer
 plot(log(samples[,1]-samples[1,1]+1), xlab="iteration (i)", ylab="log (logProb[i] - logProb[1] + 1)", typ="l") ## 
