@@ -80,7 +80,7 @@ samples <- as.matrix(cmcmc$mvSamples); dim(samples)
 samples <- tail(samples, nIter)
 mc      <- as.mcmc(samples)
 dev.set(dev.list()[1])
-plot(mc)                                 ## The variance is microscopic, the sampler is stuck on a ridge & is trying to sample in the wrong direction
+plot(mc) ## Don't be decived, these are terrible. The variance is microscopic, the sampler is stuck on a ridge & is trying to sample in the wrong direction
 dev.set(dev.list()[2])
 plot(samples[,2],samples[,3], typ="l")
 as.vector(tail(samples, 1))
@@ -104,12 +104,12 @@ plot(log(samples[,1]-samples[1,1]+1), xlab="iteration (i)", ylab="log (logProb[i
 ## Remove a burn-in period
 dev.set(dev.list()[1])
 burn  <- 1E4
-mc2 <- as.mcmc(tail(samples, nIter-burn))
-plot(mc2)
+mc <- as.mcmc(tail(samples, nIter-burn))
+plot(mc)
 dev.set(dev.list()[2])
 burn  <- 2E4
-mc2 <- as.mcmc(tail(samples, nIter-burn))
-plot(mc2)
+mc <- as.mcmc(tail(samples, nIter-burn))
+plot(mc)
 ## Now the sampling looks good.
 ## The main point here is RW_block required 1 reset before it could hit the target.
 ## For MCMC on a more complex model with few clues about starting values this is an undesirable characteristic.
@@ -132,8 +132,8 @@ dev.set(dev.list()[1])
 plot(mc2)
 dev.set(dev.list()[2])
 plot(samples[,2],samples[,3], typ="l")
-cmvg2$y           ##  0.6248406 0.8214114
-cmvg2$calculate() ## -1.10813
+cmvg2$y           ## -0.5164177 -0.6477722
+cmvg2$calculate() ## -0.480978
 
 ## Let's examine the hill climbing a bit closer
 plot(log(samples[,1]-samples[1,1]+1), xlab="iteration (i)", ylab="log (logProb[i] - logProb[1] + 1)", typ="l") ## 
@@ -148,3 +148,8 @@ burn  <- 2E4
 mc2 <- as.mcmc(tail(samples, nIter-burn))
 plot(mc2) ## Convergence already looks good. With the more flexible adaptation convergence is faster and does not require a user to reset.
 
+par(mfrow=n2mfrow(2))
+dim(as.matrix(mc[,2:3])) 
+dim(as.matrix(mc2[,2:3]))
+plot(as.matrix(mc[,2:3]), pch=19, cex=0.2, main="RW_block")
+plot(as.matrix(mc2[,2:3]), pch=19, cex=0.2, main="RW_block_ETA") 

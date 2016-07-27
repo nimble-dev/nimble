@@ -235,10 +235,10 @@ sampler_RW_block <- nimbleFunction(
 ########################################################################
 ### block RW sampler with multi-variate normal proposal distribution ###
 ########################################################################
+## A modified version of sampler_RW_block
+## Designed to maintain greater flexibility during the hill-climbing phase of burn-in.
+## This extra flexibility makes it less suceptible to getting stuck facing the wrong way on a ridge when converging towards highly correlated target distributions.
 sampler_RW_block_ETA <- nimbleFunction(
-    ## A modified version of sampler_RW_block
-    ## Designed to maintain greater flexibility during the hill-climbing phase of burn-in.
-    ## This extra flexibility makes it less suceptible to getting stuck facing the wrong way on a ridge when converging towards highly correlated target distributions.
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -303,7 +303,7 @@ sampler_RW_block_ETA <- nimbleFunction(
                     propCov <<- propCov + gamma1 * (empirCov - propCov)
                     chol_propCov <<- chol(propCov)
                 }
-                chol_propCov_scale <<- chol_propCov * scale
+                chol_propCov_scale <<- chol_propCov * scale 
                 propCov[1:d,1:d] <<- t(chol_propCov_scale) %*% chol_propCov_scale ## DP : I added this to prevent propCov exploding
                 timesRan <<- 0
                 timesAccepted <<- 0
