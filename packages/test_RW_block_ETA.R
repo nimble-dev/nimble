@@ -113,7 +113,38 @@ plot(mc2)
 ## Now the sampling looks good.
 ## The main point here is RW_block required 1 reset before it could hit the target.
 ## For MCMC on a more complex model with few clues about starting values this is an undesirable characteristic.
-## A method the auto-resets should be prefered.
+## A method that auto-resets should be prefered.
 
 
+##########################################################################################################
+## Scenario 2: High correlation, terrible starting values & default block sampler + univariate samplers ##
+##########################################################################################################
+## Start adaptive MCMC far from target
+set.seed(1)
+mvg2$y  <- yStart           ## The same really terrible starting values
+cmvg2$y <- yStart           ## The same really terrible starting values
+nIter   <- 1E5
+cmcmc2$run(nIter, reset=TRUE)  ## mcmc2$run(nIter, reset=TRUE) 
+samples <- as.matrix(cmcmc2$mvSamples); dim(samples)
+samples <- tail(samples, nIter)
+mc2     <- as.mcmc(samples)
+dev.set(dev.list()[1])
+plot(mc2)
+dev.set(dev.list()[2])
+plot(samples[,2],samples[,3], typ="l")
+cmvg2$y           ##  0.6248406 0.8214114
+cmvg2$calculate() ## -1.10813
+
+## Let's examine the hill climbing a bit closer
+plot(log(samples[,1]-samples[1,1]+1), xlab="iteration (i)", ylab="log (logProb[i] - logProb[1] + 1)", typ="l") ## 
+
+## Remove a burn-in period
+dev.set(dev.list()[1])
+burn  <- 1E4
+mc2 <- as.mcmc(tail(samples, nIter-burn))
+plot(mc2)
+dev.set(dev.list()[2])
+burn  <- 2E4
+mc2 <- as.mcmc(tail(samples, nIter-burn))
+plot(mc2) ## Convergence already looks good. With the more flexible adaptation convergence is faster and does not require a user to reset.
 
