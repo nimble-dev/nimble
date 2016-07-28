@@ -254,8 +254,8 @@ sampler_RW_block_ETA <- nimbleFunction(
         scaleOriginal  <- scale
         timesRan       <- 0
         timesAccepted  <- 0
-        timesAdapted   <- 0
-        EWMALogProb    <- -Inf ## Exponentially weighted moving average of LogProb
+        timesAdapted   <- 0 
+        EWMALogProb    <- 0    ## Exponentially weighted moving average of LogProb
         maxEWMALogProb <- -Inf ## The historical maximum of EWMALogProb
         d <- length(targetAsScalar)
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
@@ -325,7 +325,7 @@ sampler_RW_block_ETA <- nimbleFunction(
             timesRan           <<- 0
             timesAccepted      <<- 0
             timesAdapted       <<- 0
-            EWMALogProb        <<- -Inf 
+            EWMALogProb        <<- 0
             maxEWMALogProb     <<- -Inf 
             my_calcAdaptationFactor_ETA$reset()
         }
