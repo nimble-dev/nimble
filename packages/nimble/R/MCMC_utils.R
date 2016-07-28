@@ -223,6 +223,7 @@ calcAdaptationFactor_ETA <- nimbleFunction(
     },
     methods = list(
         reset = function() {
+            scale             <<- 1   
             gamma1            <<- 0
             timesAdapted      <<- 0
             effTimesAdapted   <<- 1
