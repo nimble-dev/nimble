@@ -62,7 +62,7 @@ X11()
 set.seed(1)
 yStart  <- c(-1, 1) * 1E10 ## Some really terrible starting values
 cmvg$y  <- yStart 
-nIter   <- 1E5
+nIter   <- 5E5
 cmcmc$run(nIter, reset=TRUE) 
 samples <- as.matrix(cmcmc$mvSamples); dim(samples)
 samples <- tail(samples, nIter)
@@ -123,7 +123,7 @@ plot(mc)
 set.seed(1)
 mvg2$y  <- yStart           ## The same really terrible starting values
 cmvg2$y <- yStart           ## The same really terrible starting values
-nIter   <- 3E5
+nIter   <- 1E5
 cmcmc2$run(nIter, reset=TRUE)  ## mcmc2$run(nIter, reset=TRUE) 
 samples <- as.matrix(cmcmc2$mvSamples); dim(samples)
 samples <- tail(samples, nIter)
@@ -140,11 +140,11 @@ plot(log(samples[,1]-samples[1,1]+1), xlab="iteration (i)", ylab="log (logProb[i
 
 ## Remove a burn-in period
 dev.set(dev.list()[1])
-burn  <- 1E4
+burn  <- 2E4
 mc2 <- as.mcmc(tail(samples, nIter-burn))
 plot(mc2) ## Burn visibly not large enough
 dev.set(dev.list()[2])
-burn  <- 2E4
+burn  <- 5E4
 mc2 <- as.mcmc(tail(samples, nIter-burn))
 plot(mc2) ## Convergence already looks good. With the more flexible adaptation convergence is faster and does not require a user to reset.
 
@@ -165,3 +165,7 @@ heidel.diag(mc2, eps=0.1, pvalue=0.05)
 
 autocorr.plot(mc)
 autocorr.plot(mc2)
+
+################
+## Comparison ##
+################
