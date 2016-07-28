@@ -123,7 +123,7 @@ plot(mc)
 set.seed(1)
 mvg2$y  <- yStart           ## The same really terrible starting values
 cmvg2$y <- yStart           ## The same really terrible starting values
-nIter   <- 1E5
+nIter   <- 3E5
 cmcmc2$run(nIter, reset=TRUE)  ## mcmc2$run(nIter, reset=TRUE) 
 samples <- as.matrix(cmcmc2$mvSamples); dim(samples)
 samples <- tail(samples, nIter)
@@ -132,7 +132,7 @@ dev.set(dev.list()[1])
 plot(mc2)
 dev.set(dev.list()[2])
 plot(samples[,2],samples[,3], typ="l")
-cmvg2$y           ## 0.6248406 0.8214114
+cmvg2$y           ##  0.6248406 0.8214114
 cmvg2$calculate() ## -1.10813
 
 ## Let's examine the hill climbing a bit closer
@@ -142,7 +142,7 @@ plot(log(samples[,1]-samples[1,1]+1), xlab="iteration (i)", ylab="log (logProb[i
 dev.set(dev.list()[1])
 burn  <- 1E4
 mc2 <- as.mcmc(tail(samples, nIter-burn))
-plot(mc2)
+plot(mc2) ## Burn visibly not large enough
 dev.set(dev.list()[2])
 burn  <- 2E4
 mc2 <- as.mcmc(tail(samples, nIter-burn))
@@ -153,3 +153,15 @@ dim(as.matrix(mc[,2:3]))
 dim(as.matrix(mc2[,2:3]))
 plot(as.matrix(mc[,2:3]), pch=19, cex=0.2, main="RW_block")
 plot(as.matrix(mc2[,2:3]), pch=19, cex=0.2, main="RW_block_ETA") 
+
+## Can CODA inform us about burn in?
+codamenu()
+effectiveSize(mc)
+effectiveSize(mc2)
+
+## Heidelberger and Welch Halfwidth test suggests both chains required more samples for 2 decimal point precision in the mean.
+heidel.diag(mc,  eps=0.1, pvalue=0.05)
+heidel.diag(mc2, eps=0.1, pvalue=0.05) 
+
+autocorr.plot(mc)
+autocorr.plot(mc2)

@@ -238,7 +238,7 @@ sampler_RW_block <- nimbleFunction(
 ## A modified version of sampler_RW_block
 ## Designed to maintain greater flexibility during the hill-climbing phase of burn-in.
 ## This extra flexibility makes it less suceptible to getting stuck facing the wrong way on a ridge when converging towards highly correlated target distributions.
-sampler_RW_block_ETA <- nimbleFunction(
+sampler_RW_block_ETA <- nimbleFunction( 
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -249,21 +249,23 @@ sampler_RW_block_ETA <- nimbleFunction(
         propCov        <- control$propCov
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
-        calcNodes <- model$getDependencies(target)
+        calcNodes      <- model$getDependencies(target)
         ## numeric value generation
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
+        scaleOriginal  <- scale
+        timesRan       <- 0
+        timesAccepted  <- 0
+        timesAdapted   <- 0
+        EWMALogProb    <- -Inf ## Exponentially weighted moving average of LogProb
+        maxEWMALogProb <- -Inf ## The historical maximum of EWMALogProb
         d <- length(targetAsScalar)
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
-        propCovOriginal <- propCov
-        chol_propCov <- chol(propCov)
+        propCovOriginal    <- propCov
+        chol_propCov       <- chol(propCov)
         chol_propCov_scale <- scale * chol_propCov
-        empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
+        empirSamp          <- matrix(0, nrow=adaptInterval, ncol=d)
         ## nested function and function list definitions
-        my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
-        my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        my_setAndCalculateDiff      <- setAndCalculateDiff(model, target)
+        my_decideAndJump            <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor_ETA <- calcAdaptationFactor_ETA(d)
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
@@ -271,11 +273,11 @@ sampler_RW_block_ETA <- nimbleFunction(
         if(!all(dim(propCov) == d)) stop('propCov matrix must have dimension ',d,'x',d,'\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
-    run = function() {
+    run = function(alpha = double(0, default=0.1)) {
         propValueVector <- generateProposalVector()
-        lpMHR <- my_setAndCalculateDiff$run(propValueVector)
-        jump <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-        if(adaptive)     adaptiveProcedure(jump)
+        lpMHR           <- my_setAndCalculateDiff$run(propValueVector)
+        jump            <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+        if(adaptive)     adaptiveProcedure(jump, alpha)
     },
     methods = list(
         generateProposalVector = function() {
@@ -284,44 +286,52 @@ sampler_RW_block_ETA <- nimbleFunction(
             returnType(double(1))
             return(propValueVector)
         },
-        adaptiveProcedure = function(jump = logical()) {
-            timesRan <<- timesRan + 1
+        adaptiveProcedure = function(jump = logical(), alpha = double()) {
+            LogProb         <- model$getLogProb()
+            timesRan       <<- timesRan + 1
+            EWMALogProb    <<- alpha * LogProb + (1-alpha) * EWMALogProb
+            maxEWMALogProb <<- max(maxEWMALogProb, EWMALogProb)
             if(jump)     timesAccepted <<- timesAccepted + 1
             if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted  <<- timesAdapted + 1
-                LogProb        <- model$getLogProb()
-                adaptFactor    <- my_calcAdaptationFactor_ETA$run(acceptanceRate, LogProb)
+                adaptFactor    <- my_calcAdaptationFactor_ETA$run(acceptanceRate, maxEWMALogProb)
                 scale         <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
                     ## browser()
                     gamma1 <- my_calcAdaptationFactor_ETA$gamma1
                     for(i in 1:d)     empirSamp[,i] <<- empirSamp[,i] - mean(empirSamp[,i])
-                    empirCov <- (t(empirSamp) %*% empirSamp) / (timesRan-1)
-                    propCov <<- propCov + gamma1 * (empirCov - propCov)
+                    empirCov      <- (t(empirSamp) %*% empirSamp) / (timesRan-1) ## within-interval empirical covariance. timesRan behaves like a constant.
+                    propCov      <<- propCov + gamma1 * (empirCov - propCov)     ## An Exponentially Weighted Moving Average
                     chol_propCov <<- chol(propCov)
                 }
-                chol_propCov_scale <<- chol_propCov * scale 
-                propCov[1:d,1:d] <<- t(chol_propCov_scale) %*% chol_propCov_scale ## DP : I added this to prevent propCov exploding
-                timesRan <<- 0
-                timesAccepted <<- 0
+                chol_propCov_scale <<- chol_propCov * scale
+                ## if (my_calcAdaptationFactor_ETA$downScale < 0.1 & scale < 1E-10) {
+                ##     ## DP : This can help prevent propCov exploding
+                ##     propCov[1:d,1:d] <<- t(chol_propCov_scale) %*% chol_propCov_scale
+                ##     scale <- 1
+                ## }
+                timesRan           <<- 0
+                timesAccepted      <<- 0
             }
         },
         reset = function() {
-            scale   <<- scaleOriginal
-            propCov <<- propCovOriginal
-            chol_propCov <<- chol(propCov)
+            scale              <<- scaleOriginal
+            propCov            <<- propCovOriginal
+            chol_propCov       <<- chol(propCov)
             chol_propCov_scale <<- chol_propCov * scale
-            timesRan      <<- 0
-            timesAccepted <<- 0
-            timesAdapted  <<- 0
+            timesRan           <<- 0
+            timesAccepted      <<- 0
+            timesAdapted       <<- 0
+            EWMALogProb        <<- -Inf 
+            maxEWMALogProb     <<- -Inf 
             my_calcAdaptationFactor_ETA$reset()
         }
     ), where = getLoadingNamespace()
 )
-
+ 
 
 
 

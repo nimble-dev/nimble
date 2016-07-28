@@ -188,49 +188,48 @@ calcAdaptationFactor <- nimbleFunction(
 ## A modified version of calcAdaptationFactor
 ## The idea is to replace timesAdapted in the calculation of gamma1 with something more sensitive to the current state of convergence
 ## This gives an on-the-fly reset during the hill-climbing phase of convergence, 
-## and therefore avoids the adaptation become stuck when it needs to change direction.
-## So timesAdapted is replaced, in that one line, with an effectiveTimesAdapted (ETA)    
-calcAdaptationFactor_ETA <- nimbleFunction(
-    setup = function(paramDimension) {
-        ## Theoretically optimal acceptance rates...
-        ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
-        acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
-        if(paramDimension > 5)     paramDimension <- 5
-        optimalAR     <- acceptanceRates[paramDimension]
-        timesAdapted  <- 0
-        gamma1        <- 0
-        ETA           <- 1   ## Effective Times Adapted
-        w             <- 1   ## Weights
-        Z             <- 1   ## Normalising 'constant' for weights w
-        MaxLogProb    <- -Inf
-        MaxLogProbOld <- -Inf
+## and therefore avoids the adaptative kernel becoming stuck when it needs to change direction.
+## So timesAdapted is replaced, in that one line, with an effectiveTimesAdapted (ETA or effTimesAdapted)
+## Once converged, downscaling of effTimesAdapted become increasingly negligible and it will grow at the same rate as timesAdapted
+calcAdaptationFactor_ETA <- nimbleFunction( 
+    setup = function(paramDimension, targetAcRate) {
+        if (missing(targetAcRate)) {
+            ## If user does not specify the targetAcRate then use
+            ## the theoretically optimal (under ideal conditions) acceptance rates...
+            ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
+            acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
+            if(paramDimension > 5) paramDimension <- 5
+            optimalAR <- acceptanceRates[paramDimension]
+            targetAcRate <- optimalAR
+        }
+        scale             <- 1   
+        gamma1            <- 0
+        timesAdapted      <- 0
+        effTimesAdapted   <- 1   ## Effective Times Adapted
+        maxEWMALogProbOld <- -Inf
     },
-    run = function(acceptanceRate = double(), LogProb = double()) {
-        MaxLogProbOld <<- MaxLogProb
-        MaxLogProb    <<- max(LogProb, MaxLogProbOld)
-        Z             <<- Z * exp(MaxLogProbOld - MaxLogProb)
-        w             <<- exp(LogProb - MaxLogProb) 
-        Z             <<- Z + w
-        w             <<- w / Z
-        ETA           <<- 1 + (1-w)*ETA 
-        timesAdapted  <<- timesAdapted + 1
-        gamma1        <<- 1 / ((ETA + 3) ^ 0.8)   ## Here ETA replaces timesAdapted of original function
-        gamma2         <- 10 * gamma1
-        adaptFactor    <- exp(gamma2 * (acceptanceRate - optimalAR))
-        ## nimPrint("timesAdapted = ", timesAdapted, " ETA = ", ETA, " w = ", w, " MaxLogProb = ", MaxLogProb, " adaptFactor = ", adaptFactor)
-        ## nimPrint("ETA = ", ETA)
+    run = function(acceptanceRate = double(), maxEWMALogProb = double()) {
+        ## maxEWMALogProb is the maximum value taken so far in the Exponential Weighted Moving Average of LogProb
+        ## It increases monotonically and the size of those increments goes to zero 
+        scale           <<- exp(maxEWMALogProbOld - maxEWMALogProb) ## (1-scale) -> 0 as timesAdapted -> Inf
+        effTimesAdapted <<- 1 + effTimesAdapted * scale
+        timesAdapted    <<- 1 + timesAdapted
+        gamma1          <<- 1 / ((effTimesAdapted + 3)^0.8) ## Here timesAdapted was swapped for the more flexible effTimesAdapted 
+        gamma2           <- 10 * gamma1                                ## Unchanged
+        adaptFactor      <- exp(gamma2 * (acceptanceRate - optimalAR)) ## Unchanged
+        nimPrint("timesAdapted = ", timesAdapted, " ETA = ", effTimesAdapted,
+                 " exp(old-new)", exp(MaxLogProbOld - MaxLogProb),
+                 " MaxLogProb = ", MaxLogProb, " adaptFactor = ", adaptFactor)
+        maxEWMALogProbOld <<- maxEWMALogProb
         returnType(double())
         return(adaptFactor)
     },
     methods = list(
         reset = function() {
-            timesAdapted  <<- 0
-            gamma1        <<- 0
-            ETA           <<- 1
-            w             <<- 1   
-            Z             <<- 1   
-            MaxLogProb    <<- -Inf
-            MaxLogProbOld <<- -Inf
+            gamma1            <<- 0
+            timesAdapted      <<- 0
+            effTimesAdapted   <<- 1
+            maxEWMALogProbOld <<- -Inf
         }
     ), where = getLoadingNamespace()
 )
