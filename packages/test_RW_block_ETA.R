@@ -39,9 +39,10 @@ mvg2      <- nimbleModel(mvgCode, constants=Constants, inits=Inits)
 mvg2$calculate('y')
 cmvg2     <- compileNimble(mvg2)
 ##
+
 mcmcConf2 <- configureMCMC(mvg2, print=TRUE)
 mcmcConf2$removeSamplers()
-mcmcConf2$ addSampler('y', type="RW_block_ETA", control = list(readaptability=0.0)) ## 0 gives original sampler, 1 gives greatest readaptibility but at the expense of rate
+mcmcConf2$addSampler('y', type="RW_block_ETA", control = list(readaptability=0.01)) ## 0 gives original sampler, 1 gives greatest readaptibility but at the expense of rate, even values pretty close to zero work well on this example.
 mcmcConf2$printSamplers() 
 mcmcConf2$resetMonitors()
 mcmcConf2$addMonitors(c('y', 'logProb_y'))
@@ -64,7 +65,7 @@ X11()
 set.seed(1)
 yStart  <- c(-1, 1) * 1E10 ## Some really terrible starting values
 cmvg$y  <- yStart 
-nIter   <- 5E5
+nIter   <- 1E5
 cmcmc$run(nIter, reset=TRUE) 
 samples <- as.matrix(cmcmc$mvSamples); dim(samples)
 samples <- tail(samples, nIter)
@@ -142,12 +143,12 @@ plot(log(samples[,1]-samples[1,1]+1), xlab="iteration (i)", ylab="log (logProb[i
 
 ## Remove a burn-in period
 dev.set(dev.list()[1])
-burn  <- 2E4
-mc2 <- as.mcmc(tail(samples, nIter-burn))
+burn <- 2E4
+mc2  <- as.mcmc(tail(samples, nIter-burn))
 plot(mc2) ## Burn visibly not large enough
 dev.set(dev.list()[2])
-burn  <- 5E4
-mc2 <- as.mcmc(tail(samples, nIter-burn))
+burn <- 5E4
+mc2  <- as.mcmc(tail(samples, nIter-burn))
 plot(mc2) ## Convergence already looks good. With the more flexible adaptation convergence is faster and does not require a user to reset.
 
 par(mfrow=n2mfrow(2))
@@ -157,7 +158,15 @@ plot(as.matrix(mc[,2:3]), pch=19, cex=0.2, main="RW_block")
 plot(as.matrix(mc2[,2:3]), pch=19, cex=0.2, main="RW_block_ETA") 
 
 ## Can CODA inform us about burn in?
-codamenu()
+## codamenu()
+summary(mc)
+summary(mc2)
+raftery.diag(mc)  ## , q=0.025, r=0.005, s=0.95, converge.eps=0.001)
+raftery.diag(mc2) ## , q=0.025, r=0.005, s=0.95, converge.eps=0.001)
+
+raftery.diag(mc)$resmatrix
+raftery.diag(mc2)$resmatrix
+
 effectiveSize(mc)
 effectiveSize(mc2)
 
@@ -168,6 +177,3 @@ heidel.diag(mc2, eps=0.1, pvalue=0.05)
 autocorr.plot(mc)
 autocorr.plot(mc2)
 
-################
-## Comparison ##
-################
