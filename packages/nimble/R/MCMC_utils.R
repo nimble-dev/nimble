@@ -185,7 +185,7 @@ calcAdaptationFactor <- nimbleFunction(
 )
 
 
-## A modified version of calcAdaptationFactor
+## A modified version of calcAdaptationFactor 
 ## The idea is to replace timesAdapted in the calculation of gamma1 with something more sensitive to the current state of convergence
 ## This gives an on-the-fly reset during the hill-climbing phase of convergence, 
 ## and therefore avoids the adaptative kernel becoming stuck when it needs to change direction.

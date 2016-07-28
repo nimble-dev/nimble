@@ -233,7 +233,7 @@ sampler_RW_block <- nimbleFunction(
 
 
 ########################################################################
-### block RW sampler with multi-variate normal proposal distribution ###
+### block RW sampler with multi-variate normal proposal distribution ### 
 ########################################################################
 ## A modified version of sampler_RW_block
 ## Designed to maintain greater flexibility during the hill-climbing phase of burn-in.
