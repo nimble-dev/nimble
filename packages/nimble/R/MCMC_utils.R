@@ -192,16 +192,13 @@ calcAdaptationFactor <- nimbleFunction(
 ## So timesAdapted is replaced, in that one line, with an effectiveTimesAdapted (ETA or effTimesAdapted)
 ## Once converged, downscaling of effTimesAdapted become increasingly negligible and it will grow at the same rate as timesAdapted
 calcAdaptationFactor_ETA <- nimbleFunction( 
-    setup = function(paramDimension, targetAcRate) {
-        if (missing(targetAcRate)) {
-            ## If user does not specify the targetAcRate then use
-            ## the theoretically optimal (under ideal conditions) acceptance rates...
-            ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
-            acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
-            if(paramDimension > 5) paramDimension <- 5
-            optimalAR <- acceptanceRates[paramDimension]
-            targetAcRate <- optimalAR
-        }
+    setup = function(paramDimension) {
+        ## If user does not specify the targetAcRate then use
+        ## the theoretically optimal (under ideal conditions) acceptance rates...
+        ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
+        acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
+        if(paramDimension > 5) paramDimension <- 5
+        optimalAR         <- acceptanceRates[paramDimension]        
         scale             <- 1   
         gamma1            <- 0
         timesAdapted      <- 0
