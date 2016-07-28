@@ -192,24 +192,23 @@ calcAdaptationFactor <- nimbleFunction(
 ## So timesAdapted is replaced, in that one line, with an effectiveTimesAdapted (ETA or effTimesAdapted)
 ## Once converged, downscaling of effTimesAdapted become increasingly negligible and it will grow at the same rate as timesAdapted
 calcAdaptationFactor_ETA <- nimbleFunction( 
-    setup = function(paramDimension) {
+    setup = function(paramDimension, readaptability) {
         ## If user does not specify the targetAcRate then use
         ## the theoretically optimal (under ideal conditions) acceptance rates...
         ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
         acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
         if(paramDimension > 5) paramDimension <- 5
         optimalAR         <- acceptanceRates[paramDimension]
-        Scale             <- 1
-        readaptability    <- 1 ## 0 gives original sampler, 1 gives greatest readaptibility but being overly flexible might hamper convergence rate.
+        Scale             <- 1        
         gamma1            <- 0
         timesAdapted      <- 0
-        effTimesAdapted   <- 1   ## Effective Times Adapted
+        effTimesAdapted   <- 1 ## Effective Times Adapted
         maxEWMA_LogProbOld <- -Inf
     },
-    run = function(acceptanceRate = double(), maxEWMA_LogProb = double()) {
+    run = function(acceptanceRate = double(), maxEWMA_LogProb = double()) { ## reAdaptability = double()
         ## maxEWMA_LogProb is the maximum value taken so far in the Exponential Weighted Moving Average of LogProb
         ## It increases monotonically and the size of those increments goes to zero        
-        Scale           <<- exp(stiffness*(maxEWMA_LogProbOld - maxEWMA_LogProb)) ## (1-Scale) -> 0 as timesAdapted -> Inf
+        Scale           <<- exp(readaptability*(maxEWMA_LogProbOld - maxEWMA_LogProb)) ## (1-Scale) -> 0 as timesAdapted -> Inf
         effTimesAdapted <<- 1 + effTimesAdapted * Scale
         timesAdapted    <<- 1 + timesAdapted
         gamma1          <<- 1 / ((effTimesAdapted + 3)^0.8) ## Here timesAdapted was swapped for the more flexible effTimesAdapted 

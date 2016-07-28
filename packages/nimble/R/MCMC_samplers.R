@@ -247,6 +247,12 @@ sampler_RW_block_ETA <- nimbleFunction(
         adaptInterval  <- control$adaptInterval
         scale          <- control$scale
         propCov        <- control$propCov
+        if (0==length(control$readaptability)) 
+            readaptability <- 0.5 ## Controls how readily the adaptation process should reset itself
+        else             
+            readaptability <- control$readaptability
+        if (readaptability > 1 | readaptability < 0)
+            stop("Ensure readaptability is in[0,1], 0 gives original sampler, 1 gives greatest readaptibility but being overly flexible might hamper convergence rate.")
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target)
@@ -267,7 +273,7 @@ sampler_RW_block_ETA <- nimbleFunction(
         ## nested function and function list definitions
         my_setAndCalculateDiff      <- setAndCalculateDiff(model, target)
         my_decideAndJump            <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor_ETA <- calcAdaptationFactor_ETA(d)
+        my_calcAdaptationFactor_ETA <- calcAdaptationFactor_ETA(d, readaptability)
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
