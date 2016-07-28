@@ -198,7 +198,7 @@ calcAdaptationFactor_ETA <- nimbleFunction(
         ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
         acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
         if(paramDimension > 5) paramDimension <- 5
-        optimalAR         <- acceptanceRates[paramDimension] 
+        optimalAR         <- acceptanceRates[paramDimension]
         scale             <- 1   
         gamma1            <- 0
         timesAdapted      <- 0

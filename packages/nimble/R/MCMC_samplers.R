@@ -255,9 +255,10 @@ sampler_RW_block_ETA <- nimbleFunction(
         timesRan       <- 0
         timesAccepted  <- 0
         timesAdapted   <- 0 
+        alpha          <- 0.1
         EWMALogProb    <- 0    ## Exponentially weighted moving average of LogProb
         maxEWMALogProb <- -Inf ## The historical maximum of EWMALogProb
-        d <- length(targetAsScalar)
+        d              <- length(targetAsScalar)
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal    <- propCov
         chol_propCov       <- chol(propCov)
@@ -273,11 +274,11 @@ sampler_RW_block_ETA <- nimbleFunction(
         if(!all(dim(propCov) == d)) stop('propCov matrix must have dimension ',d,'x',d,'\n')
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
-    run = function(alpha = double(0, default=0.1)) {
+    run = function() {
         propValueVector <- generateProposalVector()
         lpMHR           <- my_setAndCalculateDiff$run(propValueVector)
         jump            <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
-        if(adaptive)     adaptiveProcedure(jump, alpha)
+        if(adaptive)     adaptiveProcedure(jump)
     },
     methods = list(
         generateProposalVector = function() {
@@ -286,7 +287,7 @@ sampler_RW_block_ETA <- nimbleFunction(
             returnType(double(1))
             return(propValueVector)
         },
-        adaptiveProcedure = function(jump = logical(), alpha = double()) {
+        adaptiveProcedure = function(jump = logical()) {
             LogProb         <- model$getLogProb()
             timesRan       <<- timesRan + 1
             EWMALogProb    <<- alpha * LogProb + (1-alpha) * EWMALogProb
