@@ -140,7 +140,13 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
     type <- paramInfo$type
     unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
     funName <- paste0('getParam_',nDim,'D_',type)
-    ans <- eval(substitute(nodeFunction$FUNNAME(paramID, unrolledIndicesMatrixRow), list(FUNNAME = as.name(funName))))
+
+    useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
+
+    if(useCompiledNonNestedInterface) {
+        ans <- model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], funName, paramID, unrolledIndicesMatrixRow)
+    } else 
+        ans <- eval(substitute(nodeFunction$FUNNAME(paramID, unrolledIndicesMatrixRow), list(FUNNAME = as.name(funName))))
     return(ans)
 }
 
