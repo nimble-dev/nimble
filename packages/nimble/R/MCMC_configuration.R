@@ -256,7 +256,7 @@ not present in this argument, the control list argument to configureMCMC(), or i
 
 print: Logical argument, specifying whether to print the details of the newly added sampler, as well as its position in the list of MCMC samplers.
 
-name: A character string name for the sampler, which is only used when the \'type\' argument is provided as a nimbleFunction generator object.  If \'name\' is not provided, then the text of the \'type\' argument (i.e. the result of \'deparse(substitute(type))\') is used as the default sampler name.
+name: Optional character string name for the sampler, which is used by the printSamplers method.  If \'name\' is not provided, the \'type\' argument is used to generate the sampler name.
 
 Details: A single instance of the newly configured sampler is added to the end of the list of samplers for this MCMCconf object.
 
@@ -264,7 +264,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
 '
 
             if(is.character(type)) {
-                thisSamplerName <- gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
+                thisSamplerName <- if(!missing(name)) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
