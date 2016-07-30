@@ -222,6 +222,26 @@ codeBlockClass <- setRefClass(
 )
 
 
+
+#' @export
+#' @description
+#' Used to generate control list argument for MCMC samplers, including default values
+mcmc_generateControlListArgument <- function(requiredControlNames, samplerFunction, control, controlDefaults) {
+    if(missing(requiredControlNames))
+        requiredControlNames <- mcmc_findControlListNamesInCode(samplerFunction)
+    if(missing(controlDefaults))
+        controlDefaults <- getNimbleOption('MCMCcontrolDefaultList')
+    thisControlList <- controlDefaults           ## start with all the defaults
+    thisControlList[names(control)] <- control   ## add in any controls provided as an argument
+    missingControlNames <- setdiff(requiredControlNames, names(thisControlList))
+    missingControlNames <- missingControlNames[!grepl('^dep_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
+    if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for ', thisSamplerName, ' sampler: ', paste0(missingControlNames, collapse=', ')))
+    thisControlList <- thisControlList[requiredControlNames]
+    return(thisControlList)
+}
+
+
+
 mcmc_listContentsToStr <- function(ls) {
     if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
     ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)   ## functions -> 'function'
