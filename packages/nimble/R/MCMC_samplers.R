@@ -239,7 +239,7 @@ sampler_RW_block <- nimbleFunction(
 ## Designed to maintain greater flexibility during the hill-climbing phase of burn-in.
 ## The extra flexibility makes it less suceptible to getting stuck facing the wrong way
 ## on a ridge when converging towards highly correlated target distributions.
-sampler_RW_block_ETA <- nimbleFunction( 
+sampler_RW_block_effTA <- nimbleFunction( 
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
         ## control list extraction
@@ -277,7 +277,7 @@ sampler_RW_block_ETA <- nimbleFunction(
         ## nested function and function list definitions
         my_setAndCalculateDiff      <- setAndCalculateDiff(model, target)
         my_decideAndJump            <- decideAndJump(model, mvSaved, calcNodes)
-        my_calcAdaptationFactor_ETA <- calcAdaptationFactor_ETA(d, readaptability)
+        my_calcAdaptationFactor_effTA <- calcAdaptationFactor_effTA(d, readaptability)
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
@@ -307,11 +307,11 @@ sampler_RW_block_ETA <- nimbleFunction(
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted  <<- timesAdapted + 1
-                adaptFactor    <- my_calcAdaptationFactor_ETA$run(acceptanceRate, maxEWMALogProb)
+                adaptFactor    <- my_calcAdaptationFactor_effTA$run(acceptanceRate, maxEWMALogProb)
                 scale         <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
-                    gamma1 <- my_calcAdaptationFactor_ETA$gamma1
+                    gamma1 <- my_calcAdaptationFactor_effTA$gamma1
                     for(i in 1:d)     empirSamp[,i] <<- empirSamp[,i] - mean(empirSamp[,i])
                     empirCov      <- (t(empirSamp) %*% empirSamp) / (timesRan-1) ## Within-interval empirical covariance. timesRan behaves like a constant.
                     propCov      <<- propCov + gamma1 * (empirCov - propCov)     ## An Exponentially Weighted Moving Average
@@ -332,7 +332,7 @@ sampler_RW_block_ETA <- nimbleFunction(
             timesAdapted       <<- 0
             EWMALogProb        <<- 0
             maxEWMALogProb     <<- -Inf 
-            my_calcAdaptationFactor_ETA$reset()
+            my_calcAdaptationFactor_effTA$reset()
         }
     ), where = getLoadingNamespace()
 )
@@ -1202,9 +1202,9 @@ sampler_RW_multinomial <- nimbleFunction(
 #' \item propCov. The initial covariance matrix for the multivariate normal proposal distribution.  This element may be equal to the character string 'identity', in which case the identity matrix of the appropriate dimension will be used for the initial proposal covariance matrix. (default = 'identity')
 #' }
 #'
-#' @section RW_block_ETA sampler:
+#' @section RW_block_effTA sampler:
 #'
-#' The RW_block_ETA is a variant of RW_block that maintains greater flexibility in adaptation during the hill-climbing phase of burn-in. The sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr
+#' The RW_block_effTA is a variant of RW_block that maintains greater flexibility in adaptation during the hill-climbing phase of burn-in. The sampler performs a simultaneous update of one or more model nodes, using an adaptive Metropolis-Hastings algorithm with a multivariate normal proposal distribution (Roberts and Sahu, 1997), implementing the adaptation routine given in Shaby and Wells, 2011.  This sampler may be applied to any set of continuous-valued model nodes, to any single continuous-valued multivariate model node, or to any combination thereof. \cr
 #'
 #' The RW_block sampler accepts the following control list elements:
 #' \itemize{

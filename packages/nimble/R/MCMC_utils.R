@@ -189,9 +189,9 @@ calcAdaptationFactor <- nimbleFunction(
 ## The idea is to replace timesAdapted in the calculation of gamma1 with something more sensitive to the current state of convergence
 ## This gives an on-the-fly reset during the hill-climbing phase of convergence, 
 ## and therefore avoids the adaptative kernel becoming stuck when it needs to change direction.
-## So timesAdapted is replaced, in that one line, with an effectiveTimesAdapted (ETA or effTimesAdapted)
+## So timesAdapted is replaced, in that one line, with an effectiveTimesAdapted (effTA or effTimesAdapted)
 ## Once converged, downscaling of effTimesAdapted become increasingly negligible and it will grow at the same rate as timesAdapted
-calcAdaptationFactor_ETA <- nimbleFunction( 
+calcAdaptationFactor_effTA <- nimbleFunction( 
     setup = function(paramDimension, readaptability) {
         ## Theoretically optimal (under ideal conditions) acceptance rates...
         ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
@@ -215,7 +215,7 @@ calcAdaptationFactor_ETA <- nimbleFunction(
         gamma2           <- 10 * gamma1                                ## Unchanged
         adaptFactor      <- exp(gamma2 * (acceptanceRate - optimalAR)) ## Unchanged
         ## nimPrint("readaptability =",  readaptability,     " TA = ", timesAdapted,
-        ##          " ETA = ",           effTimesAdapted,    " Sc = ", Scale, 
+        ##          " effTA = ",           effTimesAdapted,    " Sc = ", Scale, 
         ##          " maxEWMA_LPOld = ", maxEWMA_LogProbOld, " maxEWMA_LP = ", maxEWMA_LogProb,
         ##          " exp(old-new)",     exp(maxEWMA_LogProbOld - maxEWMA_LogProb) )
         maxEWMA_LogProbOld <<- maxEWMA_LogProb
