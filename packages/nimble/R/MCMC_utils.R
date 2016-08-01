@@ -193,15 +193,14 @@ calcAdaptationFactor <- nimbleFunction(
 ## Once converged, downscaling of effTimesAdapted become increasingly negligible and it will grow at the same rate as timesAdapted
 calcAdaptationFactor_ETA <- nimbleFunction( 
     setup = function(paramDimension, readaptability) {
-        ## If user does not specify the targetAcRate then use
-        ## the theoretically optimal (under ideal conditions) acceptance rates...
+        ## Theoretically optimal (under ideal conditions) acceptance rates...
         ## (dim=1) .44, (dim=2) .35, (dim=3) .32, (dim=4) .25, (dim>=5) .234
         acceptanceRates <- c(0.44, 0.35, 0.32, 0.25, 0.234)
         if(paramDimension > 5) paramDimension <- 5
         optimalAR          <- acceptanceRates[paramDimension]
         Scale              <- 1        
         gamma1             <- 0
-        timesAdapted       <- 0
+        ## timesAdapted    <- 0
         effTimesAdapted    <- 1 ## Effective Times Adapted
         maxEWMA_LogProbOld <- -.Machine$double.xmax
         ApproxNegInf       <- -.Machine$double.xmax
@@ -209,25 +208,16 @@ calcAdaptationFactor_ETA <- nimbleFunction(
     run = function(acceptanceRate = double(), maxEWMA_LogProb = double()) { ## reAdaptability = double()
         ## maxEWMA_LogProb is the maximum value taken so far in the Exponential Weighted Moving Average of LogProb
         ## It increases monotonically and the size of those increments goes to zero
-        ## browser()
         Scale           <<- exp(readaptability*(maxEWMA_LogProbOld - maxEWMA_LogProb)) ## (1-Scale) -> 0 as timesAdapted -> Inf
         effTimesAdapted <<- 1 + effTimesAdapted * Scale
-        timesAdapted    <<- 1 + timesAdapted
+        ## timesAdapted <<- 1 + timesAdapted
         gamma1          <<- 1 / ((effTimesAdapted + 3)^0.8) ## Here timesAdapted was swapped for the more flexible effTimesAdapted 
         gamma2           <- 10 * gamma1                                ## Unchanged
         adaptFactor      <- exp(gamma2 * (acceptanceRate - optimalAR)) ## Unchanged
-        nimPrint("readaptability =", readaptability,
-                 " TA = ", timesAdapted,
-                 " ETA = ", effTimesAdapted,
-                 " Sc = ", Scale, 
-                 " maxEWMA_LPOld = ", maxEWMA_LogProbOld,
-                 " maxEWMA_LP = ", maxEWMA_LogProb,
-                 " exp(old-new)", exp(maxEWMA_LogProbOld - maxEWMA_LogProb) )
-        ## nimPrint(
-        ##          "readaptability =", readaptability, 
-        ##          " ETA = ", effTimesAdapted,
-        ##          " exp(old-new)", exp(maxEWMA_LogProbOld - maxEWMA_LogProb),
-        ##          " maxEWMA_LogProb = ", maxEWMA_LogProb, " adaptFactor = ", adaptFactor)
+        ## nimPrint("readaptability =",  readaptability,     " TA = ", timesAdapted,
+        ##          " ETA = ",           effTimesAdapted,    " Sc = ", Scale, 
+        ##          " maxEWMA_LPOld = ", maxEWMA_LogProbOld, " maxEWMA_LP = ", maxEWMA_LogProb,
+        ##          " exp(old-new)",     exp(maxEWMA_LogProbOld - maxEWMA_LogProb) )
         maxEWMA_LogProbOld <<- maxEWMA_LogProb
         returnType(double())
         return(adaptFactor)
@@ -236,7 +226,7 @@ calcAdaptationFactor_ETA <- nimbleFunction(
         reset = function() {
             Scale              <<- 1   
             gamma1             <<- 0
-            timesAdapted       <<- 0
+            ## timesAdapted    <<- 0
             effTimesAdapted    <<- 1
             maxEWMA_LogProbOld <<- ApproxNegInf
         }

@@ -237,7 +237,8 @@ sampler_RW_block <- nimbleFunction(
 ########################################################################
 ## A modified version of sampler_RW_block
 ## Designed to maintain greater flexibility during the hill-climbing phase of burn-in.
-## This extra flexibility makes it less suceptible to getting stuck facing the wrong way on a ridge when converging towards highly correlated target distributions.
+## The extra flexibility makes it less suceptible to getting stuck facing the wrong way
+## on a ridge when converging towards highly correlated target distributions.
 sampler_RW_block_ETA <- nimbleFunction( 
     contains = sampler_BASE,
     setup = function(model, mvSaved, target, control) {
@@ -247,12 +248,15 @@ sampler_RW_block_ETA <- nimbleFunction(
         adaptInterval  <- control$adaptInterval
         scale          <- control$scale
         propCov        <- control$propCov
-        if (0==length(control$readaptability)) 
-            readaptability <- 0.5 ## Controls how readily the adaptation process should reset itself
-        else             
-            readaptability <- control$readaptability
+        ## if (0==length(control$readaptability)) 
+        ##     readaptability <- 0.5 ## Controls how readily the adaptation process should reset itself
+        ## else             
+        readaptability <- control$readaptability
         if (readaptability > 1 | readaptability < 0)
-            stop("Ensure readaptability is in[0,1], 0 gives original sampler, 1 gives greatest readaptibility but being overly flexible might hamper convergence rate.")
+            stop(paste("Ensure readaptability is in[0,1].",
+                       "0 gives original RW_block sampler:", 
+                       "1 gives greatest readaptibility, although excessive flexibility can slow convergence.", 
+                       "Values close to zero can work well in practice."))
         ## node list generation
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes      <- model$getDependencies(target)
@@ -307,19 +311,13 @@ sampler_RW_block_ETA <- nimbleFunction(
                 scale         <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
                 if(!adaptScaleOnly) {
-                    ## browser()
                     gamma1 <- my_calcAdaptationFactor_ETA$gamma1
                     for(i in 1:d)     empirSamp[,i] <<- empirSamp[,i] - mean(empirSamp[,i])
-                    empirCov      <- (t(empirSamp) %*% empirSamp) / (timesRan-1) ## within-interval empirical covariance. timesRan behaves like a constant.
+                    empirCov      <- (t(empirSamp) %*% empirSamp) / (timesRan-1) ## Within-interval empirical covariance. timesRan behaves like a constant.
                     propCov      <<- propCov + gamma1 * (empirCov - propCov)     ## An Exponentially Weighted Moving Average
                     chol_propCov <<- chol(propCov)
                 }
                 chol_propCov_scale <<- chol_propCov * scale
-                ## if (my_calcAdaptationFactor_ETA$downScale < 0.1 & scale < 1E-10) {
-                ##     ## DP : This can help prevent propCov exploding
-                ##     propCov[1:d,1:d] <<- t(chol_propCov_scale) %*% chol_propCov_scale
-                ##     scale <- 1
-                ## }
                 timesRan           <<- 0
                 timesAccepted      <<- 0
             }
