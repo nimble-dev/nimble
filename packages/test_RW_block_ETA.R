@@ -208,11 +208,11 @@ cmcmc2$thin <- Thin
 cmcmc$run(nIter, reset=FALSE)  
 cmcmc2$run(nIter, reset=FALSE)  
 
-samples <- tail(as.matrix(cmcmc$mvSamples)[,2:3], 1E5)
+samples <- tail(as.matrix(cmcmc$mvSamples)[,2:3], nIter/Thin)
 mc      <- as.mcmc(samples)
 dim(mc)
 ##
-samples <- tail(as.matrix(cmcmc2$mvSamples)[,2:3], 1E5)
+samples <- tail(as.matrix(cmcmc2$mvSamples)[,2:3], nIter/Thin)
 mc2     <- as.mcmc(samples)
 dim(mc2)
 ## 
