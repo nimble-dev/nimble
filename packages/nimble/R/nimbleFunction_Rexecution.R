@@ -81,21 +81,28 @@ asCol <- function(x) {
 #'
 #' @param model A model such as returned by \code{\link{nimbleModel}}.
 #'
-#' @param nodes A character string naming one or more stochastic nodes, such as "mu", "c('mu', 'beta[2]')", or "eta[1:3, 2]"
+#' @param nodes A character string naming one stochastic node, such as "mu", "beta[2]", or "eta[1:3, 2]"
 #'
 #' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
 #'
 #' @export
 #' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 makeParamInfo <- function(model, nodes, param) {
-    ## updating to allow nodes to be a vector
-    distInfo <- getDistributionList(model$getNodeDistribution(nodes))
-    paramIDvec <- unlist(lapply(distInfo, function(x) x$paramIDs[param]))
-    typeVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$type))
-    nDimVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$nDim))
-    if(length(unique(typeVec)) != 1 | length(unique(nDimVec)) != 1) stop('cannot have multiple nodes accessed by the same getParam if they have different types or dimensions for the same parameter.') 
+    if(length(nodes) != 1) stop(paste0("Problem with nodes argument while setting up getParam.  Should be length 1 but was: ", paste0(nodes, collapse = ",")))
+    distInfo <- getDistributionList(model$getNodeDistribution(nodes))[[1]]
+    ## If nodes is invalid, an error from the above line will be trapped in parseEvalNumericMany
+    if(length(param) != 1) stop(paste0(paste0('Problem with param(s) ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
+                                       '\nOnly one parameter is allowed.')))
+    paramID <- distInfo$paramIDs[param]
+    if(length(paramID)!=1 | any(is.na(paramID))) stop(paste0('Problem with param ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
+                                       '\nThe parameter name is not valid.'))
+    ##paramIDvec <- unlist(lapply(distInfo, function(x) x$paramIDs[param]))
+    ##typeVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$type))
+    ##nDimVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$nDim))
+    ##if(length(unique(typeVec)) != 1 | length(unique(nDimVec)) != 1) stop('cannot have multiple nodes accessed by the same getParam if they have different types or dimensions for the same parameter.') 
 ##    ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
-    ans <- c(list(paramID = paramIDvec), distInfo[[1]]$types[[param]])
+    ##    ans <- c(list(paramID = paramIDvec), distInfo[[1]]$types[[param]])
+    ans <- c(list(paramID = paramID), distInfo$types[[param]])
     class(ans) <- 'getParam_info'
     ans
 }
