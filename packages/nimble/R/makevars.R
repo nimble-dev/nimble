@@ -53,6 +53,7 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
 genLocalMakevars =
 function(target, vars = character(), .useLib = UseLibraryMakevars)
 {
+    ## This function will write a Makevars file, but with the current installation system (as of 0.6), it should never be needed
     cat("creating local makeVars in", target, "\n")
     inc.make = system.file("make", if(.useLib) 
                                      "Makevars_lib" 
@@ -61,7 +62,7 @@ function(target, vars = character(), .useLib = UseLibraryMakevars)
                                    else
                                      "Makevars", package = "nimble")
 
-    vars = c(EIGEN_INC = AutoconfInfo$eigenInc,
+    vars = c(EIGEN_INC = "", ## AutoconfInfo$eigenInc, ## we used to generate an AutoconfInfo list. We'll need a new mechanism if a local Makevars needs to be generated and the user has non-nimble-provided Eigen
              NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
              NIMBLE_LIB_DIR =  system.file("CppCode", package = "nimble"),        
              NIMBLE_DIR =  system.file(package = "nimble"),
