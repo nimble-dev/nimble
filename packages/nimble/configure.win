@@ -20,9 +20,15 @@ sed -e 's!@NEED_MAKEVARS_FILE@!TRUE!' R/config.R.in |
  sed -e 's|@RPATH@||' |
  sed -e 's|@USE_REGISTRATION@|.NimbleUseRegistration = TRUE|' > R/config.R
 
-sed -e "s|@EIGEN_INC@|$R_PACKAGE_DIR/include|" inst/make/Makevars.win.in |
-sed -e "s|@NIMBLE_INC_DIR@|$R_PACKAGE_DIR/include|" |
-sed -e "s|@NIMBLE_LIB_DIR@|$R_PACKAGE_DIR/CppCode|"  > inst/Make/Makevars.win
+## These sed lines aren't really needed because there is no longer anything
+## dynamic we do here.  But it remains in place here in case we make it dynamic in the future.
+sed -e "s|@EIGEN_INC@||" inst/make/Makevars.win.in |
+sed -e "s|@NIMBLE_INC_DIR@|TO_BE_FILLED_IN_BY_LOCAL_MAKE|" |
+sed -e "s|@NIMBLE_LIB_DIR@|TO_BE_FILLED_IN_BY_LOCAL_MAKE|"  > inst/Make/Makevars.win
+
+# sed -e "s|@EIGEN_INC@|$R_PACKAGE_DIR/include|" inst/make/Makevars.win.in |
+# sed -e "s|@NIMBLE_INC_DIR@|$R_PACKAGE_DIR/include|" |
+# sed -e "s|@NIMBLE_LIB_DIR@|$R_PACKAGE_DIR/CppCode|"  > inst/Make/Makevars.win
 
 
 echo "R_HOME = $R_HOME, R_ARCH=$R_ARCH"
