@@ -102,7 +102,11 @@ NIMBLE_DIR=${R_PACKAGE_DIR}
 echo "NIMBLE_DIR = ${NIMBLE_DIR}"
 AC_SUBST(NIMBLE_DIR)
 
-NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+else
+ NIMBLE_INC_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 AC_SUBST(NIMBLE_INC_DIR)
 
 if test "${ENABLE_LIB}" = "yes" ; then
@@ -111,8 +115,11 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
-
-NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+else
+ NIMBLE_LIB_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 AC_SUBST(NIMBLE_LIB_DIR)
 
 

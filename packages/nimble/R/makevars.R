@@ -28,9 +28,12 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
   if(file.exists(target) && !.force)
      stop(paste(target, "already exists"))
 
-  haveContents = !missing(pkgFlags) || !missing(pkgLibs) || length(list(...))
+  ## This old condition evaluates to TRUE even when we should be generating a new makevars
+  ## For now I am simplifying by conditioning only on .useLib
+  ##  haveContents = !missing(pkgFlags) || !missing(pkgLibs) || length(list(...))
 
-  if(!haveContents) {
+  ##  if(!haveContents) {
+  if(.useLib) {
      if(!file.exists(.copyFrom))
          stop("No default Makevars file")
 
@@ -53,7 +56,7 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
 genLocalMakevars =
 function(target, vars = character(), .useLib = UseLibraryMakevars)
 {
-    ## This function will write a Makevars file, but with the current installation system (as of 0.6), it should never be needed
+    browser()
     cat("creating local makeVars in", target, "\n")
     inc.make = system.file("make", if(.useLib) 
                                      "Makevars_lib" 
