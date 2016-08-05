@@ -8,6 +8,6 @@
 *.so
 
 MyMakevars
-Eigen*
+#Eigen*
 
 config.*
