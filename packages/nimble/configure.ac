@@ -67,22 +67,22 @@ fi
 AC_LANG([C++])
 dnl  AC_LANG_PUSH([C++]);
 
+echo "working on eigen"
+
 AC_CHECK_HEADERS([Eigen/Dense], 
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
-                 ], 
-                 [echo "Cannot find Eigen/Dense include file.";
-                  echo "Using the version of Eigen provided locally with the R package";
-                  echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
-                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR";
 		  if test -e "NOT_IN_TARBALL" ; then
 		   echo "found NOT_IN_TARBALL"
-		   echo `pwd`
-                   cp -r inst/Eigen_local inst/include/Eigen 
 		  else
 		   echo "did not find NOT_IN_TARBALL"
-		   echo `pwd`
-		   mv inst/Eigen_local inst/include/Eigen 
+		  fi
+                 ], 
+                 [echo "Using the version of Eigen provided with NIMBLE";
+		  if test -e "NOT_IN_TARBALL" ; then
+		   echo "found NOT_IN_TARBALL"
+		  else
+		   echo "did not find NOT_IN_TARBALL"
 		  fi
                   EIGEN_DIR=""
                   ])
