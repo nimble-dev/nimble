@@ -1,0 +1,12 @@
+#!/bin/sh -xe
+
+echo "** testing default build from working directory with user-provided eigen"
+echo "**** The configure output should include a message like 'Providing your own Eigen only works if installing from a tarball.'"
+cd MyTempEigen
+EIGEN_DIR=`pwd`
+cd ..
+echo EIGEN_DIR
+CONFIG_ARGS="'--with-eigen=$EIGEN_DIR'"
+echo CONFIG_ARGS
+R CMD BUILD ../nimble
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" nimble_0.6.tar.gz

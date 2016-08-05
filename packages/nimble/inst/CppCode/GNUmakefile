@@ -31,7 +31,7 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 # Was R CMD COMPILE
 
 clean:
-	-rm $(OBJECTS) libnimble$(DYLIB_EXT) libnimble$(ARCH_SUFFIX).a
+	-rm -f $(OBJECTS) libnimble$(DYLIB_EXT) libnimble$(ARCH_SUFFIX).a
 
 # libnimble32.a libnimble64.a
 libnimble.a  libnimble_x64.a libnimble_i386.a: $(OBJECTS)

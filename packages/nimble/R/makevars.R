@@ -56,7 +56,6 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
 genLocalMakevars =
 function(target, vars = character(), .useLib = UseLibraryMakevars)
 {
-    browser()
     cat("creating local makeVars in", target, "\n")
     inc.make = system.file("make", if(.useLib) 
                                      "Makevars_lib" 
