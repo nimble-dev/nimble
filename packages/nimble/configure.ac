@@ -26,10 +26,6 @@ else
 fi
 )
 
-dnl This was a nice addition by Perry, but R CMD check looks at src/Makevars.in directly so we need to put $(FLIBS) in src/Makevars.in so don't need --enable-flibs 
-AC_ARG_ENABLE(flibs, [  --enable-flibs        include FLIBS flags in Makevars, which is not really necessary but is expected by CRAN],
-                         ENABLE_FLIBS=${enableval}, ENABLE_FLIBS=false)
-
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false
   echo "Disabling libnimble."
@@ -78,8 +74,16 @@ dnl                rm -rf inst/Eigen_local
                  [echo "Cannot find Eigen/Dense include file.";
                   echo "Using the version of Eigen provided locally with the R package";
                   echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
-                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR"; 
-                  cp -r inst/Eigen_local inst/include/Eigen ;
+                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR";
+		  if test -e "NOT_IN_TARBALL" ; then
+		   echo "found NOT_IN_TARBALL"
+		   echo `pwd`
+                   cp -r inst/Eigen_local inst/include/Eigen 
+		  else
+		   echo "did not find NOT_IN_TARBALL"
+		   echo `pwd`
+		   mv inst/Eigen_local inst/include/Eigen 
+		  fi
                   EIGEN_DIR=""
                   ])
 
@@ -115,16 +119,6 @@ AC_SUBST(NIMBLE_LIB_DIR)
 R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
-
-ENABLE_FLIBS=`echo "${ENABLE_FLIBS}" | tr "[a-z]" "[A-Z]"`
-if test "${ENABLE_FLIBS}" = "TRUE"; then
-  echo "including FLIBS in Makevars as expected for CRAN"
-  FLIBS="\$(FLIBS)"
-else
-  echo "not including FLIBS in Makevars.  use --configure-args=\'--enable-flibs=true\' when testing for CRAN."
-  FLIBS=""
-fi
-AC_SUBST(FLIBS)
 
 if ! test `uname` = "Darwin" ; then
 RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"

@@ -2980,7 +2980,15 @@ else
                   echo "Using the version of Eigen provided locally with the R package";
                   echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
                   echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR";
-                  cp -r inst/Eigen_local inst/include/Eigen ;
+		  if test -e "NOT_IN_TARBALL" ; then
+		   echo "found NOT_IN_TARBALL"
+		   echo `pwd`
+                   cp -r inst/Eigen_local inst/include/Eigen
+		  else
+		   echo "did not find NOT_IN_TARBALL"
+		   echo `pwd`
+		   mv inst/Eigen_local inst/include/Eigen
+		  fi
                   EIGEN_DIR=""
 
 fi

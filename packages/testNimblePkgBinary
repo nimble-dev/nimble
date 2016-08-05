@@ -13,6 +13,8 @@
 #
 #
 
+# This script will result in uninstalling nimble from standard installation location so that that one will not inadvertently mask a failure
+
 (cd ../nimble ; ./cleanup)
 
 echo "** Building nimble binary package"
@@ -22,6 +24,7 @@ fi
 
 CONFIG_ARGS="'--enable-lib=false'"
 R CMD INSTALL  --configure-args="$CONFIG_ARGS" --build ../nimble
+Rscript -e 'remove.packages("nimble")'
 
 GZ=`ls nimble_*gz`
 echo "** Installing nimble binary package $GZ"
