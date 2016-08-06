@@ -31,7 +31,8 @@ libnimble$(DYLIB_EXT): $(OBJECTS)
 # Was R CMD COMPILE
 
 clean:
-	-rm -f $(OBJECTS) libnimble$(DYLIB_EXT) libnimble$(ARCH_SUFFIX).a
+	-rm -f $(OBJECTS) libnimble.$(DYLIB_EXT) libnimble.dylib libnimble$(ARCH_SUFFIX).a
+# DYLIB_EXT does not seem to be defined unless this is called within R CMD.  e.g. from ./cleanup, DYLIB_EXT is not defined
 
 # libnimble32.a libnimble64.a
 libnimble.a  libnimble_x64.a libnimble_i386.a: $(OBJECTS)

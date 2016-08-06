@@ -55,7 +55,7 @@ R CMD BUILD ../nimble
 R CMD INSTALL  --configure-args="$CONFIG_ARGS" nimble_0.6.tar.gz
 Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
 
-echo "****************************** testing default build from directory with user-provided eigen"
+echo "****************************** testing default build from directory with (futile) user-provided eigen"
 echo "********************************** The configure output should include a message like 'Providing your own Eigen only works if installing from a tarball.'"
 (cd ../nimble ; ./cleanup)
 Rscript -e 'try(remove.packages("nimble"))'
@@ -105,17 +105,45 @@ fi
 R CMD INSTALL  --configure-args="$CONFIG_ARGS" ../nimble
 Rscript -e 'library(methods); library("nimble"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
 
-echo "****************************** testing default binary build with different locations (needed to work across machines)"
 if ! test -d RTempLib ; then
   mkdir RTempLib
 fi
 
-CONFIG_ARGS="'--enable-dylib=false'"
-R CMD INSTALL  --configure-args="$CONFIG_ARGS" --build ../nimble
+
+echo "****************************** testing default binary build from directory with different locations (needed to work across machines)"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+if test -e nimble_0.6.tgz ; then
+    rm nimble_0.6.tgz
+fi
+
+R CMD INSTALL --build ../nimble
 Rscript -e 'try(remove.packages("nimble"))'
 
 GZ=`ls nimble_*gz`
-echo "****************************** Installing nimble binary package $GZ"
+R CMD INSTALL -l RTempLib $GZ
+
+echo "Running testBUGSmodel()"
+Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); print(system.file(package = "nimble")); testBUGSmodel("pump")'
+
+echo "****************************** testing default binary build from tarball with different locations (needed to work across machines)"
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+if test -e nimble_0.6.tgz ; then
+    rm nimble_0.6.tgz
+fi
+
+R CMD BUILD ../nimble
+R CMD INSTALL --build nimble_0.6.tar.gz
+Rscript -e 'try(remove.packages("nimble"))'
+
+GZ=`ls nimble_*gz`
 R CMD INSTALL -l RTempLib $GZ
 
 echo "Running testBUGSmodel()"
