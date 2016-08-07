@@ -7,17 +7,17 @@
 #include <typeinfo>
 #include <iostream>
 
-#ifdef _WIN32
-#define _WIN3264
-#endif
+/* #ifdef _WIN32 */
+/* #define _WIN3264 */
+/* #endif */
 
-#ifdef _WIN64
-#define _WIN3264
-#endif
+/* #ifdef _WIN64 */
+/* #define _WIN3264 */
+/* #endif */
 
-#ifdef _WIN3264
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+/* #ifdef _WIN3264 */
+/* #pragma GCC diagnostic ignored "-Wmaybe-uninitialized" */
+/* #endif */
 
 using std::vector;
 
