@@ -121,7 +121,6 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
             ## TO-DO: unfold types and nDims more thoroughly (but all types are implemented as doubles anyway)
             ## understand use of altParams vs. all entries in typesListAllParams
         ## need a value Entry
-        browser()
         distName <- as.character(RHS[[1]])
 
         allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
@@ -143,7 +142,7 @@ nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, 
         methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
     ## add model$ in front of all names, except the setupOutputs
-    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "INDEXEDNODEINFO_"))
+    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"))
     return(methodList)
 }
 
@@ -186,29 +185,29 @@ nndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nD
     ans
 }
 
-nndf_generateGetBoundSwitchFunction <- function(typesListAll, paramIDs, type, nDim) {
+nndf_generateGetBoundSwitchFunction <- function(typesListAll, boundIDs, type, nDim) {
     if(any(unlist(lapply(typesListAll, is.null)))) stop(paste('problem creating switch function for getBound from ', paste(paste(names(typesListAll), as.character(typesListAll), sep='='), collapse=',')))
-    paramIDs <- as.integer(paramIDs)
-    answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
-    switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))
+    boundIDs <- as.integer(boundIDs)
+    answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(BOUNDANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
+    switchCode <- as.call(c(list(quote(nimSwitch), quote(BOUNDID_), boundIDs), answerAssignmentExpressions))
     if(nDim == 0) {
-        answerInitCode <- quote(PARAMANSWER_ <- 0)  ## this avoids a Windows compiler warning about a possibly unassigned return variable
+        answerInitCode <- quote(BOUNDANSWER_ <- 0)  ## this avoids a Windows compiler warning about a possibly unassigned return variable
 
         ans <- try(eval(substitute(
-            function(PARAMID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
+            function(BOUNDID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
                 returnType(TYPE(NDIM))
                 ANSWERINITCODE
                 SWITCHCODE
-                return(PARAMANSWER_)
+                return(BOUNDANSWER_)
             },
             list(TYPE = as.name(type), NDIM=nDim, ANSWERINITCODE = answerInitCode, SWITCHCODE = switchCode)
         )))
     } else {
         ans <- try(eval(substitute(
-            function(PARAMID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
+            function(BOUNDID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
                 returnType(TYPE(NDIM))
                 SWITCHCODE
-                return(PARAMANSWER_)
+                return(BOUNDANSWER_)
             },
             list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
         )))

@@ -234,7 +234,7 @@ getParam_keywordInfo <- keywordInfoClass(
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
 
         if(isCodeArgBlank(code, 'param'))
-            stop('param argument missing from getParam, with no accessor argument supplied')
+            stop("'param' argument missing from 'getParam', with no accessor argument supplied")
         paramInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, param = code$param) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the paramID will be vector
         paramInfoName <- paramInfo_SetupTemplate$makeName(paramInfo_ArgList)
         paramIDname <- paramInfo_SetupTemplate$makeOtherNames(paramInfoName, paramInfo_ArgList)
@@ -251,6 +251,53 @@ getParam_keywordInfo <- keywordInfoClass(
         return(newRunCode)
     }
 )
+
+getBound_keywordInfo <- keywordInfoClass(
+    keyword = 'getBound',
+    processor = function(code, nfProc) {
+        if(!isCodeArgBlank(code, 'nodeFunction'))
+            return(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE)
+        if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
+            if(!isCodeArgBlank(code, 'nodes'))
+                stop('nodes argument cannot be provided to getParam if nodeFunctionIndex is specified')
+            return(code) ## no modification needed!
+        }
+
+        if(isCodeArgBlank(code, 'model'))
+            stop('model argument missing from getParam, with no accessor argument supplied')
+        if(isCodeArgBlank(code, 'node'))
+            stop('node argument missing from getParam, with no accessor argument supplied')
+
+        useNodeFunctionVectorByIndex <- FALSE
+        if(hasBracket(nodeFunVec_ArgList$nodes)) { ## like calculate(model, nodes[i]), which could have started as model$calculate(nodes[i])
+            useNodeFunctionVectorByIndex <- TRUE
+            if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
+            nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+        }
+
+        nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
+
+        if(isCodeArgBlank(code, 'bound'))
+            stop("'bound' argument missing from 'getBound', with no accessor argument supplied")
+        boundInfo_ArgList <- list(model = code$model, node = nodeFunVec_ArgList$nodes, bound = code$bound) ## use nodeFunVec_ArgList$nodes instead of code$node because nodeFunVec_ArgList$nodes may have been updated if code$nodes has a run-time index.  In that case the boundID will be vector
+        boundInfoName <- boundInfo_SetupTemplate$makeName(boundInfo_ArgList)
+        boundIDname <- boundInfo_SetupTemplate$makeOtherNames(boundInfoName, boundInfo_ArgList)
+
+        addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
+        addNecessarySetupCode(boundInfoName, boundInfo_ArgList, boundInfo_SetupTemplate, nfProc)
+        if(!useNodeFunctionVectorByIndex)
+            newRunCode <- substitute(getBound(nodeFunction = NODEFUNVEC_NAME, paboundID = BOUNDID_NAME, paramInfo = BOUNDINFO_NAME),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName), BOUNDID_NAME = as.name(boundIDname), BOUNDINFO_NAME = as.name(boundInfoName)))
+        else
+            newRunCode <- substitute(getBound(nodeFunction = NODEFUNVEC_NAME, boundID = BOUNDID_NAME, boundInfo = BOUNDINFO_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
+                                     list(NODEFUNVEC_NAME = as.name(nodeFunName), BOUNDID_NAME = as.name(boundIDname), BOUNDINFO_NAME = as.name(boundInfoName), NODEFUNVECINDEX = nodesIndexExpr))
+        
+        return(newRunCode)
+    }
+)
+
 
 calculate_keywordInfo <- keywordInfoClass(
     keyword = 'calculate',
@@ -686,6 +733,7 @@ length_char_keywordInfo <- keywordInfoClass(
 #	KeywordList
 keywordList <- new.env()
 keywordList[['getParam']] <- getParam_keywordInfo
+keywordList[['getBound']] <- getBound_keywordInfo
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo
 keywordList[['calculateDiff']] <- calculateDiff_keywordInfo
@@ -719,6 +767,7 @@ keywordListModelMemberFuns[['simulate']] <- modelMemberFun_keywordInfo
 keywordListModelMemberFuns[['calculateDiff']] <- modelMemberFun_keywordInfo
 keywordListModelMemberFuns[['getLogProb']] <- modelMemberFun_keywordInfo
 keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
+keywordListModelMemberFuns[['getBound']] <- modelMemberFun_keywordInfo
 
 # necessary keywords:
 #	calculate 	(done)
@@ -745,6 +794,7 @@ matchFunctions[['nimMatrix']] <- function(value = 0, nrow = 1, ncol = 1, init = 
 matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['getParam']] <- getParam
+matchFunctions[['getBound']] <- getBound
 matchFunctions[['calculate']] <- calculate		#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['calculateDiff']] <- calculateDiff		#function(model, nodes, nodeFunctionVector){}
 matchFunctions[['simulate']] <- simulate		#function(model, nodes, includeData = FALSE, nodeFunctionVector){}
@@ -772,6 +822,7 @@ matchModelMemberFunctions[['calculateDiff']] <- function(nodes) {}
 matchModelMemberFunctions[['getLogProb']] <- function(nodes) {}
 matchModelMemberFunctions[['simulate']] <- function(nodes, includeData = FALSE) {}
 matchModelMemberFunctions[['getParam']] <- function(node, param) {}
+matchModelMemberFunctions[['getBound']] <- function(node, bound) {}
 
 # remove ncp from signatures
 stripArgs <- function(fname, argNames) {
@@ -1022,6 +1073,22 @@ paramInfo_SetupTemplate <- setupCodeTemplateClass(
              MODEL = argList$model,
              NODE = argList$node,
              PARAM = argList$param)
+    })
+
+boundInfo_SetupTemplate <- setupCodeTemplateClass(
+    #Note to programmer: required fields of argList are model, node and param
+    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$node), deparse(argList$bound), 'boundInfo', sep='_'))},
+    makeOtherNames = function(name,argList) {Rname2CppName(paste0(name,'_ID'))},
+    codeTemplate = quote({
+        BOUNDINFONAME <- makeBoundInfo(MODEL, NODE, BOUND)
+        BOUNDIDNAME <- BOUNDINFONAME$boundID
+       }),
+    makeCodeSubList = function(resultName, argList){
+        list(BOUNDINFONAME = as.name(resultName),
+             BOUNDIDNAME = as.name(paste0(resultName,'_ID')),
+             MODEL = argList$model,
+             NODE = argList$node,
+             BOUND = argList$bound)
     })
 
 allLHSNodes_SetupTemplate <- setupCodeTemplateClass(

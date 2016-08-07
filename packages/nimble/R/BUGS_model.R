@@ -40,6 +40,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   getLogProb = function(nodes) nimble::getLogProb(.self, nodes),
                                   simulate = function(nodes, includeData = FALSE) nimble::simulate(.self, nodes, includeData),
                                   getParam = function(node, param) nimble::getParam(.self, node, param),
+                                  getBound = function(node, bound) nimble::getBound(.self, node, bound),
                                   
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
