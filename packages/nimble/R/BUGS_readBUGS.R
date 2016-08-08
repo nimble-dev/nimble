@@ -38,9 +38,9 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 }
 
 
-#' Create a NIMBLE mode from BUGS code
+#' Create a NIMBLE model from BUGS code
 #'
-#' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition
+#' processes BUGS model code and optional constants, data, and initial values. Returns a NIMBLE model or model definition.
 #'
 #' @param code code for the model in the form returned by \link{nimbleCode} or (equivalently) \code{quote}
 #' @param constants named list of constants in the model.  Constants cannot be subsequently modified. For compatibility with JAGS and BUGS, one can include data values with constants and \code{nimbleModel} will automatically distinguish them based on what appears on the left-hand side of expressions in \code{code}.
@@ -210,9 +210,11 @@ processNonParseableCode <- function(text) {
 #'
 #' @param debug logical indicating whether to put the user in a browser for debugging when \code{readBUGSmodel} calls \code{nimbleModel}.  Intended for developer use.
 #'
+#' @param returnComponents logical indicating whether to return pieces of model  object without building the model. Default is FALSE.
+#'
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #'
-#' @param returnComponents logical indicating whether to return pieces of model  object without building the model. Default is FALSE.
+#' @param calculate logical indicating whether to run \code{calculate} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
 #'
 #' @author Christopher Paciorek
 #'

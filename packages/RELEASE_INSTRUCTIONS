@@ -2,7 +2,7 @@ make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
 
-for version on nimble website, remove FLIBS from Makevars.in
+for version on nimble website, remove FLIBS from src/Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
 Make sure src/Makevars.win is present.
@@ -12,7 +12,7 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 # before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 ./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
 
-(this may be obviated by new prep_pkg... as of v0.6)
+(this seems to be obviated by new prep_pkg... as of v0.6)
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
 This also should work:
 for file in `ls nimble/man`; do

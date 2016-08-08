@@ -221,11 +221,6 @@ codeBlockClass <- setRefClass(
     
 )
 
-
-
-#' @export
-#' @description
-#' Used to generate control list argument for MCMC samplers, including default values
 mcmc_generateControlListArgument <- function(requiredControlNames, samplerFunction, control, controlDefaults) {
     if(missing(requiredControlNames)) {
         if(is.character(samplerFunction)) {

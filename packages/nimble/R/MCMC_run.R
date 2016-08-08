@@ -2,6 +2,10 @@
 
 #' Run one or more chains of an MCMC algorithm and extract samples
 #'
+#' Takes as input an MCMC algorithm (ideally a compiled one for speed)
+#' and runs the MCMC with one or more chains, automatically extracting
+#' the samples.
+#'
 #' @param mcmc A NIMBLE MCMC algorithm.  See details.
 #'
 #' @param niter Number of iterations to run each MCMC chain (default = 10000).
@@ -12,31 +16,31 @@
 #'
 #' @param inits Optional argument to specify initial values for each chain.  See details.
 #'
-#' @param setSeed Logical argument.  If \cd{TRUE}, then R's random number seed is set to \cd{i} (using \cd{set.seed(i)}) at the onset of each MCMC chain number \cd{i} (default = \cd{FALSE}).
+#' @param setSeed Logical argument.  If \code{TRUE}, then R's random number seed is set to \code{i} (using \code{set.seed(i)}) at the onset of each MCMC chain number \code{i} (default = \code{FALSE}).
 #'
-#' @param progressBar Logical argument.  If \cd{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain (default = \cd{TRUE}).
+#' @param progressBar Logical argument.  If \code{TRUE}, an MCMC progress bar is displayed during execution of each MCMC chain (default = \code{TRUE}).
 #'
-#' @param silent Logical argument.  If \cd{TRUE}, then all output is suppressed during execution.  This overrides the \cd{progressBar} argument (default = \cd{FALSE}).
+#' @param silent Logical argument.  If \code{TRUE}, then all output is suppressed during execution.  This overrides the \code{progressBar} argument (default = \code{FALSE}).
 #'
-#' @param returnCodaMCMC Logical argument.  If \cd{TRUE}, then a \cd{coda} \cd{mcmc} object is returned instead of an R matrix of samples, or when \cd{nchains > 1} a \cd{coda} \cd{mcmc.list} object is returned containing \cd{nchains} \cd{mcmc} objects (default = \cd{FALSE}).
+#' @param returnCodaMCMC Logical argument.  If \code{TRUE}, then a \code{coda} \code{mcmc} object is returned instead of an R matrix of samples, or when \code{nchains > 1} a \code{coda} \code{mcmc.list} object is returned containing \code{nchains} \code{mcmc} objects (default = \code{FALSE}).
 #'
-#' @return When \cd{nchains = 1}, a matrix of MCMC samples.  When \cd{nchains > 1}, a list of length \cd{nchains}, where each list element is a matrix of MCMC samples.  If \cd{returnCodaMCMC = TRUE}, then a \cd{coda} \cd{mcmc} or \cd{mcmc.list} object is returned instead.
+#' @return When \code{nchains = 1}, a matrix of MCMC samples.  When \code{nchains > 1}, a list of length \code{nchains}, where each list element is a matrix of MCMC samples.  If \code{returnCodaMCMC = TRUE}, then a \code{coda} \code{mcmc} or \code{mcmc.list} object is returned instead.
 #'
 #' @details
 #'
-#' The \cd{mcmc} argument can be a compiled or uncompiled NIMBLE MCMC algorithm, which is generated using \cd{buildMCMC}.  Using a compiled algorithm will give substantially faster execution.
+#' The \code{mcmc} argument can be a compiled or uncompiled NIMBLE MCMC algorithm, which is generated using \code{buildMCMC}.  Using a compiled algorithm will give substantially faster execution.
 #'
-#' If provided, the \cd{inits} argument can be one of three things:
+#' If provided, the \code{inits} argument can be one of three things:
 #' (1) a function to generate initial values, which will be executed to generate initial values at the beginning of each MCMC chain,
 #' (2) a single named list of initial values which, will be used for each chain, or
-#' (3) a list of length \cd{nchains}, each element being a named list of initial values which be used for one MCMC chain.
-#' The \cd{inits} argument may also be omitted, in which case the current values in the \cd{model} object will be used as the initial values of the first chain, and subsequent chains will begin using starting values where the previous chain ended.
+#' (3) a list of length \code{nchains}, each element being a named list of initial values which be used for one MCMC chain.
+#' The \code{inits} argument may also be omitted, in which case the current values in the \code{model} object will be used as the initial values of the first chain, and subsequent chains will begin using starting values where the previous chain ended.
 #' 
-#' Other aspects of the MCMC algorithm, such as sampler assignments and thinning, must be specified in advance using the MCMC configuration object (created using \cd{configureMCMC}), which is then used to build the MCMC algorithm (using \cd{buildMCMC}) argument.
+#' Other aspects of the MCMC algorithm, such as sampler assignments and thinning, must be specified in advance using the MCMC configuration object (created using \code{configureMCMC}), which is then used to build the MCMC algorithm (using \code{buildMCMC}) argument.
 #'
-#' The \cd{niter} argument specifies the number of pre-thinning MCMC iterations, and the \cd{nburnin} argument will remove post-thinning samples.
+#' The \code{niter} argument specifies the number of pre-thinning MCMC iterations, and the \code{nburnin} argument will remove post-thinning samples.
 #'
-#' The MCMC option \cd{mcmc$run(..., reset = FALSE)}, used to continue execution of an MCMC chain, is not available through \cd{runMCMC()}.
+#' The MCMC option \code{mcmc$run(..., reset = FALSE)}, used to continue execution of an MCMC chain, is not available through \code{runMCMC()}.
 #' 
 #' @examples
 #' \dontrun{
