@@ -73,21 +73,14 @@ AC_CHECK_HEADERS([Eigen/Dense],
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
 		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "found NOT_IN_TARBALL"
 		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6.tar.gz or something similar." 
 		  else
-		   echo "did not find NOT_IN_TARBALL"
 		   echo "Not installing Eigen with NIMBLE"
 		   rm -r inst/include/Eigen
 		  fi
                  ], 
                  [echo "Using the version of Eigen provided with NIMBLE";
-		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "found NOT_IN_TARBALL"
-		  else
-		   echo "did not find NOT_IN_TARBALL"
-		  fi
-                  EIGEN_DIR=""
+		  EIGEN_DIR=""
                   ])
 
 
@@ -101,8 +94,12 @@ AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
 AC_SUBST(R_PACKAGE_DIR)
 
-NIMBLE_DIR=${R_PACKAGE_DIR}
-echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_DIR=${R_PACKAGE_DIR}
+ echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+else
+ NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 AC_SUBST(NIMBLE_DIR)
 
 if test "${ENABLE_LIB}" != "false" ; then
