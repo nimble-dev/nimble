@@ -184,14 +184,17 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        isWindows = (.Platform$OS.type == "windows")
 
-                                       includes <- if(!.useLib) {
-	                                              if(isWindows) {
-                                                         shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
-		    			                 sprintf("%s/%s", shortDirname, cppPermList)
-                                                      } else
-                                                         sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
-                                       	            } else
-                                                       character()
+                                       includes <- character()
+
+                                       ## following was before we created libnimble.a as an alternative to libnimble.so/libnimble.dll
+                                       ## includes <- if(!.useLib) {
+	                               ##                if(isWindows) {
+                                       ##                   shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
+		    		       ##                   sprintf("%s/%s", shortDirname, cppPermList)
+                                       ##                } else
+                                       ##                   sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
+                                       ## 	            } else
+                                       ##                 character()
                                        
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 

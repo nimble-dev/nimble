@@ -624,7 +624,6 @@ LIBOBJS
 USE_REGISTRATION
 PKG_LIBS
 RPATH
-FLIBS
 R_ENABLE_LIB
 NIMBLE_LIB_DIR
 NIMBLE_INC_DIR
@@ -685,7 +684,6 @@ ac_user_opts='
 enable_option_checking
 with_eigen
 enable_dylib
-enable_flibs
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1305,7 +1303,6 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code
-  --enable-flibs        include FLIBS flags in Makevars, which is not really necessary but is expected by CRAN
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2519,14 +2516,6 @@ fi
 fi
 
 
-# Check whether --enable-flibs was given.
-if test "${enable_flibs+set}" = set; then :
-  enableval=$enable_flibs; ENABLE_FLIBS=${enableval}
-else
-  ENABLE_FLIBS=false
-fi
-
-
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false
   echo "Disabling libnimble."
@@ -2571,6 +2560,8 @@ ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
+
+echo "working on eigen"
 
 
 ac_ext=cpp
@@ -2974,14 +2965,16 @@ if test "x$ac_cv_header_Eigen_Dense" = xyes; then :
 #define HAVE_EIGEN_DENSE 1
 _ACEOF
  echo "Found Eigen/Dense";
+		  if test -e "NOT_IN_TARBALL" ; then
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6.tar.gz or something similar."
+		  else
+		   echo "Not installing Eigen with NIMBLE"
+		   rm -r inst/include/Eigen
+		  fi
 
 else
-  echo "Cannot find Eigen/Dense include file.";
-                  echo "Using the version of Eigen provided locally with the R package";
-                  echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
-                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR";
-                  cp -r inst/Eigen_local inst/include/Eigen ;
-                  EIGEN_DIR=""
+  echo "Using the version of Eigen provided with NIMBLE";
+		  EIGEN_DIR=""
 
 fi
 
@@ -2999,11 +2992,19 @@ fi
 
 
 
-NIMBLE_DIR=${R_PACKAGE_DIR}
-echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_DIR=${R_PACKAGE_DIR}
+ echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+else
+ NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
 
-NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+else
+ NIMBLE_INC_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
 
 if test "${ENABLE_LIB}" = "yes" ; then
@@ -3012,23 +3013,16 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
-
-NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+else
+ NIMBLE_LIB_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
 
 
 R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "a-z" "A-Z"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
-
-
-ENABLE_FLIBS=`echo "${ENABLE_FLIBS}" | tr "a-z" "A-Z"`
-if test "${ENABLE_FLIBS}" = "TRUE"; then
-  echo "including FLIBS in Makevars as expected for CRAN"
-  FLIBS="\$(FLIBS)"
-else
-  echo "not including FLIBS in Makevars.  use --configure-args=\'--enable-flibs=true\' when testing for CRAN."
-  FLIBS=""
-fi
 
 
 if ! test `uname` = "Darwin" ; then
