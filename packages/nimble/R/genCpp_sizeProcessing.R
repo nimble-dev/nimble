@@ -89,6 +89,9 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                     code$type <- class(symTab$getSymbolObject(code$name, TRUE))[1]
                 } else {
                     code$type <- 'unknown'
+                    ##if(exists('.AllowUnknowns', envir = typeEnv)) 
+                        if(!typeEnv$.AllowUnknowns)
+                            warning(paste0("variable '",code$name,"' has not been created yet."), call.=FALSE) 
                 }
             } else {
                 ## otherwise fill in type fields from typeEnv object
@@ -605,7 +608,12 @@ sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = F
 }
 
 sizeAssign <- function(code, symTab, typeEnv) {
-    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    ##asserts <- recurseSetSizes(code, symTab, typeEnv)
+    typeEnv$.AllowUnknowns <- FALSE
+    asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, TRUE))
+    typeEnv$.AllowUnknowns <- TRUE
+    asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, FALSE)))
+    
     asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
     if(length(asserts) == 0) NULL else asserts
 }

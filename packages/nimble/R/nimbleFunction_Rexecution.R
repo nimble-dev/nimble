@@ -81,20 +81,28 @@ asCol <- function(x) {
 #'
 #' @param model A model such as returned by \code{\link{nimbleModel}}.
 #'
-#' @param nodes A character string naming one or more stochastic nodes, such as "mu", "c('mu', 'beta[2]')", or "eta[1:3, 2]"
+#' @param nodes A character string naming one one or more stochastic nodes, such as "mu", "c('mu', 'beta[2]')", or "eta[1:3, 2]".  getParam only works for one node at a time, but if it is indexed (nodes[i]), then makeParamInfo sets up the information for the entire vector nodes.  The processing pathway is used by the NIMBLE compiler.
 #'
 #' @param param A character string naming a parameter of the distribution followed by node, such as "mean", "rate", "lambda", or whatever parameter names are relevant for the distribution of the node.
 #'
 #' @export
 #' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 makeParamInfo <- function(model, nodes, param) {
-    ## updating to allow nodes to be a vector
+    ## updating to allow nodes to be a vector. getParam only works for a scalar but in a case like nodes[i] the param info is set up for the entire vector.
     distInfo <- getDistributionList(model$getNodeDistribution(nodes))
+
+    ## if(length(nodes) != 1) stop(paste0("Problem with nodes argument while setting up getParam.  Should be length 1 but was: ", paste0(nodes, collapse = ",")))
+    ## distInfo <- getDistributionList(model$getNodeDistribution(nodes))[[1]]
+    ## ## If nodes is invalid, an error from the above line will be trapped in parseEvalNumericMany
+    if(length(param) != 1) stop(paste0(paste0('Problem with param(s) ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
+                 '\nOnly one parameter is allowed.')))
+    ## paramID <- distInfo$paramIDs[param]
+    ## if(length(paramID)!=1 | any(is.na(paramID))) stop(paste0('Problem with param ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
+    ##                                    '\nThe parameter name is not valid.'))
     paramIDvec <- unlist(lapply(distInfo, function(x) x$paramIDs[param]))
     typeVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$type))
     nDimVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$nDim))
-    if(length(unique(typeVec)) != 1 | length(unique(nDimVec)) != 1) stop('cannot have multiple nodes accessed by the same getParam if they have different types or dimensions for the same parameter.') 
-##    ans <- c(list(paramID = distInfo$paramIDs[param]), distInfo$types[[param]])
+    if(length(unique(typeVec)) != 1 | length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
     ans <- c(list(paramID = paramIDvec), distInfo[[1]]$types[[param]])
     class(ans) <- 'getParam_info'
     ans
@@ -125,10 +133,14 @@ makeParamInfo <- function(model, nodes, param) {
 getParam <- function(model, node, param, nodeFunctionIndex) {
     if(missing(param)) { ## already converted by keyword conversion
         stop('This case of getParam (after keyword replacement) has not been updated for R execution with newNodeFunction system')
+        ## nodeFunctionIndex would only be used here, when we make this part work
         nodeFunction <- model
         paramInfo <- node
     } else {
-        ## not already converted
+        ## not already converted; this is regular execution
+        if(length(node) != 1) stop(paste0("getParam only works for one node at a time, but", length(node), "were provided."))
+        ## makeParamInfo, called by nodeFunctionVector, will check on length of param
+        ## nodeFunctionIndex should never be used.
         nfv <- nodeFunctionVector(model, node)
         indexingInfo <- nfv$indexingInfo
         declID <- indexingInfo$declIDs[1] ## should only be one
