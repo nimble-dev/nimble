@@ -8,4 +8,6 @@ ModelClassUtils.cpp
 Utils.cpp
 nimbleGraph.cpp
 Makevars
+NFxnUtils.cpp
+Values.cpp
 
