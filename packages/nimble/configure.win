@@ -2,8 +2,6 @@
 
 cp inst/CppCode/*.cpp src
 
-cp -r inst/Eigen_local inst/include/Eigen
-
 if test -r src/Makevars.win ; then
     cp src/Makevars.win src/Makevars
 fi
