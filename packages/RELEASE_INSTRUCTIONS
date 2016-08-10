@@ -114,3 +114,4 @@ if you're in the directory with the batch file (build.bat), then just type "buil
 
 Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
 
+NOTE: as of v0.6, mcmc testing seemed to run fine on Savio (SciLinux) and run but give compiler warnings related to Eigen on NERSC Edison (SUSE).
