@@ -478,7 +478,7 @@ conjugacyClass <- setRefClass(
                                      list(DEP_VALUES_VAR         = as.name(paste0('dep_', distName, '_values')),               ## DECLARE() statement
                                           DEP_VALUES_VAR_NDIM    = 1 + depNodeValueNdim,                                       ## DECLARE() statement
                                           DECLARE_SIZE           = makeDeclareSizeField(as.name(paste0('N_dep_', distName)), as.name(paste0('dep_', distName, '_nodeSizeMax')), as.name(paste0('dep_', distName, '_nodeSizeMax')), depNodeValueNdim)))
-                functionBody$addCode(thisNodeSize <- 0) ## annoyingly this is to avoid a windows compiler warning about possible uninitialized use of thisNodeSize
+                ##functionBody$addCode(thisNodeSize <- 0) ## annoyingly this is to avoid a windows compiler warning about possible uninitialized use of thisNodeSize
                 ## get *value* of each dependent node
                 ## NEWNODEFXN
                 if(distributions[[distName]]$types$value$nDim > 0) {
