@@ -9,5 +9,6 @@
 
 MyMakevars
 #Eigen*
+Eigen_local*
 
 config.*
