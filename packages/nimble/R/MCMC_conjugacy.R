@@ -701,19 +701,29 @@ conjugacyClass <- setRefClass(
 
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                 depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
+
+                ## don't allow ragged dependencies for 2D conjugate case.
+                ## no such cases exist, and it causes a runtime size check compiler warning.
+                ## nonRaggedSizeExpr used to replace quote(thisNodeSize) below.
+                ## August 2016
+                nonRaggedSizeExpr <- if(targetNdim < 2) quote(thisNodeSize) else quote(d)
                 subList <- lapply(depParamsAvailable, function(param)
-                    makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize)))
+                    makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr))
                 names(subList) <- depParamsAvailable
-
-                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize))
-                subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize))
-                subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(d))
-
+                
+                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
+                
                 forLoopBody <- codeBlockClass()
 
                 if(distributions[[distName]]$types$value$nDim > 0) {
-                    forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
-                                        list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
+                    if(targetNdim == 1) ## 1D
+                        forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
+                                            list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
+                    else ## 2D
+                        forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
+                                            list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
 
                 for(contributionName in posteriorObject$neededContributionNames) {
