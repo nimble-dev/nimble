@@ -702,24 +702,18 @@ conjugacyClass <- setRefClass(
                 if(!any(posteriorObject$neededContributionNames %in% dependents[[distName]]$contributionNames))     next
                 depParamsAvailable <- dependents[[distName]]$neededParamsForPosterior
 
-                if(targetNdim < 2) { ## 0D or 1D
-                    subList <- lapply(depParamsAvailable, function(param)
-                        makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize)))
-                    names(subList) <- depParamsAvailable
-                    
-                    subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize))
-                    subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(thisNodeSize))
-                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = quote(thisNodeSize), thirdSize = quote(d))
-                } else { ## 2D
-                    if(distributions[[distName]]$types$value$nDim  > 2) stop("Conjugacy case indicated with > 2 dimensions. Something is wrong.")
-                    subList <- lapply(depParamsAvailable, function(param)
-                        makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep), secondSize = quote(d), thirdSize = quote(d)))
-                    names(subList) <- depParamsAvailable
-                    
-                    subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep), secondSize = quote(d), thirdSize = quote(d))
-                    subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = quote(d), thirdSize = quote(d))
-                    subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = quote(d), thirdSize = quote(d))
-                }
+                ## don't allow ragged dependencies for 2D conjugate case.
+                ## no such cases exist, and it causes a runtime size check compiler warning.
+                ## nonRaggedSizeExpr used to replace quote(thisNodeSize) below.
+                ## August 2016
+                nonRaggedSizeExpr <- if(targetNdim < 2) quote(thisNodeSize) else quote(d)
+                subList <- lapply(depParamsAvailable, function(param)
+                    makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr))
+                names(subList) <- depParamsAvailable
+                
+                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
 
@@ -728,7 +722,7 @@ conjugacyClass <- setRefClass(
                         forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                     else ## 2D
-                        forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print("Run-time error with sizes of 2D conjugate sampler"),
+                        forLoopBody$addCode(if(DEP_NODESIZES[iDep] != d) print('runtime error with sizes of 2D conjugate sampler'),
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
 
