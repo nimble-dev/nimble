@@ -107,6 +107,7 @@ Collate:
     NF_utils.R
     miscFunctions.R
     makevars.R
+    setNimbleInternalFunctions.R
     registration.R
     nimble-package.r
     zzz.R

@@ -51,8 +51,8 @@ setMethod('[[<-', 'RNumericList',
           {
               if(i > x$nRow)
                   stop("Index is higher than max row of numericList")
-              rowDims <- nimble:::dimOrLength(x[[i]])
-              inputDims <- nimble:::dimOrLength(value)
+              rowDims <- nimbleInternalFunctions$dimOrLength(x[[i]])
+              inputDims <- nimbleInternalFunctions$dimOrLength(value)
               if(length(rowDims) != length(inputDims) )
                   stop("Incorrect number of dimensions for numericList")
               if(any(rowDims != inputDims) ) 
