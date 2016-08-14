@@ -2,7 +2,7 @@
 #define __NIMARRBASE
 
 /* fix to avoid warnings exemplified by edison.nersc.gov SUSE Linux - Github issue #214 */
-#if defined GNUC && GNUC>=6
+#if defined __GNUC__ && __GNUC__>=6
 #pragma GCC diagnostic ignored "-Wignored-attributes"
 #endif
 
