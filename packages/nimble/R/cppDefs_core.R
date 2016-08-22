@@ -115,7 +115,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                        objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                        output <- c(generateClassHeader(name, inheritance),
                                                    list('public:'), ## In the future we can separate public and private
-                                                   lapply(generateObjectDefs(objectDefsToUse), pasteSemicolon, indent = '  '),
+                                                   lapply(generateObjectDefs(objectDefsToUse), function(x) if(length(x)==0) '' else pasteSemicolon(x, indent = '  ')),
                                                    generateAll(functionDefs, declaration = TRUE),
                                                    '};'
                                                )
