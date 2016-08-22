@@ -132,7 +132,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
       PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
     }
   }
-};
+}
 
 // Actually this is identical to above so could be done without specialization
 template<>
@@ -153,8 +153,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
       PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
     }
   }
-};
-
+}
 
 vector<double> SEXP_2_vectorDouble( SEXP Sn ) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorDouble called for SEXP that is not a numeric or logica!\n");
@@ -313,7 +312,7 @@ SEXP bool_2_SEXP(bool ind){
 	LOGICAL(Sans)[0] = ind;
 	UNPROTECT(1);
 	return(Sans);
-};
+}
 
 bool SEXP_2_bool(SEXP Sn, int i) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_bool called for SEXP that is not numeric or logical\n");

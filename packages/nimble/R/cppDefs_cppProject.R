@@ -180,7 +180,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                         'ModelClassUtils.cpp', 
                                                         'accessorClasses.cpp'
                                                         )
-                                       if(nimbleOptions()$includeCPPdists) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
+                                       if(getNimbleOption('includeCPPdists')) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
 
                                        isWindows = (.Platform$OS.type == "windows")
 
@@ -210,8 +210,12 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        cur = getwd()
                                        setwd(dirName)
                                        on.exit(setwd(cur))
-                                       
-                                       status = system(SHLIBcmd)
+
+                                       suppressOutput <- getNimbleOption('suppressCppCompilerOutput')
+                                       if(isWindows)
+                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput, show.output.on.console = !suppressOutput)
+                                       else
+                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput)
 				       if(status != 0)
                                           stop(structure(simpleError("Failed to create the shared library"), 
                                                          class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))

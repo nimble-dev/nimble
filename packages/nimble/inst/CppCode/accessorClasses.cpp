@@ -3,48 +3,31 @@
 #include<sstream>
 using std::istringstream;
 
-// double getParam_0D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) { //iNodeFunction has default 0 in prototype
-//   /* iNodeFunction sometimes needs to be generated in a call even if not needed */
-//   /* but we want to avoid compiled warnings about an unused argument */
-//   /* the following line of code tries to make the compiler think iNodeFunction will be used */
-//   if(iNodeFunction == 0) paramID += 0;
-//   return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID, useInfo.useInfo));
-// }
-
-// /* This is for a case like model$getParam(nodes[i], 'mean'), where then paramID becomes a vector.  The vector of nodeFxnPtrs is unpacked at the line of generated C++ */
-// template<class paramIDtype>
-// double getParam_0D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-//   return(useInfo.nodeFunPtr->getParam_0D_double_block(paramID[iNodeFunction], useInfo.useInfo));
-// }
-
-// template double getParam_0D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-// template double getParam_0D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID, useInfo.useInfo));
 }
 
-template<class paramIDtype>
-NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-  return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.useInfo));
-}
+// template<class paramIDtype>
+// NimArr<1, double> getParam_1D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+//   return(useInfo.nodeFunPtr->getParam_1D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+// }
 
-template NimArr<1, double> getParam_1D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-template NimArr<1, double> getParam_1D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+//template NimArr<1, double> getParam_1D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+//template NimArr<1, double> getParam_1D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
 NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
   return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID, useInfo.useInfo));
 }
 
-template<class paramIDtype>
-NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
-  return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID[iNodeFunction], useInfo.useInfo));
-}
+// template<class paramIDtype>
+// NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+//   return(useInfo.nodeFunPtr->getParam_2D_double_block(paramID[iNodeFunction], useInfo.useInfo));
+// }
 
-template NimArr<2, double> getParam_2D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
-template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+//template NimArr<2, double> getParam_2D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+//template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
 
 double calculate(NodeVectorClassNew &nodes) {
@@ -211,7 +194,7 @@ ManyModelValuesMapAccessor::ManyModelValuesMapAccessor() : currentRow(0) {
 ManyModelValuesMapAccessor::~ManyModelValuesMapAccessor() {
     for(unsigned int i = 0; i < varAccessors.size(); ++i)
       delete static_cast<SingleModelValuesMapAccess*>(varAccessors[i]);
-};
+}
 
 #ifdef __NIMBLE_DEBUG_ACCESSORS
 void ManyModelValuesMapAccessor::check() {
@@ -639,7 +622,7 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
 
   to.setRow(rowTo - 1);
   nimCopy(from, to);
-};
+}
 
 copierClassBuilderCase< singletonCopierClass_M2M<double, double>, singletonCopierClass_M2M<double, int>, singletonCopierClass_M2M<int, int>, singletonCopierClass_M2M<int, double> > globalCopierBuilder_singleton_M2M;
 
@@ -885,7 +868,7 @@ void nimCopy(ManyVariablesAccessorBase &from, int rowFrom, ManyVariablesAccessor
 void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to, int rowTo) {
 	to.setRow(rowTo - 1);
 	nimCopy(from, to);
-};
+}
 
 
 
