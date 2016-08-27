@@ -24,6 +24,6 @@ ARCH_SUFFIX=$(patsubst /%,_%, $(R_ARCH))
 endif
 
 
-PKG_CPPFLAGS=-I"${NIMBLE_INC_DIR}" -I"${EIGEN_INC_DIR}" -DEIGEN_MPL2_ONLY=1
+PKG_CPPFLAGS=-I"${NIMBLE_INC_DIR}" -I"${EIGEN_INC_DIR}" -DEIGEN_MPL2_ONLY=1 -Wno-misleading-indentation -Wno-ignored-attributes -Wno-deprecated-declarations
 PKG_LIBS=-L"${NIMBLE_LIB_DIR}" -lnimble$(ARCH_SUFFIX) -lRlapack -lRblas
 

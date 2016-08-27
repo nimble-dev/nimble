@@ -8,7 +8,7 @@ graphNode::graphNode(int inputCgraphID, NODETYPE inputType, const string &inputN
   touched(false),
   numChildren(0) {
   RgraphID = CgraphID + 1;
-};
+}
 
 void graphNode::addChild( graphNode *toNode, int childParentExpressionID) {
 #ifdef _DEBUGNIMGRAPH
@@ -18,14 +18,14 @@ void graphNode::addChild( graphNode *toNode, int childParentExpressionID) {
   childrenParentExpressionIDs.push_back(childParentExpressionID);
   numChildren++;
   toNode->addParent(this);
-};
+}
 
 void graphNode::addParent(graphNode *fromNode) {
 #ifdef _DEBUGNIMGRAPH
   PRINTF("adding parent %s to child %s\n", fromNode->name.c_str(), name.c_str());
 #endif
   parents.push_back(fromNode);
-};
+}
 
 void SEXP_2_nodeType(SEXP Stypes, vector<NODETYPE> &ans) {
   //  enum NODETYPE {UNKNOWNTYPE, STOCH, DETERM, RHSONLY};
@@ -71,7 +71,7 @@ SEXP setGraph(SEXP SedgesFrom, SEXP SedgesTo, SEXP SedgesFrom2ParentExprIDs, SEX
   R_RegisterCFinalizerEx(SextPtrAns, &nimbleGraphFinalizer, TRUE);
   UNPROTECT(1);
   return(SextPtrAns);
-};
+}
 
 void nimbleGraphFinalizer(SEXP SgraphExtPtr) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));

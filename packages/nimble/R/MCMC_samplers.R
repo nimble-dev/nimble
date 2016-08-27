@@ -624,7 +624,7 @@ sampler_RW_PF <- nimbleFunction(
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
         latentSamp <- FALSE
-        MCMCmonitors <- tryCatch(parent.frame(2)$MCMCconf$monitors, error = function(e) e)
+        MCMCmonitors <- tryCatch(parent.frame(2)$conf$monitors, error = function(e) e)
         if(identical(MCMCmonitors, TRUE))
             latentSamp <- TRUE
         else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))
@@ -768,7 +768,7 @@ sampler_RW_PF_block <- nimbleFunction(
         targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
         calcNodes <- model$getDependencies(target)
         latentSamp <- FALSE
-        MCMCmonitors <- tryCatch(parent.frame(2)$MCMCconf$monitors, error = function(e) e)
+        MCMCmonitors <- tryCatch(parent.frame(2)$conf$monitors, error = function(e) e)
         if(identical(MCMCmonitors, TRUE))
             latentSamp <- TRUE
         else if(any(model$expandNodeNames(latents) %in% model$expandNodeNames(MCMCmonitors)))

@@ -221,10 +221,38 @@ codeBlockClass <- setRefClass(
     
 )
 
+mcmc_generateControlListArgument <- function(requiredControlNames, samplerFunction, control, controlDefaults) {
+    if(missing(requiredControlNames)) {
+        if(is.character(samplerFunction)) {
+            if(exists(samplerFunction) && is.nfGenerator(eval(as.name(samplerFunction)))) {
+                samplerFunction <- eval(as.name(samplerFunction))
+            } else {
+                samplerFunction_type <- paste0('sampler_', samplerFunction)
+                if(exists(samplerFunction_type) && is.nfGenerator(eval(as.name(samplerFunction_type)))) {
+                    samplerFunction <- eval(as.name(samplerFunction_type))
+                } else stop(paste0('cannot find sampler type \'', type, '\''))
+            }
+        }
+        requiredControlNames <- mcmc_findControlListNamesInCode(samplerFunction)
+    }
+    if(missing(controlDefaults))
+        controlDefaults <- getNimbleOption('MCMCcontrolDefaultList')
+    if(missing(control))
+        control <- list()
+    thisControlList <- controlDefaults           ## start with all the defaults
+    thisControlList[names(control)] <- control   ## add in any controls provided as an argument
+    missingControlNames <- setdiff(requiredControlNames, names(thisControlList))
+    missingControlNames <- missingControlNames[!grepl('^dep_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
+    if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for sampler: ', paste0(missingControlNames, collapse=', ')))
+    thisControlList <- thisControlList[requiredControlNames]
+    return(thisControlList)
+}
+
+
 
 mcmc_listContentsToStr <- function(ls) {
-    if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
-    ls <- lapply(ls, function(el) if(is.nf(el)) 'function' else el)   ## functions -> 'function'
+    ##if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
+    ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     defaultOptions <- getNimbleOption('MCMCcontrolDefaultList')
     for(i in seq_along(ls)) {

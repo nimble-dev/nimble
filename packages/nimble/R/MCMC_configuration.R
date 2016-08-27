@@ -91,6 +91,7 @@ MCMCconf <- setRefClass(
         samplerConfs        = 'ANY',
         controlDefaults     = 'ANY',
         controlNamesLibrary = 'ANY',
+        namedSamplerLabelMaker = 'ANY',
         mvSamples1Conf      = 'ANY',
         mvSamples2Conf      = 'ANY'
     ),
@@ -146,6 +147,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
 '
             
             samplerConfs <<- list(); controlDefaults <<- list(); controlNamesLibrary <<- list(); monitors <<- character(); monitors2 <<- character();
+            namedSamplerLabelMaker <<- labelFunctionCreator('namedSampler')
             ##model <<- model
             if(is(model, 'RmodelBaseClass')) {
                 model <<- model
@@ -263,8 +265,9 @@ Details: A single instance of the newly configured sampler is added to the end o
 Invisibly returns a list of the current sampler configurations, which are samplerConf reference class objects.
 '
 
+            nameProvided <- !missing(name)
             if(is.character(type)) {
-                thisSamplerName <- if(!missing(name)) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
+                thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
                 } else {
@@ -274,21 +277,16 @@ Invisibly returns a list of the current sampler configurations, which are sample
                     } else stop(paste0('cannot find sampler type \'', type, '\''))
                 }
             } else if(is.function(type)) {
-                thisSamplerName <- if(!missing(name)) name else gsub('^sampler_', '', deparse(substitute(type)))
+                thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', deparse(substitute(type)))
                 samplerFunction <- type
             } else stop('sampler type must be character name or function')
             if(!is.character(thisSamplerName)) stop('Sampler name should be a character string')
             if(!is.function(samplerFunction)) stop('Sampler type does not specify a function')
 
-            if(is.null(controlNamesLibrary[[thisSamplerName]]))   controlNamesLibrary[[thisSamplerName]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
-            controlListNames <- controlNamesLibrary[[thisSamplerName]]
-            thisControlList <- controlDefaults           ## start with all the defaults
-            thisControlList[names(control)] <- control   ## add in any controls provided as an argument
-            missingControlNames <- setdiff(controlListNames, names(thisControlList))
-            missingControlNames <- missingControlNames[!grepl('^dep_', missingControlNames)]   ## dependents for conjugate samplers are exempted from this check
-            if(length(missingControlNames) != 0)  stop(paste0('Required control names are missing for ', thisSamplerName, ' sampler: ', paste0(missingControlNames, collapse=', ')))
-            if(!all(names(control) %in% controlListNames))   warning(paste0('Superfluous control names were provided for ', thisSamplerName, ' sampler: ', paste0(setdiff(names(control), controlListNames), collapse=', ')))
-            thisControlList <- thisControlList[controlListNames]
+            libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
+            if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
+            requiredControlNames <- controlNamesLibrary[[libraryTag]]
+            thisControlList <- mcmc_generateControlListArgument(requiredControlNames=requiredControlNames, control=control, controlDefaults=controlDefaults)  ## should name arguments
             
             newSamplerInd <- length(samplerConfs) + 1
             samplerConfs[[newSamplerInd]] <<- samplerConf(name=thisSamplerName, samplerFunction=samplerFunction, target=target, control=thisControlList, model=model)

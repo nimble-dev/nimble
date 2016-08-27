@@ -28,6 +28,8 @@ nimbleUserNamespace <- as.environment(list())
         ## buildConjugateSamplerFunctions()
         verifyConjugatePosteriors = FALSE,
 
+        suppressCppCompilerOutput = FALSE,
+
         ## uses the 'new' system for dynamically generated conjugate samplers (DT, March 2016),
         ## rather than the older 'static' system.
         ## update May 2016: old (non-dynamic) system is no longer supported -DT

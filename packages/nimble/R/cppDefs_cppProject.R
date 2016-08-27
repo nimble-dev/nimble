@@ -180,18 +180,21 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                         'ModelClassUtils.cpp', 
                                                         'accessorClasses.cpp'
                                                         )
-                                       if(nimbleOptions()$includeCPPdists) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
+                                       if(getNimbleOption('includeCPPdists')) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
 
                                        isWindows = (.Platform$OS.type == "windows")
 
-                                       includes <- if(!.useLib) {
-	                                              if(isWindows) {
-                                                         shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
-		    			                 sprintf("%s/%s", shortDirname, cppPermList)
-                                                      } else
-                                                         sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
-                                       	            } else
-                                                       character()
+                                       includes <- character()
+
+                                       ## following was before we created libnimble.a as an alternative to libnimble.so/libnimble.dll
+                                       ## includes <- if(!.useLib) {
+	                               ##                if(isWindows) {
+                                       ##                   shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
+		    		       ##                   sprintf("%s/%s", shortDirname, cppPermList)
+                                       ##                } else
+                                       ##                   sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
+                                       ## 	            } else
+                                       ##                 character()
                                        
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
@@ -207,8 +210,12 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        cur = getwd()
                                        setwd(dirName)
                                        on.exit(setwd(cur))
-                                       
-                                       status = system(SHLIBcmd)
+
+                                       suppressOutput <- getNimbleOption('suppressCppCompilerOutput')
+                                       if(isWindows)
+                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput, show.output.on.console = !suppressOutput)
+                                       else
+                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput)
 				       if(status != 0)
                                           stop(structure(simpleError("Failed to create the shared library"), 
                                                          class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))

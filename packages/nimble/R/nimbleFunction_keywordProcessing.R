@@ -1150,7 +1150,7 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 	makeName = code2Name_fromArgList,
 	
 	codeTemplate = quote({
-		VARANDINDICES <- nimble:::getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
 		MFLATINDEX <- nimble:::varAndIndices2flatIndex(VARANDINDICES, MODELVAREXPR$getVarInfo(NEWVARNAME))
 		VARACCESSOR <- nimble:::singleVarAccess(MODELVAREXPR, NEWVARNAME, useSingleIndex = TRUE)
@@ -1175,7 +1175,7 @@ map_SetupTemplate <- setupCodeTemplateClass(
 		return(output)
 	},
 	codeTemplate = quote({
-		VARANDINDICES <- nimble:::getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
                 map_SetupTemplate_vi <- MODEL$getVarInfo(NEWVARNAME)
 		map_SetupTemplate_mapParts <- nimble:::varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
@@ -1313,7 +1313,7 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
             stop(paste0('Error, ', as.character(varOrNodeExpr), ' does not exist in an instance of this nimbleFunction.'))
         }
         lab <- eval(varOrNodeExpr, envir = x)
-        varAndIndices <- nimble:::getVarAndIndices(lab)
+        varAndIndices <- nimbleInternalFunctions$getVarAndIndices(lab)
         determineNdimFromOneCase(model, varAndIndices)
     } )
     return(allNDims)

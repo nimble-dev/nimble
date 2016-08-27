@@ -223,7 +223,7 @@ modelDefClass$methods(assignDimensions = function(dimensions) {
     for(i in seq_along(constantsList)) {
         constName <- names(constantsList)[i]
         ## constDim <- if(is.null(dim(constantsList[[i]]))) length(constantsList[[i]]) else dim(constantsList[[i]])
-        constDim <- nimble:::dimOrLength(constantsList[[i]], scalarize = TRUE)
+        constDim <- nimbleInternalFunctions$dimOrLength(constantsList[[i]], scalarize = TRUE)
         if(constName %in% names(dL)) {
             if(!identical(as.numeric(dL[[constName]]), as.numeric(constDim))) {
                 stop('inconsistent dimensions between constants and dimensions arguments')
@@ -2249,11 +2249,41 @@ parseEvalNumeric <- function(x, env){
     as.numeric(ans)
 }
 
+parseEvalNumericManyFindErrors <- function(x, env) {
+    problems <- list()
+    for(thisx in x) {
+        oneResult <- try(parseEvalNumeric(thisx, env), silent = TRUE)
+        if(inherits(oneResult, 'try-error')) {
+            problems[[ length(problems) + 1]] <- oneResult[1]
+            if(length(problems) >= 10)
+                return(problems)
+        }
+    }
+    return(problems)
+}
+
+parseEvalNumericManyHandleError <- function(cond, x, env) {
+    problems <- parseEvalNumericManyFindErrors(x, env)
+    if(length(problems)==0) message(paste0('There an unknown problem looking for variables ', paste0(x, collapse=','), ' in the model.\n'))
+    else {
+        message(paste0('One or more errors occurred looking for variables in a model (first 10 shown below).\n',
+                       'These messages may be cryptic, but generally the variable or expression somewhere in each message was not valid in a model:\n',
+                       paste0(unlist(problems), collapse = ''))) 
+    }
+    invokeRestart('abort')
+}
+
 parseEvalNumericMany <- function(x, env) {
-    if(length(x) > 1) {
-        return(as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env)))
-    } else 
-        as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
+    withCallingHandlers(
+        if(length(x) > 1) {
+            as.numeric(eval(parse(text = paste0('c(', paste0(x, collapse=','),')'), keep.source = FALSE)[[1]], envir = env))
+        } else 
+            as.numeric(eval(parse(text = x, keep.source = FALSE)[[1]], envir = env))
+       ,
+        error = function(cond) {
+           parseEvalNumericManyHandleError(cond, x, env)
+        }
+    )
 }
 
 parseEvalCharacter <- function(x, env){

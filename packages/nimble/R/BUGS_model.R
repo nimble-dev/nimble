@@ -359,8 +359,8 @@ Details: If a provided value (or the current value in the model when only a name
                                                       stop('variable name not suitable for setData(): ', varName)
                                                   } else next
                                               }
-                                          if(length(nimble:::dimOrLength(varValue, scalarize = TRUE)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          if(!(all(nimble:::dimOrLength(varValue, scalarize = TRUE) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = TRUE)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = TRUE) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           assign(varName, varValue, inherits = TRUE)
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
@@ -591,9 +591,9 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                               if(declInfo$type == 'determ') {
                                                   # check LHS and RHS are same size/dim
                                                   # need to eval within nf; constants not present otherwise
-                                                  RHSsize <- try(nimble:::dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))), silent = TRUE)
+                                                  RHSsize <- try(nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))), silent = TRUE)
 
-                                                  LHSsize <- try(nimble:::dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))), silent = TRUE)
+                                                  LHSsize <- try(nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))), silent = TRUE)
                                                   # apparently implicit dropping of size 1 dimensions is ok in determ node calcs
                                                   if(!is(RHSsize, 'try-error') && !is(LHSsize, 'try-error')) {
                                                       if(length(RHSsize) > 1 && any(RHSsize == 1))
@@ -631,7 +631,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       e <- try(.self$getParam(nfn, nms[k]))
                                                       
                                                       if(!is(e, "try-error")) {
-                                                          sizes[[nms[k]]] <- nimble:::dimOrLength(e)
+                                                          sizes[[nms[k]]] <- nimbleInternalFunctions$dimOrLength(e)
                                                           if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
                                                       } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
                                                   }

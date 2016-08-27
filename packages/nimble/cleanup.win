@@ -9,8 +9,8 @@ for f in $FILES ; do
  fi
 done
 
-(cd inst/CppCode ; make clean)
-#(cd src ; rm *.o)
+(cd inst/CppCode ; make clean; rm *.a)
+(cd src ; rm *.dll)
 
 
 

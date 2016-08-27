@@ -47,6 +47,15 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                           setupSymbolTables = function(parentST = NULL) {
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
+                                              if(numArgs > 0) {
+                                                  argIsBlank <- unlist(lapply(RCfun$argInfo, identical, formals(function(a) {})[[1]]))
+                                                  ## it seems to be impossible to store the value of a blank argument, formals(function(a) {})[[1]], in a variable
+                                                  if(any(argIsBlank)) {
+                                                      stop(paste0("Type declaration missing for argument(s) ", paste(names(RCfun$argInfo)[argIsBlank], collapse = ", ")), call. = FALSE)
+                                                  }
+                                              }
+                                              argInfoWithMangledNames <- RCfun$argInfo
+                                              numArgs <- length(argInfoWithMangledNames)
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
@@ -193,6 +202,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        }
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
+                                       compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
 
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 

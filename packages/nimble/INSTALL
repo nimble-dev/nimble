@@ -12,9 +12,9 @@ There are two configuration options:  --enable-dylib and --with-eigen.
 --enable-dylib is supported on UNIX/Linux/OS X platforms,
 i.e. not Windows.
 
- --enable-lib=false/true  controls whether we compile the shared C++ code that is used
+ --enabledy-lib=false/true  controls whether we compile the shared C++ code that is used
    across different NIMBLE models as a dynamic library, libnimble.so, and then use this one copy of the code
-   by linking against it. Otherwise, we create a static library, libnimble.a, and include this in the DLL for each compiled model and algorithm, essentially copying the code. By default, --enable-lib=true for Linux but --enable-lib=false for OS X. If building from source for OS X, we recommend setting --enable-lib=true to reduce the size of the shared libraries built when compiling models and algorithms. 
+   by linking against it. Otherwise, we create a static library, libnimble.a, and include this in the DLL for each compiled model and algorithm, essentially copying the code. By default, --enable-dylib=true for Linux but --enable-dylib=false for OS X. If building from source for OS X, we recommend setting --enable-dylib=true to reduce the size of the shared libraries built when compiling models and algorithms. 
 
  --with-eigen=/path/to/dir   - this specifies the full path to a directory containing the 
     header files for the Eigen library. This directory must contain the Eigen/ sub-directory 

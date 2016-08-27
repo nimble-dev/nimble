@@ -462,56 +462,55 @@ MCMCsuiteClass <- setRefClass(
 
         run_stan = function(dataFile, initFile) {
             if(setSeed) set.seed(0)
-            if(requireNamespace('rstan', quietly = TRUE)) {
-                warning("MCMCsuite: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.")
-                ## if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
-                ## ##            dataFile <- gsub('stan$', 'data.R', stan_model)
-                ## ##            initFile <- gsub('stan$', 'init.R', stan_model)
-                ## if(!is.list(dataFile)) 
-                ##     constantsAndDataStan <- fileToList(dataFile)
-                ## else
-                ##     constantsAndDataStan <- dataFile
+            if(require('rstan', quietly = TRUE)) {
+                if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
+                ##            dataFile <- gsub('stan$', 'data.R', stan_model)
+                ##            initFile <- gsub('stan$', 'init.R', stan_model)
+                if(!is.list(dataFile)) 
+                    constantsAndDataStan <- fileToList(dataFile)
+                else
+                    constantsAndDataStan <- dataFile
                 
-                ## if(!is.list(initFile)) {
-                ##     if(file.exists(initFile))
-                ##         initsStan <- fileToList(initFile)
-                ##     else
-                ##         initsStan <- NULL
-                ## } else
-                ##     initsStan <- initFile
+                if(!is.list(initFile)) {
+                    if(file.exists(initFile))
+                        initsStan <- fileToList(initFile)
+                    else
+                        initsStan <- NULL
+                } else
+                    initsStan <- initFile
 
                 
-                ## timeResult <- system.time(stan_mod <- rstan::stan_model(file = stan_model))
-                ## addTimeResult('stan_compile', timeResult)
+                timeResult <- system.time(stan_mod <- rstan::stan_model(file = stan_model))
+                addTimeResult('stan_compile', timeResult)
                         
-                ## if(is.null(initsStan)) {
-                ##     ## missing model.init.R file (stan inits file)
-                ##     timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
-                ## } else {
-                ##       ## we have the model.init.R file
-                ##       ## this one includes inits = ...
-                ##       timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))
-                ##   }
+                if(is.null(initsStan)) {
+                    ## missing model.init.R file (stan inits file)
+                    timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
+                } else {
+                      ## we have the model.init.R file
+                      ## this one includes inits = ...
+                      timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))
+                  }
                 
-                ## tempArray <- rstan::extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
-                ## for(BUGSname in names(StanNameMaps)) {
-                ##     iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
-                ##     if(length(iCol)==1) {
-                ##         if(!is.null(StanNameMaps[[BUGSname]]$transform))
-                ##             tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
-                ##         colnames(tempArray)[iCol] <- BUGSname
-                ##     }
-                ## }
-                ## dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
-                ## if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
-                ##     missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])
-                ##     warning(paste0('Stan output is missing values for: ', paste0(missingNames,collapse=', ')))
-                ## }
-                ## samplesArray <- array(0, dim = c(nkeep, length(monitorNodesBUGS)))
-                ## dimnames(samplesArray)[[2]] <- monitorNodesBUGS
-                ## monitorsWeHave <- intersect(monitorNodesBUGS, dimnames(tempArray)[[2]])
-                ## samplesArray[, monitorsWeHave] <- tempArray[(burnin+1):floor(niter/thin), monitorsWeHave, drop=FALSE]
-                ## addToOutput('stan', samplesArray, timeResult)
+                tempArray <- rstan::extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
+                for(BUGSname in names(StanNameMaps)) {
+                    iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
+                    if(length(iCol)==1) {
+                        if(!is.null(StanNameMaps[[BUGSname]]$transform))
+                            tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
+                        colnames(tempArray)[iCol] <- BUGSname
+                    }
+                }
+                dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
+                if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
+                    missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])
+                    warning(paste0('Stan output is missing values for: ', paste0(missingNames,collapse=', ')))
+                }
+                samplesArray <- array(0, dim = c(nkeep, length(monitorNodesBUGS)))
+                dimnames(samplesArray)[[2]] <- monitorNodesBUGS
+                monitorsWeHave <- intersect(monitorNodesBUGS, dimnames(tempArray)[[2]])
+                samplesArray[, monitorsWeHave] <- tempArray[(burnin+1):floor(niter/thin), monitorsWeHave, drop=FALSE]
+                addToOutput('stan', samplesArray, timeResult)
             } else warning("run_stan: rstan package is required for 'stan' option.")
         },
             

@@ -26,10 +26,6 @@ else
 fi
 )
 
-dnl This was a nice addition by Perry, but R CMD check looks at src/Makevars.in directly so we need to put $(FLIBS) in src/Makevars.in so don't need --enable-flibs 
-AC_ARG_ENABLE(flibs, [  --enable-flibs        include FLIBS flags in Makevars, which is not really necessary but is expected by CRAN],
-                         ENABLE_FLIBS=${enableval}, ENABLE_FLIBS=false)
-
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false
   echo "Disabling libnimble."
@@ -71,16 +67,20 @@ fi
 AC_LANG([C++])
 dnl  AC_LANG_PUSH([C++]);
 
+echo "working on eigen"
+
 AC_CHECK_HEADERS([Eigen/Dense], 
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
+		  if test -e "NOT_IN_TARBALL" ; then
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6.tar.gz or something similar." 
+		  else
+		   echo "Not installing Eigen with NIMBLE"
+		   rm -r inst/include/Eigen
+		  fi
                  ], 
-                 [echo "Cannot find Eigen/Dense include file.";
-                  echo "Using the version of Eigen provided locally with the R package";
-                  echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
-                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR"; 
-                  cp -r inst/Eigen_local inst/include/Eigen ;
-                  EIGEN_DIR=""
+                 [echo "Using the version of Eigen provided with NIMBLE";
+		  EIGEN_DIR=""
                   ])
 
 
@@ -94,11 +94,19 @@ AC_SUBST(EIGEN_INC)
 AC_SUBST(NEED_MAKEVARS_FILE)
 AC_SUBST(R_PACKAGE_DIR)
 
-NIMBLE_DIR=${R_PACKAGE_DIR}
-echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_DIR=${R_PACKAGE_DIR}
+ echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+else
+ NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 AC_SUBST(NIMBLE_DIR)
 
-NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+else
+ NIMBLE_INC_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 AC_SUBST(NIMBLE_INC_DIR)
 
 if test "${ENABLE_LIB}" = "yes" ; then
@@ -107,24 +115,17 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
-
-NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+else
+ NIMBLE_LIB_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 AC_SUBST(NIMBLE_LIB_DIR)
 
 
 R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
-
-ENABLE_FLIBS=`echo "${ENABLE_FLIBS}" | tr "[a-z]" "[A-Z]"`
-if test "${ENABLE_FLIBS}" = "TRUE"; then
-  echo "including FLIBS in Makevars as expected for CRAN"
-  FLIBS="\$(FLIBS)"
-else
-  echo "not including FLIBS in Makevars.  use --configure-args=\'--enable-flibs=true\' when testing for CRAN."
-  FLIBS=""
-fi
-AC_SUBST(FLIBS)
 
 if ! test `uname` = "Darwin" ; then
 RPATH="-Wl,-rpath=${NIMBLE_DIR}/CppCode"
