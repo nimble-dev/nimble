@@ -70,7 +70,7 @@ indexedNodeInfoTableClass <- function(BUGSdecl) {
              class = 'indexedNodeInfoTableClass')
 }
 
-## creates a list of the methods calculate, simulate, getParam, getBounds, and getLogProb, corresponding to LHS, RHS, and type arguments
+## creates a list of the methods calculate, simulate, getParam, getBound, and getLogProb, corresponding to LHS, RHS, and type arguments
 nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type) {
     if(type == 'determ') {
         methodList <- eval(substitute(

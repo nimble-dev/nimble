@@ -200,7 +200,7 @@ makeBoundInfo <- function(model, nodes, bound) {
 #'
 #' @param node  The name of a stochastic node in the model
 #'
-#' @param param Either \code{'lower'} or \code{'upper'} indicating the desired bound for the node
+#' @param bound Either \code{'lower'} or \code{'upper'} indicating the desired bound for the node
 #'
 #' @param nodeFunctionIndex For internal NIMBLE use only
 #'
