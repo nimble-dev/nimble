@@ -277,14 +277,33 @@ BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
 ## which is taken from the lower and upper expression
 ## if not truncated, remove 'lower' and 'upper' from codeReplaced as not needed for standard nodeFunctions (and in nodeFunction creation, it checks for presence of lower,upper to indicate truncation since only has access to RHS code not to full declInfo)
 BUGSdeclClass$methods(genBounds = function() {
-
     boundExprs <<- list()
-    
     if(type == 'stoch') {
         RHSreplaced <- codeReplaced[[3]]
         if(length(RHSreplaced) > 1) { ## It actually has argument(s)
             boundNames <- c('lower', 'upper')
             boundExprs <<- as.list(RHSreplaced[boundNames])
+            if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
+                distName <- as.character(RHSreplaced[[1]])
+                distRange <- getDistribution(distName)$range
+                if(is.numeric(boundExprs$lower) && is.numeric(distRange$lower) &&
+                   is.numeric(boundExprs$upper) && is.numeric(distRange$upper) &&
+                   boundExprs$lower <= distRange$lower && boundExprs$upper >= distRange$upper)  # user specified bounds irrelevant
+                    truncated <<- FALSE
+                
+                if(is.numeric(boundExprs$lower) && is.numeric(boundExprs$upper) && boundExprs$lower >= boundExprs$upper)
+                    warning(paste0("Lower bound is greater than or equal to upper bound in ", deparse(codeReplaced), "; proceeding anyway, but this is likely to cause numerical issues."))
+                if(is.numeric(boundExprs$lower) && is.numeric(distRange$lower) && boundExprs$lower <= distRange$lower) {
+                    warning(paste0("Lower bound is less than or equal to distribution lower bound in ", deparse(codeReplaced), "; ignoring user-provided lower bound."))
+                    boundExprs$lower <<- distRange$lower
+                    codeReplaced[[3]]['lower'] <<- distRange$lower
+                }
+                if(is.numeric(boundExprs$upper) && is.numeric(distRange$upper) && boundExprs$upper >= distRange$upper) {
+                    warning(paste0("Upper bound is greater than or equal to distribution upper bound in ", deparse(codeReplaced), "; ignoring user-provided upper bound."))
+                    boundExprs$upper <<- distRange$upper
+                    codeReplaced[[3]]['upper'] <<- distRange$upper
+                }
+            }
             if(!truncated) {
                  boundNamesLogicalVector <- names(RHSreplaced) %in% boundNames
                  RHSreplacedWithoutBounds <- RHSreplaced[!boundNamesLogicalVector]    

@@ -449,10 +449,6 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
                 warning(paste0("Lower and upper bounds not supplied for T(); proceeding with bounds: (",
                                paste(boundExprs, collapse = ','), ")."))
         
-            if(boundExprs$lower == distRange[1] && boundExprs$upper == distRange[2])  # user specified bounds that are the same as the range
-                truncated <- FALSE
-        
-
             BUGSdecl$code <- newCode
         }
         BUGSdeclClassObject <- BUGSdeclClass$new()
@@ -460,8 +456,6 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
-
-
 
 
 modelDefClass$methods(expandDistributions = function() {
