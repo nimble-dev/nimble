@@ -667,3 +667,28 @@ test_size <- function(input, verbose = TRUE) {
     }
     invisible(NULL)
 }
+
+test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
+    rtest <- test(model, node, bnd)
+    project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
+    ctest <- compileNimble(rtest, project = project)
+
+    out1 <- model$getBound(node, bnd)
+    out2 <- getBound(model, node, bnd)
+    out3 <- cmodel$getBound(node, bnd)
+    out4 <- getBound(cmodel, node, bnd)
+    nfOutput <- rtest$run()
+    cnfOutput <- ctest$run()
+    
+    expect_equal(truth, out1, info = paste0("mismatch of true bound with getBound result: ", info))
+    expect_equal(out1, out2, info = paste0("function vs. method getBound call mismatch for uncompiled model with: ", info))
+    expect_equal(out1, out2, info = paste0("function vs. method getBound call mismatch for compiled model with: ", info))
+    expect_equal(out1, out3, info = paste0("uncompiled vs. compiled getBound call mismatch with: ", info))
+    expect_equal(out1, nfOutput[1], info = paste0("direct vs. nimbleFunction getBound call mismatch for uncompiled model with: ", info))
+    expect_equal(nfOutput[1], nfOutput[2], info = paste0("function vs. method getBound call mismatch for uncompiled nimbleFunction with: ", info))
+    expect_equal(out3, cnfOutput[1], info = paste0("direct vs. nimbleFunction getBound call mismatch for compiled model with: ", info))
+    expect_equal(cnfOutput[1], cnfOutput[2], info = paste0("function vs. method getBound call mismatch for compiled nimbleFunction with: ", info))
+ #   if(.Platform$OS.type != 'windows') dyn.unload(project$cppProjects[[1]]$getSOName())
+    invisible(NULL)
+}
+ 
