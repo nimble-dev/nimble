@@ -100,6 +100,7 @@ class nimbleTimerClass_ {
    }
 
 #define EIGEN_CHOL(x)       (x).selfadjointView<Eigen::Upper>().llt().matrixU()
+//#define EIGEN_EIGEN(x)		(x).eigenvectors()
 //#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)
 //#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
 //#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)

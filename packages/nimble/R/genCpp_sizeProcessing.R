@@ -13,7 +13,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixMultOperators, 'sizeMatrixMult'), 
                makeCallList(matrixFlipOperators, 'sizeTranspose'),
                makeCallList(matrixSolveOperators, 'sizeSolveOp'), ## TO DO
-               makeCallList(matrixEigenOperators, 'sizeEigenOp'), ## TO DO
+               # makeCallList(matrixEigenOperators, 'sizeEigenOp'), ## TO DO
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',

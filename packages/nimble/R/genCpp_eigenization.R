@@ -93,7 +93,8 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     list('t' = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
-         'chol' = 'eigenize_matrixOps'
+         'chol' = 'eigenize_matrixOps',
+         'eigen' = 'eigenize_matrixOps'
          )
 )
 

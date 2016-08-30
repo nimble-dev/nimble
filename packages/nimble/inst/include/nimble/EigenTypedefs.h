@@ -40,11 +40,12 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
 
 template<class derived1>
 MatrixXd EIGEN_EIGEN(const MatrixBase<derived1> &x) {
-  MatrixXd ycopy = y; // in case y was a map, which it will always be from nimble
-  MatrixXd ans = x.lu().solve(ycopy);
-  return(ans);
+  Eigen::EigenSolver<Eigen::MatrixXd> es;
+  MatrixXd xcopy = x;
+  es.compute(x);
+  MatrixXd ans = es.eigenvalues();
+   return(ans);
 }
-
 
 
 template <typename Derived1, typename Derived2>
