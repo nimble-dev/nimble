@@ -345,6 +345,7 @@ eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
                         solve = 'EIGEN_SOLVE',
                         forwardsolve = 'EIGEN_FS',
                         backsolve = 'EIGEN_BS',
+                        eigen = 'EIGEN_EIGEN',
                         stop('should never get here')
                         )
     invisible(NULL)
