@@ -721,7 +721,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         for(i in whichUnits) if(names(units)[i] != '') names(ans)[i] <- names(units)[i]
     }
     
-    if(nimbleOptions('verbose')) message("compilation complete.")
+    if(nimbleOptions('verbose')) message("compilation finished.")
 
     if(length(ans) == 1) ans[[1]] else ans
 }
