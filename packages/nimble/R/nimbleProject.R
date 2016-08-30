@@ -691,6 +691,9 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     }
     
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
+
+    if(nimbleOptions('verbose')) message("compiling (this may take a minute; if you'd like to see the compiler calls, please set 'nimbleOptions(suppressCppCompilerOutput = FALSE)')...")
+    
     ## Compile models first
     ans <- list()
     rcfUnits <- unitTypes == 'rcf'
@@ -718,7 +721,8 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         for(i in whichUnits) if(names(units)[i] != '') names(ans)[i] <- names(units)[i]
     }
     
-    
+    if(nimbleOptions('verbose')) message("compilation complete.")
+
     if(length(ans) == 1) ans[[1]] else ans
 }
 
