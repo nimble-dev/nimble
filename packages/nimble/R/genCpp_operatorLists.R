@@ -26,7 +26,7 @@ matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse','eigen')
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
-##matrixEigenOperators <- c('eigen')
+matrixSVDOperators <- c('svd')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')
 

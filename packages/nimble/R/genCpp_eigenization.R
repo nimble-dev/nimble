@@ -94,7 +94,8 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     list('t' = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps',
-         'eigen' = 'eigenize_matrixOps'
+         'eigen' = 'eigenize_matrixOps',
+         'svd' = 'eigenize_matrixOps'
          )
 )
 
@@ -347,6 +348,7 @@ eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
                         forwardsolve = 'EIGEN_FS',
                         backsolve = 'EIGEN_BS',
                         eigen = 'EIGEN_EIGEN',
+                        svd = 'EIGEN_SVD',
                         stop('should never get here')
                         )
     invisible(NULL)
