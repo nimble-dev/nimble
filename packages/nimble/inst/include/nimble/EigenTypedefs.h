@@ -48,7 +48,9 @@ MatrixXd EIGEN_EIGEN(const MatrixBase<derived1> &x) {
 template<class derived1>
 MatrixXd EIGEN_SVD(const MatrixBase<derived1> &x) {
   MatrixXd xcopy = x;	
-  MatrixXd ans = asDiagonal(JacobiSVD<MatrixXd>(xcopy).singularValues().real());
+  MatrixXd ans(x.rows(), x.cols());
+  
+  MatrixXd svds = asDiagonal(JacobiSVD<MatrixXd>(xcopy).singularValues().real());
   return(ans); 
 }
 
