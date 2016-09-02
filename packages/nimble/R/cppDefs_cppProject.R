@@ -211,16 +211,16 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
-                                       suppressOutput <- getNimbleOption('suppressCppCompilerOutput')
-                                       if(suppressOutput) {
+                                       showOutput <- getNimbleOption('showCompilerOutput')
+                                       if(!showOutput) {
                                            logFile <- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log"))
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
                                            ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
                                        }
                                        if(isWindows)
-                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput, show.output.on.console = !suppressOutput)
+                                           status = system(SHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput, show.output.on.console = showOutput)
                                        else
-                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput)
+                                           status = system(SHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput)
 				       if(status != 0)
                                           stop(structure(simpleError("Failed to create the shared library"),
                                                          class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
