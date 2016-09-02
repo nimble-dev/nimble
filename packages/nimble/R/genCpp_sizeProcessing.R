@@ -13,7 +13,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixMultOperators, 'sizeMatrixMult'), 
                makeCallList(matrixFlipOperators, 'sizeTranspose'),
                makeCallList(matrixSolveOperators, 'sizeSolveOp'), ## TO DO
-               makeCallList(matrixSVDOperators, 'sizeMatrixVectorReduction'), ## TO DO
+               makeCallList(matrixSVDOperators, 'sizeUnaryCwise'), ## TO DO
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
@@ -1156,27 +1156,6 @@ sizeMatrixSquareReduction <- function(code, symTab, typeEnv) {
     if(length(asserts) == 0) NULL else asserts
 }
 
-## used to return vector of singular svd values
-sizeMatrixVectorReduction <- function(code, symTab, typeEnv) {
-  if(length(code$args) != 1){
-    stop(exprClassProcessingErrorMsg(code, 'sizeMatrixVectorReduction called with argument length != 1.'), call. = FALSE)
-  }
-  asserts <- recurseSetSizes(code, symTab, typeEnv)
-  a1 <- code$args[[1]]
-  if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixVectorReduction called with argument that is not an expression.'), call. = FALSE)
-  if(a1$toEigenize == 'no') {
-    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-    a1 <- code$args[[1]]
-  }
-  if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixVectorReduction called with argument that is not a matrix.'), call. = FALSE)
-  browser()
-  newSize <- min(a1$sizeExprs[[1]], a1$sizeExprs[[2]])
-  code$nDim <- 1
-  code$sizeExprs <- list(newSize)
-  code$type <-  a1$type
-  code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
-  invisible(asserts)
-}
 
 sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1){
