@@ -3,3 +3,4 @@
 *.dylib
 Makevars
 libnimble.a
+libnimble_x64.a
