@@ -293,12 +293,12 @@ BUGSdeclClass$methods(genBounds = function() {
                 
                 if(is.numeric(boundExprs$lower) && is.numeric(boundExprs$upper) && boundExprs$lower >= boundExprs$upper)
                     warning(paste0("Lower bound is greater than or equal to upper bound in ", deparse(codeReplaced), "; proceeding anyway, but this is likely to cause numerical issues."))
-                if(is.numeric(boundExprs$lower) && is.numeric(distRange$lower) && boundExprs$lower <= distRange$lower) {
+                if(is.numeric(boundExprs$lower) && is.numeric(distRange$lower) && boundExprs$lower < distRange$lower) {
                     warning(paste0("Lower bound is less than or equal to distribution lower bound in ", deparse(codeReplaced), "; ignoring user-provided lower bound."))
                     boundExprs$lower <<- distRange$lower
                     codeReplaced[[3]]['lower'] <<- distRange$lower
                 }
-                if(is.numeric(boundExprs$upper) && is.numeric(distRange$upper) && boundExprs$upper >= distRange$upper) {
+                if(is.numeric(boundExprs$upper) && is.numeric(distRange$upper) && boundExprs$upper > distRange$upper) {
                     warning(paste0("Upper bound is greater than or equal to distribution upper bound in ", deparse(codeReplaced), "; ignoring user-provided upper bound."))
                     boundExprs$upper <<- distRange$upper
                     codeReplaced[[3]]['upper'] <<- distRange$upper
