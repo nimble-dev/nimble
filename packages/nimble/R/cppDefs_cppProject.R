@@ -213,7 +213,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        showOutput <- getNimbleOption('showCompilerOutput')
                                        if(!showOutput) {
-                                           logFile <- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log"))
+                                           logFile <- paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
                                            ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
                                        }
