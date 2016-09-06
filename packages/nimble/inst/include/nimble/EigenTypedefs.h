@@ -53,7 +53,7 @@ VectorXd EIGEN_EIGENVALS(const MatrixBase<derived1> &x) {
 }
 
 template<class derived1>
-VectorXd EIGEN_SVDU(const MatrixBase<derived1> &x) {
+VectorXd EIGEN_SVDD(const MatrixBase<derived1> &x) {
   MatrixXd xcopy = x;	  
   VectorXd ans = JacobiSVD<MatrixXd>(xcopy).singularValues();
   return(ans); 
