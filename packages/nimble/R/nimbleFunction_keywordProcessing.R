@@ -155,7 +155,7 @@ svd_keywordInfo <- keywordInfoClass(
   processor = function(code, nfProc){
     nuArg <- code$nu
     nvArg <- code$nv
-    if(nuArg == 0 & nvArg > 0){
+    if((nuArg == 0) && (nvArg > 0)){
       code[[1]] <- parse(text = 'svdv')[[1]]
       code[[3]] <- NULL #remove nu argument
     }
