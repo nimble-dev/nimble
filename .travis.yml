@@ -7,7 +7,7 @@ warnings_are_errors: true
 notifications:
   email:
     recipients:
-      - dturek@berkeley.edu
+      - dbt1@williams.edu
     on_success: always
     on_failure: always
 
@@ -25,13 +25,7 @@ install:
   - R CMD INSTALL packages/nimble
 
 script:
-##  - Rscript packages/nimble/tests/test-all.R    2>&1 | tee out
-##                                                                
-##  - Rscript packages/nimble/tests/test-mcmc.R   2>&1 | tee out
-    - Rscript packages/nimble/tests/test-models.R 2>&1 | tee out
-##  - Rscript packages/nimble/tests/test-trunc.R  2>&1 | tee out
-##  - Rscript packages/nimble/tests/test-others.R 2>&1 | tee out
-
-after_script:
-  - sed -n -E '/[Ww]arning|[Ee]rror[^=]|[Ff]ailure/p' out > error
-  - cat error
+    - Rscript packages/nimble/inst/tests/test-mcmc.R
+    - Rscript packages/nimble/inst/tests/test-models.R
+##  - Rscript packages/nimble/inst/tests/test-trunc.R
+##  - Rscript packages/nimble/inst/tests/test-others.R

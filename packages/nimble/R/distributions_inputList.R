@@ -47,13 +47,6 @@ distributionsInputList <- list(
                          range    = c(0, Inf),
                          discrete = TRUE),
 
-    dmulti  = list(BUGSdist = 'dmulti(prob, size)',
-                   Rdist    = 'dmulti(size, prob)',
-                   types    = c('value = double(1)', 'prob = double(1)'),
-                   range    = c(0, Inf),
-                   discrete = TRUE,
-                   alias    = 'dmultinom'),
-    
     dnegbin = list(BUGSdist = 'dnegbin(prob, size)',
                    Rdist    = 'dnbinom(size, prob)',
                    discrete = TRUE,
@@ -153,7 +146,13 @@ distributionsInputList <- list(
                    altParams= c('prec = calc_dmnormAltParams(cholesky, prec_param, 1)', 'cov = calc_dmnormAltParams(cholesky, prec_param, 0)'),
                    types    = c('value = double(1)', 'mean = double(1)', 'cholesky = double(2)', 'prec = double(2)', 'cov = double(2)')),
     
-    ## dmt     = list(BUGSdist = 'dmt(mu, T, k)'),   ## not sure the state of this?  -DT
+    dmulti  = list(BUGSdist = 'dmulti(prob, size)',
+                   Rdist    = 'dmulti(size, prob)',
+                   types    = c('value = double(1)', 'prob = double(1)'),
+                   range    = c(0, Inf),
+                   discrete = TRUE,
+                   alias    = 'dmultinom'),
+    
     dmvt  = list(BUGSdist = 'dmvt(mu, prec, scale, cholesky, df, prec_param)',
                    Rdist    = c('dmvt_chol(mu, cholesky = chol(prec), df = df, prec_param = 1)', 'dmvt_chol(mu, cholesky = chol(scale), df = df, prec_param = 0)', 'dmvt_chol(mu, cholesky, df = df, prec_param)'),
                    ## I think it's okay to use the same altParams function for multivariate normal and t

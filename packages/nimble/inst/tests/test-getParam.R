@@ -16,6 +16,7 @@ testGetParam <- function(distCall) {
     dist <- nimble:::getDistribution(as.character(distCall[[1]]))
     code <- substitute({x ~ DISTCALL}, list(DISTCALL = distCall))
     m <- nimbleModel( code = code )
+    cm <- compileNimble(m)
     gpFuns <- list()
     expectedResults <- list()
     altParams <- dist$altParams
@@ -66,6 +67,9 @@ testGetParam <- function(distCall) {
         else  ## it wasn't provided so eval the expression to calculate it from reqdArgs
             expectedResults[[i]] <- eval(altParams[[i]], envir = evalEnv)
         test_that(paste(distCallText, 'uncompiled', altParamNames[i]), expect_equal(gpFuns[[i]]$run(), expectedResults[[i]]))
+        # test use of getParam in R
+        test_that(paste(distCallText, 'Rmodel', altParamNames[i]), expect_equal(m$getParam('x', altParamNames[i]), expectedResults[[i]]))
+        test_that(paste(distCallText, 'Cmodel', altParamNames[i]), expect_equal(cm$getParam('x', altParamNames[i]), expectedResults[[i]]))
     }
 
     resultsNames <- altParamNames
@@ -74,6 +78,9 @@ testGetParam <- function(distCall) {
         gpFuns[[nextI]] <- gpScalar(m, 'x', reqdArgs[i])
         expectedResults[[nextI]] <- eval(as.name(reqdArgs[i]), envir = evalEnv) ## it was already calculated into evalEnv above
         test_that(paste(distCallText, 'uncompiled reqd', reqdArgs[i]), expect_equal(gpFuns[[nextI]]$run(), expectedResults[[nextI]]))
+        # test use of getParam in R
+        test_that(paste(distCallText, 'Rmodel reqd', reqdArgs[i]), expect_equal(m$getParam('x', reqdArgs[i]), expectedResults[[nextI]]))
+        test_that(paste(distCallText, 'Cmodel reqd', reqdArgs[i]), expect_equal(cm$getParam('x', reqdArgs[i]), expectedResults[[nextI]]))
         resultsNames[nextI] <- reqdArgs[i]
         nextI <- nextI + 1
     }
@@ -157,3 +164,24 @@ Ctest <- compileNimble(testModel, nf1)
 test_that('multivar 4', expect_equivalent(Ctest$nf1$run(), Ctest$testModel$x))
 test_that('multivar 5', expect_equivalent(Ctest$nf1$test2(), Ctest$testModel$x + 1.1))
 test_that('multivar 6', expect_equivalent(Ctest$nf1$test3(11:13), Ctest$testModel$x + 11:13))
+
+# basic non-scalar test
+code = nimbleCode({
+    a[1:3] ~ dmnorm(mu[1:3],pr[1:3,1:3])
+})
+pr1 = diag(3)
+pr1[1,2]=pr1[2,1]=.3
+pr2 <- pr1
+pr1[1,2]=pr1[2,1]=.5
+
+m = nimbleModel(code, inits =list(mu=rep(1,3), pr = pr1))
+cm = compileNimble(m)
+
+cm$pr <- pr2
+cm$calculate(cm$getDependencies('pr'))
+
+test_that('non-scalar 1', expect_equal(pr1, m$getParam('a', 'prec')))
+test_that('non-scalar 2', expect_equal(pr2, cm$getParam('a', 'prec')))
+test_that('non-scalar 3', expect_equal(solve(pr1), m$getParam('a', 'cov')))
+test_that('non-scalar 4', expect_equal(solve(pr2), cm$getParam('a', 'cov')))
+

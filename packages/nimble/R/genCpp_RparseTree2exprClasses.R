@@ -49,7 +49,9 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
                 for(iSwitch in 4:length(code))
                     if(!isRbracket(code[[iSwitch]])) code[[iSwitch]] <- embedInRbracket(code[[iSwitch]])
         }
-        
+        if(name == 'run.time') {
+            if(!isRbracket(code[[2]])) code[[2]] <- embedInRbracket(code[[2]])
+        }
         if(name == 'map') { ## special treatment. just stick the remaining arguments in as a list
             ans$args <- as.list(code[-1])
             return(ans)

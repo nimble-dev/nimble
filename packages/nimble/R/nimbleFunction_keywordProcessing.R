@@ -668,7 +668,20 @@ singleBracket_keywordInfo <- keywordInfoClass(
     }
 )    
 
-
+length_char_keywordInfo <- keywordInfoClass(
+    keyword = 'length',
+    processor = function(code, nfProc) {
+        if(is.null(nfProc)) return(code)
+        if(length(code) < 2) stop('length() used without an argument')
+        class <- symTypeFromSymTab(code[[2]], nfProc$setupSymTab)
+        if(class == "symbolString") {
+            length_char_ArgList <- list(code = code, string = code[[2]])
+            accessName <- length_char_SetupTemplate$makeName(length_char_ArgList)
+            addNecessarySetupCode(accessName, length_char_ArgList, length_char_SetupTemplate, nfProc)
+            return(substitute(LENGTHNAME, list(LENGTHNAME = as.name(accessName))))
+        }
+        return(code)
+    })
 
 #	KeywordList
 keywordList <- new.env()
@@ -697,6 +710,8 @@ keywordList[['dexp_nimble']] <- d_exp_nimble_keywordInfo
 keywordList[['pexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['qexp_nimble']] <- pq_exp_nimble_keywordInfo
 keywordList[['rexp_nimble']] <- rexp_nimble_keywordInfo
+
+keywordList[['length']] <- length_char_keywordInfo ## active only if argument has type character
 
 keywordListModelMemberFuns <- new.env()
 keywordListModelMemberFuns[['calculate']] <- modelMemberFun_keywordInfo
@@ -911,10 +926,14 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 #		singleModelIndexAccess_SetupTemplate
 #		map_SetupTemplate
 #       singleModelValuesAccessor_SetupTemplate
-        
-        
-        
-                                         
+
+length_char_SetupTemplate <- setupCodeTemplateClass(
+    makeName = function(argList) {Rname2CppName(paste0(paste("length", deparse(argList$string), sep='_'), '_KNOWN_'))},
+    codeTemplate = quote(LENGTHNAME <- CODE),
+    makeCodeSubList = function(resultName, argList) {
+        list(LENGTHNAME = as.name(resultName),
+             CODE = argList$code)
+    })
 
 optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 	makeName = function(argList){Rname2CppName(deparse(argList$name))},
@@ -930,7 +949,7 @@ optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelVariableAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
     makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
@@ -940,7 +959,7 @@ modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 copierVector_setupCodeTemplate <- setupCodeTemplateClass(
     makeName = function(argList) {Rname2CppName(paste0(argList$accessFrom_name, '_', argList$accessTo_name))},
-    codeTemplate = quote( COPIERNAME <- copierVector(ACCESS_FROM, ACCESS_TO, ISMVFROM, ISMVTO) ),
+    codeTemplate = quote( COPIERNAME <- nimble:::copierVector(ACCESS_FROM, ACCESS_TO, ISMVFROM, ISMVTO) ),
     makeCodeSubList = function(resultName, argList) {
         list(COPIERNAME = as.name(resultName),
              ACCESS_FROM = as.name(argList$accessFrom_name),
@@ -954,7 +973,7 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and logProb
 
     makeName = function(argList) {Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'access_logProb', deparse(argList$logProb), deparse(argList$row), sep = '_'))},
-    codeTemplate = quote( ACCESSNAME <- modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
+    codeTemplate = quote( ACCESSNAME <- nimble:::modelValuesAccessorVector(MODEL, NODES, logProb = LOGPROB) ),
 	makeCodeSubList = function(resultName, argList) {
         list(ACCESSNAME = as.name(resultName),
              MODEL = argList$model,
@@ -964,24 +983,24 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 
     
-accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
-  #Note to programmer: required fields of argList are accessName
+## accessorVectorLength_setupCodeTemplate <- setupCodeTemplateClass( ## This is not very nice: modify the accessor to have element 5 as the length name, so that when makeMapInfo...() is called it will set the length variable in the calling environment.  kind of convoluted but doing it for now.
+##   #Note to programmer: required fields of argList are accessName
  
-  makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
-    codeTemplate = quote({ACCESSLENGTH <- 0;
-        ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
-  makeCodeSubList = function(resultName, argList){
-      list(ACCESSNAME = as.name(argList$accessName),
-           ACCESSLENGTH = as.name(resultName),
-           ACCESSLENGTHNAME = resultName)
-  })
+##   makeName = function(argList){ Rname2CppName(paste(deparse(argList$accessName), 'length', sep = '_')) },
+##     codeTemplate = quote({ACCESSLENGTH <- 0;
+##         ACCESSNAME[[5]] <- ACCESSLENGTHNAME}),
+##   makeCodeSubList = function(resultName, argList){
+##       list(ACCESSNAME = as.name(argList$accessName),
+##            ACCESSLENGTH = as.name(resultName),
+##            ACCESSLENGTHNAME = resultName)
+##   })
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
 	#Note to programmer: required fields of argList are model, nodes and includeData
 	
 	makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), sep = '_'))},
-	codeTemplate = quote(NODEFXNVECNAME <- nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA)), 
+	codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA)), 
 	makeCodeSubList = function(resultName, argList){
 		list(NODEFXNVECNAME = as.name(resultName),
 			MODEL = argList$model,
@@ -1050,7 +1069,7 @@ singleVarAccess_SetupTemplate <- setupCodeTemplateClass(
 
 	makeName = code2Name_fromArgList,
 
-	codeTemplate = quote(SINGLEACCESSOR <- singleVarAccess(MODEL, VAR)),
+	codeTemplate = quote(SINGLEACCESSOR <- nimble:::singleVarAccess(MODEL, VAR)),
 
 	makeCodeSubList = function(resultName, argList){
 		list(SINGLEACCESSOR = as.name(resultName),
@@ -1064,10 +1083,10 @@ singleModelIndexAccess_SetupTemplate <- setupCodeTemplateClass(
 	makeName = code2Name_fromArgList,
 	
 	codeTemplate = quote({
-		VARANDINDICES <- getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
-		MFLATINDEX <- varAndIndices2flatIndex(VARANDINDICES, MODELVAREXPR$getVarInfo(NEWVARNAME))
-		VARACCESSOR <- singleVarAccess(MODELVAREXPR, NEWVARNAME, useSingleIndex = TRUE)
+		MFLATINDEX <- nimble:::varAndIndices2flatIndex(VARANDINDICES, MODELVAREXPR$getVarInfo(NEWVARNAME))
+		VARACCESSOR <- nimble:::singleVarAccess(MODELVAREXPR, NEWVARNAME, useSingleIndex = TRUE)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(VARACCESSOR = as.name(resultName),
@@ -1089,14 +1108,14 @@ map_SetupTemplate <- setupCodeTemplateClass(
 		return(output)
 	},
 	codeTemplate = quote({
-		VARANDINDICES <- getVarAndIndices(NODEVARNAME)
+		VARANDINDICES <- nimbleInternalFunctions$getVarAndIndices(NODEVARNAME)
 		NEWVARNAME <- as.character(VARANDINDICES$varName)
                 map_SetupTemplate_vi <- MODEL$getVarInfo(NEWVARNAME)
-		map_SetupTemplate_mapParts <- varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
+		map_SetupTemplate_mapParts <- nimble:::varAndIndices2mapParts(VARANDINDICES, map_SetupTemplate_vi$maxs, map_SetupTemplate_vi$nDim)
 		MSTRIDES <- map_SetupTemplate_mapParts$strides
 		MOFFSET <- map_SetupTemplate_mapParts$offset
 		MSIZES <- map_SetupTemplate_mapParts$sizes
-		VARACCESSOR <- singleVarAccess(model, NEWVARNAME)
+		VARACCESSOR <- nimble:::singleVarAccess(model, NEWVARNAME)
 	}),
 	makeCodeSubList = function(resultName, argList){
 		list(VARACCESSOR = as.name(resultName),
@@ -1227,7 +1246,7 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
             stop(paste0('Error, ', as.character(varOrNodeExpr), ' does not exist in an instance of this nimbleFunction.'))
         }
         lab <- eval(varOrNodeExpr, envir = x)
-        varAndIndices <- getVarAndIndices(lab)
+        varAndIndices <- nimbleInternalFunctions$getVarAndIndices(lab)
         determineNdimFromOneCase(model, varAndIndices)
     } )
     return(allNDims)

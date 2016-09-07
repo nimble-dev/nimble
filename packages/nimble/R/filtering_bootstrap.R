@@ -45,10 +45,13 @@ bootFStep <- nimbleFunction(
   },
   run = function(m = integer(), threshNum = double(), prevSamp = logical()) {
     returnType(double(1))
-    declare(wts, double(1, m))
+    ##declare(wts, double(1, m))
+    wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
-    declare(llEst, double(1,m))
-    declare(out, double(1,2))
+    ##declare(llEst, double(1,m))
+    llEst <- numeric(m, init=FALSE)
+    ##declare(out, double(1,2))
+    out <- numeric(2, init=FALSE)
     
     for(i in 1:m) {
       if(notFirst) {  
@@ -225,7 +228,7 @@ buildBootstrapFilter <- nimbleFunction(
       type <- sapply(modelSymbolObjects, function(x)return(x$type))
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
       
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -234,7 +237,7 @@ buildBootstrapFilter <- nimbleFunction(
       size$wts <- length(dims)
       if(smoothing == TRUE)
         size$wts <- 1  ##  only need one weight per particle (at time T) if smoothing == TRUE
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -245,14 +248,14 @@ buildBootstrapFilter <- nimbleFunction(
       size <- lapply(modelSymbolObjects, function(x)return(x$size))
       size[[1]] <- as.numeric(dims[[1]])
       
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       names <- names[1]

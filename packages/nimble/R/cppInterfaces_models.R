@@ -152,9 +152,9 @@ makeModelBindingFields <- function(symTab) {
     fieldList[[ptrName]] <- "ANY"
     eval(substitute( fieldList$VARNAME <- function(x){
       if(missing(x) ) 
-        getNimValues(VPTR, 2)
+        nimbleInternalFunctions$getNimValues(VPTR, 2)
       else
-        setNimValues(VPTR, x, 2, allowResize = FALSE)
+        nimbleInternalFunctions$setNimValues(VPTR, x, 2, allowResize = FALSE)
     }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
   }
   return(fieldList)
@@ -193,8 +193,8 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 # avoid R CMD check problem with registration
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
                                                 # .basePtr <<- .Call(BPTRCALL)
-                                                .modelValues_Ptr <<- getMVptr(.basePtr)
-                                                defaultModelValues <<- CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = getMVName(.modelValues_Ptr), initialized = TRUE )
+                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr)
+                                                defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr), initialized = TRUE )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
                                                 vars <<- model$vars
@@ -208,7 +208,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 for(vn in cppNames)
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
-                                                     	.self[[vPtrName]] <<- newObjElementPtr(.basePtr, vn)
+                                                     	.self[[vPtrName]] <<- nimbleInternalFunctions$newObjElementPtr(.basePtr, vn)
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)

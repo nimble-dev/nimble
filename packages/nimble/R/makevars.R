@@ -28,9 +28,12 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
   if(file.exists(target) && !.force)
      stop(paste(target, "already exists"))
 
-  haveContents = !missing(pkgFlags) || !missing(pkgLibs) || length(list(...))
+  ## This old condition evaluates to TRUE even when we should be generating a new makevars
+  ## For now I am simplifying by conditioning only on .useLib
+  ##  haveContents = !missing(pkgFlags) || !missing(pkgLibs) || length(list(...))
 
-  if(!haveContents) {
+  ##  if(!haveContents) {
+  if(.useLib) {
      if(!file.exists(.copyFrom))
          stop("No default Makevars file")
 
@@ -44,7 +47,43 @@ function(pkgFlags, pkgLibs, ..., dir = getwd(),
   if(!missing(pkgLibs))
      args$PKG_LIBS = pkgLibs
   args = sapply(args, as.character)
-  cat(sprintf("%s=%s", names(args), args), sep = "\n", file = target)
-
+#  cat(sprintf("%s=%s", names(args), args), sep = "\n", file = target)
+  genLocalMakevars(target, args, .useLib)
+  
   target
+}
+
+genLocalMakevars =
+function(target, vars = character(), .useLib = UseLibraryMakevars)
+{
+##    cat("creating local makeVars in", target, "\n")
+    inc.make = system.file("make", if(.useLib) 
+                                     "Makevars_lib" 
+                                   else if(.Platform$OS.type == "windows")
+                                     "Makevars.win"
+                                   else
+                                     "Makevars", package = "nimble")
+
+    vars = c(EIGEN_INC = "", ## AutoconfInfo$eigenInc, ## we used to generate an AutoconfInfo list. We'll need a new mechanism if a local Makevars needs to be generated and the user has non-nimble-provided Eigen
+             NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
+             NIMBLE_LIB_DIR =  system.file("CppCode", package = "nimble"),        
+             NIMBLE_DIR =  system.file(package = "nimble"),
+             RPATH = sprintf("-rpath %s", system.file("CppCode", package = "nimble")),
+             vars)
+    varDefs = mapply(function(id, val) paste(id, val, sep = "="), names(vars), vars)
+
+       # replace any spaces in the path with \<space>, but need \\\\ to get the single \ 
+    inc.make = gsub(" ", "\\\\ ", inc.make)
+    content = c(varDefs, "", sprintf('include %s', inc.make))
+
+    cat(content, file = target, sep = "\n")
+}
+
+
+
+
+sameDir =
+function(a, b)
+{
+    path.expand(a) == path.expand(b)
 }

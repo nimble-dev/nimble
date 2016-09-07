@@ -1,3 +1,5 @@
 *.o
 *.so
+*.dylib
 Makevars
+libnimble.a
