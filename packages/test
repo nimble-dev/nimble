@@ -1,0 +1,23 @@
+#!/bin/sh -xe
+
+(cd ../nimble ; ./cleanup)
+Rscript -e 'try(remove.packages("nimble"))'
+if test -e nimble_0.6.tar.gz ; then
+    rm nimble_0.6.tar.gz
+fi
+
+echo "****************************** testing default binary build with different locations (needed to work across machines)"
+if ! test -d RTempLib ; then
+  mkdir RTempLib
+fi
+
+CONFIG_ARGS="'--enable-dylib=false'"
+R CMD INSTALL  --configure-args="$CONFIG_ARGS" --build ../nimble
+Rscript -e 'try(remove.packages("nimble"))'
+
+GZ=`ls nimble_*gz`
+echo "****************************** Installing nimble binary package $GZ"
+R CMD INSTALL -l RTempLib $GZ
+
+echo "Running testBUGSmodel()"
+Rscript -e 'library(methods); library("nimble", lib.loc = "RTempLib"); print(system.file(package = "nimble")); testBUGSmodel("pump")'

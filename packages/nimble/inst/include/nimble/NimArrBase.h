@@ -1,10 +1,30 @@
 #ifndef __NIMARRBASE
 #define __NIMARRBASE
+
+/* fix to avoid warnings exemplified by edison.nersc.gov SUSE Linux - Github issue #214 */
+#if defined __GNUC__ && __GNUC__>=6
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
+
+
 #include <vector>
 #include <string>
+#include <cstring>
 #include <R.h>
 #include <typeinfo>
 #include <iostream>
+
+/* #ifdef _WIN32 */
+/* #define _WIN3264 */
+/* #endif */
+
+/* #ifdef _WIN64 */
+/* #define _WIN3264 */
+/* #endif */
+
+/* #ifdef _WIN3264 */
+/* #pragma GCC diagnostic ignored "-Wmaybe-uninitialized" */
+/* #endif */
 
 using std::vector;
 
@@ -22,7 +42,7 @@ enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 	public:
 	nimType myType;
 	virtual nimType getNimType() const {return(myType);};
-	virtual NimArrType* getRowTypePtr(int row)=0; 
+	virtual NimArrType* getRowTypePtr(int row)=0;
 	virtual int size() =0;
 	virtual void setRowDims(int row, vector<int> dims) = 0;
 	virtual vector<int> getRowDims(int row) = 0;
@@ -36,7 +56,7 @@ class NimArrBase: public NimArrType {
   T *v;
   //vector<T> *vPtr;
   T **vPtr;
-  void setVptr() {vPtr = &v;} 
+  void setVptr() {vPtr = &v;}
   //  vector<T> *getVptr() const {return(vPtr);}
   T **getVptr() const{return(vPtr);}
   bool own_v;
@@ -44,11 +64,11 @@ class NimArrBase: public NimArrType {
   //  int *NAdims;
   int NAdims[4];
   //  const vector<int> &dim() const {return(NAdims);}
-  const int* dim() const {return(NAdims);}    
+  const int* dim() const {return(NAdims);}
     //vector<int> NAstrides;
   //  int *NAstrides;
   int NAstrides[4];
-  int stride1, offset; // everyone has a stride1, and the flat [] operator needs it, so it is here. 
+  int stride1, offset; // everyone has a stride1, and the flat [] operator needs it, so it is here.
   int getOffset() {return(offset);}
   bool boolMap;
   bool isMap() const {return(boolMap);}
@@ -63,19 +83,29 @@ class NimArrBase: public NimArrType {
   virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
-  void setLength(int l) {
-    if(NAlength==l) return;
+  void setLength(int l, bool copyValues = true, bool fillZeros = true) {
+    if(NAlength==l) {
+      if((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0));
+      return;
+    }
     T *new_v = new T[l];
     if(own_v) {
-      if(l < NAlength) std::copy(v, v + l, new_v);
-      else std::copy(v, v + NAlength, new_v);
+      if(copyValues) {
+	if(l < NAlength) std::copy(v, v + l, new_v);
+	else {
+	  std::copy(v, v + NAlength, new_v);
+	  if(fillZeros) {
+	    std::fill(new_v + NAlength, new_v + l, static_cast<T>(0));
+	  }
+	}
+      }
       delete[] v;
     }
     NAlength = l;
     //v.resize(l);
     v = new_v;
     own_v = true;
-  } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory. 
+  } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory.
   void fillAllValues(T value) { std::fill(v, v + NAlength, value); }
   void setMyType() {
     myType = UNDEFINED;
@@ -119,7 +149,7 @@ class VecNimArrBase : public NimVecType {
   virtual void resize(int i)=0;
   virtual NimArrBase<T>* getBasePtr(int i)=0;
   NimArrType* getRowTypePtr(int row){
-   	return(static_cast<NimArrType *> (getBasePtr(row) )  );	
+   	return(static_cast<NimArrType *> (getBasePtr(row) )  );
    }
 
   VecNimArrBase() {
@@ -129,7 +159,7 @@ class VecNimArrBase : public NimVecType {
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
   }
-  
+
   ~VecNimArrBase(){};
 };
 

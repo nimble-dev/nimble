@@ -3,26 +3,25 @@
 # by Mignani & Rosa, 2001 (p. 350)
 calc_asympVar = nimbleFunction(
   setup = function(model, fixedNodes, sampledNodes, mvBlock, mvSample, burnIn = 0, numReps){
-    calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = burnIn, mvSample = mvBlock)
+    calc_E_llk <- calc_E_llk_gen(model, fixedNodes = fixedNodes, sampledNodes = sampledNodes, burnIn = 0, mvSample = mvBlock)
   },
   run = function(nsamps = integer(0), theta = double(1), oldTheta = double(1)){
-    declare(svals, double(1, numReps))
-    l <- ceiling(min(1000, nsamps/10)) #length of each block, ensures it's not too big
-    q <- nsamps - l + 1 #total number of blocks available to sample from
-    h <- ceiling(nsamps/l) #number of blocks to use for q function calculation
+      ##declare(svals, double(1, numReps))
+      svals <- numeric(numReps, init=FALSE)
+    l <- ceiling(min(1000, (nsamps - burnIn)/20)) #length of each block, ensures it's not too big
+    q <- (nsamps - burnIn) - l + 1 #total number of blocks available to sample from
+    h <- ceiling((nsamps - burnIn)/l) #number of blocks to use for q function calculation
     resize(mvBlock, h*l) #size our model value object to be approximately of size m (number of mc samples)
     for(r in 1:numReps){
       for(i in 1:h){
         randNum <- rbeta(1,1,1)
-        randIndex <- ceiling(randNum*q) #random starting index for blocks
+        randIndex <- ceiling(randNum*q) #random starting index for blocks (post burn-in)
         for(j in 1:l){
-          copy(mvSample, mvBlock, sampledNodes, sampledNodes, randIndex-1+j,  (i-1)*l+j) #fill in mvBlock with chosen blocks
+          copy(mvSample, mvBlock, sampledNodes, sampledNodes, burnIn + randIndex-1+j,  (i-1)*l+j) #fill in mvBlock with chosen blocks
         }
       }
       #as per Caffo, calculate both Q functions using the same samples from the latent variables
-      oldQ <- calc_E_llk(oldTheta) 
-      newQ <- calc_E_llk(theta)
-      svals[r] <- newQ - oldQ
+      svals[r]  <- calc_E_llk(theta, oldTheta, 1) 
     }
     svalsSD <- sd(svals)
     svalsVar <- svalsSD^2
@@ -32,7 +31,7 @@ calc_asympVar = nimbleFunction(
 )
     
 
-
+# Calculates Q function if diff = 0, calculates difference in Q functions if diff = 1.
 calc_E_llk_gen = nimbleFunction(
     setup = function(model, fixedNodes, sampledNodes, mvSample, burnIn = 0){
 	fixedCalcNodes <- model$getDependencies(fixedNodes)	
@@ -42,30 +41,42 @@ calc_E_llk_gen = nimbleFunction(
 	areFixedDetermNodes <- length(paramDepDetermNodes_fixed) > 0
 	areLatentDetermNodes <- length(paramDepDetermNodes_latent) >0
     },
-    run = function(paramValues = double(1)){
-        values(model, fixedNodes) <<- paramValues
+    run = function(paramValues = double(1), oldParamValues = double(1), diff = integer(0)){
+      nSamples = getsize(mvSample)
+      mean_LL <- 0
+      
+      for(i in (burnIn+1):nSamples){
+        nimCopy(from = mvSample, to = model, nodes = sampledNodes, row = i)
+        values(model, fixedNodes) <<- paramValues  #first use new params, then old ones
         if(areFixedDetermNodes){
-            simulate(model, paramDepDetermNodes_fixed)	#	Fills in the deterministic nodes
+          simulate(model, paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
         }
-        nSamples = getsize(mvSample)
-        mean_LL <- 0
-        for(i in (burnIn+1):nSamples){
-            nimCopy(from = mvSample, to = model, nodes = sampledNodes, row = i)
-            if(areLatentDetermNodes){
-                simulate(model, paramDepDetermNodes_latent)	#	Fills in the deterministic nodes
-            }
-            sample_LL = calculate(model, latentCalcNodes)
-            mean_LL = mean_LL + sample_LL
+        if(areLatentDetermNodes){
+          simulate(model, paramDepDetermNodes_latent)	#	Fills in the deterministic nodes
         }
-        mean_LL <- mean_LL / nSamples
-        if(is.nan(mean_LL)){
-            mean_LL = -Inf	
+        sample_LL = calculate(model, latentCalcNodes)
+        mean_LL = mean_LL + sample_LL
+        if(diff == 1){
+          values(model, fixedNodes) <<- oldParamValues #now old params
+          if(areFixedDetermNodes){
+            simulate(model, paramDepDetermNodes_fixed)  #	Fills in the deterministic nodes
+          }
+          if(areLatentDetermNodes){
+            simulate(model, paramDepDetermNodes_latent)  #	Fills in the deterministic nodes
+          }
+          sample_LL = calculate(model, latentCalcNodes)
+          mean_LL = mean_LL - sample_LL
         }
-        returnType(double())
-        return(mean_LL)
+      }
+      mean_LL <- mean_LL / nSamples
+      if(is.nan(mean_LL)){
+        mean_LL = -Inf	
+      }
+      returnType(double())
+      return(mean_LL)
     },where = getLoadingNamespace())
 
-                                      
+
 
 #' Builds an MCEM algorithm from a given NIMBLE model
 #' 
@@ -74,17 +85,17 @@ calc_E_llk_gen = nimbleFunction(
 #' to enforce this. 
 #' The M-step is done by a nimble MCMC sampler. The E-step is done by a call to R's \code{optim} with \code{method = 'L-BFGS-B'}.
 #' 
-#' @param model 			A nimble model 
-#' @param latentNodes 		A character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
+#' @param model a nimble model 
+#' @param latentNodes character vector of the names of the stochastic nodes to integrated out. Names can be expanded, but don't need to be. For example, if the model contains
 #' \code{x[1], x[2] and x[3]} then one could provide either \code{latentNodes = c('x[1]', 'x[2]', 'x[3]')} or \code{latentNodes = 'x'}. 
-#' @param burnIn			burn-in used for MCMC sampler in E step
-#' @param mcmcControl		list passed to \code{MCMCSpec}, a nimble function that builds the MCMC sampler. See \code{help(MCMCSpec)} for more details
-#' @param boxConstraints	A list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.
+#' @param burnIn burn-in used for MCMC sampler in E step
+#' @param mcmcControl	list passed to \code{configureMCMC}, which builds the MCMC sampler. See \code{help(configureMCMC)} for more details
+#' @param boxConstraints list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.
 #' @param buffer			A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount. 
-#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.1. 
-#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.1.
-#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.
-#' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged.
+#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.01. 
+#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.01.
+#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.01.
+#' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged. Default is 0.001.
 #' @param numReps number of bootstrap samples to use for asymptotic variance calculation
 #' @param verbose logical indicating whether to print additional logging information
 #' 
@@ -136,8 +147,8 @@ calc_E_llk_gen = nimbleFunction(
 #' }
 #' # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 #' 
-buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adaptInterval = 20),
-                      boxConstraints = list(), buffer = 10^-6, alpha = 0.1, beta = 0.1, gamma = 0.05, C = .1, numReps = 100, verbose = TRUE) {
+buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
+                      boxConstraints = list(), buffer = 10^-6, alpha = 0.01, beta = 0.01, gamma = 0.01, C = 0.001, numReps = 300, verbose = TRUE) {
     latentNodes = model$expandNodeNames(latentNodes)
     latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
     allStochNonDataNodes = model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
@@ -194,8 +205,8 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
     
 
 
-    mcmc_Latent_Spec <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
-    Rmcmc_Latent <- buildMCMC(mcmc_Latent_Spec)
+    mcmc_Latent_Conf <- configureMCMC(Rmodel, nodes = latentNodes, monitors = model$getVarNames(), control = mcmcControl) 
+    Rmcmc_Latent <- buildMCMC(mcmc_Latent_Conf)
     sampledMV = Rmcmc_Latent$mvSamples
     mvBlock <- modelValues(Rmodel)
     Rcalc_E_llk <- calc_E_llk_gen(model, fixedNodes = maxNodes, sampledNodes = latentNodes, burnIn = burnIn, mvSample = sampledMV)
@@ -208,7 +219,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
     run <- function(initM = 1000){
         theta = rep(NA, nParams)
         if(burnIn >= initM)
-            stop('mcem quitting: burnIn > inital m value')
+            stop('mcem quitting: burnIn > initial m value')
         cmcmc_Latent$run(1, reset = TRUE)	# To get valid initial values 
         theta <- values(cModel, maxNodes)
         
@@ -221,43 +232,43 @@ buildMCEM <- function(model, latentNodes, burnIn = 100 , mcmcControl = list(adap
         
         m <- initM 
         endCrit <- C+1 #ensure that first iteration runs
-        oldQ <- -1000 #ensure we accept first estimate
         sigSq <-0 #use initM as m value for first step
         diff <- 1 # any nonzero value can be used here, gets overwritten quickly in algo
         itNum <- 0
         while(endCrit > C){ 
           acceptCrit <- 0
           #starting sample size calculation for this iteration
-          m <- ceiling(max(m, sigSq*((zAlpha + zBeta)^2)/((diff)^2)))
+          m <- burnIn + ceiling(max(m - burnIn, sigSq*((zAlpha + zBeta)^2)/((diff)^2)))
           cmcmc_Latent$run(m, reset = TRUE)   #initial mcmc run of size m
           thetaPrev <- theta  #store previous theta value
           itNum <- itNum + 1
           while(acceptCrit == 0){
-            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
+            optimOutput = optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
+                                diff = 0, control = list(fnscale = -1), method = 'L-BFGS-B', lower = low_limits, upper = hi_limits)
             theta = optimOutput$par    
-            #varOut has two elements: varOut[1] is the sample variance, varOut[2] is the number of samples used to ccalculate the varianve
             sigSq <- cvarCalc$run(m, theta, thetaPrev) 
-            ase <- sqrt(sigSq/numReps) #asymptotic std. error
-            newQ <- cCalc_E_llk$run(theta)
-            diff <- newQ-oldQ
+            ase <- sqrt(sigSq) #asymptotic std. error
+            diff <- cCalc_E_llk$run(theta, thetaPrev, 1)
             if((diff - zAlpha*ase)<0){ #swamped by mc error
-              mAdd <- ceiling(m/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
+              mAdd <- ceiling((m-burnIn)/2)  #from section 2.3, additional mcmc samples will be taken if difference is not great enough
               cmcmc_Latent$run(mAdd, reset = FALSE)
               m <- m + mAdd
+              cat("Monte Carlo error too big: increasing MCMC sample size.\n")
             }
             else{
               acceptCrit <- 1
               endCrit <- diff + zGamma*ase #evaluate ending criterion
-              cmcmc_Latent$run(m, reset = TRUE) #get Q(theta^(t-1),theta^(t-1)) as in equation 6
-              oldQ <- cCalc_E_llk$run(theta) #save old q value 
+              if(itNum == 1)
+                endCrit <- C+1 #ensure that at least two iterations are run
+              
               if(verbose == T){
-                print(paste("Iteration Number:", itNum, sep = " "))
-                print(paste("Current number of MCMC iterations:", m, sep = " "))
+                cat("Iteration Number: ", itNum, ".\n", sep = "")
+                cat("Current number of MCMC iterations: ", m, ".\n", sep = "")
                 output = optimOutput$par
                 names(output) = maxNodes
-                print("Parameter Estimates:")
+                cat("Parameter Estimates: \n", sep = "")
                 print(output)
-                print(paste("Convergence Criterion:", endCrit, sep = " "))
+                cat("Convergence Criterion: ", endCrit, ".\n", sep = "")
               }
             }
           }

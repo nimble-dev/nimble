@@ -421,20 +421,20 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
                 return(invisible(NULL))
             }
         }
-        ## Generate one set of symbolModelValues objects for the neededTypes, and each of these can have its own mvSpec
+        ## Generate one set of symbolModelValues objects for the neededTypes, and each of these can have its own mvConf
         ## Generate another symbolModelValues to return and have in the symTab for this compilation
-        ## I don't think that mvSpec gets used, since they all get Values *        
+        ## I don't think that mvConf gets used, since they all get Values *        
         for(i in seq_along(instances)) {
             className <- class(instances[[i]][[name]])
             if(!(className %in% names(neededTypes))) {
                 ## these are used only to build neededTypes
-                ntSym <- symbolModelValues(name = name, type = 'Values', mvSpec = instances[[i]][[name]]$mvSpec)
+                ntSym <- symbolModelValues(name = name, type = 'Values', mvConf = instances[[i]][[name]]$mvConf)
                 neededTypes[[className]] <<- ntSym
             }
         }
         ## this is used in the symbol table
         neededObjectNames <<- c(neededObjectNames, name)
-        newSym <- symbolModelValues(name = name, type = 'Values', mvSpec = NULL)
+        newSym <- symbolModelValues(name = name, type = 'Values', mvConf = NULL)
         return(newSym)
     }
     if(inherits(instances[[1]][[name]], 'modelBaseClass')) {
@@ -652,11 +652,7 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
 }
 
 
-#' Class \code{singleModelValuesAccessClass}
-#' @aliases singleModelValuesAccessClass
-#' @export
-#' @description
-#' Classes used internally in NIMBLE and not expected to be called directly by users.
+# singleModelValuesAccessClass and singleModelValuesAccess are exported (and 'documented' in nimble-internals.Rd) based on prep_pkg; doing it here causes R CMD check issues with argument names
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
                                      methods = list(
                                            initialize = function() cat('Oops: building a singleModelValuesAccessClass refClass -- should be defunct\n')

@@ -191,8 +191,8 @@ addSingleVarAccess <- function(ManyVarAccessPtr, SingleVarAccessPtr, addAtEnd = 
 #   Same as addNodeFxn, but for adding a SingleModelVariableAccessor to a ManyModelVariablesAccessors
 
   
-removeSingleVarAccess <- function(ManyVarAccessPtr, index = 1, removeAll = FALSE)
-    nil <- .Call("removeModelVariableAccessor", ManyVarAccessPtr, as.integer(index), as.logical(removeAll) )
+## removeSingleVarAccess <- function(ManyVarAccessPtr, index = 1, removeAll = FALSE)
+##     nil <- .Call("removeModelVariableAccessor", ManyVarAccessPtr, as.integer(index), as.logical(removeAll) )
 #   Same as removeNodeFxn, but for SingleModelVariableAccessors
 
 newManyModelValuesAccess <- function(size)
@@ -203,8 +203,8 @@ addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValu
     nil <- .Call("addSingleModelValuesAccessor", ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, as.logical(addAtEnd), as.integer(index) ) 
 #   Same as addNodeFxn, but for adding singleModelValuesAccess to ManyModelValuesAccessor
 
-removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll = FALSE)
-    nil <- .Call("removeModelValuesAccessor", ManyModelValuesAccessPtr, as.integer(index), as.logical(removeAll) ) 
+## removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll = FALSE)
+##     nil <- .Call("removeModelValuesAccessor", ManyModelValuesAccessPtr, as.integer(index), as.logical(removeAll) ) 
 #   Same as removeNodeFxn, but for ManyModelValuessAccessor
 
 

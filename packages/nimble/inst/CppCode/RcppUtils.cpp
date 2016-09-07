@@ -4,6 +4,7 @@
 #include "nimble/Utils.h"
 #include<iostream>
 #include<sstream>
+#include<algorithm>
 
 std::ostringstream _nimble_global_output;
 
@@ -131,7 +132,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
       PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
     }
   }
-};
+}
 
 // Actually this is identical to above so could be done without specialization
 template<>
@@ -152,8 +153,7 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
       PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
     }
   }
-};
-
+}
 
 vector<double> SEXP_2_vectorDouble( SEXP Sn ) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorDouble called for SEXP that is not a numeric or logica!\n");
@@ -221,6 +221,26 @@ SEXP vectorInt_2_SEXP(const vector<int> &v) {
   return(Sans);
 }
 
+struct opIntegerShift {
+public:
+  int c;
+  opIntegerShift(int inputc) : c(inputc) {};
+  int operator()(int x) {return(x + c);}
+};
+
+SEXP vectorInt_2_SEXP(const vector<int> &v, int offset) {
+  SEXP Sans;
+  int nn = v.size();
+  PROTECT(Sans = allocVector(INTSXP, nn));
+  if(nn > 0) {
+    if(offset == 0)
+      copy(v.begin(), v.end(), INTEGER(Sans));
+    else
+      std::transform(v.begin(), v.end(), INTEGER(Sans), opIntegerShift(offset));
+  }
+  UNPROTECT(1);
+  return(Sans);
+}
 
 vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorInt called for SEXP that is not a numeric or logica!\n");
@@ -228,7 +248,10 @@ vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   vector<int> ans(nn);
   if(isInteger(Sn) || isLogical(Sn)) {
     int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-    copy(iSn, iSn + nn, ans.begin());
+    if(offset == 0) copy(iSn, iSn + nn, ans.begin());
+    else {
+      std::transform(iSn, iSn + nn, ans.begin(), opIntegerShift(offset)); 
+    }
   } else {
     if(isReal(Sn)) {
       double *dSn = REAL(Sn);
@@ -289,7 +312,7 @@ SEXP bool_2_SEXP(bool ind){
 	LOGICAL(Sans)[0] = ind;
 	UNPROTECT(1);
 	return(Sans);
-};
+}
 
 bool SEXP_2_bool(SEXP Sn, int i) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_bool called for SEXP that is not numeric or logical\n");

@@ -35,11 +35,11 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   nimbleProject = 'ANY'
                                   ),
                               methods = list(
-                                  calculate = function(nodes) nimble:::calculate(.self, nodes),
-                                  calculateDiff = function(nodes) nimble:::calculateDiff(.self, nodes),
-                                  getLogProb = function(nodes) nimble:::getLogProb(.self, nodes),
-                                  simulate = function(nodes, includeData = FALSE) nimble:::simulate(.self, nodes, includeData),
-                                  getParam = function(node, param) nimble:::getParam(.self, node, param),
+                                  calculate = function(nodes) nimble::calculate(.self, nodes),
+                                  calculateDiff = function(nodes) nimble::calculateDiff(.self, nodes),
+                                  getLogProb = function(nodes) nimble::getLogProb(.self, nodes),
+                                  simulate = function(nodes, includeData = FALSE) nimble::simulate(.self, nodes, includeData),
+                                  getParam = function(node, param) nimble::getParam(.self, node, param),
                                   
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
@@ -122,7 +122,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   isDiscrete = function(node) {
                                       dist <- getNodeDistribution(node)
                                       # explicit reference to namespace needed as class definition objects inheriting from modelBaseClass not in namespace
-                                      discrete <- getDistribution(dist)$discrete
+                                      discrete <- nimble:::getDistribution(dist)$discrete
                                       return(discrete)
                                   },
 
@@ -156,7 +156,7 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                           if(includeLogProb) ans <- modelDef$varNames
                                           else ans <- names(modelDef$varInfo)
     	                              } else {
-                                          ans <- unique(removeIndexing(nodes))
+                                          ans <- unique(nimble:::removeIndexing(nodes))
                                           if(!all(ans %in% modelDef$varNames))
                                               stop(c('invalid node names provided to model$getVarNames') )
                                       }
@@ -283,7 +283,7 @@ Details: This function merely reorders its input argument.  This may be inportan
                                   
                                   init_isDataEnv = function() {
                                       ## initializes the 'isDataEnv' to logical arrays of 'FALSE', based on dimensions in 'isDataVars' object
-                                      list2env(lapply(isDataVars, createDefault_isDataObj), isDataEnv)
+                                      list2env(lapply(isDataVars, nimble:::createDefault_isDataObj), isDataEnv)
                                   },
                                   
                                   resetData = function() {
@@ -295,16 +295,53 @@ Resets the \'data\' property of ALL model nodes to FALSE.  Subsequent to this ca
                                       return(invisible(NULL))
                                   },
                                   
-                                  setData = function(data, warnAboutMissingNames = TRUE) {
+                                  setData = function(..., warnAboutMissingNames = TRUE) {
 '
 Sets the \'data\' flag for specified nodes to TRUE, and also sets the value of these nodes to the value provided.  This is the exclusive method for specifying \'data\' nodes in a model object.  When a \'data\' argument is provided to \'nimbleModel()\', it uses this method to set the data nodes.
 
 Arguments:
 
-data: A named list.  The names of list elements must correspond to model variable names.  The elements of the list must be of class numeric, with size and dimension each matching the corresponding model variable.  These numeric scalars, vectors, arrays, etc, may only contain numeric data, or NAs.
+...:  Arguments may be provided as named elements with numeric values or as character names of model variables.  These may be provided in a single list, a single character vector, or as multiple arguments.  When a named element with a numeric value is provided, the size and dimension must match the corresponding model variable.  This value will be copied to the model variable and any non-NA elements will be marked as data.  When a character name is provided, the value of that variable in the model is not changed but any currently non-NA values are marked as data.  Examples: setData(\'x\', y = 1:10) will mark both x and y as data and will set the value of y to 1:10.  setData(list(\'x\', y = 1:10)) is equivalent.  setData(c(\'x\',\'y\')) or setData(\'x\',\'y\') will mark both x and y as data.  
 
-Details: If a list element contains some number of NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) will resilt in an error; multivariate nodes must be entirely data, or entirely non-data.
+Details: If a provided value (or the current value in the model when only a name is specified) contains some NA values, then the model nodes corresponding to these NAs will not have their value set, and will not be designated as \'data\'.  Only model nodes corresponding to numeric values in the argument list elements will be designated as data.  Designating a deterministic model node as \'data\' will result in an error.  Designating part of a multivariate node as \'data\' and part as non-data (NA) will result in an error; multivariate nodes must be entirely data, or entirely non-data.
 '
+                                          ## new functionality for setData():
+                                          ## ... can be a list, a character vector of variable names, or a mix of both
+                                          ## intention is to flag these variables as 'data', and not change any model values.
+                                          ## some inefficiency here (accesses model values, then re-sets the same model values),
+                                          ## but this simplifies the addition without changing exisiting code.
+
+                                           data = list(...)
+                                           ## Check if a single list or character vector was provided
+                                           if(length(data)==0) return()
+                                           if(length(data)==1)
+                                               if(is.null(data[[1]])) return()
+                                               if(is.character(data[[1]])) {
+                                                   data <- as.list(data[[1]])
+                                               } else {
+                                                   if(is.list(data[[1]])) {
+                                                       data <- data[[1]]
+                                                   }
+                                               }
+                                           if(length(data)==0) return()
+                                           ## When a variable name was provided, make it the list name and put the model's value for that variable as the list element
+                                           dataNames <- names(data)
+                                           if(is.null(dataNames)) dataNames <- rep("", length(data))
+                                           for(i in seq_along(data)) {
+                                               if(dataNames[i]=="") {
+                                                   dataNames[i] <- data[[i]]
+                                                   data[[i]] <- get(dataNames[i])
+                                               }
+                                           }
+                                           names(data) <- dataNames
+                                           data
+
+
+                                      ##  if(is.character(data)) {
+                                      ##     dataNames <- data
+                                      ##     data <- lapply(data, function(x) get(x))
+                                      ##     names(data) <- dataNames
+                                      ## }
                                       origData <<- data
                                       ## argument is a named list of data values.
                                       ## all nodes specified (except with NA) are set to that value, and have isDataEnv$VAR set to TRUE
@@ -321,8 +358,8 @@ Details: If a list element contains some number of NA values, then the model nod
                                                       stop('variable name not suitable for setData(): ', varName)
                                                   } else next
                                               }
-                                          if(length(dimOrLength(varValue, scalarize = TRUE)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
-                                          if(!(all(dimOrLength(varValue, scalarize = TRUE) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(length(nimbleInternalFunctions$dimOrLength(varValue, scalarize = TRUE)) != length(isDataVars[[varName]]))   stop(paste0('incorrect size or dim in data: ', varName))
+                                          if(!(all(nimbleInternalFunctions$dimOrLength(varValue, scalarize = TRUE) == isDataVars[[varName]])))   stop(paste0('incorrect size or dim in data: ', varName))
                                           assign(varName, varValue, inherits = TRUE)
                                           isDataVarValue <- !is.na(varValue)
                                           assign(varName, isDataVarValue, envir = isDataEnv)
@@ -454,7 +491,15 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
                                       
-                                      depIDs <- gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+
+depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+## ## Uncomment these lines to catch discrepancies between the old and new systems.
+## depIDsOld <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
+##     cat('caught a discrepancy for depIDs')
+##     browser()
+## }
+
                                       if(!includeRHSonly) depIDs <- depIDs[modelDef$maps$types[depIDs] != 'RHSonly']
                                       if(determOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'determ']
                                       if(stochOnly)	depIDs <- depIDs[modelDef$maps$types[depIDs] == 'stoch']
@@ -521,18 +566,18 @@ Details: The return value is a named list, with an element corresponding to each
                                       if(missing(nodeVector))
                                           nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
                                       nodeVector <- expandNodeNames(nodeVector)
-                                      conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
+                                      nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
                                   },
                                   checkConjugacy2 = function(nodeVector) {
                                       if(missing(nodeVector)) nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
                                       nodeIDs <- expandNodeNames(nodeVector, returnType = 'ids')
-                                      conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
+                                      nimble:::conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
                                   },
-                                  check = function() {
+                                  checkBasics = function() {
                                       '
-Checks for common errors in model specification, including missing values, inability to calculate/simulate on a node, and dimension/size mismatches
+Checks for size/dimension mismatches and for presence of NAs in model variables (the latter is not an error but a note of this is given to the user)
 '
-                                      # first do size checking; do before check of calculate/simulate so LHS of deterministic expressions are not filled in
+                                      # first do size checking; note that LHS of deterministic expressions are not necessarily filled in
 
                                       for(j in seq_along(.self$modelDef$declInfo)) {
                                               declInfo <- .self$modelDef$declInfo[[j]]
@@ -545,9 +590,9 @@ Checks for common errors in model specification, including missing values, inabi
                                               if(declInfo$type == 'determ') {
                                                   # check LHS and RHS are same size/dim
                                                   # need to eval within nf; constants not present otherwise
-                                                  RHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))), silent = TRUE)
+                                                  RHSsize <- try(nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$valueExprReplaced, as.list(nf)))), silent = TRUE)
 
-                                                  LHSsize <- try(dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))), silent = TRUE)
+                                                  LHSsize <- try(nimbleInternalFunctions$dimOrLength(eval(codeSubstitute(declInfo$targetExprReplaced, as.list(nf)))), silent = TRUE)
                                                   # apparently implicit dropping of size 1 dimensions is ok in determ node calcs
                                                   if(!is(RHSsize, 'try-error') && !is(LHSsize, 'try-error')) {
                                                       if(length(RHSsize) > 1 && any(RHSsize == 1))
@@ -571,8 +616,8 @@ Checks for common errors in model specification, including missing values, inabi
                                                   #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
-                                                  distDims <- as.integer(sapply(getDistribution(dist)$types, function(x) x$nDim))
-                                                  nms <- names(getDistribution(dist)$types)
+                                                  distDims <- as.integer(sapply(nimble:::getDistribution(dist)$types, function(x) x$nDim))
+                                                  nms <- names(nimble:::getDistribution(dist)$types)
                                                   names(distDims) <- nms
                                                   
                                                   sizes <- list(); length(sizes) <- length(nms); names(sizes) <- nms
@@ -585,7 +630,7 @@ Checks for common errors in model specification, including missing values, inabi
                                                       e <- try(.self$getParam(nfn, nms[k]))
                                                       
                                                       if(!is(e, "try-error")) {
-                                                          sizes[[nms[k]]] <- dimOrLength(e)
+                                                          sizes[[nms[k]]] <- nimbleInternalFunctions$dimOrLength(e)
                                                           if(prod(sizes[[nms[[k]]]]) == 1) sizes[[nms[[k]]]] <- numeric()
                                                       } else warning(paste0("Unable to calculate parameter '", nms[k], "'; this may simply reflect that there are missing values in model variables."))
                                                   }
@@ -632,12 +677,24 @@ Checks for common errors in model specification, including missing values, inabi
                                               }
                                       }
 
+                                      varsWithNAs <- NULL
+                                      for(v in .self$getVarNames()) 
+                                          if(!nimble:::isValid(.self[[v]]))
+                                              varsWithNAs <- c(varsWithNAs, v)
+                                      if(!is.null(varsWithNAs))
+                                          message(' note that missing values (NAs) or non-finite values were found in model variables: ', paste(varsWithNAs, collapse = ', '), '. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.', appendLF = FALSE)
+                                  },
+
+                                  check = function() {
+                                      '
+Checks for errors in model specification and for missing values that prevent use of calculate/simulate on any nodes
+'
                                       # check for missing values and inability to calculate/simulate
-                                      lp <- try(nimble:::calculate(.self))
-                                      if(!isValid(lp)) {
+                                      lp <- try(calculate())
+                                      if(!nimble:::isValid(lp)) {
                                           varsToCheck <- character()
                                           for(v in .self$getVarNames())
-                                              if(!isValid(.self[[v]]) || !isValid(nimble:::getLogProb(.self, setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
+                                              if(!nimble:::isValid(.self[[v]]) || !nimble:::isValid(getLogProb(setdiff(expandNodeNames(v), modelDef$maps$nodeNamesRHSonly))))
                                                   varsToCheck <- c(varsToCheck, v)
                                           badVars <- list(na=character(), nan=character(), inf=character())
                                       ##nns <- getNodeNames(includeRHSonly = TRUE)
@@ -648,23 +705,23 @@ Checks for common errors in model specification, including missing values, inabi
                                               type <- getNodeType(nn)
                                               if(length(type) > 1) stop('something wrong with Daniel\'s understanding of nimbleModel')
                                               if(type == 'RHSonly') {
-                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                                  if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'determ') {
-                                                  test <- try(nimble:::calculate(.self, nn))
+                                                  test <- try(calculate(nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   val <- .self[[nn]]
-                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
+                                                  if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
                                               } else if(type == 'stoch') {
-                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], nn)
-                                                  test <- try(val <- nimble:::calculate(.self, nn))
+                                                  if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], nn)
+                                                  test <- try(val <- calculate(.self, nn))
                                                   if(class(test) == 'try-error')
                                                       cat("Note: cannot calculate logProb for node ", nn, ".\n")
                                                   
-                                                  if(!isValid(val)) badVars[[whyInvalid(val)]] <- c(badVars[[whyInvalid(val)]], paste0('logProb_', nn))
+                                                  if(!nimble:::isValid(val)) badVars[[nimble:::whyInvalid(val)]] <- c(badVars[[nimble:::whyInvalid(val)]], paste0('logProb_', nn))
                                               } else stop('unknown node type: ', type)
                                           }
-                                          badVars <- lapply(badVars, removeIndexing)
+                                          badVars <- lapply(badVars, nimble:::removeIndexing)
                                           badVars <- lapply(badVars, unique)
                                           badVars <- lapply(badVars, function(nns) if(length(nns>0)) paste0(nns, collapse=', '))
                                           conds <- list(c('na','NAs'), c('nan','NaNs'), c('inf','Infinite values'))
@@ -677,7 +734,7 @@ Checks for common errors in model specification, including missing values, inabi
 
                                   },
 
-                                  newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
+newModel = function(data = NULL, inits = NULL, modelName = character(), replicate = FALSE, check = getNimbleOption('checkModel')) {
                                       '
 Returns a new R model object, with the same model definiton (as defined from the original model code) as the existing model object.
 
@@ -789,7 +846,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                    },
                                    setupDefaultMV = function(where = NULL) {
                                        defaultModelValues <<- modelDef$modelValuesClass(1)
-                                       pointAt(.self, defaultModelValues, index = 1)
+                                       nimble:::pointAt(.self, defaultModelValues, index = 1)
                                    },
 
                                    buildNodeFunctions = function(where = globalenv(), debug = FALSE) {
@@ -805,22 +862,22 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## extract needed pieces
                                            type <- BUGSdecl$type
                                            code <- BUGSdecl$codeReplaced
-                                           code <- insertSingleIndexBrackets(code, modelDef$varInfo)
+                                           code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
                                            altParams <- BUGSdecl$altParamExprs
-                                           altParams <- lapply(altParams, insertSingleIndexBrackets, modelDef$varInfo)
+                                           altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
-                                           logProbNodeExpr <- insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
+                                           logProbNodeExpr <- nimble:::insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
                                            ## ensure they are in the same order as the columns of the unrolledIndicesMatrix, because that is assumed in nodeFunctionNew
                                            ## This can be necessary in a case like for(j in ...) for(i in ...) x[i,j] ~ ...; because x uses inner index first
                                            if(nrow(BUGSdecl$unrolledIndicesMatrix) > 0)
                                                setupOutputExprs <- setupOutputExprs[ colnames(BUGSdecl$unrolledIndicesMatrix) ]
                                            ## make a unique name
-                                           thisNodeGeneratorName <- paste0(Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimbleUniqueID())
+                                           thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           nfGenerator <- nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
+                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName
@@ -842,19 +899,19 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## extract needed pieces
                                            type <- BUGSdecl$type
                                            code <- BUGSdecl$codeReplaced
-                                           code <- insertSingleIndexBrackets(code, modelDef$varInfo)
+                                           code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
                                            altParams <- BUGSdecl$altParamExprs
-                                           altParams <- lapply(altParams, insertSingleIndexBrackets, modelDef$varInfo)
+                                           altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
-                                           logProbNodeExpr <- insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
+                                           logProbNodeExpr <- nimble:::insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
 
                                            ## make a unique name
-                                           thisNodeGeneratorName <- paste0(Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimbleUniqueID())
+                                           thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           nfGenerator <- nodeFunction(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
+                                           nfGenerator <- nimble:::nodeFunction(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
 
                                            newNodeFunctionNames <- BUGSdecl$nodeFunctionNames
