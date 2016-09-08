@@ -23,6 +23,16 @@ nfCompilationInfoClass <- setRefClass('nfCompilationInfoClass',
                                           addRinstanceList = function(nfList) {Rinstances[length(Rinstances) + seq_along(nfList)] <<- nfList}
                                           ))
 
+nlCompilationInfoClass <- setRefClass('nlCompilationInfoClass',
+                                      fields = list(
+                                          cppDef = 'ANY',       ## a cppNimbleFunctionClass object
+                                          written =  'ANY',		#'logical',
+                                          cppCompiled =  'ANY'		#'logical',
+                                      ),
+                                      methods = list(
+                                          initialize = function(...){callSuper(...)}
+                                      ))
+
 mvInfoClass <- setRefClass('mvInfoClass',
                            fields = list(
                                mvConf = 'ANY', ## a custom modelValues class
@@ -61,6 +71,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  modelCppInterfaces =  'ANY',		#'list',
                                  models             =  'ANY',		#'list',
                                  nimbleFunctions    =  'ANY',		#'list',
+                                 nlCompInfos        =  'ANY',
                                  nfCompInfos        =  'ANY',		#'list', ## list of nfCompilationInfoClass objects
                                  cppProjects        =  'ANY',		#'list', ## list of cppProjectClass objects, 1 for each dll to be produced
                                  dirName            =  'ANY',		#'character',
@@ -383,6 +394,65 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      createModel <- TRUE
                                      if(!createModel) return(ans) else return(ans(model, where, dll = cppProj$dll))
                                  },
+                                 ## nimbleList functions
+                                 compileNimbleList = function(nl, filename = NULL, initialSetupOnly = FALSE,
+                                     control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
+                                     reset = FALSE, returnCppClass = FALSE, className = NULL, alreadyAdded = FALSE) { ## className? alreadyAdded?
+                                     
+                                     ## nl could be a list or a singleton
+                                     if(is.list(nl)) {
+                                         if(is.null(className)) className <- unique(unlist(lapply(nl, function(x) x$nimbleListDef$className)))
+                                         if(length(className != 1)) stop(paste0('Not all elements in the nimbleList list for compileNimbleList are from the same nimbleFunctionDef.  The class names include:', paste(className, collapse = ' ')), call. = FALSE)
+                                         nlList <- nl
+                                     } else {
+                                         if(attr(nl, 'class') != 'nimbleList') stop(paste0("nl argument provided is not a nimbleList."), call. = FALSE)
+                                         nlList <- list(nl)
+                                         className <- nl$nimbleListDef$className
+                                     }
+                                     if(reset) nlCompInfos[[className]] <<- NULL
+                                     if(!alreadyAdded) {
+                                         message('Add checking for duplicated nimbleList additions in compileNimbleList')
+                                         message('Add addNimbleList')
+                                         for(i in seq_along(nlList)) {
+                                             addNimbleList(nlList[[i]])
+                                         }
+                                     }
+                                     message('Add buildNimbleListCompilationInfo')
+                                     cppClass = buildNimbleListCompilationInfo(nlList, initialSetupOnly = initialSetupOnly)
+                                     if(initialSetupOnly || returnCppClass) return(cppClass)
+
+                                     message('Remaining compileNimbleList is not yet adapted')
+                                     if(!nlCompInfos[[className]]$written && control$writeFiles) {
+                                         cppProj <- cppProjectClass(dirName = dirName)
+                                         cppProjects[[ className ]] <<- cppProj
+                                         if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(className))
+                                         cppProj$addClass(cppClass, className, filename)
+                                         cppProj$writeFiles(filename)
+                                         nlCompInfos[[className]]$written <<- TRUE
+                                     } else {
+                                         if(!control$writeFiles) return(cppProj)
+                                         cppProj <- cppProjects[[ className ]]
+                                     }
+                                     if(!nlCompInfos[[className]]$cppCompiled && control$compileCpp) {
+                                         if(control$compileCpp) {
+                                             cppProj$compileFile(filename)
+                                             nlCompInfos[[className]]$cppCompiled <<- TRUE
+                                         } else writeLines('Skipping compilation because control$compileCpp is FALSE')
+                                     } else {if(!control$compileCpp) return(cppProj)}#writeLines('Using previously compiled C++ code.')
+                                     if(!nlCompInfos[[className]]$loaded && control$loadSO) {
+                                         cppProj$loadSO(filename)
+                                         nlCompInfos[[className]]$loaded <<- TRUE
+                                     } else{if(!control$loadSO) return(cppProj)}# writeLines('Using previously loaded compilation unit.')
+                                     
+                                     ans <- vector('list', length(nlList))
+
+                                     for(i in seq_along(nlList)) {
+                                         ans[[i]] <- nlCompInfos[[class]]$cppDef$buildCallable(nlList[[i]], cppProj$dll, asTopLevel = TRUE)
+                                     }
+                                     if(length(ans) == 1) ans[[1]] else ans
+                                 },
+                                 
+                                 ## nimbleFunction functions
                                  getNimbleFunctionCppDef = function(generatorName, nfProc) {
                                      if(missing(generatorName)) {
                                          if(missing(nfProc)) stop('No good information provided to getNimbleFunctionCppDef', call. = FALSE)

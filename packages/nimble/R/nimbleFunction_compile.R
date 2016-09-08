@@ -363,6 +363,30 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## but actually, right now, we use it inconsistently.
 ## this is a function that could use a lot of polishing, but it's ok for now.
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
+    if(inherits(instances[[1]][[name]], 'nimbleList')) {
+        ## This case mimics the nimbleFunction case below (see is.nf)
+
+        ## We need all instances created in setup code from all instances
+        nlList <- lapply(instances, `[[`, name)
+        ## trigger initial procesing to set up an nlProc object
+        ## that will have a symbol table.
+        ## Issue: We may also need to trigger this step from run code
+        nlp <- nimbleProject$compileNimbleList(nlList, initialSetupOnly = TRUE)
+
+        ## get the unique name that we use to generate a unique C++ definition
+        className <- attr(nlList[[1]], 'nimbleListDef')$className
+
+        ## add the setupOutput name to objects that we need to instantiate and point to
+        neededObjectNames <- c(neededObjectNames, name)
+
+        ## create a symbol table object
+        newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
+
+        ## If this is the first time this type is encountered,
+        ## add it to the list of types whose C++ definitions will need to be generated
+        if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+        return(newSym)
+    }
     if(inherits(instances[[1]][[name]], 'indexedNodeInfoTableClass')) {
         return(symbolIndexedNodeInfoTable(name = name, type = 'symbolIndexedNodeInfoTable')) ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
     }
