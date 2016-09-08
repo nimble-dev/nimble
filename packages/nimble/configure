@@ -2554,6 +2554,9 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
+
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'

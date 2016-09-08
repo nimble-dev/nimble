@@ -64,6 +64,9 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
+
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 AC_LANG([C++])
 dnl  AC_LANG_PUSH([C++]);
 
