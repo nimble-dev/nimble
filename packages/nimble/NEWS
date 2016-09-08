@@ -1,3 +1,11 @@
+                           CHANGES IN VERSION 0.6-1 (September 2016)
+
+DEVELOPER LEVEL CHANGES
+
+-- Changes to configure.ac to address Solaris installation issues and removal of some lingering std::cout calls.
+
+-- Fixed bug in making an internal function accessible to Nimble generated code.
+
                            CHANGES IN VERSION 0.6 (August 2016)
 
 USER LEVEL CHANGES
