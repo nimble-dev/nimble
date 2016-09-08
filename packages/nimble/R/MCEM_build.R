@@ -174,28 +174,31 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
     stop('latentNodes provided not found in model')
   maxNodes = setdiff(allStochNonDataNodes, latentNodes)
   
-  if(length(boxConstraints) > 0){
-    optimMethod = "L-BFGS-B"
-    limits <- getMCEMRanges(model, maxNodes, buffer)
-    low_limits = limits[[1]]
-    hi_limits  = limits[[2]]
-    
-    constraintNames = list()
-    for(i in seq_along(boxConstraints) )
-      constraintNames[[i]] = model$expandNodeNames(boxConstraints[[i]][[1]])
-    for(i in seq_along(constraintNames) ) {
-      limits = boxConstraints[[i]][[2]]
-      inds = which(maxNodes %in% constraintNames[[i]])
-      if(length(inds) == 0)
-        stop(  paste("warning: provided a constraint for node '", constraintNames[i], "' but that node does not exist in the model!") )
-      low_limits[inds] = limits[1] + abs(buffer)
-      hi_limits[inds] = limits[2] - abs(buffer)
-    }
-    if(any(low_limits>=hi_limits))
-      stop('lower limits greater than or equal to upper limits!')
-  }
-  else optimMethod = "BFGS"
+
+  limits <- getMCEMRanges(model, maxNodes, buffer)
+  low_limits = limits[[1]]
+  hi_limits  = limits[[2]]
+
   
+  constraintNames = list()
+  for(i in seq_along(boxConstraints) )
+    constraintNames[[i]] = model$expandNodeNames(boxConstraints[[i]][[1]])
+  for(i in seq_along(constraintNames) ) {
+    limits = boxConstraints[[i]][[2]]
+    inds = which(maxNodes %in% constraintNames[[i]])
+    if(length(inds) == 0)
+      stop(  paste("warning: provided a constraint for node '", constraintNames[i], "' but that node does not exist in the model!") )
+    low_limits[inds] = limits[1] + abs(buffer)
+    hi_limits[inds] = limits[2] - abs(buffer)
+  }
+  if(any(low_limits>=hi_limits))
+    stop('lower limits greater than or equal to upper limits!')
+  
+  if(identical(low_limits, rep(-Inf, length(low_limits))) && identical(hi_limits, rep(Inf, length(hi_limits))))
+    optimMethod = "BFGS"
+  else 
+    optimMethod = "L-BFGS-B"
+
   if(length(latentNodes) == 0)
     stop('no latentNodes')
   
