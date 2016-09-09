@@ -49,7 +49,7 @@ nimbleUserNamespace <- as.environment(list())
             sliceFactorBurnIn = 2000,
             sliceFactorAdaptInterval = 200,
             sliceSliceBurnIn = 300,
-            widths = 'oneVec'
+            widths = 'oneVec',
             pfNparticles = 1000,
             pfResample = FALSE,
             pfOptimizeNparticles = FALSE,
