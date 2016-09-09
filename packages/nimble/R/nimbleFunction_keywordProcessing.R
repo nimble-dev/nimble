@@ -108,7 +108,6 @@ pq_exp_nimble_keywordInfo <- keywordInfoClass(
 rexp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'rexp_nimble',
 	processor = function(code, nfProc){
-	  print(summary(code[[1]]))
 		code <- handleScaleAndRateForExpNimble(code)
 		return(code)
 	}
@@ -144,7 +143,6 @@ eigen_keywordInfo <- keywordInfoClass(
   keyword = "eigen",
   processor = function(code, nfProc){
     eigenValsArg <- code$only.values
-    print(code)
     if(eigenValsArg == TRUE) code[[1]] <- parse(text = 'eigenvals')[[1]]
     else  code[[1]] <- parse(text = 'eigenvecs')[[1]]
     code[[3]] <- NULL #remove only.values argument
@@ -155,7 +153,6 @@ eigen_keywordInfo <- keywordInfoClass(
 svd_keywordInfo <- keywordInfoClass(
   keyword = "svd",
   processor = function(code, nfProc){
-    print(code)
     nuArg <- code$nu
     nvArg <- code$nv
     if((nuArg == 0) && (nvArg > 0)){
@@ -876,7 +873,6 @@ addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList
 #	processKeyword function to be called by nfProc
 processKeyword <- function(code, nfProc){
   thisKeywordInfo <- keywordList[[ as.character(code[[1]]) ]]
-  print(thisKeywordInfo)
   if(!is.null(thisKeywordInfo))
     return(thisKeywordInfo$processor(code, nfProc))
   return(code)
@@ -1341,8 +1337,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
 matchKeywordCode <- function(code, nfProc){
     callName <- as.character(code[[1]])
     thisFunctionMatch <- matchFunctions[[ callName ]]
-    print(callName)
-    print(thisFunctionMatch)
     ## see if this is a member function of an nf object
     if(!is.null(nfProc)) {
         modCallName <- if(callName == "run") "operator()" else callName

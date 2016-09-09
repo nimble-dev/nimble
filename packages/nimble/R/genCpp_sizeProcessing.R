@@ -1203,7 +1203,6 @@ sizeMatrixVectorReduction <- function(code, symTab, typeEnv) {
   code$sizeExprs <- list(newSize)
   code$type <- a1$type
   code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
-  print(newSize)
   invisible(asserts)
 }
 
@@ -1220,10 +1219,6 @@ sizeMatrixSquareVectorReduction <- function(code, symTab, typeEnv) {
     asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     a1 <- code$args[[1]]
   }
-  print(str(a1$sizeExprs[[1]]))
-  print(a1$sizeExprs[[2]])
-  print(identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]]))
-  print(summary(a1))
   if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixSquareVectorReduction called with argument that is not a matrix.'), call. = FALSE)
   if(!identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]])) {
     asserts <- c(asserts, identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], paste0("Run-time size error: expected ", nimDeparse(a1), " to be square.") ))
@@ -1243,7 +1238,6 @@ sizeMatrixSquareVectorReduction <- function(code, symTab, typeEnv) {
   code$sizeExprs <- list(newSize)
   code$type <- a1$type
   code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
-  print(asserts)
   invisible(asserts)
 }
 
