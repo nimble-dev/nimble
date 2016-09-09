@@ -24,9 +24,11 @@ nonNativeEigenCalls <- c('logdet','sd','var','inprod')
 
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
-matrixSquareOperators <- c('chol','inverse','eigen')
+matrixSquareOperators <- c('chol','inverse','eigenvecs')
+matrixSquareVectorOperators <- c('eigenvals')
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
-matrixSVDOperators <- c('svd')
+matrixVectorOperators <- c('svdd')
+matrixMatrixOperators <- c('svdu', 'svdv')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')
 

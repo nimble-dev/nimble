@@ -11,7 +11,7 @@ cppCodeFileClass <- setRefClass('cppCodeFileClass',
                                  ),
                              methods = list(
                              	initialize = function(...){filename <<- character(); includes <<- character(); usings <<- character(); cppDefs <<- list(); callSuper(...)},
-                             
+
                                  writeIncludes = function(con = stdout()) {
                                      if(length(includes) > 0) writeLines(paste0('#include ', includes), con)
                                      writeLines('#undef eval', con) ## remove R headers' #define eval Rf_eval
@@ -130,7 +130,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        classDef$filename <- filename
                                        cppDefs[[name]] <<- classDef
                                    },
-                                   writeFiles = function(filename, con = filename) { 
+                                   writeFiles = function(filename, con = filename) {
                                        filename <- Rname2CppName(filename)
 
                                        whichDefs <- which(unlist(lapply(cppDefs, `[[`, 'filename')) == filename)
@@ -142,16 +142,16 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        CPPincludes <- unique(CPPincludes)
                                        selfCPP <- if(is.character(con)) paste0('"', con, '.cpp"') else '"[FILENAME].cpp"'
                                        CPPincludes <- CPPincludes[ CPPincludes != selfCPP ]
-                                                                             
+
                                        ## Eigen must be included before any R header files because they both define "length"
                                        iEigenInclude <- grep("EigenTypedefs", CPPincludes)
                                        if(length(iEigenInclude) > 0) {
                                            CPPincludes <- c(CPPincludes[iEigenInclude], CPPincludes[-iEigenInclude])
                                        }
-                                       
+
                                        CPPusings <- unlist(lapply(defs, function(x) x$getCPPusings()))
                                        CPPusings <- unique(CPPusings)
-                                       
+
                                        ifndefName <- if(is.character(con)) toupper(paste0('__', con)) else '"__IFNDEFNAME"'
                                        cppPieces <- do.call('c', lapply(defs, function(x) x$getDefs()))
 
@@ -163,7 +163,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
-                                                                  includes = CPPincludes, 
+                                                                  includes = CPPincludes,
                                                                   usings = CPPusings,
                                                                   cppDefs= cppPieces,
                                                                   ifndefName = cppIfndefName
@@ -174,10 +174,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        cppFile$writeFile(con = con, dir = dirName)
                                    },
                                    compileFile = function(names, .useLib = UseLibraryMakevars) {
-                                       cppPermList <- c('RcppUtils.cpp', 
-                                                        'Utils.cpp', 
-                                                        'NamedObjects.cpp', 
-                                                        'ModelClassUtils.cpp', 
+                                       cppPermList <- c('RcppUtils.cpp',
+                                                        'Utils.cpp',
+                                                        'NamedObjects.cpp',
+                                                        'ModelClassUtils.cpp',
                                                         'accessorClasses.cpp'
                                                         )
                                        if(getNimbleOption('includeCPPdists')) cppPermList <- c(cppPermList, 'dists.cpp', 'nimDists.cpp')
@@ -192,40 +192,45 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ##                   shortDirname = dirname(shortPathName(sprintf("%s/%s", NimbleCodeDir, cppPermList[1])))
 		    		       ##                   sprintf("%s/%s", shortDirname, cppPermList)
                                        ##                } else
-                                       ##                   sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList) 
+                                       ##                   sprintf("%s/%s", normalizePath(NimbleCodeDir, winslash = '/'), cppPermList)
                                        ## 	            } else
                                        ##                 character()
-                                       
+
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
-                                      
+
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
-                                       
+
                                        outputSOfile <<- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), .Platform$dynlib.ext))
 
 
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
-                                       
+
                                        cur = getwd()
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
-                                       suppressOutput <- getNimbleOption('suppressCppCompilerOutput')
+                                       showOutput <- getNimbleOption('showCompilerOutput')
+                                       if(!showOutput) {
+                                           logFile <- paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                           SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
+                                           ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
+                                       }
                                        if(isWindows)
-                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput, show.output.on.console = !suppressOutput)
+                                           status = system(SHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput, show.output.on.console = showOutput)
                                        else
-                                           status = system(SHLIBcmd, ignore.stdout = suppressOutput, ignore.stderr = suppressOutput)
+                                           status = system(SHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput)
 				       if(status != 0)
-                                          stop(structure(simpleError("Failed to create the shared library"), 
+                                          stop(structure(simpleError("Failed to create the shared library"),
                                                          class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
                                    },
                                    loadSO = function(name) {
-                                       dll <<- dyn.load(getSOName(name, dirName), local = TRUE) 
+                                       dll <<- dyn.load(getSOName(name, dirName), local = TRUE)
                                    },
                                    unloadSO = function(name) {
 				       if(!is.null(dll)) {
-                                           status = dyn.unload(dll[["path"]])		
+                                           status = dyn.unload(dll[["path"]])
                                            dll <<- NULL
                                            status
                                        } else

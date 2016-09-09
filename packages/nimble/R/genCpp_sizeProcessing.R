@@ -12,8 +12,10 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(reductionBinaryOperators, 'sizeBinaryReduction'),
                makeCallList(matrixMultOperators, 'sizeMatrixMult'), 
                makeCallList(matrixFlipOperators, 'sizeTranspose'),
-               makeCallList(matrixSolveOperators, 'sizeSolveOp'), ## TO DO
-               makeCallList(matrixSVDOperators, 'sizeUnaryCwise'), ## TO DO
+               makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
+               makeCallList(matrixMatrixOperators, 'sizeMatrixMatrixReduction'), 
+               makeCallList(matrixVectorOperators, 'sizeMatrixVectorReduction'),
+               makeCallList(matrixSquareVectorOperators, 'sizeMatrixSquareVectorReduction'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
@@ -1154,6 +1156,95 @@ sizeMatrixSquareReduction <- function(code, symTab, typeEnv) {
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
     }
     if(length(asserts) == 0) NULL else asserts
+}
+
+# for left and right singular vector matrices
+sizeMatrixMatrixReduction  <- function(code, symTab, typeEnv) {
+  if(length(code$args) != 1){
+    stop(exprClassProcessingErrorMsg(code, 'sizeMatrixMatrixReduction called with argument length != 1.'), call. = FALSE)
+  }
+  asserts <- recurseSetSizes(code, symTab, typeEnv)
+  a1 <- code$args[[1]]
+  if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixMatrixReduction called with argument that is not an expression.'), call. = FALSE)
+  if(a1$toEigenize == 'no') {
+    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+    a1 <- code$args[[1]]
+  }
+  if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixMatrixReduction called with argument that is not a matrix.'), call. = FALSE)
+  if(!identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]])) {
+    newSize <- substitute(min(d1, d2), list(d1 = a1$sizeExprs[[1]], d2 =a1$sizeExprs[[2]] ))
+  } 
+  code$nDim <- 2
+  code$sizeExprs <- list(newSize)
+  code$type <- a1$type
+  code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
+  invisible(asserts)
+}
+
+#for vector of singluar values, return type is vector of length min(d1,d2)
+sizeMatrixVectorReduction <- function(code, symTab, typeEnv) {
+  if(length(code$args) != 1){
+    stop(exprClassProcessingErrorMsg(code, 'sizeMatrixVectorReduction called with argument length != 1.'), call. = FALSE)
+  }
+  asserts <- recurseSetSizes(code, symTab, typeEnv)
+  a1 <- code$args[[1]]
+  if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixVectorReduction called with argument that is not an expression.'), call. = FALSE)
+  if(a1$toEigenize == 'no') {
+    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+    a1 <- code$args[[1]]
+  }
+  if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixVectorReduction called with argument that is not a matrix.'), call. = FALSE)
+  if(!identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]])) {
+    newSize <- substitute(min(d1, d2), list(d1 = a1$sizeExprs[[1]], d2 =a1$sizeExprs[[2]] ))
+  } else {
+    newSize <- a1$sizeExprs[[1]]
+  }
+  code$nDim <- 1
+  code$sizeExprs <- list(newSize)
+  code$type <- a1$type
+  code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
+  print(newSize)
+  invisible(asserts)
+}
+
+
+#for eigenvalues
+sizeMatrixSquareVectorReduction <- function(code, symTab, typeEnv) {
+  if(length(code$args) != 1){
+    stop(exprClassProcessingErrorMsg(code, 'sizeMatrixSquareVectorReduction called with argument length != 1.'), call. = FALSE)
+  }
+  asserts <- recurseSetSizes(code, symTab, typeEnv)
+  a1 <- code$args[[1]]
+  if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixSquareVectorReduction called with argument that is not an expression.'), call. = FALSE)
+  if(a1$toEigenize == 'no') {
+    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+    a1 <- code$args[[1]]
+  }
+  print(str(a1$sizeExprs[[1]]))
+  print(a1$sizeExprs[[2]])
+  print(identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]]))
+  print(summary(a1))
+  if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixSquareVectorReduction called with argument that is not a matrix.'), call. = FALSE)
+  if(!identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]])) {
+    asserts <- c(asserts, identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], paste0("Run-time size error: expected ", nimDeparse(a1), " to be square.") ))
+    if(is.integer(a1$sizeExprs[[1]])) {
+      newSize <- a1$sizeExprs[[1]]
+    } else {
+      if(is.integer(a1$sizeExprs[[2]])) {
+        newSize <- a1$sizeExprs[[2]]
+      } else {
+        newSize <- a1$sizeExprs[[1]]
+      }
+    }
+  } else {
+    newSize <- a1$sizeExprs[[1]]
+  }
+  code$nDim <- 1
+  code$sizeExprs <- list(newSize)
+  code$type <- a1$type
+  code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
+  print(asserts)
+  invisible(asserts)
 }
 
 
