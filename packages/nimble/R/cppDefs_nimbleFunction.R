@@ -225,6 +225,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           ),
                                       )
 
+## This and the functions below were original stand-along compilation functions
+## Now they are superceded by compileNimble.
+## A stand-alone call could still work but these may have faller out of date.
 compileNimbleFunction <- function(fun, dirName, all.instances = TRUE, individual.instances = NA, name = deparse(substitute(fun) ),  fileName = Rname2CppName(name), writeFiles = !(environment(fun)$Cwritten), compileCpp = !(environment(fun)$compiled), loadSO = !(environment(fun)$loadedSO), debug = FALSE, debugCpp = FALSE, returnInternals = FALSE ) {
     
     if(missing(dirName))    dirName <- makeDefaultDirName()
