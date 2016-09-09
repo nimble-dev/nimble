@@ -19,7 +19,7 @@ nimbleList <- function(types,
     ## one that has the nimbleListDefClass object
     if(is.na(name)) name <- nl_refClassLabelMaker()
     
-    thisNimbleListDef <- nimbleListDef(types = types, className = name)
+    thisNimbleListDef <- nimbleListDefClass(types = types, className = name)
     ans <- function(...) {
         structure(list(...), class = "nimbleList", nimbleListDef = thisNimbleListDef)
     }
@@ -39,8 +39,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                 show = function() {
                                     writeLines(paste0('nlProcessing object ', name))
                                 },
-                                initialize = function(){
-
+                                initialize = function(...){
+                                    callSuper(...)
                                 },
                                 getSymbolTable = function() symTab, ## required name
                                 buildSymbolTable = function() {},
@@ -61,5 +61,6 @@ nlProcessing <- setRefClass('nlProcessing',
                             )
 
 nlProcessing$methods(buildSymbolTable = function() {
-    message("nlProcessing::buildSymbolTable not written yet")
+    ##message("nlProcessing::buildSymbolTable not written yet")
+    symTab <<- nimble:::buildSymbolTable(nimbleDefList$vars, nimbleDefList$types, nimbleDefList$sizes)
 })

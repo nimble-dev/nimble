@@ -64,6 +64,7 @@ Collate:
     nimbleFunction_Rexecution.R
     nimbleFunction_compile.R
     nimbleFunction_keywordProcessing.R
+    nimbleList_core.R
     types_util.R
     types_symbolTable.R
     types_modelValues.R
@@ -79,6 +80,7 @@ Collate:
     cppDefs_BUGSmodel.R
     cppDefs_RCfunction.R
     cppDefs_nimbleFunction.R
+    cppDefs_nimbleList.R
     cppDefs_modelValues.R
     cppDefs_cppProject.R
     cppDefs_outputCppFromRparseTree.R

@@ -377,7 +377,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         className <- attr(nlList[[1]], 'nimbleListDef')$className
 
         ## add the setupOutput name to objects that we need to instantiate and point to
-        neededObjectNames <- c(neededObjectNames, name)
+        neededObjectNames <<- c(neededObjectNames, name)
 
         ## create a symbol table object
         newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
