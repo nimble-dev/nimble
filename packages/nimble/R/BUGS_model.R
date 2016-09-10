@@ -317,7 +317,8 @@ Details: If a provided value (or the current value in the model when only a name
                                            if(length(data)==1)
                                                if(is.null(data[[1]])) return()
                                                if(is.character(data[[1]])) {
-                                                   data <- as.list(data[[1]])
+                                                   if(length(data[[1]]) > 1)
+                                                       data <- as.list(data[[1]])
                                                } else {
                                                    if(is.list(data[[1]])) {
                                                        data <- data[[1]]
