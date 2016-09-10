@@ -126,7 +126,7 @@ fi
 AC_SUBST(NIMBLE_LIB_DIR)
 
 
-R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
+R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[[a-z]]" "[[A-Z]]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
 
