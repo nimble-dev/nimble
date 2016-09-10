@@ -76,7 +76,7 @@ AC_CHECK_HEADERS([Eigen/Dense],
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
 		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6.tar.gz or something similar." 
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar." 
 		  else
 		   echo "Not installing Eigen with NIMBLE"
 		   rm -r inst/include/Eigen
