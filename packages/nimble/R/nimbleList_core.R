@@ -6,7 +6,8 @@ nimbleListDefClass <- setRefClass(
     ## The types need not be numeric.
     ## In general, ideally, they could be another nimbleList or a nimbleFunction
     Class = "nimbleListDefClass",
-    fields = list(types = 'ANY',
+    fields = list(vars = 'ANY',
+                  types = 'ANY',
                   className = 'ANY')
 )
 
