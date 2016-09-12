@@ -158,6 +158,9 @@ nndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nD
     paramIDs <- as.integer(paramIDs)
     answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(PARAMANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
     switchCode <- as.call(c(list(quote(nimSwitch), quote(PARAMID_), paramIDs), answerAssignmentExpressions))
+    # avoid arg name mismatch based on R partial arg name matching
+    names(answerAssignmentExpressions) <- NULL
+    names(switchCode)[2:3] <- c('paramID', 'IDoptions')
     if(nDim == 0) {
         answerInitCode <- quote(PARAMANSWER_ <- 0)  ## this avoids a Windows compiler warning about a possibly unassigned return variable
 

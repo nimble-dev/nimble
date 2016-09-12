@@ -4,6 +4,14 @@ USER LEVEL CHANGES
 
 -- Added getBound() functionality that provides dynamic access to lower and upper bounds on a node (from R or in the DSL), based on the underlying distribution and any user-defined truncation. Functionality is analogous to getParam().
 
+DEVELOPER LEVEL CHANGES
+
+-- Changes to configure.ac to address Solaris installation issues and removal of some lingering std::cout calls.
+
+-- Fixed bug in making an internal function accessible to Nimble generated code.
+
+-- Fixed bug in use of nimSwitch in getParam.
+
                            CHANGES IN VERSION 0.6 (August 2016)
 
 USER LEVEL CHANGES

@@ -318,7 +318,8 @@ Details: If a provided value (or the current value in the model when only a name
                                            if(length(data)==1)
                                                if(is.null(data[[1]])) return()
                                                if(is.character(data[[1]])) {
-                                                   data <- as.list(data[[1]])
+                                                   if(length(data[[1]]) > 1)
+                                                       data <- as.list(data[[1]])
                                                } else {
                                                    if(is.list(data[[1]])) {
                                                        data <- data[[1]]
@@ -670,7 +671,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   matRows <- unlist(sapply(sizes[mats], `[`, 1))
                                                   matCols <- unlist(sapply(sizes[mats], `[`, 2))
                                                   if(!length(unique(c(matRows, matCols, unlist(sizes[vecs])))) <= 1)
-                                                      if(dist %in% names(distributionsInputList)) {
+                                                      if(dist %in% names(nimble:::distributionsInputList)) {
                                                           stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
                                                       } else {
                                                           warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes.")                                                                                                                                   }

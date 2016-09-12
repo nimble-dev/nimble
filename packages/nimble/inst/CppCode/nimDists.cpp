@@ -229,9 +229,15 @@ double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<2, d
   xptr = nimArrCopyIfNeeded<1, double>(x, xCopy).getPtr();
   int n = x.size();
   muptr = nimArrCopyIfNeeded<1, double>(mu, muCopy).getPtr();
-  if(mu.size() != n) {std::cout<<"Error in nimArr_dmvt_chol: mu and x and different sizes.\n";}
+  if(mu.size() != n) {
+    _nimble_global_output<<"Error in nimArr_dmvt_chol: mu and x and different sizes.\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
-  if((chol.dim()[0] != n) | (chol.dim()[1] != n)) {std::cout<<"Error in nimArr_dmvt_chol: chol does not match size size of x.\n";}
+  if((chol.dim()[0] != n) | (chol.dim()[1] != n)) {
+    _nimble_global_output<<"Error in nimArr_dmvt_chol: chol does not match size size of x.\n";
+    nimble_print_to_R(_nimble_global_output);
+  }
   
   double ans;
   ans = dmvt_chol(xptr, muptr, cholptr, df, n, prec_param, give_log);
@@ -251,7 +257,8 @@ void nimArr_rmvt_chol(NimArr<1, double> &ans, NimArr<1, double> &mu, NimArr<2, d
     ans.setSize(n);
   } else {
     if(ans.size() != n) {
-      std::cout<<"Error in nimArr_rmvt_chol: answer size ("<< ans.size() <<") does not match mu size ("<<n<<").\n";
+      _nimble_global_output<<"Error in nimArr_rmvt_chol: answer size ("<< ans.size() <<") does not match mu size ("<<n<<").\n";
+      nimble_print_to_R(_nimble_global_output);
     }
   }
   ansPtr = nimArrCopyIfNeeded<1, double>(ans, ansCopy).getPtr();

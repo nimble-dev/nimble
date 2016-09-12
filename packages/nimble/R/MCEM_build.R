@@ -173,7 +173,7 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   if(length(setdiff(latentNodes, allStochNonDataNodes) ) != 0 )
     stop('latentNodes provided not found in model')
   maxNodes = setdiff(allStochNonDataNodes, latentNodes)
-  
+  browser()
 
   limits <- getMCEMRanges(model, maxNodes, buffer)
   low_limits = limits[[1]]

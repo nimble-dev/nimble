@@ -2554,6 +2554,9 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
+
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -2966,7 +2969,7 @@ if test "x$ac_cv_header_Eigen_Dense" = xyes; then :
 _ACEOF
  echo "Found Eigen/Dense";
 		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6.tar.gz or something similar."
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar."
 		  else
 		   echo "Not installing Eigen with NIMBLE"
 		   rm -r inst/include/Eigen
@@ -3021,7 +3024,7 @@ fi
 
 
 
-R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "a-z" "A-Z"`
+R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 
 
