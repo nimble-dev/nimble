@@ -62,5 +62,5 @@ nlProcessing <- setRefClass('nlProcessing',
 
 nlProcessing$methods(buildSymbolTable = function() {
     ##message("nlProcessing::buildSymbolTable not written yet")
-    symTab <<- nimble:::buildSymbolTable(nimbleDefList$vars, nimbleDefList$types, nimbleDefList$sizes)
+    symTab <<- nimble:::buildSymbolTable(nimbleListDef$vars, nimbleListDef$types, nimbleListDef$sizes)
 })
