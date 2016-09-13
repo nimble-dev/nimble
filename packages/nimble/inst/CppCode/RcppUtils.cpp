@@ -6,6 +6,11 @@
 #include<sstream>
 #include<algorithm>
 
+#define _CHECK_WHERE_I_AM
+#ifdef _CHECK_WHERE_I_AM
+#include "whereIam.h"
+#endif
+
 std::ostringstream _nimble_global_output;
 
 void nimble_print_to_R(std::ostringstream &input) {
@@ -1032,8 +1037,11 @@ SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 	return(R_NilValue);
 }
 
-
+#ifdef _IN_CPP_CODE
  SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
+   #ifdef _CHECK_WHERE_I_AM
+   PRINTF("Calling SEXP_2_Nim compiled in %s\n", _WHERE_I_AM);
+   #endif
     vector<int> sexpDims = getSEXPdims( rValues );
     int sexpNumDims = sexpDims.size();
     bool resize = (LOGICAL(allowResize)[0] == TRUE);
@@ -1071,6 +1079,7 @@ SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 	}
 	return(R_NilValue);
 }
+#endif
 
 template <class T>
 void cNimArr_2_NimArr(NimArrBase<T> &nimFrom, NimArrBase<T> &nimTo){

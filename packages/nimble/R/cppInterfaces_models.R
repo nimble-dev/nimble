@@ -154,7 +154,7 @@ makeModelBindingFields <- function(symTab) {
       if(missing(x) ) 
         nimbleInternalFunctions$getNimValues(VPTR, 2)
       else
-        nimbleInternalFunctions$setNimValues(VPTR, x, 2, allowResize = FALSE)
+        nimbleInternalFunctions$setNimValues(VPTR, x, 2, allowResize = FALSE, dll = dll)
     }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
   }
   return(fieldList)

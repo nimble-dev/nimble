@@ -38,12 +38,12 @@ getNimValues <- function(elementPtr, pointDepth = 1){
   .Call("Nim_2_SEXP", elementPtr, as.integer(pointDepth) ) 
 }
 
-setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE){
+setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE, dll){
   ptrExp <- substitute(elementPtr)
   storage.mode(values) <- 'numeric'
   if(!inherits(elementPtr, "externalptr"))    
     return(NULL)
-      jnk = .Call("SEXP_2_Nim", elementPtr, as.integer(pointDepth), values, allowResize)
+      jnk = .Call(getNativeSymbolInfo("SEXP_2_Nim", dll), elementPtr, as.integer(pointDepth), values, allowResize)
   values
 }
 

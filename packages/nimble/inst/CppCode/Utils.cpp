@@ -3,6 +3,9 @@
 #define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
+#include "whereIam.h"
+void printWhereIam() {PRINTF("I am in %s\n", _WHERE_I_AM);}
+
 bool decide(double lMHr) { // simple function accept or reject based on log Metropolis-Hastings ratio
   if(ISNAN(lMHr)) return(false);
   if(lMHr > 0) return(true);

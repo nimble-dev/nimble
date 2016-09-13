@@ -150,7 +150,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                     if(missing(x) ) 
                         nimbleInternalFunctions$getNimValues(VPTR)
                     else 
-                        nimbleInternalFunctions$setNimValues(VPTR, x)
+                        nimbleInternalFunctions$setNimValues(VPTR, x, dll = dll)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
             }
@@ -263,12 +263,12 @@ getSetCharacter <- function(name, value, basePtr) {
          nimbleInternalFunctions$setCharacterValue(vptr, value)
 }
 
-getSetNumericVector <- function(name, value, basePtr) {
+getSetNumericVector <- function(name, value, basePtr, dll) {
       vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
      if(missing(value)) 
          nimbleInternalFunctions$getNimValues(vptr)
      else
-         nimbleInternalFunctions$setNimValues(vptr, value)
+         nimbleInternalFunctions$setNimValues(vptr, value, dll = dll)
 }
 
 getSetDoubleScalar <- function(name, value, basePtr) {
@@ -534,7 +534,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
     }
 }
 
-copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
+copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(is.null(Robj[[v]])) {
@@ -642,7 +642,7 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
             next
         }
         else if(cppCopyTypes[[v]] == 'numericVector') {
-            getSetNumericVector(v, Robj[[v]], basePtr)
+            getSetNumericVector(v, Robj[[v]], basePtr, dll = dll)
             ##.self[[v]] <<- Robj[[v]]
             next
         }
@@ -801,7 +801,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  RobjectList[[length(RobjectList)+1]] <<- newRobject
                                                  newNeededObjects <- nimbleInternalFunctions$buildNeededObjects(newRobject, compiledNodeFun, list(), dll, nimbleProject)
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
-                                                 nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr)
+                                                 nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr, dll)
                                                  if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              },
@@ -820,7 +820,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                                modelValues = getSetModelValues(name, value, basePtr), ## ditto
                                                                characterVector = getSetCharacterVector(name, value, basePtr),
                                                                characterScalar = getSetCharacterScalar(name, value, basePtr),
-                                                               numericVector = getSetNumericVector(name, value, basePtr),
+                                                               numericVector = getSetNumericVector(name, value, basePtr, dll = dll),
                                                                doubleScalar = getSetDoubleScalar(name, value, basePtr),
                                                                integerScalar = getSetIntegerScalar(name, value, basePtr),
                                                                logicalScalar = getSetLogicalScalar(name, value, basePtr),
