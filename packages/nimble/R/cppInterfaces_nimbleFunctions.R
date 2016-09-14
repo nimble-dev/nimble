@@ -682,7 +682,6 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         symTab <- compiledNodeFun$nfProc$setupSymTab
         defaults$cnf <- compiledNodeFun
     }
-    browser()
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
     cppNames <- compiledNodeFun$objectDefs$getSymbolNames() 
     NFBF <-  makeNFBindingFields(symTab, cppNames)

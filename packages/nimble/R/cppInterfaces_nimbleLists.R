@@ -69,7 +69,6 @@ buildNimbleListInterface <- function(refName,  compiledNodeList, basePtrCall, wh
     writeLines(paste0("Derived CnimbleFunctionBase object created by buildNimbleFxnInterface for nimbleFunction with class ", class(Robject)))
   })
   names(methodsList)[length(methodsList)] <- 'show'
-  browser()
   eval(substitute( newClass <-  setRefClass(refName,
                                             fields = FIELDS,
                                             contains = 'CnimbleFunctionBase',
