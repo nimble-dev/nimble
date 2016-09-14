@@ -88,6 +88,7 @@ Collate:
     cppInterfaces_models.R
     cppInterfaces_modelValues.R
     cppInterfaces_nimbleFunctions.R
+	cppInterfaces_nimbleLists.R
     cppInterfaces_otherTypes.R
     nimbleProject.R
     initializeModel.R

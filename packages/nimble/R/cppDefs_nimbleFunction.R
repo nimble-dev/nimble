@@ -62,7 +62,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            callSuper()
                                        },
                                        genNeededTypes = function(debugCpp = FALSE, fromModel = FALSE) {
-                                           ##print(nimCompProc$neededTypes)
                                            for(i in seq_along(nimCompProc$neededTypes)) {
                                                neededType<- nimCompProc$neededTypes[[i]]
                                                if(inherits(neededType, 'nfMethodRC')) {
@@ -145,16 +144,16 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            nimCompProc <<- ncp
                                            genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
                                            objectDefs <<- symbolTable2cppVars(ncp$setupSymTab)
-                                           buildFunctionDefs()
+                                           # buildFunctionDefs()
                                            ## This is slightly klugey
                                            ## The objectDefs here are for the member data
                                            ## We need them to be the parentST for each member function
                                            ## However the building of the cpp objects is slightly out of order, with the
                                            ## member functions already having been built during nfProcessing.
-                                           for(i in seq_along(functionDefs)) {
-                                               functionDefs[[i]]$args$parentST <<- objectDefs
-                                           }
-                                           SEXPmemberInterfaceFuns <<- lapply(functionDefs, function(x) x$SEXPinterfaceFun)
+                                           # for(i in seq_along(functionDefs)) {
+                                           #     functionDefs[[i]]$args$parentST <<- objectDefs
+                                           # }
+                                           # SEXPmemberInterfaceFuns <<- lapply(functionDefs, function(x) x$SEXPinterfaceFun)
                                        },
                                        buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){
                                            ##     cat('buildCallable\n')
@@ -174,12 +173,39 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            buildRgenerator(where = where)
                                            buildCmultiInterface()
                                        },
+                                       buildCmultiInterface = function(dll = NULL) {
+                                         sym <- if(!is.null(dll))
+                                           getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
+                                         else
+                                           SEXPgeneratorFun$name
+                                         CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
+                                       },
                                        buildConstructorFunctionDef = function() {
                                            code <- putCodeLinesInBrackets(list(namedObjectsConstructorCodeBlock()))
                                            conFunDef <- cppFunctionDef(name = name,
                                                                        returnType = emptyTypeInfo(),
                                                                        code = cppCodeBlock(code = code, skipBrackets = TRUE))
                                            functionDefs[['constructor']] <<- conFunDef
+                                       },
+                                       # buildFunctionDefs = function() {
+                                       #   for(i in seq_along(nimCompProc$RCfunProcs)) {
+                                       #     RCname <- names(nimCompProc$RCfunProcs)[i]
+                                       #     functionDefs[[RCname]] <<- RCfunctionDef$new() ## all nodeFunction members are const f
+                                       #     functionDefs[[RCname]]$buildFunction(nimCompProc$RCfunProcs[[RCname]])
+                                       #     functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nimCompProc$name)
+                                       #     RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
+                                       #   }
+                                       # },
+                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
+                                         sym <- if(!is.null(dll))
+                                           getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
+                                         else
+                                           SEXPgeneratorFun$name
+                                         Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
+                                       },
+                                       makeCppNames = function() {
+                                           Rnames2CppNames <<- as.list(Rname2CppName(objectDefs$getSymbolNames()))
+                                           names(Rnames2CppNames) <<- objectDefs$getSymbolNames()
                                        }
                                    ),
                                    )
@@ -191,7 +217,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                           ## ## Inherits a functionDefs list for member functions
                                           ## ## Inherits an objectDefs list for member data
                                           ## SEXPmemberInterfaceFuns = 'ANY', ## List of SEXP interface functions, one for each member function
-                                          ## nfProc = 'ANY', ## an nfProcessing class, needed to get the member data symbol table post-compilation
+                                          nfProc = 'ANY' ## an nfProcessing class, needed to get the member data symbol table post-compilation
 
                                           ## Rgenerator = 'ANY' , ## function to generate and wrap a new object from an R object
                                           ## CmultiInterface = 'ANY', ## object for interfacing multiple C instances when a top-level interface is not needed
@@ -286,12 +312,13 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               ##         }
                                               ##     }
                                               ## },
-                                              initialize = function(nimCompProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
+                                              initialize = function(nfProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
                                                   RCfunDefs <<- list()
                                                   ## RCfunDefs <<- list()
                                                   ## callSuper(...) ## must call this first because it sets objectDefs to list()
-                                                  callSuper(nimCompProc, debugCpp, fromModel, ...)
-                                                  ## if(!missing(nfProc)) processNFproc(nfProc, debugCpp = debugCpp, fromModel = fromModel)
+                                                  callSuper(nfProc, debugCpp, fromModel, ...)
+                                                  if(!missing(nfProc)) processNFproc(nfProc, debugCpp = debugCpp, fromModel = fromModel)
+                                                  
                                                   if(isNode) {
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassObj <- environment(nfProc$nfGenerator)$contains
@@ -311,10 +338,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## loaded <<- FALSE
                                                   ## Cwritten <<- FALSE
                                               },
-                                              processNimCompProc = function(nfp, debugCpp = FALSE, fromModel = FALSE) {
-                                                  callSuper(nfp, debugCpp, fromModel)
-                                                  ## nfp$cppDef <- .self
-                                                  ## nfProc <<- nfp
+                                              processNFproc = function(nfp, debugCpp = FALSE, fromModel = FALSE) {
+                                                  ## callSuper(nfp, debugCpp, fromModel)
+                                                   nfp$cppDef <- .self
+                                                   nfProc <<- nfp
                                                   ## genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
                                                   ## objectDefs <<- symbolTable2cppVars(nfp$setupSymTab)
                                                   buildFunctionDefs()
@@ -361,7 +388,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                              ##      return(cppInterfaceObject)
                                              ##  },
                                               buildAll = function(where = where) {
-                                                  baseClassObj <- environment(nimCompProc$nfGenerator)$contains
+                                                  baseClassObj <- environment(nfProc$nfGenerator)$contains
                                                   if(!is.null(baseClassObj)) {
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassName <- environment(baseClassObj)$name
