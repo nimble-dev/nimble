@@ -62,6 +62,8 @@ bool checkNumeric(SEXP Sval, int len);
 vector<int> getSEXPdims(SEXP Sx);
 
 extern "C" {
+  SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
+
   SEXP setVec(SEXP Sextptr, SEXP Svalue);
   SEXP getVec(SEXP Sextptr);
   SEXP getVec_Integer(SEXP Sextptr);

@@ -28,28 +28,53 @@ void multivarTestCall(double *x, int n) {
   nimble_print_to_R(_nimble_global_output);
 }
 
+// This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
+// We assume we have an extptr to each
+#ifdef _IN_CPP_CODE
+SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
+#ifdef _CHECK_WHERE_I_AM
+  PRINTF("Calling setDoublePtrFromSinglePtr compiled in %s\n", _WHERE_I_AM);
+#endif
+  void *singlePtr = R_ExternalPtrAddr(SsinglePtr); // this is really a **
+  void **doublePtr = static_cast<void **>(R_ExternalPtrAddr(SdoublePtr)); // this is really a ***.  
+  *doublePtr = singlePtr;
+  return(R_NilValue);
+}
+#endif
+
+#ifdef _IN_CPP_CODE
 SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize) {
+#ifdef _CHECK_WHERE_I_AM
+  PRINTF("Calling setPtrVectorOfPtrs compiled in %s\n", _WHERE_I_AM);
+#endif
   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 
   void *contentsPtr = static_cast<void *>(R_ExternalPtrAddr(ScontentsPtr));
   int size = INTEGER(Ssize)[0];
   accessorPtr->setTheVec(contentsPtr, size);
   return(R_NilValue);
 }
+#endif
 
+#ifdef _IN_CPP_CODE
 SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr) {
+#ifdef _CHECK_WHERE_I_AM
+  PRINTF("Calling setOnePtrVectorOfPtrs compiled in %s\n", _WHERE_I_AM);
+#endif
   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 
   void *contentsPtr = static_cast<void *>(R_ExternalPtrAddr(ScontentsPtr));
   int i = INTEGER(Si)[0];
   accessorPtr->setVecPtr(i, contentsPtr);
   return(R_NilValue);
 }
+#endif
 
-SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si) {
-  vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 
-  int i = INTEGER(Si)[0];
-  void *ans = accessorPtr->getVecPtr(i);
-  return( R_MakeExternalPtr(ans, R_NilValue, R_NilValue));
-}
+// could be useful but is not currently used
+// SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si) {
+//   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 
+//   int i = INTEGER(Si)[0];
+//   void *ans = accessorPtr->getVecPtr(i);
+//   return( R_MakeExternalPtr(ans, R_NilValue, R_NilValue));
+// }
 
 /*This function was created so we can report the status of different operations
 from C++ to R. I found that Rbreak does not stop the R function from which the C++

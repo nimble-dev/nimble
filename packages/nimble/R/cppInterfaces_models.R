@@ -38,6 +38,7 @@ getMVName <- function(modelValuePtr)
 CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                contains = 'modelBaseClass',
                                fields = list(
+                                   dll = 'ANY',
                                    Rmodel = 'ANY',
                                    cppNames = 'ANY',
                                    cppCopyTypes = 'ANY', ## At the given moment these will all be 'numeric', but the system allows more flexibility
@@ -153,7 +154,7 @@ makeModelBindingFields <- function(symTab) {
     eval(substitute( fieldList$VARNAME <- function(x){
       if(missing(x) ) 
         nimbleInternalFunctions$getNimValues(VPTR, 2)
-      else
+      else 
         nimbleInternalFunctions$setNimValues(VPTR, x, 2, allowResize = FALSE, dll = dll)
     }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
   }
@@ -188,7 +189,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 isDataEnv <<- new.env()
                                                 classEnvironment <<- new.env()
                                                 
-                                                callSuper()
+                                                callSuper(dll = dll, ...)
 
                                                 # avoid R CMD check problem with registration
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))

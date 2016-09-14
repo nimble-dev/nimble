@@ -40,9 +40,9 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rinterval, 3),
  FUN(makeNumericList, 3),
 //   The following 4 conflict with names of R functions. So we prefix them with a R_
- CFUN(setPtrVectorOfPtrs, 3),
- CFUN(setOnePtrVectorOfPtrs, 3),
- CFUN(setDoublePtrFromSinglePtr, 2),
+ //CFUN(setPtrVectorOfPtrs, 3),
+ //CFUN(setOnePtrVectorOfPtrs, 3),
+ //CFUN(setDoublePtrFromSinglePtr, 2),
 // CFUN(setSinglePtrFromSinglePtr, 2),
 // FUN(newModelValues, 1),
  {NULL, NULL, 0}

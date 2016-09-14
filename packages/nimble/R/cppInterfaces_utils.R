@@ -47,26 +47,26 @@ setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE,
   values
 }
 
-setPtrVectorOfPtrs <- function(accessorPtr, contentsPtr, length) {
+setPtrVectorOfPtrs <- function(accessorPtr, contentsPtr, length, dll) {
     if(!inherits(accessorPtr, 'externalptr')) return(NULL)
     if(!inherits(contentsPtr, 'externalptr')) return(NULL)
     if(!is.numeric(length)) return(NULL)
-    .Call('setPtrVectorOfPtrs', accessorPtr, contentsPtr, as.integer(length))
+    .Call(getNativeSymbolInfo('setPtrVectorOfPtrs', dll), accessorPtr, contentsPtr, as.integer(length))
     contentsPtr
 }
 
-setOnePtrVectorOfPtrs <- function(accessorPtr, i, contentsPtr) {
+setOnePtrVectorOfPtrs <- function(accessorPtr, i, contentsPtr, dll) {
     if(!inherits(accessorPtr, 'externalptr')) return(NULL)
     if(!is.numeric(i)) return(NULL)
     if(!inherits(contentsPtr, 'externalptr')) return(NULL)
-    .Call('setOnePtrVectorOfPtrs', accessorPtr, as.integer(i-1), contentsPtr)
+    .Call(getNativeSymbolInfo('setOnePtrVectorOfPtrs', dll), accessorPtr, as.integer(i-1), contentsPtr)
     contentsPtr
 }
 
-setDoublePtrFromSinglePtr <- function(elementPtr, value) {
+setDoublePtrFromSinglePtr <- function(elementPtr, value, dll) {
     if(!inherits(elementPtr, 'externalptr')) return(NULL)
     if(!inherits(value, 'externalptr')) return(NULL)
-    .Call('setDoublePtrFromSinglePtr', elementPtr, value)
+    .Call(getNativeSymbolInfo('setDoublePtrFromSinglePtr', dll), elementPtr, value)
     value
 }
 

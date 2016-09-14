@@ -66,12 +66,3 @@ SEXP derefPtr(SEXP SmultiPtr) {
   return(R_MakeExternalPtr( static_cast<void *>(*doublePtr), R_NilValue, R_NilValue) );
 }
 
-// This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
-// We assume we have an extptr to each
-SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
-  void *singlePtr = R_ExternalPtrAddr(SsinglePtr); // this is really a **
-  void **doublePtr = static_cast<void **>(R_ExternalPtrAddr(SdoublePtr)); // this is really a ***.  
-  *doublePtr = singlePtr;
-  return(R_NilValue);
-}
-
