@@ -30,6 +30,7 @@ nimbleList <- function(types,
 ## analogous to but must simpler than NFprocessing
 nlProcessing <- setRefClass('nlProcessing',
                             fields = list(
+                                cppDef = 'ANY',
                                 nimbleListDef = 'ANY',
                                 symTab = 'ANY',
                                 neededTypes = 'ANY',
@@ -41,6 +42,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                 },
                                 initialize = function(...){
                                     callSuper(...)
+                                    neededTypes <<- list()
                                 },
                                 getSymbolTable = function() symTab, ## required name
                                 buildSymbolTable = function() {},
@@ -62,5 +64,5 @@ nlProcessing <- setRefClass('nlProcessing',
 
 nlProcessing$methods(buildSymbolTable = function() {
     ##message("nlProcessing::buildSymbolTable not written yet")
-    symTab <<- nimble:::buildSymbolTable(nimbleDefList$vars, nimbleDefList$types, nimbleDefList$sizes)
+    symTab <<- nimble:::buildSymbolTable(nimbleListDef$types$vars, nimbleListDef$types$types, nimbleListDef$types$sizes)
 })

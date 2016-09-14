@@ -144,17 +144,17 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            ncp$cppDef <- .self
                                            nimCompProc <<- ncp
                                            genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
-                                           objectDefs <<- symbolTable2cppVars(ncp$setupSymTab)
-                                           buildFunctionDefs()
-                                           ## This is slightly klugey
-                                           ## The objectDefs here are for the member data
-                                           ## We need them to be the parentST for each member function
-                                           ## However the building of the cpp objects is slightly out of order, with the
-                                           ## member functions already having been built during nfProcessing.
-                                           for(i in seq_along(functionDefs)) {
-                                               functionDefs[[i]]$args$parentST <<- objectDefs
-                                           }
-                                           SEXPmemberInterfaceFuns <<- lapply(functionDefs, function(x) x$SEXPinterfaceFun)
+                                           objectDefs <<- symbolTable2cppVars(ncp$getSymbolTable())
+                                           ## buildFunctionDefs()
+                                           ## ## This is slightly klugey
+                                           ## ## The objectDefs here are for the member data
+                                           ## ## We need them to be the parentST for each member function
+                                           ## ## However the building of the cpp objects is slightly out of order, with the
+                                           ## ## member functions already having been built during nfProcessing.
+                                           ## for(i in seq_along(functionDefs)) {
+                                           ##     functionDefs[[i]]$args$parentST <<- objectDefs
+                                           ## }
+                                           ## SEXPmemberInterfaceFuns <<- lapply(functionDefs, function(x) x$SEXPinterfaceFun)
                                        },
                                        buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){
                                            ##     cat('buildCallable\n')
@@ -173,6 +173,12 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            ##buildSEXPfinalizer()
                                            buildRgenerator(where = where)
                                            buildCmultiInterface()
+                                       },
+                                       buildRgenerator = function() {message('whoops, base class version of buildRgenerator')},
+                                       buildCmultiInterface = function() {message('whoops, base class version of buildCmultiInterface')},
+                                       makeCppNames = function() {
+                                           Rnames2CppNames <<- as.list(Rname2CppName(objectDefs$getSymbolNames()))
+                                           names(Rnames2CppNames) <<- objectDefs$getSymbolNames()
                                        },
                                        buildConstructorFunctionDef = function() {
                                            code <- putCodeLinesInBrackets(list(namedObjectsConstructorCodeBlock()))
