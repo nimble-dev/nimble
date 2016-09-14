@@ -46,7 +46,7 @@ buildNimbleListInterface <- function(refName,  compiledNodeList, basePtrCall, wh
     # .basePtr <<- .Call(basePtrCall)
     cppNames <<- .Call("getAvailableNames", .basePtr)
     cppCopyTypes <<- defaults$cppCT
-    compiledNodeList <<- defaults$cnf
+    compiledNodeFun <<- defaults$cnf
     vPtrNames <- 	paste0(".", cppNames, "_Ptr")
     for(vn in seq_along(cppNames) ){
       .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn])
@@ -69,12 +69,13 @@ buildNimbleListInterface <- function(refName,  compiledNodeList, basePtrCall, wh
     writeLines(paste0("Derived CnimbleFunctionBase object created by buildNimbleFxnInterface for nimbleFunction with class ", class(Robject)))
   })
   names(methodsList)[length(methodsList)] <- 'show'
+  browser()
   eval(substitute( newClass <-  setRefClass(refName,
                                             fields = FIELDS,
                                             contains = 'CnimbleFunctionBase',
                                             methods = ML,
                                             where = where),
-                   list(FIELDS = NFBF, ML = methodsList ) ) )
+                   list(FIELDS = NFBF, ML = methodsList) ) )
 
   ans <- function(nfObject, dll = NULL, project) {
     wrappedInterfaceBuild <- newClass$new

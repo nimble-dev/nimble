@@ -20,8 +20,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                      getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                  else
                                                      SEXPgeneratorFun$name
-                                          Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
-                  
+                                          Rgenerator <<- buildNimbleListInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                           # message('Rgenerator for nimbleList does not exist')
                                       })
                                   )

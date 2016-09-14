@@ -30,24 +30,19 @@ nimbleList <- function(types,
 ## analogous to but must simpler than NFprocessing
 nlProcessing <- setRefClass('nlProcessing',
                             fields = list(
+                                cppDef = 'ANY',
                                 nimbleListDef = 'ANY',
                                 setupSymTab = 'ANY',
                                 neededTypes = 'ANY',
-                                nimbleProject = 'ANY',
-                                cppDef = 'ANY'
+                                nimbleProject = 'ANY'
                             ),
                             methods = list(
                                 show = function() {
                                     writeLines(paste0('nlProcessing object ', nimbleListDef$className))
                                 },
                                 initialize = function(...){
-                                  callSuper(...)
-                                  neededTypes <<- list()
-                                  
-                                },
-                                getSymbolTable = function() setupSymTab, ## required name
-                                buildSymbolTable = function() {
-                                  setupSymTab <<- nimble:::buildSymbolTable(nimbleListDef$types$vars, nimbleListDef$types$types, nimbleListDef$types$sizes)
+                                    callSuper(...)
+                                    neededTypes <<- list()
                                 },
                                 setupTypesForUsingFunction= function() buildSymbolTable(), ## required name
                                 process = function(control = list(debug = FALSE, debugCpp = FALSE)) {
@@ -62,11 +57,9 @@ nlProcessing <- setRefClass('nlProcessing',
                                     }
                                     if(debug) browser()
                                     buildSymbolTable()
-                                })
-                            )
-
-# nlProcessing$methods(buildSymbolTable = function() {
-#     ##message("nlProcessing::buildSymbolTable not written yet")
-# 
-#       symTab <<- nimble:::buildSymbolTable(nimbleListDef$types$vars, nimbleListDef$types$types, nimbleListDef$types$sizes)
-# })
+                                },
+                                buildSymbolTable = function() {
+                                  setupSymTab <<- nimble:::buildSymbolTable(nimbleListDef$types$vars, nimbleListDef$types$types, nimbleListDef$types$sizes)
+                                },
+                                getSymbolTable = function() {return(setupSymTab)}
+                            ))
