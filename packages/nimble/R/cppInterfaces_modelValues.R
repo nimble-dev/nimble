@@ -27,6 +27,7 @@
 CmodelValues <- setRefClass(
     Class = 'CmodelValues',
     fields = list(
+        dll = 'ANY',
         extptr = 'ANY',
         extptrCall = 'ANY',
         varNames = 'ANY',
@@ -41,7 +42,7 @@ CmodelValues <- setRefClass(
     			return(NULL)
     		sizeList <- list()
     		for(compName in varNames ){
-    			sizeList[[compName]] <- .Call('getMVsize', componentExtptrs[[compName]])
+    			sizeList[[compName]] <- .Call(getNativeSymbolInfo('getMVsize', dll), componentExtptrs[[compName]])
     		}
     	return(sizeList)
     	}),
@@ -58,30 +59,31 @@ CmodelValues <- setRefClass(
             return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
                                            flatIndices = flatIndices))
         },
-        initialize = function(buildCall, existingPtr, initialized = FALSE ) {
+        initialize = function(buildCall, existingPtr, initialized = FALSE, dll) {
             if(missing(existingPtr) ) {
                 if(is.character(buildCall)) {
                     warning("a call to getNativeSymbolInfo with only a name and no DLL")
                 }
-                                        # Are we actually calling this here
-
                 # avoid R CMD check problem with registration
+                ## notice that buildCall is the result of getNativeSymbolInfo using the dll from nimbleProject$instantiateCmodelValues
+                ## only other calling point is from cppInterfaces_models.R, and in that case existingPtr is provided
                 extptr <<- eval(parse(text = ".Call(buildCall)"))
 #                extptr <<- .Call(buildCall) 
             }
             else{
                 extptr <<- existingPtr
             }
+            dll <<- dll
             initialized <<- initialized
             if(missing(buildCall) ) 
                 break("Cannot build object without buildCall!")
             extptrCall <<- buildCall
-            varNames <<- .Call(getNativeSymbolInfo('getAvailableNames'), extptr)      
+            varNames <<- .Call(getNativeSymbolInfo('getAvailableNames', dll), extptr)      
             componentExtptrs <<- vector(mode = 'list', length = length(varNames))
             names(componentExtptrs) <<- varNames
             blankAns <<- componentExtptrs
             for(comp in varNames) 
-                componentExtptrs[[comp]] <<- .Call(getNativeSymbolInfo('getModelObjectPtr'), extptr, comp)
+                componentExtptrs[[comp]] <<- .Call(getNativeSymbolInfo('getModelObjectPtr', dll), extptr, comp)
                 
             ## .nodePtrs_byGID <<- new('numberedObjects')
             ## GID_map <<- makeMV_GID_Map(.self)
@@ -99,8 +101,8 @@ CmodelValues <- setRefClass(
         },
         resize = function(rows){	
         	for(ptr in componentExtptrs)
-        	jnk <- .Call("setNumListRows", ptr, as.integer(rows), TRUE)
-        	jnk <- .Call('manualSetNRows', extptr, as.integer(rows) )  	
+        	jnk <- .Call(getNativeSymbolInfo("setNumListRows", dll), ptr, as.integer(rows), TRUE)
+        	jnk <- .Call(getNativeSymbolInfo('manualSetNRows', dll), extptr, as.integer(rows) )  	
         	},
         getSize = function() {	getCRows(componentExtptrs[[1]])		}
         )
@@ -118,10 +120,10 @@ setMethod('[', 'CmodelValues',
               	if(is.null(ptr) ) 
               		stop(paste('variable', i, ' not found in modelValues') ) 
               	if(length(j) == 1){
-              		output = .Call('getMVElement', ptr, as.integer(j) )
+              		output = .Call(getNativeSymbolInfo('getMVElement', x$dll), ptr, as.integer(j) )
               		return(output) 
               		}
-              	output = .Call('getMVElementAsList', ptr, as.integer(j) )
+              	output = .Call(getNativeSymbolInfo('getMVElementAsList', x$dll), ptr, as.integer(j) )
               	return(output)
               	}
              output <- list() 	
@@ -143,12 +145,12 @@ setMethod('[<-', 'CmodelValues',
 	              		stop(paste('variable', i, ' not found in modelValues') ) 
 					if(length(j) == 1){
 						storage.mode(value) <- 'numeric'
-						.Call('setMVElement', ptr, as.integer(j), value )
+						.Call(getNativeSymbolInfo('setMVElement', x$dll), ptr, as.integer(j), value )
 						return(x)
 					}
 				for(jj in j)
 					storage.mode(value[[jj]]) <- 'numeric'
-				.Call('setMVElementFromList', ptr, value, as.integer(j) )
+				.Call(getNativeSymbolInfo('setMVElementFromList', x$dll), ptr, value, as.integer(j) )
 				return(x)
 				}
 			cmpNames = names(value)
@@ -171,10 +173,10 @@ setMethod('[[', 'CmodelValues',
                   if(is.null(ptr) ) 
                       stop(paste('variable', i, ' not found in modelValues') )
                   if(k == 1){
-                      output = .Call('getMVElement', ptr, as.integer(1) )
+                      output = .Call(getNativeSymbolInfo('getMVElement', x$dll), ptr, as.integer(1) )
                       return(output) 
                   }
-                  output = .Call('getMVElementAsList', ptr, as.integer(1:k) )
+                  output = .Call(getNativeSymbolInfo('getMVElementAsList', x$dll), ptr, as.integer(1:k) )
                   return(output)
               }
               output <- list() 	
@@ -193,10 +195,10 @@ setMethod('[[<-', 'CmodelValues',
 	              	if(is.null(ptr) ) 
 	              		stop(paste('variable', i, ' not found in modelValues') ) 
 					if(k == 1){
-						.Call('setMVElement', ptr, as.integer(1), as.numeric(value) )
+						.Call(getNativeSymbolInfo('setMVElement', x$dll), ptr, as.integer(1), as.numeric(value) )
 						return(x)
 					}
-				.Call('setMVElementFromList', ptr, as.numeric(value), as.integer(1:k) )
+				.Call(getNativeSymbolInfo('setMVElementFromList', x$dll), ptr, as.numeric(value), as.integer(1:k) )
 				return(x)
 				}
 			cmpNames = names(value)

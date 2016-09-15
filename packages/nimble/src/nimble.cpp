@@ -1,6 +1,6 @@
 #include <nimble/RcppUtils.h>
-#include <nimble/ModelClassUtils.h>
-#include <nimble/accessorClasses.h>
+//#include <nimble/ModelClassUtils.h>
+//#include <nimble/accessorClasses.h>
 #include <nimble/dists.h>
 
 #include <R_ext/Rdynload.h>

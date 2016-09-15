@@ -21,26 +21,26 @@
 # NumberedObjects 
 
 
-makeCSingleVariableAccessor <- function(rModelPtr, elementName, beginIndex, endIndex){
-    .Call("makeSingleVariableAccessor", rModelPtr, elementName, 
-          as.integer(beginIndex), as.integer(endIndex) ) 
-}    
+## makeCSingleVariableAccessor <- function(rModelPtr, elementName, beginIndex, endIndex){
+##     .Call("makeSingleVariableAccessor", rModelPtr, elementName, 
+##           as.integer(beginIndex), as.integer(endIndex) ) 
+## }    
         
 #  This function make a single variable accessor. You must provide the model in which
 #  the variable resides by rModelPtr. elementName is the name of the variable you would
 #  like to access. beginIndex and endIndex are R indices (i.e. first element is 1, not 0)
 #  for the begining and ending sequence of flat indices this accessor uses
 
-populateCopierVector <- function(fxnPtr, Robject, vecName) {
-    vecPtr <- .Call("getModelObjectPtr", fxnPtr, vecName)
+populateCopierVector <- function(fxnPtr, Robject, vecName, dll) {
+    vecPtr <- .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, vecName)
     copierVectorObject <- Robject[[vecName]]
-    fromPtr <- .Call("getModelObjectPtr", fxnPtr, copierVectorObject[[1]])
-    toPtr <- .Call("getModelObjectPtr", fxnPtr, copierVectorObject[[2]])
-    .Call('populateCopierVector', vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]]))
+    fromPtr <- .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, copierVectorObject[[1]])
+    toPtr <- .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, copierVectorObject[[2]])
+    .Call(getNativeSymbolInfo('populateCopierVector', dll), vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]]))
 }
 
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) { ## new version
-    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll = dll), fxnPtr, manyAccessName)
+    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, manyAccessName)
     cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
     ## cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS 
     if(is(cModel, 'uninitializedField'))
@@ -57,7 +57,7 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
     ##   doing it the following way induces the crashing.
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
     if(length(mapInfo[[1]]) > 0) {
-        .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll = dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
+        .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
     }
     
     ## oldest version
@@ -67,7 +67,7 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
 }
 
 populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dll){ ## new version. nearly identical to populateManyModelVarMapAccess
-    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll = dll), fxnPtr, manyAccessName)
+    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, manyAccessName)
     ##cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS
     cModelValues <- Robject[[manyAccessName]][[1]]$CobjectInterface
 
@@ -79,7 +79,7 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dl
         
     ##fastest
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]]) ##faster
-    .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll = dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
+    .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
 }
 
 ## addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
@@ -87,8 +87,8 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dl
 ##     addNodeFxn(fxnVecPtr, nodes[[x]]$.basePtr, addAtEnd = FALSE, index = countInf$count)
 ## }
 
-getFxnVectorPtr <- function(fxnPtr, fxnVecName)
-    .Call('getModelObjectPtr', fxnPtr, fxnVecName)
+## getFxnVectorPtr <- function(fxnPtr, fxnVecName)
+##     .Call('getModelObjectPtr', fxnPtr, fxnVecName)
 
 ## populateNodeFxnVec_OLD <- function(fxnPtr, Robject, fxnVecName){
 ##     fxnVecPtr <- .Call('getModelObjectPtr', fxnPtr, fxnVecName)
@@ -98,11 +98,12 @@ getFxnVectorPtr <- function(fxnPtr, fxnVecName)
 ## }
 
 getNamedObjected <- function(objectPtr, fieldName, dll)
-    .Call(getNativeSymbolInfo('getModelObjectPtr', dll = dll), objectPtr, fieldName)
+    .Call(getNativeSymbolInfo('getModelObjectPtr', dll), objectPtr, fieldName)
 
 inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs, dll)
-    nil <- .Call(getNativeSymbolInfo('populateNodeFxnVector_byGID', dll = dll), fxnVecPtr, as.integer(gids), numberedPtrs)
+    nil <- .Call(getNativeSymbolInfo('populateNodeFxnVector_byGID', dll), fxnVecPtr, as.integer(gids), numberedPtrs)
 
+## This is deprecated.  Remove at some point.
 populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName, dll){
     fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName, dll = dll)
     gids <- Robject[[fxnVecName]]$gids
@@ -130,7 +131,7 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
 }
 
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName, dll) {
-    iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName)
+    iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName, dll = dll)
     iNITcontent <- Robject[[indexedNodeInfoTableName]]$unrolledIndicesMatrix
     .Call(getNativeSymbolInfo('populateIndexedNodeInfoTable', dll), iNITptr, iNITcontent)
 }
@@ -199,9 +200,9 @@ populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableNa
 ##     .Call("newManyModelValuesAccessor", as.integer(size) ) 
 ## #   Same as newNodeFxnVec, but for ManyModelValuesAccessor
 
-addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, addAtEnd, index = - 1)
-    nil <- .Call("addSingleModelValuesAccessor", ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, as.logical(addAtEnd), as.integer(index) ) 
-#   Same as addNodeFxn, but for adding singleModelValuesAccess to ManyModelValuesAccessor
+## addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, addAtEnd, index = - 1)
+##     nil <- .Call("addSingleModelValuesAccessor", ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, as.logical(addAtEnd), as.integer(index) ) 
+## #   Same as addNodeFxn, but for adding singleModelValuesAccess to ManyModelValuesAccessor
 
 ## removeSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, index, removeAll = FALSE)
 ##     nil <- .Call("removeModelValuesAccessor", ManyModelValuesAccessPtr, as.integer(index), as.logical(removeAll) ) 
@@ -215,100 +216,102 @@ addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValu
 # However, the intent is that the pointers will actually be accessed more directly in C++ 
 # At this time, used to store pointers to nodeFunctions, which will allow for fast
 # population of nodeFunctionVectors. They are indexed by graphID's
-numberedObjects <- setRefClass('numberedObjects', fields = c('.ptr' = 'ANY'), 
+numberedObjects <- setRefClass('numberedObjects',
+                               fields = c('.ptr' = 'ANY', dll = 'ANY'), 
                                methods = list(
-                                   initialize = function(){
-                                       .ptr <<- newNumberedObjects()
+                                   initialize = function(dll){
+                                       dll <<- dll
+                                       .ptr <<- newNumberedObjects(dll)
                                    },
                                    getSize = function(){
-                                       getSize_NumberedObjects(.ptr)
+                                       getSize_NumberedObjects(.ptr, dll)
                                    },
                                    resize = function(size){
-                                       resize_NumberedObjects(.ptr, size)
+                                       resize_NumberedObjects(.ptr, size, dll)
                                    }
                                )
                                )
 
 setMethod('[', 'numberedObjects', function(x, i){
-    getNumberedObject(x$.ptr, i)
+    getNumberedObject(x$.ptr, i, x$dll)
 })
 
 setMethod('[<-', 'numberedObjects', function(x, i, value){
-    assignNumberedObject(x$.ptr, i, value)
+    assignNumberedObject(x$.ptr, i, value, x$dll)
     return(x)
 })
 
 
 
-newNumberedObjects <- function(){
-    .Call('newNumberedObjects')
+newNumberedObjects <- function(dll){
+    .Call(getNativeSymbolInfo('newNumberedObjects', dll))
 }
 
-getSize_NumberedObjects <- function(numberedObject){
-    .Call('getSizeNumberedObjects', numberedObject)
+getSize_NumberedObjects <- function(numberedObject, dll){
+    .Call(getNativeSymbolInfo('getSizeNumberedObjects', dll), numberedObject)
 }
 
-resize_NumberedObjects <- function(numberedObject, size){
-    nil <- .Call('resizeNumberedObjects', numberedObject, as.integer(size) )
+resize_NumberedObjects <- function(numberedObject, size, dll){
+    nil <- .Call(getNativeSymbolInfo('resizeNumberedObjects', dll), numberedObject, as.integer(size) )
 }
 
-assignNumberedObject <- function(numberedObject, index, val){
+assignNumberedObject <- function(numberedObject, index, val, dll){
     if(!is(val, 'externalptr'))
         stop('Attempting to assign a val which is not an externalptr to a NumberedObjects')
     if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
         stop('Invalid index')
-    nil <- .Call('setNumberedObject', numberedObject, as.integer(index), val)
+    nil <- .Call(getNativeSymbolInfo('setNumberedObject', dll), numberedObject, as.integer(index), val)
 }
 
-getNumberedObject <- function(numberedObject, index){
+getNumberedObject <- function(numberedObject, index, dll){
     if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
         stop('Invalid index')
-    .Call('getNumberedObject', numberedObject, as.integer(index))	
+    .Call(getNativeSymbolInfo('getNumberedObject', dll), numberedObject, as.integer(index))	
 }
 
 
-numberedModelValuesAccessors <- setRefClass('numberedModelValuesAccessors',
-                                            fields = c('.ptr' = 'ANY'),
-                                            methods = list(
-                                                initialize = function(){ 
-                                                    .ptr  <<- .Call('new_SingleModelValuesAccessor_NumberedObjects')
-                                                },
-                                                getSize = function(){
-                                                    getSize_NumberedObjects(.ptr)
-                                                },
-                                                resize = function(size){
-                                                    resize_NumberedObjects(.ptr, size)
-                                                }))
+## numberedModelValuesAccessors <- setRefClass('numberedModelValuesAccessors',
+##                                             fields = c('.ptr' = 'ANY'),
+##                                             methods = list(
+##                                                 initialize = function(){ 
+##                                                     .ptr  <<- .Call('new_SingleModelValuesAccessor_NumberedObjects')
+##                                                 },
+##                                                 getSize = function(){
+##                                                     getSize_NumberedObjects(.ptr)
+##                                                 },
+##                                                 resize = function(size){
+##                                                     resize_NumberedObjects(.ptr, size)
+##                                                 }))
 
-setMethod('[', 'numberedModelValuesAccessors', function(x, i){
-    getNumberedObject(x$.ptr, i)
-})
+## setMethod('[', 'numberedModelValuesAccessors', function(x, i){
+##     getNumberedObject(x$.ptr, i)
+## })
 
-setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
-    assignNumberedObject(x$.ptr, i, value)
-    return(x)
-})
+## setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
+##     assignNumberedObject(x$.ptr, i, value)
+##     return(x)
+## })
 		
 		
 		
-numberedModelVariableAccessors <- setRefClass('numberedModelVariableAccessors',
-                                              fields = c('.ptr' = 'ANY'),
-                                              methods = list(
-                                                  initialize = function(){ 
-                                                      .ptr  <<- .Call('new_SingleModelVariablesAccessor_NumberedObjects')
-                                                  },
-                                                  getSize = function(){
-                                                      getSize_NumberedObjects(.ptr)
-                                                  },
-                                                  resize = function(size){
-                                                      resize_NumberedObjects(.ptr, size)
-                                                  }))
+## numberedModelVariableAccessors <- setRefClass('numberedModelVariableAccessors',
+##                                               fields = c('.ptr' = 'ANY'),
+##                                               methods = list(
+##                                                   initialize = function(){ 
+##                                                       .ptr  <<- .Call('new_SingleModelVariablesAccessor_NumberedObjects')
+##                                                   },
+##                                                   getSize = function(){
+##                                                       getSize_NumberedObjects(.ptr)
+##                                                   },
+##                                                   resize = function(size){
+##                                                       resize_NumberedObjects(.ptr, size)
+##                                                   }))
 
-setMethod('[', 'numberedModelValuesAccessors', function(x, i){
-    getNumberedObject(x$.ptr, i)
-})
+## setMethod('[', 'numberedModelValuesAccessors', function(x, i){
+##     getNumberedObject(x$.ptr, i)
+## })
 
-setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
-    assignNumberedObject(x$.ptr, i, value)
-    return(x)
-})
+## setMethod('[<-', 'numberedModelValuesAccessors', function(x, i, value){
+##     assignNumberedObject(x$.ptr, i, value)
+##     return(x)
+## })

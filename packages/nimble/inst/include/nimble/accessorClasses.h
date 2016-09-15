@@ -10,7 +10,7 @@
 #include "NimArrBase.h"
 #include "NimArr.h"			
 #include "ModelClassUtils.h"
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include <Rinternals.h>
 #include "R.h"
 
@@ -18,8 +18,6 @@
 using std::cout;
 
 #include "nodeFun.h" 
-
-#ifdef _IN_CPP_CODE
 
 //#define __NIMBLE_DEBUG_ACCESSORS
 
@@ -623,7 +621,6 @@ extern "C" {
 	 
   SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
 
-  SEXP parseVar(SEXP Sinput);
   SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr);
   SEXP getVarAndIndices(SEXP Sstring);
   SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim);
@@ -652,6 +649,5 @@ void  SingleMVA_Finalizer ( SEXP Sv );
 void NodeVector_Finalizer( SEXP Sv);
 void ManyVariable_Finalizer(SEXP Sv);
 void ManyMV_Finalizer(SEXP Sv);
-#endif 			
 
 #endif

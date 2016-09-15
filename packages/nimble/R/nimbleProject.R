@@ -326,7 +326,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          warning('a nimbleFunctionInterface is about to build a CmodelValues without dll info, based on generatorFun name only.', call. = FALSE)
                                          generatorName
                                      }
-                                     ans <- CmodelValues(sym)
+                                     ans <- CmodelValues(sym, dll = dll)
                                      mvInfos[[mvClassName]]$addRmv(mv) ## simply a list for later clearing
                                      mv$CobjectInterface <- ans
                                      ans

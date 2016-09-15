@@ -1,7 +1,3 @@
-#define _CHECK_WHERE_I_AM
-#ifdef _CHECK_WHERE_I_AM
-#include "whereIam.h"
-#endif
 
 // various additional distributions functions needed by NIMBLE
 // Author: Chris Paciorek 

@@ -1,8 +1,3 @@
-#define _CHECK_WHERE_I_AM
-#ifdef _CHECK_WHERE_I_AM
-#include "whereIam.h"
-#endif
-
 #include <iostream> // must go before other things because R defines a "length" macro
 #include "nimble/dists.h"
 #include "nimble/nimDists.h"

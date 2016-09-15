@@ -7,8 +7,6 @@ using std::string;
 #include "NamedObjects.h"
 #include "Utils.h"
 
-#ifdef _IN_CPP_CODE
-
 class Values : public NamedObjects {
 public:
   int numRows;
@@ -19,7 +17,5 @@ public:
   string getMVBuildName(){ return buildName;}  ;
   Values() { buildName = "missing"; numRows = 0;};
 };
-
-#endif
 
 #endif

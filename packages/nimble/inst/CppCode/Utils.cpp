@@ -1,15 +1,7 @@
-#define _CHECK_WHERE_I_AM
-#ifdef _CHECK_WHERE_I_AM
-#include "whereIam.h"
-#endif
-
 #include "nimble/Utils.h"
 #define PRINTF Rprintf
 #define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
-
-#include "whereIam.h"
-void printWhereIam() {PRINTF("I am in %s\n", _WHERE_I_AM);}
 
 bool decide(double lMHr) { // simple function accept or reject based on log Metropolis-Hastings ratio
   if(ISNAN(lMHr)) return(false);

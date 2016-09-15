@@ -1,8 +1,3 @@
-#define _CHECK_WHERE_I_AM
-#ifdef _CHECK_WHERE_I_AM
-#include "whereIam.h"
-#endif
-
 #include "nimble/nimbleGraph.h"
 
 graphNode::graphNode(int inputCgraphID, NODETYPE inputType, const string &inputName ) :

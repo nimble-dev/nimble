@@ -23,10 +23,10 @@
 ###					Default initialization is assumed that elements are pointing to row 1 of
 ###					the modelValues, but this is not necessary (as long as it is a double pointer to something
 
-getMVptr <- function(rPtr)
-  .Call("getModelValuesPtrFromModel", rPtr)
-getMVName <- function(modelValuePtr)
-  .Call("getMVBuildName", modelValuePtr)
+getMVptr <- function(rPtr, dll)
+  .Call(getNativeSymbolInfo("getModelValuesPtrFromModel", dll), rPtr)
+getMVName <- function(modelValuePtr, dll)
+  .Call(getNativeSymbolInfo("getMVBuildName", dll), modelValuePtr)
 
 # for now export this as R<3.1.2 give warnings if don't
 
@@ -86,7 +86,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        names(nodeFunctions) <<- names(Rmodel$nodeFunctions)
                                        
                                        ##.nodeFxnPointers_byGID <<- new('numberedObjects')
-                                       .nodeFxnPointers_byDeclID <<- new('numberedObjects') 
+                                       .nodeFxnPointers_byDeclID <<- new('numberedObjects', dll = dll) 
                                        ##maxID = length(modelDef$maps$graphIDs)
                                        maxID = length(modelDef$declInfo)
                                        ##.nodeFxnPointers_byGID$resize(maxID)
@@ -191,11 +191,12 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 
                                                 callSuper(dll = dll, ...)
 
-                                                # avoid R CMD check problem with registration
+                                        # avoid R CMD check problem with registration
+                                                ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
                                                 # .basePtr <<- .Call(BPTRCALL)
-                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr)
-                                                defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr), initialized = TRUE )
+                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll)
+                                                defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
                                                 vars <<- model$vars
@@ -203,7 +204,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 nimbleProject <<- defaults$project
                                                 for(v in ls(model$isDataEnv)) isDataEnv[[v]] <<- model$isDataEnv[[v]]
                                                 setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                                                cppNames <<- .Call("getAvailableNames", .basePtr) ## or could get this from R objects
+                                                cppNames <<- .Call(getNativeSymbolInfo("getAvailableNames", dll), .basePtr) ## or could get this from R objects
                                                 cppCopyTypes <<- defaults$cppCT
                                                 compiledModel <<- defaults$cm
                                                 for(vn in cppNames)

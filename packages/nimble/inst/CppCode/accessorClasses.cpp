@@ -1,14 +1,7 @@
-#define _CHECK_WHERE_I_AM
-#ifdef _CHECK_WHERE_I_AM
-#include "whereIam.h"
-#endif
-
 #include "nimble/accessorClasses.h"
 #include "nimble/RcppUtils.h"
 #include<sstream>
 using std::istringstream;
-
-#ifdef _IN_CPP_CODE
 
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
@@ -1300,31 +1293,6 @@ int nimble_stoi(const string &input) {
   return ans;
 }
 
-void parseVar(const vector<string> &input, vector<string> &output) {
-  int vecSize = input.size();
-  std::size_t iEnd, iBegin;
-  output.resize( vecSize );
-  for(int i = 0; i < vecSize; i++) {
-    iBegin = input[i].find_first_not_of(_NIMBLE_WHITESPACE);
-    iEnd = input[i].find_first_of(_NIMBLE_WHITESPACEBRACKET, iBegin);
-    if(iBegin < iEnd)
-      output[i].assign( input[i].substr(iBegin, iEnd - iBegin) );
-    else
-      output[i].assign( string("") );
-    //    if(iBracket != std::string::npos)
-
-    //    else
-    //   output[i].assign( input[i] );
-  }
-}
-
-SEXP parseVar(SEXP Sinput) {
-  vector<string> input, output;
-  STRSEXP_2_vectorString(Sinput, input);
-  parseVar(input, output);
-  return(vectorString_2_STRSEXP(output));
-}
-
 class varAndIndicesClass {
 public:
   string varName;
@@ -1973,4 +1941,3 @@ void ManyMV_Finalizer(SEXP Sv){
   R_ClearExternalPtr(Sv);
 }
 
-#endif

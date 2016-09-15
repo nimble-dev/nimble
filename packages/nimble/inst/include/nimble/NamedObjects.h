@@ -4,10 +4,8 @@
 #include<map>
 #include<string>
 using namespace std;
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include<Rinternals.h>
-
-#ifdef _IN_CPP_CODE
 
 /*
 Class for void pointers to arbitrary objects for R access
@@ -66,8 +64,5 @@ class SpecialNumberedObjects : public NumberedObjects{
 
 template<class T>
 void Special_NumberedObjects_Finalizer(SEXP Snp);
-
-
-#endif
 
 #endif

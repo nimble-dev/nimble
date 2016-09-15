@@ -1,32 +1,32 @@
-cGetNRow <- function(cMV, compIndex = 1, dll)
+cGetNRow <- function(cMV, compIndex = 1)
 {
-  nRow = .Call(getNativeSymbolInfo("getNRow", dll = dll), cMV$componentExtptrs[[compIndex]])
+  nRow = .Call(getNativeSymbolInfo("getNRow", cMV$dll), cMV$componentExtptrs[[compIndex]])
   return(nRow)
 }
 
-cAddBlank <- function(cMV, addNum, dll)
-{
-  addNum = as.integer(addNum)
-  for(i in 1:length( cMV$componentExtptrs) )
-    status = .Call(getNativeSymbolInfo('addBlankModelValueRows', dll = dll), cMV$componentExtptrs[[i]], addNum)
-  if(status == FALSE)
-    stop("Error adding rows to ModelValues")
-}
+## cAddBlank <- function(cMV, addNum)
+## {
+##   addNum = as.integer(addNum)
+##   for(i in 1:length( cMV$componentExtptrs) )
+##     status = .Call(getNativeSymbolInfo('addBlankModelValueRows', cMV$dll), cMV$componentExtptrs[[i]], addNum)
+##   if(status == FALSE)
+##     stop("Error adding rows to ModelValues")
+## }
 
-cCopyVariableRows <- function(cMVFrom, cMVTo, varIndex, rowsFrom = 1:cGetNRow(cMVFrom), rowsTo = 1:cGetNRow(cMVFrom), dll ) 
-{
-  if(length(varIndex) > 1)
-    stop("cCopyVariableRows only takes on varIndex at a time")
-  rowsFrom = as.integer(rowsFrom )
-  rowsTo = as.integer(rowsTo )
-  if(cMVFrom$extptrCall != cMVTo$extptrCall)
-    stop("ModelValues are not of the same type")
-  fromPtr <- cMVFrom$componentExtptrs[[varIndex]]
-  toPtr <- cMVTo$componentExtptrs[[varIndex]]
-  status = .Call(getNativeSymbolInfo('copyModelValuesElements', dll), fromPtr, toPtr, rowsFrom, rowsTo)
-  if(status == FALSE)
-    stop("Did not correctly copy from one ModelValues to another")
-}
+## cCopyVariableRows <- function(cMVFrom, cMVTo, varIndex, rowsFrom = 1:cGetNRow(cMVFrom), rowsTo = 1:cGetNRow(cMVFrom), dll ) 
+## {
+##   if(length(varIndex) > 1)
+##     stop("cCopyVariableRows only takes on varIndex at a time")
+##   rowsFrom = as.integer(rowsFrom )
+##   rowsTo = as.integer(rowsTo )
+##   if(cMVFrom$extptrCall != cMVTo$extptrCall)
+##     stop("ModelValues are not of the same type")
+##   fromPtr <- cMVFrom$componentExtptrs[[varIndex]]
+##   toPtr <- cMVTo$componentExtptrs[[varIndex]]
+##   status = .Call(getNativeSymbolInfo('copyModelValuesElements', dll), fromPtr, toPtr, rowsFrom, rowsTo)
+##   if(status == FALSE)
+##     stop("Did not correctly copy from one ModelValues to another")
+## }
 
 newObjElementPtr = function(rPtr, name, dll){
   .Call(getNativeSymbolInfo("getModelObjectPtr", dll), rPtr, name)
@@ -105,12 +105,6 @@ setBoolValue <- function(elementPtr, value,  pointDepth = 1, dll){
     if(!inherits(elementPtr, "externalptr"))    
         return(NULL)
     jnk = .Call(getNativeSymbolInfo("SEXP_2_bool", dll), elementPtr, as.integer(pointDepth), value )
-}
-
-getBoolValue <- function(elementPtr, pointDepth = 1){
-    if(!inherits(elementPtr, "externalptr") ) 
-        return(NULL)
-    .Call(getNativeSymbolInfo("bool_2_SEXP", dll), elementPtr, as.integer(pointDepth) ) 
 }
 
 setCharacterValue <- function(elementPtr, value, dll){

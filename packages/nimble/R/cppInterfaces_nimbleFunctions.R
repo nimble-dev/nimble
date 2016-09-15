@@ -112,7 +112,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                     else {
                         if(!inherits(x, 'nimPointerList')) stop(paste('Nimble compilation error initializing nimPointerList (nimbleFunctionList) ', NFLNAMECHAR, '.'), call. = FALSE)
                         if(!nimbleInternalFunctions$checkNimbleFunctionListCpp(x)) stop(paste('Nimble compilation error initializing nimbleFunctionList ', NFLNAMECHAR, '.  Something is not valid in this list.  It may be the contains (base class) value of one or more functions in the list.'), call. = FALSE)
-                        nimbleInternalFunctions$setPtrVectorOfPtrs(ACCESSPTR, CONTENTSPTR, length(x$contentsList))
+                        nimbleInternalFunctions$setPtrVectorOfPtrs(ACCESSPTR, CONTENTSPTR, length(x$contentsList), dll = dll)
                         for(i in seq_along(x$contentsList)) {
                             if(is.list(x[[i]])) { ## case of list(CmultiNimbleFunction, index)
                                 basePtr <- x[[i]][[1]]$basePtrList[[ x[[i]][[2]] ]]
@@ -562,7 +562,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
             message('copying modelVar (copyFromRobject)')
-            getSetModelVarPtr(v, .Call('getModelObjectPtr', Cmodel$.basePtr, varName, dll = dll), basePtr, dll = dll)
+            getSetModelVarPtr(v, .Call(getNativeSymbolInfo('getModelObjectPtr', dll), Cmodel$.basePtr, varName), basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -718,10 +718,10 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
             if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
             lookupSymbol(defaults$basePtrCall)
         } else defaults$basePtrCall
-        # avoid R CMD check problem with registration
+        # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
         .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
         # .basePtr <<- .Call(basePtrCall)
-        cppNames <<- .Call("getAvailableNames", .basePtr)
+        cppNames <<- .Call(getNativeSymbolInfo("getAvailableNames", dll), .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
         vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
@@ -793,6 +793,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  RobjectList <<- list()
                                                  dll <<- NULL
                                                  compiledNodeFun <<- compiledNodeFun
+                                                 ## basePtrCall is the result of getNativeSymbolInfo with the dll if possible from cppDefs_nimbleFunction.R
                                                  basePtrCall <<- basePtrCall
                                                  callSuper(...)
                                                  symTab <- compiledNodeFun$nfProc$setupSymTab

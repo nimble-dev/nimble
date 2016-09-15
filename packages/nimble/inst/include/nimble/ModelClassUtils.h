@@ -2,10 +2,8 @@
 #define __MODELCLASSUTILS
 
 #include "NamedObjects.h"
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include "Values.h"
-
-#ifdef _IN_CPP_CODE
 
 class ModelBase : public NamedObjects{
 	public:
@@ -29,6 +27,5 @@ extern "C" {
 
 NimArrType** cGetModelElementPtr(SEXP Sextptr, SEXP Sname);	// Gets the ptr to an element of name Sname from
 // the ModelValues object pointed to by Sextptr
-#endif
 
 #endif

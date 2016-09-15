@@ -4,9 +4,6 @@
 #include "NimArrBase.h"
 #include "Utils.h"
 
-//#define _PRINT_WHERE_I_AM
-#define _PRINT_WHERE_I_AM PRINTF("Constructing NimArr<>: "); printWhereIam();
-
 template<int ndim, class T>
   class NimArr;
 // Here is the specialization for 1 dimensions (for any type, T = double, int or bool).
@@ -130,7 +127,6 @@ public:
   }
 
   NimArr<1, T>() : NimArrBase<T>() {
-_PRINT_WHERE_I_AM
     //NimArrBase<T>::NAdims.resize(1);
     //NimArrBase<T>::NAdims = new int[1];
     //    NimArrBase<T>::NAstrides.resize(1);
@@ -346,7 +342,6 @@ public:
   }
 
   NimArr<2, T> () : NimArrBase<T>() {
-    _PRINT_WHERE_I_AM
     //    NimArrBase<T>::NAdims.resize(2);
     //NimArrBase<T>::NAdims = new int[2];
     //    NimArrBase<T>::NAstrides.resize(2);
