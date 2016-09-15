@@ -684,7 +684,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      } else{if(!control$loadSO) return(cppProj)}# writeLines('Using previously loaded compilation unit.')
                                      
                                      ans <- vector('list', length(funList))
-
                                      for(i in seq_along(funList)) {
                                          ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll, asTopLevel = TRUE)
                                      }

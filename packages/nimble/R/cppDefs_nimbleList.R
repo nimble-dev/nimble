@@ -12,15 +12,15 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                       getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                   else
                                                       SEXPgeneratorFun$name
-                                          message('CmultiInterface for nimbleList does not exist')
-                                          ##CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
+                                          # message('CmultiInterface for nimbleList does not exist')
+                                          CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                       },
                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
                                           sym <- if(!is.null(dll))
                                                      getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                  else
                                                      SEXPgeneratorFun$name
-                                          Rgenerator <<- buildNimbleListInterface(paste0(name,'_refClass') , .self, sym, where = where)
+                                           Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                           # message('Rgenerator for nimbleList does not exist')
                                       })
                                   )

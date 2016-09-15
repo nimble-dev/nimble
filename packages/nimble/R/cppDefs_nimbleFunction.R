@@ -134,6 +134,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                        },
                                        initialize = function(nimCompProc, debugCpp = FALSE, fromModel = FALSE, ...) {
                                            callSuper(...) ## must call this first because it sets objectDefs to list()
+                                           RCfunDefs <<- list()
                                            if(!missing(nimCompProc)) processNimCompProc(nimCompProc, debugCpp = debugCpp, fromModel = fromModel)
                                            built <<- FALSE
                                            loaded <<- FALSE
@@ -185,7 +186,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                                        returnType = emptyTypeInfo(),
                                                                        code = cppCodeBlock(code = code, skipBrackets = TRUE))
                                            functionDefs[['constructor']] <<- conFunDef
-                                       },
+                                       }
                                        # buildFunctionDefs = function() {
                                        #   for(i in seq_along(nimCompProc$RCfunProcs)) {
                                        #     RCname <- names(nimCompProc$RCfunProcs)[i]
@@ -195,13 +196,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                        #     RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                        #   }
                                        # },
-                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
-                                         sym <- if(!is.null(dll))
-                                           getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
-                                         else
-                                           SEXPgeneratorFun$name
-                                         Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
-                                       }
                                    ),
                                    )
 
@@ -308,7 +302,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               ##     }
                                               ## },
                                               initialize = function(nfProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
-                                                  RCfunDefs <<- list()
                                                   ## RCfunDefs <<- list()
                                                   ## callSuper(...) ## must call this first because it sets objectDefs to list()
                                                   callSuper(nfProc, debugCpp, fromModel, ...)
@@ -336,7 +329,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               processNFproc = function(nfp, debugCpp = FALSE, fromModel = FALSE) {
                                                   ## callSuper(nfp, debugCpp, fromModel)
                                                    nfp$cppDef <- .self
-                                                   nfProc <<- nfp
+                                                   nfProc <<- nimCompProc
                                                   ## genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
                                                   ## objectDefs <<- symbolTable2cppVars(nfp$setupSymTab)
                                                   buildFunctionDefs()
@@ -349,13 +342,14 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       functionDefs[[i]]$args$parentST <<- objectDefs
                                                   }
                                                   SEXPmemberInterfaceFuns <<- lapply(functionDefs, function(x) x$SEXPinterfaceFun)
+                                                  nimCompProc <<- nfProc
                                               },
                                               buildFunctionDefs = function() {
-                                                  for(i in seq_along(nimCompProc$RCfunProcs)) {
-                                                      RCname <- names(nimCompProc$RCfunProcs)[i]
+                                                  for(i in seq_along(nfProc$RCfunProcs)) {
+                                                      RCname <- names(nfProc$RCfunProcs)[i]
                                                       functionDefs[[RCname]] <<- RCfunctionDef$new() ## all nodeFunction members are const f
-                                                      functionDefs[[RCname]]$buildFunction(nimCompProc$RCfunProcs[[RCname]])
-                                                      functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nimCompProc$name)
+                                                      functionDefs[[RCname]]$buildFunction(nfProc$RCfunProcs[[RCname]])
+                                                      functionDefs[[RCname]]$buildSEXPinterfaceFun(className = nfProc$name)
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
                                               },
@@ -371,7 +365,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                              getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                          else
                                                             SEXPgeneratorFun$name
-                                                  Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
+                                                  Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                               },
                                              ##  buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){
                                              ## ##     cat('buildCallable\n')
@@ -416,7 +410,6 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ## Now they are superceded by compileNimble.
 ## A stand-alone call could still work but these may have faller out of date.
 compileNimbleFunction <- function(fun, dirName, all.instances = TRUE, individual.instances = NA, name = deparse(substitute(fun) ),  fileName = Rname2CppName(name), writeFiles = !(environment(fun)$Cwritten), compileCpp = !(environment(fun)$compiled), loadSO = !(environment(fun)$loadedSO), debug = FALSE, debugCpp = FALSE, returnInternals = FALSE ) {
-    
     if(missing(dirName))    dirName <- makeDefaultDirName()
     
         if(!is.nfGenerator(fun)) stop('Error in compileNimbleFunction: fun should be a nimbleFunction generator')
@@ -524,6 +517,7 @@ nfWriteCompileAndLoadSO <- function(RFun, dirName, name = deparse(substitute(RFu
     return(cppProj)
 }
 
-nfBuildCInterface <- function(cppProj, instance, name = deparse(substitute(RFun) ))
+nfBuildCInterface <- function(cppProj, instance, name = deparse(substitute(RFun) )){
 	return( cppProj$cppDefs[[name]]$buildCallable(instance, cppProj$dll ) )
+}
 

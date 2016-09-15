@@ -10,6 +10,7 @@ nimbleListDefClass <- setRefClass(
                   className = 'ANY')
 )
 
+#do we stil want to return an R list?
 nimbleList <- function(types,
                        name = NA) {
     ## This has a role like nimbleFunction but a much simpler implementation
@@ -17,12 +18,12 @@ nimbleList <- function(types,
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
-    if(is.na(name)) name <- nl_refClassLabelMaker()
-    
-    thisNimbleListDef <- nimbleListDefClass(types = types, className = name)
-    ans <- function(...) {
-        structure(list(...), class = "nimbleList", nimbleListDef = thisNimbleListDef)
-    }
+    if(is.na(name)) name <- nf_refClassLabelMaker()
+    eval(substitute(
+      ans <- function( ...){
+            thisNimbleListDef <- nimbleListDefClass(types = types, className = name, ...)
+      }, env = list(types = types, name = name)
+    ) )
     ans
 }
 
@@ -32,7 +33,7 @@ nlProcessing <- setRefClass('nlProcessing',
                             fields = list(
                                 cppDef = 'ANY',
                                 nimbleListDef = 'ANY',
-                                setupSymTab = 'ANY',
+                                symTab = 'ANY',
                                 neededTypes = 'ANY',
                                 nimbleProject = 'ANY'
                             ),
@@ -59,7 +60,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                     buildSymbolTable()
                                 },
                                 buildSymbolTable = function() {
-                                  setupSymTab <<- nimble:::buildSymbolTable(nimbleListDef$types$vars, nimbleListDef$types$types, nimbleListDef$types$sizes)
+                                  symTab <<- nimble:::buildSymbolTable(nimbleListDef$types$vars, nimbleListDef$types$types, nimbleListDef$types$sizes)
                                 },
-                                getSymbolTable = function() {return(setupSymTab)}
+                                getSymbolTable = function() symTab
                             ))

@@ -378,8 +378,8 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
 }
 
 makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelfAsArg = FALSE, embedInBrackets = FALSE) {
-    numFuns <- length(compiledNodeFun$RCfunDefs)
     ans <- if(!embedInBrackets) quote(list()) else quote({}) 
+    numFuns <- length(compiledNodeFun$RCfunDefs)
     if(numFuns == 0) return(ans)
     funNames <- names(compiledNodeFun$RCfunDefs)
     funNames[funNames == 'operator()'] <- 'run'
@@ -672,26 +672,34 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
     }
 }
 
-buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, where = globalenv()){
+buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, where = globalenv()){
     defaults <- list()
-    if(inherits(compiledNodeFun, 'symbolTable')) {
-        symTab <- compiledNodeFun
+    if(inherits(compiledNimbleObj, 'symbolTable')) {
+        symTab <- compiledNimbleObj
         defaults$cnf <- NULL
         warning('No compiled node function provided, so interface will be incomplete')
     } else {
-        symTab <- compiledNodeFun$nfProc$setupSymTab
-        defaults$cnf <- compiledNodeFun
+        symTab <- compiledNimbleObj$nimCompProc$getSymbolTable()
+        defaults$cnf <- compiledNimbleObj
     }
+    listObj <- inherits(compiledNimbleObj, 'cppNimbleListClass')
+    funObj <- inherits(compiledNimbleObj, 'cppNimbleFunctionClass')
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
-    cppNames <- compiledNodeFun$objectDefs$getSymbolNames() 
+    cppNames <- compiledNimbleObj$objectDefs$getSymbolNames() 
     NFBF <-  makeNFBindingFields(symTab, cppNames)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
-    methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun) ##, compiledNodeFun$nfProc)
     defaults$basePtrCall <- basePtrCall
 
+    methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
+    if(listObj){
+       firstFunLine <- NULL
+    }
+    else if(funObj) {
+      firstFunLine <- expression(defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE))
+    }
     # substitute on parsed text string to avoid CRAN issues with .Call registration
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, ...){		#cModel removed from here
-        defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE) ## in case this instance was not used during nfProc$process
+        firstFunLine
         callSuper(dll = dll, project = project, test = FALSE, ...)
         basePtrCall <- if(is.character(defaults$basePtrCall)) {
             if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
@@ -714,8 +722,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
             ##copyFromRobject()
             nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self)
         }
-    }, list())
-
+    }, list(firstFunLine = firstFunLine))
       # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization
       # function is called.  So change the .Call('name') to .Call(lookupSymbol('name')) which will use this objects
       # dll field.
@@ -763,9 +770,9 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  cat(paste0('CmultiNimbleFunctionClass object\n'))
                                              },
                                              initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
-                                                 if(missing(project)) stop('Cannot create CmultiNimbleFunctionClass without a project', call. = FALSE)
-                                                 if(is.null(project)) stop('Cannot create CmultiNimbleFunctionClass without a NULL project', call. = FALSE)
-                                                 nimbleProject <<- project
+                                                 # if(missing(project)) stop('Cannot create CmultiNimbleFunctionClass without a project', call. = FALSE)
+                                                 # if(is.null(project)) stop('Cannot create CmultiNimbleFunctionClass without a NULL project', call. = FALSE)
+                                                 # nimbleProject <<- project
                                                  neededObjectsList <<- list()
                                                  ##     nfObjectList <<- list()
                                                  basePtrList <<- list()
@@ -774,7 +781,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  compiledNodeFun <<- compiledNodeFun
                                                  basePtrCall <<- basePtrCall
                                                  callSuper(...)
-                                                 symTab <- compiledNodeFun$nfProc$setupSymTab
+                                                 symTab <- compiledNodeFun$nimCompProc$getSymbolTable()
                                                  cppNames <<- compiledNodeFun$objectDefs$getSymbolNames()
                                                  cppCopyTypes <<- makeNimbleFxnCppCopyTypes(symTab, cppNames)
                                                  ##                                          methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun) ## can do this but need to pass another pointer in
