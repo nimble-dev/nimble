@@ -1,4 +1,11 @@
+#define _CHECK_WHERE_I_AM
+#ifdef _CHECK_WHERE_I_AM
+#include "whereIam.h"
+#endif
+
 #include "nimble/ModelClassUtils.h"
+
+#ifdef _IN_CPP_CODE
 
 SEXP getModelValuesPtrFromModel (SEXP rPtr){
 	void* vPtr = R_ExternalPtrAddr(rPtr);
@@ -66,3 +73,4 @@ SEXP derefPtr(SEXP SmultiPtr) {
   return(R_MakeExternalPtr( static_cast<void *>(*doublePtr), R_NilValue, R_NilValue) );
 }
 
+#endif

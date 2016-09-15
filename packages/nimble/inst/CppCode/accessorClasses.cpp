@@ -1,7 +1,14 @@
+#define _CHECK_WHERE_I_AM
+#ifdef _CHECK_WHERE_I_AM
+#include "whereIam.h"
+#endif
+
 #include "nimble/accessorClasses.h"
 #include "nimble/RcppUtils.h"
 #include<sstream>
 using std::istringstream;
+
+#ifdef _IN_CPP_CODE
 
 NimArr<1, double> getParam_1D_double(int paramID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
   if(iNodeFunction == 0) paramID += 0;
@@ -1965,3 +1972,5 @@ void ManyMV_Finalizer(SEXP Sv){
   delete mVPtr;
   R_ClearExternalPtr(Sv);
 }
+
+#endif

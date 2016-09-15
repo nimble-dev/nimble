@@ -1,3 +1,8 @@
+#define _CHECK_WHERE_I_AM
+#ifdef _CHECK_WHERE_I_AM
+#include "whereIam.h"
+#endif
+
 #include "nimble/Utils.h"
 #define PRINTF Rprintf
 #define NIMERROR error

@@ -1,8 +1,14 @@
+#define _CHECK_WHERE_I_AM
+#ifdef _CHECK_WHERE_I_AM
+#include "whereIam.h"
+#endif
+
 #include "nimble/NamedObjects.h"
 #include "nimble/Utils.h"
 #include "nimble/Model.h"
 #include "R.h"
 
+#ifdef _IN_CPP_CODE
 
 void* NamedObjects::getObjectPtr( string &name ) {
   //  cout<<name<<"\n";
@@ -127,3 +133,4 @@ SEXP newNumberedObjects(){
 	return(rPtr);
 }
 
+#endif

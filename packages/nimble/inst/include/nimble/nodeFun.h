@@ -2,6 +2,8 @@
 #define __NODEFUN
 #include "NimArr.h"
 
+#ifdef _IN_CPP_CODE
+
 // this contains the indexed information -- often indices themselves but also any partially evaluated values -- to calculate/simulate/getLogProb for one node withina new node function
 // typically we'll have a vector of these in a node function or some such way of packaging information 
 class indexedNodeInfo {
@@ -114,5 +116,7 @@ class nodeFun : public NamedObjects {
   }
 };
 
+
+#endif
 
 #endif

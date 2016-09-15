@@ -134,17 +134,17 @@ makeNFBindingFields <- function(symTab, cppNames) {
             if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
-                        nimbleInternalFunctions$getCharacterVectorValue(VPTR)
+                        nimbleInternalFunctions$getCharacterVectorValue(VPTR, dll = dll)
                     else
-                        nimbleInternalFunctions$setCharacterVectorValue(VPTR, x)
+                        nimbleInternalFunctions$setCharacterVectorValue(VPTR, x, dll = dll)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
             next
             } else {                    ## character scalar
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
-                        nimbleInternalFunctions$getCharacterValue(VPTR)
+                        nimbleInternalFunctions$getCharacterValue(VPTR, dll = dll)
                     else
-                        nimbleInternalFunctions$setCharacterValue(VPTR, x)
+                        nimbleInternalFunctions$setCharacterValue(VPTR, x, dll = dll)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
             }
@@ -154,7 +154,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
                 eval(substitute( fieldList$VARNAME <- function(x){
                     
                     if(missing(x) ) 
-                        nimbleInternalFunctions$getNimValues(VPTR)
+                        nimbleInternalFunctions$getNimValues(VPTR, dll = dll)
                     else {
                         message('setting a numeric via setNimValues')
                         nimbleInternalFunctions$setNimValues(VPTR, x, dll = dll)
@@ -166,9 +166,9 @@ makeNFBindingFields <- function(symTab, cppNames) {
             if(thisSymbol$type == "double"){     ## Scalar double
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
-                        nimbleInternalFunctions$getDoubleValue(VPTR)
+                        nimbleInternalFunctions$getDoubleValue(VPTR, dll = dll)
                     else
-                       nimbleInternalFunctions$setDoubleValue(VPTR, x)
+                       nimbleInternalFunctions$setDoubleValue(VPTR, x, dll = dll)
                         
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
@@ -176,18 +176,18 @@ makeNFBindingFields <- function(symTab, cppNames) {
             if(thisSymbol$type == "integer"){    ## Scalar int
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
-                        nimbleInternalFunctions$getIntValue(VPTR)
+                        nimbleInternalFunctions$getIntValue(VPTR, dll = dll)
                     else
-                        nimbleInternalFunctions$setIntValue(VPTR, x)                        
+                        nimbleInternalFunctions$setIntValue(VPTR, x, dll = dll)                        
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
             }
             if(thisSymbol$type == "logical"){    ## Scalar logical
                 eval(substitute( fieldList$VARNAME <- function(x){
                     if(missing(x) ) 
-                        nimbleInternalFunctions$getBoolValue(VPTR)
+                        nimbleInternalFunctions$getBoolValue(VPTR, dll = dll)
                     else
-                        nimbleInternalFunctions$setBoolValue(VPTR, x)
+                        nimbleInternalFunctions$setBoolValue(VPTR, x, dll = dll)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
                 next
             }
@@ -202,7 +202,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
 
 #### functions that are similar to what is created in makeNFBindingFields but are standalone and look up pointers each time
 getSetModelVarPtr <- function(name, value, basePtr, dll) { ## This only deals with a pointer member data.  It doesn't return or set the model's actual values.
-    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
     if(missing(value)) {
         return(vptr)
     } else {
@@ -221,7 +221,7 @@ getSetNimbleFunction <- function(name, value, basePtr, dll) {
         warning('getSetNimbleFunction does not work for getting but was called without value.', call. = FALSE)
         return(NULL)
     } else {
-        vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+        vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
         message('setting from getSetNimbleFunction')
         nimbleInternalFunctions$setDoublePtrFromSinglePtr(vptr, value, dll = dll) ## previously value$.basePtr
     }
@@ -232,7 +232,7 @@ getSetModelValues <- function(name, value, basePtr, dll) {
         warning('getSetModelValues does not work for getting but was called without value.', call. = FALSE)
         return(NULL)
     } else {
-        vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+        vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
         message('setting from getSetModelValues')
         nimbleInternalFunctions$setDoublePtrFromSinglePtr(vptr, value$extptr, dll = dll)
     }  
@@ -245,8 +245,8 @@ getSetNimPtrList <- function(name, value, basePtr, dll) {
     } else {
         if(!inherits(value, 'nimPointerList')) stop(paste('Nimble compilation error initializing nimPointerList (nimbleFunctionList) ', name, '.'), call. = FALSE)
         if(!nimbleInternalFunctions$checkNimbleFunctionListCpp(value)) stop(paste('Nimble compilation error initializing nimbleFunctionList ', name, '.  Something is not valid in this list.  It may be the contains (base class) value of one or more functions in the list.'), call. = FALSE)
-        vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
-        accessptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, paste0(name, '_setter'))
+        vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+        accessptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, paste0(name, '_setter'), dll = dll)
         nimbleInternalFunctions$setPtrVectorOfPtrs(accessptr, vptr, length(value$contentsList), dll = dll)
         for(i in seq_along(value$contentsList)) {
             if(is.list(value[[i]])) { ## case of list(CmultiNimbleFunction, index)
@@ -261,54 +261,54 @@ getSetNimPtrList <- function(name, value, basePtr, dll) {
     }
 }
 
-getSetCharacterVector <- function(name, value, basePtr) {
-    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+getSetCharacterVector <- function(name, value, basePtr, dll) {
+    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
-         nimbleInternalFunctions$getCharacterVectorValue(vptr)
+         nimbleInternalFunctions$getCharacterVectorValue(vptr, dll = dll)
      else
-         nimbleInternalFunctions$setCharacterVectorValue(vptr, value)
+         nimbleInternalFunctions$setCharacterVectorValue(vptr, value, dll = dll)
 }
 
-getSetCharacter <- function(name, value, basePtr) {
-    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+getSetCharacter <- function(name, value, basePtr, dll) {
+    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
-         nimbleInternalFunctions$getCharacterValue(vptr)
+         nimbleInternalFunctions$getCharacterValue(vptr, dll = dll)
      else
-         nimbleInternalFunctions$setCharacterValue(vptr, value)
+         nimbleInternalFunctions$setCharacterValue(vptr, value, dll = dll)
 }
 
 getSetNumericVector <- function(name, value, basePtr, dll) {
-      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
-         nimbleInternalFunctions$getNimValues(vptr)
+         nimbleInternalFunctions$getNimValues(vptr, dll = dll)
      else {
          message('setting from getSetNumericVector')
          nimbleInternalFunctions$setNimValues(vptr, value, dll = dll)
      }
 }
 
-getSetDoubleScalar <- function(name, value, basePtr) {
-      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+getSetDoubleScalar <- function(name, value, basePtr, dll) {
+      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
-         nimbleInternalFunctions$getDoubleValue(vptr)
+         nimbleInternalFunctions$getDoubleValue(vptr, dll = dll)
      else
-         nimbleInternalFunctions$setDoubleValue(vptr, value)
+         nimbleInternalFunctions$setDoubleValue(vptr, value, dll = dll)
 }
 
-getSetIntegerScalar <- function(name, value, basePtr) {
-      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+getSetIntegerScalar <- function(name, value, basePtr, dll) {
+      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
-         nimbleInternalFunctions$getIntValue(vptr)
+         nimbleInternalFunctions$getIntValue(vptr, dll = dll)
      else
-         nimbleInternalFunctions$setIntValue(vptr, value)
+         nimbleInternalFunctions$setIntValue(vptr, value, dll = dll)
 }
 
-getSetLogicalScalar <- function(name, value, basePtr) {
-      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name)
+getSetLogicalScalar <- function(name, value, basePtr, dll) {
+      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
-         nimbleInternalFunctions$getBoolValue(vptr)
+         nimbleInternalFunctions$getBoolValue(vptr, dll = dll)
      else
-         nimbleInternalFunctions$setBoolValue(vptr, value)
+         nimbleInternalFunctions$setBoolValue(vptr, value, dll = dll)
 }
 
 
@@ -443,7 +443,7 @@ buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll, nimbleP
     neededObjects
 }
 
-copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self) {
+copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self, dll) {
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(is.null(Robj[[v]])) {
@@ -454,7 +454,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
             modelVar <- Robj[[v]] ## this is a singleVarAccessClass created by replaceModelSingles
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
-            .self[[v]] <- .Call('getModelObjectPtr', Cmodel$.basePtr, varName)
+            .self[[v]] <- .Call(getNativeSymbolInfo('getModelObjectPtr', dll), Cmodel$.basePtr, varName)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -495,15 +495,15 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
         }
         else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
             ##populateNodeFxnVec(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v)
-            populateNodeFxnVecNew(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v) 
+            populateNodeFxnVecNew(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v, dll = dll) 
             next
         }
         else if(cppCopyTypes[[v]] == 'modelVarAccess'){
-            populateManyModelVarMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v)
+            populateManyModelVarMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'modelValuesAccess'){
-            populateManyModelValuesMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v)
+            populateManyModelValuesMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == "modelValuesPtr"){
@@ -529,7 +529,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
             next
         }
         else if(cppCopyTypes[[v]] == 'indexedNodeInfoTable') {
-            populateIndexedNodeInfoTable(fxnPtr = .self$.basePtr, Robject = Robj, indexedNodeInfoTableName = v)
+            populateIndexedNodeInfoTable(fxnPtr = .self$.basePtr, Robject = Robj, indexedNodeInfoTableName = v, dll = dll)
         }
         else if(cppCopyTypes[[v]] == 'characterVector' || cppCopyTypes[[v]] == 'characterScalar') {
             .self[[v]] <- Robj[[v]]
@@ -545,7 +545,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(cppCopyTypes[[v]] == 'copierVector') {
-            populateCopierVector(fxnPtr = .self$.basePtr, Robject = Robj, vecName = v)
+            populateCopierVector(fxnPtr = .self$.basePtr, Robject = Robj, vecName = v, dll = dll)
         }
     }
 }
@@ -562,7 +562,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
             message('copying modelVar (copyFromRobject)')
-            getSetModelVarPtr(v, .Call('getModelObjectPtr', Cmodel$.basePtr, varName), basePtr, dll = dll)
+            getSetModelVarPtr(v, .Call('getModelObjectPtr', Cmodel$.basePtr, varName, dll = dll), basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -612,24 +612,24 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             next
         }
         else if(cppCopyTypes[[v]] == 'nodeFxnVec') {
-            populateNodeFxnVecNew(fxnPtr = basePtr, Robject = Robj, fxnVecName = v)
+            populateNodeFxnVecNew(fxnPtr = basePtr, Robject = Robj, fxnVecName = v, dll = dll)
             ## populateNodeFxnVec(fxnPtr = .self$.basePtr, Robject = Robj, fxnVecName = v) 
             next
         }
         else if(cppCopyTypes[[v]] == 'modelVarAccess'){
-            populateManyModelVarMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v)
+            populateManyModelVarMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)
             ## populateManyModelVarMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v)
             next
         }
         else if(cppCopyTypes[[v]] == 'modelValuesAccess'){
-            populateManyModelValuesMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v)
+            populateManyModelValuesMapAccess(fxnPtr = basePtr, Robject = Robj, manyAccessName = v, dll = dll)
             ## populateManyModelValuesMapAccess(fxnPtr = .self$.basePtr, Robject = Robj, manyAccessName = v)
             next
         }
         else if(cppCopyTypes[[v]] == "modelValuesPtr"){
             curObj <- Robj[[v]]
             mvPtr = curObj$modelValues$CobjectInterface$componentExtptrs[[curObj$var]]
-            getSetModelValuesPtr(v, mvPtr, basePtr)
+            getSetModelValuesPtr(v, mvPtr, basePtr, dll = dll)
             ## .self[[v]] <<- mvPtr
             next
         }
@@ -650,15 +650,15 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             next
         }
         else if(cppCopyTypes[[v]] == 'indexedNodeInfoTable') {
-            populateIndexedNodeInfoTable(fxnPtr = basePtr, Robject = Robj, indexedNodeInfoTableName = v)
+            populateIndexedNodeInfoTable(fxnPtr = basePtr, Robject = Robj, indexedNodeInfoTableName = v, dll = dll)
         }
         else if(cppCopyTypes[[v]] == 'characterVector') {
-            getSetCharacterVector(v, Robj[[v]], basePtr)
+            getSetCharacterVector(v, Robj[[v]], basePtr, dll = dll)
             ##.self[[v]] <<- Robj[[v]]
             next
         }
         else if(cppCopyTypes[[v]] == 'characterScalar') {
-            getSetCharacter(v, Robj[[v]], basePtr)
+            getSetCharacter(v, Robj[[v]], basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'numericVector') {
@@ -668,15 +668,15 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             next
         }
         else if(cppCopyTypes[[v]] == 'doubleScalar') {
-            getSetDoubleScalar(v, Robj[[v]], basePtr)
+            getSetDoubleScalar(v, Robj[[v]], basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'integerScalar') {
-            getSetIntegerScalar(v, Robj[[v]], basePtr)
+            getSetIntegerScalar(v, Robj[[v]], basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'logicalScalar') {
-            getSetLogicalScalar(v, Robj[[v]], basePtr)
+            getSetLogicalScalar(v, Robj[[v]], basePtr, dll = dll)
             next
         }
         else if(!(cppCopyTypes[[v]] %in% c('copierVector'))) {
@@ -687,7 +687,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(cppCopyTypes[[v]] == 'copierVector') {
-            populateCopierVector(fxnPtr = basePtr, Robject = Robj, vecName = v)
+            populateCopierVector(fxnPtr = basePtr, Robject = Robj, vecName = v, dll = dll)
             ## populateCopierVector(fxnPtr = .self$.basePtr, Robject = Robj, vecName = v)
         }
     }
@@ -839,12 +839,12 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                                nimbleFunction ={message('switch nimbleFunction');  getSetNimbleFunction(name, value, basePtr, dll = dll)}, ## ditto
                                                                nimPtrList = {message('switch nimPtrList'); getSetNimPtrList(name, value, basePtr, dll = dll)}, ## ditto
                                                                modelValues = {message('switch modelValues'); getSetModelValues(name, value, basePtr, dll = dll)}, ## ditto
-                                                               characterVector = getSetCharacterVector(name, value, basePtr),
-                                                               characterScalar = getSetCharacterScalar(name, value, basePtr),
+                                                               characterVector = getSetCharacterVector(name, value, basePtr, dll = dll),
+                                                               characterScalar = getSetCharacterScalar(name, value, basePtr, dll = dll),
                                                                numericVector ={message('switch numericVector');  getSetNumericVector(name, value, basePtr, dll = dll)},
-                                                               doubleScalar = getSetDoubleScalar(name, value, basePtr),
-                                                               integerScalar = getSetIntegerScalar(name, value, basePtr),
-                                                               logicalScalar = getSetLogicalScalar(name, value, basePtr),
+                                                               doubleScalar = getSetDoubleScalar(name, value, basePtr, dll = dll),
+                                                               integerScalar = getSetIntegerScalar(name, value, basePtr, dll = dll),
+                                                               logicalScalar = getSetLogicalScalar(name, value, basePtr, dll = dll),
                                                                'Could not get or set a value for this variable')
                                                  ans
                                              }

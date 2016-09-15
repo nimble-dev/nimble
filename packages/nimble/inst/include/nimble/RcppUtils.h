@@ -25,12 +25,16 @@ void nimble_print_to_R(std::ostringstream &input);
 
 void multivarTestCall(double *x, int n);
 
+#ifdef _IN_CPP_CODE
+
 bool all(bool x);
 bool any(bool x);
 int t(int x);
 double t(double x);
 int prod(int x);
 double prod(double x);
+
+#endif
 
 string STRSEXP_2_string(SEXP Ss, int i = 0);
 SEXP   string_2_STRSEXP(string v);
@@ -52,21 +56,37 @@ SEXP int_2_SEXP(int i);
 bool SEXP_2_bool(SEXP Sn, int i = 0);
 SEXP bool_2_SEXP(bool ind);
 
+extern "C" {
+  SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  SEXP double_2_SEXP(SEXP rPtr, SEXP refNum);
+  SEXP SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum);
+  SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  SEXP int_2_SEXP(SEXP rPtr, SEXP refNum);
+
+  SEXP SEXP_2_string(SEXP rPtr, SEXP rString);
+  SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector);
+  SEXP string_2_SEXP(SEXP rPtr);
+  SEXP stringVector_2_SEXP(SEXP rPtr);
+}
+
+#ifdef _IN_CPP_CODE
+
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index);
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index);
 void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue);
  
-bool checkString(SEXP Ss, int len);
-bool checkNumeric(SEXP Sval, int len);
+//bool checkString(SEXP Ss, int len);
+//bool checkNumeric(SEXP Sval, int len);
 
 vector<int> getSEXPdims(SEXP Sx);
 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
 
-  SEXP setVec(SEXP Sextptr, SEXP Svalue);
-  SEXP getVec(SEXP Sextptr);
-  SEXP getVec_Integer(SEXP Sextptr);
+  //  SEXP setVec(SEXP Sextptr, SEXP Svalue);
+  //  SEXP getVec(SEXP Sextptr);
+  //  SEXP getVec_Integer(SEXP Sextptr);
   
   SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded);
   SEXP getNRow(SEXP Sextptr);
@@ -110,22 +130,10 @@ extern "C" {
 															  // 	with NumRefers as above. Also, type checking is done
 															  // 	by R.internals functions INTEGER and REAL
 															  
-  SEXP Nim_2_Nim(SEXP rPtrFrom, SEXP numRefFrom, SEXP rPtrTo, SEXP numRefTo);	
+  //  SEXP Nim_2_Nim(SEXP rPtrFrom, SEXP numRefFrom, SEXP rPtrTo, SEXP numRefTo);	
 												//  Copies from one NimArr to another. Type checks
 												//	For now, both NimArr's must be either double or int. We can add other
 												//  types or allow conversion by extending Nim_2_Nim and the cNim_2_Nim options 
-
-  SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
-  SEXP double_2_SEXP(SEXP rPtr, SEXP refNum);
-  SEXP SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar);
-  SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum);
-  SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
-  SEXP int_2_SEXP(SEXP rPtr, SEXP refNum);
-
-  SEXP SEXP_2_string(SEXP rPtr, SEXP rString);
-  SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector);
-  SEXP string_2_SEXP(SEXP rPtr);
-  SEXP stringVector_2_SEXP(SEXP rPtr);
 
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
@@ -324,10 +332,14 @@ void cNimArr_2_NimArr_Index(NimArrBase<T1> &nimFrom, int fromBegin, NimArrBase<T
 void sampleFinalizer(SEXP ptr);
 template<int nDim, class T>
 void VecNimArrFinalizer(SEXP ptr);
+#endif
+
 void dontDeleteFinalizer(SEXP ptr);
+
 
 //static void ProbSampleReplace(int n, double *p, int *perm, int nans, int *ans);
 
+#ifdef _IN_CPP_CODE
 double nimMod(double a, double b);
 
 template<class T>
@@ -405,7 +417,7 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 				 	NimArr<1, double> par, optimfn objFxn,
 				 	int numOtherArgs, ...);
 
-
+#endif
 
 /* forwardsolve, backsolve */
 // 

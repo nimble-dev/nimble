@@ -19,6 +19,8 @@ using std::cout;
 
 #include "nodeFun.h" 
 
+#ifdef _IN_CPP_CODE
+
 //#define __NIMBLE_DEBUG_ACCESSORS
 
 /////////////////////////////////
@@ -651,3 +653,5 @@ void NodeVector_Finalizer( SEXP Sv);
 void ManyVariable_Finalizer(SEXP Sv);
 void ManyMV_Finalizer(SEXP Sv);
 #endif 			
+
+#endif

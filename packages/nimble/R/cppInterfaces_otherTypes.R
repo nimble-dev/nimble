@@ -39,8 +39,8 @@ populateCopierVector <- function(fxnPtr, Robject, vecName) {
     .Call('populateCopierVector', vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]]))
 }
 
-populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## new version
-    manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
+populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) { ## new version
+    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll = dll), fxnPtr, manyAccessName)
     cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
     ## cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS 
     if(is(cModel, 'uninitializedField'))
@@ -57,7 +57,7 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## 
     ##   doing it the following way induces the crashing.
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
     if(length(mapInfo[[1]]) > 0) {
-        .Call('populateValueMapAccessorsFromNodeNames', manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
+        .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll = dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
     }
     
     ## oldest version
@@ -66,8 +66,8 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName) { ## 
     ##}
 }
 
-populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName){ ## new version. nearly identical to populateManyModelVarMapAccess
-    manyAccessPtr = .Call("getModelObjectPtr", fxnPtr, manyAccessName)
+populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dll){ ## new version. nearly identical to populateManyModelVarMapAccess
+    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll = dll), fxnPtr, manyAccessName)
     ##cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS
     cModelValues <- Robject[[manyAccessName]][[1]]$CobjectInterface
 
@@ -79,7 +79,7 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName){ #
         
     ##fastest
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]]) ##faster
-    .Call('populateValueMapAccessorsFromNodeNames', manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
+    .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll = dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
 }
 
 ## addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
@@ -97,14 +97,14 @@ getFxnVectorPtr <- function(fxnPtr, fxnVecName)
 ##     nil <- .Call('populateNodeFxnVector', fxnVecPtr, Robject[[fxnVecName]]$nodes, nodePtrsEnv)
 ## }
 
-getNamedObjected <- function(objectPtr, fieldName)
-    .Call('getModelObjectPtr', objectPtr, fieldName)
+getNamedObjected <- function(objectPtr, fieldName, dll)
+    .Call(getNativeSymbolInfo('getModelObjectPtr', dll = dll), objectPtr, fieldName)
 
-inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs)
-    nil <- .Call('populateNodeFxnVector_byGID', fxnVecPtr, as.integer(gids), numberedPtrs)
+inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs, dll)
+    nil <- .Call(getNativeSymbolInfo('populateNodeFxnVector_byGID', dll = dll), fxnVecPtr, as.integer(gids), numberedPtrs)
 
-populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
-    fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
+populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName, dll){
+    fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName, dll = dll)
     gids <- Robject[[fxnVecName]]$gids
     numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byGID$.ptr
     
@@ -112,11 +112,11 @@ populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName){
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
 	
-    inner_populateNodeFxnVec(fxnVecPtr, gids, numberedPtrs)
+    inner_populateNodeFxnVec(fxnVecPtr, gids, numberedPtrs, dll = dll)
 }
 
-populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName){
-    fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName)
+populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
+    fxnVecPtr <- getNamedObjected(fxnPtr, fxnVecName, dll = dll)
     indexingInfo <- Robject[[fxnVecName]]$indexingInfo
     declIDs <- indexingInfo$declIDs
     rowIndices <- indexingInfo$unrolledIndicesMatrixRows
@@ -126,36 +126,36 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName){
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
 	
-    .Call('populateNodeFxnVectorNew_byDeclID', fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices))
+    .Call(getNativeSymbolInfo('populateNodeFxnVectorNew_byDeclID', dll), fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices))
 }
 
-populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName) {
+populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName, dll) {
     iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName)
     iNITcontent <- Robject[[indexedNodeInfoTableName]]$unrolledIndicesMatrix
-    .Call('populateIndexedNodeInfoTable', iNITptr, iNITcontent)
+    .Call(getNativeSymbolInfo('populateIndexedNodeInfoTable', dll), iNITptr, iNITcontent)
 }
 
 # Currently requires: addSingleModelValuesAccess
 
-makeCSingleModelValuesAccessor <- function(rModelValuesPtr, elementName, curRow = 1, beginIndex, endIndex)
-    .Call("makeSingleModelValuesAccessor", rModelValuesPtr, elementName, 
-          as.integer(curRow), as.integer(beginIndex), as.integer(endIndex) ) 
-#   Same as above but for modelValues instead of variables of a model. Note that the pointer
-#   we are passing now must point to a C modelValues object, not a model. To get a modelValues pointer
-#   from a model, we would have to first call
-#   MVPtr <- getMVPtr(rModelPtr)    (getMVPtr is in BuildInterfaces.R)
-#   Then we can pass MVPtr to this function
-#   Also, this function requires you to select which row you would like to point to via curRow 
-#   (R index, not C++ index)
+## makeCSingleModelValuesAccessor <- function(rModelValuesPtr, elementName, curRow = 1, beginIndex, endIndex)
+##     .Call("makeSingleModelValuesAccessor", rModelValuesPtr, elementName, 
+##           as.integer(curRow), as.integer(beginIndex), as.integer(endIndex) ) 
+## #   Same as above but for modelValues instead of variables of a model. Note that the pointer
+## #   we are passing now must point to a C modelValues object, not a model. To get a modelValues pointer
+## #   from a model, we would have to first call
+## #   MVPtr <- getMVPtr(rModelPtr)    (getMVPtr is in BuildInterfaces.R)
+## #   Then we can pass MVPtr to this function
+## #   Also, this function requires you to select which row you would like to point to via curRow 
+## #   (R index, not C++ index)
 
-getModelAccessorValues <- function(modelAccessor)
-    .Call("getModelAccessorValues", modelAccessor)
-#   This retrieves the values from a modelAccessor. It is very important to note that this is 
-#   for a singleVariableAccessor, NOT a singleModelValuesAccessor
+## getModelAccessorValues <- function(modelAccessor)
+##     .Call("getModelAccessorValues", modelAccessor)
+## #   This retrieves the values from a modelAccessor. It is very important to note that this is 
+## #   for a singleVariableAccessor, NOT a singleModelValuesAccessor
 
-getModelValuesAccessorValues <- function(modelAccessor)
-    .Call("getMVAccessorValues", modelAccessor)
-#   Same as above, but for singleModelValuesAccessors
+## getModelValuesAccessorValues <- function(modelAccessor)
+##     .Call("getMVAccessorValues", modelAccessor)
+## #   Same as above, but for singleModelValuesAccessors
 
 
 ## newNodeFxnVec <- function(size = 0) 
@@ -182,22 +182,22 @@ getModelValuesAccessorValues <- function(modelAccessor)
 ##     nil <- .Call("removeNodeFun", NVecFxnPtr, as.integer(index), as.logical(removeAll) ) 
 ## #   This function removes either the nodeFunctionPointer at position index (R-index) or removes all if removeAll = TRUE
 
-newManyVarAccess <- function(size = 0)
-    .Call("newManyVariableAccessor", as.integer(size) ) 
-#   Same as newNodeFxnVec, but a builds a ManyVariableAccessor rather than a nodeVectorFunction
+## newManyVarAccess <- function(size = 0)
+##     .Call("newManyVariableAccessor", as.integer(size) ) 
+## #   Same as newNodeFxnVec, but a builds a ManyVariableAccessor rather than a nodeVectorFunction
 
-addSingleVarAccess <- function(ManyVarAccessPtr, SingleVarAccessPtr, addAtEnd = TRUE, index = -1)
-    nil <- .Call("addSingleVariableAccessor", ManyVarAccessPtr, SingleVarAccessPtr, as.logical(addAtEnd), as.integer(index) )
-#   Same as addNodeFxn, but for adding a SingleModelVariableAccessor to a ManyModelVariablesAccessors
+## addSingleVarAccess <- function(ManyVarAccessPtr, SingleVarAccessPtr, addAtEnd = TRUE, index = -1)
+##     nil <- .Call("addSingleVariableAccessor", ManyVarAccessPtr, SingleVarAccessPtr, as.logical(addAtEnd), as.integer(index) )
+## #   Same as addNodeFxn, but for adding a SingleModelVariableAccessor to a ManyModelVariablesAccessors
 
   
 ## removeSingleVarAccess <- function(ManyVarAccessPtr, index = 1, removeAll = FALSE)
 ##     nil <- .Call("removeModelVariableAccessor", ManyVarAccessPtr, as.integer(index), as.logical(removeAll) )
 #   Same as removeNodeFxn, but for SingleModelVariableAccessors
 
-newManyModelValuesAccess <- function(size)
-    .Call("newManyModelValuesAccessor", as.integer(size) ) 
-#   Same as newNodeFxnVec, but for ManyModelValuesAccessor
+## newManyModelValuesAccess <- function(size)
+##     .Call("newManyModelValuesAccessor", as.integer(size) ) 
+## #   Same as newNodeFxnVec, but for ManyModelValuesAccessor
 
 addSingleModelValuesAccess <- function(ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, addAtEnd, index = - 1)
     nil <- .Call("addSingleModelValuesAccessor", ManyModelValuesAccessPtr, SingleModelValuesAccessPtr, as.logical(addAtEnd), as.integer(index) ) 
