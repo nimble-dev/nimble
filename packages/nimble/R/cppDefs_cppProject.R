@@ -161,6 +161,9 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               ifndefName = ifndefName)
                                        selfInclude <- if(is.character(con)) paste0('"', con, '.h', '"') else '"[FILENAME].h"'
                                        CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen
+                                       browser()
+                                       CPPincludes <- c(CPPincludes, ('\"nimble/dynamicRegistrations.cpp\"'))
+                                       
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
                                                                   includes = CPPincludes,
@@ -227,6 +230,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    },
                                    loadSO = function(name) {
                                        dll <<- dyn.load(getSOName(name, dirName), local = TRUE)
+                                       browser()
+                                       .Call(getNativeSymbolInfo('R_init_nimble_routines'), dll)
+                                       browser()
+                                       NULL
                                    },
                                    unloadSO = function(name) {
 				       if(!is.null(dll)) {
