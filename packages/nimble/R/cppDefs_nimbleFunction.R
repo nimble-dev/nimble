@@ -328,7 +328,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               },
                                               processNFproc = function(nfp, debugCpp = FALSE, fromModel = FALSE) {
                                                   ## callSuper(nfp, debugCpp, fromModel)
-                                                   nfp$cppDef <- .self
+                                                  ## nfp$cppDef <- .self
                                                    nfProc <<- nimCompProc
                                                   ## genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
                                                   ## objectDefs <<- symbolTable2cppVars(nfp$setupSymTab)

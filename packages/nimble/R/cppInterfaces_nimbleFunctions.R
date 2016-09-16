@@ -684,7 +684,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     }
     listObj <- inherits(compiledNimbleObj, 'cppNimbleListClass')
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
-    cppNames <- compiledNimbleObj$objectDefs$getSymbolNames() 
+    cppNames <- compiledNimbleObj$objectDefs$getSymbolNames()
     NFBF <-  makeNFBindingFields(symTab, cppNames)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
     defaults$basePtrCall <- basePtrCall
@@ -713,7 +713,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
         cppNames <<- .Call("getAvailableNames", .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
-        vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
+        vPtrNames <- 	paste0(".", cppNames, "_Ptr")
         for(vn in seq_along(cppNames) ){
             .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn])
         }
@@ -728,8 +728,8 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
       # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization
       # function is called.  So change the .Call('name') to .Call(lookupSymbol('name')) which will use this objects
       # dll field.
-    
-    methodsList[[length(methodsList) + 1]] <- fun 
+
+    methodsList[[length(methodsList) + 1]] <- fun
     names(methodsList)[length(methodsList)] <- 'initialize'
     methodsList[[length(methodsList) + 1]] <- quote(function() {
         writeLines(paste0("Derived CnimbleFunctionBase object created by buildNimbleFxnInterface for nimbleFunction with class ", class(Robject)))
@@ -749,6 +749,8 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     }
     return(ans)
 }
+
+
 
 ####
 ## New class for interfacing multiple compiledNimbleFunctions of the same class
