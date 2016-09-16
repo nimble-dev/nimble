@@ -10,21 +10,35 @@ nimbleListDefClass <- setRefClass(
                   className = 'ANY')
 )
 
+
+
+
 #do we stil want to return an R list?
 nimbleList <- function(types,
-                       name = NA) {
+                       name = NA,
+                       where =  getNimbleFunctionEnvironment()) {
     ## This has a role like nimbleFunction but a much simpler implementation
     ## It returns a function that simply makes a regular R list and
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
-    if(is.na(name)) name <- nf_refClassLabelMaker()
-    eval(substitute(
-      ans <- function( ...){
-            thisNimbleListDef <- nimbleListDefClass(types = types, className = name, ...)
-      }, env = list(types = types, name = name)
-    ) )
-    ans
+    if(is.na(name)) name <- nimble:::nf_refClassLabelMaker()
+    nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
+
+    fields <- as.list(rep('ANY', length(types$vars)))
+    names(fields) <- types$vars
+    
+
+    nlGeneratorFunction <-   eval(  substitute(
+      nlRefClassObject <- setRefClass(
+          Class = NLREFCLASS_CLASSNAME,
+          fields = NLREFCLASS_FIELDS,
+          where = where
+      ),       
+      list(NLREFCLASS_CLASSNAME = name,
+           NLREFCLASS_FIELDS = fields,
+           where =where)))
+    return(nlGeneratorFunction)
 }
 
 ## nimbleList processing class

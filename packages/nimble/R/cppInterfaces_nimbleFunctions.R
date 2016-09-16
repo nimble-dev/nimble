@@ -385,7 +385,7 @@ makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelf
     funNames[funNames == 'operator()'] <- 'run'
     for(i in seq_along(compiledNodeFun$RCfunDefs)) {
         ## note that the className is really used as a boolean: any non-NULL value triggers treatment as a class, but name isn't needed
-        ans[[i+1]] <- compiledNodeFun$RCfunDefs[[i]]$buildRwrapperFunCode(className = compiledNodeFun$nfProc$name, includeLHS = FALSE, returnArgsAsList = FALSE, includeDotSelf = '.basePtr', includeDotSelfAsArg = includeDotSelfAsArg)
+        ans[[i+1]] <- compiledNodeFun$RCfunDefs[[i]]$buildRwrapperFunCode(className = compiledNodeFun$nimCompProc$name, includeLHS = FALSE, returnArgsAsList = FALSE, includeDotSelf = '.basePtr', includeDotSelfAsArg = includeDotSelfAsArg)
         if(embedInBrackets) ans[[i+1]] <- substitute(THISNAME <- FUNDEF, list(THISNAME = as.name(funNames[i]), FUNDEF = ans[[i+1]]))
     }
     if(!embedInBrackets) names(ans) <- c('', funNames)
@@ -692,14 +692,17 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
 
     methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
     if(listObj){
-       firstFunLine <- NULL
+      lines <- list(line1 = NULL,
+                    line2 = expression(neededObjects <<- list()))
     }
     else if(funObj) {
-      firstFunLine <- expression(defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE))
+      lines <- list(line1 = expression(defaults$cnf$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)),
+                    line2 =  expression(neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject))
+      )
     }
     # substitute on parsed text string to avoid CRAN issues with .Call registration
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, ...){		#cModel removed from here
-        firstFunLine
+        lines[['line1']]
         callSuper(dll = dll, project = project, test = FALSE, ...)
         basePtrCall <- if(is.character(defaults$basePtrCall)) {
             if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
@@ -718,11 +721,11 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
          if(!missing(nfObject)) {
             setRobject(nfObject)
             ##buildNeededObjects()
-            neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
+           lines[['line2']]
             ##copyFromRobject()
             nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self)
         }
-    }, list(firstFunLine = firstFunLine))
+    }, list(lines = lines))
       # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization
       # function is called.  So change the .Call('name') to .Call(lookupSymbol('name')) which will use this objects
       # dll field.
@@ -796,7 +799,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                      if(is.null(dll)) stop('In addInstance, DLL was not set and so must be provided when calling', call. = FALSE)
                                                      dll <<- dll       ## should only occur first time addInstance is called
                                                  }
-                                                 compiledNodeFun$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
+                                                 compiledNodeFun$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
                                                  
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
@@ -809,7 +812,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  newNeededObjects <- nimbleInternalFunctions$buildNeededObjects(newRobject, compiledNodeFun, list(), dll, nimbleProject)
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
                                                  nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr)
-                                                 if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
+                                                 if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nimCompProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              },
                                              callMemberFunction = function(index, funName, ...) {
