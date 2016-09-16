@@ -88,7 +88,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                    next
                                                }
                                                if(inherits(neededType, 'symbolNimbleFunction')) {
-                                                   generatorName <- environment(neededType$nimCompProc$nfGenerator)$name
+                                                   generatorName <- environment(neededType$nfProc$nfGenerator)$name
                                                    thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = generatorName)
                                                    if(is.null(thisCppDef)) {
                                                        className <- names(nimCompProc$neededTypes)[i]

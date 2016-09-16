@@ -385,7 +385,7 @@ makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelf
     funNames[funNames == 'operator()'] <- 'run'
     for(i in seq_along(compiledNodeFun$RCfunDefs)) {
         ## note that the className is really used as a boolean: any non-NULL value triggers treatment as a class, but name isn't needed
-        ans[[i+1]] <- compiledNodeFun$RCfunDefs[[i]]$buildRwrapperFunCode(className = compiledNodeFun$nimCompProc$name, includeLHS = FALSE, returnArgsAsList = FALSE, includeDotSelf = '.basePtr', includeDotSelfAsArg = includeDotSelfAsArg)
+        ans[[i+1]] <- compiledNodeFun$RCfunDefs[[i]]$buildRwrapperFunCode(className = compiledNodeFun$nfProc$name, includeLHS = FALSE, returnArgsAsList = FALSE, includeDotSelf = '.basePtr', includeDotSelfAsArg = includeDotSelfAsArg)
         if(embedInBrackets) ans[[i+1]] <- substitute(THISNAME <- FUNDEF, list(THISNAME = as.name(funNames[i]), FUNDEF = ans[[i+1]]))
     }
     if(!embedInBrackets) names(ans) <- c('', funNames)
@@ -683,7 +683,6 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
         defaults$cnf <- compiledNimbleObj
     }
     listObj <- inherits(compiledNimbleObj, 'cppNimbleListClass')
-    funObj <- inherits(compiledNimbleObj, 'cppNimbleFunctionClass')
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
     cppNames <- compiledNimbleObj$objectDefs$getSymbolNames() 
     NFBF <-  makeNFBindingFields(symTab, cppNames)
@@ -695,8 +694,8 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
       lines <- list(line1 = NULL,
                     line2 = expression(neededObjects <<- list()))
     }
-    else if(funObj) {
-      lines <- list(line1 = expression(defaults$cnf$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)),
+    else {
+      lines <- list(line1 = expression(defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)),
                     line2 =  expression(neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject))
       )
     }
