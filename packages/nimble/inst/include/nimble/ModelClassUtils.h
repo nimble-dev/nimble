@@ -21,7 +21,7 @@ extern "C" {
   // is pointed to by rPtr
   
   SEXP derefPtr(SEXP SmultiPtr);
-  SEXP setSinglePtrFromSinglePtr(SEXP SPtrTo, SEXP SPtrToSet);
+  //SEXP setSinglePtrFromSinglePtr(SEXP SPtrTo, SEXP SPtrToSet);
  }
 
 

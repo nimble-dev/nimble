@@ -104,7 +104,7 @@ CmodelValues <- setRefClass(
         	jnk <- .Call(getNativeSymbolInfo("setNumListRows", dll), ptr, as.integer(rows), TRUE)
         	jnk <- .Call(getNativeSymbolInfo('manualSetNRows', dll), extptr, as.integer(rows) )  	
         	},
-        getSize = function() {	getCRows(componentExtptrs[[1]])		}
+        getSize = function() {	.Call(getNativeSymbolInfo("getNRow", dll), componentExtptrs[[1]]) } ## formerly getCRows(componentExtptrs[[1]])		}
         )
     )
 

@@ -604,7 +604,7 @@ extern "C" {
   SEXP getMVAccessorValues(SEXP accessor);
 
   //SEXP newNodeFxnVector(SEXP size);
-  SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
+  //SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
   //SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size);
   //  SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index);
   //SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll);

@@ -6,6 +6,9 @@
 
 std::ostringstream _nimble_global_output;
 
+string _NIMBLE_WHITESPACE_UTIL(" \t");
+string _NIMBLE_WHITESPACEBRACKET_UTIL(" \t[");
+
 void nimble_print_to_R(std::ostringstream &input) {
   PRINTF("%s", input.str().c_str());
   input.str("");
@@ -656,16 +659,13 @@ SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
   return(output);
 }
 
-string _NIMBLE_WHITESPACE(" \t");
-string _NIMBLE_WHITESPACEBRACKET(" \t[");
-
 void parseVar(const vector<string> &input, vector<string> &output) {
   int vecSize = input.size();
   std::size_t iEnd, iBegin;
   output.resize( vecSize );
   for(int i = 0; i < vecSize; i++) {
-    iBegin = input[i].find_first_not_of(_NIMBLE_WHITESPACE);
-    iEnd = input[i].find_first_of(_NIMBLE_WHITESPACEBRACKET, iBegin);
+    iBegin = input[i].find_first_not_of(_NIMBLE_WHITESPACE_UTIL);
+    iEnd = input[i].find_first_of(_NIMBLE_WHITESPACEBRACKET_UTIL, iBegin);
     if(iBegin < iEnd)
       output[i].assign( input[i].substr(iBegin, iEnd - iBegin) );
     else

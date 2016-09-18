@@ -376,82 +376,82 @@ SEXP copyModelValuesElements(SEXP SextptrFrom, SEXP SextptrTo, SEXP rowsFrom, SE
 
 }	
 
-// SEXP getMVElement(SEXP Sextptr, SEXP Sindex){
-// 	if(!isInteger(Sindex)) {
-//     	PRINTF("Error: Sindex is not an integer!\n");
-//     	return(returnStatus(false) ) ;
-// 	}
-//   	if(!R_ExternalPtrAddr(Sextptr)) {
-//   	  PRINTF("Error: Sextptr is not a valid external pointer\n");
-//   	  return(returnStatus(false) ) ;
-//   	}
-// 	NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
-// 	nimType vecType = (*typePtr).getNimType();
-// 	int nrowCpp = typePtr->size();
-// 	int index = INTEGER(Sindex)[0];
-// 	if(index > nrowCpp){
-// 		PRINTF("Error: index too large\n");
-// 		return(returnStatus(false) ) ;
-// 	  }
-//   	if(index < 1){
-// 		PRINTF("Error: index < 1\n");
-// 		return(returnStatus(false) ) ;
-//   	}
-//   return(cGetMVElementOneRow(typePtr, vecType, index) ) ;	
-// }  	
+SEXP getMVElement(SEXP Sextptr, SEXP Sindex){
+	if(!isInteger(Sindex)) {
+    	PRINTF("Error: Sindex is not an integer!\n");
+    	return(returnStatus(false) ) ;
+	}
+  	if(!R_ExternalPtrAddr(Sextptr)) {
+  	  PRINTF("Error: Sextptr is not a valid external pointer\n");
+  	  return(returnStatus(false) ) ;
+  	}
+	NimVecType *typePtr = static_cast< NimVecType* >(R_ExternalPtrAddr(Sextptr));
+	nimType vecType = (*typePtr).getNimType();
+	int nrowCpp = typePtr->size();
+	int index = INTEGER(Sindex)[0];
+	if(index > nrowCpp){
+		PRINTF("Error: index too large\n");
+		return(returnStatus(false) ) ;
+	  }
+  	if(index < 1){
+		PRINTF("Error: index < 1\n");
+		return(returnStatus(false) ) ;
+  	}
+  return(cGetMVElementOneRow(typePtr, vecType, index) ) ;	
+}  	
   	
 
 // //SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index) 	{  	
 // //ONe
-// SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{  	
-//     if(vecType == DOUBLE){
-// 		VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(typePtr);
-// //		int nrowCpp = matPtr->size();
-// 		NimArrBase<double> *thisRow;
-//   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
-// 		int outputLength = thisRow->size();
-//   		SEXP Sans;
-//   		PROTECT(Sans = allocVector(REALSXP, outputLength));
-// 		double *value = REAL(Sans);
-//   		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
-//   		if(thisRow->numDims() > 1) { // using first row as representative
-//     		SEXP Sdim;
-//     		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
-//     		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
-//     			setAttrib(Sans, R_DimSymbol, Sdim);
-//     		UNPROTECT(2);
-//   		}
-//   		else {
-//     UNPROTECT(1);
-//   		}
-//   	 	return(Sans);
-//   	}
-//     else if(vecType == INT){
-// 		VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(typePtr);
-// //		int nrowCpp = matPtr->size();
-// 		NimArrBase<int> *thisRow;
-//   		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
-// 		int outputLength = thisRow->size();
-//   		SEXP Sans;
-//   		PROTECT(Sans = allocVector(INTSXP, outputLength));
-// 		int *value = INTEGER(Sans);
-//   		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
-//   		if(thisRow->numDims() > 1) { // using first row as representative
-//     		SEXP Sdim;
-//     		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
-//     		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
-//     			setAttrib(Sans, R_DimSymbol, Sdim);
-//     		UNPROTECT(2);
-//   		}
-//   		else {
-//     UNPROTECT(1);
-//   		}
-//   	  	return(Sans);	
-//   	}
-//   	else
-//   		PRINTF("VecNimArr datatype not supported\n");
-// 	return(R_NilValue);
-// }
+SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{  	
+    if(vecType == DOUBLE){
+		VecNimArrBase<double> *matPtr = static_cast< VecNimArrBase<double>* >(typePtr);
+//		int nrowCpp = matPtr->size();
+		NimArrBase<double> *thisRow;
+  		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
+		int outputLength = thisRow->size();
+  		SEXP Sans;
+  		PROTECT(Sans = allocVector(REALSXP, outputLength));
+		double *value = REAL(Sans);
+  		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
+  		if(thisRow->numDims() > 1) { // using first row as representative
+    		SEXP Sdim;
+    		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
+    		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
+    			setAttrib(Sans, R_DimSymbol, Sdim);
+    		UNPROTECT(2);
+  		}
+  		else {
+    UNPROTECT(1);
+  		}
+  	 	return(Sans);
+  	}
+    else if(vecType == INT){
+		VecNimArrBase<int> *matPtr = static_cast< VecNimArrBase<int>* >(typePtr);
+//		int nrowCpp = matPtr->size();
+		NimArrBase<int> *thisRow;
+  		thisRow = matPtr->getBasePtr(index - 1);		//Converting R index to C index
+		int outputLength = thisRow->size();
+  		SEXP Sans;
+  		PROTECT(Sans = allocVector(INTSXP, outputLength));
+		int *value = INTEGER(Sans);
+  		std::copy(thisRow->getPtr(), thisRow->getPtr() + outputLength, value); /* copy should work now */
+  		if(thisRow->numDims() > 1) { // using first row as representative
+    		SEXP Sdim;
+    		PROTECT(Sdim = allocVector(INTSXP, thisRow->numDims()));
+    		for(int idim = 0; idim < thisRow->numDims(); ++idim) INTEGER(Sdim)[idim] = thisRow->dimSize(idim);
+    			setAttrib(Sans, R_DimSymbol, Sdim);
+    		UNPROTECT(2);
+  		}
+  		else {
+    UNPROTECT(1);
+  		}
+  	  	return(Sans);	
+  	}
+  	else
+  		PRINTF("VecNimArr datatype not supported\n");
+	return(R_NilValue);
+}
 
   SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
   	// This function needs to get the length of rList

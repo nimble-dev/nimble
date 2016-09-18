@@ -28,7 +28,7 @@ int prod(int x);
 double prod(double x);
 
 SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index);
-SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index);
+//SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int nrowCpp, int index);
 void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue);
  
 //bool checkString(SEXP Ss, int len);
@@ -54,7 +54,7 @@ extern "C" {
 
   SEXP matrix2VecNimArr(SEXP RvecNimPtr, SEXP matrix, SEXP rowStart, SEXP rowEnd);
 
-  SEXP printMVElement(SEXP Sextptr, SEXP Sindex);
+  //  SEXP printMVElement(SEXP Sextptr, SEXP Sindex);
   SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue);
 
   SEXP resizeNumListRow(SEXP Sextptr, SEXP Sindex, SEXP dims); 	// resizes a particular row of a numericlist
@@ -63,7 +63,7 @@ extern "C" {
    SEXP setNumListRows(SEXP Sextptr, SEXP nRows, SEXP setSize2row1);		// this sets the number of rows in a numericList (really, any VecNimArr)
 
 
-  SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum);
+  //  SEXP setVarPointer(SEXP SextptrModelVar, SEXP SextptrStorageVar, SEXP Srownum);
   SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows);
 
   SEXP newSampObject();	//  Creates our new object from sampleClass (will be generated automatically later)
@@ -89,7 +89,7 @@ extern "C" {
 
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
-  SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
+  //SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
   
   
   

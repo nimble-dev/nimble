@@ -161,8 +161,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               ifndefName = ifndefName)
                                        selfInclude <- if(is.character(con)) paste0('"', con, '.h', '"') else '"[FILENAME].h"'
                                        CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen
-                                       browser()
-                                       CPPincludes <- c(CPPincludes, ('\"nimble/dynamicRegistrations.cpp\"'))
+                                       
+                                     ##  CPPincludes <- c(CPPincludes, ('\"nimble/dynamicRegistrations.cpp\"'))
                                        
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
@@ -175,6 +175,25 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(is.character(con)) createDir()
                                        hFile$writeFile(con = con, dir = dirName)
                                        cppFile$writeFile(con = con, dir = dirName)
+                                   },
+                                   writeDynamicRegistrationsDotCpp = function(dynamicRegistrationsCppName, dllName) {
+                                       ## this writes dynamicRegistrations.cpp to include <nimble/dynamicRegistrations.h> and
+                                       ## then add an R_init function, which must have the name R_init_[outputSOfile]
+                                       ##
+                                       ## At the moment this step is called immediately before doing R CMD SHLIB
+                                       ## And it is only at that stage that the outputSOfile is known, since the SOname includes a time stamp
+                                       ## for uniqueness that is created right before R CMD SHLIB.
+                                       ## However this content for this file could be integrated into the cppDefs
+                                       ## and then automatically written as part of writeFiles.  Doing so would require
+                                       ## that the SOname be generated earlier, which would probably be fine.
+                                       contentLines <- c(
+                                           "#include <nimble/dynamicRegistrations.h>",
+                                           "",
+                                           "extern \"C\"",
+                                           paste0("void R_init_", dllName, "(DllInfo *dll) {"),
+                                           "  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);",
+                                           "}")
+                                       writeLines(contentLines, con = dynamicRegistrationsCppName)
                                    },
                                    compileFile = function(names, .useLib = UseLibraryMakevars) {
                                        cppPermList <- c('RcppUtils.cpp',
@@ -199,14 +218,19 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ## 	            } else
                                        ##                 character()
 
-                                       mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
+                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
+
+                                       dynamicRegistrationsCppName <- paste0("dynamicRegistrations_", timeStamp, ".cpp")
+                                       
+                                       mainfiles <- paste(paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' '), dynamicRegistrationsCppName)
 
 
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
 
-                                       outputSOfile <<- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), .Platform$dynlib.ext))
-
+                                       dllName <- paste0(names[1], timeStamp)
+                                       
+                                       outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
@@ -214,6 +238,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
+                                       writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dllName)
+                                       
                                        showOutput <- getNimbleOption('showCompilerOutput')
                                        if(!showOutput) {
                                            logFile <- paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
@@ -230,10 +256,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    },
                                    loadSO = function(name) {
                                        dll <<- dyn.load(getSOName(name, dirName), local = TRUE)
-                                       browser()
-                                       .Call(getNativeSymbolInfo('R_init_nimble_routines'), dll)
-                                       browser()
-                                       NULL
                                    },
                                    unloadSO = function(name) {
 				       if(!is.null(dll)) {

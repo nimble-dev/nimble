@@ -195,6 +195,6 @@ setSize <- function(numObj, ..., row){
 ## getCNumericListValue <- function(list, row)
 ## 	.Call("getMVElement", list, as.integer(row))	
 	
-## getCRows = function(list)
-## 	.Call("getNRow", list)
+## getCRows = function(list, dll)
+## 	.Call(getNativeSymbolInfo("getNRow", dll), list)
 	
