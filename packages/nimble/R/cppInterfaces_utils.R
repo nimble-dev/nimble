@@ -13,7 +13,7 @@ cGetNRow <- function(cMV, compIndex = 1)
 ##     stop("Error adding rows to ModelValues")
 ## }
 
-## cCopyVariableRows <- function(cMVFrom, cMVTo, varIndex, rowsFrom = 1:cGetNRow(cMVFrom), rowsTo = 1:cGetNRow(cMVFrom), dll ) 
+## cCopyVariableRows <- function(cMVFrom, cMVTo, varIndex, rowsFrom = 1:cGetNRow(cMVFrom), rowsTo = 1:cGetNRow(cMVFrom), dll )
 ## {
 ##   if(length(varIndex) > 1)
 ##     stop("cCopyVariableRows only takes on varIndex at a time")
@@ -30,18 +30,18 @@ cGetNRow <- function(cMV, compIndex = 1)
 
 newObjElementPtr = function(rPtr, name, dll){
   .Call(getNativeSymbolInfo("getModelObjectPtr", dll), rPtr, name)
-} 
+}
 
 getNimValues <- function(elementPtr, pointDepth = 1, dll){
-  if(!inherits(elementPtr, "externalptr"))    
+  if(!inherits(elementPtr, "externalptr"))
     return(NULL)
-  .Call(getNativeSymbolInfo("Nim_2_SEXP", dll), elementPtr, as.integer(pointDepth) ) 
+  .Call(getNativeSymbolInfo("Nim_2_SEXP", dll), elementPtr, as.integer(pointDepth) )
 }
 
 setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE, dll){
   ptrExp <- substitute(elementPtr)
   storage.mode(values) <- 'numeric'
-  if(!inherits(elementPtr, "externalptr"))    
+  if(!inherits(elementPtr, "externalptr"))
     return(NULL)
       jnk = .Call(getNativeSymbolInfo("SEXP_2_Nim", dll), elementPtr, as.integer(pointDepth), values, allowResize)
   values
@@ -71,62 +71,62 @@ setDoublePtrFromSinglePtr <- function(elementPtr, value, dll) {
 }
 
 getDoubleValue <- function(elementPtr, pointDepth = 1, dll){
-  if(!inherits(elementPtr, "externalptr") ) 
+  if(!inherits(elementPtr, "externalptr") )
     return(NULL)
-  .Call(getNativeSymbolInfo("double_2_SEXP", dll), elementPtr, as.integer(pointDepth) ) 
+  .Call("double_2_SEXP", elementPtr, as.integer(pointDepth) )
 }
 
 setDoubleValue <- function(elementPtr, value,  pointDepth = 1, dll){
-  if(!inherits(elementPtr, "externalptr"))    
+  if(!inherits(elementPtr, "externalptr"))
     return(NULL)
-  jnk = .Call(getNativeSymbolInfo("SEXP_2_double", dll), elementPtr, as.integer(pointDepth), value)
+  jnk = .Call("SEXP_2_double", elementPtr, as.integer(pointDepth), value)
   value
 }
 
 getIntValue <- function(elementPtr, pointDepth = 1, dll){
-  if(!inherits(elementPtr, "externalptr") ) 
+  if(!inherits(elementPtr, "externalptr") )
     return(NULL)
-  .Call(getNativeSymbolInfo("int_2_SEXP", dll), elementPtr, as.integer(pointDepth) ) 
+  .Call("int_2_SEXP", elementPtr, as.integer(pointDepth) )
 }
 
 setIntValue <- function(elementPtr, value,  pointDepth = 1, dll){
-  if(!inherits(elementPtr, "externalptr"))    
+  if(!inherits(elementPtr, "externalptr"))
     return(NULL)
-  jnk = .Call(getNativeSymbolInfo("SEXP_2_int", dll), elementPtr, as.integer(pointDepth), value )
+  jnk = .Call("SEXP_2_int", elementPtr, as.integer(pointDepth), value )
 }
 
 getBoolValue <- function(elementPtr, pointDepth = 1, dll){
-    if(!inherits(elementPtr, "externalptr") ) 
+    if(!inherits(elementPtr, "externalptr") )
         return(NULL)
-    .Call(getNativeSymbolInfo("bool_2_SEXP", dll), elementPtr, as.integer(pointDepth) ) 
+    .Call("bool_2_SEXP" , elementPtr, as.integer(pointDepth) )
 }
 
 setBoolValue <- function(elementPtr, value,  pointDepth = 1, dll){
-    if(!inherits(elementPtr, "externalptr"))    
+    if(!inherits(elementPtr, "externalptr"))
         return(NULL)
-    jnk = .Call(getNativeSymbolInfo("SEXP_2_bool", dll), elementPtr, as.integer(pointDepth), value )
+    jnk = .Call("SEXP_2_bool", elementPtr, as.integer(pointDepth), value )
 }
 
 setCharacterValue <- function(elementPtr, value, dll){
-    if(!inherits(elementPtr, "externalptr"))    
+    if(!inherits(elementPtr, "externalptr"))
         return(NULL)
-    jnk = .Call(getNativeSymbolInfo("SEXP_2_string", dll), elementPtr, value )
+    jnk = .Call("SEXP_2_string", elementPtr, value )
 }
 
 getCharacterValue <- function(elementPtr, dll){
-    if(!inherits(elementPtr, "externalptr") ) 
+    if(!inherits(elementPtr, "externalptr") )
         return(NULL)
-    .Call(getNativeSymbolInfo("string_2_SEXP", dll), elementPtr ) 
+    .Call("string_2_SEXP" , elementPtr )
 }
 
 setCharacterVectorValue <- function(elementPtr, value, dll){
-    if(!inherits(elementPtr, "externalptr"))    
+    if(!inherits(elementPtr, "externalptr"))
         return(NULL)
-    jnk = .Call(getNativeSymbolInfo("SEXP_2_stringVector", dll), elementPtr, value )
+    jnk = .Call("SEXP_2_stringVector" , elementPtr, value )
 }
 
 getCharacterVectorValue <- function(elementPtr, dll){
-    if(!inherits(elementPtr, "externalptr") ) 
+    if(!inherits(elementPtr, "externalptr") )
         return(NULL)
-    .Call(getNativeSymbolInfo("stringVector_2_SEXP", dll), elementPtr) 
+    .Call("stringVector_2_SEXP" , elementPtr)
 }

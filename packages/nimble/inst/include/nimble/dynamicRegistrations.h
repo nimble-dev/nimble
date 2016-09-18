@@ -8,6 +8,7 @@
 #include <nimble/ModelClassUtils.h>
 #include <nimble/accessorClasses.h>
 #include <nimble/dists.h>
+#include <nimble/NamedObjects.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -86,12 +87,21 @@ R_CallMethodDef CallEntries[] = {
   FUN(getEnvVar_Sindex, 3),
   FUN(getEnvVar, 2),
   FUN(setEnvVar_Sindex, 4),
-  FUN(setEnvVar, 3)
+  FUN(setEnvVar, 3),
+
+  // from NamedObjects
+  FUN(getModelObjectPtr, 2),
+  FUN(getAvailableNames, 1),
+  FUN(getNumberedObject, 2),
+  FUN(setNumberedObject, 3),
+  FUN(resizeNumberedObjects, 2),
+  FUN(getSizeNumberedObjects, 1),
+  FUN(newNumberedObjects, 0)
 };
 
 // Something like this will be generated with each .so/.dll nimble creates
 // however it is required to be named R_init_SONAME, so it must be generated for each one.
-//  
+//
 // extern "C"
 // void
 // R_init_nimble_on_the_fly(DllInfo *dll)
