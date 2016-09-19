@@ -27,7 +27,7 @@ nimbleList <- function(types,
     fields <- as.list(rep('ANY', length(types$vars)))
     names(fields) <- types$vars
     fields[[length(fields)+1]] <- "ANY"
-    names(fields)[length(fields)] <- "nlDefClassObj"
+    names(fields)[length(fields)] <- "nimbleListDef"
 
     nlGeneratorFunction <-   eval(  substitute(
       nlRefClassObject <- setRefClass(
@@ -35,7 +35,7 @@ nimbleList <- function(types,
           fields = NLREFCLASS_FIELDS,
           methods = list(
             initialize = function(...){
-              nlDefClassObj <<- nlDefClassObject
+              nimbleListDef <<- nlDefClassObject
               callSuper(...)
             }
           ),
@@ -53,18 +53,32 @@ nimbleList <- function(types,
 nlProcessing <- setRefClass('nlProcessing',
                             fields = list(
                                 cppDef = 'ANY',
-                                nimbleListDef = 'ANY',
+                                nimbleListObj = 'ANY',
                                 symTab = 'ANY',
                                 neededTypes = 'ANY',
-                                nimbleProject = 'ANY'
+                                nimbleProject = 'ANY',
+                                name = 'ANY',
+                                instances = 'ANY'
                             ),
                             methods = list(
                                 show = function() {
                                     writeLines(paste0('nlProcessing object ', nimbleListDef$className))
                                 },
-                                initialize = function(...){
-                                    callSuper(...)
-                                    neededTypes <<- list()
+                                initialize = function(nimLists = NULL, className, project, ...) {
+                                  
+                                  neededTypes <<- list()
+                                  callSuper(...)
+                                  if(!is.null(nimLists)) {
+                                    ## in new system, f must be a specialized nf, or a list of them
+                                    nimbleProject <<- project
+                                    if(missing(className)) {
+                                      sl <- if(is.list(nimLists)) nimLists[[1]]$nimbleListDef else nimLists$nimbleListDef
+                                      name <<- Rname2CppName(sl)
+                                    } else {
+                                      name <<- className
+                                    }
+                                    instances <<- if(inherits(nimLists, 'list')) nimLists else list(nimLists)
+                                  }
                                 },
                                 setupTypesForUsingFunction= function() buildSymbolTable(), ## required name
                                 process = function(control = list(debug = FALSE, debugCpp = FALSE)) {
@@ -81,7 +95,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                     buildSymbolTable()
                                 },
                                 buildSymbolTable = function() {
-                                  symTab <<- nimble:::buildSymbolTable(nimbleListDef$types$vars, nimbleListDef$types$types, nimbleListDef$types$sizes)
+                                  symTab <<- nimble:::buildSymbolTable(nimbleListObj$nimbleListDef$vars, nimbleListObj$nimbleListDef$types, nimbleListObj$nimbleListDef$sizes)
                                 },
                                 getSymbolTable = function() symTab
                             ))

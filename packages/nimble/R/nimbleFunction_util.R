@@ -29,6 +29,11 @@ is.Cnf <- function(f) {
     return(FALSE)
 }
 
+is.nl <- function(f){
+  if(inherits(f, 'nimbleListBase')) return(TRUE)
+  return(FALSE)
+}
+
 is.nfGenerator <- function(f) {
     return(is.function(f) && 
                existsFunctionEnvVar(f, 'generatorFunction') &&
