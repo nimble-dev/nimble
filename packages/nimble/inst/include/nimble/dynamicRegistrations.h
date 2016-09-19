@@ -96,7 +96,8 @@ R_CallMethodDef CallEntries[] = {
   FUN(setNumberedObject, 3),
   FUN(resizeNumberedObjects, 2),
   FUN(getSizeNumberedObjects, 1),
-  FUN(newNumberedObjects, 0)
+  FUN(newNumberedObjects, 0),
+  {NULL, NULL, 0}
 };
 
 // Something like this will be generated with each .so/.dll nimble creates
