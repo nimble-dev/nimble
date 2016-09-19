@@ -216,7 +216,7 @@ modelValuesElement2Matrix <- function(mv, varName){
 Cmatrix2mvOneVar <- function(mat, mv, varName, k){
 	ptr <- mv$componentExtptrs[[varName]]
 	if(inherits(ptr, 'externalptr'))
-		.Call(getNativeSymbolTable('matrix2VecNimArr', mv$dll), ptr, mat, rowStart = as.integer(1), rowEnd = k )
+		.Call(getNativeSymbolInfo('matrix2VecNimArr', mv$dll), ptr, mat, rowStart = as.integer(1), rowEnd = k )
 	else
 		stop('varName not found in modelValues')
 }
