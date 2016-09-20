@@ -105,12 +105,14 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 
 
 void numberedObjects_Finalizer(SEXP Snp){
+  std::cout<< "In numberedObjects_Finalizer\n";
   NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);
 }
 
 void namedObjects_Finalizer(SEXP Snp){
+  std::cout<< "In namedObjects_Finalizer\n";
   NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);

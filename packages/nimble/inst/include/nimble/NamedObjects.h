@@ -14,7 +14,7 @@ class NamedObjects {
 public:
   map< string, void * > namedObjects;
   virtual void* getObjectPtr( string &name );
-  virtual ~NamedObjects() { };
+  virtual ~NamedObjects() {PRINTF("In NamedObjects destructor\n"); };
 };
 
 extern "C" {
