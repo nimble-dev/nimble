@@ -723,9 +723,11 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
 
     methodsList[[length(methodsList) + 1]] <- fun
     names(methodsList)[length(methodsList)] <- 'initialize'
-    methodsList[[length(methodsList) + 1]] <- quote(function() {
-        writeLines(paste0("Derived CnimbleFunctionBase object created by buildNimbleFxnInterface for nimbleFunction with class ", class(Robject)))
-    })
+    showTxt <- if(isListObj) "List" else "Function"
+    methodsList[[length(methodsList) + 1]] <- substitute(function() {
+        writeLines(paste0("Derived CnimbleFunctionBase object created by buildNimbleObjInterface for nimble", TEXT 
+                          ," with class ", class(Robject)))
+    }, list(TEXT = showTxt))
     names(methodsList)[length(methodsList)] <- 'show'
     eval(substitute( newClass <-  setRefClass(refName,
                                               fields = FIELDS,

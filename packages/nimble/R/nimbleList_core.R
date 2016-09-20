@@ -28,6 +28,9 @@ nimbleList <- function(types,
     names(fields) <- types$vars
     fields[[length(fields)+1]] <- "ANY"
     names(fields)[length(fields)] <- "nimbleListDef"
+    fields[[length(fields)+1]] <- "ANY"
+    names(fields)[length(fields)] <- ".CobjectInterface"
+
 
     nlGeneratorFunction <-   eval(  substitute(
       nlRefClassObject <- setRefClass(
@@ -62,17 +65,17 @@ nlProcessing <- setRefClass('nlProcessing',
                             ),
                             methods = list(
                                 show = function() {
-                                    writeLines(paste0('nlProcessing object ', nimbleListDef$className))
+                                    writeLines(paste0('nlProcessing object ', nimbleListObj$className))
                                 },
                                 initialize = function(nimLists = NULL, className, project, ...) {
-                                  
                                   neededTypes <<- list()
                                   callSuper(...)
                                   if(!is.null(nimLists)) {
                                     ## in new system, f must be a specialized nf, or a list of them
                                     nimbleProject <<- project
+                                    sl <- if(is.list(nimLists)) nimLists[[1]]$nimbleListDef else nimLists$nimbleListDef
+                                    nimbleListObj <<- sl
                                     if(missing(className)) {
-                                      sl <- if(is.list(nimLists)) nimLists[[1]]$nimbleListDef else nimLists$nimbleListDef
                                       name <<- Rname2CppName(sl)
                                     } else {
                                       name <<- className
@@ -95,7 +98,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                     buildSymbolTable()
                                 },
                                 buildSymbolTable = function() {
-                                  symTab <<- nimble:::buildSymbolTable(nimbleListObj$nimbleListDef$vars, nimbleListObj$nimbleListDef$types, nimbleListObj$nimbleListDef$sizes)
+                                  symTab <<- nimble:::buildSymbolTable(nimbleListObj$types$vars, nimbleListObj$types$types, 
+                                                                       nimbleListObj$types$sizes)
                                 },
                                 getSymbolTable = function() symTab
                             ))

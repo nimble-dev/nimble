@@ -30,7 +30,7 @@ is.Cnf <- function(f) {
 }
 
 is.nl <- function(f){
-  if(inherits(f, 'nimbleListBase')) return(TRUE)
+  if(exists("nimbleListDef", envir = f)) return(TRUE)
   return(FALSE)
 }
 
