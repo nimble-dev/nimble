@@ -32,15 +32,15 @@
 #  for the begining and ending sequence of flat indices this accessor uses
 
 populateCopierVector <- function(fxnPtr, Robject, vecName, dll) {
-    vecPtr <- .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, vecName)
+    vecPtr <- .Call( dll$getModelObjectPtr, fxnPtr, vecName)
     copierVectorObject <- Robject[[vecName]]
-    fromPtr <- .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, copierVectorObject[[1]])
-    toPtr <- .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, copierVectorObject[[2]])
-    .Call(getNativeSymbolInfo('populateCopierVector', dll), vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]]))
+    fromPtr <- .Call( dll$getModelObjectPtr, fxnPtr, copierVectorObject[[1]])
+    toPtr <- .Call( dll$getModelObjectPtr, fxnPtr, copierVectorObject[[2]])
+    .Call( dll$populateCopierVector, vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]]))
 }
 
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) { ## new version
-    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, manyAccessName)
+    manyAccessPtr = .Call( dll$getModelObjectPtr, fxnPtr, manyAccessName)
     cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
     ## cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS 
     if(is(cModel, 'uninitializedField'))
@@ -57,7 +57,7 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
     ##   doing it the following way induces the crashing.
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
     if(length(mapInfo[[1]]) > 0) {
-        .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
+        .Call( dll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
     }
     
     ## oldest version
@@ -67,7 +67,7 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
 }
 
 populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dll){ ## new version. nearly identical to populateManyModelVarMapAccess
-    manyAccessPtr = .Call(getNativeSymbolInfo("getModelObjectPtr", dll), fxnPtr, manyAccessName)
+    manyAccessPtr = .Call( dll$getModelObjectPtr, fxnPtr, manyAccessName)
     ##cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS
     cModelValues <- Robject[[manyAccessName]][[1]]$CobjectInterface
 
@@ -79,7 +79,7 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dl
         
     ##fastest
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]]) ##faster
-    .Call(getNativeSymbolInfo('populateValueMapAccessorsFromNodeNames', dll), manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
+    .Call( dll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
 }
 
 ## addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
@@ -98,10 +98,10 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dl
 ## }
 
 getNamedObjected <- function(objectPtr, fieldName, dll)
-    .Call(getNativeSymbolInfo('getModelObjectPtr', dll), objectPtr, fieldName)
+    .Call( dll$getModelObjectPtr, objectPtr, fieldName)
 
 inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs, dll)
-    nil <- .Call(getNativeSymbolInfo('populateNodeFxnVector_byGID', dll), fxnVecPtr, as.integer(gids), numberedPtrs)
+    nil <- .Call( dll$populateNodeFxnVector_byGID, fxnVecPtr, as.integer(gids), numberedPtrs)
 
 ## This is deprecated.  Remove at some point.
 populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName, dll){
@@ -127,13 +127,13 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
 	
-    .Call(getNativeSymbolInfo('populateNodeFxnVectorNew_byDeclID', dll), fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices))
+    .Call( dll$populateNodeFxnVectorNew_byDeclID, fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices))
 }
 
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName, dll) {
     iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName, dll = dll)
     iNITcontent <- Robject[[indexedNodeInfoTableName]]$unrolledIndicesMatrix
-    .Call(getNativeSymbolInfo('populateIndexedNodeInfoTable', dll), iNITptr, iNITcontent)
+    .Call( dll$populateIndexedNodeInfoTable, iNITptr, iNITcontent)
 }
 
 # Currently requires: addSingleModelValuesAccess
@@ -244,29 +244,29 @@ setMethod('[<-', 'numberedObjects', function(x, i, value){
 
 
 newNumberedObjects <- function(dll){
-    .Call(getNativeSymbolInfo('newNumberedObjects', dll))
+    .Call( dll$newNumberedObjects)
 }
 
 getSize_NumberedObjects <- function(numberedObject, dll){
-    .Call(getNativeSymbolInfo('getSizeNumberedObjects', dll), numberedObject)
+    .Call( dll$getSizeNumberedObjects, numberedObject)
 }
 
 resize_NumberedObjects <- function(numberedObject, size, dll){
-    nil <- .Call(getNativeSymbolInfo('resizeNumberedObjects', dll), numberedObject, as.integer(size) )
+    nil <- .Call( dll$resizeNumberedObjects, numberedObject, as.integer(size) )
 }
 
 assignNumberedObject <- function(numberedObject, index, val, dll){
     if(!is(val, 'externalptr'))
         stop('Attempting to assign a val which is not an externalptr to a NumberedObjects')
-    if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
+    if(index < 1 || index > getSize_NumberedObjects(numberedObject, dll) )
         stop('Invalid index')
-    nil <- .Call(getNativeSymbolInfo('setNumberedObject', dll), numberedObject, as.integer(index), val)
+    nil <- .Call( dll$setNumberedObject, numberedObject, as.integer(index), val)
 }
 
 getNumberedObject <- function(numberedObject, index, dll){
-    if(index < 1 || index > getSize_NumberedObjects(numberedObject) )
+    if(index < 1 || index > getSize_NumberedObjects(numberedObject, dll) )
         stop('Invalid index')
-    .Call(getNativeSymbolInfo('getNumberedObject', dll), numberedObject, as.integer(index))	
+    .Call( dll$getNumberedObject, numberedObject, as.integer(index))	
 }
 
 

@@ -454,7 +454,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
             modelVar <- Robj[[v]] ## this is a singleVarAccessClass created by replaceModelSingles
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
-            .self[[v]] <- .Call(getNativeSymbolInfo('getModelObjectPtr', dll), Cmodel$.basePtr, varName)
+            .self[[v]] <- .Call( dll$getModelObjectPtr, Cmodel$.basePtr, varName)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -562,7 +562,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
             ##message('copying modelVar (copyFromRobject)')
-            getSetModelVarPtr(v, .Call(getNativeSymbolInfo('getModelObjectPtr', dll), Cmodel$.basePtr, varName), basePtr, dll = dll)
+            getSetModelVarPtr(v, .Call( dll$getModelObjectPtr, Cmodel$.basePtr, varName), basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -721,19 +721,19 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
         .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
         # .basePtr <<- .Call(basePtrCall)
-        cppNames <<- .Call(getNativeSymbolInfo("getAvailableNames", dll), .basePtr)
+        cppNames <<- .Call( dll$getAvailableNames, .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
         vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
         for(vn in seq_along(cppNames) ){
-            .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn])
+            .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn], dll = dll)
         }
          if(!missing(nfObject)) {
             setRobject(nfObject)
             ##buildNeededObjects()
             neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
             ##copyFromRobject()
-            nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self)
+            nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self, dll)
         }
     }, list())
 

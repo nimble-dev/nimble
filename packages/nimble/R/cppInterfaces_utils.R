@@ -1,6 +1,6 @@
 cGetNRow <- function(cMV, compIndex = 1)
 {
-  nRow = .Call(getNativeSymbolInfo("getNRow", cMV$dll), cMV$componentExtptrs[[compIndex]])
+  nRow = .Call( cMV$dll$getNRow, cMV$componentExtptrs[[compIndex]])
   return(nRow)
 }
 
@@ -29,13 +29,13 @@ cGetNRow <- function(cMV, compIndex = 1)
 ## }
 
 newObjElementPtr = function(rPtr, name, dll){
-  .Call(getNativeSymbolInfo("getModelObjectPtr", dll), rPtr, name)
+  .Call( dll$getModelObjectPtr, rPtr, name)
 }
 
 getNimValues <- function(elementPtr, pointDepth = 1, dll){
   if(!inherits(elementPtr, "externalptr"))
     return(NULL)
-  .Call(getNativeSymbolInfo("Nim_2_SEXP", dll), elementPtr, as.integer(pointDepth) )
+  .Call( dll$Nim_2_SEXP, elementPtr, as.integer(pointDepth) )
 }
 
 setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE, dll){
@@ -43,7 +43,7 @@ setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE,
   storage.mode(values) <- 'numeric'
   if(!inherits(elementPtr, "externalptr"))
     return(NULL)
-      jnk = .Call(getNativeSymbolInfo("SEXP_2_Nim", dll), elementPtr, as.integer(pointDepth), values, allowResize)
+      jnk = .Call(dll$SEXP_2_Nim, elementPtr, as.integer(pointDepth), values, allowResize)
   values
 }
 
@@ -51,7 +51,7 @@ setPtrVectorOfPtrs <- function(accessorPtr, contentsPtr, length, dll) {
     if(!inherits(accessorPtr, 'externalptr')) return(NULL)
     if(!inherits(contentsPtr, 'externalptr')) return(NULL)
     if(!is.numeric(length)) return(NULL)
-    .Call(getNativeSymbolInfo('setPtrVectorOfPtrs', dll), accessorPtr, contentsPtr, as.integer(length))
+    .Call(dll$setPtrVectorOfPtrs, accessorPtr, contentsPtr, as.integer(length))
     contentsPtr
 }
 
@@ -59,14 +59,14 @@ setOnePtrVectorOfPtrs <- function(accessorPtr, i, contentsPtr, dll) {
     if(!inherits(accessorPtr, 'externalptr')) return(NULL)
     if(!is.numeric(i)) return(NULL)
     if(!inherits(contentsPtr, 'externalptr')) return(NULL)
-    .Call(getNativeSymbolInfo('setOnePtrVectorOfPtrs', dll), accessorPtr, as.integer(i-1), contentsPtr)
+    .Call(dll$setOnePtrVectorOfPtrs, accessorPtr, as.integer(i-1), contentsPtr)
     contentsPtr
 }
 
 setDoublePtrFromSinglePtr <- function(elementPtr, value, dll) {
     if(!inherits(elementPtr, 'externalptr')) return(NULL)
     if(!inherits(value, 'externalptr')) return(NULL)
-    .Call(getNativeSymbolInfo('setDoublePtrFromSinglePtr', dll), elementPtr, value)
+    .Call(dll$setDoublePtrFromSinglePtr, elementPtr, value)
     value
 }
 

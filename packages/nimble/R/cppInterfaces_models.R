@@ -24,9 +24,9 @@
 ###					the modelValues, but this is not necessary (as long as it is a double pointer to something
 
 getMVptr <- function(rPtr, dll)
-  .Call(getNativeSymbolInfo("getModelValuesPtrFromModel", dll), rPtr)
+  .Call( dll$getModelValuesPtrFromModel, rPtr)
 getMVName <- function(modelValuePtr, dll)
-  .Call(getNativeSymbolInfo("getMVBuildName", dll), modelValuePtr)
+  .Call( dll$getMVBuildName, modelValuePtr)
 
 # for now export this as R<3.1.2 give warnings if don't
 
@@ -153,7 +153,7 @@ makeModelBindingFields <- function(symTab) {
     fieldList[[ptrName]] <- "ANY"
     eval(substitute( fieldList$VARNAME <- function(x){
       if(missing(x) ) 
-        nimbleInternalFunctions$getNimValues(VPTR, 2)
+        nimbleInternalFunctions$getNimValues(VPTR, 2, dll = dll)
       else 
         nimbleInternalFunctions$setNimValues(VPTR, x, 2, allowResize = FALSE, dll = dll)
     }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
@@ -195,7 +195,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
                                                 # .basePtr <<- .Call(BPTRCALL)
-                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll)
+                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll = dll)
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
@@ -204,13 +204,13 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 nimbleProject <<- defaults$project
                                                 for(v in ls(model$isDataEnv)) isDataEnv[[v]] <<- model$isDataEnv[[v]]
                                                 setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                                                cppNames <<- .Call(getNativeSymbolInfo("getAvailableNames", dll), .basePtr) ## or could get this from R objects
+                                                cppNames <<- .Call( dll$getAvailableNames, .basePtr) ## or could get this from R objects
                                                 cppCopyTypes <<- defaults$cppCT
                                                 compiledModel <<- defaults$cm
                                                 for(vn in cppNames)
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
-                                                     	.self[[vPtrName]] <<- nimbleInternalFunctions$newObjElementPtr(.basePtr, vn)
+                                                     	.self[[vPtrName]] <<- nimbleInternalFunctions$newObjElementPtr(.basePtr, vn, dll = dll)
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)
