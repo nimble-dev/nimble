@@ -27,21 +27,21 @@ R_CallMethodDef CallEntries[] = {
   //  FUN(setSinglePtrFromSinglePtr, 2),
 
   // accessorClasses
-  FUN(makeSingleVariableAccessor, 4),
-  FUN(makeSingleModelValuesAccessor, 5),
+  //FUN(makeSingleVariableAccessor, 4),
+  //  FUN(makeSingleModelValuesAccessor, 5),
   FUN(getModelAccessorValues, 1),
   FUN(getMVAccessorValues, 1),
   //  FUN(setNodeModelPtr, 3),
-  FUN(newManyVariableAccessor, 1),
+  //FUN(newManyVariableAccessor, 1),
   FUN(addSingleVariableAccessor, 4),
   FUN(resizeManyModelVarAccessor, 2),
   FUN(removeModelVariableAccessor, 3),
-  FUN(newManyModelValuesAccessor, 1),
+  //FUN(newManyModelValuesAccessor, 1),
   FUN(resizeManyModelValuesAccessor, 2),
   FUN(addSingleModelValuesAccessor, 4),
   FUN(removeModelValuesAccessor, 3),
   FUN(manualSetNRows, 2),
-  FUN(getVarAndIndicesExtPtr, 2),
+  //FUN(getVarAndIndicesExtPtr, 2),
   FUN(getVarAndIndices, 1),
   FUN(varAndIndices2mapParts, 3),
   FUN(var2mapParts, 3),
@@ -54,8 +54,8 @@ R_CallMethodDef CallEntries[] = {
   FUN(populateCopierVector, 5),
   FUN(populateNumberedObject_withSingleModelVariablesAccessors, 5),
   FUN(populateModelVariablesAccessors_byGID, 5),
-  FUN(new_SingleModelValuesAccessor_NumberedObjects, 0),
-  FUN(new_SingleModelVariablesAccessor_NumberedObjects, 0),
+  //  FUN(new_SingleModelValuesAccessor_NumberedObjects, 0),
+  //FUN(new_SingleModelVariablesAccessor_NumberedObjects, 0),
 
   //dists
   // these don't need to be linked into an on-the-fly dll because they will be in nimble.so
@@ -97,6 +97,9 @@ R_CallMethodDef CallEntries[] = {
   FUN(resizeNumberedObjects, 2),
   FUN(getSizeNumberedObjects, 1),
   FUN(newNumberedObjects, 0),
+  FUN(register_namedObjects_Finalizer, 1),
+  FUN(register_numberedObjects_Finalizer, 1),
+  FUN(register_VecNimArr_Finalizer, 1),
   {NULL, NULL, 0}
 };
 

@@ -68,7 +68,7 @@ extern "C" {
 
 void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent);
 
-void dontDeleteFinalizer(SEXP ptr);
+//void dontDeleteFinalizer(SEXP ptr);
 
 #endif
 

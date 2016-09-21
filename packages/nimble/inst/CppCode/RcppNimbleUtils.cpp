@@ -809,7 +809,7 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 		(*newList).resize(cRows);		
 		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
 		PROTECT(ptr);
-		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<1, double>, TRUE);
+		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<1, double>, TRUE);
 		UNPROTECT(1);
 		return(ptr);
 	}
@@ -819,7 +819,7 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 		(*newList).resize(cRows);
 		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
 		PROTECT(ptr);
-		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<2, double>, TRUE);
+		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<2, double>, TRUE);
 		UNPROTECT(1);
 		return(ptr);
 	}
@@ -829,7 +829,7 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 		(*newList).resize(cRows);
 		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
 		PROTECT(ptr);
-		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<3, double>, TRUE);
+		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<3, double>, TRUE);
 		UNPROTECT(1);
 		return(ptr);
 	}
@@ -840,7 +840,7 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 		(*newList).resize(cRows);
 		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
 		PROTECT(ptr);
-		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<1, int>, TRUE);
+		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<1, int>, TRUE);
 		UNPROTECT(1);
 		return(ptr);
 	}
@@ -850,7 +850,7 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 		(*newList).resize(cRows);
 		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
 		PROTECT(ptr);
-		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<2, int>, TRUE);
+		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<2, int>, TRUE);
 		UNPROTECT(1);
 		return(ptr);
 	}
@@ -860,7 +860,7 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 		(*newList).resize(cRows);
 		SEXP ptr = R_MakeExternalPtr(newList, R_NilValue, R_NilValue);
 		PROTECT(ptr);
-		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<3, int>, TRUE);
+		//		R_RegisterCFinalizerEx(ptr, &VecNimArrFinalizer<3, int>, TRUE);
 		UNPROTECT(1);
 		return(ptr);
 	}
@@ -870,10 +870,24 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 }
 
 
-template<int nDim, class T>
-void VecNimArrFinalizer(SEXP ptr){
-	VecNimArr<nDim, T>* cPtr = static_cast<VecNimArr<nDim, T>*>(R_ExternalPtrAddr(ptr));
-	delete cPtr;
+// template<int nDim, class T>
+// void VecNimArrFinalizer(SEXP ptr){
+// 	VecNimArr<nDim, T>* cPtr = static_cast<VecNimArr<nDim, T>*>(R_ExternalPtrAddr(ptr));
+// 	delete cPtr;
+// }
+
+void VecNimArr_Finalizer(SEXP Sp) {
+  std::cout<< "In VecNimArr_Finalizer\n";
+  NimVecType* np = static_cast<NimVecType*>(R_ExternalPtrAddr(Sp));
+  if(np) delete np;
+  R_ClearExternalPtr(Sp);
+
+}
+
+SEXP register_VecNimArr_Finalizer(SEXP Sp) {
+  std::cout<< "In register_VecNimArr_Finalizer\n";
+  R_RegisterCFinalizerEx(Sp, &VecNimArr_Finalizer, TRUE);
+  return(Sp);
 }
 
 double nimMod(double a, double b) {

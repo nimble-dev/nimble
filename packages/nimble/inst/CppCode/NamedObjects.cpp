@@ -103,12 +103,23 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 	return(ans);
 }
 
+SEXP register_numberedObjects_Finalizer(SEXP Snp) {
+  std::cout<< "In register_numberedObjects_Finalizer\n";
+  R_RegisterCFinalizerEx(Snp, &numberedObjects_Finalizer, TRUE);
+  return(Snp);
+}
 
 void numberedObjects_Finalizer(SEXP Snp){
   std::cout<< "In numberedObjects_Finalizer\n";
   NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);
+}
+
+SEXP register_namedObjects_Finalizer(SEXP Snp) {
+  std::cout<< "In register_namedObjects_Finalizer\n";
+  R_RegisterCFinalizerEx(Snp, &namedObjects_Finalizer, TRUE);
+  return(Snp);
 }
 
 void namedObjects_Finalizer(SEXP Snp){
@@ -123,7 +134,8 @@ SEXP newNumberedObjects(){
 	NumberedObjects* np = new NumberedObjects;
 	SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
 	PROTECT(rPtr);
-	R_RegisterCFinalizerEx(rPtr, &numberedObjects_Finalizer, TRUE);
+	// register from R to ensure finalizer will never be unloaded with this dll
+	//R_RegisterCFinalizerEx(rPtr, &numberedObjects_Finalizer, TRUE);
 	UNPROTECT(1);
 	return(rPtr);
 }

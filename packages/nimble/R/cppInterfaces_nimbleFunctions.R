@@ -454,7 +454,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
             modelVar <- Robj[[v]] ## this is a singleVarAccessClass created by replaceModelSingles
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
-            .self[[v]] <- .Call( dll$getModelObjectPtr, Cmodel$.basePtr, varName)
+            .self[[v]] <- .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -562,7 +562,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
             ##message('copying modelVar (copyFromRobject)')
-            getSetModelVarPtr(v, .Call( dll$getModelObjectPtr, Cmodel$.basePtr, varName), basePtr, dll = dll)
+            getSetModelVarPtr(v, .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName), basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -720,8 +720,10 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         } else defaults$basePtrCall
         # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
         .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+        browser()
+        .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr)
         # .basePtr <<- .Call(basePtrCall)
-        cppNames <<- .Call( dll$getAvailableNames, .basePtr)
+        cppNames <<- .Call( nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr)
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
         vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
@@ -815,6 +817,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
+                                                 browser()
+                                                 .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr)
                                                  
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)

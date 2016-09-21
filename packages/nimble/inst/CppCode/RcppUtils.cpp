@@ -330,9 +330,9 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 //  return(Sans);
 // }
 
-void dontDeleteFinalizer(SEXP ptr){
-	return;
-}
+// void dontDeleteFinalizer(SEXP ptr){
+// 	return;
+// }
 
 SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);

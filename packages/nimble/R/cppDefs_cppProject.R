@@ -222,7 +222,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        dynamicRegistrationsCppName <- paste0("dynamicRegistrations_", timeStamp, ".cpp")
                                        
-                                       mainfiles <- paste(paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' '), dynamicRegistrationsCppName)
+                                       ## mainfiles <- paste(paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' '), dynamicRegistrationsCppName)
+                                       mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
 
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
@@ -238,7 +239,15 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
-                                       writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dllName)
+                                       browser()
+                                       if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
+                                           writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dllName)
+                                           ssDllName <- file.path(dirName, paste0(dllName,'_SSDLL', .Platform$dynlib.ext))
+                                           ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
+                                           system(ssdSHLIBcmd)
+                                           nimbleUserNamespace$sessionSpecificDll <- dyn.load(ssDllName, local = TRUE)
+                                       }
+
                                        
                                        showOutput <- getNimbleOption('showCompilerOutput')
                                        if(!showOutput) {

@@ -1,5 +1,5 @@
 # environment that holds user-provided information
-nimbleUserNamespace <- as.environment(list()) 
+nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL)) 
 # new.env() here fails with: Error in as.environment(pos) : using 'as.environment(NULL)' is defunct when testing package loading during INSTALL
 
 # options used for NIMBLE package

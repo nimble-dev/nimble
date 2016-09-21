@@ -24,9 +24,9 @@
 ###					the modelValues, but this is not necessary (as long as it is a double pointer to something
 
 getMVptr <- function(rPtr, dll)
-  .Call( dll$getModelValuesPtrFromModel, rPtr)
+  .Call( nimbleUserNamespace$sessionSpecificDll$getModelValuesPtrFromModel, rPtr)
 getMVName <- function(modelValuePtr, dll)
-  .Call( dll$getMVBuildName, modelValuePtr)
+  .Call( nimbleUserNamespace$sessionSpecificDll$getMVBuildName, modelValuePtr)
 
 # for now export this as R<3.1.2 give warnings if don't
 
@@ -194,6 +194,8 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                         # avoid R CMD check problem with registration
                                                 ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+                                                browser()
+                                                .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr)
                                                 # .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll = dll)
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )
@@ -204,7 +206,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 nimbleProject <<- defaults$project
                                                 for(v in ls(model$isDataEnv)) isDataEnv[[v]] <<- model$isDataEnv[[v]]
                                                 setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                                                cppNames <<- .Call( dll$getAvailableNames, .basePtr) ## or could get this from R objects
+                                                cppNames <<- .Call( nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr) ## or could get this from R objects
                                                 cppCopyTypes <<- defaults$cppCT
                                                 compiledModel <<- defaults$cm
                                                 for(vn in cppNames)
