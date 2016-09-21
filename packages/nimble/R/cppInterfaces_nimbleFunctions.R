@@ -56,7 +56,27 @@ makeNFBindingFields <- function(symTab, cppNames) {
             fieldList[[vn]] <- 'ANY'
             next
         }
-        
+        browser()
+        if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
+          nfName <- paste0(".",vn,"_CnimbleList")
+          fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
+          fieldList[[vn]] <- eval(substitute(
+            function(x) {
+              if(missing(x))
+                NFNAME
+              else {
+                if(is.list(x)) { ## can be a list with first element a CmultiNimbleFunction object and second element an index
+                  basePtr <- x[[1]]$basePtrList[[ x[[2]] ]]
+                  nimbleInternalFunctions$setDoublePtrFromSinglePtr(VPTR, basePtr) ## check field name
+                } else {
+                  if(!inherits(x$.basePtr, 'externalptr')) stop(paste('Nimble compilation error initializing pointer for nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
+                  nimbleInternalFunctions$setDoublePtrFromSinglePtr(VPTR, x$.basePtr) ## check field name
+                }
+                assign(NFNAMECHAR, x, inherits = TRUE) ## avoids <<- warnings
+              }
+            }, list(VPTR = as.name(ptrName), NFNAME = as.name(nfName), NFNAMECHAR = nfName) ) )
+          next
+        }
         if(inherits(thisSymbol, 'symbolNimbleFunction')) { ## copy type 'nimbleFunction'
             nfName <- paste0(".",vn,"_CnimbleFunction")
             fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleFunction
@@ -339,6 +359,7 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                        ))
 
 makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
+  browser()
     ans <- list()
     vNames <- if(missing(cppNames)) names(symTab$symbols) else cppNames
     for(vn in vNames) {
@@ -352,6 +373,7 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
         else if(inherits(thisSymbol, 'symbolModelValuesAccessorVector')) {ans[[thisSymbol$name]] <- 'modelValuesAccess';next}
         else if(inherits(thisSymbol, 'symbolModelValues')) {ans[[thisSymbol$name]] <- 'modelValues'; next}
         else if(inherits(thisSymbol, 'symbolNimbleFunction')) {ans[[thisSymbol$name]] <- 'nimbleFunction'; next}
+        else if(inherits(thisSymbol, 'symbolNimbleList')) {ans[[thisSymbol$name]] <- 'nimbleList'; next}
         else if(inherits(thisSymbol, 'symbolVecNimArrPtr')) {ans[[thisSymbol$name]] <- 'modelValuesPtr'; next} ## from a singleModelValuesAccessClass, from e.g. mv[i, 'x']
         else if(inherits(thisSymbol, 'symbolNumericList')) {ans[[thisSymbol$name]] <- 'numericList'; next}
         else if(inherits(thisSymbol, 'symbolNimPtrList')) {ans[[thisSymbol$name]] <- 'nimPtrList'; next}

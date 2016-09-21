@@ -299,8 +299,12 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 sizeNFvar <- function(code, symTab, typeEnv) {
     nfName <- code$args[[1]]$name
     nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
-    if(!inherits(nfSym, 'symbolNimbleFunction')) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction.'), call. = FALSE)
-    nfProc <- nfSym$nfProc ## Now more generally this should be an interface
+    isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
+    isSymList <- inherits(nfSym, 'symbolNimbleList')
+    if(!(isSymFunc || isSymList))
+      stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or nimbleList.'), call. = FALSE)
+    if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface
+    if(isSymList) nfProc <- nfSym$nlProc
     if(is.null(nfProc)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbols in this nimbleFunction generation function not set up.'), call. = FALSE)
     objName <- code$args[[2]]
     if(!is.character(objName)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Second argument must be a character string.'), call. = FALSE)

@@ -362,7 +362,7 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## but actually, right now, we use it inconsistently.
 ## this is a function that could use a lot of polishing, but it's ok for now.
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
-    if(inherits(instances[[1]][[name]], 'nimbleList')) {
+    if(is.nl(instances[[1]][[name]])) {
         ## This case mimics the nimbleFunction case below (see is.nf)
 
         ## We need all instances created in setup code from all instances
@@ -370,10 +370,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
         ## trigger initial procesing to set up an nlProc object
         ## that will have a symbol table.
         ## Issue: We may also need to trigger this step from run code
-        nlp <- nimbleProject$compileNimbleList(nlList, initialSetupOnly = TRUE)
-
+        nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
         ## get the unique name that we use to generate a unique C++ definition
-        className <- attr(nlList[[1]], 'nimbleListDef')$className
+        className <- nlList[[1]]$nimbleListDef$className
 
         ## add the setupOutput name to objects that we need to instantiate and point to
         neededObjectNames <<- c(neededObjectNames, name)

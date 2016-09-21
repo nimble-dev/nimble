@@ -524,10 +524,18 @@ doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
     processor = function(code, nfProc){
         if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
-        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList')
+        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList', 'symbolNimbleList')
         class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
         if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
             return(code)
+        if(class == 'symbolNimbleList'){
+          #	Code is of the form 
+          #  myNimbleList[['myVar']]
+          nl_charName <- as.character(callerCode)
+          nl_fieldName <-as.character(code[[3]])
+          newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+          return(newRunCode)
+        }
         if(class == 'symbolModel'){
             singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
             nodeArg <- code[[3]]
@@ -580,13 +588,12 @@ dollarSign_keywordInfo <- keywordInfoClass(
 			#	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
 			#   Probably a better way to handle this
 			
-					
 		if(code[[3]] == 'run'){
 			newRunCode <- code[[2]]
 			return(newRunCode)
 		}
 				
-		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList')
+		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
 
 		callerCode <- code[[2]]
 		#	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
@@ -601,13 +608,13 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				
 		if(class == 'symbolNimPtrList'){
 			return(code)
-                    }
-            if(class == 'symbolModel'){
-                singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
-                accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
-                addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
-                return(as.name(accessName))
-            }
+    }
+    if(class == 'symbolModel'){
+      singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
+      accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
+      addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
+      return(as.name(accessName))
+    }
 		if(class == 'symbolNimbleFunction'){
 			
 			#	Code is of the form myNimbleFunction$myMethod
@@ -630,6 +637,14 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = as.name(nf_charName), VARNAME = nf_fieldName))
 				return(newRunCode)
 			}
+		}
+		if(class == 'symbolNimbleList'){
+		  #	Code is of the form 
+		  #  myNimbleList$myVar
+		  nl_charName <- as.character(callerCode)
+		  nl_fieldName <-as.character(code[[3]])
+		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+		  return(newRunCode)
 		}
 		if(class == 'symbolNimbleFunctionList'){
 				

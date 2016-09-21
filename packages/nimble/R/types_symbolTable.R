@@ -271,7 +271,7 @@ symbolNimbleList <-
                     initialize = function(...){callSuper(...)},
                     show = function() writeLines(paste('symbolNimbleList', name)),
                     genCppVar = function(...) {
-                        return(cppVarFull(name = name, baseType = nlProc$nimbleListDef$className, ptr = 1, selfDereference = TRUE))
+                        return(cppVarFull(name = name, baseType = nlProc$nimbleListObj$className, ptr = 1, selfDereference = TRUE))
                     }
                     ))
 

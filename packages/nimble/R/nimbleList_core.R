@@ -10,6 +10,14 @@ nimbleListDefClass <- setRefClass(
                   className = 'ANY')
 )
 
+nimbleListBase <- setRefClass(Class = 'nimbleListBase', 
+                                  fields = list(
+                                    .CobjectInterface = 'ANY'
+                                  ),
+                                  methods = list(
+                                    initialize = function(...)
+                                      callSuper(...)
+                                  ))
 
 
 
@@ -28,14 +36,14 @@ nimbleList <- function(types,
     names(fields) <- types$vars
     fields[[length(fields)+1]] <- "ANY"
     names(fields)[length(fields)] <- "nimbleListDef"
-    fields[[length(fields)+1]] <- "ANY"
-    names(fields)[length(fields)] <- ".CobjectInterface"
+
 
 
     nlGeneratorFunction <-   eval(  substitute(
       nlRefClassObject <- setRefClass(
           Class = NLREFCLASS_CLASSNAME,
           fields = NLREFCLASS_FIELDS,
+          contains = 'nimbleListBase',
           methods = list(
             initialize = function(...){
               nimbleListDef <<- nlDefClassObject
