@@ -56,8 +56,8 @@ makeNFBindingFields <- function(symTab, cppNames) {
             fieldList[[vn]] <- 'ANY'
             next
         }
-        browser()
         if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
+          browser()
           nfName <- paste0(".",vn,"_CnimbleList")
           fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
           fieldList[[vn]] <- eval(substitute(
@@ -359,7 +359,6 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                        ))
 
 makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
-  browser()
     ans <- list()
     vNames <- if(missing(cppNames)) names(symTab$symbols) else cppNames
     for(vn in vNames) {
@@ -470,6 +469,13 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self)
             .self[[v]] <- Cnf
             next
         }
+      else if(cppCopyTypes[[v]] == 'nimbleList') {
+        modelVar <- Robj[[v]]
+        Cnf <- modelVar$.CobjectInterface ##environment(modelVar)$.CobjectInterface
+        ## Cnf coule be old format (CnimbleFunction) or a list(CmultiNimbleFunction, index)
+        .self[[v]] <- Cnf
+        next
+      }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
             if(is.null(Robj[[v]]$contentsList)) {
                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
@@ -582,6 +588,18 @@ copyFromRobject = function(Robj, cppNames, cppCopyTypes, basePtr) {
             ## .self[[v]] <- Cnf
             next
         }
+      else if(cppCopyTypes[[v]] == 'nimbleList') {
+        modelVar <- Robj[[v]]
+        Cnf <- modelVar$.CobjectInterface ##environment(modelVar)$.CobjectInterface
+        if(is.list(Cnf)) {
+          valueBasePtr <- Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
+        } else {
+          valueBasePtr <- Cnf$.basePtr
+        }
+        getSetNimbleFunction(v, valueBasePtr, basePtr)
+        ## .self[[v]] <- Cnf
+        next
+      }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
             if(is.null(Robj[[v]]$contentsList)) {
                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
@@ -792,7 +810,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
                                                  # if(missing(project)) stop('Cannot create CmultiNimbleFunctionClass without a project', call. = FALSE)
                                                  # if(is.null(project)) stop('Cannot create CmultiNimbleFunctionClass with a NULL project', call. = FALSE)
-                                                  nimbleProject <<- project
+                                                 nimbleProject <<- project
                                                  neededObjectsList <<- list()
                                                  ##     nfObjectList <<- list()
                                                  basePtrList <<- list()

@@ -5,7 +5,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                   methods = list(
                                       initialize = function(nimCompProc, debugCpp = FALSE, fromModel = FALSE, ...) {
                                           callSuper(nimCompProc, debugCpp, fromModel, ...)
-                                          # inheritance <<- c(inheritance, 'pointedToBase')
+                                          inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       buildCmultiInterface = function(dll = NULL) {
                                           sym <- if(!is.null(dll))
@@ -22,5 +22,9 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                      SEXPgeneratorFun$name
                                            Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                           # message('Rgenerator for nimbleList does not exist')
+                                      },
+                                      genNeededTypes = function(debugCpp = FALSE, fromModel = FALSE){
+                                        CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
+                                        callSuper(debugCpp, fromModel)
                                       })
                                   )

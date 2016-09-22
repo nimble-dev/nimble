@@ -104,7 +104,18 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                    }
                                                    next
                                                }
-                                               
+                                               if(inherits(neededType, 'symbolNimbleList')) {
+                                                 generatorName <- neededType$nlProc$name
+                                                 thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = generatorName)
+                                                 if(is.null(thisCppDef)) {
+                                                   className <- names(nimCompProc$neededTypes)[i]
+                                                   thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel)
+                                                   neededTypeDefs[[ className ]] <<- thisCppDef
+                                                   Hincludes <<- c(Hincludes, thisCppDef)
+                                                   CPPincludes <<- c(CPPincludes, thisCppDef, nimbleIncludeFile("smartPtrs.h"))
+                                                 }
+                                                 next
+                                               }
                                                if(inherits(neededType, 'symbolOptimReadyFunction')){
                                                    typeName <- neededType$genName
                                                    thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = typeName)                                                     	 

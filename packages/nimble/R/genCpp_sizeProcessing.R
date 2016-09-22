@@ -1,5 +1,5 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize')
-operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
+operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar','nlVar')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
@@ -25,6 +25,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                  ## '[[' for nimbleFunctionList goes through chainedCall
                     chainedCall = 'sizeChainedCall',
                     nfVar = 'sizeNFvar',
+                    nlVar = 'sizeNFvar',
                     map = 'sizemap', 
                     ':' = 'sizeColonOperator',
                     dim = 'sizeDimOperator',

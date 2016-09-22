@@ -271,7 +271,14 @@ symbolNimbleList <-
                     initialize = function(...){callSuper(...)},
                     show = function() writeLines(paste('symbolNimbleList', name)),
                     genCppVar = function(...) {
-                        return(cppVarFull(name = name, baseType = nlProc$nimbleListObj$className, ptr = 1, selfDereference = TRUE))
+                      browser()
+                        return(  cppVarFull(name = name,
+                                            baseType = 'nimSmartPtr',
+                                            templateArgs = list(nlProc$name),
+                                            ptr = 0,
+                                            selfDereference = FALSE,
+                                            ref = FALSE,
+                                            ...) )
                     }
                     ))
 

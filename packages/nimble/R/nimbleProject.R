@@ -556,7 +556,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ## like old makeCppNIMBLEfunction
                                      ## check of make new nfCompInfos item
                                      ## ensure it is build up to the cppNimbleFunctionClass
-                                   browser()
                                      if(!is.null(funList)) {
                                          generatorName <- nfGetDefVar(funList[[1]], 'name')
                                          name <- nf_getRefClassObject(funList[[1]])$name
