@@ -120,7 +120,11 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      
                                      funCode <- parse(text = paste0('function(', paste0(argNamesCall, collapse = ','),') A'), keep.source = FALSE)[[1]]
-                                     bodyCode <- substitute({ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
+                                     if(asMember & is.character(includeDotSelf))
+                                         bodyCode <- substitute({if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
+                                                                 ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign, DOTSELFNAME = includeDotSelf))
+                                     else
+                                         bodyCode <- substitute({ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
                                      funCode[[4]] <- NULL
                                      if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))

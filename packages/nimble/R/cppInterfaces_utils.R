@@ -1,3 +1,7 @@
+nimbleFinalize <- function(extptr) {
+    .Call(nimbleUserNamespace$sessionSpecificDll$RNimble_Ptr_ManualFinalizer, extptr)
+}
+
 cGetNRow <- function(cMV, compIndex = 1)
 {
   nRow = .Call( nimbleUserNamespace$sessionSpecificDll$getNRow, cMV$componentExtptrs[[compIndex]])

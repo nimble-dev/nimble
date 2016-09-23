@@ -38,6 +38,7 @@ getMVName <- function(modelValuePtr, dll)
 CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                contains = 'modelBaseClass',
                                fields = list(
+                                   .basePtr = 'ANY',
                                    dll = 'ANY',
                                    Rmodel = 'ANY',
                                    cppNames = 'ANY',
@@ -53,6 +54,23 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                methods = list(
                                    show = function() {
                                        cat('CmodelBaseClass object\n')
+                                   },
+                                   finalize = function() {
+                                     ##  Rmodel$CobjectInterface <<- NULL
+                                       for(vn in cppNames) {
+                                           vPtrName <- paste(".", vn, "_Ptr", sep = "")
+                                           assign(vPtrName, NULL, inherits = TRUE)
+                                       }
+                                       browser()
+                                       for(i in ls(Rmodel$nodes)) {
+                                           if(is.list(nodes[[thisNodeFunName]]))
+                                               nodes[[thisNodeFunName]][[1]]$finalize(nodes[[thisNodeFunName]][[2]])
+                                           else
+                                               nodes[[thisNodeFunName]]$finalize()
+                                       }
+                                       .basePtr <<- NULL
+                                       .nodeFxnPointers_byDeclID$finalize()
+                                       nimbleProject <<- NULL
                                    },
                                    setModel = function(model) {
                                        ## This is creating a circular reference, so be careful with show(), and with Rstudio
@@ -146,7 +164,7 @@ makeModelCppCopyTypes <- function(symTab) {
 
 
 makeModelBindingFields <- function(symTab) {
-  fieldList = list(.basePtr = "ANY", .modelValues_Ptr = "ANY", .DUMMY = "ANY")  
+  fieldList = list(.modelValues_Ptr = "ANY", .DUMMY = "ANY")  
   vNames = names(symTab$symbols)
   for(vn in vNames){
     ptrName = paste(".", vn, "_Ptr", sep = "")
@@ -194,8 +212,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                         # avoid R CMD check problem with registration
                                                 ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-                                                browser()
-                                                .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr)
+                                                .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll)
                                                 # .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll = dll)
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )

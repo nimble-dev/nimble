@@ -59,6 +59,10 @@ CmodelValues <- setRefClass(
             return(GID_map$expandNodeNames(nodeNames = nodeNames, returnType = returnType, 
                                            flatIndices = flatIndices))
         },
+        finalize = function() {
+            nimble:::nimbleFinalize(extptr)
+            extptr <<- NULL
+        },
         initialize = function(buildCall, existingPtr, initialized = FALSE, dll) {
             if(missing(existingPtr) ) {
                 if(is.character(buildCall)) {
@@ -68,8 +72,7 @@ CmodelValues <- setRefClass(
                 ## notice that buildCall is the result of getNativeSymbolInfo using the dll from nimbleProject$instantiateCmodelValues
                 ## only other calling point is from cppInterfaces_models.R, and in that case existingPtr is provided
                 extptr <<- eval(parse(text = ".Call(buildCall)"))
-                browser()
-                .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr)
+                .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll)
 #                extptr <<- .Call(buildCall) 
             }
             else{

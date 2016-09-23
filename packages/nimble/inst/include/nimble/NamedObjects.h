@@ -37,8 +37,8 @@ extern "C" {
   SEXP resizeNumberedObjects(SEXP Snp, SEXP size);
   SEXP getSizeNumberedObjects(SEXP Snp);
   SEXP newNumberedObjects();
-  SEXP register_namedObjects_Finalizer(SEXP Sno);
-  SEXP register_numberedObjects_Finalizer(SEXP Sno);
+  SEXP register_namedObjects_Finalizer(SEXP Sno, SEXP Dll);
+  SEXP register_numberedObjects_Finalizer(SEXP Sno, SEXP Dll);
 }
 
 void numberedObjects_Finalizer(SEXP Snp);

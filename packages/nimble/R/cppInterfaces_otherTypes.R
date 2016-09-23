@@ -223,6 +223,9 @@ numberedObjects <- setRefClass('numberedObjects',
                                        dll <<- dll
                                        .ptr <<- newNumberedObjects(dll)
                                    },
+                                   finalize = function() {
+                                       nimbleFinalize(.ptr)
+                                   },
                                    getSize = function(){
                                        getSize_NumberedObjects(.ptr, dll)
                                    },
@@ -245,7 +248,7 @@ setMethod('[<-', 'numberedObjects', function(x, i, value){
 
 newNumberedObjects <- function(dll){
     ans <- .Call( nimbleUserNamespace$sessionSpecificDll$newNumberedObjects)
-    .Call(nimbleUserNamespace$sessionSpecificDll$register_numberedObjects_Finalizer, ans)
+    .Call(nimbleUserNamespace$sessionSpecificDll$register_numberedObjects_Finalizer, ans, dll)
     ans
 }
 

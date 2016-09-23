@@ -105,7 +105,7 @@ extern "C" {
   SEXP setEnvVar_Sindex(SEXP sString, SEXP sEnv, SEXP sVal, SEXP sIndex);	//Same as getEnvVar_Sindex, but this function sets rather than gets														
   SEXP setEnvVar(SEXP sString, SEXP sEnv, SEXP sVal);						//Same as above but uses sIndex = 1
 
-  SEXP register_VecNimArr_Finalizer(SEXP Sp);
+  SEXP register_VecNimArr_Finalizer(SEXP Sp, SEXP Dll);
 }
 
 void VecNimArr_Finalizer(SEXP Sp);

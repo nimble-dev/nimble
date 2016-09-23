@@ -9,6 +9,7 @@
 #include <nimble/accessorClasses.h>
 #include <nimble/dists.h>
 #include <nimble/NamedObjects.h>
+#include <nimble/dllFinalizer.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -97,11 +98,21 @@ R_CallMethodDef CallEntries[] = {
   FUN(resizeNumberedObjects, 2),
   FUN(getSizeNumberedObjects, 1),
   FUN(newNumberedObjects, 0),
-  FUN(register_namedObjects_Finalizer, 1),
-  FUN(register_numberedObjects_Finalizer, 1),
-  FUN(register_VecNimArr_Finalizer, 1),
+  FUN(register_namedObjects_Finalizer, 2),
+  FUN(register_numberedObjects_Finalizer, 2),
+  FUN(register_VecNimArr_Finalizer, 2),
+
+  FUN(RNimble_Ptr_ManualFinalizer, 1),
+  FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 1),
+  
   {NULL, NULL, 0}
 };
+
+
+/* R_CMethodDef CEntries[] = { */
+/*   FUN(RegisterNimblePointer, 3), */
+/*   {NULL, NULL, 0} */
+/* } */
 
 // Something like this will be generated with each .so/.dll nimble creates
 // however it is required to be named R_init_SONAME, so it must be generated for each one.
@@ -110,7 +121,7 @@ R_CallMethodDef CallEntries[] = {
 // void
 // R_init_nimble_on_the_fly(DllInfo *dll)
 // {
-//     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+//     R_registerRoutines(dll, CEntries OR NULL, CallEntries, NULL, NULL);
 // }
 
 #endif

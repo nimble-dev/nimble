@@ -16,7 +16,7 @@
 ###						Access to the elements is provided through nimbleFxnObject$Varname
 
 makeNFBindingFields <- function(symTab, cppNames) {
-    fieldList = list(.basePtr = "ANY", .DUMMY = "ANY")  # We use this .DUMMY field to trick R into not mistakenly printing
+    fieldList = list(.DUMMY = "ANY")  # We use this .DUMMY field to trick R into not mistakenly printing
                                         # an error. See initialization function inside buildNimbleFxnInterface
     vNames <- if(missing(cppNames)) names(symTab$symbols) else cppNames
     for(vn in vNames) {
@@ -320,6 +320,7 @@ getSetLogicalScalar <- function(name, value, basePtr, dll) {
 CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                    fields = list(
                                        dll = "ANY",
+                                       .basePtr = 'ANY',
                                        compiledNodeFun = 'ANY',
                                        Robject = 'ANY', ## this should be the refClassObject, not the function
                                        cppNames = 'ANY',
@@ -328,6 +329,16 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                        nimbleProject = 'ANY'
                                        ),
                                    methods = list(
+                                       finalize = function() {
+                                           neededObjects <<- nimble:::clearNeededObjects(Robject, compiledNodeFun, neededObjects)
+                                           vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
+                                           for(vn in seq_along(cppNames) ){
+                                               .self[[vPtrNames[vn]]] <- NULL
+                                           }
+                                           nimble:::nimbleFinalize(.basePtr)
+                                           .basePtr <<- NULL
+                                           nimbleProject <<- NULL
+                                       },
                                        initialize = function(dll = NULL, project = NULL, test = TRUE, ...) {
                                        		neededObjects <<- list()
                                            if(!test) {
@@ -408,7 +419,50 @@ makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelf
     ans
 }
 
-buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll, nimbleProject) {
+clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
+    for(iName in compiledNodeFun$nfProc$neededObjectNames) {
+        thisObj <- Robj[[iName]]
+
+        if(inherits(thisObj, 'modelValuesBaseClass')) {
+            ## if(!(inherits(thisObj$CobjectInterface, 'uninitializedField') || is.null(thisObj$CobjectInterface))) {
+            ##     neededObjects[[iName]] <- nimbleProject$clearCmodelValues(thisObj) ## should be redundant since CmodelValues are added to the nimbleProject earlier and so will be cleared anyway via nimbleProject$clearCompiled()
+            ## }
+
+            ## We skip over CmodelValues for now because they should be cleared by nimbleProject$clearCompiled
+            ## otherwise we don't have a good way to look them up from the project except by index, which isn't known
+            next
+        }
+        if(is.nf(thisObj)) {
+            RCO <- nf_getRefClassObject(thisObj)
+            if(!(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface))) {
+                if(is.list(RCO$.CobjectInterface))
+                    RCO$.CobjectInterface[[1]]$finalizeInstance(RCO$.CobjectInterface[[2]])
+                else
+                    RCO$.CobjectInterface$finalize()
+                neededObjects[[iName]] <- NULL
+            }
+            next
+        }
+        if(inherits(thisObj, 'nimbleFunctionList')) {
+            for(i in seq_along(thisObj$contentsList)) {
+                RCO <- nf_getRefClassObject(thisObj[[i]])
+                if(!(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface))) {
+                    if(is.list(RCO$.CobjectInterface))
+                        RCO$.CobjectInterface[[1]]$finalizeInstance(RCO$.CobjectInterface[[2]])
+                    else
+                        RCO$.CobjectInterface$finalize()
+                    neededObjects[[iName]][[i]] <- NULL
+                } 
+            }
+            thisObj$CobjectInterface <- NULL
+            neededObjects[[iName]] <- NULL
+            next
+        }
+    }
+    neededObjects
+}
+
+buildNeededObjects <- function(Robj, compiledNodeFun, neededObjects, dll, nimbleProject) {
     for(iName in compiledNodeFun$nfProc$neededObjectNames) {
         thisObj <- Robj[[iName]]
         if(inherits(thisObj, 'modelValuesBaseClass')) {
@@ -720,8 +774,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         } else defaults$basePtrCall
         # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
         .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-        browser()
-        .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr)
+        .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll)
         # .basePtr <<- .Call(basePtrCall)
         cppNames <<- .Call( nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr)
         cppCopyTypes <<- defaults$cppCT
@@ -806,6 +859,14 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  callEnv <<- new.env()
                                                  eval(callCode, envir = callEnv)
                                              },
+                                             finalizeInstance = function(index) {
+                                                 if(!is.na(basePtrList[[index]])) {
+                                                     neededObjectsList[[index]] <<- nimble:::clearNeededObjects(RobjectList[[index]], compiledNodeFun, neededObjectsList[[index]])
+                                                     RobjectList[[index]] <<- NA
+                                                     nimble:::nimbleFinalize(basePtrList[[index]])
+                                                     basePtrList[[index]] <<- NA
+                                                 }          
+                                             },
                                              addInstance = function(nfObject, dll = NULL) { ## role of initialize
                                                  if(!is.null(.self$dll)) {
                                                      if(!identical(dll, .self$dll)) stop('Can not addInstance of a compiled nimbleFunction from different DLLs', call. = FALSE)
@@ -817,8 +878,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
-                                                 browser()
-                                                 .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr)
+                                                 .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr, dll)
                                                  
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)

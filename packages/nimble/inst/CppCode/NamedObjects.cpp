@@ -1,6 +1,7 @@
 #include "nimble/NamedObjects.h"
 #include "nimble/Utils.h"
 #include "nimble/Model.h"
+#include "nimble/dllFinalizer.h"
 #include "R.h"
 
 void* NamedObjects::getObjectPtr( string &name ) {
@@ -103,9 +104,10 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 	return(ans);
 }
 
-SEXP register_numberedObjects_Finalizer(SEXP Snp) {
+SEXP register_numberedObjects_Finalizer(SEXP Snp, SEXP Dll) {
   std::cout<< "In register_numberedObjects_Finalizer\n";
-  R_RegisterCFinalizerEx(Snp, &numberedObjects_Finalizer, TRUE);
+  //  R_RegisterCFinalizerEx(Snp, &numberedObjects_Finalizer, TRUE);
+  RegisterNimbleFinalizer(Snp, Dll, &numberedObjects_Finalizer);
   return(Snp);
 }
 
@@ -116,9 +118,10 @@ void numberedObjects_Finalizer(SEXP Snp){
   R_ClearExternalPtr(Snp);
 }
 
-SEXP register_namedObjects_Finalizer(SEXP Snp) {
+SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll) {
   std::cout<< "In register_namedObjects_Finalizer\n";
-  R_RegisterCFinalizerEx(Snp, &namedObjects_Finalizer, TRUE);
+  //R_RegisterCFinalizerEx(Snp, &namedObjects_Finalizer, TRUE);
+  RegisterNimbleFinalizer(Snp, Dll, &namedObjects_Finalizer);
   return(Snp);
 }
 

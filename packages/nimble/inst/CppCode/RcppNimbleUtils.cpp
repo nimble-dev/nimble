@@ -1,6 +1,7 @@
 #include "nimble/NimArrBase.h"
 #include "nimble/NamedObjects.h"
 #include "nimble/RcppNimbleUtils.h"
+#include "nimble/dllFinalizer.h"
 //#include "nimble/RcppUtils.h"
 #include "nimble/Utils.h"
 #include<iostream>
@@ -884,9 +885,10 @@ void VecNimArr_Finalizer(SEXP Sp) {
 
 }
 
-SEXP register_VecNimArr_Finalizer(SEXP Sp) {
+SEXP register_VecNimArr_Finalizer(SEXP Sp, SEXP Dll) {
   std::cout<< "In register_VecNimArr_Finalizer\n";
-  R_RegisterCFinalizerEx(Sp, &VecNimArr_Finalizer, TRUE);
+  //  R_RegisterCFinalizerEx(Sp, &VecNimArr_Finalizer, TRUE);
+  RegisterNimbleFinalizer(Sp, Dll, &VecNimArr_Finalizer);
   return(Sp);
 }
 

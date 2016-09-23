@@ -239,7 +239,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
-                                       browser()
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
                                            writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dllName)
                                            ssDllName <- file.path(dirName, paste0(dllName,'_SSDLL', .Platform$dynlib.ext))

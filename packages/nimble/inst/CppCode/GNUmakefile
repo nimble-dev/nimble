@@ -1,4 +1,4 @@
-SRC=RcppUtils.cpp RcppNimbleUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp nimbleGraph.cpp
+SRC=RcppUtils.cpp RcppNimbleUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp dllFinalizer.cpp #nimbleGraph.cpp
 OBJECTS=$(SRC:%.cpp=%.o)
 
 ifndef R_SHARE_DIR
