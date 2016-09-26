@@ -103,8 +103,8 @@ R_CallMethodDef CallEntries[] = {
   FUN(register_VecNimArr_Finalizer, 2),
 
   FUN(RNimble_Ptr_ManualFinalizer, 1),
-  FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 1),
-  
+  FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
+  FUN(CountDllObjects, 1),
   {NULL, NULL, 0}
 };
 

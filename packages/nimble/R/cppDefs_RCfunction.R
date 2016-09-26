@@ -120,25 +120,38 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      
                                      funCode <- parse(text = paste0('function(', paste0(argNamesCall, collapse = ','),') A'), keep.source = FALSE)[[1]]
+                                     ## the first warning may be removed later if there is no CnativeSymbolInfo_ to be created or if eval is FALSE (as for a nimbleFunction member
                                      if(asMember & is.character(includeDotSelf))
-                                         bodyCode <- substitute({if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
-                                                                 ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign, DOTSELFNAME = includeDotSelf))
+                                         bodyCode <- substitute({
+                                             if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
+                                             if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
+                                             ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign, DOTSELFNAME = includeDotSelf))
                                      else
-                                         bodyCode <- substitute({ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
+                                         bodyCode <- substitute({
+                                             if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
+                                              ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
                                      funCode[[4]] <- NULL
                                      if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
                                      if(eval) {
-                                         fun = eval(funCode) 
-                                         environment(fun) = env #??? may want this to be environment() or the default value for env to be environment()
+                                         fun = eval(funCode)
+                                         newenv <- eval(quote(new.env()), envir = env)
+                                         environment(fun) = newenv #??? may want this to be environment() or the default value for env to be environment()
+                                         ##environment(fun) = env #??? may want this to be environment() or the default value for env to be environment()
                                          if(!is.null(dll))   {
                                         # replace the name of the symbol in the .Call() with the resolved symbol.
-					     body(fun)[[2]][[3]][[2]] = getNativeSymbolInfo(SEXPinterfaceCname, dll)
-					 }
+					     ##body(fun)[[2]][[3]][[2]] = getNativeSymbolInfo(SEXPinterfaceCname, dll)
+                                             body(fun)[[3]][[3]][[2]] = quote(CnativeSymbolInfo_)
+                                             assign('CnativeSymbolInfo_', getNativeSymbolInfo(SEXPinterfaceCname, dll), envir = newenv)
+					 } else {
+                                             body(fun)[[2]] <- NULL ## remove the check for valid CnativeSymbolInfo_
+                                         }
 
                                          fun
-                                     } else 
+                                     } else {
+                                         funCode[[3]][[2]] <- NULL
                                          funCode
+                                     }
                                  },
                                  buildSEXPinterfaceFun = function(className = NULL) {
                                      asMember <- !is.null(className)

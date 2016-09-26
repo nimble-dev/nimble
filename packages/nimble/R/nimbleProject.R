@@ -86,13 +86,19 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      dirName <<- if(is.null(dir)) makeDefaultDirName() else dir
                                      if(name == '') projectName <<- projectNameCreator() else projectName <<- name
                                     },
-                                 clearCompiler = function() {
-                                     resetFunctions(finalize = TRUE)
-                                     resetModels(finalize = TRUE)
+                                 clearCompiled = function(functions = TRUE, models = TRUE, DLLs = TRUE) {
+                                     if(functions) resetFunctions(finalize = TRUE)
+                                     if(models) resetModels(finalize = TRUE)
+                                     if(DLLs) unloadDLLs()
+                                 },
+                                 unloadDLLs = function() {
+                                     for(i in seq_along(cppProjects)) {
+                                         cppProjects[[i]]$unloadSO(check = TRUE, force = FALSE)
+                                     }
                                  },
                                  resetModels = function(finalize = TRUE) {
                                      for(i in ls(models)) {
-                                         models[[i]]$CobjectInterface$finalize()
+                                         models[[i]]$CobjectInterface$finalizeInternal()
                                          models[[i]]$CobjectInterface <<- NULL
                                          models[[i]]$nimbleProject <<- NULL
                                          models[[i]]$Cname <<- character(0)
@@ -101,6 +107,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  resetFunctions = function(finalize = FALSE) {
                                      message("put clearNeededObjects and nimbleFinalize into nimbleFunctionNamespace")
+                                     message("fix up modelValues creation")
                                      ## clear everything except models and nimbleFunctions from models
                                      for(i in ls(mvInfos)) {
                                          if(length(mvInfos[[i]]$fromModel) > 0) {
@@ -109,7 +116,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                  for(j in seq_along(mvInfos[[i]]$RmvObjs)) {
                                                      if(!is.null(mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface)) {
                                                          if(finalize) {
-                                                             mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface$finalize() 
+                                                             mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface$finalizeInternal() 
                                                          }
                                                          mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface <<- NULL
                                                      }
@@ -119,14 +126,14 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          }
                                      }
                                      for(i in ls(RCfunInfos)) {
-                                         if(length(RCfunInfos[[i]]$fromModel) > 0) {
-                                             if(!RCfunInfos[[i]]$fromModel) {
-                                                 thisName <- RCfunInfos[[i]]$uniqueName
-                                                 cppProjects[[thisName]] <<- NULL
-                                                 RCfunInfos[[i]] <<- NULL
-                                                 RCfunCppInterfaces[[i]] <<- NULL
-                                             }
+                                         if(!is.null(RCfunCppInterfaces[[i]])) { ## could be null if it was a neededType and an interface was never built 
+                                             environment(RCfunCppInterfaces[[i]])$CnativeSymbolInfo_ <<- NULL
+                                             RCfunCppInterfaces[[i]] <<- NULL
                                          }
+                                         assign('nimbleProject', NULL, envir = RCfunInfos[[i]]$nfMethodRCobj)
+                                         thisName <- RCfunInfos[[i]]$nfMethodRCobj$uniqueName
+                                         ##if(!is.null(cppProjects[[thisName]])) cppProjects[[thisName]] <<- NULL
+                                         RCfunInfos[[i]] <<- NULL
                                      }
                                      for(i in ls(nfCompInfos)) {
                                          if(length(nfCompInfos[[i]]$fromModel) > 0) {
@@ -145,14 +152,14 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                              if(is.list( thisRCO$.CobjectInterface)) { ## CmultiNimbleFunctionInterface
                                                                  thisRCO$.CobjectInterface[[1]]$finalizeInstance(thisRCO$.CobjectInterface[[2]])
                                                              } else {
-                                                                 thisRCO$.CobjectInterface$finalize()
+                                                                 thisRCO$.CobjectInterface$finalizeInternal()
                                                              }
                                                              thisRCO$.CobjectInterface <- NULL
                                                          }
                                                      }
                                                  }
                                                  nfCompInfos[[i]] <<- NULL
-                                                 cppProjects[[i]] <<- NULL
+                                                 ## cppProjects[[i]] <<- NULL
                                              }
                                          }
                                      }
@@ -276,6 +283,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(is.null(RCfunInfos[[className]])) {
                                          RCfunInfos[[className]] <<- RCfunInfoClass(nfMethodRCobj = nfmObj, RCfunProc = NULL, cppClass = NULL, fromModel = fromModel)
                                      }
+                                     assign('nimbleProject', .self, envir = nfmObj) ## needed for clearCompiled(), i.e. safe dyn.unload()
                                  },
                                  getRCfunCppDef = function(nfmObj, NULLok = FALSE) {
                                      className <- nfmObj$uniqueName
@@ -652,8 +660,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  )
                              )
 
-clearCompiledNimble <- function(obj) { # for now just take one obj as input
-    np <- getNimbleProject(np)
+clearCompiled <- function(obj) { # for now just take one obj as input
+    np <- getNimbleProject(obj)
     np$clearCompiled()
 }
 
@@ -777,6 +785,7 @@ getNimbleTypes <- function(units) {
 getNimbleProject <- function(project, stopOnNull = FALSE) {
     if(inherits(project, 'nimbleProjectClass')) return(project)
     if(is.nf(project)) return(nfVar(project, 'nimbleProject'))
+    if(is.rcf(project)) return(environment(project)$nfMethodRCobject$nimbleProject)
     ans <- try(project$nimbleProject)
     if(inherits(ans, 'try-error') | is.null(ans)) {
         if(stopOnNull) stop(paste0('cannot determine nimbleProject from provided project argument'))
@@ -785,3 +794,6 @@ getNimbleProject <- function(project, stopOnNull = FALSE) {
     ans
 }
 
+countDllObjects <- function() {
+    .Call(nimbleUserNamespace$sessionSpecificDll$CountDllObjects)
+}

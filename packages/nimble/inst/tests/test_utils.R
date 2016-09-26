@@ -47,8 +47,8 @@ test_math <- function(input, verbose = TRUE, size = 3) {
       #       setup = TRUE,
              run = runFun)
   #nfR <- nfGen()
-  project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
-  nfC <- compileNimble(nfR, project = project)
+##  project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
+  nfC <- compileNimble(nfR)##, project = project)
 
   nArgs <- length(input$inputDim)
   logicalArgs <- rep(FALSE, nArgs)
@@ -78,7 +78,7 @@ test_math <- function(input, verbose = TRUE, size = 3) {
   try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name),
                 expect_equal(out, out_nfC)))
   # unload DLL as R doesn't like to have too many loaded
-  if(.Platform$OS.type != 'windows') dyn.unload(project$cppProjects[[1]]$getSOName())
+  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
   invisible(NULL)
 }
 
@@ -348,9 +348,11 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
     if(doCpp) {
         if(.Platform$OS.type != "windows") {
-            dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
-            dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
-            }
+            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
+            ##dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
+            message('remove the nimble::: in test_mcmc')
+            nimble:::clearCompiled(Rmodel)
+        }
     }
   return(returnVal)
 }
@@ -600,8 +602,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
 
     if(doCpp) {
         if(.Platform$OS.type != 'windows') {
-            dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rfilter have the same project so they are interchangeable in these lines.
-            dyn.unload(getNimbleProject(Rmodel)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
+            nimble:::clearCompiled(Rmodel)
+            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rfilter have the same project so they are interchangeable in these lines.
+            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
         }
     }
   return(returnVal)

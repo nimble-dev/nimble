@@ -34,8 +34,9 @@ enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
 	public:
 	nimType myType;
 	virtual nimType getNimType() const {return(myType);};
-	virtual ~NimArrType(){Rprintf("In NimArrType destructor\n");};
+	virtual ~NimArrType(){//Rprintf("In NimArrType destructor\n");
 	};
+ };
 
 
   class NimVecType{
@@ -117,7 +118,7 @@ class NimArrBase: public NimArrType {
   virtual ~NimArrBase(){
     //delete[] NAdims;
     //delete[] NAstrides;
-    Rprintf("In NimArrBase destructor\n");
+    //Rprintf("In NimArrBase destructor\n");
     if(own_v) delete [] v;
   };
  NimArrBase(const NimArrBase<T> &other) : // do we ever use this case?

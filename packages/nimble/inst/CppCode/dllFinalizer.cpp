@@ -1,11 +1,11 @@
-#include <unordered_map>
+#include <map>
 #include <utility>
 #include "nimble/dllFinalizer.h"
 
 typedef std::pair<SEXP, R_CFinalizer_t> DllAndFinalizer;
 
-std::unordered_map<SEXP, DllAndFinalizer> RnimblePtrs;
-typedef std::unordered_map<SEXP, DllAndFinalizer>::iterator RnimblePtrsIterator;
+std::map<SEXP, DllAndFinalizer> RnimblePtrs;
+typedef std::map<SEXP, DllAndFinalizer>::iterator RnimblePtrsIterator;
 
 void finalizeOneObject(RnimblePtrsIterator RNPiter) {
     R_CFinalizer_t cfun;
@@ -20,7 +20,7 @@ void RNimble_PtrFinalizer(SEXP obj) {
   // add check that obj is an external pointer
   RnimblePtrsIterator value = RnimblePtrs.find(obj);
   if(value == RnimblePtrs.end()) {
-    PRINTF("Trying to finalize a pointer whose object was already cleared\n");
+    //PRINTF("Trying to finalize a pointer whose object was already cleared\n");
     return;
   }
   finalizeOneObject(value);
@@ -37,26 +37,42 @@ void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer) { // sa
   R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
 }
 
+SEXP CountDllObjects() {
+  SEXP Sans;
+  PROTECT(Sans = allocVector(INTSXP, 1));
+  INTEGER(Sans)[0] = RnimblePtrs.size();
+  UNPROTECT(1);
+  return(Sans);
+}
+
 SEXP RNimble_Ptr_ManualFinalizer(SEXP obj) {
   RNimble_PtrFinalizer(obj);
   return(R_NilValue);
 }
 
-SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll) {
+SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
   RnimblePtrsIterator RNPiter;
   int objectsFound(0);
+  bool force = LOGICAL(Sforce)[0];
   for(RNPiter = RnimblePtrs.begin();
       RNPiter != RnimblePtrs.end();
       ) {
     if(RNPiter->second.first == Dll) {
       objectsFound++;
-      finalizeOneObject(RNPiter++); // pass by copy a current iterator value and increment, since finalizerOneObject will use .erase()
+      if(force) finalizeOneObject(RNPiter++); // pass by copy a current iterator value and increment, since finalizerOneObject will use .erase()
     } else {
       ++RNPiter;
     }
   }
   if(objectsFound > 0) {
-    PRINTF("Warning: %i objects were cleared from a DLL\n", objectsFound);
+    if(force) 
+      PRINTF("Warning: %i objects were force-cleared from a DLL\n", objectsFound);
+    else
+      PRINTF("Warning: %i objects were found from a DLL\n", objectsFound);
   }
-  return(R_NilValue);
+  SEXP Sans;
+  PROTECT(Sans = allocVector(INTSXP, 1));
+  INTEGER(Sans)[0] = objectsFound;
+  UNPROTECT(1);
+  return(Sans);
 }

@@ -55,22 +55,29 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                    show = function() {
                                        cat('CmodelBaseClass object\n')
                                    },
-                                   finalize = function() {
-                                     ##  Rmodel$CobjectInterface <<- NULL
+                                   finalizeInternal = function() {
                                        for(vn in cppNames) {
                                            vPtrName <- paste(".", vn, "_Ptr", sep = "")
                                            assign(vPtrName, NULL, inherits = TRUE)
                                        }
-                                       browser()
-                                       for(i in ls(Rmodel$nodes)) {
-                                           if(is.list(nodes[[thisNodeFunName]]))
-                                               nodes[[thisNodeFunName]][[1]]$finalize(nodes[[thisNodeFunName]][[2]])
-                                           else
-                                               nodes[[thisNodeFunName]]$finalize()
-                                       }
+                                       finalize()
                                        .basePtr <<- NULL
-                                       .nodeFxnPointers_byDeclID$finalize()
+                                       .nodeFxnPointers_byDeclID <<- NULL
                                        nimbleProject <<- NULL
+                                   },
+                                   finalize = function() {
+                                       for(i in ls(Rmodel$nodes)) {
+                                           if(is.null(nodes[[i]])) next
+                                           if(is.list(nodes[[i]]))
+                                               nodes[[i]][[1]]$finalizeInstance(nodes[[i]][[2]])
+                                           else
+                                               nodes[[i]]$finalize()
+                                           nodes[[i]] <<- NULL
+                                       }
+                                       if(!is.null(.nodeFxnPointers_byDeclID))
+                                           .nodeFxnPointers_byDeclID$finalize()
+                                       if(!is.null(.basePtr))
+                                           nimble:::nimbleFinalize(.basePtr)
                                    },
                                    setModel = function(model) {
                                        ## This is creating a circular reference, so be careful with show(), and with Rstudio

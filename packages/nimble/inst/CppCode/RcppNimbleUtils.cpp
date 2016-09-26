@@ -878,7 +878,7 @@ SEXP makeNumericList(SEXP nDims, SEXP type, SEXP nRows){
 // }
 
 void VecNimArr_Finalizer(SEXP Sp) {
-  std::cout<< "In VecNimArr_Finalizer\n";
+  //  std::cout<< "In VecNimArr_Finalizer\n";
   NimVecType* np = static_cast<NimVecType*>(R_ExternalPtrAddr(Sp));
   if(np) delete np;
   R_ClearExternalPtr(Sp);
@@ -886,7 +886,7 @@ void VecNimArr_Finalizer(SEXP Sp) {
 }
 
 SEXP register_VecNimArr_Finalizer(SEXP Sp, SEXP Dll) {
-  std::cout<< "In register_VecNimArr_Finalizer\n";
+  //  std::cout<< "In register_VecNimArr_Finalizer\n";
   //  R_RegisterCFinalizerEx(Sp, &VecNimArr_Finalizer, TRUE);
   RegisterNimbleFinalizer(Sp, Dll, &VecNimArr_Finalizer);
   return(Sp);

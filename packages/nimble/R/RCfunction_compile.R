@@ -93,6 +93,8 @@ is.rcf <- function(x) {
     FALSE
 }
 
+
+
 rcFunLabelMaker <- labelFunctionCreator('rcFun')
 
 nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {

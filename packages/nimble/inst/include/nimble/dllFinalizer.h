@@ -9,7 +9,8 @@
 void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer);
 extern "C" {
   SEXP RNimble_Ptr_ManualFinalizer(SEXP obj);
-  SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll);
+  SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce);
+  SEXP CountDllObjects();
 }
 
 #define RegisterNimbleFinalizer RegisterNimblePointer

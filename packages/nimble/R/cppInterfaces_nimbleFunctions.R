@@ -329,15 +329,18 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                        nimbleProject = 'ANY'
                                        ),
                                    methods = list(
-                                       finalize = function() {
+                                       finalizeInternal = function() {
                                            neededObjects <<- nimble:::clearNeededObjects(Robject, compiledNodeFun, neededObjects)
                                            vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
                                            for(vn in seq_along(cppNames) ){
                                                .self[[vPtrNames[vn]]] <- NULL
                                            }
-                                           nimble:::nimbleFinalize(.basePtr)
+                                           finalize()
                                            .basePtr <<- NULL
                                            nimbleProject <<- NULL
+                                       },
+                                       finalize = function() {
+                                           nimble:::nimbleFinalize(.basePtr)
                                        },
                                        initialize = function(dll = NULL, project = NULL, test = TRUE, ...) {
                                        		neededObjects <<- list()
@@ -859,12 +862,19 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  callEnv <<- new.env()
                                                  eval(callCode, envir = callEnv)
                                              },
+                                             finalize = function() {
+                                                 for(i in seq_along(basePtrList)) {
+                                                     if(!is.null(basePtrList[[i]])) {
+                                                         nimble:::nimbleFinalize(basePtrList[[i]])
+                                                     }
+                                                 }
+                                             },
                                              finalizeInstance = function(index) {
-                                                 if(!is.na(basePtrList[[index]])) {
+                                                 if(!is.null(basePtrList[[index]])) {
                                                      neededObjectsList[[index]] <<- nimble:::clearNeededObjects(RobjectList[[index]], compiledNodeFun, neededObjectsList[[index]])
-                                                     RobjectList[[index]] <<- NA
+                                                     RobjectList[index] <<- list(NULL)
                                                      nimble:::nimbleFinalize(basePtrList[[index]])
-                                                     basePtrList[[index]] <<- NA
+                                                     basePtrList[index] <<- list(NULL)
                                                  }          
                                              },
                                              addInstance = function(nfObject, dll = NULL) { ## role of initialize
