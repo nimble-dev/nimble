@@ -1,4 +1,10 @@
 # environment that holds user-provided information
+
+#' Environment that holds run-time NIMBLE compilation information
+#'
+#' Despite the appearance of "User" in the name of this object, it is intended for internal use only, but it is needed outside the package namespace.
+#'
+#' @export
 nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL)) 
 # new.env() here fails with: Error in as.environment(pos) : using 'as.environment(NULL)' is defunct when testing package loading during INSTALL
 

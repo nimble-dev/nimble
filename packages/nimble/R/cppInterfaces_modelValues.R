@@ -42,7 +42,7 @@ CmodelValues <- setRefClass(
     			return(NULL)
     		sizeList <- list()
     		for(compName in varNames ){
-    			sizeList[[compName]] <- .Call( nimbleUserNamespace$sessionSpecificDll$getMVsize, componentExtptrs[[compName]])
+    			sizeList[[compName]] <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVsize, componentExtptrs[[compName]]))
     		}
     	return(sizeList)
     	}),
@@ -64,7 +64,7 @@ CmodelValues <- setRefClass(
             extptr <<- NULL
         },
         finalize = function() {
-            nimble:::nimbleFinalize(extptr)
+            nimbleFinalize(extptr)
         },
         initialize = function(buildCall, existingPtr, initialized = FALSE, dll) {
             if(missing(existingPtr) ) {
@@ -75,7 +75,7 @@ CmodelValues <- setRefClass(
                 ## notice that buildCall is the result of getNativeSymbolInfo using the dll from nimbleProject$instantiateCmodelValues
                 ## only other calling point is from cppInterfaces_models.R, and in that case existingPtr is provided
                 extptr <<- eval(parse(text = ".Call(buildCall)"))
-                .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, extptr, dll)
+                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, extptr, dll))
 #                extptr <<- .Call(buildCall) 
             }
             else{
@@ -86,12 +86,12 @@ CmodelValues <- setRefClass(
             if(missing(buildCall) ) 
                 break("Cannot build object without buildCall!")
             extptrCall <<- buildCall
-            varNames <<- .Call( nimbleUserNamespace$sessionSpecificDll$getAvailableNames, extptr)      
+            varNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, extptr))      
             componentExtptrs <<- vector(mode = 'list', length = length(varNames))
             names(componentExtptrs) <<- varNames
             blankAns <<- componentExtptrs
             for(comp in varNames) 
-                componentExtptrs[[comp]] <<- .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, extptr, comp)
+                componentExtptrs[[comp]] <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, extptr, comp))
                 
             ## .nodePtrs_byGID <<- new('numberedObjects')
             ## GID_map <<- makeMV_GID_Map(.self)
@@ -109,10 +109,10 @@ CmodelValues <- setRefClass(
         },
         resize = function(rows){	
         	for(ptr in componentExtptrs)
-        	jnk <- .Call( nimbleUserNamespace$sessionSpecificDll$setNumListRows, ptr, as.integer(rows), TRUE)
-        	jnk <- .Call( nimbleUserNamespace$sessionSpecificDll$manualSetNRows, extptr, as.integer(rows) )  	
+        	jnk <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setNumListRows, ptr, as.integer(rows), TRUE))
+        	jnk <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$manualSetNRows, extptr, as.integer(rows)) )  	
         	},
-        getSize = function() {	.Call( nimbleUserNamespace$sessionSpecificDll$getNRow, componentExtptrs[[1]]) } ## formerly getCRows(componentExtptrs[[1]])		}
+        getSize = function() {	eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getNRow, componentExtptrs[[1]])) } ## formerly getCRows(componentExtptrs[[1]])		}
         )
     )
 
@@ -128,10 +128,10 @@ setMethod('[', 'CmodelValues',
               	if(is.null(ptr) ) 
               		stop(paste('variable', i, ' not found in modelValues') ) 
               	if(length(j) == 1){
-              		output = .Call( nimbleUserNamespace$sessionSpecificDll$getMVElement, ptr, as.integer(j) )
+              		output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElement, ptr, as.integer(j)) )
               		return(output) 
               		}
-              	output = .Call( nimbleUserNamespace$sessionSpecificDll$getMVElementAsList, ptr, as.integer(j) )
+              	output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElementAsList, ptr, as.integer(j)) )
               	return(output)
               	}
              output <- list() 	
@@ -153,12 +153,12 @@ setMethod('[<-', 'CmodelValues',
 	              		stop(paste('variable', i, ' not found in modelValues') ) 
 					if(length(j) == 1){
 						storage.mode(value) <- 'numeric'
-						.Call( nimbleUserNamespace$sessionSpecificDll$setMVElement, ptr, as.integer(j), value )
+						eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElement, ptr, as.integer(j), value ))
 						return(x)
 					}
 				for(jj in j)
 					storage.mode(value[[jj]]) <- 'numeric'
-				.Call( nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, value, as.integer(j) )
+				eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, value, as.integer(j)) )
 				return(x)
 				}
 			cmpNames = names(value)
@@ -181,10 +181,10 @@ setMethod('[[', 'CmodelValues',
                   if(is.null(ptr) ) 
                       stop(paste('variable', i, ' not found in modelValues') )
                   if(k == 1){
-                      output = .Call( nimbleUserNamespace$sessionSpecificDll$getMVElement, ptr, as.integer(1) )
+                      output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElement, ptr, as.integer(1)) )
                       return(output) 
                   }
-                  output = .Call( nimbleUserNamespace$sessionSpecificDll$getMVElementAsList, ptr, as.integer(1:k) )
+                  output = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVElementAsList, ptr, as.integer(1:k)) )
                   return(output)
               }
               output <- list() 	
@@ -203,10 +203,10 @@ setMethod('[[<-', 'CmodelValues',
 	              	if(is.null(ptr) ) 
 	              		stop(paste('variable', i, ' not found in modelValues') ) 
 					if(k == 1){
-						.Call( nimbleUserNamespace$sessionSpecificDll$setMVElement, ptr, as.integer(1), as.numeric(value) )
+						eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElement, ptr, as.integer(1), as.numeric(value) ))
 						return(x)
 					}
-				.Call( nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, as.numeric(value), as.integer(1:k) )
+				eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, as.numeric(value), as.integer(1:k) ))
 				return(x)
 				}
 			cmpNames = names(value)

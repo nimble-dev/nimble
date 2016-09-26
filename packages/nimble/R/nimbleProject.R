@@ -107,7 +107,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  resetFunctions = function(finalize = FALSE) {
                                      message("put clearNeededObjects and nimbleFinalize into nimbleFunctionNamespace")
-                                     message("fix up modelValues creation")
                                      ## clear everything except models and nimbleFunctions from models
                                      for(i in ls(mvInfos)) {
                                          if(length(mvInfos[[i]]$fromModel) > 0) {
@@ -795,5 +794,5 @@ getNimbleProject <- function(project, stopOnNull = FALSE) {
 }
 
 countDllObjects <- function() {
-    .Call(nimbleUserNamespace$sessionSpecificDll$CountDllObjects)
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$CountDllObjects))
 }

@@ -32,15 +32,15 @@
 #  for the begining and ending sequence of flat indices this accessor uses
 
 populateCopierVector <- function(fxnPtr, Robject, vecName, dll) {
-    vecPtr <- .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, vecName)
+    vecPtr <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, vecName))
     copierVectorObject <- Robject[[vecName]]
-    fromPtr <- .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, copierVectorObject[[1]])
-    toPtr <- .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, copierVectorObject[[2]])
-    .Call( nimbleUserNamespace$sessionSpecificDll$populateCopierVector, vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]]))
+    fromPtr <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, copierVectorObject[[1]]))
+    toPtr <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, copierVectorObject[[2]]))
+    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateCopierVector, vecPtr, fromPtr, toPtr, as.integer(copierVectorObject[[3]]), as.integer(copierVectorObject[[4]])))
 }
 
 populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) { ## new version
-    manyAccessPtr = .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, manyAccessName)
+    manyAccessPtr = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, manyAccessName))
     cModel <- Robject[[manyAccessName]][[1]]$CobjectInterface
     ## cModel <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS 
     if(is(cModel, 'uninitializedField'))
@@ -57,7 +57,7 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
     ##   doing it the following way induces the crashing.
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]])
     if(length(mapInfo[[1]]) > 0) {
-        .Call( nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr)
+        eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModel$.basePtr))
     }
     
     ## oldest version
@@ -67,7 +67,7 @@ populateManyModelVarMapAccess <- function(fxnPtr, Robject, manyAccessName, dll) 
 }
 
 populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dll){ ## new version. nearly identical to populateManyModelVarMapAccess
-    manyAccessPtr = .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, manyAccessName)
+    manyAccessPtr = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, fxnPtr, manyAccessName))
     ##cModelValues <- Robject[[manyAccessName]]$sourceObject$CobjectInterface ## NEW ACCESSORS
     cModelValues <- Robject[[manyAccessName]][[1]]$CobjectInterface
 
@@ -79,7 +79,7 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dl
         
     ##fastest
     mapInfo <- makeMapInfoFromAccessorVectorFaster(Robject[[manyAccessName]]) ##faster
-    .Call( nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr)
+    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateValueMapAccessorsFromNodeNames, manyAccessPtr, mapInfo[[1]], mapInfo[[2]], cModelValues$extptr))
 }
 
 ## addNodeFxn_LOOP <- function(x, nodes, fxnVecPtr, countInf){
@@ -98,10 +98,10 @@ populateManyModelValuesMapAccess <- function(fxnPtr, Robject, manyAccessName, dl
 ## }
 
 getNamedObjected <- function(objectPtr, fieldName, dll)
-    .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, objectPtr, fieldName)
+    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, objectPtr, fieldName))
 
 inner_populateNodeFxnVec <- function(fxnVecPtr, gids, numberedPtrs, dll)
-    nil <- .Call( nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVector_byGID, fxnVecPtr, as.integer(gids), numberedPtrs)
+    nil <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVector_byGID, fxnVecPtr, as.integer(gids), numberedPtrs))
 
 ## This is deprecated.  Remove at some point.
 populateNodeFxnVec <- function(fxnPtr, Robject, fxnVecName, dll){
@@ -127,13 +127,13 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     ## we want to have nodeFunctionVectors contain just the gids, not nodeNames
     ## gids <- Robject[[fxnVecName]]$model$modelDef$nodeName2GraphIDs(nodes)
 	
-    .Call( nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID, fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices))
+    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateNodeFxnVectorNew_byDeclID, fxnVecPtr, as.integer(declIDs), numberedPtrs, as.integer(rowIndices)))
 }
 
 populateIndexedNodeInfoTable <- function(fxnPtr, Robject, indexedNodeInfoTableName, dll) {
     iNITptr <- getNamedObjected(fxnPtr, indexedNodeInfoTableName, dll = dll)
     iNITcontent <- Robject[[indexedNodeInfoTableName]]$unrolledIndicesMatrix
-    .Call( nimbleUserNamespace$sessionSpecificDll$populateIndexedNodeInfoTable, iNITptr, iNITcontent)
+    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$populateIndexedNodeInfoTable, iNITptr, iNITcontent))
 }
 
 # Currently requires: addSingleModelValuesAccess
@@ -247,17 +247,17 @@ setMethod('[<-', 'numberedObjects', function(x, i, value){
 
 
 newNumberedObjects <- function(dll){
-    ans <- .Call( nimbleUserNamespace$sessionSpecificDll$newNumberedObjects)
-    .Call(nimbleUserNamespace$sessionSpecificDll$register_numberedObjects_Finalizer, ans, dll)
+    ans <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$newNumberedObjects))
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_numberedObjects_Finalizer, ans, dll))
     ans
 }
 
 getSize_NumberedObjects <- function(numberedObject, dll){
-    .Call( nimbleUserNamespace$sessionSpecificDll$getSizeNumberedObjects, numberedObject)
+    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getSizeNumberedObjects, numberedObject))
 }
 
 resize_NumberedObjects <- function(numberedObject, size, dll){
-    nil <- .Call( nimbleUserNamespace$sessionSpecificDll$resizeNumberedObjects, numberedObject, as.integer(size) )
+    nil <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$resizeNumberedObjects, numberedObject, as.integer(size)) )
 }
 
 assignNumberedObject <- function(numberedObject, index, val, dll){
@@ -265,13 +265,13 @@ assignNumberedObject <- function(numberedObject, index, val, dll){
         stop('Attempting to assign a val which is not an externalptr to a NumberedObjects')
     if(index < 1 || index > getSize_NumberedObjects(numberedObject, dll) )
         stop('Invalid index')
-    nil <- .Call( nimbleUserNamespace$sessionSpecificDll$setNumberedObject, numberedObject, as.integer(index), val)
+    nil <- eval(call('.Call', getNativeSymbolInfo('setNumberedObject', nimbleUserNamespace$sessionSpecificDll), numberedObject, as.integer(index), val))
 }
 
 getNumberedObject <- function(numberedObject, index, dll){
     if(index < 1 || index > getSize_NumberedObjects(numberedObject, dll) )
         stop('Invalid index')
-    .Call( nimbleUserNamespace$sessionSpecificDll$getNumberedObject, numberedObject, as.integer(index))	
+    eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getNumberedObject, numberedObject, as.integer(index)))	
 }
 
 

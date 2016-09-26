@@ -330,7 +330,7 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                        ),
                                    methods = list(
                                        finalizeInternal = function() {
-                                           neededObjects <<- nimble:::clearNeededObjects(Robject, compiledNodeFun, neededObjects)
+                                           neededObjects <<- clearNeededObjects(Robject, compiledNodeFun, neededObjects)
                                            vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
                                            for(vn in seq_along(cppNames) ){
                                                .self[[vPtrNames[vn]]] <- NULL
@@ -340,7 +340,7 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                            nimbleProject <<- NULL
                                        },
                                        finalize = function() {
-                                           nimble:::nimbleFinalize(.basePtr)
+                                           nimbleFinalize(.basePtr)
                                        },
                                        initialize = function(dll = NULL, project = NULL, test = TRUE, ...) {
                                        		neededObjects <<- list()
@@ -374,35 +374,30 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
     for(vn in vNames) {
         thisSymbol <- symTab$getSymbolObject(vn)
         if(is.null(thisSymbol)) next
-        else if(thisSymbol$type == 'Ronly') next ## skip models
-        else if(inherits(thisSymbol, 'symbolIndexedNodeInfoTable')) {ans[[thisSymbol$name]] <- 'indexedNodeInfoTable'; next}
-        else if(inherits(thisSymbol, 'symbolNimArrDoublePtr')) {ans[[thisSymbol$name]] <- 'modelVar'; next}
-        else if(inherits(thisSymbol, 'symbolNodeFunctionVector'))  { ans[[thisSymbol$name]] <- 'nodeFxnVec'; next}
-        else if(inherits(thisSymbol, 'symbolModelVariableAccessorVector')) {ans[[thisSymbol$name]] <- 'modelVarAccess';next}
-        else if(inherits(thisSymbol, 'symbolModelValuesAccessorVector')) {ans[[thisSymbol$name]] <- 'modelValuesAccess';next}
-        else if(inherits(thisSymbol, 'symbolModelValues')) {ans[[thisSymbol$name]] <- 'modelValues'; next}
-        else if(inherits(thisSymbol, 'symbolNimbleFunction')) {ans[[thisSymbol$name]] <- 'nimbleFunction'; next}
-        else if(inherits(thisSymbol, 'symbolVecNimArrPtr')) {ans[[thisSymbol$name]] <- 'modelValuesPtr'; next} ## from a singleModelValuesAccessClass, from e.g. mv[i, 'x']
-        else if(inherits(thisSymbol, 'symbolNumericList')) {ans[[thisSymbol$name]] <- 'numericList'; next}
-        else if(inherits(thisSymbol, 'symbolNimPtrList')) {ans[[thisSymbol$name]] <- 'nimPtrList'; next}
-        else if(inherits(thisSymbol, 'symbolCopierVector')) {ans[[thisSymbol$name]] <- 'copierVector'; next}
-        else if(inherits(thisSymbol, 'symbolString')) {
+        if(thisSymbol$type == 'Ronly') next ## skip models
+        if(inherits(thisSymbol, 'symbolIndexedNodeInfoTable')) {ans[[thisSymbol$name]] <- 'indexedNodeInfoTable'; next}
+        if(inherits(thisSymbol, 'symbolNimArrDoublePtr')) {ans[[thisSymbol$name]] <- 'modelVar'; next}
+        if(inherits(thisSymbol, 'symbolNodeFunctionVector'))  { ans[[thisSymbol$name]] <- 'nodeFxnVec'; next}
+        if(inherits(thisSymbol, 'symbolModelVariableAccessorVector')) {ans[[thisSymbol$name]] <- 'modelVarAccess';next}
+        if(inherits(thisSymbol, 'symbolModelValuesAccessorVector')) {ans[[thisSymbol$name]] <- 'modelValuesAccess';next}
+        if(inherits(thisSymbol, 'symbolModelValues')) {ans[[thisSymbol$name]] <- 'modelValues'; next}
+        if(inherits(thisSymbol, 'symbolNimbleFunction')) {ans[[thisSymbol$name]] <- 'nimbleFunction'; next}
+        if(inherits(thisSymbol, 'symbolVecNimArrPtr')) {ans[[thisSymbol$name]] <- 'modelValuesPtr'; next} ## from a singleModelValuesAccessClass, from e.g. mv[i, 'x']
+        if(inherits(thisSymbol, 'symbolNumericList')) {ans[[thisSymbol$name]] <- 'numericList'; next}
+        if(inherits(thisSymbol, 'symbolNimPtrList')) {ans[[thisSymbol$name]] <- 'nimPtrList'; next}
+        if(inherits(thisSymbol, 'symbolCopierVector')) {ans[[thisSymbol$name]] <- 'copierVector'; next}
+        if(inherits(thisSymbol, 'symbolString')) {
             if(thisSymbol$nDim > 0)
                 ans[[thisSymbol$name]] <- 'characterVector'
             else
                 ans[[thisSymbol$name]] <- 'characterScalar'
             next
         }
-        else {
-            if(thisSymbol$nDim > 0) 
-                ans[[thisSymbol$name]] <- 'numericVector'
-            else {
-                if(thisSymbol$type == 'double') ans[[thisSymbol$name]] <- 'doubleScalar'
-                else if(thisSymbol$type == 'integer') ans[[thisSymbol$name]] <- 'integerScalar'
-                else if(thisSymbol$type == 'logical') ans[[thisSymbol$name]] <- 'logicalScalar'
-                else stop(paste0('Confused in assigning a cpp copy type for ',thisSymbol$name), call. = FALSE) 
-            }
-        }
+        if(thisSymbol$nDim > 0) {ans[[thisSymbol$name]] <- 'numericVector'; next}
+        if(thisSymbol$type == 'double') {ans[[thisSymbol$name]] <- 'doubleScalar'; next}
+        if(thisSymbol$type == 'integer') {ans[[thisSymbol$name]] <- 'integerScalar'; next}
+        if(thisSymbol$type == 'logical') {ans[[thisSymbol$name]] <- 'logicalScalar'; next}
+        stop(paste0('Confused in assigning a cpp copy type for ',thisSymbol$name), call. = FALSE) 
     }
     ans
 }
@@ -511,7 +506,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
             modelVar <- Robj[[v]] ## this is a singleVarAccessClass created by replaceModelSingles
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
-            .self[[v]] <- .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName)
+            .self[[v]] <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName))
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -619,7 +614,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             Cmodel <- modelVar$model$CobjectInterface
             varName <- modelVar$var
             ##message('copying modelVar (copyFromRobject)')
-            getSetModelVarPtr(v, .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName), basePtr, dll = dll)
+            getSetModelVarPtr(v, eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, Cmodel$.basePtr, varName)), basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleFunction') {
@@ -777,9 +772,9 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         } else defaults$basePtrCall
         # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
         .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-        .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll)
+        eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll))
         # .basePtr <<- .Call(basePtrCall)
-        cppNames <<- .Call( nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr)
+        cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr))
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
         vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
@@ -865,15 +860,15 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              finalize = function() {
                                                  for(i in seq_along(basePtrList)) {
                                                      if(!is.null(basePtrList[[i]])) {
-                                                         nimble:::nimbleFinalize(basePtrList[[i]])
+                                                         nimbleFinalize(basePtrList[[i]])
                                                      }
                                                  }
                                              },
                                              finalizeInstance = function(index) {
                                                  if(!is.null(basePtrList[[index]])) {
-                                                     neededObjectsList[[index]] <<- nimble:::clearNeededObjects(RobjectList[[index]], compiledNodeFun, neededObjectsList[[index]])
+                                                     neededObjectsList[[index]] <<- clearNeededObjects(RobjectList[[index]], compiledNodeFun, neededObjectsList[[index]])
                                                      RobjectList[index] <<- list(NULL)
-                                                     nimble:::nimbleFinalize(basePtrList[[index]])
+                                                     nimbleFinalize(basePtrList[[index]])
                                                      basePtrList[index] <<- list(NULL)
                                                  }          
                                              },
@@ -888,7 +883,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
-                                                 .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr, dll)
+                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr, dll))
                                                  
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)

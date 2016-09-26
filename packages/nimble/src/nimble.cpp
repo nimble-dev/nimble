@@ -1,6 +1,7 @@
 #include <nimble/RcppUtils.h>
 //#include <nimble/ModelClassUtils.h>
 //#include <nimble/accessorClasses.h>
+#include <nimble/nimbleGraph.h>
 #include <nimble/dists.h>
 
 #include <R_ext/Rdynload.h>
@@ -45,6 +46,29 @@ R_CallMethodDef CallEntries[] = {
  //CFUN(setDoublePtrFromSinglePtr, 2),
 // CFUN(setSinglePtrFromSinglePtr, 2),
 // FUN(newModelValues, 1),
+
+ //These don't register well since they are overloaded
+// FUN(SEXP_2_double, 3),
+ // FUN(double_2_SEXP, 2),
+ // FUN(SEXP_2_bool, 3),
+ // FUN(bool_2_SEXP, 2),
+ // FUN(SEXP_2_int, 3),
+ // FUN(int_2_SEXP, 2),
+ // FUN(SEXP_2_string, 2),
+ // FUN(SEXP_2_stringVector, 2),
+ // FUN(string_2_SEXP, 1),
+ // FUN(stringVector_2_SEXP, 1)
+ FUN(fastMatrixInsert, 4),
+ FUN(matrix2ListDouble, 5),
+ FUN(matrix2ListInt, 5),
+ // FUN(rankSample, 4),
+ FUN(parseVar, 1),
+
+ FUN(setGraph, 6),
+ FUN(anyStochDependencies, 1),
+ FUN(anyStochParents, 1),
+ FUN(getDependencies, 4),
+ 
  {NULL, NULL, 0}
 };
 

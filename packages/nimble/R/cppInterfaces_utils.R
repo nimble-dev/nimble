@@ -1,10 +1,10 @@
 nimbleFinalize <- function(extptr) {
-    .Call(nimbleUserNamespace$sessionSpecificDll$RNimble_Ptr_ManualFinalizer, extptr)
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$RNimble_Ptr_ManualFinalizer, extptr))
 }
 
 cGetNRow <- function(cMV, compIndex = 1)
 {
-  nRow = .Call( nimbleUserNamespace$sessionSpecificDll$getNRow, cMV$componentExtptrs[[compIndex]])
+  nRow = eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getNRow, cMV$componentExtptrs[[compIndex]]))
   return(nRow)
 }
 
@@ -33,13 +33,13 @@ cGetNRow <- function(cMV, compIndex = 1)
 ## }
 
 newObjElementPtr = function(rPtr, name, dll){
-  .Call( nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, rPtr, name)
+  eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, rPtr, name))
 }
 
 getNimValues <- function(elementPtr, pointDepth = 1, dll){
   if(!inherits(elementPtr, "externalptr"))
     return(NULL)
-  .Call( nimbleUserNamespace$sessionSpecificDll$Nim_2_SEXP, elementPtr, as.integer(pointDepth) )
+  eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$Nim_2_SEXP, elementPtr, as.integer(pointDepth)) )
 }
 
 setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE, dll){
@@ -47,7 +47,7 @@ setNimValues <- function(elementPtr, values, pointDepth = 1, allowResize = TRUE,
   storage.mode(values) <- 'numeric'
   if(!inherits(elementPtr, "externalptr"))
     return(NULL)
-      jnk = .Call(nimbleUserNamespace$sessionSpecificDll$SEXP_2_Nim, elementPtr, as.integer(pointDepth), values, allowResize)
+      jnk = eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$SEXP_2_Nim, elementPtr, as.integer(pointDepth), values, allowResize))
   values
 }
 
@@ -55,7 +55,7 @@ setPtrVectorOfPtrs <- function(accessorPtr, contentsPtr, length, dll) {
     if(!inherits(accessorPtr, 'externalptr')) return(NULL)
     if(!inherits(contentsPtr, 'externalptr')) return(NULL)
     if(!is.numeric(length)) return(NULL)
-    .Call(nimbleUserNamespace$sessionSpecificDll$setPtrVectorOfPtrs, accessorPtr, contentsPtr, as.integer(length))
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$setPtrVectorOfPtrs, accessorPtr, contentsPtr, as.integer(length)))
     contentsPtr
 }
 
@@ -63,14 +63,14 @@ setOnePtrVectorOfPtrs <- function(accessorPtr, i, contentsPtr, dll) {
     if(!inherits(accessorPtr, 'externalptr')) return(NULL)
     if(!is.numeric(i)) return(NULL)
     if(!inherits(contentsPtr, 'externalptr')) return(NULL)
-    .Call(nimbleUserNamespace$sessionSpecificDll$setOnePtrVectorOfPtrs, accessorPtr, as.integer(i-1), contentsPtr)
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$setOnePtrVectorOfPtrs, accessorPtr, as.integer(i-1), contentsPtr))
     contentsPtr
 }
 
 setDoublePtrFromSinglePtr <- function(elementPtr, value, dll) {
     if(!inherits(elementPtr, 'externalptr')) return(NULL)
     if(!inherits(value, 'externalptr')) return(NULL)
-    .Call(nimbleUserNamespace$sessionSpecificDll$setDoublePtrFromSinglePtr, elementPtr, value)
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$setDoublePtrFromSinglePtr, elementPtr, value))
     value
 }
 

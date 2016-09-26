@@ -24,9 +24,9 @@
 ###					the modelValues, but this is not necessary (as long as it is a double pointer to something
 
 getMVptr <- function(rPtr, dll)
-  .Call( nimbleUserNamespace$sessionSpecificDll$getModelValuesPtrFromModel, rPtr)
+  eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelValuesPtrFromModel, rPtr))
 getMVName <- function(modelValuePtr, dll)
-  .Call( nimbleUserNamespace$sessionSpecificDll$getMVBuildName, modelValuePtr)
+  eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getMVBuildName, modelValuePtr))
 
 # for now export this as R<3.1.2 give warnings if don't
 
@@ -77,7 +77,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        if(!is.null(.nodeFxnPointers_byDeclID))
                                            .nodeFxnPointers_byDeclID$finalize()
                                        if(!is.null(.basePtr))
-                                           nimble:::nimbleFinalize(.basePtr)
+                                           nimbleFinalize(.basePtr)
                                    },
                                    setModel = function(model) {
                                        ## This is creating a circular reference, so be careful with show(), and with Rstudio
@@ -219,7 +219,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                         # avoid R CMD check problem with registration
                                                 ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-                                                .Call(nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll)
+                                                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll))
                                                 # .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll = dll)
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )
@@ -230,7 +230,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 nimbleProject <<- defaults$project
                                                 for(v in ls(model$isDataEnv)) isDataEnv[[v]] <<- model$isDataEnv[[v]]
                                                 setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                                                cppNames <<- .Call( nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr) ## or could get this from R objects
+                                                cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr)) ## or could get this from R objects
                                                 cppCopyTypes <<- defaults$cppCT
                                                 compiledModel <<- defaults$cm
                                                 for(vn in cppNames)

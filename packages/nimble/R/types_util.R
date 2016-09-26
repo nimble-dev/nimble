@@ -215,10 +215,10 @@ modelValuesElement2Matrix <- function(mv, varName){
 
 Cmatrix2mvOneVar <- function(mat, mv, varName, k){
 	ptr <- mv$componentExtptrs[[varName]]
-	if(inherits(ptr, 'externalptr'))
-		.Call( mv$dll$matrix2VecNimArr, ptr, mat, rowStart = as.integer(1), rowEnd = k )
-	else
-		stop('varName not found in modelValues')
+	if(inherits(ptr, 'externalptr')) {
+            eval(call('.Call', mv$dll$matrix2VecNimArr, ptr, mat, rowStart = as.integer(1), rowEnd = k ))
+        } else
+            stop('varName not found in modelValues')
 }
 
 Rmatrix2mvOneVar <- function(mat, mv, varName, k){
