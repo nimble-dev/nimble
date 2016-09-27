@@ -235,6 +235,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
+                                       browser()
+                                       
                                        cur = getwd()
                                        setwd(dirName)
                                        on.exit(setwd(cur))
@@ -267,9 +269,10 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    },
                                    unloadSO = function(check = TRUE, force = FALSE) { ## The book-keeping on different names isn't quite connected to here yet.  Instead we just unload dll.
 				       if(!is.null(dll)) {
-                                           numObjects <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$RNimble_Ptr_CheckAndRunAllDllFinalizers, dll, force))
-                                           if(numObjects > 0 & check) {
-                                               warning(paste0("A DLL to be unloaded has non-zero (", numObjects, ") objects that need to be finalized first. ", if(force) "It's objects were cleared and it was unloaded anyway." else "It was not unloaded." ))
+                                           objectNames <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$RNimble_Ptr_CheckAndRunAllDllFinalizers, dll, force))
+                                           if(length(objectNames) > 0 & check) {
+                                               warning(paste0("A DLL to be unloaded has non-zero (", paste(objectNames, collapse = ", "), ") objects that need to be finalized first. ", if(force) "It's objects were cleared and it was unloaded anyway." else "It was not unloaded." ))
+                                               browser()
                                                if(!force) return(NULL)
                                            }
                                            status = dyn.unload(dll[["path"]])

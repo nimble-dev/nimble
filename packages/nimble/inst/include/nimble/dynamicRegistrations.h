@@ -98,8 +98,8 @@ R_CallMethodDef CallEntries[] = {
   FUN(resizeNumberedObjects, 2),
   FUN(getSizeNumberedObjects, 1),
   FUN(newNumberedObjects, 0),
-  FUN(register_namedObjects_Finalizer, 2),
-  FUN(register_numberedObjects_Finalizer, 2),
+  FUN(register_namedObjects_Finalizer, 3),
+  FUN(register_numberedObjects_Finalizer, 3),
   FUN(register_VecNimArr_Finalizer, 2),
 
   FUN(RNimble_Ptr_ManualFinalizer, 1),

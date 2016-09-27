@@ -888,7 +888,7 @@ void VecNimArr_Finalizer(SEXP Sp) {
 SEXP register_VecNimArr_Finalizer(SEXP Sp, SEXP Dll) {
   //  std::cout<< "In register_VecNimArr_Finalizer\n";
   //  R_RegisterCFinalizerEx(Sp, &VecNimArr_Finalizer, TRUE);
-  RegisterNimbleFinalizer(Sp, Dll, &VecNimArr_Finalizer);
+  RegisterNimbleFinalizer(Sp, Dll, &VecNimArr_Finalizer, R_NilValue);
   return(Sp);
 }
 

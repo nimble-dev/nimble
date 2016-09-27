@@ -75,7 +75,7 @@ CmodelValues <- setRefClass(
                 ## notice that buildCall is the result of getNativeSymbolInfo using the dll from nimbleProject$instantiateCmodelValues
                 ## only other calling point is from cppInterfaces_models.R, and in that case existingPtr is provided
                 extptr <<- eval(parse(text = ".Call(buildCall)"))
-                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, extptr, dll))
+                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, extptr, dll, 'modelValues'))
 #                extptr <<- .Call(buildCall) 
             }
             else{

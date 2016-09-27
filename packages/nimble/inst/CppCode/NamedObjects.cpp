@@ -104,10 +104,10 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 	return(ans);
 }
 
-SEXP register_numberedObjects_Finalizer(SEXP Snp, SEXP Dll) {
+SEXP register_numberedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
   //  std::cout<< "In register_numberedObjects_Finalizer\n";
   //  R_RegisterCFinalizerEx(Snp, &numberedObjects_Finalizer, TRUE);
-  RegisterNimbleFinalizer(Snp, Dll, &numberedObjects_Finalizer);
+  RegisterNimbleFinalizer(Snp, Dll, &numberedObjects_Finalizer, Slabel);
   return(Snp);
 }
 
@@ -118,10 +118,10 @@ void numberedObjects_Finalizer(SEXP Snp){
   R_ClearExternalPtr(Snp);
 }
 
-SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll) {
+SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
   //  std::cout<< "In register_namedObjects_Finalizer\n";
   //R_RegisterCFinalizerEx(Snp, &namedObjects_Finalizer, TRUE);
-  RegisterNimbleFinalizer(Snp, Dll, &namedObjects_Finalizer);
+  RegisterNimbleFinalizer(Snp, Dll, &namedObjects_Finalizer, Slabel);
   return(Snp);
 }
 
