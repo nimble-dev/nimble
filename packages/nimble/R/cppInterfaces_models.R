@@ -77,7 +77,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        if(!is.null(.nodeFxnPointers_byDeclID))
                                            .nodeFxnPointers_byDeclID$finalize()
                                        if(!is.null(.basePtr))
-                                           nimbleFinalize(.basePtr)
+                                           nimbleInternalFunctions$nimbleFinalize(.basePtr)
                                    },
                                    setModel = function(model) {
                                        ## This is creating a circular reference, so be careful with show(), and with Rstudio

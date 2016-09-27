@@ -224,7 +224,7 @@ numberedObjects <- setRefClass('numberedObjects',
                                        .ptr <<- newNumberedObjects(dll)
                                    },
                                    finalize = function() {
-                                       nimbleFinalize(.ptr)
+                                       nimbleInternalFunctions$nimbleFinalize(.ptr)
                                    },
                                    getSize = function(){
                                        getSize_NumberedObjects(.ptr, dll)

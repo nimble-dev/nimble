@@ -106,7 +106,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                  },
                                  resetFunctions = function(finalize = FALSE) {
-                                     message("put clearNeededObjects and nimbleFinalize into nimbleFunctionNamespace")
                                      ## clear everything except models and nimbleFunctions from models
                                      for(i in ls(mvInfos)) {
                                          if(length(mvInfos[[i]]$fromModel) > 0) {

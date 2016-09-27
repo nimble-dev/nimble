@@ -64,7 +64,7 @@ CmodelValues <- setRefClass(
             extptr <<- NULL
         },
         finalize = function() {
-            nimbleFinalize(extptr)
+            nimbleInternalFunctions$nimbleFinalize(extptr)
         },
         initialize = function(buildCall, existingPtr, initialized = FALSE, dll) {
             if(missing(existingPtr) ) {
