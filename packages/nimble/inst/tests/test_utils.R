@@ -350,7 +350,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
         if(.Platform$OS.type != "windows") {
             ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
             ##dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
-            message('remove the nimble::: in test_mcmc')
+            browser()
             nimble:::clearCompiled(Rmodel)
         }
     }

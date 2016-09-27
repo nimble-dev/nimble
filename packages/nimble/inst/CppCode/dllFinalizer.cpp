@@ -59,7 +59,10 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
       ) {
     if(RNPiter->second.first == Dll) {
       objectsFound++;
-      if(force) finalizeOneObject(RNPiter++); // pass by copy a current iterator value and increment, since finalizerOneObject will use .erase()
+      if(force) {
+	finalizeOneObject(RNPiter++);// pass by copy a current iterator value and increment, since finalizerOneObject will use .erase()
+      } else
+	++RNPiter; 
     } else {
       ++RNPiter;
     }
