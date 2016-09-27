@@ -1,5 +1,5 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize')
-operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar','nlVar')
+operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(binaryMidLogicalOperators, 'sizeBinaryCwiseLogical'),
@@ -25,7 +25,6 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                  ## '[[' for nimbleFunctionList goes through chainedCall
                     chainedCall = 'sizeChainedCall',
                     nfVar = 'sizeNFvar',
-                    nlVar = 'sizeNFvar',
                     map = 'sizemap', 
                     ':' = 'sizeColonOperator',
                     dim = 'sizeDimOperator',
@@ -82,7 +81,7 @@ scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical
 ## and it will set the size expressions for A and for itself to 1.
 exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprClass
     ## name:
-    if(code$isName) {
+  if(code$isName) {
         ## If it doesn't exist and must exist, stop
         if(code$name != "") { ## e.g. In A[i,], second index gives name==""
             if(!exists(code$name, envir = typeEnv, inherits = FALSE)) {
@@ -320,6 +319,16 @@ sizeNFvar <- function(code, symTab, typeEnv) {
         code$sizeExprs <- list()
     }
     code$toEigenize <- 'maybe'
+
+    
+    if(isSymList){
+      a1 <- code$args[[1]]
+      a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
+      a1$type <- a1$args[[1]]$type
+      a1$nDim <- a1$args[[1]]$nDim
+      a1$sizeExprs <- a1$args[[1]]$sizeExprs
+      code$args[[1]] <- a1
+    } 
     NULL
 }
 

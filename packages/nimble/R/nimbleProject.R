@@ -523,6 +523,26 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(inherits(ans, 'uninitializedField')) return(NULL)
                                      ans
                                  },
+                                 getNimbleListCppDef = function(generatorName, nlProc) {
+                                   if(missing(generatorName)) {
+                                     if(missing(nlProc)) stop('No good information provided to getNimbleListCppDef', call. = FALSE)
+                                     generatorName <- nlProc$nimbleListObj$className
+                                     if(is.null(generatorName)) stop('Invalid generatorName', call. = FALSE)
+                                   }
+                                   if(is.null(nlCompInfos[[generatorName]])){
+                                     return(NULL)
+                                   }
+                                   ans <- nlCompInfos[[generatorName]]$cppDef
+                                   if(inherits(ans, 'uninitializedField') )  return(NULL)                                     	 
+                                   ans
+                                 },
+                                 getNimbleListNLproc = function(fun) {
+                                   generatorName <- fun$name
+                                   if(is.null(nlCompInfos[[generatorName]])) return(NULL)
+                                   ans <- nlCompInfos[[generatorName]]$nlProc
+                                   if(inherits(ans, 'uninitializedField')) return(NULL)
+                                   ans
+                                 },
                                  buildVirtualNimbleFunctionCompilationInfo = function(vfun, initialTypeInferenceOnly = FALSE, control = list(debug = FALSE, debugCpp = FALSE)) {
                                      if(!is.character(vfun)) {
                                          if(!is.nfGenerator(vfun)) stop("Something provided as a nimbleFunctionVirtual does not appear to be correct.", call. = FALSE)
@@ -629,6 +649,26 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                    } else {
                                      nfCompInfos[[className]]$cppDef ## return value if already exists
                                    }
+                                 },
+                                 instantiateNimbleList = function(nl, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
+                                   ## to instantiate neededObjects
+                                   if(!is.nl(nl)) stop("Can't instantiateNimbleList, nl is not a nimbleList")
+                                   className <- nl$nimbleListDef$className
+                                   
+                                   nlCppDef <- getNimbleListCppDef(generatorName = className)
+                                   
+                                   ok <- TRUE
+                                   if(asTopLevel) {
+                                     if(is.null(nlCppDef$Rgenerator)) ok <- FALSE
+                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll, project = .self)
+                                   } else {
+                                     if(is.null(nlCppDef$CmultiInterface)) ok <- FALSE
+                                     else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dll)
+                                     
+                                   }
+                                   if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
+                                   
+                                   ans
                                  },
                                  instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
                                      ## to instantiate neededObjects
@@ -743,7 +783,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          }
                                      }
 ##                                     Cname <- nf_getRefClassObject(funList[[1]])$Cname
-                                     
                                      if(!exists('name', envir = nf_getRefClassObject(funList[[1]]), inherits = FALSE)) stop('Something is wrong if by this point in compileNimbleFunction there is no name.', call. = FALSE)
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
@@ -846,11 +885,10 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         if(!i %in% names(control)) control[[i]] <- controlDefaults[[i]]
     }
     
-    ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
+    ## Units should be either Rmodel, nimbleFunction, nimbleList, or RCfunction (now coming from nimbleFunction with no setup)
     showOutput <- getNimbleOption('showCompilerOutput')
     if(nimbleOptions('verbose') && !showOutput) message("compiling... this may take a minute. Use nimbleOptions(showCompilerOutput = TRUE) to see C++ compiler details.")
     if(nimbleOptions('verbose') && showOutput) message("compiling... this may take a minute. On some systems there may be some compiler warnings that can be safely ignored.")
-    
     ## Compile models first
     ans <- list()
     rcfUnits <- unitTypes == 'rcf'
@@ -874,7 +912,7 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     if(sum(nfUnits) > 0) {
         whichUnits <- which(nfUnits)
         nfAns <- project$compileNimbleFunctionMulti(units[whichUnits], control = control, reset = reset)
-        ans[[whichUnits]] <- nfAns
+        ans[whichUnits] <- nfAns
         for(i in whichUnits) if(names(units)[i] != '') names(ans)[i] <- names(units)[i]
     }
     nlUnits <- unitTypes == 'nl'

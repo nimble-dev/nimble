@@ -57,7 +57,6 @@ makeNFBindingFields <- function(symTab, cppNames) {
             next
         }
         if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
-          browser()
           nfName <- paste0(".",vn,"_CnimbleList")
           fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
           fieldList[[vn]] <- eval(substitute(
@@ -414,7 +413,7 @@ makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelf
 }
 
 buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll, nimbleProject) {
-    for(iName in compiledNodeFun$nfProc$neededObjectNames) {
+    for(iName in compiledNodeFun$nimCompProc$neededObjectNames) {
         thisObj <- Robj[[iName]]
         if(inherits(thisObj, 'modelValuesBaseClass')) {
             if(inherits(thisObj$CobjectInterface, 'uninitializedField') || is.null(thisObj$CobjectInterface)) {
@@ -428,6 +427,13 @@ buildNeededObjects = function(Robj, compiledNodeFun, neededObjects, dll, nimbleP
                 neededObjects[[iName]] <- nimbleProject$instantiateNimbleFunction(thisObj, dll, asTopLevel = getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions'))
             }
             next
+        }
+        if(is.nl(thisObj)) {
+          RCO <- thisObj
+          if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
+            neededObjects[[iName]] <- nimbleProject$instantiateNimbleList(thisObj, dll ) #, asTopLevel = getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions'))
+          }
+          next
         }
         if(inherits(thisObj, 'nimbleFunctionList')) {
             neededObjects[[iName]] <- nimPointerList(thisObj$baseClass, length(thisObj$contentsList))
@@ -834,7 +840,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                      if(is.null(dll)) stop('In addInstance, DLL was not set and so must be provided when calling', call. = FALSE)
                                                      dll <<- dll       ## should only occur first time addInstance is called
                                                  }
-                                                 compiledNodeFun$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
+                                                 if(is.nf(nfObject)) compiledNodeFun$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
                                                  
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))

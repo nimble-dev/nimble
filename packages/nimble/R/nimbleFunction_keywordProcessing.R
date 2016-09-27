@@ -526,6 +526,12 @@ doubleBracket_keywordInfo <- keywordInfoClass(
         if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
         possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList', 'symbolNimbleList')
         class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
+        if(is.null(class)){  ##assume that an element of a run-time provided nimbleList is being accessed
+          nl_charName <- as.character(callerCode)
+          nl_fieldName <-as.character(code[[3]])
+          newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+          return(newRunCode)
+        }
         if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
             return(code)
         if(class == 'symbolNimbleList'){
@@ -563,7 +569,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             return(ans)			
         }
-        stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
+        # stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
     })
 
 modelMemberFun_keywordInfo <- keywordInfoClass(
@@ -605,7 +611,12 @@ dollarSign_keywordInfo <- keywordInfoClass(
 		#	May be a better way to do this
 		
 		class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
-				
+		if(is.null(class)){  ##assume that an element of a run-time provided nimbleList is being accessed
+		  nl_charName <- as.character(callerCode)
+		  nl_fieldName <-as.character(code[[3]])
+		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+		  return(newRunCode)				
+		}
 		if(class == 'symbolNimPtrList'){
 			return(code)
     }
@@ -658,8 +669,8 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				nf_fieldName <- as.character(code[[3]])
 				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
 				return(newRunCode)				
-			}
-			stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
+		}
+			 # stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
 	}
 )
     
@@ -1199,7 +1210,8 @@ symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
 	if(length(options) == 0)
 		return(class)
 	if(!(class %in% options))
-		stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
+		return(NULL)  ## nimbleList that was not constructed in setup code 
+	                ## stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
 	return(class)
 }
 

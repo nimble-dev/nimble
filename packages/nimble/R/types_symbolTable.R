@@ -26,12 +26,23 @@ argTypeList2symbolTable <- function(ATL) {
 ## The second argument is a vector of the sizes, defaulting to rep(NA, nDim)
 ## If only some sizes are known, something like double(2, c(5, NA)) should be valid, but we'll have to check later handling to be sure.
 argType2symbol <- function(AT, name = character()) {
-	
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
     if(type == "internalType") {
         return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
-    }
+    } else if(type == "nimbleList"){
+      typeInfo <- eval(AT[[2]])
+      # symbolNimbleList
+      nlDef <- nimbleListDefClass(types = typeInfo, className = name) 
+      listNLP <- nlProcessing(className = name, nimbleListObj = nlDef)
+      listNLP$buildSymbolTable()
+      listST <- symbolNimbleList(name = name, nlProc = listNLP)
+      return(listST)
+        
+        #typeInfo$vars, typeInfo$types, 
+         #              typeInfo$sizes))
+         
+    } 
     nDim <- if(length(AT)==1) 0 else AT[[2]]
     size <- if(nDim == 0) 1 else {
         if(length(AT) < 3)
@@ -46,7 +57,7 @@ argType2symbol <- function(AT, name = character()) {
             size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
         }
         symbolString(name = name, type = "character", nDim = nDim, size = size) 
-    } else {
+    }  else {
         symbolBasic(name = name, type = type, nDim = nDim, size = size)
     }
 }
@@ -271,14 +282,9 @@ symbolNimbleList <-
                     initialize = function(...){callSuper(...)},
                     show = function() writeLines(paste('symbolNimbleList', name)),
                     genCppVar = function(...) {
-                      browser()
                         return(  cppVarFull(name = name,
                                             baseType = 'nimSmartPtr',
-                                            templateArgs = list(nlProc$name),
-                                            ptr = 0,
-                                            selfDereference = FALSE,
-                                            ref = FALSE,
-                                            ...) )
+                                            templateArgs = nlProc$name) )
                     }
                     ))
 

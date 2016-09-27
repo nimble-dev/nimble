@@ -69,7 +69,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                 neededTypes = 'ANY',
                                 nimbleProject = 'ANY',
                                 name = 'ANY',
-                                instances = 'ANY'
+                                instances = 'ANY',
+                                neededObjectNames =  'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
                             ),
                             methods = list(
                                 show = function() {

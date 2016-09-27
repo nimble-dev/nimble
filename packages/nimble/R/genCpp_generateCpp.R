@@ -25,7 +25,6 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
                          nfVar = 'cppOutputNFvar',
-                         nlVar = 'cppOutputNLvar',
                          getsize = 'cppOutputMemberFunctionDeref',
                          getNodeFunctionIndexedInfo = 'cppOutputGetNodeFunctionIndexedInfo',
                          resizeNoPtr = 'cppOutputMemberFunction',
@@ -38,6 +37,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          return = 'cppOutputReturn',
                          cppPtrType = 'cppOutputPtrType', ## mytype* (needed in templates like myfun<a*>(b)
                          cppDereference = 'cppOutputDereference', ## *(arg)
+                         cppPointerDereference = 'cppOutputPointerDereference',  ##(*arg)
                          cppMemberDereference = 'cppOutputMidOperator', ## arg1->arg2
                          '[[' = 'cppOutputDoubleBracket',
                          as.integer = 'cppOutputCast',
@@ -272,12 +272,7 @@ cppOutputMemberFunctionDeref <- function(code, symTab) {
 
 cppOutputNFvar <- function(code, symTab) {
     if(length(code$args) != 2) stop('Error: expecting 2 arguments for operator ',code$name)
-    paste0( nimGenerateCpp(code$args[[1]], symTab), '->', code$args[[2]] ) ## No nimGenerateCpp on code$args[[2]] because it should be a string
-}
-
-cppOutputNLvar <- function(code, symTab) {
-  if(length(code$args) != 2) stop('Error: expecting 2 arguments for operator ',code$name)
-  paste0( nimGenerateCpp(code$args[[1]], symTab), '->', code$args[[2]] ) ## No nimGenerateCpp on code$args[[2]] because it should be a string
+    paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]] ) ## No nimGenerateCpp on code$args[[2]] because it should be a string
 }
 
 cppOutputNFmethod <- function(code, symTab) {
@@ -373,6 +368,10 @@ cppOutputPtrType <- function(code, symTab) {
 
 cppOutputDereference <- function(code, symTab) {
     cppOutputCallWithName(code, symTab, '*')
+}
+
+cppOutputPointerDereference <- function(code, symTab) {
+  paste0('(*', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
 }
 
 cppOutputTemplate <- function(code, symTab) {
