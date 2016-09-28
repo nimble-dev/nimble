@@ -97,7 +97,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    dirName = 'ANY', #'character',
                                    cppDefs = 'ANY', #'list',
                                    dll = 'ANY', #"DLLInfoOrNULL",
-                                   outputSOfile = 'ANY'# "character"
+                                   outputSOfile = 'ANY',# "character"
+                                   Oincludes = 'ANY'
                                    ),
                                methods = list(
                                		initialize = function(...){dirName <<- character(); cppDefs <<- list(); dll <<- NULL; outputSOfile <<- character();callSuper(...)},
@@ -149,8 +150,12 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            CPPincludes <- c(CPPincludes[iEigenInclude], CPPincludes[-iEigenInclude])
                                        }
 
-                                       ## at this point strip out CPPincludes other than EigenTypedefs and sub .cpp to .o
-                                       
+                                       ## at this point strip out CPPincludes other than EigenTypedefs that have .cpp and gsub .cpp to .o
+                                       browser()
+                                       boolConvertCppIncludeToOinclude <- grepl("\\.cpp", CPPincludes)
+                                       if(length(iEigenInclude) > 0) boolConvertCppIncludeToOinclude[1] <- FALSE
+                                       Oincludes <<- gsub("\\.cpp", ".o", CPPincludes[boolConvertCppIncludeToOinclude])
+                                       CPPincludes <- CPPincludes[!boolConvertCppIncludeToOinclude]
 
                                        CPPusings <- unlist(lapply(defs, function(x) x$getCPPusings()))
                                        CPPusings <- unique(CPPusings)
@@ -236,6 +241,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        
                                        outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
+                                       includes <- c(includes, Oincludes)
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        browser()

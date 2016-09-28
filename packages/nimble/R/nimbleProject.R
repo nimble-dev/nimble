@@ -110,7 +110,9 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  resetFunctions = function(finalize = FALSE) {
                                      ## clear everything except models and nimbleFunctions from models
                                      for(i in ls(mvInfos)) {
-                                         clearThisMV <- TRUE ## It looks like in some situations we'd not want to clear here, but apparently we always should
+                                         clearThisMV <- TRUE ## It looked like in some situations we'd not want to clear here, but apparently we always should
+                                         ## OK, what happens is we used to check if a cppClass was from a model and then not clear, but that isn't right.
+                                         ## It could be defined from a model but then have objects from nimbleFunctions that need to be cleared.
                                          if(clearThisMV) {
                                              mvInfos[[i]]$cppClass <<- NULL
                                              for(j in seq_along(mvInfos[[i]]$RmvObjs)) {
