@@ -87,6 +87,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(name == '') projectName <<- projectNameCreator() else projectName <<- name
                                     },
                                  clearCompiled = function(functions = TRUE, models = TRUE, DLLs = TRUE) {
+                                     browser()
+                                     
                                      if(functions) resetFunctions(finalize = TRUE)
                                      if(models) resetModels(finalize = TRUE)
                                      if(DLLs) unloadDLLs()
@@ -108,19 +110,18 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  resetFunctions = function(finalize = FALSE) {
                                      ## clear everything except models and nimbleFunctions from models
                                      for(i in ls(mvInfos)) {
-                                         if(length(mvInfos[[i]]$fromModel) > 0) {
-                                             if(!mvInfos[[i]]$fromModel) {
-                                                 mvInfos[[i]]$cppClass <<- NULL
-                                                 for(j in seq_along(mvInfos[[i]]$RmvObjs)) {
-                                                     if(!is.null(mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface)) {
-                                                         if(finalize) {
-                                                             mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface$finalizeInternal() 
-                                                         }
-                                                         mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface <<- NULL
+                                         clearThisMV <- TRUE ## It looks like in some situations we'd not want to clear here, but apparently we always should
+                                         if(clearThisMV) {
+                                             mvInfos[[i]]$cppClass <<- NULL
+                                             for(j in seq_along(mvInfos[[i]]$RmvObjs)) {
+                                                 if(!is.null(mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface)) {
+                                                     if(finalize) {
+                                                         mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface$finalizeInternal() 
                                                      }
+                                                     mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface <<- NULL
                                                  }
-                                                mvInfos[[i]] <<- NULL
                                              }
+                                             mvInfos[[i]] <<- NULL
                                          }
                                      }
                                      for(i in ls(RCfunInfos)) {

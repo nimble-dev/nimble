@@ -774,7 +774,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
         regLabel <- try(get('name', envir = nfObject))
         if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
-        eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll, regLabel))
+        eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll[['handle']], regLabel))
         # .basePtr <<- .Call(basePtrCall)
         cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr))
         cppCopyTypes <<- defaults$cppCT
@@ -888,7 +888,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  regLabel <- try(get('name', envir = nfObject))
                                                  if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
 
-                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr, dll, regLabel))
+                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr, dll[['handle']], regLabel))
                                                  
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)

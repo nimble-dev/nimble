@@ -248,7 +248,7 @@ setMethod('[<-', 'numberedObjects', function(x, i, value){
 
 newNumberedObjects <- function(dll){
     ans <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$newNumberedObjects))
-    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_numberedObjects_Finalizer, ans, dll, "numberedObjects"))
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_numberedObjects_Finalizer, ans, dll[['handle']], "numberedObjects"))
     ans
 }
 

@@ -219,7 +219,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                         # avoid R CMD check problem with registration
                                                 ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
                                                 .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-                                                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll, model$name))
+                                                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll[['handle']], model$name))
                                                 # .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll = dll)
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )
