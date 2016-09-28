@@ -87,8 +87,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(name == '') projectName <<- projectNameCreator() else projectName <<- name
                                     },
                                  clearCompiled = function(functions = TRUE, models = TRUE, DLLs = TRUE) {
-                                     browser()
-                                     
                                      if(functions) resetFunctions(finalize = TRUE)
                                      if(models) resetModels(finalize = TRUE)
                                      if(DLLs) unloadDLLs()

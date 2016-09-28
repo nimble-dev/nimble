@@ -151,7 +151,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
 
                                        ## at this point strip out CPPincludes other than EigenTypedefs that have .cpp and gsub .cpp to .o
-                                       browser()
                                        boolConvertCppIncludeToOinclude <- grepl("\\.cpp", CPPincludes)
                                        if(length(iEigenInclude) > 0) boolConvertCppIncludeToOinclude[1] <- FALSE
                                        Oincludes <<- gsub("\\.cpp", ".o", CPPincludes[boolConvertCppIncludeToOinclude])
@@ -244,8 +243,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        includes <- c(includes, Oincludes)
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
-                                       browser()
-                                       
                                        cur = getwd()
                                        setwd(dirName)
                                        on.exit(setwd(cur))
