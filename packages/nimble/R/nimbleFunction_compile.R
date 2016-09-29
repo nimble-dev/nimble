@@ -362,6 +362,17 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## but actually, right now, we use it inconsistently.
 ## this is a function that could use a lot of polishing, but it's ok for now.
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
+   browser()
+    if(is.nlGenerator(instances[[1]][[name]])){ ## from method argument or return type
+      ## Need to change to accomidate multiple nlGenerators
+      nlList <- instances[[1]][[name]]()
+      nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+      className <- nlList$nimbleListDef$className
+      neededObjectNames <<- c(neededObjectNames, name)
+      newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
+      if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+      return(newSym)
+    }
     if(is.nl(instances[[1]][[name]])) {
         ## This case mimics the nimbleFunction case below (see is.nf)
 

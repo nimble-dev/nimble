@@ -159,7 +159,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                        returnType = cppVoid(),
                                        code = cppCodeBlock(code = code, objectDefs = CBobjectDefs, skipBrackets = TRUE)
                                        )
-                               }                                                                       
+                               }
                                )
                            )
 

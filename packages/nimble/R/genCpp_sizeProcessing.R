@@ -297,6 +297,7 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 }
 
 sizeNFvar <- function(code, symTab, typeEnv) {
+  browser()
     nfName <- code$args[[1]]$name
     nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
     isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')

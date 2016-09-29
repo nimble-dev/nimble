@@ -40,21 +40,25 @@ nimbleList <- function(types,
 
 
     nlGeneratorFunction <-   eval(  substitute(
+      function(...){
+      nlDefClassObject <- NLDEFCLASSOBJECT
+      
       nlRefClassObject <- setRefClass(
           Class = NLREFCLASS_CLASSNAME,
           fields = NLREFCLASS_FIELDS,
           contains = 'nimbleListBase',
           methods = list(
-            initialize = function(...){
+            initialize = function(nlDefClassObject, ...){
               nimbleListDef <<- nlDefClassObject
               callSuper(...)
             }
           ),
           where = where
-      ),       
+          )
+      return(nlRefClassObject(nlDefClassObject, ...))},
       list(NLREFCLASS_CLASSNAME = name,
            NLREFCLASS_FIELDS = fields,
-           nlDefClassObject = nlDefClassObject,
+           NLDEFCLASSOBJECT = nlDefClassObject,
            where =where)))
     return(nlGeneratorFunction)
 }

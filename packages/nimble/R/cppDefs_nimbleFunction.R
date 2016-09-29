@@ -315,7 +315,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               initialize = function(nfProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
                                                   ## RCfunDefs <<- list()
                                                   ## callSuper(...) ## must call this first because it sets objectDefs to list()
-                                                callSuper(nfProc, debugCpp, fromModel, ...)
+                                                  callSuper(nfProc, debugCpp, fromModel, ...)
                                                   if(!missing(nfProc)) processNFproc(nfProc, debugCpp = debugCpp, fromModel = fromModel)
                                                   
                                                   if(isNode) {
@@ -339,8 +339,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                               processNFproc = function(nfp, debugCpp = FALSE, fromModel = FALSE) {
                                                   ## callSuper(nfp, debugCpp, fromModel)
                                                   ## nfp$cppDef <- .self
-                                                browser()
-                                                   nfProc <<- nimCompProc
+                                                  nfProc <<- nimCompProc
                                                   ## genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
                                                   ## objectDefs <<- symbolTable2cppVars(nfp$setupSymTab)
                                                   buildFunctionDefs()

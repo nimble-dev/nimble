@@ -26,5 +26,25 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                       genNeededTypes = function(debugCpp = FALSE, fromModel = FALSE){
                                         CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                         callSuper(debugCpp, fromModel)
-                                      })
+                                      },
+                                      buildAll = function(where = where) {
+                                        # buildSEXPCopier()
+                                        callSuper(where)
+                                      },
+                                      buildSEXPCopier = function(){
+                                        browser()
+                                        # argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
+                                        # 
+                                        # inputArgs <- list(cppSEXP(name = 'Sinput'))
+                                        # code <- putCodeLinesInBrackets(list(cppLiteral(c(notificationLine, castLine, deleteLine))))
+                                        # 
+                                        # 
+                                        # #may not want [[name]] below but instead something else ie 'copier', 'listCopier', etc.
+                                        # functionDefs[[name]] <- cppFunctionDef(name = paste0(name,'_Copier'),
+                                        #                                        args = interfaceArgs,
+                                        #                                        code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = objects),
+                                        #                                        returnType = cppSEXP(),
+                                        #                                        externC = TRUE)
+                                      }
+                                      )
                                   )

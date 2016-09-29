@@ -73,6 +73,7 @@ cppVarFull <- setRefClass('cppVarFull',
                               }
                           },
                           generate = function(printName = .self$name, ...) {
+                            browser()
                               if(silent) return(character())
                               bCP <- if(length(baseConst) > 0) { 
                                   if(length(baseConstPtr) > 0) paste(paste(rep('*', baseConstPtr), collapse = ''), 'const')

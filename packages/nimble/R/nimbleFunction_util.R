@@ -29,6 +29,12 @@ is.Cnf <- function(f) {
     return(FALSE)
 }
 
+is.nlGenerator <- function(f){
+  return(is.function(f) && 
+           existsFunctionEnvVar(f, 'nlDefClassObject'))
+  
+}
+
 is.nl <- function(f){
   if(exists("nimbleListDef", envir = f)) return(TRUE)
   return(FALSE)

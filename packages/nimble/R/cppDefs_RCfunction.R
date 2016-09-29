@@ -60,7 +60,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                  },
                                  buildFunction = function(RCfun, parentST = NULL) {
-                                   browser()
                                      RCfunProc <<- RCfun
                                      name <<- RCfunProc$name
                                      const <<- RCfunProc$const
@@ -141,7 +140,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      objects <- symbolTable2cppVars(RCfunProc$compileInfo$origLocalSymTab)
                                      argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
                                      Snames <- character(length(argNames))
-                                     copyLines <- list()
+                                     # copyLines <- list()
                                      interfaceArgs <- symbolTable()
                                      objects$setParentST(interfaceArgs)
                                      returnVoid <- returnType$baseType == 'void'
@@ -154,8 +153,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          ## and we need a line to copy from the SEXP to the local variable
                                          ## The to argument uses the origLocalSymbolObject rather than the objects (which has cppVars) because that has the nDim
                                          ## The name of that and the new one in objects must match
-                                         copyLines[[i]] <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
-                                                                                 RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))
+                                          copyLines[[i]] <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
+                                                                                  RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))
                                      }
 
                                      RHScall <- as.call(c(list(as.name(name)),
@@ -208,9 +207,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              }
                                              returnLine <- quote(return(S_returnValue_LIST_1234))
                                              unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
-                                             allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
-                                                                              returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
-                                  
+                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
+                                                                               returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
                                          } else { ## No input or return objects
                                              returnLine <- quote(return(R_NilValue))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall),
@@ -267,10 +265,14 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
             ans <- substitute(TO <- indexedNodeInfo(SEXP_2_vectorDouble(FROM)), list(TO = as.name(toSym$name),
                                                                                      FROM = as.name(fromSym$name)))
             return(ans)
-        } else{
+        } 
+        else{
             stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
         }
     }
+  if(inherits(toSym, 'symbolNimbleList')) {
+    ans <- substitute
+  }
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 

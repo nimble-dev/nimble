@@ -242,6 +242,8 @@ SEXP vectorInt_2_SEXP(const vector<int> &v, int offset) {
   return(Sans);
 }
 
+
+
 vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorInt called for SEXP that is not a numeric or logica!\n");
   int nn = LENGTH(Sn);

@@ -194,7 +194,11 @@ nf_getVarFromAssignmentLHScode <- function(code) {
 
 ## creates a list of all the names of all variables and functions in the code of methodList functions
 nf_createAllNamesFromMethodList <- function(methodList) {
-    methodListCode <- lapply(methodList, function(f) f$code)
+    methodBodyListCode <- lapply(methodList, function(f) f$code)
+    methodReturnListCode <- lapply(methodList, function(f) f$returnType)
+    methodArgListCode <- lapply(methodList, function(f) f$argInfo$argList[[1]])
+    methodListCode <- c(methodBodyListCode, methodArgListCode, methodReturnListCode)
+    if(length(methodReturnListCode) > 0)
     return(unique(unlist(lapply(methodListCode, function(code) all.names(code)))))
 }
 
