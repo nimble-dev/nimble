@@ -221,6 +221,21 @@ Cmatrix2mvOneVar <- function(mat, mv, varName, k){
             stop('varName not found in modelValues')
 }
 
+#' Set values of one variable of a modelValues object from an R matrix
+#'
+#' Normally a modelValues object is accessed one "row" at a time.  This function allows all rows for one variable to set from a matrix with one dimension more than the variable to be set.
+#'
+#' @param mat Input matrix
+#'
+#' @param mv  modelValues object to be modified.
+#'
+#' @param varName Character string giving the name of the variable on \code{mv} to be set
+#'
+#' @param k Number of rows to use
+#'
+#' @export
+#' @details
+#' This function may be deprecated in the future when a more natural system for interacting with modelValues objects is developed.
 Rmatrix2mvOneVar <- function(mat, mv, varName, k){
 	if( mv$symTab$symbols[[varName]][['type']] == 'double'){
 		storage.mode(mat) <- 'double'
