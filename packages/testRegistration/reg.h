@@ -19,4 +19,4 @@ double value(0);
 
 extern "C" SEXP getValue();
 
-extern "C" void R_init_code(DllInfo *dll);
+extern "C" void R_init_reg(DllInfo *dll);

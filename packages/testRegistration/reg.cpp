@@ -1,6 +1,6 @@
 #include "reg.h"
 
-void R_init_code(DllInfo *dll)
+void R_init_reg(DllInfo *dll)
 {
   value = 1234;
   R_registerRoutines(dll,  NULL, CallEntries, NULL, NULL);
