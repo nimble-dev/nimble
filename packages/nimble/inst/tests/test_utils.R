@@ -104,7 +104,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # single multivar sampler: samplers(type = "RW_block", target = 'x')
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
-    
+
     setSampler <- function(var, conf) {
         currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
                                         # remove already defined scalar samplers
@@ -117,9 +117,9 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                                         #          gsub("\\[[0-9]+\\]", "", x$target))
                                         #                         %in% var$target)
         conf$removeSamplers(inds, print = FALSE)
-        
+
         if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
-        if(length(var$target) == 1 || (var$type %in% c("RW_block", "RW_PF_block", "RW_llFunction_block") && !is.list(var$target))) 
+        if(length(var$target) == 1 || (var$type %in% c("RW_block", "RW_PF_block", "RW_llFunction_block") && !is.list(var$target)))
             tmp <- conf$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) conf$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
     }
 
@@ -157,7 +157,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   }
   if(!is.null(mcmcControl)) mcmcConf <- configureMCMC(Rmodel, control = mcmcControl) else mcmcConf <- configureMCMC(Rmodel)
   if(removeAllDefaultSamplers) mcmcConf$removeSamplers()
-  
+
   if(!is.null(samplers)) {
       sapply(samplers, setSampler, mcmcConf)
       if(verbose) {
@@ -169,7 +169,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   vars <- Rmodel$getDependencies(Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE), stochOnly = TRUE, includeData = FALSE, downstream = TRUE)
   vars <- unique(nimble:::removeIndexing(vars))
   mcmcConf$addMonitors(vars, print = FALSE)
-  
+
   Rmcmc <- buildMCMC(mcmcConf)
   if(doCpp) {
       Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
@@ -347,7 +347,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   cat("===== Finished MCMC test for ", name, ". =====\n", sep = "")
 
     if(doCpp) {
-        if(.Platform$OS.type != "windows") {
+        if(TRUE) { ##.Platform$OS.type != "windows") {
             ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
             ##dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
             nimble:::clearCompiled(Rmodel)
