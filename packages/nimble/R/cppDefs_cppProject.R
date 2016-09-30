@@ -194,7 +194,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ## and then automatically written as part of writeFiles.  Doing so would require
                                        ## that the SOname be generated earlier, which would probably be fine.
                                        contentLines <- c(
-                                           "#include <nimble/dynamicRegistrations.h>",
+                                            "#include <nimble/dynamicRegistrations.h>",
                                            "",
                                            "extern \"C\"",
                                            paste0("void R_init_", dllName, "(DllInfo *dll) {"),
@@ -227,7 +227,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
 
                                        timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
 
-                                       dynamicRegistrationsCppName <- paste0("dynamicRegistrations_", timeStamp, ".cpp")
+                                       dynamicRegistrationsDllName <- paste0("dynamicRegistrations_", timeStamp)
+                                       dynamicRegistrationsCppName <- paste0(dynamicRegistrationsDllName, ".cpp")
                                        
                                        ## mainfiles <- paste(paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' '), dynamicRegistrationsCppName)
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
@@ -248,8 +249,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        on.exit(setwd(cur))
 
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
-                                           writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dllName)
-                                           ssDllName <- file.path(dirName, paste0(dllName,'_SSDLL', .Platform$dynlib.ext))
+                                           writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
+                                           ssDllName <- file.path(dirName, paste0(dynamicRegistrationsDllName, .Platform$dynlib.ext))
                                            ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
                                            system(ssdSHLIBcmd)
                                            nimbleUserNamespace$sessionSpecificDll <- dyn.load(ssDllName, local = TRUE)
