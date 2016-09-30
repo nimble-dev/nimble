@@ -139,16 +139,20 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      asMember <- !is.null(className)
                                      objects <- symbolTable2cppVars(RCfunProc$compileInfo$origLocalSymTab)
                                      argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
+                                     copyLines <- list()
+                                     numNimLists <- 0
                                      Snames <- character(length(argNames))
-                                     # copyLines <- list()
                                      interfaceArgs <- symbolTable()
                                      objects$setParentST(interfaceArgs)
                                      returnVoid <- returnType$baseType == 'void'
-                                     
                                      for(i in seq_along(argNames)) {
+                                       
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
                                          interfaceArgs$addSymbol(cppSEXP(name = Snames[i]))
+                                         
+                                         if(inherits(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]), 'symbolNimbleList'))
+                                           numNimLists <- numNimLists + 1 ## so that we don't unprotect too many times
                                          
                                          ## and we need a line to copy from the SEXP to the local variable
                                          ## The to argument uses the origLocalSymbolObject rather than the objects (which has cppVars) because that has the nDim
@@ -206,7 +210,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                                                             list(I = numArgs, THISSEXP = as.name('S_returnValue_1234')))
                                              }
                                              returnLine <- quote(return(S_returnValue_LIST_1234))
-                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
+                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid - numNimLists))
                                               allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
                                                                                returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
                                          } else { ## No input or return objects
@@ -271,12 +275,15 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
         }
     }
   if(inherits(toSym, 'symbolNimbleList')) {
-    ans <- substitute
+    ans <- substitute(TO.copyFromSEXP(FROM), list(TO = as.name(toSym$name),
+                                                  FROM = as.name(fromSym$name)))
+    return(ans)
   }
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 
 buildCopyLineToSEXP <- function(fromSym, toSym) {
+  browser()
     if(inherits(fromSym, 'symbolBasic')) {
         if(fromSym$nDim == 0) {
             ans <- substitute(PROTECT(TO <- CONVERT(FROM)), list(TO = as.name(toSym$name),
@@ -303,6 +310,11 @@ buildCopyLineToSEXP <- function(fromSym, toSym) {
         } else {
             stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
         }
+    }
+    if(inherits(fromSym, 'symbolNimbleList')) {
+      ans <- substitute(FROM.copyToSEXP(TO), list(TO = as.name(toSym$name),
+                                                  FROM = as.name(fromSym$name)))
+      return(ans)    
     }
     stop(paste("Error, don't know how to make a copy line to SEXP for something of class", class(fromSym)))
 }

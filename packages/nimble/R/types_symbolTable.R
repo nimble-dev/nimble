@@ -11,11 +11,11 @@ buildSymbolTable <- function(vars, type, size){
     return(symTab)
 }
 
-argTypeList2symbolTable <- function(ATL) {
+argTypeList2symbolTable <- function(ATL, parentST) {
     ## ATL is the type of argument type list from run-time args to a nimble function
     symTab <- symbolTable()
     for(i in seq_along(ATL)) {
-        symTab$addSymbol(argType2symbol(ATL[[i]], names(ATL)[i]))
+        symTab$addSymbol(argType2symbol(ATL[[i]], parentST, names(ATL)[i]))
     }
     symTab
 }
@@ -25,30 +25,18 @@ argTypeList2symbolTable <- function(ATL) {
 ## The first argument is the number of dimensions, defaulting to 0 (indicated scalar)
 ## The second argument is a vector of the sizes, defaulting to rep(NA, nDim)
 ## If only some sizes are known, something like double(2, c(5, NA)) should be valid, but we'll have to check later handling to be sure.
-argType2symbol <- function(AT, name = character()) {
-  browser()
+argType2symbol <- function(AT, parentST, name = character()) {
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
-    if(type == "internalType") {
-        return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
-    } else if(type == "nimbleList"){
-      
-      currentObjs <- parent.frame(2)$parentST$getSymbolNames ##not a good idea but ok for now?
-      if(as.character(AT[[1]]%in%currentObjs)){ ##should occur if nimbleListDef was given as type for input argument
-        
-        
-      }
-      
-      typeInfo <- eval(AT[[2]]) ##currently only works if list setup def'n is defined in global env, must fix this
-      nlDef <- nimbleListDefClass(types = typeInfo, className = name)
-      listNLP <- nlProcessing(className = name, nimbleListObj = nlDef)
-      listNLP$buildSymbolTable()
+    
+    browser()
+    
+    if(name %in% parent.frame(2)$parentST$getSymbolNames()){
+        symbolNames <- parent.frame(2)$parentST$getSymbolNames() 
+        listST <- parent.frame(2)$parentST$symbols[[which(name == symbolNames)]]
+        return(listST)
+    }
 
-      # listNLP <- eval(substitute(paste0('parent.frame()$parentST$symbols$', NAME, '$nlProc'), list(NAME = )
-      listST <- symbolNimbleList(name = name, nlProc = listNLP)
-      listST$type <- "symbolNimbleList"
-      return(listST)
-    } 
     nDim <- if(length(AT)==1) 0 else AT[[2]]
     size <- if(nDim == 0) 1 else {
         if(length(AT) < 3)

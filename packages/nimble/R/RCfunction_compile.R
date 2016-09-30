@@ -45,7 +45,6 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
                                           setupSymbolTables = function(parentST = NULL) {
-                                            browser()
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
                                               if(numArgs > 0) {
@@ -60,8 +59,8 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
-                                              compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames) ## will be used for function args.  must be a better way.
-                                              compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames)
+                                              compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, parentST) ## will be used for function args.  must be a better way.
+                                              compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, parentST)
                                               if(!is.null(parentST)) {
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)

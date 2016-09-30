@@ -81,7 +81,7 @@ nimbleFunction <- function(setup         = NULL,
         if(!is.null(contains)) stop('Cannot provide a contains argument if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         return(RCfunction(run, name = name))
     }
-   
+
     virtual <- FALSE
     force(where) # so that we can get to namespace where a nf is defined by using topenv(parent.frame(2)) in getNimbleFunctionEnvironment()
     # we now include the namespace in the name of the RefClass to avoid two nfs having RefClass of same name but existing in different namespaces
@@ -97,7 +97,11 @@ nimbleFunction <- function(setup         = NULL,
     ## create the reference class definition
     nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
     nfRefClass    <- eval(nfRefClassDef)
-
+    ## record which setupOutputs are used in method argument or returns
+    argReturnOutputs <- intersect(nf_createAllNamesFromMethodList(methodList, onlyArgsAndReturn = TRUE), names(nfRefClassDef$fields))
+    argReturnNames  <- lapply(methodList, function(x){
+      return(names(x$argInfo[which(as.character(x$argInfo$argList[[1]]) == argReturnOutputs)]))})
+                                
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
     .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, nf_assignmentLHSvars(body(globalSetup)))
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
@@ -193,9 +197,11 @@ nf_getVarFromAssignmentLHScode <- function(code) {
 }
 
 ## creates a list of all the names of all variables and functions in the code of methodList functions
-nf_createAllNamesFromMethodList <- function(methodList) {
-    methodBodyListCode <- lapply(methodList, function(f) f$code)
-    methodReturnListCode <- lapply(methodList, function(f) f$returnType)
+nf_createAllNamesFromMethodList <- function(methodList, onlyArgsAndReturn = F) {
+    methodBodyListCode <- list()
+    if(!onlyArgsAndReturn)
+      methodBodyListCode <- lapply(methodList, function(f) f$code)
+    methodReturnListCode <- lapply(methodList, function(f) f$returnType) ##might need changing
     methodArgListCode <- lapply(methodList, function(f) f$argInfo$argList[[1]])
     methodListCode <- c(methodBodyListCode, methodArgListCode, methodReturnListCode)
     if(length(methodReturnListCode) > 0)
