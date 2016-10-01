@@ -41,6 +41,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            }
                                         },
                                        setupLocalSymbolTables = function() {
+                                         browser()
                                            for(i in seq_along(RCfunProcs)) {
                                                RCfunProcs[[i]]$setupSymbolTables()
                                            }
@@ -117,7 +118,7 @@ nfProcessing <- setRefClass('nfProcessing',
                               addMemberFunctionsToSymbolTable = function(){},
                               setupLocalSymbolTables = function() {
                                   for(i in seq_along(RCfunProcs)) {
-                                      RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab)
+                                      RCfunProcs[[i]]$setupSymbolTables(parentST = setupSymTab, neededTypes = neededTypes)
                                   }
                               },
                               collectRCfunNeededTypes = function() {
@@ -367,7 +368,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
       nlList <- instances[[1]][[name]]()
       nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
       className <- nlList$nimbleListDef$className
-      newSym <- symbolNimbleList(name = className, type = 'nimbleList', nlProc = nlp)
+      newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
       if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
       return(NULL)
     }

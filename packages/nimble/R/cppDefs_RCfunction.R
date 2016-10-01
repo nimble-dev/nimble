@@ -90,6 +90,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      
                                      
                                      # avoid R CMD check problem with registration
+                                     # ok not to use getNativeSymbolInfo with a dll argument because SEXPinterfaceCname can't possible be in nimble.so, so it is unique to the project dll.
                                      txt <- ".Call(SEXPname)"
                                      dotCall <- eval(substitute(substitute(txt1, list(SEXPname = SEXPinterfaceCname)), list(txt1 = parse(text = txt)[[1]])))
                                      
@@ -119,46 +120,59 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      
                                      funCode <- parse(text = paste0('function(', paste0(argNamesCall, collapse = ','),') A'), keep.source = FALSE)[[1]]
-                                     bodyCode <- substitute({ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
+                                     ## the first warning may be removed later if there is no CnativeSymbolInfo_ to be created or if eval is FALSE (as for a nimbleFunction member
+                                     if(asMember & is.character(includeDotSelf))
+                                         bodyCode <- substitute({
+                                             if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
+                                             if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
+                                             ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign, DOTSELFNAME = includeDotSelf))
+                                     else
+                                         bodyCode <- substitute({
+                                             if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
+                                              ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
                                      funCode[[4]] <- NULL
                                      if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
                                      if(eval) {
-                                         fun = eval(funCode) 
-                                         environment(fun) = env #??? may want this to be environment() or the default value for env to be environment()
+                                         fun = eval(funCode)
+                                         newenv <- eval(quote(new.env()), envir = env)
+                                         environment(fun) = newenv #??? may want this to be environment() or the default value for env to be environment()
+                                         ##environment(fun) = env #??? may want this to be environment() or the default value for env to be environment()
                                          if(!is.null(dll))   {
                                         # replace the name of the symbol in the .Call() with the resolved symbol.
-					     body(fun)[[2]][[3]][[2]] = getNativeSymbolInfo(SEXPinterfaceCname, dll)
-					 }
+					     ##body(fun)[[2]][[3]][[2]] = getNativeSymbolInfo(SEXPinterfaceCname, dll)
+                                             body(fun)[[3]][[3]][[2]] = quote(CnativeSymbolInfo_)
+                                             assign('CnativeSymbolInfo_', getNativeSymbolInfo(SEXPinterfaceCname, dll), envir = newenv)
+					 } else {
+                                             body(fun)[[2]] <- NULL ## remove the check for valid CnativeSymbolInfo_
+                                         }
 
                                          fun
-                                     } else 
+                                     } else {
+                                         funCode[[3]][[2]] <- NULL
                                          funCode
+                                     }
                                  },
                                  buildSEXPinterfaceFun = function(className = NULL) {
                                      asMember <- !is.null(className)
                                      objects <- symbolTable2cppVars(RCfunProc$compileInfo$origLocalSymTab)
                                      argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
-                                     copyLines <- list()
-                                     numNimLists <- 0
                                      Snames <- character(length(argNames))
+                                     copyLines <- list()
                                      interfaceArgs <- symbolTable()
                                      objects$setParentST(interfaceArgs)
                                      returnVoid <- returnType$baseType == 'void'
+                                     
                                      for(i in seq_along(argNames)) {
-                                       
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
                                          interfaceArgs$addSymbol(cppSEXP(name = Snames[i]))
                                          
-                                         if(inherits(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]), 'symbolNimbleList'))
-                                           numNimLists <- numNimLists + 1 ## so that we don't unprotect too many times
-                                         
                                          ## and we need a line to copy from the SEXP to the local variable
                                          ## The to argument uses the origLocalSymbolObject rather than the objects (which has cppVars) because that has the nDim
                                          ## The name of that and the new one in objects must match
-                                          copyLines[[i]] <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
-                                                                                  RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))
+                                         copyLines[[i]] <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
+                                                                                 RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))
                                      }
 
                                      RHScall <- as.call(c(list(as.name(name)),
@@ -210,9 +224,10 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                                                             list(I = numArgs, THISSEXP = as.name('S_returnValue_1234')))
                                              }
                                              returnLine <- quote(return(S_returnValue_LIST_1234))
-                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid - numNimLists))
-                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
-                                                                               returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
+                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
+                                             allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
+                                                                              returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
+                                  
                                          } else { ## No input or return objects
                                              returnLine <- quote(return(R_NilValue))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall),
@@ -246,6 +261,11 @@ toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
                                      character = 'string_2_STRSEXP')
 
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
+    if(inherits(toSym, 'symbolNimbleList')){
+      ans <- paste0( as.name(toSym$name), ".copyToSEXP(", as.name(fromSym$name), ")")
+      ans <- cppLiteral(ans)
+      return(ans)
+    }
     if(inherits(toSym, 'symbolBasic')) {
         if(toSym$nDim == 0) {
             ans <- substitute(TO <- CONVERT(FROM), list(TO = as.name(toSym$name),
@@ -269,21 +289,19 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
             ans <- substitute(TO <- indexedNodeInfo(SEXP_2_vectorDouble(FROM)), list(TO = as.name(toSym$name),
                                                                                      FROM = as.name(fromSym$name)))
             return(ans)
-        } 
-        else{
+        } else{
             stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
         }
     }
-  if(inherits(toSym, 'symbolNimbleList')) {
-    ans <- substitute(TO.copyFromSEXP(FROM), list(TO = as.name(toSym$name),
-                                                  FROM = as.name(fromSym$name)))
-    return(ans)
-  }
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 
 buildCopyLineToSEXP <- function(fromSym, toSym) {
-  browser()
+    if(inherits(fromSym, 'symbolNimbleList')){
+      ans <- paste0( as.name(toSym$name), ".copyToSEXP(", as.name(fromSym$name), ")")
+      ans <- cppLiteral(ans)
+      return(ans)
+    }
     if(inherits(fromSym, 'symbolBasic')) {
         if(fromSym$nDim == 0) {
             ans <- substitute(PROTECT(TO <- CONVERT(FROM)), list(TO = as.name(toSym$name),
@@ -310,11 +328,6 @@ buildCopyLineToSEXP <- function(fromSym, toSym) {
         } else {
             stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
         }
-    }
-    if(inherits(fromSym, 'symbolNimbleList')) {
-      ans <- substitute(FROM.copyToSEXP(TO), list(TO = as.name(toSym$name),
-                                                  FROM = as.name(fromSym$name)))
-      return(ans)    
     }
     stop(paste("Error, don't know how to make a copy line to SEXP for something of class", class(fromSym)))
 }
