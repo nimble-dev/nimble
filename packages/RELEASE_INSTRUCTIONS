@@ -116,3 +116,28 @@ if you're in the directory with the batch file (build.bat), then just type "buil
 Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
 
 NOTE: as of v0.6, mcmc testing seemed to run fine on Savio (SciLinux) and run but give compiler warnings related to Eigen on NERSC Edison (SUSE).
+
+
+==========
+Solaris testing
+
+Can use VirtualBox Solaris VM on Paciorek smeagol Linux box. See solaris.sh for notes
+
+==========
+sanitizer testing
+
+CRAN seems only to use UBSAN (undefined behavior sanitizer) though Kurt Hornik indicated that he built R with ASAN (address sanitizer) and UBSAN
+
+to set up R-devel with SAN:
+
+# configuration for ASAN, UBSAN, SAN (UBSAN+ASAN)
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-asan 'CC=/tmp/clang/bin/clang -fsanitize=address -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+ ./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-san 'CC=/tmp/clang/bin/clang -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr  -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-ubsan 'CC=/tmp/clang/bin/clang -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack 
+
+on paciorek smeagol box:
+need to turn vm.overcommit_memory to 2 on my Linux box or building R will fail because conftest will not run as ASAN tries to allocate a ridiculous amount of memory.
+
+export LD_LIBRARY_PATH=/tmp/clang/lib:$LD_LIBRARY_PATH
