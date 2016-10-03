@@ -237,7 +237,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
 
-                                       dllName <- paste0(names[1], timeStamp)
+                                       dllName <- paste0(names[1], "_", timeStamp)
                                        
                                        outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
@@ -256,7 +256,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            ssDllName <- file.path(dirName, paste0(dynamicRegistrationsDllName, .Platform$dynlib.ext))
                                            ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
                                            if(!showOutput) {
-                                               logFile <- paste0("dynamicRegistrations", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                               logFile <- paste0("dynamicRegistrations_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                                ssdSHLIBcmd <- paste(ssdSHLIBcmd, ">", logFile)
                                                ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
                                            }
@@ -271,7 +271,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
 
                                        if(!showOutput) { 
-                                           logFile <- paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                           logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
                                            ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
                                        }
