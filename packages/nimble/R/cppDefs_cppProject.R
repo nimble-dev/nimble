@@ -248,21 +248,34 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        setwd(dirName)
                                        on.exit(setwd(cur))
 
+                                       showOutput <- getNimbleOption('showCompilerOutput')
+
+
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
                                            writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
                                            ssDllName <- file.path(dirName, paste0(dynamicRegistrationsDllName, .Platform$dynlib.ext))
                                            ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
-                                           system(ssdSHLIBcmd)
+                                           if(!showOutput) {
+                                               logFile <- paste0("dynamicRegistrations", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                               ssdSHLIBcmd <- paste(ssdSHLIBcmd, ">", logFile)
+                                               ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
+                                           }
+                                           if(isWindows)
+                                               status = system(ssdSHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput, show.output.on.console = showOutput)
+                                           else
+                                               status = system(ssdSHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput)
+                                           if(status != 0) 
+                                               stop(structure(simpleError("Failed to create the shared library"),
+                                                              class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
                                            nimbleUserNamespace$sessionSpecificDll <- dyn.load(ssDllName, local = TRUE)
                                        }
 
-                                       
-                                       showOutput <- getNimbleOption('showCompilerOutput')
-                                       if(!showOutput) {
+                                       if(!showOutput) { 
                                            logFile <- paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
                                            ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
                                        }
+                                       
                                        if(isWindows)
                                            status = system(SHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput, show.output.on.console = showOutput)
                                        else
