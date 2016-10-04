@@ -103,7 +103,7 @@ nimbleFunction <- function(setup         = NULL,
     #   return(names(x$argInfo[which(as.character(x$argInfo$argList[[1]]) == argReturnOutputs)]))})
     #                             
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
-    .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, nf_assignmentLHSvars(body(globalSetup)))
+    .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
     ## create a list to hold all specializations (instances) of this nimble function.  The following objects are accessed in environment(generatorFunction) in the future
     ## create the generator function, which is returned from nimbleFunction()
@@ -174,7 +174,7 @@ nf_createRefClassDef_fields <- function(setup, methodList, globalSetup, declared
 nf_createSetupOutputNames <- function(setup, methodList, declaredSetupOutputNames, globalSetup) {
     setupOutputNames <- character(0)
     setupOutputNames <- c(setupOutputNames, names(formals(setup)))   # add all setupArgs to potential setupOutputs
-    setupOutputNames <- c(setupOutputNames, nf_assignmentLHSvars(body(setup)), nf_assignmentLHSvars(body(globalSetup)))  # add all variables on LHS of <- in setup to potential setupOutputs
+    setupOutputNames <- c(setupOutputNames, nf_assignmentLHSvars(body(setup)), if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character())  # add all variables on LHS of <- in setup to potential setupOutputs
     setupOutputNames <- intersect(setupOutputNames, nf_createAllNamesFromMethodList(methodList))
     setupOutputNames <- c(setupOutputNames, declaredSetupOutputNames)
     setupOutputNames <- unique(setupOutputNames)
