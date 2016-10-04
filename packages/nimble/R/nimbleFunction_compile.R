@@ -41,7 +41,6 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            }
                                         },
                                        setupLocalSymbolTables = function() {
-                                         browser()
                                            for(i in seq_along(RCfunProcs)) {
                                                RCfunProcs[[i]]$setupSymbolTables()
                                            }

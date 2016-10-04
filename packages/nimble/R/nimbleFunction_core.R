@@ -98,10 +98,10 @@ nimbleFunction <- function(setup         = NULL,
     nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
     nfRefClass    <- eval(nfRefClassDef)
     ## record which setupOutputs are used in method argument or returns
-    argReturnOutputs <- intersect(nf_createAllNamesFromMethodList(methodList, onlyArgsAndReturn = TRUE), names(nfRefClassDef$fields))
-    argReturnNames  <- lapply(methodList, function(x){
-      return(names(x$argInfo[which(as.character(x$argInfo$argList[[1]]) == argReturnOutputs)]))})
-                                
+    # argReturnOutputs <- intersect(nf_createAllNamesFromMethodList(methodList, onlyArgsAndReturn = TRUE), names(nfRefClassDef$fields))
+    # argReturnNames  <- lapply(methodList, function(x){
+    #   return(names(x$argInfo[which(as.character(x$argInfo$argList[[1]]) == argReturnOutputs)]))})
+    #                             
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
     .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, nf_assignmentLHSvars(body(globalSetup)))
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)

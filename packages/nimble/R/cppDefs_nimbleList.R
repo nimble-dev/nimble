@@ -29,43 +29,41 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                       },
                                       buildSEXPCopier = function(){
                                         browser()
+                                        ###want: something like SEXP S_nimList for function argument
+                                        ###then cycle through list symbol table, calling appropriate SEXP_2 function for each
+                                        ###also, if first time calling SEXP Copier, include "getClassElement" function from perry (although this may not be the best place to do this)
+                                        
+                                        functionArgName <-  Rname2CppName(paste0('S_nimList'))
+                                        interfaceArgs <- symbolTable()
+                                        interfaceArgs$addSymbol(cppSEXP(name = functionArgName))
+                                                                
                                         objects <- symbolTable2cppVars(nimCompProc$symTab)
-                                        argNames <- nimCompProc$symTab$getSymbolNames()
+                                        argNames <- nimCompProc$symTab$getSymbolNames() ##not actually arg names any more, but names of nimbleListElements
                                         copyLines <- list()
                                         Snames <- character(length(argNames))
                                         returnType <- "void"
-                                        interfaceArgs <- symbolTable()
-                                        objects$setParentST(interfaceArgs)
-                      
+                                        listElementTable <- symbolTable()
+                                        # objects <= symbolTable()
+                                        # objects$setParentST(listElementTable)
+                                        
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
-                                          interfaceArgs$addSymbol(cppSEXP(name = Snames[i]))
-                                          copyLines[[i]] <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
+                                          listElementTable$addSymbol(cppSEXP(name = Snames[i]))
+                                          
+                                          copyLines[[i]] <- buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
                                                                                   nimCompProc$symTab$getSymbolObject(argNames[i]))
                                         }
                                         
                                         numArgs <- length(argNames)
-                                            if(numArgs> 0) {
-                                              objects$addSymbol(cppSEXP(name = 'S_returnValue_LIST_1234'))
-                                              returnListLines <- returnCopyLines <- vector('list', length = numArgs)
-                                              allocVectorLine <- substitute(PROTECT(S_returnValue_LIST_1234 <- allocVector(VECSXP, nAp1)), list(nAp1 = numArgs))
-                                                for(i in 1:numArgs) {
-                                                  returnCopyLines[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
-                                                                                                                       interfaceArgs$getSymbolObject(Snames[i]))
-                                                  returnListLines[[i]] <- substitute(SET_VECTOR_ELT(S_returnValue_LIST_1234, Im1, THISSEXP),
-                                                                                     list(Im1 = i-1, THISSEXP = as.name(Snames[i])))
-                                                }
-                                              }
-                                              unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1))
-                                              allCode <- embedListInRbracket(c(copyLines, list(allocVectorLine),
-                                                                               returnCopyLines, returnListLines, list(unprotectLine)))
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1))
+                                        allCode <- embedListInRbracket(c(copyLines, list(unprotectLine)))
                                        
                                         # SEXPinterfaceCname <<- paste0('CALL_',Rname2CppName(paste0(if(!is.null(className)) paste0(className,'_') else NULL, name))) ##Rname2CppName needed for operator()
                                               
                                         #may not want [[name]] below but instead something else ie 'copier', 'listCopier', etc.
                                         functionDefs[[name]] <<- cppFunctionDef(name = "copyFromSEXP",
                                                                                args = interfaceArgs,
-                                                                               code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = objects),
+                                                                               code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
                                                                                returnType = cppVoid(),
                                                                                externC = FALSE)
                                       }

@@ -8,6 +8,8 @@
 
 std::ostringstream _nimble_global_output;
 
+
+
 void nimble_print_to_R(std::ostringstream &input) {
   PRINTF("%s", input.str().c_str());
   input.str("");
@@ -22,6 +24,8 @@ void multivarTestCall(double *x, int n) {
   _nimble_global_output<<"\n";
   nimble_print_to_R(_nimble_global_output);
 }
+
+
 
 SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize) {
   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 

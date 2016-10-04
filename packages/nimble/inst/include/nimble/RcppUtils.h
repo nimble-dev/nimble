@@ -32,6 +32,7 @@ double t(double x);
 int prod(int x);
 double prod(double x);
 
+
 string STRSEXP_2_string(SEXP Ss, int i = 0);
 SEXP   string_2_STRSEXP(string v);
 void   STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans);
@@ -124,7 +125,7 @@ extern "C" {
   SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector);
   SEXP string_2_SEXP(SEXP rPtr);
   SEXP stringVector_2_SEXP(SEXP rPtr);
-
+  
   SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize);
   SEXP setOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si, SEXP ScontentsPtr);
   SEXP getOnePtrVectorOfPtrs(SEXP SaccessorPtr, SEXP Si);
