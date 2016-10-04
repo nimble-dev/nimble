@@ -104,6 +104,42 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          models[[i]]$Cname <<- character(0)
                                          models[[i]] <<- NULL
                                      }
+                                     for(i in ls(RCfunInfos)) {
+                                         if(length(RCfunInfos[[i]]$fromModel) > 0) {
+                                             if(RCfunInfos[[i]]$fromModel) {
+                                                 if(!is.null(RCfunCppInterfaces[[i]])) { ## could be null if it was a neededType and an interface was never built 
+                                                     environment(RCfunCppInterfaces[[i]])$CnativeSymbolInfo_ <<- NULL
+                                                     ##RCfunCppInterfaces[[i]] <<- NULL
+                                                     rm(list = i, envir = RCfunCppInterfaces)
+                                                 }
+                                                 assign('nimbleProject', NULL, envir = RCfunInfos[[i]]$nfMethodRCobj)
+                                                 thisName <- RCfunInfos[[i]]$nfMethodRCobj$uniqueName
+                                                 ##if(!is.null(cppProjects[[thisName]])) cppProjects[[thisName]] <<- NULL
+                                                 ##RCfunInfos[[i]] <<- NULL
+                                                 rm(list = i, envir = RCfunInfos)
+                                             }
+                                         }
+                                     }
+                                     for(i in ls(nfCompInfos)) {
+                                         if(length(nfCompInfos[[i]]$fromModel) > 0) {
+                                             if(nfCompInfos[[i]]$fromModel) {
+                                                 for(j in seq_along(nfCompInfos[[i]]$Rinstances)) {
+                                                     thisEnv <- environment(nfCompInfos[[i]]$Rinstances[[j]])
+                                                     thisRCO <- nf_getRefClassObject(nfCompInfos[[i]]$Rinstances[[j]])
+                                                     if(exists('name', envir = thisRCO, inherits = FALSE)) {
+                                                         thisname <- thisRCO$name
+                                                         rm(list = thisname, envir = nimbleFunctions)
+                                                         rm('name', envir = thisRCO)
+                                                     }
+                                                     thisRCO[['nimbleProject']] <- NULL
+                                                     ## finalization done internally to the model interface
+                                                 }
+                                                 nfCompInfos[[i]] <<- NULL
+                                                 ## cppProjects[[i]] <<- NULL
+                                             }
+                                         }
+                                     }
+
                                  },
                                  resetFunctions = function(finalize = FALSE) {
                                      ## clear everything except models and nimbleFunctions from models
@@ -121,18 +157,25 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                      mvInfos[[i]]$RmvObjs[[j]]$CobjectInterface <<- NULL
                                                  }
                                              }
-                                             mvInfos[[i]] <<- NULL
+                                             rm(list = i, envir = mvInfos)
                                          }
                                      }
+                                     
                                      for(i in ls(RCfunInfos)) {
-                                         if(!is.null(RCfunCppInterfaces[[i]])) { ## could be null if it was a neededType and an interface was never built 
-                                             environment(RCfunCppInterfaces[[i]])$CnativeSymbolInfo_ <<- NULL
-                                             RCfunCppInterfaces[[i]] <<- NULL
+                                         if(length(RCfunInfos[[i]]$fromModel) > 0) {
+                                             if(!RCfunInfos[[i]]$fromModel) {
+                                                 if(!is.null(RCfunCppInterfaces[[i]])) { ## could be null if it was a neededType and an interface was never built 
+                                                     environment(RCfunCppInterfaces[[i]])$CnativeSymbolInfo_ <<- NULL
+                                                     ##RCfunCppInterfaces[[i]] <<- NULL
+                                                     rm(list = i, envir = RCfunCppInterfaces)
+                                                 }
+                                                 assign('nimbleProject', NULL, envir = RCfunInfos[[i]]$nfMethodRCobj)
+                                                 thisName <- RCfunInfos[[i]]$nfMethodRCobj$uniqueName
+                                                 ##if(!is.null(cppProjects[[thisName]])) cppProjects[[thisName]] <<- NULL
+                                                 ##RCfunInfos[[i]] <<- NULL
+                                                 rm(list = i, envir = RCfunInfos)
+                                             }
                                          }
-                                         assign('nimbleProject', NULL, envir = RCfunInfos[[i]]$nfMethodRCobj)
-                                         thisName <- RCfunInfos[[i]]$nfMethodRCobj$uniqueName
-                                         ##if(!is.null(cppProjects[[thisName]])) cppProjects[[thisName]] <<- NULL
-                                         RCfunInfos[[i]] <<- NULL
                                      }
                                      for(i in ls(nfCompInfos)) {
                                          if(length(nfCompInfos[[i]]$fromModel) > 0) {
@@ -142,7 +185,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                      thisRCO <- nf_getRefClassObject(nfCompInfos[[i]]$Rinstances[[j]])
                                                      if(exists('name', envir = thisRCO, inherits = FALSE)) {
                                                          thisname <- thisRCO$name
-                                                         nimbleFunctions[[ thisname ]] <<- NULL
+                                                         rm(list = thisname, envir = nimbleFunctions)
+                                                         ##nimbleFunctions[[ thisname ]] <<- NULL
                                                          rm('name', envir = thisRCO)
                                                      }
                                                      thisRCO[['nimbleProject']] <- NULL
