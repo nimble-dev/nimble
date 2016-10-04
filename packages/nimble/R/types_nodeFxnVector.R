@@ -36,7 +36,7 @@ nodeFunctionVector <- setRefClass(
                         if(excludeData == TRUE)
                             temp_gids <- temp_gids[!model$isDataFromGraphID(temp_gids)]
                     } else {
-                        temp_gids <- model$modelDef$nodeName2GraphIDs(nodeNames)
+                        temp_gids <- model$modelDef$nodeName2GraphIDs(nodeNames, doUnique = FALSE)
                         if(length(temp_gids) != length(nodeNames)) stop(paste0("In nodeFunctionVector from a case like model$doSomething(nodes[i]) where nodes may not contain well-defined node names.  Context is ", errorContext))
                         if(excludeData) {
                             if(sum(model$isDataFromGraphID(temp_gids)) > 0) ## message uses includeData instead of excludeData b/c that's what users see as argument

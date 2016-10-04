@@ -2181,21 +2181,18 @@ modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     list(declIDs = declIDs, unrolledIndicesMatrixRows = rowIndices)
 })
 
-modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, doUnique=TRUE){
     if(length(nodeName) == 0)
         return(NULL)
+    ## If doUnique is FALSE, we still use unique for each element of nodeName
+    ## but we allow non-uniqueness across elements in the result
     if(nodeFunctionID) {
-        ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-        ## old system had IDs for RHSonly things here.  This puts that back in for now.
-        ##output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
-        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
+        if(doUnique)
+            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
+        else
+            output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly), unique))
     } else {
-        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
-        ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
-        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
         output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
-        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
     }
     output <- output2
     return(output[!is.na(output)])
@@ -2282,6 +2279,19 @@ parseEvalNumericMany <- function(x, env) {
        ,
         error = function(cond) {
            parseEvalNumericManyHandleError(cond, x, env)
+        }
+    )
+}
+
+parseEvalNumericManyList <- function(x, env) {
+    withCallingHandlers(
+        if(length(x) > 1) {
+            eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
+        } else 
+            eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
+       ,
+        error = function(cond) {
+            parseEvalNumericManyHandleError(cond, x, env)
         }
     )
 }
