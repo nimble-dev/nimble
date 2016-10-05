@@ -224,6 +224,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                                                             list(I = numArgs, THISSEXP = as.name('S_returnValue_1234')))
                                              }
                                              returnLine <- quote(return(S_returnValue_LIST_1234))
+                                             #update below so that nimbleList symbols do not add to unprotectLine
                                              unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
                                                                               returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
@@ -262,8 +263,7 @@ toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
 
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
     if(inherits(toSym, 'symbolNimbleList')){
-      ans <- paste0( as.name(toSym$name), ".copyToSEXP(", as.name(fromSym$name), ")")
-      ans <- cppLiteral(ans)
+      ans <- as.name(paste0( as.name(toSym$name), "->copyFromSEXP(", as.name(fromSym$name), ");"))
       return(ans)
     }
     if(inherits(toSym, 'symbolBasic')) {
@@ -298,8 +298,7 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
 
 buildCopyLineToSEXP <- function(fromSym, toSym) {
     if(inherits(fromSym, 'symbolNimbleList')){
-      ans <- paste0( as.name(toSym$name), ".copyToSEXP(", as.name(fromSym$name), ")")
-      ans <- cppLiteral(ans)
+      ans <- as.name(paste0(as.name(fromSym$name) , "->copyToSEXP(", as.name(toSym$name), ");"))
       return(ans)
     }
     if(inherits(fromSym, 'symbolBasic')) {

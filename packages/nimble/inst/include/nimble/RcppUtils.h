@@ -4,6 +4,7 @@
 #include "NimArrBase.h"
 #include "NimArr.h"
 #include "R.h"
+#include "Rdefines.h"
 #include "Utils.h"
 #include <string>
 #include <vector>
@@ -21,7 +22,10 @@ using namespace std;
 #define Inf R_PosInf
 #define NA 0
 
+SEXP getClassElement(SEXP Sobject, const char *name);
+
 void nimble_print_to_R(std::ostringstream &input);
+
 
 void multivarTestCall(double *x, int n);
 

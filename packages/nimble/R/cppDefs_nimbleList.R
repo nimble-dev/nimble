@@ -24,21 +24,68 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           # message('Rgenerator for nimbleList does not exist')
                                       },
                                       buildAll = function(where = where) {
-                                        buildSEXPCopier()
+                                        buildCopyFromSexp()
+                                        buildCopyToSexp()
                                         callSuper(where)
                                       },
-                                      buildSEXPCopier = function(){
+                                      buildCopyToSexp = function(){
                                         browser()
-                                        ###want: something like SEXP S_nimList for function argument
-                                        ###then cycle through list symbol table, calling appropriate SEXP_2 function for each
-                                        ###also, if first time calling SEXP Copier, include "getClassElement" function from perry (although this may not be the best place to do this)
-                                        
-                                        functionArgName <-  Rname2CppName(paste0('S_nimList'))
+                                        functionArgName <-  Rname2CppName(paste0('S_nimList_'))
                                         interfaceArgs <- symbolTable()
                                         interfaceArgs$addSymbol(cppSEXP(name = functionArgName))
-                                                                
+                                        argNames <- nimCompProc$symTab$getSymbolNames()
+                                        
+                                        objectsST <- nimCompProc$symTab$copy()
+                                        for(i in seq_along(argNames)){
+                                          objectsST$setSymbolField(argNames[[i]], "name", paste0("temp_", argNames[[i]], "_"))
+                                        }
+                                        objects <- symbolTable2cppVars(objectsST)
+                                        
+                                         ##not actually arg names any more, but names of nimbleListElements
+                                        protectLines <- list()
+                                        copyLines <- list()
+                                        rewriteLines <- list()
+                                        Snames <- character(length(argNames))
+                                        returnType <- "void"
+                                        # objects <= symbolTable()
+                                        # objects$setParentST(listElementTable)
+                                        for(i in seq_along(argNames)) {
+                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
+                                          objects$addSymbol(cppSEXP(name = Snames[i]))
+                                          # protectLines[[i]] <- cppLiteral(paste0(
+                                          #   "PROTECT(",Snames[i]," = getClassElement(S_nimList_, ",argNames[i],"))"))
+                                          
+                                          copyLines[[i]] <- buildCopyLineFromSEXP(objects$getSymbolObject(Snames[i]),
+                                                                                  objectsST$getSymbolObjects()[[i]])
+                                          protectLines[[i]] <- substitute(PROTECT(Svar <- getClassElement(S_nimList_, argName)),
+                                                                          list(Svar = as.name(Snames[i]), argName = argNames[i]))
+                                          rewriteLines[[i]] <- substitute(tempNm <- argNm, list(argNm = as.name(argNames[i]),
+                                                                                                tempNm = as.name(objects$getSymbolNames()[i])))
+                                        }
+                                        
+                                        numArgs <- length(argNames)
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs))
+                                        allCode <- embedListInRbracket(c(protectLines, copyLines, rewriteLines, list(unprotectLine)))
+                                       
+                                        # SEXPinterfaceCname <<- paste0('CALL_',Rname2CppName(paste0(if(!is.null(className)) paste0(className,'_') else NULL, name))) ##Rname2CppName needed for operator()
+                                              
+                                        #may not want [[name]] below but instead something else ie 'copier', 'listCopier', etc.
+                                        functionDefs[[paste0(name, "_copyTo")]] <<- cppFunctionDef(name = "copyToSEXP",
+                                                                               args = interfaceArgs,
+                                                                               code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = objects),
+                                                                               returnType = cppVoid(),
+                                                                               externC = FALSE,
+                                                                               CPPincludes = list(nimbleIncludeFile("RcppUtils.h"),
+                                                                                                  nimbleIncludeFile("smartPtrs.h")))
+                                      },
+                                      buildCopyFromSexp = function(){
+                                        functionArgName <-  Rname2CppName(paste0('S_nimList_'))
+                                        interfaceArgs <- symbolTable()
+                                        interfaceArgs$addSymbol(cppSEXP(name = functionArgName))
+                                        
                                         objects <- symbolTable2cppVars(nimCompProc$symTab)
                                         argNames <- nimCompProc$symTab$getSymbolNames() ##not actually arg names any more, but names of nimbleListElements
+                                        protectLines <- list()
                                         copyLines <- list()
                                         Snames <- character(length(argNames))
                                         returnType <- "void"
@@ -49,23 +96,29 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
+                                          # protectLines[[i]] <- cppLiteral(paste0(
+                                          #   "PROTECT(",Snames[i]," = getClassElement(S_nimList_, ",argNames[i],"))"))
                                           
+                                          protectLines[[i]] <- substitute(PROTECT(Svar <- getClassElement(S_nimList_, argName)),
+                                                                          list(Svar = as.name(Snames[i]), argName = argNames[i]))
                                           copyLines[[i]] <- buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
                                                                                   nimCompProc$symTab$getSymbolObject(argNames[i]))
                                         }
                                         
                                         numArgs <- length(argNames)
-                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1))
-                                        allCode <- embedListInRbracket(c(copyLines, list(unprotectLine)))
-                                       
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs))
+                                        allCode <- embedListInRbracket(c(protectLines, copyLines, list(unprotectLine)))
+                                        
                                         # SEXPinterfaceCname <<- paste0('CALL_',Rname2CppName(paste0(if(!is.null(className)) paste0(className,'_') else NULL, name))) ##Rname2CppName needed for operator()
-                                              
+                                        
                                         #may not want [[name]] below but instead something else ie 'copier', 'listCopier', etc.
-                                        functionDefs[[name]] <<- cppFunctionDef(name = "copyFromSEXP",
-                                                                               args = interfaceArgs,
-                                                                               code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
-                                                                               returnType = cppVoid(),
-                                                                               externC = FALSE)
+                                        functionDefs[[paste0(name, "_copyFrom")]] <<- cppFunctionDef(name = "copyFromSEXP",
+                                                                                args = interfaceArgs,
+                                                                                code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
+                                                                                returnType = cppVoid(),
+                                                                                externC = FALSE,
+                                                                                CPPincludes = list(nimbleIncludeFile("RcppUtils.h"),
+                                                                                                   nimbleIncludeFile("smartPtrs.h")))
                                       }
                                       )
                                   )

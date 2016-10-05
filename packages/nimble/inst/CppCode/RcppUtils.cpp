@@ -8,6 +8,16 @@
 
 std::ostringstream _nimble_global_output;
 
+SEXP getClassElement(SEXP Sobject, const char *name) {
+  SEXP call;
+  PROTECT(call = allocVector(LANGSXP, 3));
+  SETCAR(call, install("$"));
+  SETCADR(call, Sobject);
+  SETCADDR(call, install(name));
+  UNPROTECT(1);
+  return(EVAL(call));
+}
+
 
 
 void nimble_print_to_R(std::ostringstream &input) {
