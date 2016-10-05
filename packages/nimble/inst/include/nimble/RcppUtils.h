@@ -8,6 +8,8 @@
 #include<sstream>
 #include "R.h"
 #include "Utils.h"
+#include "Rdefines.h"
+
 
 #include <Rinternals.h>
 

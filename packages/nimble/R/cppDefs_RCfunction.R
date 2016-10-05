@@ -162,7 +162,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      interfaceArgs <- symbolTable()
                                      objects$setParentST(interfaceArgs)
                                      returnVoid <- returnType$baseType == 'void'
-                                     
+                                     numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -171,8 +171,13 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          ## and we need a line to copy from the SEXP to the local variable
                                          ## The to argument uses the origLocalSymbolObject rather than the objects (which has cppVars) because that has the nDim
                                          ## The name of that and the new one in objects must match
-                                         copyLines[[i]] <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
-                                                                                 RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))
+                                         tempLines <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
+                                                                            RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))
+                                         if(inherits(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]), 'symbolNimbleList')){
+                                           numNimbleList <- numNimbleList + 1
+                                         }
+                                         if(is.list(tempLines)) copyLines <- c(copyLines, tempLines)
+                                         else copyLines[[i]] <- tempLines 
                                      }
 
                                      RHScall <- as.call(c(list(as.name(name)),
@@ -225,7 +230,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              }
                                              returnLine <- quote(return(S_returnValue_LIST_1234))
                                              #update below so that nimbleList symbols do not add to unprotectLine
-                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
+                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid - numNimbleList))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
                                                                               returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
                                   
@@ -263,7 +268,11 @@ toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
 
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
     if(inherits(toSym, 'symbolNimbleList')){
-      ans <- as.name(paste0( as.name(toSym$name), "->copyFromSEXP(", as.name(fromSym$name), ");"))
+      ans <- list()
+      ansText  <- paste0(as.name(toSym$name), " = new ", as.name(toSym$nlProc$name), ";")
+      ans[[1]] <- substitute(cppLiteral(answerText), list(answerText = ansText))
+      ansText  <- paste0( as.name(toSym$name), "->copyFromSEXP(", as.name(fromSym$name), ");")
+      ans[[2]] <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
     }
     if(inherits(toSym, 'symbolBasic')) {
