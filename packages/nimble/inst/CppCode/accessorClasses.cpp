@@ -918,48 +918,48 @@ void nimCopyOne(SingleVariableAccessBase *from, SingleVariableAccessBase *to) {
 
 
 
-SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex){
-	SingleVariableAccess* sVAPtr = NULL;
-	void* vPtr = R_ExternalPtrAddr(rModelPtr);
-	if(vPtr != NULL){
-		ModelBase* mPtr = static_cast<ModelBase*>(vPtr);
-		string eName = STRSEXP_2_string(elementName, 0);
-		sVAPtr = new SingleVariableAccess;
-		(*sVAPtr).flatIndexStart = INTEGER(beginIndex)[0] - 1;
-		(*sVAPtr).flatIndexEnd = INTEGER(endIndex)[0] - 1;
-		(*sVAPtr).length = (*sVAPtr).flatIndexEnd - (*sVAPtr).flatIndexStart + 1;
-		(*sVAPtr).ppVar = static_cast<NimArrType**> (mPtr->getObjectPtr(eName) );
-		}
+// SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex){
+// 	SingleVariableAccess* sVAPtr = NULL;
+// 	void* vPtr = R_ExternalPtrAddr(rModelPtr);
+// 	if(vPtr != NULL){
+// 		ModelBase* mPtr = static_cast<ModelBase*>(vPtr);
+// 		string eName = STRSEXP_2_string(elementName, 0);
+// 		sVAPtr = new SingleVariableAccess;
+// 		(*sVAPtr).flatIndexStart = INTEGER(beginIndex)[0] - 1;
+// 		(*sVAPtr).flatIndexEnd = INTEGER(endIndex)[0] - 1;
+// 		(*sVAPtr).length = (*sVAPtr).flatIndexEnd - (*sVAPtr).flatIndexStart + 1;
+// 		(*sVAPtr).ppVar = static_cast<NimArrType**> (mPtr->getObjectPtr(eName) );
+// 		}
 
-	SEXP rPtr;
-	PROTECT(rPtr = R_MakeExternalPtr(sVAPtr, R_NilValue, R_NilValue) );
-	R_RegisterCFinalizerEx(rPtr, &dontDeleteFinalizer, TRUE);
-	UNPROTECT(1);
-	return(rPtr);
-}
+// 	SEXP rPtr;
+// 	PROTECT(rPtr = R_MakeExternalPtr(sVAPtr, R_NilValue, R_NilValue) );
+// 	R_RegisterCFinalizerEx(rPtr, &dontDeleteFinalizer, TRUE);
+// 	UNPROTECT(1);
+// 	return(rPtr);
+// }
 
 
-SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex){
-	SingleModelValuesAccess* sMVAPtr = NULL;
-	void* vPtr = R_ExternalPtrAddr(rModelValuesPtr);
-	if(vPtr != NULL){
-		Values* MVPtr = static_cast<Values*>(vPtr);
-		int cRow = INTEGER(curRow)[0] - 1;
-		string eName = STRSEXP_2_string(elementName, 0);
-		sMVAPtr = new SingleModelValuesAccess;
-		(*sMVAPtr).flatIndexStart = INTEGER(beginIndex)[0] - 1;
-		(*sMVAPtr).flatIndexEnd = INTEGER(endIndex)[0] - 1;
-		(*sMVAPtr).length = (*sMVAPtr).flatIndexEnd - (*sMVAPtr).flatIndexStart + 1;
-		(*sMVAPtr).currentRow = cRow;
-		(*sMVAPtr).pVVar = static_cast<NimVecType*> (MVPtr->getObjectPtr(eName) );
-		}
+// SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex){
+// 	SingleModelValuesAccess* sMVAPtr = NULL;
+// 	void* vPtr = R_ExternalPtrAddr(rModelValuesPtr);
+// 	if(vPtr != NULL){
+// 		Values* MVPtr = static_cast<Values*>(vPtr);
+// 		int cRow = INTEGER(curRow)[0] - 1;
+// 		string eName = STRSEXP_2_string(elementName, 0);
+// 		sMVAPtr = new SingleModelValuesAccess;
+// 		(*sMVAPtr).flatIndexStart = INTEGER(beginIndex)[0] - 1;
+// 		(*sMVAPtr).flatIndexEnd = INTEGER(endIndex)[0] - 1;
+// 		(*sMVAPtr).length = (*sMVAPtr).flatIndexEnd - (*sMVAPtr).flatIndexStart + 1;
+// 		(*sMVAPtr).currentRow = cRow;
+// 		(*sMVAPtr).pVVar = static_cast<NimVecType*> (MVPtr->getObjectPtr(eName) );
+// 		}
 
-	SEXP rPtr;
-	PROTECT(rPtr = R_MakeExternalPtr(sMVAPtr, R_NilValue, R_NilValue) );
-	R_RegisterCFinalizerEx(rPtr, &dontDeleteFinalizer, TRUE);
-	UNPROTECT(1);
-	return(rPtr);
-}
+// 	SEXP rPtr;
+// 	PROTECT(rPtr = R_MakeExternalPtr(sMVAPtr, R_NilValue, R_NilValue) );
+// 	R_RegisterCFinalizerEx(rPtr, &dontDeleteFinalizer, TRUE);
+// 	UNPROTECT(1);
+// 	return(rPtr);
+// }
 
 
 
@@ -1293,31 +1293,6 @@ int nimble_stoi(const string &input) {
   return ans;
 }
 
-void parseVar(const vector<string> &input, vector<string> &output) {
-  int vecSize = input.size();
-  std::size_t iEnd, iBegin;
-  output.resize( vecSize );
-  for(int i = 0; i < vecSize; i++) {
-    iBegin = input[i].find_first_not_of(_NIMBLE_WHITESPACE);
-    iEnd = input[i].find_first_of(_NIMBLE_WHITESPACEBRACKET, iBegin);
-    if(iBegin < iEnd)
-      output[i].assign( input[i].substr(iBegin, iEnd - iBegin) );
-    else
-      output[i].assign( string("") );
-    //    if(iBracket != std::string::npos)
-
-    //    else
-    //   output[i].assign( input[i] );
-  }
-}
-
-SEXP parseVar(SEXP Sinput) {
-  vector<string> input, output;
-  STRSEXP_2_vectorString(Sinput, input);
-  parseVar(input, output);
-  return(vectorString_2_STRSEXP(output));
-}
-
 class varAndIndicesClass {
 public:
   string varName;
@@ -1425,31 +1400,31 @@ SEXP varAndIndices2Rlist(const varAndIndicesClass &input) {
   return(Soutput);
 }
 
-static void varAndIndicesClassFinalizer(SEXP ptr) {
-  void *cptr = R_ExternalPtrAddr(ptr);
-  if(!cptr) return;
-  varAndIndicesClass *result = static_cast< varAndIndicesClass *>(cptr);
-  //  std::cout<<"about to delete\n";
-  delete result;
-  //  std::cout<<"done deleting\n";
-  R_ClearExternalPtr(ptr); /* not really needed according R-exts.html */
-}
+// static void varAndIndicesClassFinalizer(SEXP ptr) {
+//   void *cptr = R_ExternalPtrAddr(ptr);
+//   if(!cptr) return;
+//   varAndIndicesClass *result = static_cast< varAndIndicesClass *>(cptr);
+//   //  std::cout<<"about to delete\n";
+//   delete result;
+//   //  std::cout<<"done deleting\n";
+//   R_ClearExternalPtr(ptr); /* not really needed according R-exts.html */
+// }
 
-SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr) {
-  bool returnExtPtr(SEXP_2_bool(SboolExtPtr, 0));
-  string input(STRSEXP_2_string(Sstring, 0));
-  varAndIndicesClass output;
-  parseVarAndInds(input, output);
-  if(returnExtPtr) {
-    varAndIndicesClass *result = new varAndIndicesClass(output);
-    SEXP Sans;
-    PROTECT(Sans = R_MakeExternalPtr(result, R_NilValue, R_NilValue));
-    R_RegisterCFinalizerEx(Sans, varAndIndicesClassFinalizer, TRUE);
-    UNPROTECT(1);
-    return(Sans);
-  }
-  return(varAndIndices2Rlist(output));
-}
+// SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr) {
+//   bool returnExtPtr(SEXP_2_bool(SboolExtPtr, 0));
+//   string input(STRSEXP_2_string(Sstring, 0));
+//   varAndIndicesClass output;
+//   parseVarAndInds(input, output);
+//   if(returnExtPtr) {
+//     varAndIndicesClass *result = new varAndIndicesClass(output);
+//     SEXP Sans;
+//     PROTECT(Sans = R_MakeExternalPtr(result, R_NilValue, R_NilValue));
+//     R_RegisterCFinalizerEx(Sans, varAndIndicesClassFinalizer, TRUE);
+//     UNPROTECT(1);
+//     return(Sans);
+//   }
+//   return(varAndIndices2Rlist(output));
+// }
 
 SEXP getVarAndIndices(SEXP Sstring) {
   string input(STRSEXP_2_string(Sstring, 0));
@@ -1802,16 +1777,16 @@ SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName
 // }
 
 
-SEXP newManyVariableAccessor(SEXP size){
-	ManyVariablesAccessor* nMVAPtr = new ManyVariablesAccessor;
-	int cSize = INTEGER(size)[0];
-	(*nMVAPtr).varAccessors.resize(cSize);
-	SEXP rPtr = R_MakeExternalPtr(nMVAPtr, R_NilValue, R_NilValue);
-	PROTECT(rPtr);
-	R_RegisterCFinalizerEx(rPtr, &ManyVariable_Finalizer, TRUE);
-	UNPROTECT(1);
-	return(rPtr);
-}
+// SEXP newManyVariableAccessor(SEXP size){
+// 	ManyVariablesAccessor* nMVAPtr = new ManyVariablesAccessor;
+// 	int cSize = INTEGER(size)[0];
+// 	(*nMVAPtr).varAccessors.resize(cSize);
+// 	SEXP rPtr = R_MakeExternalPtr(nMVAPtr, R_NilValue, R_NilValue);
+// 	PROTECT(rPtr);
+// 	R_RegisterCFinalizerEx(rPtr, &ManyVariable_Finalizer, TRUE);
+// 	UNPROTECT(1);
+// 	return(rPtr);
+// }
 
 SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size){
 	int cSize = INTEGER(size)[0];
@@ -1828,16 +1803,16 @@ SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size){
 }
 
 
-SEXP newManyModelValuesAccessor(SEXP size){
-	ManyModelValuesAccessor* nMVAPtr = new ManyModelValuesAccessor;
-	int cSize = INTEGER(size)[0];
-	(*nMVAPtr).varAccessors.resize(cSize);
-	SEXP rPtr = R_MakeExternalPtr(nMVAPtr, R_NilValue, R_NilValue);
-	PROTECT(rPtr);
-	R_RegisterCFinalizerEx(rPtr, &ManyMV_Finalizer, TRUE);
-	UNPROTECT(1);
-	return(rPtr);
-}
+// SEXP newManyModelValuesAccessor(SEXP size){
+// 	ManyModelValuesAccessor* nMVAPtr = new ManyModelValuesAccessor;
+// 	int cSize = INTEGER(size)[0];
+// 	(*nMVAPtr).varAccessors.resize(cSize);
+// 	SEXP rPtr = R_MakeExternalPtr(nMVAPtr, R_NilValue, R_NilValue);
+// 	PROTECT(rPtr);
+// 	R_RegisterCFinalizerEx(rPtr, &ManyMV_Finalizer, TRUE);
+// 	UNPROTECT(1);
+// 	return(rPtr);
+// }
 
 
 template<class Many, class Single>
@@ -1894,56 +1869,56 @@ SEXP manualSetNRows(SEXP Sextptr, SEXP nRows){
   }
 
 
-void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
-  SpecialNumberedObjects<SingleModelValuesAccess>* np
-    = static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
-  if(!np) return;
-  delete np;
-  R_ClearExternalPtr(Snp);
-}
+// void SingleModelValuesAccessor_NumberedObjects_Finalizer(SEXP Snp){
+//   SpecialNumberedObjects<SingleModelValuesAccess>* np
+//     = static_cast<SpecialNumberedObjects<SingleModelValuesAccess>*>(R_ExternalPtrAddr(Snp));
+//   if(!np) return;
+//   delete np;
+//   R_ClearExternalPtr(Snp);
+// }
 
-SEXP new_SingleModelValuesAccessor_NumberedObjects(){
-  SpecialNumberedObjects<SingleModelValuesAccess>* np = new SpecialNumberedObjects<SingleModelValuesAccess>;
-  SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
-  PROTECT(rPtr);
-  R_RegisterCFinalizerEx(rPtr, &SingleModelValuesAccessor_NumberedObjects_Finalizer, TRUE);
-  UNPROTECT(1);
-  return(rPtr);
-}
+// SEXP new_SingleModelValuesAccessor_NumberedObjects(){
+//   SpecialNumberedObjects<SingleModelValuesAccess>* np = new SpecialNumberedObjects<SingleModelValuesAccess>;
+//   SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
+//   PROTECT(rPtr);
+//   R_RegisterCFinalizerEx(rPtr, &SingleModelValuesAccessor_NumberedObjects_Finalizer, TRUE);
+//   UNPROTECT(1);
+//   return(rPtr);
+// }
 
-void SingleVariableAccessBase_NumberedObjects_Finalizer(SEXP Snp){
-  SpecialNumberedObjects<SingleVariableAccessBase>* np
-    = static_cast<SpecialNumberedObjects<SingleVariableAccessBase>*>(R_ExternalPtrAddr(Snp));
-  if(!np) return;
-  delete np;
-  R_ClearExternalPtr(Snp);
-}
+// void SingleVariableAccessBase_NumberedObjects_Finalizer(SEXP Snp){
+//   SpecialNumberedObjects<SingleVariableAccessBase>* np
+//     = static_cast<SpecialNumberedObjects<SingleVariableAccessBase>*>(R_ExternalPtrAddr(Snp));
+//   if(!np) return;
+//   delete np;
+//   R_ClearExternalPtr(Snp);
+// }
 
-SEXP new_SingleModelVariablesAccessor_NumberedObjects(){
-  SpecialNumberedObjects<SingleVariableAccessBase>* np = new SpecialNumberedObjects<SingleVariableAccessBase>;
-  SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
-  PROTECT(rPtr);
-  R_RegisterCFinalizerEx(rPtr, &SingleVariableAccessBase_NumberedObjects_Finalizer, TRUE);
-  UNPROTECT(1);
-  return(rPtr);
-}
+// SEXP new_SingleModelVariablesAccessor_NumberedObjects(){
+//   SpecialNumberedObjects<SingleVariableAccessBase>* np = new SpecialNumberedObjects<SingleVariableAccessBase>;
+//   SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
+//   PROTECT(rPtr);
+//   R_RegisterCFinalizerEx(rPtr, &SingleVariableAccessBase_NumberedObjects_Finalizer, TRUE);
+//   UNPROTECT(1);
+//   return(rPtr);
+// }
 
-void  SingleMVA_Finalizer ( SEXP Sv ) {
-  SingleModelValuesAccess* oldObj;
-  oldObj = static_cast<SingleModelValuesAccess *>(R_ExternalPtrAddr(Sv));
-  if(!oldObj) return;
-  delete oldObj;
-  R_ClearExternalPtr(Sv);
-}
+// void  SingleMVA_Finalizer ( SEXP Sv ) {
+//   SingleModelValuesAccess* oldObj;
+//   oldObj = static_cast<SingleModelValuesAccess *>(R_ExternalPtrAddr(Sv));
+//   if(!oldObj) return;
+//   delete oldObj;
+//   R_ClearExternalPtr(Sv);
+// }
 
 
-void  SingleVA_Finalizer ( SEXP Sv ) {
-  SingleVariableAccess* oldObj;
-  oldObj = static_cast<SingleVariableAccess *>(R_ExternalPtrAddr(Sv));
-  if(!oldObj) return;
-  delete oldObj;
-  R_ClearExternalPtr(Sv);
-}
+// void  SingleVA_Finalizer ( SEXP Sv ) {
+//   SingleVariableAccess* oldObj;
+//   oldObj = static_cast<SingleVariableAccess *>(R_ExternalPtrAddr(Sv));
+//   if(!oldObj) return;
+//   delete oldObj;
+//   R_ClearExternalPtr(Sv);
+// }
 
 void NodeVector_Finalizer( SEXP Sv) {
   NodeVectorClass* nVPtr = static_cast<NodeVectorClass *>(R_ExternalPtrAddr(Sv));
@@ -1952,16 +1927,17 @@ void NodeVector_Finalizer( SEXP Sv) {
   R_ClearExternalPtr(Sv);
 }
 
-void ManyVariable_Finalizer(SEXP Sv){
-  ManyVariablesAccessor* mVAPtr = static_cast<ManyVariablesAccessor*>(R_ExternalPtrAddr(Sv));
-  if(!mVAPtr) return;
-  delete mVAPtr;
-  R_ClearExternalPtr(Sv);
-}
+// void ManyVariable_Finalizer(SEXP Sv){
+//   ManyVariablesAccessor* mVAPtr = static_cast<ManyVariablesAccessor*>(R_ExternalPtrAddr(Sv));
+//   if(!mVAPtr) return;
+//   delete mVAPtr;
+//   R_ClearExternalPtr(Sv);
+// }
 
-void ManyMV_Finalizer(SEXP Sv){
-  ManyModelValuesAccessor* mVPtr = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(Sv));
-  if(!mVPtr) return;
-  delete mVPtr;
-  R_ClearExternalPtr(Sv);
-}
+// void ManyMV_Finalizer(SEXP Sv){
+//   ManyModelValuesAccessor* mVPtr = static_cast<ManyModelValuesAccessor*>(R_ExternalPtrAddr(Sv));
+//   if(!mVPtr) return;
+//   delete mVPtr;
+//   R_ClearExternalPtr(Sv);
+// }
+
