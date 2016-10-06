@@ -141,3 +141,8 @@ on paciorek smeagol box:
 need to turn vm.overcommit_memory to 2 on my Linux box or building R will fail because conftest will not run as ASAN tries to allocate a ridiculous amount of memory.
 
 export LD_LIBRARY_PATH=/tmp/clang/lib:$LD_LIBRARY_PATH
+
+CRAN might use valgrind (Cliff suggested this). If so, may want to check package examples with:
+R -d valgrind --vanilla < nimble.Rcheck/mypkg-Ex.R
+R -d "valgrind --tool=memcheck --leak-check=full" --vanilla <
+   nimble.Rcheck/mypkg-Ex.R
