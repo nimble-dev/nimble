@@ -50,19 +50,21 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         Snames <- character(length(argNames))
                                         returnType <- "void"
                                         listElementTable <- symbolTable()
+                                        
+                                        printLines <- list()
+                                        printLines[[1]] <- as.name("double aVal;")
+                                        printLines[[2]] <- as.name("aVal = REAL(S_a)[0];")
+                                        printLines[[3]] <- substitute(Rprintf("got a = %g\n", aVal), list())
                                         # objects$setParentST(listElementTable)
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                          # protectLines[[i]] <- cppLiteral(paste0(
-                                          #   "PROTECT(",Snames[i]," = getClassElement(S_nimList_, ",argNames[i],"))"))
-                                          
+
                                           protectLines[[i]] <- substitute(PROTECT(Svar <- getClassElement(S_nimList_, argName)),
                                                                           list(Svar = as.name(Snames[i]), argName = argNames[i]))
                                           
                                           # copyLines[[i]] <- buildCopyLineFromSEXP(objects$getSymbolObject(Snames[i]),
                                           #                                         objectsST$getSymbolObjects()[[i]])
-                                          browser()
                                           copyLines[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
                                                                                 listElementTable$getSymbolObject(Snames[i]))
                                           
@@ -71,8 +73,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         }
                                         
                                         numArgs <- length(argNames)
-                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs))
-                                        allCode <- embedListInRbracket(c(protectLines, copyLines, list(unprotectLine)))
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = 2*numArgs))
+                                        allCode <- embedListInRbracket(c(protectLines, copyLines, printLines, list(unprotectLine)))
                                        
                                         # SEXPinterfaceCname <<- paste0('CALL_',Rname2CppName(paste0(if(!is.null(className)) paste0(className,'_') else NULL, name))) ##Rname2CppName needed for operator()
                                               

@@ -88,7 +88,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      # dotCall[[1L]] <- .Call
                                      # dotCall[[2L]] <- getNativeSymbolInfo(SEXPinterfaceCname, dll )$address
                                      
-                                     
+                                     browser()
                                      # avoid R CMD check problem with registration
                                      # ok not to use getNativeSymbolInfo with a dll argument because SEXPinterfaceCname can't possible be in nimble.so, so it is unique to the project dll.
                                      txt <- ".Call(SEXPname)"
