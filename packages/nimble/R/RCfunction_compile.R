@@ -65,7 +65,7 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
-                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, parentST, "return")
+                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return")
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {

@@ -26,7 +26,6 @@ argTypeList2symbolTable <- function(ATL, neededTypes) {
 ## The second argument is a vector of the sizes, defaulting to rep(NA, nDim)
 ## If only some sizes are known, something like double(2, c(5, NA)) should be valid, but we'll have to check later handling to be sure.
 argType2symbol <- function(AT, neededTypes, name = character()) {
-  browser()
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
 
