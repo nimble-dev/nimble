@@ -65,15 +65,19 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           
                                           # copyLines[[i]] <- buildCopyLineFromSEXP(objects$getSymbolObject(Snames[i]),
                                           #                                         objectsST$getSymbolObjects()[[i]])
-                                          copyLines[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
-                                                                                listElementTable$getSymbolObject(Snames[i]))
+                                          copyText  <- paste0("copyNimArr_2_SEXP<1>( ", argNames[i], ", ", Snames[i], ");")
+                                          copyLines[[i]] <- substitute(cppLiteral(copText), list(copText = copyText))
+                                          
+
+                                          # copyLines[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
+                                          #                                       listElementTable$getSymbolObject(Snames[i]))
                                           
                                           # rewriteLines[[i]] <- substitute(tempNm <- argNm, list(argNm = as.name(argNames[i]),
                                           #                                                       tempNm = as.name(objects$getSymbolNames()[i])))
                                         }
                                         
                                         numArgs <- length(argNames)
-                                        unprotectLine <- substitute(UNPROTECT(N), list(N = 2*numArgs))
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs))
                                         allCode <- embedListInRbracket(c(protectLines, copyLines, printLines, list(unprotectLine)))
                                        
                                         # SEXPinterfaceCname <<- paste0('CALL_',Rname2CppName(paste0(if(!is.null(className)) paste0(className,'_') else NULL, name))) ##Rname2CppName needed for operator()

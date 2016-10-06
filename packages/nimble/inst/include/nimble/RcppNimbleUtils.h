@@ -140,6 +140,10 @@ template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans );
 
 template<int ndim>
+void copyNimArr_2_SEXP(NimArr<ndim, double> &val, SEXP Sn);
+
+
+template<int ndim>
 SEXP NimArr_2_SEXP(const NimArr<ndim, double> &val);
 template<int ndim>
 SEXP NimArr_2_SEXP(const NimArr<ndim, int> &val);
@@ -210,13 +214,12 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
   }
 }
 
-
+template<int ndim>
 void copyNimArr_2_SEXP(NimArr<ndim, double> &val, SEXP Sn) {
   int outputLength = val.size();
   //PROTECT(Sans = allocVector(REALSXP, outputLength));
   double *ans = REAL(Sn);
   std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
-  return(Sn);
 }
 
 template<int ndim>
