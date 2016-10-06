@@ -363,7 +363,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
                         numItsC_results = numItsC,
                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
                         doubleCompare = FALSE, filterType2 = NULL,
-                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, dirName = NULL) {
   # There are two modes of testing:
   # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states
   # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
@@ -397,7 +397,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     Rmodel <- readBUGSmodel(model, dir = "", data = data, inits = inits, useInits = TRUE, check = FALSE)
   }
   if(doCpp) {
-    Cmodel <- compileNimble(Rmodel)
+    Cmodel <- compileNimble(Rmodel, dirName = dirName)
     cat('done compiling model\n')
   }
   cat("Building filter\n")
@@ -419,7 +419,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
   }
 
   if(doCpp) {
-    Cfilter <- compileNimble(Rfilter, project = Rmodel)
+    Cfilter <- compileNimble(Rfilter, project = Rmodel, dirName = dirName)
   }
 
   if(basic) {
