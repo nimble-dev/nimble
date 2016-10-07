@@ -1321,12 +1321,17 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
             if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
             thisFunctionMatch <- thisRCfunProc$RCfun$template
             return(matchAndFill.call(thisFunctionMatch, code ) )
-        } else 
-            if(inherits(symObj, 'symbolModel')) {
+        } 
+        else if(inherits(symObj, 'symbolModel')) {
                 thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
                 if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
                 return(matchAndFill.call(thisFunctionMatch, code) )
-            } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
+        } 
+        else if(inherits(symObj, 'symbolNimbleListGenerator')){
+          return(substitute(makeNewNimbleListObject(nfName), 
+                            list(nfName = nfName)))
+        }
+        else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
     }
     ## then look in R
     if(exists(nfName)) {
@@ -1390,6 +1395,7 @@ matchKeywords_recurse <- function(code, nfProc = NULL) {
         }
         if(cl >= 2) { ## recurse through arguments
             for(i in 2:cl) {
+              browser()
                 code[[i]] <- matchKeywords_recurse(code[[i]], nfProc)
             }
         }

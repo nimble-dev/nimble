@@ -1104,6 +1104,15 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 	//Could return ans if we decided to build it on the fly here instead of providing it as argument
 }	
 
+SEXP getClassElement(SEXP Sobject, const char *name) {
+  SEXP call;
+  PROTECT(call = allocVector(LANGSXP, 3));
+  SETCAR(call, install("$"));
+  SETCADR(call, Sobject);
+  SETCADDR(call, install(name));
+  UNPROTECT(1);
+  return(EVAL(call));
+}
 
 
 /* forwardsolve, backsolve */

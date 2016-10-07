@@ -8,16 +8,22 @@ std::ostringstream _nimble_global_output;
 
 string _NIMBLE_WHITESPACE_UTIL(" \t");
 string _NIMBLE_WHITESPACEBRACKET_UTIL(" \t[");
+/* 
 
-SEXP getClassElement(SEXP Sobject, const char *name) {
+void setClassElement(SEXP SClassObject, SEXP SReplaceObject, const char *name) {
   SEXP call;
+  SEXP replaceCall;
   PROTECT(call = allocVector(LANGSXP, 3));
   SETCAR(call, install("$"));
-  SETCADR(call, Sobject);
+  SETCADR(call, SClassObject);
   SETCADDR(call, install(name));
-  UNPROTECT(1);
-  return(EVAL(call));
-}
+  PROTECT(replaceCall = allocVector(LANGSXP, 3));
+  SETCAR(replaceCall, install("="));
+  SETCADR(replaceCall, call);
+  SETCADDR(replaceCall, SReplaceObject);
+  EVAL(replaceCall);
+  UNPROTECT(2);
+} */
 
 void nimble_print_to_R(std::ostringstream &input) {
   PRINTF("%s", input.str().c_str());

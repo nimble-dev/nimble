@@ -223,7 +223,11 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                  rsName <- RCfunProc$compileInfo$returnSymbol$name
                                                  RCfunProc$compileInfo$returnSymbol$name <<- LHSvar$name
                                                  returnCopyLines[[numArgs+1]] <- buildCopyLineToSEXP(RCfunProc$compileInfo$returnSymbol,
-                                                                                                     objects$getSymbolObject('S_returnValue_1234'))
+                                                                                                     objects$getSymbolObject('S_returnValue_1234'), 
+                                                                                                     returnCall = TRUE)
+                                                 if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
+                                                   numNimbleList <- numNimbleList + 2
+                                                 }
                                                  RCfunProc$compileInfo$returnSymbol$name <<- rsName
                                                  returnListLines[[numArgs+1]] <- substitute(SET_VECTOR_ELT(S_returnValue_LIST_1234, I, THISSEXP),
                                                                                             list(I = numArgs, THISSEXP = as.name('S_returnValue_1234')))
@@ -269,9 +273,9 @@ toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
     if(inherits(toSym, 'symbolNimbleList')){
       ans <- list()
-      ansText  <- paste0(as.name(toSym$name), " = new ", as.name(toSym$nlProc$name), ";")
+      ansText  <- paste0(toSym$name, " = new ",toSym$nlProc$name, ";")
       ans[[1]] <- substitute(cppLiteral(answerText), list(answerText = ansText))
-      ansText  <- paste0( as.name(toSym$name), "->copyFromSEXP(", as.name(fromSym$name), ");")
+      ansText  <- paste0(toSym$name, "->copyFromSEXP(", fromSym$name, ");")
       ans[[2]] <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
     }
@@ -305,9 +309,11 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 
-buildCopyLineToSEXP <- function(fromSym, toSym) {
+buildCopyLineToSEXP <- function(fromSym, toSym, returnCall = FALSE) {
     if(inherits(fromSym, 'symbolNimbleList')){
-      ans <- as.name(paste0(as.name(fromSym$name) , "->copyToSEXP(", as.name(toSym$name), ");"))
+      if(returnCall == TRUE)  ansText  <- paste0(toSym$name, " = ",fromSym$name, "->writeToSEXP();")
+      else ansText  <- paste0(fromSym$name, "->copyToSEXP(", toSym$name, ");")
+      ans <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
     }
     if(inherits(fromSym, 'symbolBasic')) {

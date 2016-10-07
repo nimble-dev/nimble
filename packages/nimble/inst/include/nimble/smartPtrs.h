@@ -65,7 +65,7 @@ class pointedToBase {
       delete this;
     }
   }
-  virtual ~pointedToBase() {PRINTF("In base destructor\n");};
+  virtual ~pointedToBase() {};
 };
 
 // example

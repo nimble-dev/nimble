@@ -269,6 +269,20 @@ symbolMemberFunction <-
                         stop(paste('Error, you should not be generating a cppVar for symbolMemberFunction', name))
                     } ))
 
+symbolNimbleListGenerator <-
+  setRefClass(Class = 'symbolNimbleListGenerator',
+              contains = 'symbolBase',
+              fields = list(nlProc = 'ANY'),
+              methods = list(
+                initialize = function(...){callSuper(...)},
+                show = function() writeLines(paste('symbolNimbleListGenerator', name)),
+                genCppVar = function(...) {
+                  return(  cppVarFull(name = name,
+                                      baseType = 'Ronly',
+                                      templateArgs = nlProc$name) )
+                }
+              ))
+
 symbolNimbleList <-
     setRefClass(Class = 'symbolNimbleList',
                 contains = 'symbolBase',
