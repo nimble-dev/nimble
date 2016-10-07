@@ -40,7 +40,7 @@ make_input <- function(dim, size = 3, logicalArg) {
   stop("not set for dimension greater than 2")
 }
 
-test_math <- function(input, verbose = TRUE, size = 3) {
+test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFun(input)
   nfR <- nimbleFunction(  # formerly nfGen
@@ -48,7 +48,7 @@ test_math <- function(input, verbose = TRUE, size = 3) {
              run = runFun)
   #nfR <- nfGen()
 ##  project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
-  nfC <- compileNimble(nfR)##, project = project)
+  nfC <- compileNimble(nfR, dirName = dirName)##, project = project)
 
   nArgs <- length(input$inputDim)
   logicalArgs <- rep(FALSE, nArgs)
@@ -56,17 +56,27 @@ test_math <- function(input, verbose = TRUE, size = 3) {
     logicalArgs <- input$logicalArgs
 
   arg1 <- make_input(input$inputDim[1], size = size, logicalArgs[1])
-  if(nArgs == 2)
-    arg2 <- make_input(input$inputDim[2], size = size, logicalArgs[2])
-  if("Rcode" %in% names(input)) {
-    eval(input$Rcode)
+  if(nArgs > 1)
+      arg2 <- make_input(input$inputDim[2], size = size, logicalArgs[2])
+  if(nArgs > 2)
+      arg3 <- make_input(input$inputDim[3], size = size, logicalArgs[3])
+  if(nArgs > 3)
+      stop("test_math not set up for >3 args yet")
+  
+  if("Rcode" %in% names(input)) {      
+      eval(input$Rcode)
   } else {
-    eval(input$expr)
+      eval(input$expr)
   }
+  if(nArgs == 3) {
+      out_nfR = nfR(arg1, arg2, arg3)
+      out_nfC = nfC(arg1, arg2, arg3)
+  }  
   if(nArgs == 2) {
-    out_nfR = nfR(arg1, arg2)
-    out_nfC = nfC(arg1, arg2)
-  } else {
+      out_nfR = nfR(arg1, arg2)
+      out_nfC = nfC(arg1, arg2)
+  }
+  if(nArgs == 1) {
     out_nfR = nfR(arg1)
     out_nfC = nfC(arg1)
   }

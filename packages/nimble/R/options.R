@@ -13,6 +13,7 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         debugRCfunProcessing = FALSE,
         debugCppLineByLine = FALSE,
         debugNFProcessing = FALSE,
+        debugSizeProcessing = FALSE,
         compileAltParamFunctions = TRUE,
         includeCPPdists = TRUE,    ## includes dists.cpp and nimDists.cpp in the compilation.  Momentarily we have a problem on Windows.
         processBackwardsModelIndexRanges = FALSE,    ## if FALSE (default), for(i in 9:7) in model code becomes for(i in 7).  if TRUE, becomes for(i in c(9, 8, 7))
