@@ -885,7 +885,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
-                                                 regLabel <- try(get('name', envir = nfObject))
+                                                 regLabel <- try(get('name', envir = nfObject), silent = TRUE)
                                                  if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
 
                                                  eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr, dll[['handle']], regLabel))
