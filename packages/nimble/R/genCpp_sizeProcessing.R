@@ -16,6 +16,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixEigenOperators, 'sizeEigenOp'), ## TO DO
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('return' = 'sizeReturn',
+                    'makeNewNimbleListObject' = 'sizeNewNimbleList',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
                     getParam = 'sizeGetParam',
@@ -294,6 +295,15 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 
     warning(paste0(' asRow or asCol used on something with more than 1 dimension in ', nimDeparse(code)), call. = FALSE)
 
+}
+
+sizeNewNimbleList <- function(code, symTab, typeEnv){
+  browser()
+  listDefName <- code$args[[1]]
+  if(symTab$parentST$symbolExists(listDefName)){}
+  else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
+  if()
+  
 }
 
 sizeNFvar <- function(code, symTab, typeEnv) {
@@ -631,6 +641,8 @@ sizeAssign <- function(code, symTab, typeEnv) {
     asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
     if(length(asserts) == 0) NULL else asserts
 }
+
+
 
 ## Handler for assignment
 sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {

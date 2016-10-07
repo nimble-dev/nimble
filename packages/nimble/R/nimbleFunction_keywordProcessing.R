@@ -1395,7 +1395,6 @@ matchKeywords_recurse <- function(code, nfProc = NULL) {
         }
         if(cl >= 2) { ## recurse through arguments
             for(i in 2:cl) {
-              browser()
                 code[[i]] <- matchKeywords_recurse(code[[i]], nfProc)
             }
         }
