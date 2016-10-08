@@ -96,7 +96,6 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         optimalAR     <- 0.44
         gamma1        <- 0
-        range <- getDistribution(model$getNodeDistribution(target))$range
         ## checks
         if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
         if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
@@ -108,9 +107,14 @@ sampler_RW <- nimbleFunction(
         if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
                        propValue <- currentValue * exp(propLogScale)
                    } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
-        if(reflective)   while(propValue < range[1] | propValue > range[2]) {
-            if(propValue < range[1]) propValue <- 2*range[1] - propValue
-            if(propValue > range[2]) propValue <- 2*range[2] - propValue    }
+        if(reflective) {
+            lower <- model$getBound(target, 'lower')
+            upper <- model$getBound(target, 'upper')
+            while(propValue < lower | propValue > upper) {
+                if(propValue < lower) propValue <- 2*lower - propValue
+                if(propValue > upper) propValue <- 2*upper - propValue
+            }
+        }
         model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes) + propLogScale
         jump <- decide(logMHR)
