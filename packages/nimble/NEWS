@@ -2,7 +2,7 @@
 
 USER LEVEL CHANGES
 
--- Added getBound() functionality that provides dynamic access to lower and upper bounds on a node (from R or in the DSL), based on the underlying distribution and any user-defined truncation. Functionality is analogous to getParam().
+-- Added getBound() functionality that provides dynamic access to lower and upper bounds on a node (from R or in the DSL), based on the underlying distribution and any user-defined truncation. Functionality is analogous to getParam(). Now used in the reflection sampler.
 
                            CHANGES IN VERSION 0.6 (August 2016)
 
