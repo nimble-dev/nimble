@@ -336,6 +336,7 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
 {
   double sumProb(0.0);
   double sumX(0.0);
+  double logSumProb;
 
   if (R_IsNA(x, K) || R_IsNA(prob, K) || R_IsNA(size))
     return NA_REAL;
@@ -350,23 +351,23 @@ double dmulti(double* x, double size, double* prob, int K, int give_log) // Call
 
   double dens = lgammafn(size + 1);
   for(int i = 0; i < K; i++) {
-    if (prob[i] < 0 || prob[i] > 1) ML_ERR_return_NAN;
+    if (prob[i] < 0) ML_ERR_return_NAN;
     R_D_nonint_check(x[i]);
     if (x[i] < 0 || !R_FINITE(x[i])) return R_D__0;
 
     x[i] = R_D_forceint(x[i]);
     sumProb += prob[i];
     sumX += x[i];
+  }
+  logSumProb = log(sumProb);
 
+  for(int i = 0; i < K; i++) {  
     if(!(x[i] == 0.0 && prob[i] == 0.0))
-      dens += x[i]*log(prob[i]) - lgammafn(x[i] + 1);
+      dens += x[i]*(log(prob[i]) - logSumProb) - lgammafn(x[i] + 1);
   }
 
   if(sumX > size + 10*DBL_EPSILON || sumX < size - 10*DBL_EPSILON) {
     return R_D__0;
-  }
-  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
-    ML_ERR_return_NAN;
   }
 
   return give_log ? dens : exp(dens);
@@ -381,6 +382,20 @@ void rmulti(int *ans, double size, double* prob, int K) // Calling functions nee
 // IMPORTANT: have ans and size as int when sent to rmultinom as Rmath rmultinom has these types
 // Nimble does a copy in nimArr_rmulti
 {
+  /* rmultinom requires normalized probs (in R this is done in Rmultinom interface
+     function via FixupProb before passing to rmultinom) */
+  double sumProb = 0.0;
+  int i;
+
+  for(i = 0; i < K; i++) 
+    sumProb += prob[i];
+  if (sumProb <= 0.0) {
+    for(i = 0; i < K; i++) 
+      ans[i] = R_NaN;
+    return;
+  }
+  for(int i = 0; i < K; i++) 
+    prob[i] /= sumProb;
   rmultinom((int) size, prob, K, ans);
 }
 
@@ -405,10 +420,6 @@ SEXP C_dmulti(SEXP x, SEXP size, SEXP prob, SEXP return_log)
   double c_size = REAL(size)[0];
 
   double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_dmulti): sum of probabilities is not equal to 1.\n");
 
   sum = 0.0;
   for(i = 0; i < K; i++) 
@@ -441,15 +452,10 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
   double* c_prob = REAL(prob);
   double c_size = REAL(size)[0];
 
-  double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_rmulti): sum of probabilities is not equal to 1.\n");
-
   GetRNGstate(); 
 
   PROTECT(ans = allocVector(INTSXP, K));  
+  // note that if NaN set in rmulti, the INTEGER() casts it to NA
   rmulti(INTEGER(ans), c_size, c_prob, K);
   PutRNGstate();
   UNPROTECT(1);
