@@ -526,7 +526,8 @@ sizeSetSize <- function(code, symTab, typeEnv) {
             if(firstSizeExpr$name == 'c') { ## handle syntax of resize(Z, c(3, dim(A)[1]))
                 if(length(firstSizeExpr$args) != sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
                 asserts <- recurseSetSizes(firstSizeExpr, symTab, typeEnv) ## may set intermediates if needed
-                assign(code$args[[1]]$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(firstSizeExpr$args, nimbleGeneralParseDeparse), type = sym$type), envir = typeEnv)
+                ## see comment below
+                ##                assign(code$args[[1]]$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(firstSizeExpr$args, nimbleGeneralParseDeparse), type = sym$type), envir = typeEnv)
                 for(i in 1:length(firstSizeExpr$args)) {
                     code$args[[i+1]] <- firstSizeExpr$args[[i]]
                     if(inherits(firstSizeExpr$args[[i]], 'exprClass')) {
