@@ -2,7 +2,7 @@
 
 USER LEVEL CHANGES
 
--- dmulti() and rmulti() now allow 'probs' argument with arbitrary non-negative values and internally normalize these so they sum to one, to be consistent with R's multinom behavior.
+-- dmulti(), rmulti(), dcat() and rcat() now allow 'probs' argument with arbitrary non-negative values and internally normalize these so they sum to one, to be consistent with R's multinom behavior.
 
                            CHANGES IN VERSION 0.6-1 (October 2016)
 

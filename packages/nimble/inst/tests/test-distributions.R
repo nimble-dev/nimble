@@ -120,7 +120,7 @@ try(test_that("Test that random samples (simulate) have correct covariance: ",
                           info = "Difference in covs exceeds tolerance")))
 
 
-## dmulti
+## dmulti and dcat
 
 set.seed(0)
 normGen <- rmulti(1, 1000, prob = c(.1, .1, .8))
@@ -135,3 +135,17 @@ try(test_that("rmulti handles 'probs' that do not sum to one: ",
 try(test_that("dmulti handles 'probs' that do not sum to one: ",
               expect_equal(normResult, unnormResult,
                           info = "normalized and unnormalized probabilities give different results")))
+
+set.seed(0)
+normGen <- rcat(1, prob = c(.1, .1, .8))
+set.seed(0)
+unnormGen <- rcat(1, prob = c(10, 10, 80))
+normResult <- dcat(normGen, prob = c(.1, .1, .8), log = TRUE)
+unnormResult <- dcat(normGen, prob = c(10, 10, 80), log = TRUE)
+
+try(test_that("rcat handles 'probs' that do not sum to one: ",
+                               expect_identical(normGen, unnormGen,
+                                                                             info = "normalized and unnormalized probabilities give different results")))
+try(test_that("dcat handles 'probs' that do not sum to one: ",
+                               expect_equal(normResult, unnormResult,
+                                                                         info = "normalized and unnormalized probabilities give different results")))

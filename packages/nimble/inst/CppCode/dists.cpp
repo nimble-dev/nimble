@@ -476,15 +476,12 @@ double dcat(double x, double* prob, int K, int give_log)
   double sumProb(0.0);
   for(int i = 0; i < K; i++) 
     sumProb += prob[i];
-  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
-    ML_ERR_return_NAN;
-  }
 
   R_D_nonint_check(x);
   x = R_D_forceint(x);
 
   if(x > K || x < 1) return R_D__0;
-  return give_log ? log(prob[(int) x - 1]) : prob[(int) x - 1];
+  return give_log ? log(prob[(int) x - 1]) - log(sumProb) : prob[(int) x - 1]/sumProb;
 }
 
 double rcat(double* prob, int K)
@@ -493,17 +490,14 @@ double rcat(double* prob, int K)
 // relying on sum to 1 risks accessing beyond storage
 // we'll need to figure out how to inject the number of categories w/in NIMBLE
 {
-  double u = unif_rand();
   double prob_cum = prob[0];
   int value = 1;
 
   double sumProb(0.0);
   for(int i = 0; i < K; i++) 
     sumProb += prob[i];
-  if(sumProb > 1.0 + 10*DBL_EPSILON || sumProb < 1.0 - 10*DBL_EPSILON) {
-    ML_ERR_return_NAN;
-  }
 
+  double u = unif_rand() * sumProb;
   while(u > prob_cum && value < K) {
     prob_cum += prob[value];
     value++;
@@ -533,12 +527,6 @@ SEXP C_dcat(SEXP x, SEXP prob, SEXP return_log)
   double* c_x = REAL(x);
   double* c_prob = REAL(prob);
 
-  double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_dcat): sum of probabilities is not equal to 1.\n");
-
   PROTECT(ans = allocVector(REALSXP, n_x));  
   for(i = 0; i < n_x; i++) {
     REAL(ans)[i] = dcat(c_x[i], c_prob, K, give_log);
@@ -566,12 +554,6 @@ SEXP C_rcat(SEXP n, SEXP prob) {
     RBREAK("Error (C_rcat): n must be non-negative.\n");
 
   double* c_prob = REAL(prob);
-
-  double sum = 0.0;
-  for(i = 0; i < K; i++) 
-    sum += c_prob[i];
-  if(sum > 1.0 + 10*DBL_EPSILON || sum < 1.0 - 10*DBL_EPSILON)
-    RBREAK("Error (C_rcat): sum of probabilities is not equal to 1.\n");
 
   GetRNGstate(); 
   PROTECT(ans = allocVector(INTSXP, n_values));  

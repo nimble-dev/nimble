@@ -127,7 +127,7 @@ rmulti <- function(n = 1, size, prob) {
 #' 
 #' @param x non-negative integer-value numeric value.
 #' @param n number of observations.
-#' @param prob vector of probabilities, summing to one.
+#' @param prob vector of probabilities, internally normalized to sum to one.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
 #' @export
