@@ -88,4 +88,18 @@ getDefinition <- function(nf) {
 }
 
 
+keywords <- c(nimble:::nimbleOrRfunctionNames, names(nimble:::specificCallReplacements), unlist(nimble:::nimKeyWords))
+operators <- c(nimble:::ifOrWhile, nimble:::binaryMidLogicalOperators, nimble:::binaryOperators,
+               nimble:::binaryOrUnaryOperators, nimble:::unaryOperators, nimble:::assignmentOperators,
+               nimble:::reductionUnaryOperators, nimble:::matrixSquareReductionOperators,
+               nimble:::reductionBinaryOperatorsEither, nimble:::matrixMultOperators,
+               nimble:::matrixFlipOperators, nimble:::matrixSquareOperators, nimble:::matrixSolveOperators,
+               nimble:::matrixEigenOperators, nimble:::passThroughOperators, unlist(nimble:::brackOperators))
+names(operators) <- NULL
+names(keywords) <- NULL
+
+replacements <- unlist(c(nimble:::specificCallReplacements, nimble:::nimKeyWords))
+operators <- operators[!(operators %in% replacements)]
+
+dslKeyWords <- unique(c(keywords, operators))
 
