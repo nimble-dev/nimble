@@ -173,13 +173,12 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
   if(length(setdiff(latentNodes, allStochNonDataNodes) ) != 0 )
     stop('latentNodes provided not found in model')
   maxNodes = setdiff(allStochNonDataNodes, latentNodes)
-  browser()
 
   limits <- getMCEMRanges(model, maxNodes, buffer)
   low_limits = limits[[1]]
   hi_limits  = limits[[2]]
 
-  
+  browser() 
   constraintNames = list()
   for(i in seq_along(boxConstraints) )
     constraintNames[[i]] = model$expandNodeNames(boxConstraints[[i]][[1]])
@@ -187,7 +186,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
     limits = boxConstraints[[i]][[2]]
     inds = which(maxNodes %in% constraintNames[[i]])
     if(length(inds) == 0)
-      stop(  paste("warning: provided a constraint for node '", constraintNames[i], "' but that node does not exist in the model!") )
+      stop(paste("warning: provided a constraint for nodes", constraintNames[[i]], ", but those nodes do not exist in the model!"))
+    tooLowNodes <- which(limits[1] + abs(buffer) < low_limits[inds])
+    tooHighNodes <- which(limits[2] - abs(buffer) > hi_limits[inds])
+    if(length(tooLowNodes) > 0) warning(paste0("User-specified lower bound for ", constraintNames[[i]][tooLowNodes],
+                                               " is below lower bound detected by NIMBLE.  "))
+    if(length(tooHighNodes) > 0) warning(paste0("User-specified upper bound for ", constraintNames[[i]][tooHighNodes],
+                                                " is above upper bound detected by NIMBLE.  "))
     low_limits[inds] = limits[1] + abs(buffer)
     hi_limits[inds] = limits[2] - abs(buffer)
   }
@@ -241,7 +246,6 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
       stop('mcem quitting: burnIn > initial m value')
     cmcmc_Latent$run(1, reset = TRUE)	# To get valid initial values 
     theta <- values(cModel, maxNodes)
-    
     if(optimMethod == "L-BFGS-B"){
       for(i in seq_along(theta) ) {  # check that initial values satisfy constraints
         if(identical(low_limits[i], -Inf) && (hi_limits[i] < Inf)){
@@ -257,6 +261,8 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
             theta[i] = (low_limits[i] + hi_limits[i])/2	
         }
       }
+      values(cModel, maxNodes) <<- theta
+      simulate(cModel, cModel$getDependencies(maxNodes, self = FALSE))
     }
     
     m <- initM 
