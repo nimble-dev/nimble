@@ -33,7 +33,7 @@ class nimSmartPtr {
     return *this;
   }
 
-  nimSmartPtr() {};
+  nimSmartPtr() : realPtr(0) {};
   nimSmartPtr(const nimSmartPtr &rhs) {
     realPtr = rhs.realPtr;
     realPtr->newWatcher();

@@ -80,19 +80,15 @@ nlProcessing <- setRefClass('nlProcessing',
                                 show = function() {
                                     writeLines(paste0('nlProcessing object ', nimbleListObj$className))
                                 },
-                                initialize = function(nimLists = NULL, className, project, ...) {
+                                initialize = function(nimLists = NULL, ...) {
+                                  browser()
                                   neededTypes <<- list()
                                   callSuper(...)
                                   if(!is.null(nimLists)) {
                                     ## in new system, f must be a specialized nf, or a list of them
-                                    nimbleProject <<- project
                                     sl <- if(is.list(nimLists)) nimLists[[1]]$nimbleListDef else nimLists$nimbleListDef
                                     nimbleListObj <<- sl
-                                    if(missing(className)) {
-                                      name <<- Rname2CppName(sl)
-                                    } else {
-                                      name <<- className
-                                    }
+                                    name <<- sl$className
                                     instances <<- if(inherits(nimLists, 'list')) nimLists else list(nimLists)
                                   }
                                 },

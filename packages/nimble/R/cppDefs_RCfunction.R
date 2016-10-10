@@ -88,7 +88,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      # dotCall[[1L]] <- .Call
                                      # dotCall[[2L]] <- getNativeSymbolInfo(SEXPinterfaceCname, dll )$address
                                      
-                                     browser()
                                      # avoid R CMD check problem with registration
                                      # ok not to use getNativeSymbolInfo with a dll argument because SEXPinterfaceCname can't possible be in nimble.so, so it is unique to the project dll.
                                      txt <- ".Call(SEXPname)"
@@ -163,6 +162,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      objects$setParentST(interfaceArgs)
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
+                                     browser()
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -174,6 +174,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          tempLines <- buildCopyLineFromSEXP(interfaceArgs$getSymbolObject(Snames[i]),
                                                                             RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]))
                                          if(inherits(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]), 'symbolNimbleList')){
+                                           CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                            numNimbleList <- numNimbleList + 1
                                          }
                                          if(is.list(tempLines)) copyLines <- c(copyLines, tempLines)
@@ -227,6 +228,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                                                                      returnCall = TRUE)
                                                  if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
                                                    numNimbleList <- numNimbleList + 2
+                                                   CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                                  }
                                                  RCfunProc$compileInfo$returnSymbol$name <<- rsName
                                                  returnListLines[[numArgs+1]] <- substitute(SET_VECTOR_ELT(S_returnValue_LIST_1234, I, THISSEXP),
@@ -271,7 +273,8 @@ toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
                                      character = 'string_2_STRSEXP')
 
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
-    if(inherits(toSym, 'symbolNimbleList')){
+  browser()
+    if(inherits(toSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
       ans <- list()
       ansText  <- paste0(toSym$name, " = new ",toSym$nlProc$name, ";")
       ans[[1]] <- substitute(cppLiteral(answerText), list(answerText = ansText))
@@ -310,7 +313,7 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
 }
 
 buildCopyLineToSEXP <- function(fromSym, toSym, returnCall = FALSE) {
-    if(inherits(fromSym, 'symbolNimbleList')){
+    if(inherits(fromSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
       if(returnCall == TRUE)  ansText  <- paste0(toSym$name, " = ",fromSym$name, "->writeToSEXP();")
       else ansText  <- paste0(fromSym$name, "->copyToSEXP(", toSym$name, ");")
       ans <- substitute(cppLiteral(answerText), list(answerText = ansText))

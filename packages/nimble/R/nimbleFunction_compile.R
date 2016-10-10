@@ -367,9 +367,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
       nlList <- instances[[1]][[name]]()
       nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
       className <- nlList$nimbleListDef$className
-      newSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
+      newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
       if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
-      return(newSym)
+      return(NULL)
     }
     if(is.nl(instances[[1]][[name]])) {
         ## This case mimics the nimbleFunction case below (see is.nf)

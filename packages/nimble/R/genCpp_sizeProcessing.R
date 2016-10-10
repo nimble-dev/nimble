@@ -315,11 +315,11 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 }
 
 sizeNewNimbleList <- function(code, symTab, typeEnv){
-  browser()
-  listDefName <- code$args[[1]]
-  if(symTab$parentST$symbolExists(listDefName)){}
-  else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
-  if()
+  stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)  
+  # listDefName <- code$args[[1]]
+  # if(symTab$parentST$symbolExists(listDefName)){}
+  # else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
+  # if()
   
 }
 
@@ -327,7 +327,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     nfName <- code$args[[1]]$name
     nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
     isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
-    isSymList <- inherits(nfSym, 'symbolNimbleList')
+    isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
     if(!(isSymFunc || isSymList))
       stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or nimbleList.'), call. = FALSE)
     if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface

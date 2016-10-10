@@ -37,6 +37,17 @@ argType2symbol <- function(AT, neededTypes, name = character()) {
           return(listST)
       }
     }
+    if(is.nlGenerator(eval(AT[[1]]))){
+      nl <- eval(AT[[1]])() ##currently only works if list setup def'n is defined in global env, must fix this		
+           # nlDef <- eval(AT[[1]])()$nimbleListDef	
+           listNLP <- nlProcessing(nimLists = nl)		
+           listNLP$buildSymbolTable()		
+      		
+             # listNLP <- eval(substitute(paste0('parent.frame()$parentST$symbols$', NAME, '$nlProc'), list(NAME = )		
+              # listST <- symbolNimbleList(name = name, nlProc = listNLP)		
+              # listST$type <- "symbolNimbleList"		
+              return(listNLP)
+    }
 
     nDim <- if(length(AT)==1) 0 else AT[[2]]
     size <- if(nDim == 0) 1 else {
@@ -274,7 +285,7 @@ symbolNimbleListGenerator <-
               contains = 'symbolBase',
               fields = list(nlProc = 'ANY'),
               methods = list(
-                initialize = function(...){callSuper(...)},
+                initialize = function(...){callSuper(...); type <<- 'Ronly'},
                 show = function() writeLines(paste('symbolNimbleListGenerator', name)),
                 genCppVar = function(...) {
                   return(  cppVarFull(name = name,
