@@ -33,6 +33,10 @@ nfMethodRC <-
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
+                        #if(exists('aaa') && aaa==3) {
+                            #browser()
+                            nf_checkDSLcode(code, argInfo)
+                        #}
                     },
                     generateArgs = function() {
                         argsList <- nf_createAList(names(argInfo))
@@ -82,6 +86,30 @@ nfMethodRC <-
                     getArgInfo       = function() { return(argInfo)    },
                     getReturnType    = function() { return(returnType) })
     )
+
+
+otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType")
+
+nf_checkDSLcode <- function(code, argInfo) {
+    dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords)
+    calls <- setdiff(all.names(code), all.vars(code))
+    nonDSLcalls <- calls[!(calls %in% dslCalls)]
+    if(length(nonDSLcalls)) {
+        objInR <- sapply(nonDSLcalls, exists)
+        nonDSLnonR <- nonDSLcalls[!objInR]
+        nonDSLinR <- nonDSLcalls[objInR]
+        if(length(nonDSLinR)) {
+            nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, is.nf, inputIsName = TRUE) |
+                                     sapply(nonDSLinR, is.rcf, inputIsName = TRUE))]
+            warning(paste0("These R functions are not allowed in nimbleFunction run code unless these are the names of nimbleFunctions: ", paste(nonDSLinR, collapse = ', '), ".\n"))
+        }
+        if(length(nonDSLnonR))
+            warning(paste0("Expecting these functions will be defined as nimbleFunctions: ", paste(nonDSLnonR, collapse = ', '), ".\n"))
+    }
+    return(0)
+}
+
+
 
 
 nf_changeNimKeywords <- function(code){

@@ -18,18 +18,27 @@ nfGetDefVar <- function(f, var) {
 #'
 #' @seealso \link{nimbleFunction} for how to create a nimbleFunction
 #' @export
-is.nf <- function(f) {
+is.nf <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
     if(inherits(f, 'nimbleFunctionBase')) return(TRUE)
-    return(is.function(f) && 
+    return(is.function(f) && !is.null(environment(f)) &&  
                existsFunctionEnvVar(f, 'nfRefClassObject') ) 	
 }
 
-is.Cnf <- function(f) {
+is.Cnf <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
     if(inherits(f, 'CnimbleFunctionBase')) return(TRUE)
     return(FALSE)
 }
 
-is.nfGenerator <- function(f) {
+is.rcf <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
+    return(is.function(f) && !is.null(environment(f)) &&
+           existsFunctionEnvVar(f, 'nfMethodRCobject') ) 	
+} 
+
+is.nfGenerator <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
     return(is.function(f) && 
                existsFunctionEnvVar(f, 'generatorFunction') &&
                existsFunctionEnvVar(f, 'nfRefClassDef') &&
@@ -88,18 +97,4 @@ getDefinition <- function(nf) {
 }
 
 
-keywords <- c(nimble:::nimbleOrRfunctionNames, names(nimble:::specificCallReplacements), unlist(nimble:::nimKeyWords))
-operators <- c(nimble:::ifOrWhile, nimble:::binaryMidLogicalOperators, nimble:::binaryOperators,
-               nimble:::binaryOrUnaryOperators, nimble:::unaryOperators, nimble:::assignmentOperators,
-               nimble:::reductionUnaryOperators, nimble:::matrixSquareReductionOperators,
-               nimble:::reductionBinaryOperatorsEither, nimble:::matrixMultOperators,
-               nimble:::matrixFlipOperators, nimble:::matrixSquareOperators, nimble:::matrixSolveOperators,
-               nimble:::matrixEigenOperators, nimble:::passThroughOperators, unlist(nimble:::brackOperators))
-names(operators) <- NULL
-names(keywords) <- NULL
-
-replacements <- unlist(c(nimble:::specificCallReplacements, nimble:::nimKeyWords))
-operators <- operators[!(operators %in% replacements)]
-
-dslKeyWords <- unique(c(keywords, operators))
 
