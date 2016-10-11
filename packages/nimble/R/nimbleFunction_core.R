@@ -204,7 +204,7 @@ nf_createAllNamesFromMethodList <- function(methodList, onlyArgsAndReturn = F) {
     methodReturnListCode <- lapply(methodList, function(f) f$returnType) ##might need changing
     methodArgListCode <- lapply(methodList, function(f) f$argInfo$argList[[1]])
     methodListCode <- c(methodBodyListCode, methodArgListCode, methodReturnListCode)
-    if(length(methodReturnListCode) > 0)
+    if(length(methodListCode) > 0)
     return(unique(unlist(lapply(methodListCode, function(code) all.names(code)))))
 }
 

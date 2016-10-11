@@ -82,6 +82,15 @@ nf_getSetupOutputNames <- function(f, hidden = FALSE) {
     stop('invalid nimbleFunction argument\n')
 }
 
+nf_getArgOutputNames <- function(f, hidden = FALSE) {
+  nfEnv <- environment(f)
+  methodList <- nfEnv$methodList
+  
+  methodArgListCode <- lapply(methodList, function(x) x$argInfo$argList[[1]])
+  argObjIndex <- !(methodArgListCode %in% c('double', 'integer', 'character', 'logical'))
+  return(c(methodArgListCode[argObjIndex]))
+}
+
 #'
 #' Get nimbleFunction definition
 #'

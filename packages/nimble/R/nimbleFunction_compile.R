@@ -282,6 +282,7 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     	setupSymTab <<- symbolTable(parentST = NULL)
     	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
     }
+    outputNames <- unique(c(outputNames, nf_getArgOutputNames(nfGenerator)))
     if(setupNew) {
         ## Kluge that results from adding string handling to the compiler:
         ## Previously any character objects were assigned a symbol object with
@@ -299,7 +300,6 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
         ## that are really created as intermediates for others that are really needed
         ## during the keyword processing, the newSetupOutputNames is used for
         ## bookkeeping, so it would not be trivial to remove them at an earlier stage.
-
         origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
         declaredSetupOutputs <- getFunctionEnvVar(nfGenerator, 'declaredSetupOutputNames')
         origSetupOutputs <- setdiff(origSetupOutputs, declaredSetupOutputs)
@@ -362,277 +362,288 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## but actually, right now, we use it inconsistently.
 ## this is a function that could use a lot of polishing, but it's ok for now.
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
-    if(is.nlGenerator(instances[[1]][[name]])){ 
-      ## Need to change to accomidate multiple nlGenerators
+  isNLG <- FALSE
+  if(is.character(name)){
+    if(is.nlGenerator(instances[[1]][[name]])){
       nlList <- instances[[1]][[name]]()
-      nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
-      className <- nlList$nimbleListDef$className
-      newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
-      if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
-      return(NULL)
+      isNLG <- TRUE
     }
-    if(is.nl(instances[[1]][[name]])) {
-        ## This case mimics the nimbleFunction case below (see is.nf)
-
-        ## We need all instances created in setup code from all instances
-        nlList <- lapply(instances, `[[`, name)
-        ## trigger initial procesing to set up an nlProc object
-        ## that will have a symbol table.
-        ## Issue: We may also need to trigger this step from run code
-        nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
-        ## get the unique name that we use to generate a unique C++ definition
-        className <- nlList[[1]]$nimbleListDef$className
-
-        ## add the setupOutput name to objects that we need to instantiate and point to
-        neededObjectNames <<- c(neededObjectNames, name)
-
-        ## create a symbol table object
-        newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
-
-        ## If this is the first time this type is encountered,
-        ## add it to the list of types whose C++ definitions will need to be generated
-        if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
-        return(newSym)
-    }
-    if(inherits(instances[[1]][[name]], 'indexedNodeInfoTableClass')) {
-        return(symbolIndexedNodeInfoTable(name = name, type = 'symbolIndexedNodeInfoTable')) ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
-    }
-    if(inherits(instances[[1]][[name]], 'nimbleFunctionList')) {
-        
-        neededObjectNames <<- c(neededObjectNames, name)
-        baseClass <- instances[[1]][[name]]$baseClass ## an nfGenerator created by virtualNimbleFunction()
-        baseClassName <- environment(baseClass)$className
- 
-        newSym <- symbolNimbleFunctionList(name = name, type = 'nimbleFunctionList', baseClass = baseClass)
-        if(!(baseClassName %in% names(neededTypes))) {
-            nfp <- nimbleProject$setupVirtualNimbleFunction(baseClass, fromModel = inModel)
-            neededTypeSim <- symbolNimbleFunction(name = baseClassName, type = 'virtualNimbleFunction', nfProc = nfp)
-            neededTypes[[baseClassName]] <<- newSym
-        }
-
-        allInstances <- unlist(lapply(instances, function(x) x[[name]]$contentsList), recursive = FALSE)
-        newNFprocs <- nimbleProject$compileNimbleFunctionMulti(allInstances, initialTypeInference = TRUE)
-        ## only types are needed here, not initialTypeInference, because nfVar's from a nimbleFunctionList are not available (could be in future)
-        for(nfp in newNFprocs) {
-            newTypeName <- environment(nfp$nfGenerator)$name
-            neededTypes[[ newTypeName ]] <<- symbolNimbleFunction(name = newTypeName, type = 'nimbleFunction',
-                                                                  nfProc = nfp)
-        }
-        return(newSym)
-    }
-    if(inherits(instances[[1]][[name]], 'OptimReadyFunction')){
-    	    	
-    	thisObj <- instances[[1]][[name]]
-    	nfName <- thisObj$getOriginalName()
-   		funList <- lapply(instances, `[[`, nfName)
-        nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
-    	newSym <- symbolOptimReadyFunction(name = name, type = 'OptimReadyFunction', nfName = nfName, nfProc = nfp, genName = thisObj$getGeneratorName())
-    	
-    	baseClassName <- class(nf_getRefClassObject(funList[[1]]))
-    	optReadyClassName <- paste0('OPTIMREADY_', baseClassName)
-    	    	
-    	if(!(optReadyClassName %in% names(neededTypes))) neededTypes[[optReadyClassName]] <<- newSym
-    	return(NULL)
-    }
-    if(is.nf(instances[[1]][[name]])) { ## nimbleFunction
-        funList <- lapply(instances, `[[`, name)
-        nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
-
-        className <- class(nf_getRefClassObject(funList[[1]]))
-        neededObjectNames <<- c(neededObjectNames, name)
-        newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunction', nfProc = nfp)
-        if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
-
-        return(newSym)
-    }
-    if(inherits(instances[[1]][[name]], 'modelValuesBaseClass')) { ## In some cases these could be different derived classes.  If locally defined they must be the same
-        if(!firstOnly) {
-            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'modelValuesBaseClass'))))) {
-                warning(paste0('Problem: some but not all instances have ', name,' as a modelValues.  Types must be consistent.'))
-                return(invisible(NULL))
-            }
-        }
-        ## Generate one set of symbolModelValues objects for the neededTypes, and each of these can have its own mvConf
-        ## Generate another symbolModelValues to return and have in the symTab for this compilation
-        ## I don't think that mvConf gets used, since they all get Values *        
-        for(i in seq_along(instances)) {
-            className <- class(instances[[i]][[name]])
-            if(!(className %in% names(neededTypes))) {
-                ## these are used only to build neededTypes
-                ntSym <- symbolModelValues(name = name, type = 'Values', mvConf = instances[[i]][[name]]$mvConf)
-                neededTypes[[className]] <<- ntSym
-            }
-        }
-        ## this is used in the symbol table
-        neededObjectNames <<- c(neededObjectNames, name)
-        newSym <- symbolModelValues(name = name, type = 'Values', mvConf = NULL)
-        return(newSym)
-    }
-    if(inherits(instances[[1]][[name]], 'modelBaseClass')) {
-        if(!firstOnly) {
-            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'modelBaseClass'))))) {
-                warning(paste0('Problem: some but not all instances have ', name,' as a model.  Types must be consistent.'))
-                return(invisible(NULL))
-            }
-            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RmodelBaseClass'))))) {
-                warning(paste0('Problem: models should be provided as R model objects, not C model objects'))
-                return(invisible(NULL))
-            }
-        }
-        return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]))) 
-    }
-
-    if(inherits(instances[[1]][[name]], 'NumericListBase')) {
-    	    	
-    	varinfo <- instances[[1]][[name]]
-        if(!firstOnly) {
-            if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'NumericListBase'))))) {
-                warning(paste0('Problem: some but not all instances have ', name,' as a NumericList.  Types must be consistent.'))
-                return(invisible(NULL))
-            }
-        }
-        
-        return(symbolNumericList(name = name, type = varinfo$listType, nDim = max(varinfo$nDim, 1),  className = class(instances[[1]][[name]]))) 
-    }
-
-    if(inherits(instances[[1]][[name]], 'copierVectorClass')) {
-        newSym <- symbolCopierVector(name = name, type = 'symbolCopierVector')
-        return(newSym)
+  } else if (!is.character(name)){
+    if(is.nlGenerator(eval(name))){
+      nlList <- eval(name)()
+      isNLG <- TRUE
+    } else stop("Argument type is not recognized")
+  } 
+  if(isNLG){
+    ## Need to change to accomidate multiple nlGenerators
+    nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+    className <- nlList$nimbleListDef$className
+    newSym <- symbolNimbleList(name = as.character(name), type = 'nimbleList', nlProc = nlp)
+    if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+    return(NULL)
+  }
+  if(is.nl(instances[[1]][[name]])) {
+    ## This case mimics the nimbleFunction case below (see is.nf)
+    
+    ## We need all instances created in setup code from all instances
+    nlList <- lapply(instances, `[[`, name)
+    ## trigger initial procesing to set up an nlProc object
+    ## that will have a symbol table.
+    ## Issue: We may also need to trigger this step from run code
+    nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+    ## get the unique name that we use to generate a unique C++ definition
+    className <- nlList[[1]]$nimbleListDef$className
+    
+    ## add the setupOutput name to objects that we need to instantiate and point to
+    neededObjectNames <<- c(neededObjectNames, name)
+    
+    ## create a symbol table object
+    newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
+    
+    ## If this is the first time this type is encountered,
+    ## add it to the list of types whose C++ definitions will need to be generated
+    if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+    return(newSym)
+  }
+  if(inherits(instances[[1]][[name]], 'indexedNodeInfoTableClass')) {
+    return(symbolIndexedNodeInfoTable(name = name, type = 'symbolIndexedNodeInfoTable')) ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
+  }
+  if(inherits(instances[[1]][[name]], 'nimbleFunctionList')) {
+    
+    neededObjectNames <<- c(neededObjectNames, name)
+    baseClass <- instances[[1]][[name]]$baseClass ## an nfGenerator created by virtualNimbleFunction()
+    baseClassName <- environment(baseClass)$className
+    
+    newSym <- symbolNimbleFunctionList(name = name, type = 'nimbleFunctionList', baseClass = baseClass)
+    if(!(baseClassName %in% names(neededTypes))) {
+      nfp <- nimbleProject$setupVirtualNimbleFunction(baseClass, fromModel = inModel)
+      neededTypeSim <- symbolNimbleFunction(name = baseClassName, type = 'virtualNimbleFunction', nfProc = nfp)
+      neededTypes[[baseClassName]] <<- newSym
     }
     
-    if(inherits(instances[[1]][[name]], 'singleVarAccessClass')) {
-        ## Keeping this simple: only doing first instance for now
-        varInfo <- instances[[1]][[name]]$model$getVarInfo( instances[[1]][[name]]$var )
-        ## Maybe we should intercept this case in the model, but for now here:
-        if(instances[[1]][[name]]$useSingleIndex) {
-            nDim <- 1
-            size <- prod(varInfo$maxs)
-        } else {
-            nDim <- varInfo$nDim
-            size <- varInfo$maxs
-            if(length(nDim) == 0) browser()
-            if(is.na(nDim)) browser()
-            if(nDim == 0) {nDim <- 1; size <- 1;} ## There is no such thing as a scalar in a model
+    allInstances <- unlist(lapply(instances, function(x) x[[name]]$contentsList), recursive = FALSE)
+    newNFprocs <- nimbleProject$compileNimbleFunctionMulti(allInstances, initialTypeInference = TRUE)
+    ## only types are needed here, not initialTypeInference, because nfVar's from a nimbleFunctionList are not available (could be in future)
+    for(nfp in newNFprocs) {
+      newTypeName <- environment(nfp$nfGenerator)$name
+      neededTypes[[ newTypeName ]] <<- symbolNimbleFunction(name = newTypeName, type = 'nimbleFunction',
+                                                            nfProc = nfp)
+    }
+    return(newSym)
+  }
+  if(inherits(instances[[1]][[name]], 'OptimReadyFunction')){
+    
+    thisObj <- instances[[1]][[name]]
+    nfName <- thisObj$getOriginalName()
+    funList <- lapply(instances, `[[`, nfName)
+    nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
+    newSym <- symbolOptimReadyFunction(name = name, type = 'OptimReadyFunction', nfName = nfName, nfProc = nfp, genName = thisObj$getGeneratorName())
+    
+    baseClassName <- class(nf_getRefClassObject(funList[[1]]))
+    optReadyClassName <- paste0('OPTIMREADY_', baseClassName)
+    
+    if(!(optReadyClassName %in% names(neededTypes))) neededTypes[[optReadyClassName]] <<- newSym
+    return(NULL)
+  }
+  if(is.nf(instances[[1]][[name]])) { ## nimbleFunction
+    funList <- lapply(instances, `[[`, name)
+    nfp <- nimbleProject$compileNimbleFunction(funList, initialTypeInferenceOnly = TRUE) ## will return existing nfProc if it exists
+    
+    className <- class(nf_getRefClassObject(funList[[1]]))
+    neededObjectNames <<- c(neededObjectNames, name)
+    newSym <- symbolNimbleFunction(name = name, type = 'nimbleFunction', nfProc = nfp)
+    if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+    
+    return(newSym)
+  }
+  if(inherits(instances[[1]][[name]], 'modelValuesBaseClass')) { ## In some cases these could be different derived classes.  If locally defined they must be the same
+    if(!firstOnly) {
+      if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'modelValuesBaseClass'))))) {
+        warning(paste0('Problem: some but not all instances have ', name,' as a modelValues.  Types must be consistent.'))
+        return(invisible(NULL))
+      }
+    }
+    ## Generate one set of symbolModelValues objects for the neededTypes, and each of these can have its own mvConf
+    ## Generate another symbolModelValues to return and have in the symTab for this compilation
+    ## I don't think that mvConf gets used, since they all get Values *        
+    for(i in seq_along(instances)) {
+      className <- class(instances[[i]][[name]])
+      if(!(className %in% names(neededTypes))) {
+        ## these are used only to build neededTypes
+        ntSym <- symbolModelValues(name = name, type = 'Values', mvConf = instances[[i]][[name]]$mvConf)
+        neededTypes[[className]] <<- ntSym
+      }
+    }
+    ## this is used in the symbol table
+    neededObjectNames <<- c(neededObjectNames, name)
+    newSym <- symbolModelValues(name = name, type = 'Values', mvConf = NULL)
+    return(newSym)
+  }
+  if(inherits(instances[[1]][[name]], 'modelBaseClass')) {
+    if(!firstOnly) {
+      if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'modelBaseClass'))))) {
+        warning(paste0('Problem: some but not all instances have ', name,' as a model.  Types must be consistent.'))
+        return(invisible(NULL))
+      }
+      if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'RmodelBaseClass'))))) {
+        warning(paste0('Problem: models should be provided as R model objects, not C model objects'))
+        return(invisible(NULL))
+      }
+    }
+    return(symbolModel(name = name, type = 'Ronly', className = class(instances[[1]][[name]]))) 
+  }
+  
+  if(inherits(instances[[1]][[name]], 'NumericListBase')) {
+    
+    varinfo <- instances[[1]][[name]]
+    if(!firstOnly) {
+      if(!all(unlist(lapply(instances, function(x) inherits(x[[name]], 'NumericListBase'))))) {
+        warning(paste0('Problem: some but not all instances have ', name,' as a NumericList.  Types must be consistent.'))
+        return(invisible(NULL))
+      }
+    }
+    
+    return(symbolNumericList(name = name, type = varinfo$listType, nDim = max(varinfo$nDim, 1),  className = class(instances[[1]][[name]]))) 
+  }
+  
+  if(inherits(instances[[1]][[name]], 'copierVectorClass')) {
+    newSym <- symbolCopierVector(name = name, type = 'symbolCopierVector')
+    return(newSym)
+  }
+  
+  if(inherits(instances[[1]][[name]], 'singleVarAccessClass')) {
+    ## Keeping this simple: only doing first instance for now
+    varInfo <- instances[[1]][[name]]$model$getVarInfo( instances[[1]][[name]]$var )
+    ## Maybe we should intercept this case in the model, but for now here:
+    if(instances[[1]][[name]]$useSingleIndex) {
+      nDim <- 1
+      size <- prod(varInfo$maxs)
+    } else {
+      nDim <- varInfo$nDim
+      size <- varInfo$maxs
+      if(length(nDim) == 0) browser()
+      if(is.na(nDim)) browser()
+      if(nDim == 0) {nDim <- 1; size <- 1;} ## There is no such thing as a scalar in a model
+    }
+    return(symbolNimArrDoublePtr(name = name, type = 'double', nDim = nDim, size = size))
+  }
+  
+  if(inherits(instances[[1]][[name]], 'singleModelValuesAccessClass')) {
+    
+    varOrgName <- instances[[1]][[name]]$var
+    varSym <- instances[[1]][[name]]$modelValues$symTab$getSymbolObject(varOrgName)
+    nDim <- max( c(varSym$nDim, 1) )
+    type = instances[[1]][[name]]$modelValues$symTab$symbols[[varOrgName]]$type
+    return(symbolVecNimArrPtr(name = name, type = type, nDim = nDim, size = varSym$size))
+  }
+  
+  if(inherits(instances[[1]][[name]], 'nodeFunctionVector')) { 
+    return(symbolNodeFunctionVector(name = name))
+  }
+  if(inherits(instances[[1]][[name]], 'modelVariableAccessorVector')){
+    return(symbolModelVariableAccessorVector(name = name, lengthName = paste0(name, '_length')) )
+  }
+  if(inherits(instances[[1]][[name]], 'modelValuesAccessorVector')){
+    return(symbolModelValuesAccessorVector(name = name) )     	
+  }
+  if(inherits(instances[[1]][[name]], 'getParam_info')) {
+    return(symbolGetParamInfo(name = name, paramInfo = instances[[1]][[name]]))
+  }
+  ## if(is.character(instances[[1]][[name]])) {
+  ##     return(symbolBase(name = name, type = 'Ronly'))
+  ## }
+  if(is.character(instances[[1]][[name]])) {
+    if(firstOnly) {
+      nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
+      if(nDim > 1) {
+        warning('character object with nDim > 1 being handled as a vector')
+        nDim <- 1
+      }
+      size <- if(length(instances[[1]][[name]])==1) 1L else as.numeric(NA)
+      if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+        if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+      }
+      return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
+    } else {
+      instanceObjs <- lapply(instances, `[[`, name)
+      types <- unlist(lapply(instanceObjs, storage.mode))
+      if(!all(types == 'character')) stop(paste('Inconsistent types for setup variable', name))
+      dims <- lapply(instanceObjs, dim)
+      dimsNULL <- unlist(lapply(dims, is.null))
+      if(any(dimsNULL)) { ## dimsNULL TRUE means it is a vector
+        if(!all(dimsNULL)) {
+          warning(paste0('Dimensions do no all match for ', name, 'but they will be treated as all vectors anyway.'))
         }
-        return(symbolNimArrDoublePtr(name = name, type = 'double', nDim = nDim, size = size))
+      }
+      nDim <- 1
+      lengths <- unlist(lapply(instanceObjs, length))
+      size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
+      if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+        if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+      }
+      return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
     }
-
-    if(inherits(instances[[1]][[name]], 'singleModelValuesAccessClass')) {
-        
-        varOrgName <- instances[[1]][[name]]$var
-        varSym <- instances[[1]][[name]]$modelValues$symTab$getSymbolObject(varOrgName)
-        nDim <- max( c(varSym$nDim, 1) )
-        type = instances[[1]][[name]]$modelValues$symTab$symbols[[varOrgName]]$type
-        return(symbolVecNimArrPtr(name = name, type = type, nDim = nDim, size = varSym$size))
-    }
-
-    if(inherits(instances[[1]][[name]], 'nodeFunctionVector')) { 
-        return(symbolNodeFunctionVector(name = name))
-    }
-    if(inherits(instances[[1]][[name]], 'modelVariableAccessorVector')){
-    	return(symbolModelVariableAccessorVector(name = name, lengthName = paste0(name, '_length')) )
-    }
-    if(inherits(instances[[1]][[name]], 'modelValuesAccessorVector')){
-    	return(symbolModelValuesAccessorVector(name = name) )     	
-    }
-    if(inherits(instances[[1]][[name]], 'getParam_info')) {
-        return(symbolGetParamInfo(name = name, paramInfo = instances[[1]][[name]]))
-    }
-    ## if(is.character(instances[[1]][[name]])) {
-    ##     return(symbolBase(name = name, type = 'Ronly'))
-    ## }
-    if(is.character(instances[[1]][[name]])) {
-        if(firstOnly) {
-            nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
-            if(nDim > 1) {
-                warning('character object with nDim > 1 being handled as a vector')
-                nDim <- 1
-            }
-            size <- if(length(instances[[1]][[name]])==1) 1L else as.numeric(NA)
-            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
-                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
-            }
-            return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
-        } else {
-            instanceObjs <- lapply(instances, `[[`, name)
-            types <- unlist(lapply(instanceObjs, storage.mode))
-            if(!all(types == 'character')) stop(paste('Inconsistent types for setup variable', name))
-            dims <- lapply(instanceObjs, dim)
-            dimsNULL <- unlist(lapply(dims, is.null))
-            if(any(dimsNULL)) { ## dimsNULL TRUE means it is a vector
-                if(!all(dimsNULL)) {
-                    warning(paste0('Dimensions do no all match for ', name, 'but they will be treated as all vectors anyway.'))
-                }
-            }
-            nDim <- 1
-            lengths <- unlist(lapply(instanceObjs, length))
-            size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
-            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
-                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
-            }
-            return(symbolString(name = name, type = 'character', nDim = nDim, size = size))
+  }
+  if(is.numeric(instances[[1]][[name]]) | is.logical(instances[[1]][[name]])) {
+    if(firstOnly) {
+      type <- storage.mode(instances[[1]][[name]])
+      nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
+      size <- if(length(instances[[1]][[name]])==1) rep(1L, nDim) else rep(as.numeric(NA), nDim)
+      if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+        if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
+      }
+      return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
+    } else {
+      instanceObjs <- lapply(instances, `[[`, name)
+      types <- unlist(lapply(instanceObjs, storage.mode))
+      dims <- lapply(instanceObjs, dim)
+      dimsNULL <- unlist(lapply(dims, is.null))
+      if(any(dimsNULL)) { ## dimsNULL TRUE means it is a vector
+        if(!all(dimsNULL)) {
+          warning(paste0('Problem, dimensions do no all match for ', name))
+          return(NA)
         }
-    }
-    if(is.numeric(instances[[1]][[name]]) | is.logical(instances[[1]][[name]])) {
-        if(firstOnly) {
-            type <- storage.mode(instances[[1]][[name]])
-            nDim <- if(is.null(dim(instances[[1]][[name]]))) 1L else length(dim(instances[[1]][[name]]))
-            size <- if(length(instances[[1]][[name]])==1) rep(1L, nDim) else rep(as.numeric(NA), nDim)
-            if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
-                if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
-            }
-            return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
-        } else {
-            instanceObjs <- lapply(instances, `[[`, name)
-            types <- unlist(lapply(instanceObjs, storage.mode))
-            dims <- lapply(instanceObjs, dim)
-            dimsNULL <- unlist(lapply(dims, is.null))
-            if(any(dimsNULL)) { ## dimsNULL TRUE means it is a vector
-                if(!all(dimsNULL)) {
-                    warning(paste0('Problem, dimensions do no all match for ', name))
-                    return(NA)
-                }
-                nDim <- 1
-                lengths <- unlist(lapply(instanceObjs, length))
-                size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
-                if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
-                    if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
-                }
-            } else {
-                ## no dims are null, so everything is matrix or array
-                dimsLengths <- unlist(lapply(dims, length))
-                if(length(unique(dimsLengths)) > 1) {
-                    warning(paste0('Problem, dimensions do no all match for ', name))
-                    return(NA)
-                    }
-                nDim <- dimsLengths[[1]]
-                size <- rep(as.numeric(NA), nDim)
-            }
-            
-            if(any(types == 'double')) {
-                if(!all(types %in% c('double','integer'))) {
-                    warning('Problem: some but not all instances have ', name, ' as double or integer.  Types must be consistent.')
-                    return(NA)
-                }
-                return(symbolBasic(name = name, type = 'double', nDim = nDim, size = size))
-            }
-            if(any(types == 'integer')) {
-                if(!all(types == 'integer')) {
-                    warning('Problem: some but not all instances have ', name, ' as integer.  Types must be consistent.')
-                    return(NA)
-                }
-                return(symbolBasic(name = name, type = 'integer', nDim = nDim, size = size))
-            }
-            if(any(types == 'logical')) {
-                if(!all(types == 'logical')) {
-                    warning('Problem: some but not all instances have ', name, ' as logical.  Types must be consistent.')
-                    return(NA)
-                }   
-                return(symbolBasic(name = name, type = 'logical', nDim = nDim, size = size))
-            }
+        nDim <- 1
+        lengths <- unlist(lapply(instanceObjs, length))
+        size <- if(!all(lengths == 1)) as.numeric(NA) else 1L
+        if(nimbleOptions()$convertSingleVectorsToScalarsInSetupArgs) {
+          if(nDim == 1 & identical(as.integer(size), 1L)) nDim <- 0
         }
+      } else {
+        ## no dims are null, so everything is matrix or array
+        dimsLengths <- unlist(lapply(dims, length))
+        if(length(unique(dimsLengths)) > 1) {
+          warning(paste0('Problem, dimensions do no all match for ', name))
+          return(NA)
+        }
+        nDim <- dimsLengths[[1]]
+        size <- rep(as.numeric(NA), nDim)
+      }
+      
+      if(any(types == 'double')) {
+        if(!all(types %in% c('double','integer'))) {
+          warning('Problem: some but not all instances have ', name, ' as double or integer.  Types must be consistent.')
+          return(NA)
+        }
+        return(symbolBasic(name = name, type = 'double', nDim = nDim, size = size))
+      }
+      if(any(types == 'integer')) {
+        if(!all(types == 'integer')) {
+          warning('Problem: some but not all instances have ', name, ' as integer.  Types must be consistent.')
+          return(NA)
+        }
+        return(symbolBasic(name = name, type = 'integer', nDim = nDim, size = size))
+      }
+      if(any(types == 'logical')) {
+        if(!all(types == 'logical')) {
+          warning('Problem: some but not all instances have ', name, ' as logical.  Types must be consistent.')
+          return(NA)
+        }   
+        return(symbolBasic(name = name, type = 'logical', nDim = nDim, size = size))
+      }
     }
-    return(NA)
+  }
+  return(NA)
 })
 
 

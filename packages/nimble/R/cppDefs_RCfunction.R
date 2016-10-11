@@ -163,6 +163,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      browser()
+                                     copyLineCounter <- 1
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -177,8 +178,14 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                            CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                            numNimbleList <- numNimbleList + 1
                                          }
-                                         if(is.list(tempLines)) copyLines <- c(copyLines, tempLines)
-                                         else copyLines[[i]] <- tempLines 
+                                         if(is.list(tempLines)){
+                                           copyLines <- c(copyLines, tempLines)
+                                           copyLineCounter <- copyLineCounter + length(tempLines)
+                                         }
+                                         else{
+                                           copyLines[[copyLineCounter]] <- tempLines 
+                                           copyLines <- copyLines + 1
+                                         }
                                      }
 
                                      RHScall <- as.call(c(list(as.name(name)),
@@ -273,7 +280,6 @@ toSEXPscalarConvertFunctions <- list(double  = 'double_2_SEXP',
                                      character = 'string_2_STRSEXP')
 
 buildCopyLineFromSEXP <- function(fromSym, toSym) {
-  browser()
     if(inherits(toSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
       ans <- list()
       ansText  <- paste0(toSym$name, " = new ",toSym$nlProc$name, ";")
