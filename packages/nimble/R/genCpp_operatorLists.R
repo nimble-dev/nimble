@@ -20,7 +20,7 @@ matrixSquareReductionOperators <- c('det','logdet','trace')
 reductionBinaryOperatorsEither <- c('inprod')
 reductionBinaryOperators <- reductionBinaryOperatorsEither
 
-nonNativeEigenCalls <- c('logdet','sd','var','inprod')
+nonNativeEigenCalls <- c('logdet','sd','var','inprod', 'nimC', 'nimRep')
 
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')

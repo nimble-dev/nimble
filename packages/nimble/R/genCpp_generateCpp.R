@@ -13,7 +13,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
-                    list(size = 'cppOutputSize',
+                    list(
+                        size = 'cppOutputSize',
                          'for' = 'cppOutputFor',
                          'if' = 'cppOutputIfWhile',
                          'while' = 'cppOutputIfWhile',
@@ -121,6 +122,10 @@ cppOutputNumList <- function(code, symTab) {
 
 cppOutputGetNodeFunctionIndexedInfo <- function(code, symTab) {
     paste0(code$args[[1]]$name,'.info[', code$args[[2]] - 1, ']')
+}
+
+cppOutputConcantenate <- function(code, symTab) {
+    
 }
 
 cppOutputReturn <- function(code, symTab) {

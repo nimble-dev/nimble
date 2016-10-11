@@ -9,7 +9,9 @@ nimKeyWords <- list(copy = 'nimCopy',
                     integer = 'nimInteger',
                     matrix = 'nimMatrix',
                     array = 'nimArray',
-                    round = 'nimRound')
+                    round = 'nimRound',
+                    c = 'nimC',
+                    rep = 'nimRep')
 
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',

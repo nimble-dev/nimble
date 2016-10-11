@@ -16,6 +16,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixEigenOperators, 'sizeEigenOp'), ## TO DO
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
+                    nimC = 'sizeConcatenate',
+                    nimRep = 'sizeRep',
                    'return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
@@ -160,6 +162,22 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
     removeExprClassLayer(code$caller, 1)
     setNimbleOption('debugSizeProcessing', origValue)
     return(ans)
+}
+
+sizeConcatenate <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- code$args[[1]]$type
+    if(code$args[[1]]$nDim != 1 | code$args[[2]]$nDim !=) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must be vectors for now.')), call. = FALSE)
+    ## need to deal with lifting size expressions to get them fully compiled.
+    ## otherwise we could end up with an assertion output somewhat incorrectly
+    ## insertAssertions does convert to exprClasses but does not eigenize etc
+    thisSizeExpr <- substitute( AAA_ + BBB_,
+                               list(AAA_ = parse(text = nimDeparse(code$args[[1]]$sizeExprs[[1]]))[[1]],
+                                    BBB_ = parse(text = nimDeparse(code$args[[2]]$sizeExprs[[2]]))[[1]]))
+    code$sizeExprs <- list(thisSizeExpr)
+    code$nDim <- 1
+    code$toEigenize <- 'yes'
+    return(asserts)
 }
 
 sizeRMVNorm <- function(code, symTab, typeEnv) {

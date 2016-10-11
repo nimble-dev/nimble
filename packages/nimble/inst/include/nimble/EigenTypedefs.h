@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 using namespace Eigen;
+#include "nimbleEigen.h"
 
 typedef Stride<Dynamic, Dynamic> EigStrDyn;
 typedef Map<MatrixXd, Unaligned, EigStrDyn > EigenMapStr;
