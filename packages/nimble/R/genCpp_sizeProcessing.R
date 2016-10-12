@@ -315,12 +315,17 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 }
 
 sizeNewNimbleList <- function(code, symTab, typeEnv){
-  stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)  
   # listDefName <- code$args[[1]]
   # if(symTab$parentST$symbolExists(listDefName)){}
   # else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
   # if()
-  
+  browser()
+  code$type <- "custom"
+  code$sizeExprs <- symTab
+  code$toEigenize <- "maybe"
+  code$nDim <- 0
+  type$.AllowUnknowns <- TRUE
+  stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)  
 }
 
 sizeNFvar <- function(code, symTab, typeEnv) {
