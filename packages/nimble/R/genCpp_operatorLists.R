@@ -20,7 +20,8 @@ matrixSquareReductionOperators <- c('det','logdet','trace')
 reductionBinaryOperatorsEither <- c('inprod')
 reductionBinaryOperators <- reductionBinaryOperatorsEither
 
-nonNativeEigenCalls <- c('logdet','sd','var','inprod', 'nimC', 'nimRep')
+coreRmanipulationCalls <- c('nimC','nimRep')
+nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls)
 
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
@@ -85,11 +86,17 @@ newEPT <- reductionBinaryOperators
 names(newEPT) <- paste0('eig', reductionBinaryOperators)
 eigProxyTranslate <- c(eigProxyTranslate, newEPT)
 
+newEPT <- coreRmanipulationCalls
+names(newEPT) <- paste0('eig', coreRmanipulationCalls)
+eigProxyTranslate <- c(eigProxyTranslate, newEPT)
+
 newEPT <- matrixSquareReductionOperators
 names(newEPT) <- paste0('eig', matrixSquareReductionOperators)
 eigProxyTranslate <- c(eigProxyTranslate, newEPT)
 eigProxyTranslate[['eigdet']] <- 'determinant'
 
+## nonNativeEigenProxyCalls should each appear in one of the other operatorLists feeding into eigProxyTranslate
+## Then they are removed from eigProxyCalls so that in cppOutputCalls the nonNativeEigenProxyCalls can be generated differently (as a function, not a member function)
 nonNativeEigenProxyCalls <- paste0('eig', nonNativeEigenCalls)
 eigProxyCalls <- setdiff(names(eigProxyTranslate), nonNativeEigenProxyCalls)
 

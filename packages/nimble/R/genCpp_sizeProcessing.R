@@ -18,6 +18,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     nimC = 'sizeConcatenate',
                     nimRep = 'sizeRep',
+                    nimSeq = 'sizeSeq',
                    'return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
@@ -167,16 +168,54 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
 sizeConcatenate <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     code$type <- code$args[[1]]$type
-    if(code$args[[1]]$nDim != 1 | code$args[[2]]$nDim !=) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must be vectors for now.')), call. = FALSE)
+    if(code$args[[1]]$nDim != 1 | code$args[[2]]$nDim !=1) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must be vectors for now.')), call. = FALSE)
     ## need to deal with lifting size expressions to get them fully compiled.
     ## otherwise we could end up with an assertion output somewhat incorrectly
     ## insertAssertions does convert to exprClasses but does not eigenize etc
     thisSizeExpr <- substitute( AAA_ + BBB_,
-                               list(AAA_ = parse(text = nimDeparse(code$args[[1]]$sizeExprs[[1]]))[[1]],
-                                    BBB_ = parse(text = nimDeparse(code$args[[2]]$sizeExprs[[2]]))[[1]]))
+                               list(AAA_ = code$args[[1]]$sizeExprs[[1]],
+                                    BBB_ = code$args[[2]]$sizeExprs[[1]]) )
     code$sizeExprs <- list(thisSizeExpr)
     code$nDim <- 1
     code$toEigenize <- 'yes'
+    return(asserts)
+}
+
+sizeRep <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- code$args[[1]]$type
+    if(code$args[[1]]$nDim != 1) stop(exprClassProcessingErrorMsg(code, paste0('First argument to rep() must be a vector for now.')), call. = FALSE)
+    ## requiring for now that times and each arguments are given as integers, not expressions
+    ## Since these will go into sizeExprs, which are then processed as R expressions, then as exprClasses but not fully size processed,
+    ## any expression should be lifted
+    thisSizeExpr <- substitute( AAA_ * BBB_ * CCC_,
+                               list(AAA_ = code$args[[1]]$sizeExprs[[1]],
+                                    BBB_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
+                                    CCC_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]] ))
+    code$sizeExprs <- list(thisSizeExpr)
+    code$nDim <- 1
+    code$toEigenize <- 'yes'
+    return(asserts)
+}
+
+sizeSeq <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$type <- code$args[[1]]$type
+    if(identical(code$args[[3]], -1L)) {
+        code$name <- 'nimSeqLen'
+        ## Again in these cases we need to deal with lifting size expressions.  But for now:
+        thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
+    } else {
+        code$name <- 'nimSeqBy'
+        ## ditto
+        thisSizeExpr <- substitute(1 + floor((TO_ - FROM_) / BY_),
+                                   list(FROM_ = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]],
+                                        TO_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
+                                        BY_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]]))
+    }
+    code$sizeExprs <- list(thisSizeExpr)
+    code$toEigenize <- 'yes'
+    code$nDim <- 1
     return(asserts)
 }
 
