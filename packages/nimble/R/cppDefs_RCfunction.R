@@ -184,7 +184,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          }
                                          else{
                                            copyLines[[copyLineCounter]] <- tempLines 
-                                           copyLines <- copyLines + 1
+                                           copyLineCounter <- copyLineCounter + 1
                                          }
                                      }
 

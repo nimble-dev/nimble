@@ -23,6 +23,23 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                            Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                           # message('Rgenerator for nimbleList does not exist')
                                       },
+                                      buildConstructorFunctionDef = function() {
+                                        namedObjectCode <- list(namedObjectsConstructorCodeBlock())
+                                        argNames <- nimCompProc$symTab$getSymbolNames()
+                                        setSizeLines <- list()
+                                        for(i in seq_along(argNames)) {
+                                          setSizeText <- paste0(argNames[i], '.setSize(',
+                                                                nimCompProc$symTab$getSymbolField(argNames[i], 'size'),");")
+                                          setSizeLines[[i]] <- substitute(cppLiteral(sizeLineText), 
+                                                                         list(sizeLineText = setSizeText))
+                                        }
+                                        code <- embedListInRbracket(c(namedObjectCode, setSizeLines))
+                                        
+                                        conFunDef <- cppFunctionDef(name = name,
+                                                                    returnType = emptyTypeInfo(),
+                                                                    code = cppCodeBlock(code = code, skipBrackets = TRUE))
+                                        functionDefs[['constructor']] <<- conFunDef
+                                      },
                                       buildAll = function(where = where) {
                                         buildCopyFromSexp()
                                         buildCopyToSexp()
@@ -30,7 +47,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         callSuper(where)
                                       },
                                       buildWriteToSexp = function(){
-                                        
                                         interfaceArgs <- symbolTable()
                                         argNames <- nimCompProc$symTab$getSymbolNames()
                                         protectLines <- list()
@@ -65,7 +81,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         copyLinesReturn[[numArgs+2]] <- substitute(S_returnList <- PROTECT(allocVector(VECSXP, numArgs)),
                                                                                    list(numArgs = numArgs))
                                         
-                                        unprotectLineReturn <- list(substitute(UNPROTECT(N), list(N = numArgs+1)))
+                                        unprotectLineReturn <- list(substitute(UNPROTECT(N), list(N = numArgs+2)))
                                         returnLine <- list(quote(cppLiteral("return(S_returnList);")))
 
                                         allCode <- embedListInRbracket(c(copyLinesReturn, writeLinesReturn, nameLinesReturn,
@@ -98,21 +114,10 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         printLines[[1]] <- as.name("double aVal;")
                                         printLines[[2]] <- as.name("aVal = a(0);")
                                         printLines[[3]] <- substitute(Rprintf(" a = %g\n", aVal), list())
-                                        # printLines[[1]] <- as.name("double aVal;")
-                                        # printLines[[2]] <- as.name("aVal = REAL(S_a)[0];")
-                                        # printLines[[3]] <- substitute(Rprintf("got a = %g\n", aVal), list())
                                         # objects$setParentST(listElementTable)
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                          
-                                          # ##test here
-                                          # protectLines[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
-                                          #                                             listElementTable$getSymbolObject(Snames[i]))
-                                          # copyLinesNoReturn[[i]] <- substitute(setClassElement(S_nimList_, Svar, argName),
-                                          #                                     list(Svar = as.name(Snames[i]), argName = argNames[i]))
-                                          # 
-                                          # ## end here
                                           protectLines[[i]] <- substitute(PROTECT(Svar <- getClassElement(S_nimList_, argName)),
                                                                           list(Svar = as.name(Snames[i]), argName = argNames[i]))
 
@@ -148,9 +153,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                          # protectLines[[i]] <- cppLiteral(paste0(
-                                          #   "PROTECT(",Snames[i]," = getClassElement(S_nimList_, ",argNames[i],"))"))
-                                          
                                           protectLines[[i]] <- substitute(PROTECT(Svar <- getClassElement(S_nimList_, argName)),
                                                                           list(Svar = as.name(Snames[i]), argName = argNames[i]))
                                           copyLines[[i]] <- buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
@@ -163,7 +165,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         
                                         # SEXPinterfaceCname <<- paste0('CALL_',Rname2CppName(paste0(if(!is.null(className)) paste0(className,'_') else NULL, name))) ##Rname2CppName needed for operator()
                                         
-                                        #may not want [[name]] below but instead something else ie 'copier', 'listCopier', etc.
                                         functionDefs[[paste0(name, "_copyFrom")]] <<- cppFunctionDef(name = "copyFromSEXP",
                                                                                 args = interfaceArgs,
                                                                                 code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),

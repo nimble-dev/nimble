@@ -25,6 +25,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
                          nfVar = 'cppOutputNFvar',
+                         makeNewNimbleListObject = "cppNewNimbleList",
                          getsize = 'cppOutputMemberFunctionDeref',
                          getNodeFunctionIndexedInfo = 'cppOutputGetNodeFunctionIndexedInfo',
                          resizeNoPtr = 'cppOutputMemberFunction',
@@ -144,6 +145,10 @@ cppOutputChainedCall <- function(code, symTab) {
     firstCall <- nimGenerateCpp(code$args[[1]], symTab)
     ## now similar to cppOutputCallAsIs
     paste0(firstCall, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+}
+
+cppNewNimbleList <- function(code, symTab) {
+  paste0("new ", symTab$getSymbolObject(code$caller$args[[1]]$name)$templateArgs)
 }
 
 cppOutputFor <- function(code, symTab) {

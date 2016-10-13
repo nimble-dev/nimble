@@ -80,6 +80,20 @@ seqAlongHandler <- function(code, symTab) {
     NULL
 }
 
+# newNimbleListHandler <- function(code, symTab){
+#   code$isCall <- TRUE
+#   code$isAssign <- TRUE
+#   # code$caller$isCall <- TRUE
+#   # code$caller$isAssign <- TRUE
+#   # code$caller$args[[2]]$name <- "new"
+#   # code$caller$args[[2]]$args <-  symTab$parentST$getSymbolObject(code$args[[1]])$nlProc$name
+#   
+# 
+#   
+#   # codeTxt <- paste0("new ", symTab$parentST$getSymbolObject(code$args[[1]])$nlProc$name,";")
+#   # code$expr <- substitute(cppLiteral(codeTxt), list(codeTxt = codeTxt))
+# }
+
 ## processes something like declare(Z, double(1, c(3, 4))) where the first argument to double is the number of dimensions and next (optional)
 ## give size expressions
 ## A difference between this and the syntax for run-time arguments is that here the sizes can be expressions.  For run-time arguments, they must be integers.  The expressions must refer to sizes of OTHER variables.  E.g. declare(Z, double(1, c(3, dim(A)[2])))

@@ -282,7 +282,8 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     	setupSymTab <<- symbolTable(parentST = NULL)
     	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
     }
-    outputNames <- unique(c(outputNames, nf_getArgOutputNames(nfGenerator)))
+    outputNames <- c(outputNames, nf_getArgOutputNames(nfGenerator))
+    if(length(outputNames)>0) outputNames <- unique(outputNames)
     if(setupNew) {
         ## Kluge that results from adding string handling to the compiler:
         ## Previously any character objects were assigned a symbol object with
@@ -380,7 +381,8 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     className <- nlList$nimbleListDef$className
     newSym <- symbolNimbleList(name = as.character(name), type = 'nimbleList', nlProc = nlp)
     if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
-    return(NULL)
+    returnSym <- symbolNimbleListGenerator(name = as.character(name), type = 'nimbleListGenerator', nlProc = nlp)
+    return(returnSym)
   }
   if(is.nl(instances[[1]][[name]])) {
     ## This case mimics the nimbleFunction case below (see is.nf)

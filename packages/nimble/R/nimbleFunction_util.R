@@ -88,7 +88,8 @@ nf_getArgOutputNames <- function(f, hidden = FALSE) {
   
   methodArgListCode <- lapply(methodList, function(x) x$argInfo$argList[[1]])
   argObjIndex <- !(methodArgListCode %in% c('double', 'integer', 'character', 'logical'))
-  return(c(methodArgListCode[argObjIndex]))
+  if(any(argObjIndex == TRUE))
+  return(c(unlist(methodArgListCode[argObjIndex])))
 }
 
 #'

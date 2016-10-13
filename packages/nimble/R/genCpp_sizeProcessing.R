@@ -183,6 +183,22 @@ sizeRMVNorm <- function(code, symTab, typeEnv) {
     code$toEigenize <- 'no'
 }
 
+
+sizeNewNimbleList <- function(code, symTab, typeEnv){
+  listDefName <- code$args[[1]]
+  asserts <- list()
+  if(symTab$parentST$symbolExists(listDefName)){
+    nlSym <- symTab$getSymbolObject(listDefName, inherits = TRUE)
+    code$type <- "nimbleList"
+    listST <- symTab$getParentST()$getSymbolObject(listDefName)
+    code$sizeExprs <- listST
+    code$toEigenize <- "no"
+    code$nDim <- 0
+    return(NULL)
+  }
+  else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
+}
+
 sizemap <- function(code, symTab, typeEnv) {
     ## This will only be called on a map generated from setup
     ## Maps created from indexing in nimble code don't go through this function
@@ -279,6 +295,7 @@ sizeGetParam <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
+
 sizeSwitch <- function(code, symTab, typeEnv) {
     if(length(code$args) <= 2) return(invisible(NULL))
     for(i in 3:length(code$args)) { ## just like the '{' clause of exprClasses_setSizes.  This treats each of the outcomes as if it was a new line or block of code
@@ -314,19 +331,6 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 
 }
 
-sizeNewNimbleList <- function(code, symTab, typeEnv){
-  # listDefName <- code$args[[1]]
-  # if(symTab$parentST$symbolExists(listDefName)){}
-  # else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
-  # if()
-  browser()
-  code$type <- "custom"
-  code$sizeExprs <- symTab
-  code$toEigenize <- "maybe"
-  code$nDim <- 0
-  type$.AllowUnknowns <- TRUE
-  stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)  
-}
 
 sizeNFvar <- function(code, symTab, typeEnv) {
     nfName <- code$args[[1]]$name
@@ -360,7 +364,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
       a1$nDim <- a1$args[[1]]$nDim
       a1$sizeExprs <- a1$args[[1]]$sizeExprs
       code$args[[1]] <- a1
-    } 
+    }
     NULL
 }
 
@@ -708,6 +712,10 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
+                    if(RHStype == "nimbleList") {
+                      assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type=  RHStype, sizeExprs = RHS$sizeExprs), envir = typeEnv)
+                      symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = RHS$sizeExprs$nlProc))
+                    }
                     else
                         stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: LHS is not in typeEnv or symTab and cannot be added now.')), call. = FALSE)
                 }
