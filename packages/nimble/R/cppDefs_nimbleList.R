@@ -23,23 +23,25 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                            Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                           # message('Rgenerator for nimbleList does not exist')
                                       },
-                                      buildConstructorFunctionDef = function() {
-                                        namedObjectCode <- list(namedObjectsConstructorCodeBlock())
-                                        argNames <- nimCompProc$symTab$getSymbolNames()
-                                        setSizeLines <- list()
-                                        for(i in seq_along(argNames)) {
-                                          setSizeText <- paste0(argNames[i], '.setSize(',
-                                                                nimCompProc$symTab$getSymbolField(argNames[i], 'size'),");")
-                                          setSizeLines[[i]] <- substitute(cppLiteral(sizeLineText), 
-                                                                         list(sizeLineText = setSizeText))
-                                        }
-                                        code <- embedListInRbracket(c(namedObjectCode, setSizeLines))
-                                        
-                                        conFunDef <- cppFunctionDef(name = name,
-                                                                    returnType = emptyTypeInfo(),
-                                                                    code = cppCodeBlock(code = code, skipBrackets = TRUE))
-                                        functionDefs[['constructor']] <<- conFunDef
-                                      },
+                                      # buildConstructorFunctionDef = function() {
+                                      #   namedObjectCode <- list(namedObjectsConstructorCodeBlock())
+                                      #   argNames <- nimCompProc$symTab$getSymbolNames()
+                                      #   setSizeLines <- list()
+                                      #   browser()
+                                      #   for(i in seq_along(argNames)) {
+                                      #     dimVal <- paste(nimCompProc$symTab$getSymbolField(argNames[i], 'size'), 
+                                      #                     collapse = ", ")
+                                      #     setSizeText <- paste0(argNames[i], '.setSize(',dimVal,");")
+                                      #     setSizeLines[[i]] <- substitute(cppLiteral(sizeLineText), 
+                                      #                                    list(sizeLineText = setSizeText))
+                                      #   }
+                                      #   code <- embedListInRbracket(c(namedObjectCode, setSizeLines))
+                                      #   
+                                      #   conFunDef <- cppFunctionDef(name = name,
+                                      #                               returnType = emptyTypeInfo(),
+                                      #                               code = cppCodeBlock(code = code, skipBrackets = TRUE))
+                                      #   functionDefs[['constructor']] <<- conFunDef
+                                      # },
                                       buildAll = function(where = where) {
                                         buildCopyFromSexp()
                                         buildCopyToSexp()
@@ -109,7 +111,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         returnType <- "void"
                                         listElementTable <- symbolTable()
                                         numArgs <- length(argNames)
-                                        
                                         printLines <- list()
                                         printLines[[1]] <- as.name("double aVal;")
                                         printLines[[2]] <- as.name("aVal = a(0);")
@@ -121,7 +122,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           protectLines[[i]] <- substitute(PROTECT(Svar <- getClassElement(S_nimList_, argName)),
                                                                           list(Svar = as.name(Snames[i]), argName = argNames[i]))
 
-                                          copyText  <- paste0("copyNimArr_2_SEXP<1>( ", argNames[i], ", &", Snames[i], ");")
+                                          copyText  <- paste0("copyNimArr_2_SEXP<", nimCompProc$symTab$getSymbolField(argNames[i], 'nDim'),
+                                                               ">( ", argNames[i], ", &", Snames[i], ");")
                                           copyLinesNoReturn[[i]] <- substitute(cppLiteral(copText), list(copText = copyText))
                                         }
                                         unprotectLineNoReturn <- list(substitute(UNPROTECT(N), list(N = numArgs)))

@@ -37,7 +37,8 @@ specificCallHandlers = c(
          declare = 'declareHandler',
          nfMethod = 'nfMethodErrorHandler',
          min = 'minMaxHandler',
-         max = 'minMaxHandler'),
+         max = 'minMaxHandler',
+         makeNewNimbleListObject = 'newNimbleListHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
@@ -80,19 +81,22 @@ seqAlongHandler <- function(code, symTab) {
     NULL
 }
 
-# newNimbleListHandler <- function(code, symTab){
-#   code$isCall <- TRUE
-#   code$isAssign <- TRUE
-#   # code$caller$isCall <- TRUE
-#   # code$caller$isAssign <- TRUE
-#   # code$caller$args[[2]]$name <- "new"
-#   # code$caller$args[[2]]$args <-  symTab$parentST$getSymbolObject(code$args[[1]])$nlProc$name
-#   
-# 
-#   
-#   # codeTxt <- paste0("new ", symTab$parentST$getSymbolObject(code$args[[1]])$nlProc$name,";")
-#   # code$expr <- substitute(cppLiteral(codeTxt), list(codeTxt = codeTxt))
-# }
+newNimbleListHandler <- function(code, symTab){
+  # code$isCall <- TRUE
+  # code$isAssign <- TRUE
+  # code$caller$isCall <- TRUE
+  # code$caller$isAssign <- TRUE
+  # code$caller$args[[2]]$name <- "new"
+  # code$caller$args[[2]]$args <-  symTab$parentST$getSymbolObject(code$args[[1]])$nlProc$name
+  browser()
+  listValuesText <- code$args[[2]]
+  
+
+
+
+  # codeTxt <- paste0("new ", symTab$parentST$getSymbolObject(code$args[[1]])$nlProc$name,";")
+  # code$expr <- substitute(cppLiteral(codeTxt), list(codeTxt = codeTxt))
+}
 
 ## processes something like declare(Z, double(1, c(3, 4))) where the first argument to double is the number of dimensions and next (optional)
 ## give size expressions

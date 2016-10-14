@@ -348,15 +348,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
     code$nDim <- objSym$nDim
     code$type <- objSym$type
-    if(code$nDim > 0) {
-        code$sizeExprs <- makeSizeExpressions(objSym$size,
-                                              parse(text = nimDeparse(code))[[1]])
-    } else {
-        code$sizeExprs <- list()
-    }
-    code$toEigenize <- 'maybe'
-
-    
     if(isSymList){
       a1 <- code$args[[1]]
       a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
@@ -365,6 +356,14 @@ sizeNFvar <- function(code, symTab, typeEnv) {
       a1$sizeExprs <- a1$args[[1]]$sizeExprs
       code$args[[1]] <- a1
     }
+    if(code$nDim > 0) {
+      code$sizeExprs <- makeSizeExpressions(objSym$size,
+                                              parse(text = nimDeparse(code))[[1]])
+    } else {
+      code$sizeExprs <- list()
+    }
+    code$toEigenize <- 'maybe'
+    
     NULL
 }
 
@@ -768,13 +767,12 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     code$toEigenize <-if(inherits(RHS, 'exprClass')) {
         if(RHS$toEigenize == 'no') 'no' else {
             if(RHS$toEigenize == 'unknown') 'no' else {
-                if(RHS$toEigenize != 'yes' & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
+                if(RHS$toEigenize != 'yes' & (RHS$nDim == 0 | (RHS$isName & LHS$name != "nfVar") | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
                 else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
             }
         }
     } else 'no'
     
-
     if(code$toEigenize == 'yes') { ## this would make more sense in eigenize_assign
     ## generate setSize(LHS, ...) where ... are dimension expressions
         if(length(RHSnDim) == 0) {
@@ -783,8 +781,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         }
         if(RHSnDim > 0) {
             if(TRUE) { ## !identical(LHSdrop$sizeExprs, RHSdrop$sizeExprs)) {## This was too clever: it was to prevent redundant calls to setSize, but the problem is the previous call could have been generated inside an if-then-else, so we can't rely on it
-                if(LHS$isName) {
-                    assert <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
+                if(LHS$isName | LHS$name == "nfVar") {
+                    assert <- list(substitute(setSize(LHS), list(LHS = parse(text = nimDeparse(LHS), keep.source = FALSE)[[1]])))
                     for(i in seq_along(RHSsizeExprs)) {
                         test <- try(assert[[1]][[i + 2]] <- RHS$sizeExprs[[i]])
                         if(inherits(test, 'try-error')) browser()

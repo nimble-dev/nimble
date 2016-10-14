@@ -1328,8 +1328,15 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
                 return(matchAndFill.call(thisFunctionMatch, code) )
         } 
         else if(inherits(symObj, 'symbolNimbleListGenerator')){
-          return(substitute(makeNewNimbleListObject(nfName), 
-                            list(nfName = nfName)))
+          if(memFunName == "new"){
+            listElements <- symObj$nlProc$symTab$getSymbolObjects()
+            argValues <- paste0(listElements[[1]]$name, " = ", code[[listElements[[1]]$name]])  ## add the first element here, no leading comma
+            for(i in seq_along(listElements)[-1]){  ## skip the first element
+              argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", code[[listElements[[i]]$name]])
+            }
+            nlCall <- paste0("makeNewNimbleListObject(", nfName, ", ", argValues, ")")
+            return(parse(text = nlCall, keep.source = FALSE)[[1]])
+          }
         }
         else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
     }
