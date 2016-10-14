@@ -1,3 +1,6 @@
+# for use in DSL code check:
+otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along")
+
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
                     cat = 'nimCat',
@@ -23,7 +26,7 @@ nfMethodRC <-
                     neededRCfuns = 'ANY'		#list
                 ),
                 methods = list(
-                    initialize = function(method, name) {
+                    initialize = function(method, name, check = FALSE) {
                     	
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
                         neededRCfuns <<- list()	
@@ -33,10 +36,11 @@ nfMethodRC <-
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
+                        if(check && "package:nimble" %in% search()){ # don't check nimble package nimbleFunctions
                         #if(exists('aaa') && aaa==3) {
                             #browser()
-                            nf_checkDSLcode(code, argInfo)
-                        #}
+                            nf_checkDSLcode(code)
+                        }
                     },
                     generateArgs = function() {
                         argsList <- nf_createAList(names(argInfo))
@@ -88,9 +92,8 @@ nfMethodRC <-
     )
 
 
-otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType")
 
-nf_checkDSLcode <- function(code, argInfo) {
+nf_checkDSLcode <- function(code) {  
     dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords)
     calls <- setdiff(all.names(code), all.vars(code))
     nonDSLcalls <- calls[!(calls %in% dslCalls)]
@@ -101,16 +104,14 @@ nf_checkDSLcode <- function(code, argInfo) {
         if(length(nonDSLinR)) {
             nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, is.nf, inputIsName = TRUE) |
                                      sapply(nonDSLinR, is.rcf, inputIsName = TRUE))]
-            warning(paste0("These R functions are not allowed in nimbleFunction run code unless these are the names of nimbleFunctions: ", paste(nonDSLinR, collapse = ', '), ".\n"))
+            warning(paste0("Detected possible use of R functions in nimbleFunction run code. These functions must defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLinR, collapse = ', '), ".\n"))
+            print(code)
         }
         if(length(nonDSLnonR))
-            warning(paste0("Expecting these functions will be defined as nimbleFunctions: ", paste(nonDSLnonR, collapse = ', '), ".\n"))
+            warning(paste0("Expecting these functions are defined as nimbleFunctions: ", paste(nonDSLnonR, collapse = ', '), ".\n"))
     }
     return(0)
 }
-
-
-
 
 nf_changeNimKeywords <- function(code){
     if(length(code) > 0){

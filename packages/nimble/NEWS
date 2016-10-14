@@ -1,3 +1,9 @@
+                           CHANGES IN VERSION 0.6-2 (November 2016)
+
+USER LEVEL CHANGES
+
+-- Added optional (turned on by default) checking of nimbleFunction run code to warn users if they are calling functions that are not part of the NIMBLE DSL.
+
                            CHANGES IN VERSION 0.6 (August 2016)
 
 USER LEVEL CHANGES
