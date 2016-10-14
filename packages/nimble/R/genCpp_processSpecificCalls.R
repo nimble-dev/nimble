@@ -141,9 +141,15 @@ declareHandler <- function(code, symTab) {
             ## else if(nDim ==1 & typeSizeExpr$name != 'c') sizeExprs <- list(typeSizeExpr)
             ## else sizeExprs <- typeSizeExpr$args
             if(length(sizeExprs) != nDim) stop(paste('Error in declare for', paste(newNames, collapse = ','), ': wrong number of dimensions provided'))
-            for(i in 1:nDim) {
-                if(is.numeric(sizeExprs[[i]])) newSizes[i] <- sizeExprs[[i]]
-            }
+
+            ## We used to put specific sizes into the symbol entry, which puts them into the typeEnv
+            ## But now we keep the typeEnv entries generic to avoid unknown run-time evaluation path problems
+            ## Therefore, no longer copy sizeExprs into newSizes.  the newSizes defaults set above will work in the symbol
+            ## The sizeExprs are still needed below for the resize.
+            
+            ## for(i in 1:nDim) {
+            ##     if(is.numeric(sizeExprs[[i]])) newSizes[i] <- sizeExprs[[i]]
+            ## }
         }
     }
     ## The symbolTable object will be used in exprClasses_initSizes to create an entry in typeEnv when the symbol is first encountered
