@@ -8,6 +8,9 @@ using namespace Eigen;
 typedef Stride<Dynamic, Dynamic> EigStrDyn;
 typedef Map<MatrixXd, Unaligned, EigStrDyn > EigenMapStr;
 
+typedef Matrix<bool, Dynamic, Dynamic> MatrixXb;
+typedef Array<bool, Dynamic, Dynamic> ArrayXXb;
+
 //#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
 //#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
 //#define EIGEN_SOLVE(x,y)    (x).lu().solve(y)

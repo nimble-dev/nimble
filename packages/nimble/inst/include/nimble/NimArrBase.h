@@ -28,7 +28,7 @@
 
 using std::vector;
 
-enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
+enum nimType {INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1};
 
  class NimArrType{
 	public:
@@ -114,6 +114,9 @@ class NimArrBase: public NimArrType {
       myType = INT;
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
+    if(typeid(T) == typeid(bool) )
+      myType = BOOL;
+
   }
   virtual ~NimArrBase(){
     //delete[] NAdims;
@@ -160,6 +163,9 @@ class VecNimArrBase : public NimVecType {
       myType = INT;
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
+    if(typeid(T) == typeid(bool) )
+      myType = BOOL;
+
   }
 
   ~VecNimArrBase(){};

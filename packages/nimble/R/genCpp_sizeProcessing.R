@@ -261,7 +261,7 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
     type <- code$args[[1]]    ## args[[1]]: 'type' argument
     nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
-    if(!(type %in% c('double', 'integer')))       stop('unknown type in nimArrayGeneral')
+    if(!(type %in% c('double', 'integer', 'logical')))       stop('unknown type in nimArrayGeneral')
     code$name <- 'initialize'
     code$args <- c(code$args[4:5], cSizeExprs$args)  ##  args: initialize(initializeValue, initializeLogical, sizeExpr1, sizeExpr2, etc...)
     for(i in seq_along(code$args)) {

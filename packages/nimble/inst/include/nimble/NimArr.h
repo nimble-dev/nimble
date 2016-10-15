@@ -86,7 +86,8 @@ public:
   }
 
   NimArr<1, T> &operator=(const NimArr<1, double> &other) {return(templateCopyOperator<double>(other));}
-  NimArr<1, T> &operator=(const NimArr<1, int> &other) {return(templateCopyOperator<int>(other));}  
+  NimArr<1, T> &operator=(const NimArr<1, int> &other) {return(templateCopyOperator<int>(other));}
+  NimArr<1, T> &operator=(const NimArr<1, bool> &other) {return(templateCopyOperator<bool>(other));}  
 
   NimArr<1, T> (const NimArr<1, T> &other) :
   NimArrBase<T>(other)

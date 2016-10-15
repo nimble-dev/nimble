@@ -514,7 +514,7 @@ EigenNewExpr <- function(EigenName, targetName, offsetExpr = NULL, MatrixType, n
 makeEigenName <- function(name) paste0('Eig_',name)
 
 makeEigenTypeLabel <- function(Matrix = TRUE, baseType = 'double') {
-    paste0(if(Matrix) 'MatrixX' else 'ArrayXX', if(baseType == 'double') 'd' else 'i')
+    paste0(if(Matrix) 'MatrixX' else 'ArrayXX', if(baseType == 'double') 'd' else if(baseType =='integer') 'i' else 'b')
 }
 
 eigenize_chainedCall <- function(code, symTab, typeEnv, workEnv) {
