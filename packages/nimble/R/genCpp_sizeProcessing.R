@@ -185,7 +185,7 @@ sizeRMVNorm <- function(code, symTab, typeEnv) {
 
 
 sizeNewNimbleList <- function(code, symTab, typeEnv){
-  listDefName <- code$args[[1]]
+  listDefName <- code$args[[1]]$name
   asserts <- list()
   if(symTab$parentST$symbolExists(listDefName)){
     nlSym <- symTab$getSymbolObject(listDefName, inherits = TRUE)
