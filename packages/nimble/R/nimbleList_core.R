@@ -111,7 +111,17 @@ nlProcessing <- setRefClass('nlProcessing',
                                     buildSymbolTable()
                                 },
                                 buildSymbolTable = function() {
-                                  symTab <<- nimble:::buildSymbolTable(nimbleListObj$types$vars, nimbleListObj$types$types, 
+                                  if(is.null(nimbleListObj$types$sizes)){  ## if sizes haven't been provided, construct them from types
+                                    nimbleListObj$types$sizes <<- list()
+                                    varDims <- as.numeric(strsplit(gsub("[^0-9]", "", nimbleListObj$types$types), ""))
+                                    for(i in seq_along(nimbleListObj$types$vars)){
+                                      nimbleListObj$types$sizes[[i]] <<- rep(NA, varDims[i])
+                                    }
+                                  }
+                                  for(i in seq_along(nimbleListObj$types$vars)) ## ensure that types are of form "double", not "double(1)"
+                                    nimbleListObj$types$types[i] <<- unlist(strsplit(nimbleListObj$types$types[i], "\\("))[1]
+            
+                                  symTab <<- nimble:::buildSymbolTable(nimbleListObj$types$vars, nimbleListObj$types$types,
                                                                        nimbleListObj$types$sizes)
                                 },
                                 getSymbolTable = function() symTab

@@ -100,7 +100,7 @@ newNimbleListHandler <- function(code, symTab){
                           callerArgID = 1)
   listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
   for(i in seq_along(listElements)) {
-    if(!(originalCode$args[[i+1]]$name == "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
+    if(!(inherits(originalCode$args[[i+1]], 'exprClass')) || (originalCode$args[[i+1]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
     nfVarExprs[[exprCounter]] <- exprClass(name = "nfVar", isCall = TRUE, isName = FALSE, 
                              isAssign = FALSE, args = c(list(listNameExpr), list(listElements[[i]]$name)))
     nfVarExprs[[exprCounter]]$args[[1]]$caller <- nfVarExprs[[exprCounter]]
