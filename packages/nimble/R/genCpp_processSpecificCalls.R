@@ -100,7 +100,7 @@ newNimbleListHandler <- function(code, symTab){
                           callerArgID = 1)
   listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
   for(i in seq_along(listElements)) {
-    if(!is.null(originalCode$args[[i+1]])){  ## skip first arg, which will be name of nlDef
+    if(!(originalCode$args[[i+1]]$name == "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
     nfVarExprs[[exprCounter]] <- exprClass(name = "nfVar", isCall = TRUE, isName = FALSE, 
                              isAssign = FALSE, args = c(list(listNameExpr), list(listElements[[i]]$name)))
     nfVarExprs[[exprCounter]]$args[[1]]$caller <- nfVarExprs[[exprCounter]]
@@ -118,16 +118,19 @@ newNimbleListHandler <- function(code, symTab){
     exprCounter <- exprCounter + 1
     }
   }
-  code$caller$name <- "{"
-  code$caller$isCall <- TRUE
-  code$caller$isName <- FALSE
-  code$caller$isAssign <- 
-  assignExpr$args[[1]]$caller <- assignExpr
-  assignExpr$args[[2]]$caller <- assignExpr
-  assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
-  assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
-  code <- assignExpr
-  setArg(code$caller, 1, code)
+  if(length(newExprs) == 0) return(NULL)  ## if no inital values were specified, leave code as is
+  else{  ## if initial values were specified, modfify code$caller
+    code$caller$name <- "{"
+    code$caller$isCall <- TRUE
+    code$caller$isName <- FALSE
+    code$caller$isAssign <- 
+    assignExpr$args[[1]]$caller <- assignExpr
+    assignExpr$args[[2]]$caller <- assignExpr
+    assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
+    assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
+    code <- assignExpr
+    setArg(code$caller, 1, code)
+  }
 }
 
 ## processes something like declare(Z, double(1, c(3, 4))) where the first argument to double is the number of dimensions and next (optional)
