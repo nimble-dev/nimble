@@ -1,5 +1,6 @@
 # environment that holds user-provided information
-nimbleUserNamespace <- as.environment(list()) 
+
+nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL)) 
 # new.env() here fails with: Error in as.environment(pos) : using 'as.environment(NULL)' is defunct when testing package loading during INSTALL
 
 # options used for NIMBLE package
@@ -12,6 +13,7 @@ nimbleUserNamespace <- as.environment(list())
         debugRCfunProcessing = FALSE,
         debugCppLineByLine = FALSE,
         debugNFProcessing = FALSE,
+        debugSizeProcessing = FALSE,
         compileAltParamFunctions = TRUE,
         includeCPPdists = TRUE,    ## includes dists.cpp and nimDists.cpp in the compilation.  Momentarily we have a problem on Windows.
         processBackwardsModelIndexRanges = FALSE,    ## if FALSE (default), for(i in 9:7) in model code becomes for(i in 7).  if TRUE, becomes for(i in c(9, 8, 7))
@@ -20,7 +22,7 @@ nimbleUserNamespace <- as.environment(list())
         compileOnly = FALSE,
         buildInterfacesForCompiledNestedNimbleFunctions = FALSE,   ## provides interfaces, i.e. named access in R, to all variables in nested compiled nimbleFunctions
         clearNimbleFunctionsAfterCompiling = FALSE,
-        checkModel = TRUE,
+        checkModel = FALSE,
         verbose = TRUE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
@@ -28,12 +30,14 @@ nimbleUserNamespace <- as.environment(list())
         ## buildConjugateSamplerFunctions()
         verifyConjugatePosteriors = FALSE,
 
+        showCompilerOutput = FALSE,
+
         ## uses the 'new' system for dynamically generated conjugate samplers (DT, March 2016),
         ## rather than the older 'static' system.
-        useDynamicConjugacy = TRUE,
+        ## update May 2016: old (non-dynamic) system is no longer supported -DT
+        ##useDynamicConjugacy = TRUE,
         
         ## default settings for MCMC samplers
-        ## (formerly controlDefaultList appearing in MCMCspec.R)
         MCMCcontrolDefaultList = list(
             log = FALSE,
             reflective = FALSE,
@@ -44,11 +48,11 @@ nimbleUserNamespace <- as.environment(list())
             propCov = 'identity',
             sliceWidth = 1,
             sliceMaxSteps = 100,
-            m = 1000,
-            resample = F,
-            optimizeM = F,
-            filterType = "bootstrap",
-            lookahead = "simulate"
+            pfNparticles = 1000,
+            pfResample = FALSE,
+            pfOptimizeNparticles = FALSE,
+            pfType = 'bootstrap',
+            pfLookahead = 'simulate'
         )
     )
 )

@@ -5,10 +5,18 @@
 #include "R.h"
 #include<Rinternals.h>
 #include<Rmath.h>
-#include <string>
+#include<string>
+#include<time.h>
 using std::string;
 
 //using namespace std;
+
+class nimbleTimerClass_ {
+ public:
+  clock_t t_start;
+  void startNimbleTimer() {t_start = clock();}
+  double endNimbleTimer() { return(((double)(clock() - t_start))/CLOCKS_PER_SEC); }
+};
 
 #define PRINTF Rprintf
 #define NIMERROR error

@@ -68,9 +68,10 @@ doPars <- nimbleFunction(
       }
     },
     scalarGet = function(mvWset = integer(), m = integer()){
-      declare(vecOut, double(1,m))
-      if(mvWset == 1){
-        for(i in 1:m){
+        ##declare(vecOut, double(1,m))
+        vecOut <- numeric(m, init=FALSE)
+        if(mvWset == 1){
+            for(i in 1:m){
           vecOut[i] <- mvWSamples[parName, i][1]
         }
       }
@@ -83,8 +84,9 @@ doPars <- nimbleFunction(
       return(vecOut)
     },
     vectorGet = function(mvWset = integer(), m = integer(), length = integer()){
-      declare(matOut, double(2,c(length,m)))
-      if(mvWset == 1){
+        ##declare(matOut, double(2,c(length,m)))
+        matOut <- matrix(nrow = length, ncol = m, init=FALSE)
+        if(mvWset == 1){
         for(i in 1:m){
           matOut[,i] <- mvWSamples[parName, i]
         }
@@ -152,13 +154,18 @@ LWStep <- nimbleFunction(
   },
   run = function(m = integer()) {
     returnType(double())
-    declare(auxWts, double(1,m))
-    declare(l, double(1,m))
-    declare(wts, double(1, m))
+    ##declare(auxWts, double(1,m))
+    auxWts <- numeric(m, init=FALSE)
+    ##declare(l, double(1,m))
+    l <- numeric(m, init=FALSE)
+    ##declare(wts, double(1, m))
+    wts <- numeric(m, init=FALSE)
     ids <- integer(m, 0)
-    declare(preWts, double(1,m))
-    declare(tmpPars, double(2, c(numParams, m)))
-
+    ##declare(preWts, double(1,m))
+    preWts <- numeric(m, init=FALSE)
+    ##declare(tmpPars, double(2, c(numParams, m)))
+    tmpPars <- matrix(nrow = numParams, ncol = m, init=FALSE)
+    
     if(notFirst){
        for(j in 1:numParamVars){
          if(varSize[j] == 1){
@@ -271,10 +278,11 @@ LWparFunc <- nimbleFunction(
   },  
   methods = list(                        
     shrinkMean = function(m = integer(), wts = double(1), pars = double(2)) {
-      declare(oneMat, double(1, m))
-      for(i in 1:m){
-        oneMat[i] <- 1
-      }
+      ## declare(oneMat, double(1, m))
+      ## for(i in 1:m){
+      ##   oneMat[i] <- 1
+        ## }
+      oneMat <- numeric(m, value = 1)
       wts <- wts/sum(wts)
       parMean <- (pars%*%wts)%*%oneMat
       wtMean <- a*pars + (1-a)*parMean  
@@ -282,8 +290,9 @@ LWparFunc <- nimbleFunction(
       return(wtMean)
     },
     cholesVar = function(m = integer(), wts = double(1), pars = double(2)){
-      declare(varMat, double(2, c(parDim, parDim)))
-      returnType(double(2)) 
+        ##declare(varMat, double(2, c(parDim, parDim)))
+        varMat <- matrix(nrow = parDim, ncol = parDim, value = 0)
+        returnType(double(2)) 
       wts <- wts/sum(wts)
       wMean <- pars%*%wts 
       for(i in 1:m)
@@ -428,7 +437,7 @@ buildLiuWestFilter <- nimbleFunction(
       size <- lapply(modelSymbolObjects, function(x){
         if(identical(x$size, numeric(0))) return(1)
         return(x$size)})      
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -437,7 +446,7 @@ buildLiuWestFilter <- nimbleFunction(
       type <- c(type, "double")
       size$wts <- length(dims)
       
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
@@ -450,14 +459,14 @@ buildLiuWestFilter <- nimbleFunction(
         return(x$size)})
       
       size[[latentVars]] <- as.numeric(dims[[1]])      
-      mvEWSamples <- modelValues(modelValuesSpec(vars = names,
+      mvEWSamples <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
       
       names <- c(names, "wts")
       type <- c(type, "double")
       size$wts <- 1
-      mvWSamples  <- modelValues(modelValuesSpec(vars = names,
+      mvWSamples  <- modelValues(modelValuesConf(vars = names,
                                               types = type,
                                               sizes = size))
     }

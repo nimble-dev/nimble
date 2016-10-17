@@ -1,6 +1,6 @@
 
 
-#' Performs initialization nimble model node values and log probabilities
+#' Performs initialization of nimble model node values and log probabilities
 #'
 #' @param model A setup argument, which specializes an instance of this nimble function to a particular model.
 #' @param silent logical indicating whether to suppress logging information
@@ -27,6 +27,7 @@
 #'       ....
 #'    }
 #' )
+#' @export
 initializeModel <- nimbleFunction(
     setup = function(model, silent = FALSE) {
         initFunctionList <- nimbleFunctionList(nodeInit_virtual)

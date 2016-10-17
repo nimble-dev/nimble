@@ -1,23 +1,21 @@
-no visible binding issues:
-http://stackoverflow.com/questions/8096313/no-visible-binding-for-global-variable-note-in-r-cmd-check
-http://stackoverflow.com/questions/9439256/how-can-i-handle-r-cmd-check-no-visible-binding-for-global-variable-notes-when
-
 make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
 
-for version on nimble website, remove FLIBS from Makevars.in
+for version on nimble website, remove FLIBS from src/Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
+
+Make sure src/Makevars.win is present.
 
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
-# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure)
-./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
-(in general you'll need to run prep_pkg twice as first time will generate errors when writing Rd files; also will often need to remove 00LOCK files)
+# before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
 
+./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
+
+(this seems to be obviated by new prep_pkg... as of v0.6)
 warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
 This also should work:
-
 for file in `ls nimble/man`; do
     if [ -e /tmp/tmp.Rd ]; then
        rm -rf /tmp/tmp.Rd
@@ -34,10 +32,11 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="compareMCMCs copy declare distributions dsl_dists filtering getParam math mcem mcmc models size trunc user"
+types="compareMCMCs copy declare distributions dsl_dists filtering getParam getDependencies math mcem mcmc models setData size trunc user"
 for type in $types; do
-Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION}
+Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
+
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
@@ -84,10 +83,23 @@ git push --tags    ## this is how you push *tags* to the remote
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
 git push --tags    ## this is how you push *tags* to the remote
 
-before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in
-and comment out rstan usage as in cran_0.5 branch on CJP machine
+before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
+and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
 
-### Building of Windows version (instructions from DT)
+### building binaries
+
+make sure there is no libnimble.{a,dylib,so} in inst/CppCode or it will be copied over and interfere with the libnimble created during the build process
+
+For Mac: 
+R CMD INSTALL -l location --build nimble # you should be in nimble/packages when invoking this
+# don't use --merge-multiarch for Mac as it provides only one architecture for R
+
+For Windows (should one use the -l flag here too to avoid mucking up source repo?)
+R CMD build nimble  # to build tar.gz
+R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
+(--merge-multiarch only applies to a single tarball, so need this as two steps)
+
+### Building of Windows version (instructions from DT (old; use DTL instructions above))
 
 put this in build.bat:
 =====
@@ -103,4 +115,34 @@ if you're in the directory with the batch file (build.bat), then just type "buil
 
 Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
 
+NOTE: as of v0.6, mcmc testing seemed to run fine on Savio (SciLinux) and run but give compiler warnings related to Eigen on NERSC Edison (SUSE).
 
+
+==========
+Solaris testing
+
+Can use VirtualBox Solaris VM on Paciorek smeagol Linux box. See solaris.sh for notes
+
+==========
+sanitizer testing
+
+CRAN seems only to use UBSAN (undefined behavior sanitizer) though Kurt Hornik indicated that he built R with ASAN (address sanitizer) and UBSAN
+
+to set up R-devel with SAN:
+
+# configuration for ASAN, UBSAN, SAN (UBSAN+ASAN)
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-asan 'CC=/tmp/clang/bin/clang -fsanitize=address -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+ ./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-san 'CC=/tmp/clang/bin/clang -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr  -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-ubsan 'CC=/tmp/clang/bin/clang -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack 
+
+on paciorek smeagol box:
+need to turn vm.overcommit_memory to 2 on my Linux box or building R will fail because conftest will not run as ASAN tries to allocate a ridiculous amount of memory.
+
+export LD_LIBRARY_PATH=/tmp/clang/lib:$LD_LIBRARY_PATH
+
+CRAN might use valgrind (Cliff suggested this). If so, may want to check package examples with:
+R -d valgrind --vanilla < nimble.Rcheck/mypkg-Ex.R
+R -d "valgrind --tool=memcheck --leak-check=full" --vanilla <
+   nimble.Rcheck/mypkg-Ex.R

@@ -46,13 +46,15 @@ enkfScalFunc = nimbleFunction(
     getMean = function(){
       returnType(double(1))
       #  output is length 2 to ensure it is not recast as a scalar, only first element is used
-      declare(output, double(1, 2))  
+      ##declare(output, double(1, 2))  
+      output <- numeric(2)
       output[1] <- model$getParam(thisData, 'mean')
       return(output)
     },
     getVar = function(){
       returnType(double(2))
-      declare(outMat, double(2, c(1,1)))
+      ##declare(outMat, double(2, c(1,1)))
+      outMat <- matrix(nrow = 1, ncol = 1, init=FALSE)
       outMat[1,1] <- model$getParam(thisData, 'var')
       return(outMat)
     }
@@ -113,11 +115,15 @@ ENKFStep <- nimbleFunction(
     }
   },
   run = function(m = integer()) {
-    declare(xf, double(2, c(xDim, m))) 
-    declare(yf, double(2, c(yLength, m)))
-    declare(varMat, double(2, c(yLength, yLength))) # combined covariance matrix for all depndent nodes
-    declare(preturb, double(2, c(yLength, m)))  # matrix for preturbed observations  
-    declare(md, double())
+    #declare(xf, double(2, c(xDim, m))) 
+      xf <- matrix(nrow = xDim, ncol = m, init=FALSE)
+      ##declare(yf, double(2, c(yLength, m)))
+      yf <- matrix(nrow = yLength, ncol = m, init=FALSE)
+      ##declare(varMat, double(2, c(yLength, yLength))) # combined covariance matrix for all depndent nodes
+      varMat <- matrix(nrow = yLength, ncol = yLength, init=FALSE)
+      ##declare(perturb, double(2, c(yLength, m)))  # matrix for perturbed observations  
+      perturb <- matrix(nrow = yLength, ncol = m, init=FALSE)
+      declare(md, double())
     md <- m  # make m a double for calculations
     if(yLength == 1){
       setSize(yObs, 1)
@@ -168,12 +174,12 @@ ENKFStep <- nimbleFunction(
     efy <- yf -  (1/md)*(yf%*%oneVec%*%t(oneVec))
     kMat <- (1/(md-1))*efx%*%t(efy)%*%inverse((1/(md-1))*(efy%*%t(efy))+varMat)
     
-    #  next, cycle through particles, create preturbed observations,
+    #  next, cycle through particles, create perturbed observations,
     #  and store in model values object
     if(yLength == 1){
       for(i in 1:m){
-        preturb[1,i] <-yObs[1] + rnorm(1, 0, sqrt(varMat[1,1]))
-        xFilterSamp <- xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
+        perturb[1,i] <-yObs[1] + rnorm(1, 0, sqrt(varMat[1,1]))
+        xFilterSamp <- xf[,i] + kMat%*%(perturb[,i] -yf[,i]) 
         values(model, thisNode) <<- xFilterSamp
         copy(model, mvSamples, thisNode, thisXSName, rowTo = i)
       }
@@ -181,8 +187,8 @@ ENKFStep <- nimbleFunction(
     else{
       cholesky <- chol(varMat)    
       for(i in 1:m){
-        preturb[,i] <- yObs + rmnorm_chol(1, meanVec, cholesky, 0) 
-        xFilterSamp <- xf[,i] + kMat%*%(preturb[,i] -yf[,i]) 
+        perturb[,i] <- yObs + rmnorm_chol(1, meanVec, cholesky, 0) 
+        xFilterSamp <- xf[,i] + kMat%*%(perturb[,i] -yf[,i]) 
         values(model, thisNode) <<- xFilterSamp
         copy(model, mvSamples, thisNode, thisXSName, rowTo = i)      
       }
@@ -286,7 +292,7 @@ buildEnsembleKF <- nimbleFunction(
         if(identical(x$size, numeric(0))) return(1)
         return(x$size)})
       
-      mvSamples <- modelValues(modelValuesSpec(vars = names,
+      mvSamples <- modelValues(modelValuesConf(vars = names,
                                             types = type,
                                             sizes = size))
     }
@@ -299,7 +305,7 @@ buildEnsembleKF <- nimbleFunction(
       
       size[[1]] <- as.numeric(dims[[1]])
       
-      mvSamples <- modelValues(modelValuesSpec(vars = names,
+      mvSamples <- modelValues(modelValuesConf(vars = names,
                                             types = type,
                                             sizes = size))
     }

@@ -625,8 +625,10 @@ USE_REGISTRATION
 PKG_LIBS
 RPATH
 R_ENABLE_LIB
+NIMBLE_LIB_DIR
 NIMBLE_INC_DIR
 NIMBLE_DIR
+R_PACKAGE_DIR
 NEED_MAKEVARS_FILE
 EIGEN_INC
 EGREP
@@ -681,7 +683,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_eigen
-enable_lib
+enable_dylib
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1300,7 +1302,7 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-lib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code
+  --enable-dylib            use a single shared libnimble rather than linking code into each DLL/DSO generated when compiling generated code
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2501,18 +2503,27 @@ if test "${with_eigen+set}" = set; then :
 fi
 
 
-# Check whether --enable-lib was given.
-if test "${enable_lib+set}" = set; then :
-  enableval=$enable_lib; ENABLE_LIB=${enableval}
+# Check whether --enable-dylib was given.
+if test "${enable_dylib+set}" = set; then :
+  enableval=$enable_dylib; ENABLE_LIB=${enableval}
 else
-  ENABLE_LIB=true
+  if ! test `uname` = "Linux" ; then
+   ENABLE_LIB=false
+else
+   ENABLE_LIB=true
 fi
 
+fi
 
 
 if test -n "${NO_LIBNIMBLE}" ; then
   ENABLE_LIB=false
   echo "Disabling libnimble."
+fi
+
+if test -n "${LIBNIMBLE}" ; then
+  ENABLE_LIB=true
+  echo "Enabling libnimble."
 fi
 
 
@@ -2543,12 +2554,17 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
+
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
+
+echo "working on eigen"
 
 
 ac_ext=cpp
@@ -2952,14 +2968,16 @@ if test "x$ac_cv_header_Eigen_Dense" = xyes; then :
 #define HAVE_EIGEN_DENSE 1
 _ACEOF
  echo "Found Eigen/Dense";
-                  rm -rf inst/Eigen_local
+		  if test -e "NOT_IN_TARBALL" ; then
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar."
+		  else
+		   echo "Not installing Eigen with NIMBLE"
+		   rm -r inst/include/Eigen
+		  fi
+
 else
-  echo "Cannot find Eigen/Dense include file.";
-                  echo "Using the version of Eigen provided locally with the R package";
-                  echo "To avoid this, re-install and specify the path containing the Eigen/ directory via";
-                  echo "   --with-eigen (see INSTALL for syntax) or set the environment variable EIGEN_DIR";
-                  mv inst/Eigen_local inst/include/Eigen ;
-                  EIGEN_DIR=""
+  echo "Using the version of Eigen provided with NIMBLE";
+		  EIGEN_DIR=""
 
 fi
 
@@ -2976,11 +2994,20 @@ fi
 
 
 
-NIMBLE_DIR=${R_PACKAGE_DIR}
-echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_DIR=${R_PACKAGE_DIR}
+ echo "NIMBLE_DIR = ${NIMBLE_DIR}"
+else
+ NIMBLE_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
 
-NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_INC_DIR=${NIMBLE_DIR}/include
+else
+ NIMBLE_INC_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
 
 
 if test "${ENABLE_LIB}" = "yes" ; then
@@ -2989,10 +3016,16 @@ elif test "${ENABLE_LIB}" = "no" ; then
   ENABLE_LIB="FALSE"
 fi
 
-R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "a-z" "A-Z"`
+if test "${ENABLE_LIB}" != "false" ; then
+ NIMBLE_LIB_DIR=${NIMBLE_DIR}/CppCode
+else
+ NIMBLE_LIB_DIR="WILL_BE_SET_IN_LOCAL_MAKEVARS"
+fi
+
+
+
+R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
-
-
 
 
 if ! test `uname` = "Darwin" ; then
@@ -3001,7 +3034,9 @@ fi
 
 
 if test "${ENABLE_LIB}" != "false" ; then
+  #XX
   PKG_LIBS="-L../inst/CppCode -lnimble $RPATH"
+#  PKG_LIBS="-L. -lnimble $RPATH"
 fi
 
 
@@ -4174,7 +4209,15 @@ fi
 if test "${ENABLE_LIB}" != "false" ; then
  echo "Building libnimble"
  (cd inst/CppCode ; ${MAKE} )
+# cp inst/CppCode/libnimble.dylib src
+# if ! test -e $R_PACKAGE_DIR/libs/ ; then
+#    mkdir -p $R_PACKAGE_DIR/libs/
+# fi
+ #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib
 else
-#  mkdir inst/CppCode
-  cp inst/CppCode/*.cpp src
+#  cp inst/CppCode/*.cpp src
+  cp inst/CppCode/dists.cpp src
+  cp inst/CppCode/RcppUtils.cpp src
+  cp inst/CppCode/nimbleGraph.cpp src
+  (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi

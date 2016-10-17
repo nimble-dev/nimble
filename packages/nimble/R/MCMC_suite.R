@@ -1,17 +1,9 @@
-# aliased in MCMCsuiteClass
-MCMCsuite <- function(...) {
-    suite <- MCMCsuiteClass(...)
-    return(suite$output)
-}
-
 #' Executes multiple MCMC algorithms and organizes results.
 #'
 #' Creates, runs, and organizes output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
 #' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
 #' Trace plots and density plots for the MCMC samples may also be generated and saved.
 #'
-#' @aliases MCMCsuite
-#' 
 #' @details
 #' Creates and runs an MCMC Suite.
 #' By default, this will execute the specified MCMCs, record all samples, generate summary statistics, and create and save trace plots and posterior density plots.
@@ -70,9 +62,9 @@ MCMCsuite <- function(...) {
 #' Default value is \code{'nimble'}, which specifies NIMBLE's default MCMC algorithm.
 #' 
 #' @param MCMCdefs A named list of MCMC definitions.  The names of list elements should corespond to any custom MCMC algorithms specified in the \code{MCMCs} argument.
-#' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC specification object, 
+#' The list elements should be quoted expressions, enclosed in {} braces.  When executed, the internal code must return an MCMC configuration object, 
 #' specifying the corresponding MCMC algorithm; in particular, setting the appropriate samplers.  The code may assume existance of the R model object \code{Rmodel},
-#' and must *return* the MCMC specification object.  Therefore, the final line of such a code block would frequently be a standalone \code{mcmcspec}, to return this object.
+#' and must *return* the MCMC configuration object.  Therefore, the final line of such a code block would frequently be a standalone \code{MCMCconf}, to return this object.
 #' 
 #' @param winbugs_directory A character string giving the directory of the executable WinBUGS program for the WinBUGS MCMC.
 #' This argument will be passed directly to the bugs(...) call, from the R2WinBUGS library.
@@ -126,6 +118,8 @@ MCMCsuite <- function(...) {
 #' For use in debugging individual MCMC algorithms, if necessary.
 #' Default value is FALSE.
 #'
+#' @param ... For internal use only
+#'
 #' @return Returns a named list containing elements:
 #' samples: A 3-dimensional array containing samples from each MCMC algorithm.
 #' summary: A 3-dimensional array containing summary statistics for each variable and algorithm.
@@ -151,6 +145,70 @@ MCMCsuite <- function(...) {
 #' 
 #' @author Daniel Turek
 #' @export
+MCMCsuite <- function(
+                      code,
+            constants           = list(),
+            data                = list(),
+            inits               = list(),
+            monitors            = character(),
+            niter               = 10000,
+            burnin              = 2000,
+            thin                = 1,
+            summaryStats        = c('mean', 'median', 'sd', 'CI95_low', 'CI95_upp'),
+            calculateEfficiency = FALSE,
+            MCMCs               = 'nimble',
+            MCMCdefs            = list(),
+            winbugs_directory   = 'C:/WinBUGS14',
+            winbugs_program     = 'WinBUGS',
+            openbugs_directory  = 'C:/OpenBUGS323',
+            openbugs_program    = 'OpenBUGS',
+            stan_model          = '',
+            stan_inits          = NULL,
+            stan_data           = NULL,
+            stanNameMaps        = list(),
+            makePlot            = TRUE,
+            savePlot            = TRUE,
+            plotName            = 'MCMCsuite',
+            setSeed             = TRUE,
+            check               = getNimbleOption('checkModel'),
+            debug               = FALSE) {
+    ## aliased in MCMCsuiteClass
+    suite <- MCMCsuiteClass(code, constants, data, inits, monitors, niter, burnin, thin, summaryStats, calculateEfficiency,
+                            MCMCs, MCMCdefs, winbugs_directory, winbugs_program, openbugs_directory, openbugs_program,
+                            stan_model, stan_inits, stan_data, stanNameMaps, makePlot, savePlot, plotName, setSeed,
+                            check, debug)
+    return(suite$output)
+}
+
+#' Class \code{MCMCsuiteClass}
+#'
+#' @aliases MCMCsuiteClass-class
+#'
+#' @description
+#' Objects of this class create, run, and organize output from a suite of MCMC algorithms, all applied to the same model, data, and initial values.
+#' This can include WinBUGS, OpenBUGS, JAGS and Stan MCMCs, as well as NIMBLE MCMC algorithms.
+#' Trace plots and density plots for the MCMC samples may also be generated and saved.
+#'
+#' @seealso \link{MCMCsuite}
+#' 
+#' @author Daniel Turek
+#' @export
+#' @examples
+#' \dontrun{
+#' code <- nimbleCode({
+#'     mu ~ dnorm(0, 1)
+#'     x ~ dnorm(mu, 1)
+#' })
+#' output <- MCMCsuite(code,
+#'                     data = list(x=3),
+#'                     inits = list(mu=0),
+#'                     niter = 10000,
+#'                     monitors = 'mu',
+#'                     MCMCs = c('nimble', 'nimble_RW'),
+#'                     summaryStats = c('mean', 'sd', 'max', 'function(x) max(abs(x))'),
+#'                     makePlot = FALSE)
+#' }
+#' 
 MCMCsuiteClass <- setRefClass(
 
     Class = 'MCMCsuiteClass',
@@ -404,55 +462,56 @@ MCMCsuiteClass <- setRefClass(
 
         run_stan = function(dataFile, initFile) {
             if(setSeed) set.seed(0)
-            if(require('rstan', quietly = TRUE)) {
-                if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
-                ##            dataFile <- gsub('stan$', 'data.R', stan_model)
-                ##            initFile <- gsub('stan$', 'init.R', stan_model)
-                if(!is.list(dataFile)) 
-                    constantsAndDataStan <- fileToList(dataFile)
-                else
-                    constantsAndDataStan <- dataFile
+            if(requireNamespace('rstan', quietly = TRUE)) {
+                ## warning("MCMCsuite: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.")
+                 if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
+                 ##            dataFile <- gsub('stan$', 'data.R', stan_model)
+                 ##            initFile <- gsub('stan$', 'init.R', stan_model)
+                 if(!is.list(dataFile)) 
+                     constantsAndDataStan <- fileToList(dataFile)
+                 else
+                     constantsAndDataStan <- dataFile
                 
-                if(!is.list(initFile)) {
-                    if(file.exists(initFile))
-                        initsStan <- fileToList(initFile)
-                    else
-                        initsStan <- NULL
-                } else
-                    initsStan <- initFile
+                 if(!is.list(initFile)) {
+                     if(file.exists(initFile))
+                         initsStan <- fileToList(initFile)
+                     else
+                         initsStan <- NULL
+                 } else
+                     initsStan <- initFile
 
                 
-                timeResult <- system.time(stan_mod <- rstan::stan_model(file = stan_model))
-                addTimeResult('stan_compile', timeResult)
+                 timeResult <- system.time(stan_mod <- rstan::stan_model(file = stan_model))
+                 addTimeResult('stan_compile', timeResult)
                         
-                if(is.null(initsStan)) {
-                    ## missing model.init.R file (stan inits file)
-                    timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
-                } else {
-                      ## we have the model.init.R file
-                      ## this one includes inits = ...
-                      timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))
-                  }
+                 if(is.null(initsStan)) {
+                     ## missing model.init.R file (stan inits file)
+                     timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin))
+                 } else {
+                       ## we have the model.init.R file
+                       ## this one includes inits = ...
+                       timeResult <- system.time(stan_out <- rstan::sampling(stan_mod, data=constantsAndDataStan, chains=1, iter=niter, thin=thin, init=list(initsStan)))
+                   }
                 
-                tempArray <- rstan::extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
-                for(BUGSname in names(StanNameMaps)) {
-                    iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
-                    if(length(iCol)==1) {
-                        if(!is.null(StanNameMaps[[BUGSname]]$transform))
-                            tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
-                        colnames(tempArray)[iCol] <- BUGSname
-                    }
-                }
-                dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
-                if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
-                    missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])
-                    warning(paste0('Stan output is missing values for: ', paste0(missingNames,collapse=', ')))
-                }
-                samplesArray <- array(0, dim = c(nkeep, length(monitorNodesBUGS)))
-                dimnames(samplesArray)[[2]] <- monitorNodesBUGS
-                monitorsWeHave <- intersect(monitorNodesBUGS, dimnames(tempArray)[[2]])
-                samplesArray[, monitorsWeHave] <- tempArray[(burnin+1):floor(niter/thin), monitorsWeHave, drop=FALSE]
-                addToOutput('stan', samplesArray, timeResult)
+                 tempArray <- rstan::extract(stan_out, permuted = FALSE, inc_warmup = TRUE)[, 1, ]
+                 for(BUGSname in names(StanNameMaps)) {
+                     iCol <- which(StanNameMaps[[BUGSname]]$StanSourceName == colnames(tempArray))
+                     if(length(iCol)==1) {
+                         if(!is.null(StanNameMaps[[BUGSname]]$transform))
+                             tempArray[,iCol] <- StanNameMaps[[BUGSname]]$transform(tempArray[,iCol])
+                         colnames(tempArray)[iCol] <- BUGSname
+                     }
+                 }
+                 dimnames(tempArray)[[2]] <- gsub('_', '.', dimnames(tempArray)[[2]])
+                 if(!all(monitorNodesBUGS %in% dimnames(tempArray)[[2]])) {
+                     missingNames <- setdiff(monitorNodesBUGS, dimnames(tempArray)[[2]])
+                     warning(paste0('Stan output is missing values for: ', paste0(missingNames,collapse=', ')))
+                 }
+                 samplesArray <- array(0, dim = c(nkeep, length(monitorNodesBUGS)))
+                 dimnames(samplesArray)[[2]] <- monitorNodesBUGS
+                 monitorsWeHave <- intersect(monitorNodesBUGS, dimnames(tempArray)[[2]])
+                 samplesArray[, monitorsWeHave] <- tempArray[(burnin+1):floor(niter/thin), monitorsWeHave, drop=FALSE]
+                 addToOutput('stan', samplesArray, timeResult)
             } else warning("run_stan: rstan package is required for 'stan' option.")
         },
             
@@ -460,10 +519,10 @@ MCMCsuiteClass <- setRefClass(
             for(iMCMC in seq_along(nimbleMCMCs)) {
                 mcmcTag <- nimbleMCMCs[iMCMC]
                 mcmcDef <- MCMCdefs[[mcmcTag]]
-                mcmcspec <- eval(mcmcDef)
-                mcmcspec$addMonitors(monitorVars, print = FALSE)
-                mcmcspec$setThin(thin, print = FALSE)
-                RmcmcFunctionList[[mcmcTag]] <<- buildMCMC(mcmcspec)
+                mcmcConf <- eval(mcmcDef)
+                mcmcConf$addMonitors(monitorVars, print = FALSE)
+                mcmcConf$setThin(thin, print = FALSE)
+                RmcmcFunctionList[[mcmcTag]] <<- buildMCMC(mcmcConf)
             }
             timeResult <- system.time({
                 Cmodel <<- compileNimble(Rmodel)

@@ -1,6 +1,6 @@
 IntermLabelMaker <- labelFunctionCreator('Interm')
 
-buildIntermCalls <- c(makeCallList(c('eigen', 'chol', 'nimArrayGeneral'), 'buildSimpleIntermCall')
+buildIntermCalls <- c(makeCallList(c('eigen', 'chol', 'nimArrayGeneral','run.time'), 'buildSimpleIntermCall')
                       )
 
 

@@ -9,10 +9,12 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(nonNativeEigenProxyCalls, 'cppOutputNonNativeEigen'),
                     makeCallList(eigProxyCalls, 'cppOutputEigMemberFunction'),
                     makeCallList(eigCalls, 'cppOutputMemberFunction'),
-                    makeCallList(c('setSize', 'initialize', 'size', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
+                    makeCallList(c('setSize', 'initialize', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
                     makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
-                    list('for' = 'cppOutputFor',
+                    makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
+                    list(size = 'cppOutputSize',
+                         'for' = 'cppOutputFor',
                          'if' = 'cppOutputIfWhile',
                          'while' = 'cppOutputIfWhile',
                          '[' = 'cppOutputBracket',
@@ -24,17 +26,19 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          nfMethod = 'cppOutputNFmethod',
                          nfVar = 'cppOutputNFvar',
                          getsize = 'cppOutputMemberFunctionDeref',
+                         getNodeFunctionIndexedInfo = 'cppOutputGetNodeFunctionIndexedInfo',
                          resizeNoPtr = 'cppOutputMemberFunction',
                          cppMemberFunction = 'cppOutputMemberFunctionGeneric',
                          AssignEigenMap = 'cppOutputEigenMapAssign',
                          chainedCall = 'cppOutputChainedCall',
                          template = 'cppOutputTemplate',
                          nimPrint = 'cppOutputCout',
+                         nimCat = 'cppOutputCoutNoNewline',
                          return = 'cppOutputReturn',
                          cppPtrType = 'cppOutputPtrType', ## mytype* (needed in templates like myfun<a*>(b)
                          cppDereference = 'cppOutputDereference', ## *(arg)
                          cppMemberDereference = 'cppOutputMidOperator', ## arg1->arg2
-                         '[[' = 'cppOutputDoubleBracket',                         
+                         '[[' = 'cppOutputDoubleBracket',
                          as.integer = 'cppOutputCast',
                          as.numeric = 'cppOutputCast',
                          numListAccess = 'cppOutputNumList',
@@ -53,7 +57,7 @@ cppMidOperators[['&']] <- ' && '
 cppMidOperators[['|']] <- ' || '
 for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
-      
+
 nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch')
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
@@ -69,7 +73,7 @@ nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE,
     if(is.null(code)) return('R_NilValue')
     if(is.logical(code) ) return(code)
     if(is.list(code) ) stop("Error generating C++ code, there is a list where there shouldn't be one.  It is probably inside map information.", call. = FALSE)
-    
+
     if(length(code$isName) == 0) browser()
     if(code$isName) return(exprName2Cpp(code, symTab, asArg))
     if(code$name == '{') {
@@ -111,10 +115,13 @@ cppOutputEigBlank <- function(code, symTab) {
 }
 
 
-cppOutputNumList <- function(code, symTab) {	
-	paste0( nimGenerateCpp(code$args[[1]], symTab))
+cppOutputNumList <- function(code, symTab) {
+    paste0( nimGenerateCpp(code$args[[1]], symTab))
 }
 
+cppOutputGetNodeFunctionIndexedInfo <- function(code, symTab) {
+    paste0(code$args[[1]]$name,'.info[', code$args[[2]] - 1, ']')
+}
 
 cppOutputReturn <- function(code, symTab) {
     if(length(code$args) == 0) {
@@ -124,8 +131,11 @@ cppOutputReturn <- function(code, symTab) {
 }
 
 cppOutputCout <- function(code, symTab) {
-    paste0('std::cout <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"')
     paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '<<\"\\n\"; nimble_print_to_R(_nimble_global_output)')
+}
+
+cppOutputCoutNoNewline <- function(code, symTab) {
+    paste0('_nimble_global_output <<', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = '<<'), '; nimble_print_to_R(_nimble_global_output)')
 }
 
 cppOutputChainedCall <- function(code, symTab) {
@@ -180,14 +190,24 @@ cppOutputNimSwitch <- function(code, symTab) {
     for(i in 1:numChoices) {
         if(code$args[[i+2]]$name != '{')
             bracketedCode <- insertExprClassLayer(code, i+2, '{')
-        choicesCode[[i]] <- list(paste0('case ',choiceValues[i],':'), nimGenerateCpp(code$args[[i+2]], symTab, showBracket = FALSE), 'break;') 
+        choicesCode[[i]] <- list(paste0('case ',choiceValues[i],':'), nimGenerateCpp(code$args[[i+2]], symTab, showBracket = FALSE), 'break;')
     }
     ans <- list(paste('switch(',code$args[[1]]$name,') {'), choicesCode, '}')
     ans
 }
 
 cppOutputGetParam <- function(code, symTab) {
-    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
+    ##    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
+  ##  iNodeFunction <- if(length(code$args) < 3) 0 else paste(cppMinusOne(nimDeparse(code$args[[3]])))
+    if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
+        ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
+    } else {
+        iNodeFunction <- paste(cppMinusOne(nimDeparse(code$args[[4]])))
+        ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,
+                      '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
+    }
+    return(ans)
+##    return(paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[',iNodeFunction,'])'))
 }
 
 cppOutputEigenMapAssign <- function(code, symTab) {
@@ -211,6 +231,11 @@ cppOutputEigenMapAssign <- function(code, symTab) {
         else paste0('Map< ', code$args[[3]]$name, ', Unaligned, ', strideTemplateDec,' >')
     }
     paste0('new (&', nimGenerateCpp(code$args[[1]], symTab),') ', MapType, '(', paste(c(nimGenerateCpp(code$args[[2]], symTab), nimGenerateCpp(code$args[[4]], symTab), nimGenerateCpp(code$args[[5]], symTab), strideConstructor), collapse = ','), ')')
+}
+
+cppOutputSize <- function(code, symTab) {
+    ## Windows compiler will give warnings if something.size(), which returns unsigned int, is compared to an int.  Since R has no unsigned int, we cast .size() to int.
+    paste0('static_cast<int>(', nimGenerateCpp(code$args[[1]], symTab), '.size())')
 }
 
 cppOutputMemberFunction <- function(code, symTab) {
@@ -277,7 +302,7 @@ cppOutputMidOperator <- function(code, symTab) {
 
     secondPart <- nimGenerateCpp(code$args[[2]], symTab)
     if(useDoubleCast) secondPart <- paste0('static_cast<double>(', secondPart, ')')
-            
+
     if(useParens)
         paste0( '(',nimGenerateCpp(code$args[[1]], symTab), cppMidOperators[[code$name]],secondPart,')' )
     else

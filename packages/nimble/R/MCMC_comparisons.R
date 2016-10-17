@@ -28,7 +28,7 @@
 #' @return If \code{summary} is FALSE, \code{compareMCMCs} returns the object returned by \code{MCMCsuite}, which comes from \code{\link{MCMCsuiteClass}}.  If \code{summary} is TRUE, it returns a list with elements timing, efficiency, and summary.
 #' 
 #' @seealso \code{\link{MCMCsuiteClass}}, \code{\link{updateMCMCcomparisonWithHighOrderESS}}, \code{\link{make_MCMC_comparison_pages}}, \code{\link{reshape_comparison_results}}, \code{\link{combine_MCMC_comparison_results}}, \code{\link{rename_MCMC_comparison_method}}, \code{\link{reshape_comparison_results}}.
-compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary=TRUE, ...) {
+compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stanDir, stanInfo, doSamplePlots = FALSE, verbose = TRUE, summary = TRUE, ...) {
 
     ## stanInfo = list(codeFile = required, dir = optional,  stanParameterRules = optional, modelName = optional, data = optional, inits = optional)
     ## or simply a character codeFile
@@ -39,9 +39,9 @@ compareMCMCs <- function(modelInfo, MCMCs = c('nimble'), MCMCdefs, BUGSdir, stan
         models <- modelInfo
         for (i in seq_along(modelInfo)) {
             thisBUGSdir <- if(missing(BUGSdir)) getBUGSexampleDir(modelInfo[i]) else BUGSdir 
-            modelContents[[i]] <- readBUGSmodel(model=modelInfo[i],
-                                    dir=thisBUGSdir,
-                                                returnModelComponentsOnly=TRUE)
+            modelContents[[i]] <- readBUGSmodel(model = modelInfo[i],
+                                    dir = thisBUGSdir,
+                                                returnComponents = TRUE)
             names(modelContents[[i]])[names(modelContents[[i]])=="model"] <- "code"
         }
     } else {
@@ -608,10 +608,15 @@ make_MCMC_comparison_pages <- function(comparisonResults, dir = '.', pageCompone
 }
 
 effectiveSizeStan <- function(x) {
-    if(!require('rstan', quietly = TRUE)) stop('Problem loading rstan')
-    x <- array(x, dim = c(length(x), 1, 1))
-    ans <- rstan::monitor(x, warmup = 0, probs = numeric(), print = FALSE)
-    ans
+    if(!requireNamespace('rstan', quietly = TRUE)) {
+        stop('Problem loading rstan')
+    } else {
+        ## warning('effectiveSizeStan: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.')
+        ## return(NA)
+        x <- array(x, dim = c(length(x), 1, 1))
+        ans <- rstan::monitor(x, warmup = 0, probs = numeric(), print = FALSE)
+        ans
+    }
 }
 
 effectiveSizeHO <- function (x, order.max = 2000) {

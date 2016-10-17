@@ -14,9 +14,13 @@ sapply(models, testBUGSmodel, useInits = TRUE)
 # otherwise p[i,j] is a standard conjugate update
 
 # lsat has non-explicit indexing
-system(paste("cat", system.file('classic-bugs','vol1','lsat','lsat.bug', package = 'nimble'), ">>", file.path(tempdir(), "lsat.bug")))
-system(paste("sed -i -e 's/mean(alpha\\[\\])/mean(alpha\\[1:T\\])/g'", file.path(tempdir(), "lsat.bug"))) 
-system(paste("sed -i -e 's/p.item\\[i,\\]/p.item\\[i,1:T\\]/g'", file.path(tempdir(), "lsat.bug"))) 
+## changes for windows compatibility
+file.copy( system.file('classic-bugs','vol1','lsat','lsat.bug', package = 'nimble'), file.path(tempdir(), "lsat.bug"))
+##system(paste("cat", system.file('classic-bugs','vol1','lsat','lsat.bug', package = 'nimble'), ">>", file.path(tempdir(), "lsat.bug")))
+system.in.dir("sed -i -e 's/mean(alpha\\[\\])/mean(alpha\\[1:T\\])/g' lsat.bug", dir = tempdir())
+##system(paste("sed -i -e 's/mean(alpha\\[\\])/mean(alpha\\[1:T\\])/g'", file.path(tempdir(), "lsat.bug")))
+system.in.dir("sed -i -e 's/p.item\\[i,\\]/p.item\\[i,1:T\\]/g' lsat.bug", dir = tempdir())
+##system(paste("sed -i -e 's/p.item\\[i,\\]/p.item\\[i,1:T\\]/g'", file.path(tempdir(), "lsat.bug")))
 testBUGSmodel('lsat', dir = "", model = file.path(tempdir(), "lsat.bug"), data = system.file('classic-bugs','vol1','lsat','lsat-data.R', package = 'nimble'),  inits = system.file('classic-bugs','vol1','lsat','lsat-init.R', package = 'nimble'),  useInits = TRUE)
 
 
@@ -51,7 +55,7 @@ writeLines(c("model {",
            con = filename)
 inits <- list(mu = 2)
 data <- list(x = -2)
-testBUGSmodel(model = filename, dir = '', 
+testBUGSmodel(model = filename, dir = '',
               data = data, inits = inits)
 
 # non-truncated T() test
@@ -102,8 +106,8 @@ inits <- list(mu = 1.5)
 
 Rmodel = nimbleModel(code, data = data, inits = inits,
     constants = constants)
-mcmcspec <- configureMCMC(Rmodel)
-Rmcmc <- buildMCMC(mcmcspec)
+mcmcConf <- configureMCMC(Rmodel)
+Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
@@ -143,9 +147,9 @@ inits <- list(mu = mu, bnd = bnd, y = yinits)
 
 Rmodel = nimbleModel(code, data = data, inits = inits,
     constants = constants)
-mcmcspec <- configureMCMC(Rmodel)
-mcmcspec$addMonitors('y[1]')
-Rmcmc <- buildMCMC(mcmcspec)
+mcmcConf <- configureMCMC(Rmodel)
+mcmcConf$addMonitors('y[1]')
+Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
@@ -186,9 +190,9 @@ inits <- list(mu = mu, bnd = bnd, y = yinits)
 
 Rmodel = nimbleModel(code, data = data, inits = inits,
     constants = constants)
-mcmcspec <- configureMCMC(Rmodel)
-mcmcspec$addMonitors('y[1]')
-Rmcmc <- buildMCMC(mcmcspec)
+mcmcConf <- configureMCMC(Rmodel)
+mcmcConf$addMonitors('y[1]')
+Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
@@ -226,9 +230,9 @@ yinits[is.na(y)] <- c(rep(35, 4), rep(45, 4), rep(55, 4))
 inits <- list(mu = mu, y = yinits)
 
 Rmodel = nimbleModel(code, data = data, inits = inits, constants = constants)
-mcmcspec <- configureMCMC(Rmodel)
-mcmcspec$addMonitors(c('y[2]', 'y[7]', 'y[12]'))
-Rmcmc <- buildMCMC(mcmcspec)
+mcmcConf <- configureMCMC(Rmodel)
+mcmcConf$addMonitors(c('y[2]', 'y[7]', 'y[12]'))
+Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
@@ -252,7 +256,7 @@ code <- nimbleCode ({
     }
     mu1 ~ dunif(-10, 10)
     mu2 ~ dunif(-10, 10)
-    mu.c ~ dconstraint(mu1 + mu2 > 0 & mu1 > 1) 
+    mu.c ~ dconstraint(mu1 + mu2 > 0 & mu1 > 1)
 })
 mu1 <- 1; mu2 <- -0.5
 n <- 10
@@ -263,8 +267,8 @@ inits = list(mu1 = 1.5, mu2 = 0.5)
 constants = list(n = n)
 
 Rmodel = nimbleModel(code, data = data, inits = inits, constants = constants)
-mcmcspec <- configureMCMC(Rmodel)
-Rmcmc <- buildMCMC(mcmcspec)
+mcmcConf <- configureMCMC(Rmodel)
+Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
@@ -287,10 +291,10 @@ code <- nimbleCode({
     for (i in 1:N) {
         for (t in 1:T) {
             for (j in 1:Ncut) {
-#  
+#
 # Cumulative probability of worse response than j
 #
-                logit(Q[i,t,j]) <- -(a0[j] + mu[group[i],t] + b[i]); 
+                logit(Q[i,t,j]) <- -(a0[j] + mu[group[i],t] + b[i]);
             }
 #
 # Probability of response = j
@@ -298,7 +302,7 @@ code <- nimbleCode({
             p[i,t,1] <- 1 - Q[i,t,1];
             for (j in 2:Ncut) { p[i,t,j] <- Q[i,t,j-1] - Q[i,t,j] }
             p[i,t,(Ncut+1)] <- Q[i,t,Ncut];
-            
+
             response[i,t] ~ dcat(p[i,t,1:4]);
         }
 #
@@ -306,26 +310,26 @@ code <- nimbleCode({
 #
         b[i] ~ dnorm(0.0, tau);
     }
-    
+
 #
 # Fixed effects
 #
     for (g in 1:G) {
-        for(t in 1:T) { 
+        for(t in 1:T) {
                                         # logistic mean for group i in period t
-            mu[g,t] <- beta*treat[g,t]/2 + pi*period[g,t]/2 + kappa*carry[g,t]; 
+            mu[g,t] <- beta*treat[g,t]/2 + pi*period[g,t]/2 + kappa*carry[g,t];
         }
-    }                                                             
+    }
     beta ~ dnorm(0, 1.0E-06);
     pi ~ dnorm(0, 1.0E-06);
     kappa ~ dnorm(0, 1.0E-06);
-    
-# ordered cut points for underlying continuous latent variable  
+
+# ordered cut points for underlying continuous latent variable
     ordered ~ dconstraint(a0[1] < a0[2] & a0[2] < a0[3]);
     for(i in 1:3) {
         a0[i] ~ dnorm(0, 1.0E-6);
     }
-    
+
     tau ~ dgamma(0.001, 0.001);
     sigma <- sqrt(1/tau);
     log.sigma <- log(sigma);
@@ -354,15 +358,15 @@ response <- matrix(c(rep(pattern[1, ], 59+63),
                      rep(pattern[11, ], 0+1),
                      rep(pattern[13, ], 1+2),
                      rep(pattern[14, ], 1+0),
-                     rep(pattern[15, ], 0+1)),                  
+                     rep(pattern[15, ], 0+1)),
                    ncol = 2, byrow = TRUE)
 
 constants$group = group
 data = list(ordered = 1, response = response)
 
 Rmodel = nimbleModel(code, data = data, inits = as.list(inits), constants = as.list(constants))
-mcmcspec <- configureMCMC(Rmodel)
-Rmcmc <- buildMCMC(mcmcspec)
+mcmcConf <- configureMCMC(Rmodel)
+Rmcmc <- buildMCMC(mcmcConf)
 Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 Cmcmc$run(5000)
@@ -394,11 +398,11 @@ code <- nimbleCode({
 })
 
 m <- nimbleModel(code, data = list(y = 1), inits = list(mu2 = 1))
-spec <- configureMCMC(m)
+conf <- configureMCMC(m)
 
-try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_identical(spec$getSamplers('mu1')[[1]]$name, 'RW', info = "incorrectly assigning conjugate sampler for mu1")))
-try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_identical(spec$getSamplers('mu2')[[1]]$name, 'RW', info = "incorrectly assigning conjugate sampler for mu2")))
-try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_identical(spec$getSamplers('mu3')[[1]]$name, 'conjugate_dnorm_dnorm', info = "incorrectly not assigning conjugate sampler for mu3")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_identical(conf$getSamplers('mu1')[[1]]$name, 'RW', info = "incorrectly assigning conjugate sampler for mu1")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_identical(conf$getSamplers('mu2')[[1]]$name, 'RW', info = "incorrectly assigning conjugate sampler for mu2")))
+try(test_that("Test that MCMC with truncation avoids conjugate samplers: ", expect_identical(conf$getSamplers('mu3')[[1]]$name, 'conjugate_dnorm_dnorm', info = "incorrectly not assigning conjugate sampler for mu3")))
    
 # test that truncation on discrete distribution correctly uses [L, U]
 # and test use with alias too

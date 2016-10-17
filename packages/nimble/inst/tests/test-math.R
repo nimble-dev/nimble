@@ -28,16 +28,16 @@ testsBasicMath = list(
   list(name = 'cube of scalar', expr = quote(out <- cube(arg1)), inputDim = 0, outputDim = 0),
   list(name = 'cos of scalar', expr = quote(out <- cos(arg1)), inputDim = 0, outputDim = 0),
   list(name = 'acos of cos of scalar', expr = quote(out <- acos(cos(arg1))), inputDim = 0, outputDim = 0),
-  list(name = 'sin of scalar', expr = quote(out <- sin(arg1)), inputDim = 0, outputDim = 0), 
+  list(name = 'sin of scalar', expr = quote(out <- sin(arg1)), inputDim = 0, outputDim = 0),
   list(name = 'asin of sin of scalar', expr = quote(out <- asin(sin(arg1))), inputDim = 0, outputDim = 0),
-  list(name = 'tan of scalar', expr = quote(out <- tan(arg1)), inputDim = 0, outputDim = 0), 
+  list(name = 'tan of scalar', expr = quote(out <- tan(arg1)), inputDim = 0, outputDim = 0),
   list(name = 'atan of tan of scalar', expr = quote(out <- atan(tan(arg1))), inputDim = 0, outputDim = 0),
-  list(name = 'cosh of scalar', expr = quote(out <- cosh(arg1)), inputDim = 0, outputDim = 0), 
-  list(name = 'sinh of scalar', expr = quote(out <- sinh(arg1)), inputDim = 0, outputDim = 0), 
-  list(name = 'tanh of scalar', expr = quote(out <- tanh(arg1)), inputDim = 0, outputDim = 0), 
-  list(name = 'acosh of scalar', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 0, outputDim = 0), 
-  list(name = 'asinh of scalar', expr = quote(out <- asinh(arg1)), inputDim = 0, outputDim = 0), 
-  list(name = 'atanh of scalar', expr = quote(out <- atanh(abs(arg1)%%1)), inputDim = 0, outputDim = 0), 
+  list(name = 'cosh of scalar', expr = quote(out <- cosh(arg1)), inputDim = 0, outputDim = 0),
+  list(name = 'sinh of scalar', expr = quote(out <- sinh(arg1)), inputDim = 0, outputDim = 0),
+  list(name = 'tanh of scalar', expr = quote(out <- tanh(arg1)), inputDim = 0, outputDim = 0),
+  list(name = 'acosh of scalar', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 0, outputDim = 0),
+  list(name = 'asinh of scalar', expr = quote(out <- asinh(arg1)), inputDim = 0, outputDim = 0),
+  list(name = 'atanh of scalar', expr = quote(out <- atanh(abs(arg1)%%1)), inputDim = 0, outputDim = 0),
   ###
   list(name = 'exp of vector', expr = quote(out <- exp(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'log of vector', expr = quote(out <- log(abs(arg1))), inputDim = 1, outputDim = 1),
@@ -47,50 +47,50 @@ testsBasicMath = list(
   list(name = 'cube of vector', expr = quote(out <- cube(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'cos of vector', expr = quote(out <- cos(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'acos of cos of vector', expr = quote(out <- acos(cos(arg1))), inputDim = 1, outputDim = 1),
-  list(name = 'sin of vector', expr = quote(out <- sin(arg1)), inputDim = 1, outputDim = 1), 
+  list(name = 'sin of vector', expr = quote(out <- sin(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'asin of sin of vector', expr = quote(out <- asin(sin(arg1))), inputDim = 1, outputDim = 1),
-  list(name = 'tan of vector', expr = quote(out <- tan(arg1)), inputDim = 1, outputDim = 1), 
+  list(name = 'tan of vector', expr = quote(out <- tan(arg1)), inputDim = 1, outputDim = 1),
   list(name = 'atan of tan of vector', expr = quote(out <- atan(tan(arg1))), inputDim = 1, outputDim = 1),
-  list(name = 'cosh of vector', expr = quote(out <- cosh(arg1)), inputDim = 1, outputDim = 1), 
-  list(name = 'sinh of vector', expr = quote(out <- sinh(arg1)), inputDim = 1, outputDim = 1), 
-  list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1), 
-  list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1), 
-  list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1), 
+  list(name = 'cosh of vector', expr = quote(out <- cosh(arg1)), inputDim = 1, outputDim = 1),
+  list(name = 'sinh of vector', expr = quote(out <- sinh(arg1)), inputDim = 1, outputDim = 1),
+  list(name = 'tanh of vector', expr = quote(out <- tanh(arg1)), inputDim = 1, outputDim = 1),
+  list(name = 'acosh of vector', expr = quote(out <- acosh(1 + abs(arg1))), inputDim = 1, outputDim = 1),
+  list(name = 'asinh of vector', expr = quote(out <- asinh(arg1)), inputDim = 1, outputDim = 1),
 ##  list(name = 'atanh of vector', expr = quote(out <- atanh(arg1%%1)), inputDim = 1, outputDim = 1), ## FAILS - issue here is probably that modulo on vecs doesn't work but need to restrict domain for atanh
   ###
-  list(name = 'sum of scalars', expr = quote(out <- arg1 + arg2), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'diff of scalars', expr = quote(out <- arg1 - arg2), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'product of scalars', expr = quote(out <- arg1 * arg2), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'ratio of scalars', expr = quote(out <- arg1 / arg2), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'power of scalars via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'power of scalars via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'power of scalars via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'power of scalars via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'modulo of scalars', expr = quote(out <- arg1 %% arg2), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'min of scalars', expr = quote(out <- min(arg1, arg2)), inputDim = c(0,0), outputDim = 0), 
-  list(name = 'max of scalars', expr = quote(out <- max(arg1, arg2)), inputDim = c(0,0), outputDim = 0), 
+  list(name = 'sum of scalars', expr = quote(out <- arg1 + arg2), inputDim = c(0,0), outputDim = 0),
+  list(name = 'diff of scalars', expr = quote(out <- arg1 - arg2), inputDim = c(0,0), outputDim = 0),
+  list(name = 'product of scalars', expr = quote(out <- arg1 * arg2), inputDim = c(0,0), outputDim = 0),
+  list(name = 'ratio of scalars', expr = quote(out <- arg1 / arg2), inputDim = c(0,0), outputDim = 0),
+  list(name = 'power of scalars via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(0,0), outputDim = 0),
+  list(name = 'power of scalars via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
+  list(name = 'power of scalars via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(0,0), outputDim = 0),
+  list(name = 'power of scalars via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(0,0), outputDim = 0),
+  list(name = 'modulo of scalars', expr = quote(out <- arg1 %% arg2), inputDim = c(0,0), outputDim = 0),
+  list(name = 'min of scalars', expr = quote(out <- min(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
+  list(name = 'max of scalars', expr = quote(out <- max(arg1, arg2)), inputDim = c(0,0), outputDim = 0),
   ###
-  list(name = 'sum of vectors', expr = quote(out <- arg1 + arg2), inputDim = c(1,1), outputDim = 1), 
-  list(name = 'diff of vectors', expr = quote(out <- arg1 - arg2), inputDim = c(1,1), outputDim = 1), 
-  list(name = 'product of vectors', expr = quote(out <- arg1 * arg2), inputDim = c(1,1), outputDim = 1), 
-  list(name = 'ratio of vectors', expr = quote(out <- arg1 / arg2), inputDim = c(1,1), outputDim = 1), 
+  list(name = 'sum of vectors', expr = quote(out <- arg1 + arg2), inputDim = c(1,1), outputDim = 1),
+  list(name = 'diff of vectors', expr = quote(out <- arg1 - arg2), inputDim = c(1,1), outputDim = 1),
+  list(name = 'product of vectors', expr = quote(out <- arg1 * arg2), inputDim = c(1,1), outputDim = 1),
+  list(name = 'ratio of vectors', expr = quote(out <- arg1 / arg2), inputDim = c(1,1), outputDim = 1),
 ##  list(name = 'power of vectors via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,1), outputDim = 1), ## FAILS with Eigen casting
   ## list(name = 'power of vectors via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,1), outputDim = 1), ## FAILS with Eigen casting
-  ## list(name = 'modulo of vectors', expr = quote(out <- arg1 %% arg2), inputDim = c(1,1), outputDim = 1), ## FAILS with Eigen casting 
-  list(name = 'pmin of vectors', expr = quote(out <- pmin(arg1, arg2)), inputDim = c(1,1), outputDim = 1), 
-  list(name = 'pmax of vectors', expr = quote(out <- pmax(arg1, arg2)), inputDim = c(1,1), outputDim = 1), 
+  ## list(name = 'modulo of vectors', expr = quote(out <- arg1 %% arg2), inputDim = c(1,1), outputDim = 1), ## FAILS with Eigen casting
+  list(name = 'pmin of vectors', expr = quote(out <- pmin(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
+  list(name = 'pmax of vectors', expr = quote(out <- pmax(arg1, arg2)), inputDim = c(1,1), outputDim = 1),
   ###
-  list(name = 'sum of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
-  list(name = 'diff of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
-  list(name = 'product of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
-  list(name = 'ratio of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1), 
-  list(name = 'power of vector and scalar via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,0), outputDim = 1), 
+  list(name = 'sum of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1),
+  list(name = 'diff of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1),
+  list(name = 'product of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1),
+  list(name = 'ratio of vector and scalar', expr = quote(out <- arg1 + arg2), inputDim = c(1,0), outputDim = 1),
+  list(name = 'power of vector and scalar via ^', expr = quote(out <- arg1 ^ arg2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and scalar via pow', expr = quote(out <- pow(arg1, arg2)), inputDim = c(1,0), outputDim = 1),
-  list(name = 'power of vector and constant via ^', expr = quote(out <- arg1 ^ 2), inputDim = c(1,0), outputDim = 1), 
+  list(name = 'power of vector and constant via ^', expr = quote(out <- arg1 ^ 2), inputDim = c(1,0), outputDim = 1),
   list(name = 'power of vector and constant via pow', expr = quote(out <- pow(arg1, 2)), inputDim = c(1,0), outputDim = 1),
-  list(name = 'power of vector and scalar via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(1,0), outputDim = 1), 
-  list(name = 'power of vector and scalar via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(1,0), outputDim = 1) 
-  ## list(name = 'modulo of vector and scalar', expr = quote(out <- arg1 %% arg2), inputDim = c(1,0), outputDim = 1) ## FAILS with Eigen casting 
+  list(name = 'power of vector and scalar via ^ with positive first arg', expr = quote(out <- exp(arg1) ^ arg2), inputDim = c(1,0), outputDim = 1),
+  list(name = 'power of vector and scalar via pow with positive first arg', expr = quote(out <- pow(exp(arg1), arg2)), inputDim = c(1,0), outputDim = 1)
+  ## list(name = 'modulo of vector and scalar', expr = quote(out <- arg1 %% arg2), inputDim = c(1,0), outputDim = 1) ## FAILS with Eigen casting
   )
 
 testsMoreMath = list(
@@ -195,15 +195,19 @@ testsMatrix = list(
     list(name = 'vector-matrix multiply', expr = quote(out <- t(arg1) %*% arg2), inputDim = c(1, 2), outputDim = 2),
     list(name = 'matrix-matrix multiply', expr = quote(out <- arg1 %*% arg2), inputDim = c(2, 2), outputDim = 2)
 )
-  
+
 
 set.seed(0)
-##sapply(testsVaried, test_math)
-##sapply(testsBasicMath, test_math)
-##sapply(testsMoreMath, test_math)
-##sapply(testsReduction, test_math)
-##sapply(testsComparison, test_math)
-sapply(testsMatrix, test_math)
+sapply(testsVaried, test_math)    ## 12
+sapply(testsBasicMath, test_math) ## 70
+if(.Platform$OS.type == 'windows') {
+    message("Since you are running on Windows, tests stopped prior to reaching max DLL limit.  Please use test-math2 to continue")
+    stop()
+}
+sapply(testsMoreMath, test_math)  ## 41
+sapply(testsReduction, test_math) ## 13
+sapply(testsComparison, test_math)## 6
+sapply(testsMatrix, test_math)    ## 19
 
 
 

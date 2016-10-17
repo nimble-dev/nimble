@@ -4,7 +4,7 @@
 #include<map>
 #include<string>
 using namespace std;
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include<Rinternals.h>
 
 /*
@@ -14,7 +14,8 @@ class NamedObjects {
 public:
   map< string, void * > namedObjects;
   virtual void* getObjectPtr( string &name );
-  virtual ~NamedObjects() { };
+  virtual ~NamedObjects() {//PRINTF("In NamedObjects destructor\n");
+  };
 };
 
 extern "C" {
@@ -37,6 +38,8 @@ extern "C" {
   SEXP resizeNumberedObjects(SEXP Snp, SEXP size);
   SEXP getSizeNumberedObjects(SEXP Snp);
   SEXP newNumberedObjects();
+  SEXP register_namedObjects_Finalizer(SEXP Sno, SEXP Dll, SEXP Slabel);
+  SEXP register_numberedObjects_Finalizer(SEXP Sno, SEXP Dll, SEXP Slabel);
 }
 
 void numberedObjects_Finalizer(SEXP Snp);
@@ -64,6 +67,5 @@ class SpecialNumberedObjects : public NumberedObjects{
 
 template<class T>
 void Special_NumberedObjects_Finalizer(SEXP Snp);
-
 
 #endif

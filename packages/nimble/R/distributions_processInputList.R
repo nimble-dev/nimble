@@ -63,6 +63,11 @@ setMethod('[[',   'distributionsClass',
           }
 )
 
+setMethod('[',   'distributionsClass',
+          function(x, i) {
+              return(x$distObjects[i])
+          }
+)
 
 
 distClass <- setRefClass(
@@ -303,7 +308,7 @@ getValueDim <- function(distObject)
 #'               Rdist = "dmyexp(rate = 1/scale)",
 #'               altParams = "scale = 1/rate",
 #'               pqAvail = FALSE)))
-#' code <- BUGScode({
+#' code <- nimbleCode({
 #'     y ~ dmyexp(rate = r)
 #'     r ~ dunif(0, 100)
 #' })
@@ -388,6 +393,25 @@ deregisterDistributions <- function(distributionsNames) {
 # this is a hack because having trouble calling getDistribution() from within nodeInfoClass$isDiscrete; (as of 5/8/15 doesn't seem to be needed)
 getDistribution2 <- function(distName) {
     getDistribution(distName)
+}
+
+getDistributionList <- function(distNames) {
+    boolNative <- distNames %in% distributions$namesVector
+    if(all(boolNative)) return(distributions[distNames])
+    missingDists <- distNames[!boolNative]
+    allFound <- FALSE
+    if(exists('distributions', nimbleUserNamespace)) {
+        if(all(missingDists %in% nimbleUserNamespace$distributions$namesVector))
+            allFound <- TRUE
+    }
+    if(allFound) {
+        ans <- vector('list', length(distNames))
+        ans[boolNative] <- distributions[distNames[boolNative]]
+        ans[!boolNative] <- nimbleUserNamespace$distributions[missingDists]
+        return(ans)
+    }
+    notFound <- missingDists[ !(missingDists %in% nimbleUserNamespace$distributions$namesVector) ]
+    stop(paste0('In getDistributions, distributions named ', paste(notFound, sep = ',', collapse = ","), ' could not be found.')) 
 }
 
 getDistribution <- function(distName) {

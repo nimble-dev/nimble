@@ -12,7 +12,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                        show = function() {
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
-                                       initialize = function(f = NULL, className, virtual = TRUE) {
+                                       initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE) {
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
                                        		
@@ -35,7 +35,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                for(i in seq_along(origMethods)) {
                                                    RCname <- names(origMethods)[i]
                                                    if(RCname == 'run') RCname <- 'operator()'
-                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname) else RCfunProcessing$new(origMethods[[i]], RCname)
+                                                   RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = isNode) else RCfunProcessing$new(origMethods[[i]], RCname, const = isNode)
                                                }
                                                compileInfos <<- lapply(RCfunProcs,
                                                                        function(x) x$compileInfo)
@@ -77,7 +77,7 @@ nfProcessing <- setRefClass('nfProcessing',
                               show = function() {
                                   writeLines(paste0('nfProcessing object ', name))
                               },
-                              initialize = function(f = NULL, className, fromModel = FALSE, project) {
+                              initialize = function(f = NULL, className, fromModel = FALSE, project, isNode = FALSE) {
                               	neededTypes <<- list()
                               	neededObjectNames <<- character()
                               	newSetupCode <<- list()
@@ -91,7 +91,7 @@ nfProcessing <- setRefClass('nfProcessing',
                                       } else {
                                           name <<- className
                                       }
-                                      callSuper(f, name, virtual = FALSE)
+                                      callSuper(f, name, virtual = FALSE, isNode = isNode)
                                       instances <<- if(inherits(f, 'list')) lapply(f, nf_getRefClassObject) else list(nf_getRefClassObject(f))
                                      
                                       newSetupOutputNames <<- character()
@@ -360,7 +360,10 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## firstOnly is supposed to indicate whether we look at only the first instance, or use all of them
 ## but actually, right now, we use it inconsistently.
 ## this is a function that could use a lot of polishing, but it's ok for now.
-nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) { 
+nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
+    if(inherits(instances[[1]][[name]], 'indexedNodeInfoTableClass')) {
+        return(symbolIndexedNodeInfoTable(name = name, type = 'symbolIndexedNodeInfoTable')) ## the class type will get it copied but the Ronly will make it skip a type declaration, which is good since it is in the nodeFun base class.
+    }
     if(inherits(instances[[1]][[name]], 'nimbleFunctionList')) {
         
         neededObjectNames <<- c(neededObjectNames, name)
@@ -416,20 +419,20 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
                 return(invisible(NULL))
             }
         }
-        ## Generate one set of symbolModelValues objects for the neededTypes, and each of these can have its own mvSpec
+        ## Generate one set of symbolModelValues objects for the neededTypes, and each of these can have its own mvConf
         ## Generate another symbolModelValues to return and have in the symTab for this compilation
-        ## I don't think that mvSpec gets used, since they all get Values *        
+        ## I don't think that mvConf gets used, since they all get Values *        
         for(i in seq_along(instances)) {
             className <- class(instances[[i]][[name]])
             if(!(className %in% names(neededTypes))) {
                 ## these are used only to build neededTypes
-                ntSym <- symbolModelValues(name = name, type = 'Values', mvSpec = instances[[i]][[name]]$mvSpec)
+                ntSym <- symbolModelValues(name = name, type = 'Values', mvConf = instances[[i]][[name]]$mvConf)
                 neededTypes[[className]] <<- ntSym
             }
         }
         ## this is used in the symbol table
         neededObjectNames <<- c(neededObjectNames, name)
-        newSym <- symbolModelValues(name = name, type = 'Values', mvSpec = NULL)
+        newSym <- symbolModelValues(name = name, type = 'Values', mvConf = NULL)
         return(newSym)
     }
     if(inherits(instances[[1]][[name]], 'modelBaseClass')) {
@@ -647,11 +650,7 @@ singleVarAccess <- function(model, var, useSingleIndex = FALSE) {
 }
 
 
-#' Class \code{singleModelValuesAccessClass}
-#' @aliases singleModelValuesAccessClass
-#' @export
-#' @description
-#' Classes used internally in NIMBLE and not expected to be called directly by users.
+# singleModelValuesAccessClass and singleModelValuesAccess are exported (and 'documented' in nimble-internals.Rd) based on prep_pkg; doing it here causes R CMD check issues with argument names
 singleModelValuesAccessClass <- setRefClass('singleModelValuesAccessClass',
                                      methods = list(
                                            initialize = function() cat('Oops: building a singleModelValuesAccessClass refClass -- should be defunct\n')

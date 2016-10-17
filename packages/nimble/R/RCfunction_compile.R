@@ -17,10 +17,12 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                           name = 'ANY',		#character
                                           RCfun = 'ANY', ##nfMethodRC
                                           nameSubList = 'ANY',
-                                          compileInfo = 'ANY' ## RCfunctionCompileClass``
+                                          compileInfo = 'ANY', ## RCfunctionCompileClass``
+                                          const = 'ANY'
                                           ),
                                       methods = list(
-                                          initialize = function(f = NULL, funName) {
+                                          initialize = function(f = NULL, funName, const = FALSE) {
+                                              const <<- const
                                               if(!is.null(f)) {
                                                   if(missing(funName)) {
                                                       sf <- substitute(f)
@@ -43,6 +45,15 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
                                           setupSymbolTables = function(parentST = NULL) {
+                                              argInfoWithMangledNames <- RCfun$argInfo
+                                              numArgs <- length(argInfoWithMangledNames)
+                                              if(numArgs > 0) {
+                                                  argIsBlank <- unlist(lapply(RCfun$argInfo, identical, formals(function(a) {})[[1]]))
+                                                  ## it seems to be impossible to store the value of a blank argument, formals(function(a) {})[[1]], in a variable
+                                                  if(any(argIsBlank)) {
+                                                      stop(paste0("Type declaration missing for argument(s) ", paste(names(RCfun$argInfo)[argIsBlank], collapse = ", ")), call. = FALSE)
+                                                  }
+                                              }
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
@@ -81,6 +92,8 @@ is.rcf <- function(x) {
     }
     FALSE
 }
+
+
 
 rcFunLabelMaker <- labelFunctionCreator('rcFun')
 
@@ -191,6 +204,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                        }
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
+                                       compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
 
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 

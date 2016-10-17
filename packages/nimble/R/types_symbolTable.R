@@ -29,6 +29,9 @@ argType2symbol <- function(AT, name = character()) {
 	
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
+    if(type == "internalType") {
+        return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
+    }
     nDim <- if(length(AT)==1) 0 else AT[[2]]
     size <- if(nDim == 0) 1 else {
         if(length(AT) < 3)
@@ -151,6 +154,15 @@ symbolString <- setRefClass(
         })
     )
 
+symbolNimbleTimer <- setRefClass(
+    Class = "symbolNimbleTimer",
+    contains = "symbolBase",
+    methods = list(
+        show = function() writeLines(paste('symbolNimbleTimer', name)),
+        genCppVar = function(...) {
+            cppVar(name = name, baseType = "nimbleTimerClass_")
+        }))
+
 symbolNimArrDoublePtr <- 
     setRefClass(Class    = 'symbolNimArrDoublePtr',
                 contains = 'symbolBasic',
@@ -225,7 +237,7 @@ symbolModel <-
 symbolModelValues <- 
     setRefClass(Class = 'symbolModelValues',
                 contains = 'symbolBase',
-                fields = list(mvSpec = 'ANY'), 
+                fields = list(mvConf = 'ANY'), 
                 methods = list(
                     initialize = function(...) {
                         callSuper(...)
@@ -423,7 +435,37 @@ symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                               )
                               )
 
-                                     
+symbolIndexedNodeInfoTable <-
+    setRefClass(Class = "symbolIndexedNodeInfoTable",
+                contains = "symbolBase",
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolIndexedNodeInfoTable', name)),
+                    ## We need this to be copied, but it must be copied to a variable already declared in the nodeFun base class,
+                    ## so we don't want any genCppVar.
+                    genCppVar = function(...)  {
+                        cppVarFull(name = name, silent = TRUE) ## this symbol exists to get a base class member data copied, so it shouldn't be declared
+                        ##stop(paste('Error, you should not be generating a cppVar for symbolIndexedNodeInfoTable', name))
+                        ## looks like if a copy type is created in makeNimbleFxnCppCopyTypes (based on the symbolXXXclass then it will be copied
+                        ## and if the type is Ronly then it will not be turned into a cppVar.  So that bit of design worked out well
+                       ## it's in the nodeFun base class as vector<indexedNodeInfo>
+                    }))
+
+symbolInternalType <-
+    setRefClass(Class = "symbolInternalType",
+                contains = "symbolBase",
+                fields = list(argList = 'ANY'),
+                methods = list(
+                    initialize = function(...) callSuper(...),
+                    show = function() writeLines(paste('symbolInternalType', name)),
+                    genCppVar = function(functionArg = FALSE) {
+                        if(length(argList) == 0) stop(paste('No information for outputting C++ type of', name))
+                        if(argList[[1]] == 'indexedNodeInfoClass'){
+                            if(functionArg) return(cppVarFull(name = name, baseType = "indexedNodeInfo", const = TRUE, ref = TRUE))
+                            return(cppVar(name = name, baseType = "indexedNodeInfo"))
+                        }
+                    })
+                )
 
 ## nDim is set to length(size) unless provided, which is how scalar (nDim = 0) must be set
 symbolDouble <- function(name, size = numeric(), nDim = length(size)) {
