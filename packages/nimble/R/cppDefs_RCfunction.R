@@ -162,7 +162,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      objects$setParentST(interfaceArgs)
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
-                                     browser()
                                      copyLineCounter <- 1
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))

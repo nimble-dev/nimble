@@ -478,6 +478,7 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
 
 recurseSetSizes <- function(code, symTab, typeEnv, useArgs = rep(TRUE, length(code$args))) {
     ## won't be here unless code is a call.  It will not be a {
+
     asserts <- list()
     for(i in seq_along(code$args)) {
         if(useArgs[i]) {
@@ -551,7 +552,19 @@ nimbleGeneralParseDeparse <- function(code) {
 }
 
 sizeSetSize <- function(code, symTab, typeEnv) {
-    sym <- symTab$getSymbolObject(code$args[[1]]$name, inherits = TRUE)
+    #go inside nfVar call if resizing nimbleList element
+    if(code$args[[1]]$name == 'nfVar'){
+      useArg1 <- TRUE
+      sym <- symTab$getSymbolObject(code$args[[1]]$args[[1]]$name)
+      if(sym$type == 'nimbleList'){
+        sym <- sym$nlProc$symTab$getSymbolObject(code$args[[1]]$args[[2]])
+      }
+    }
+    else{
+      sym <- symTab$getSymbolObject(code$args[[1]]$name, inherits = TRUE)
+      useArg1 <- FALSE
+    } 
+
     if(!inherits(sym, 'symbolNumericList')) {
         if(sym$nDim == 0) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Resizing a scalar does not make sense.'), call. = FALSE)
         firstSizeExpr <- code$args[[2]]
@@ -572,7 +585,7 @@ sizeSetSize <- function(code, symTab, typeEnv) {
             }
         }
         if(length(code$args) != 1 + sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
-        asserts <- recurseSetSizes(code, symTab, typeEnv, c(FALSE, rep(TRUE, sym$nDim) ) )
+        asserts <- recurseSetSizes(code, symTab, typeEnv, c(useArg1, rep(TRUE, sym$nDim) ) )
 
         ## We used to update typeEnv here with the new sizes, but it is not safe to do so because the setSize might appear inside a conditional (if-then)
         ## and hence one can't know until run-time if the size will actually be changed as given.  Thus typeEnv sizeExprs are set when a variable first appears

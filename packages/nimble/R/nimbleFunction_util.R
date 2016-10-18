@@ -36,7 +36,7 @@ is.nlGenerator <- function(f){
 }
 
 is.nl <- function(f){
-  if(exists("nimbleListDef", envir = f)) return(TRUE)
+  if(inherits(f, 'nimbleListBase')) return(TRUE)
   return(FALSE)
 }
 
@@ -86,8 +86,9 @@ nf_getArgOutputNames <- function(f, hidden = FALSE) {
   nfEnv <- environment(f)
   methodList <- nfEnv$methodList
   
-  methodArgListCode <- lapply(methodList, function(x) x$argInfo$argList[[1]])
-  argObjIndex <- !(methodArgListCode %in% c('double', 'integer', 'character', 'logical'))
+  methodArgListCode <- lapply(methodList, function(x) x$argInfo[[1]][[1]])
+  argObjIndex <- unlist(sapply(methodArgListCode, function(x)return(!(as.character(x) %in%
+                                                  c('double', 'integer', 'character', 'logical', 'internalType')))))
   if(any(argObjIndex == TRUE))
   return(c(unlist(methodArgListCode[argObjIndex])))
 }

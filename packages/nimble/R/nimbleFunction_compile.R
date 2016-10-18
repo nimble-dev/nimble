@@ -369,12 +369,10 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
       nlList <- instances[[1]][[name]]()
       isNLG <- TRUE
     }
-  } else if (!is.character(name)){
-    if(is.nlGenerator(eval(name))){
+  } else if(exists(as.character(name), envir = globalenv()) && is.nlGenerator(eval(name))){
       nlList <- eval(name)()
       isNLG <- TRUE
-    } else stop("Argument type is not recognized")
-  } 
+  }
   if(isNLG){
     ## Need to change to accomidate multiple nlGenerators
     nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)

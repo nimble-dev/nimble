@@ -111,6 +111,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                     buildSymbolTable()
                                 },
                                 buildSymbolTable = function() {
+                                  if(length(nimbleListObj$types$types) != length(nimbleListObj$types$vars))
+                                    stop("Number of nimbleList vars provided is not equal to number of nimbleList types provided")
                                   if(is.null(nimbleListObj$types$sizes)){  ## if sizes haven't been provided, construct them from types
                                     nimbleListObj$types$sizes <<- list()
                                     varDims <- as.numeric(strsplit(gsub("[^0-9]", "", nimbleListObj$types$types), ""))

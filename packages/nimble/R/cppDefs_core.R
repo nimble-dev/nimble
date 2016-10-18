@@ -125,7 +125,6 @@ cppClassDef <- setRefClass('cppClassDef',
                                    output
                                },
                                buildSEXPgenerator = function(finalizer = NULL) { ## build a function that will provide a new object and return an external pointer
-                                   browser()
                                    CBobjectDefs <- list(cppVar(name = 'newObj', baseType = name, ptr = 1),
                                                       Sans = cppSEXP(name = 'Sans'));
                                    newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'), 'PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))

@@ -1314,6 +1314,18 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     ## must be nfObj$member(args)
     nfName <- as.character(nfPart) ## nfObj
     memFunName <- deparse(dollarSignPart[[3]])
+    
+    if((exists(nfName, where = globalenv())) && ((is.nlGenerator(eval(nfPart))) &&
+                                                 !(nfProc$setupSymTab$symbolExists(nfName)))){
+      nlList <- eval(nfPart)()
+      nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+      className <- nlList$nimbleListDef$className
+      newSym <- symbolNimbleList(name = nfName, type = 'nimbleList', nlProc = nlp)
+      if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
+      addSym <- symbolNimbleListGenerator(name = nfName, type = 'nimbleListGenerator', nlProc = nlp)
+      nfProc$setupSymTab$addSymbol(addSym)
+    }
+    
     if(nfProc$setupSymTab$symbolExists(nfName)) { ## first look in symbolTable
         symObj <- nfProc$setupSymTab$getSymbolObject(nfName)
         if(symObj$type == 'nimbleFunction') {
@@ -1330,9 +1342,13 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
         else if(inherits(symObj, 'symbolNimbleListGenerator')){
           if(memFunName == "new"){
             listElements <- symObj$nlProc$symTab$getSymbolObjects()
-            argValues <- paste0(listElements[[1]]$name, " = ", code[[listElements[[1]]$name]])  ## add the first element here, no leading comma
+            elementName <- deparse(code[[listElements[[1]]$name]])
+            if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
+            argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
             for(i in seq_along(listElements)[-1]){  ## skip the first element
-              argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", deparse(code[[listElements[[i]]$name]]))
+              elementName <- deparse(code[[listElements[[i]]$name]])
+              if(elementName == "NULL") elementName <- ""
+              argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)
             }
             nlCall <- paste0("makeNewNimbleListObject(", nfName, ", ", argValues, ")")
             return(parse(text = nlCall, keep.source = FALSE)[[1]])
