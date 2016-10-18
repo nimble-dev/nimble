@@ -33,14 +33,11 @@ nfMethodRC <-
                         argInfo <<- formals(method)
                         code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                         if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))
+                        if(check && "package:nimble" %in% search()) # don't check nimble package nimbleFunctions
+                            nf_checkDSLcode(code)
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
-                        if(check && "package:nimble" %in% search()){ # don't check nimble package nimbleFunctions
-                        #if(exists('aaa') && aaa==3) {
-                            #browser()
-                            nf_checkDSLcode(code)
-                        }
                     },
                     generateArgs = function() {
                         argsList <- nf_createAList(names(argInfo))

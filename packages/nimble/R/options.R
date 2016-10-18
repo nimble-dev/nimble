@@ -21,6 +21,7 @@ nimbleUserNamespace <- as.environment(list())
         buildInterfacesForCompiledNestedNimbleFunctions = FALSE,   ## provides interfaces, i.e. named access in R, to all variables in nested compiled nimbleFunctions
         clearNimbleFunctionsAfterCompiling = FALSE,
         checkModel = FALSE,
+        checkNimbleFunction = TRUE,
         verbose = TRUE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.
