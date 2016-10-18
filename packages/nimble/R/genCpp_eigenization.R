@@ -71,25 +71,26 @@ callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternal
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
     makeCallList(c('abs','square','sqrt','('), 'eigenize_cWiseUnaryEither'),
     makeCallList('pow', 'eigenize_cWiseByScalarArray'),
-                   makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
-                      ## component-wise unarys valid only for only Eigen array
-                   makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
-                   
-                   ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
-                   ## Check on which if any of these can extend to a scalar on one side
-                   makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
-
-                   ## component-wise multiplication or division
-                   makeCallList(c('*','/'), 'eigenize_cWiseMultDiv'),
-                   
-                   ## component-wise addition or subtraction
-                   makeCallList(c('+','-'), 'eigenize_cWiseAddSub'),
-
-                   makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), ##'eigenize_cWiseUnaryEither'),
-                   makeCallList(reductionUnaryOperatorsArray, 'eigenize_reductionArray'),
-                   makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
-                   makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
-                      ## matrix ops
+    makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
+    ## component-wise unarys valid only for only Eigen array
+    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
+    
+    ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
+    ## Check on which if any of these can extend to a scalar on one side
+    makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
+    makeCallList(binaryMidLogicalOperators, 'eigenize_cWiseBinaryArray'),
+    
+    ## component-wise multiplication or division
+    makeCallList(c('*','/'), 'eigenize_cWiseMultDiv'),
+    
+    ## component-wise addition or subtraction
+    makeCallList(c('+','-'), 'eigenize_cWiseAddSub'),
+    
+    makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), ##'eigenize_cWiseUnaryEither'),
+    makeCallList(reductionUnaryOperatorsArray, 'eigenize_reductionArray'),
+    makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
+    makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
+    ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     list('t' = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
@@ -108,13 +109,13 @@ eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRi
 ## e.g. if abs(X) gets eigenized, it is turned into cwiseAbs(X)
 ## which in nimGenerateCpp is generated as X.cwiseAbs()
 eigenizeTranslate <- list(abs = 'cwiseAbs',
-                       square = 'cwiseAbs2',
-                       sqrt = 'cwiseSqrt',
+                          square = 'cwiseAbs2',
+                          sqrt = 'cwiseSqrt',
                           inprod = 'eiginprod',
                           
-                       asRow = 'eigBlank',
-                       asCol = 'eigBlank',
-                       
+                          asRow = 'eigBlank',
+                          asCol = 'eigBlank',
+                          
                           exp = 'eigExp',
                           log = 'eigLog',
                           pow = 'eigPow',
@@ -126,24 +127,24 @@ eigenizeTranslate <- list(abs = 'cwiseAbs',
                           asin = 'eigAsin',
                           acos = 'eigAcos',
                           inverse = 'eigInverse',
-
-                       pmin = 'eigpmin',
-                       pmax = 'eigpmax',
-
-                       '*' = 'cwiseProduct', ## detailed handling in eigenize_cWiseMultDiv
-                       '/' = 'cwiseQuotient',
-                       
-                       '+' = '+',
-                       '-' = '-',
-
-                       ## matrix operations
-                       '%*%' = '*',
-                       't' = 'eigTranspose',
+                          
+                          pmin = 'eigpmin',
+                          pmax = 'eigpmax',
+                          
+                          '*' = 'cwiseProduct', ## detailed handling in eigenize_cWiseMultDiv
+                          '/' = 'cwiseQuotient',
+                          
+                          '+' = '+',
+                          '-' = '-',
+                          
+                          ## matrix operations
+                          '%*%' = '*',
+                          't' = 'eigTranspose',
                           'det' = 'eigDeterminant',
-                       
-                       '<-' = '<-',
-                       '(' = '('
-                       )
+                          
+                          '<-' = '<-',
+                          '(' = '('
+                          )
 
 ETentriesFromExternalUnaries <- as.list(names(eigProxyTranslateExternalUnary))
 names(ETentriesFromExternalUnaries) <- callsFromExternalUnaries
@@ -151,6 +152,7 @@ eigenizeTranslate <- c(eigenizeTranslate, ETentriesFromExternalUnaries)
 
 for(rop in reductionUnaryOperators) eigenizeTranslate[[rop]] <- paste0('eig', rop)
 for(rop in matrixSquareReductionOperators) eigenizeTranslate[[rop]] <- paste0('eig', rop)
+for(rop in binaryMidLogicalOperators) eigenizeTranslate[[rop]] <- rop
 
 ## scalar*matrix, matrix*scalar and matrix/scalar allowed
 ## ditter with matrix *= scalar and matrix /= scalar
@@ -398,8 +400,8 @@ eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
     code$eigMatrix <- TRUE
-    if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
-    if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
+    if(inherits(code$args[[1]], 'exprClass')) if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
     invisible(NULL)
 }
 

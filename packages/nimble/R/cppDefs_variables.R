@@ -108,7 +108,7 @@ cppStrideType <- function(name = character(0), type = "Stride", strides,...) {
 
 cppEigenMap <- function(name = character(0), type = 'double', eigMatrix = TRUE, strides = numeric(), constructor = '(0,0,0)', ...) {
     templateArgs <- list( paste0(if(eigMatrix) 'MatrixX' else 'ArrayXX',
-                                 if(type == 'double') 'd' else 'i' ))
+                                 if(type == 'double') 'd' else if(type == 'integer') 'i' else 'b' ))
     if(length(strides) > 0) templateArgs[[2]] <- cppStrideType(strides = strides)
     cppVarFull(name = name,
                baseType = 'Map',
