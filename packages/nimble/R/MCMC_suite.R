@@ -462,7 +462,7 @@ MCMCsuiteClass <- setRefClass(
 
         run_stan = function(dataFile, initFile) {
             if(setSeed) set.seed(0)
-            if(requireNamespace('rstan', quietly = TRUE)) {
+            if(require('rstan', quietly = TRUE)) {
                 ## warning("MCMCsuite: use of rstan is not yet provided via the CRAN version of NIMBLE because of packaging issues. To use this functionality, please install NIMBLE from http://r-nimble.org.")
                  if(stan_model == '') stop('must provide \'stan_model\' argument to run Stan MCMC')
                  ##            dataFile <- gsub('stan$', 'data.R', stan_model)
