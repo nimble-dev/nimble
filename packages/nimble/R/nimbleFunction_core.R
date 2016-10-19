@@ -72,7 +72,7 @@ nimbleFunction <- function(setup         = NULL,
                            globalSetup   = NULL,
                            contains      = NULL,
                            name          = NA,
-                           check         = TRUE,
+                           check         = getNimbleOption('checkNimbleFunction'),
                            where         = getNimbleFunctionEnvironment()
                            ) {
 
