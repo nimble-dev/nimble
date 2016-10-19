@@ -48,7 +48,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
                                           copyLinesReturn[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
-                                                                                      listElementTable$getSymbolObject(Snames[i]))
+                                                                                      listElementTable$getSymbolObject(Snames[i]), 
+                                                                                      returnCall = TRUE)
                                           writeLinesReturn[[i]] <- substitute(SET_VECTOR_ELT(S_returnList, index, Sname),
                                                                               list(index = i-1, Sname = as.name(Snames[i])))
                                           
@@ -63,6 +64,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                                    list(numArgs = numArgs))
                                         unprotectLineReturn <- list(substitute(UNPROTECT(N), list(N = numArgs+2)))
                                         returnLine <- list(quote(cppLiteral("return(S_returnList);")))
+                                        browser()
                                         
                                         allCode <- embedListInRbracket(c(copyLinesReturn, writeLinesReturn, nameLinesReturn,
                                                                          unprotectLineReturn, returnLine))

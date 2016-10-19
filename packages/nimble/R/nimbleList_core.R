@@ -117,14 +117,31 @@ nlProcessing <- setRefClass('nlProcessing',
                                     nimbleListObj$types$sizes <<- list()
                                     varDims <- as.numeric(strsplit(gsub("[^0-9]", "", nimbleListObj$types$types), ""))
                                     for(i in seq_along(nimbleListObj$types$vars)){
-                                      nimbleListObj$types$sizes[[i]] <<- rep(NA, varDims[i])
+                                      if(is.na(varDims[i])) nimbleListObj$types$sizes[[i]] <<-  NA
+                                      else nimbleListObj$types$sizes[[i]] <<- rep(NA, varDims[i])
                                     }
                                   }
-                                  for(i in seq_along(nimbleListObj$types$vars)) ## ensure that types are of form "double", not "double(1)"
+                                  symTab <<- symbolTable()
+                                  for(i in seq_along(nimbleListObj$types$vars)){ ## ensure that types are of form "double", not "double(1)"
                                     nimbleListObj$types$types[i] <<- unlist(strsplit(nimbleListObj$types$types[i], "\\("))[1]
-            
-                                  symTab <<- nimble:::buildSymbolTable(nimbleListObj$types$vars, nimbleListObj$types$types,
-                                                                       nimbleListObj$types$sizes)
+                                    ## first make work for nlDefs defined outside of function
+                                    ## also consider what happens if nimbleProject doesn't exist!
+                                    if(exists(nimbleListObj$types$types[i], envir = globalenv()) && 
+                                       is.nlGenerator(eval(parse(text = nimbleListObj$types$types[i], keep.source = FALSE)))){
+                                      nlList <- eval(parse(text = nimbleListObj$types$types[i], keep.source = FALSE))()
+                                      nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+                                      className <- nlList$nimbleListDef$className
+                                      newSym <- symbolNimbleList(name = nimbleListObj$types$vars[i], type = 'nimbleList', nlProc = nlp)
+                                      symTab$addSymbol(newSym)
+                                      if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
+                                    }
+                                    else{
+                                      symTab$addSymbol(symbolBasic(name = nimbleListObj$types$vars[i], 
+                                                                   type = nimbleListObj$types$type[i], 
+                                                                   nDim = length(nimbleListObj$types$size[[i]]), 
+                                                                   size =nimbleListObj$types$ size[[i]]))
+                                    }
+                                  }
                                 },
                                 getSymbolTable = function() symTab
                             ))
