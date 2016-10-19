@@ -2,6 +2,7 @@
 #define __NIMBLE_EIGEN
 
 #include <iostream>
+#include <cstdlib>
 
 // should the template arguments (types) be Map<MatrixXd> instead of MatrixXd?
 
@@ -186,8 +187,57 @@ CwiseNullaryOp<seqClass, MatrixXd > seqLen(double from, double to, double NOTUSE
   return(CwiseNullaryOp<seqClass, MatrixXd >(seqObj.length_out, 1, seqObj));
 }
 
-
 #define nimSeqBy seqBy<Eigen::MatrixXd>
 #define nimSeqLen seqLen<Eigen::MatrixXd>
+
+// nonseqIndexed
+
+template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
+class nonseqIndexedClass {
+ public:
+  const DerivedObj &source;
+  const DerivedI1 &index1;
+  const DerivedI2 &index2;
+  int dim1, dim2;
+  typedef double result_type;
+ nonseqIndexedClass(const DerivedObj &s, const DerivedI1 &i1, const Derived I2 &i2) :
+  source(s),
+    index1(i1),
+    index2(i2) {
+      dim1 = i1.rows();
+      dim2 = i2.rows();
+    }
+  typedef Eigen::internal::traits<MatrixXd>::Index Index;
+
+  result_type operator()() const
+  {
+    std::cout<<"IN 0\n";
+    return s.coeff(0);
+  }
+
+
+  result_type operator()(Index i) const //Eigen::DenseIndex
+  {
+    std::cout<<"IN 1\n";
+    std::div_t divRes = div(i, dim1);
+    return s.coeff(index1(divRes.rem), index2(floor(divRes.quot)));
+  }
+
+  
+  result_type operator()(Index i, Index j) const
+  {
+    std::cout<<"IN 2\n";
+    return Arg1.coeff(index1(i), index2(j));
+  }
+
+  
+};
+
+template<typename DerivedObj, template DerivedI1, template DerivedI2>
+  CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const Derived I2 &i2) {
+  nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s, i1, i2);
+  return(CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, seqObj));
+}
+
 
 #endif

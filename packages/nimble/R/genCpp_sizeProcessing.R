@@ -1033,6 +1033,8 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     code$sizeExprs <- vector('list', length = nDimVar)
     ## We could generate asserts here to ensure sub-indexing is within bounds
     needMap <- FALSE
+    ## Track whether if all index ranges are defined by `:` or by scalar
+    simpleBlockOK <- TRUE
     iSizes <- 1
     for(i in 1:nDimVar) {
         dropThisDim <- FALSE
@@ -1040,7 +1042,9 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         if(is.numeric(code$args[[i+1]])) dropThisDim <- TRUE
         else if((code$args[[i+1]]$name != "") & (length(dropSingleSizes(code$args[[i+1]]$sizeExprs)$sizeExprs) == 0)) dropThisDim <- TRUE
 
-        if(dropThisDim) {
+        isExprClass <- inherits(code$args[[1]], 'exprClass')
+        
+        if(dropThisDim) { ## The index is a scalar
             if(nimbleOptions()$indexDrop & dropBool) {
                 code$sizeExprs[[iSizes]] <- NULL
                 code$nDim <- code$nDim - 1
@@ -1048,11 +1052,14 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 code$sizeExprs[[iSizes]] <- 1; iSizes <- iSizes + 1
             }
             next
+        } else {
+            if(isExprClass) ## Need to think through cases here more
+                if(code$args[[i+1]]$name != ':') simpleBlockOK <- FALSE
         }
         needMap <- TRUE
-        if(inherits(code$args[[i+1]], 'exprClass')) {
+        if(isExprClass) {
             if(code$args[[i+1]]$name != "") {
-                ## An entry that is a variable possible with a length
+                ## An entry that is a variable possibly with a length
                 code$sizeExprs[[iSizes]] <- code$args[[i+1]]$sizeExprs[[1]]
             } else {
                 ## blank entry (e.g. A[,i]) is an exprClass with isName = TRUE and name = ""
@@ -1085,12 +1092,16 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         ## e.g. (A + B)[1:4] must become (Interm <- A + B; Interm[1:4])
         if(!code$args[[1]]$isName) if(code$args[[1]]$name != 'map') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
         ## Replace with a map expression if needed
-        newExpr <- makeMapExprFromBrackets(code, dropBool)
-        newExpr$sizeExprs <- code$sizeExprs
-        newExpr$type <- code$type
-        newExpr$nDim <- code$nDim
-        newExpr$toEigenize <- code$toEigenize
-        setArg(code$caller, code$callerArgID, newExpr)
+        if(!simpleBlockOK)
+            code$name <- 'nonseqIndexed'
+        else {
+            newExpr <- makeMapExprFromBrackets(code, dropBool)
+            newExpr$sizeExprs <- code$sizeExprs
+            newExpr$type <- code$type
+            newExpr$nDim <- code$nDim
+            newExpr$toEigenize <- code$toEigenize
+            setArg(code$caller, code$callerArgID, newExpr)
+        }
     }
     if(length(asserts)==0) NULL else asserts
 }
