@@ -229,7 +229,9 @@ cppOutputEigenMapAssign <- function(code, symTab) {
     MapType <- if(!useStrides) {
         paste0('Map< ', code$args[[3]]$name,' >')
     } else {
-        if(bothStridesDyn) 'EigenMapStr'
+        if(bothStridesDyn) {
+            symTab$getSymbolObject(nimDeparse(code$args[[1]]))$baseType
+        } ##'EigenMapStr'
         else paste0('Map< ', code$args[[3]]$name, ', Unaligned, ', strideTemplateDec,' >')
     }
     paste0('new (&', nimGenerateCpp(code$args[[1]], symTab),') ', MapType, '(', paste(c(nimGenerateCpp(code$args[[2]], symTab), nimGenerateCpp(code$args[[4]], symTab), nimGenerateCpp(code$args[[5]], symTab), strideConstructor), collapse = ','), ')')

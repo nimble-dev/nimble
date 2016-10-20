@@ -1093,7 +1093,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         if(!code$args[[1]]$isName) if(code$args[[1]]$name != 'map') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
         ## Replace with a map expression if needed
         if(!simpleBlockOK)
-            code$name <- 'nonseqIndexed'
+            code$name <- 'nimNonseqIndexed'
         else {
             newExpr <- makeMapExprFromBrackets(code, dropBool)
             newExpr$sizeExprs <- code$sizeExprs

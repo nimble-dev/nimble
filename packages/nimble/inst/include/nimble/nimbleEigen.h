@@ -200,7 +200,7 @@ class nonseqIndexedClass {
   const DerivedI2 &index2;
   int dim1, dim2;
   typedef double result_type;
- nonseqIndexedClass(const DerivedObj &s, const DerivedI1 &i1, const Derived I2 &i2) :
+ nonseqIndexedClass(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) :
   source(s),
     index1(i1),
     index2(i2) {
@@ -212,7 +212,7 @@ class nonseqIndexedClass {
   result_type operator()() const
   {
     std::cout<<"IN 0\n";
-    return s.coeff(0);
+    return source.coeff(0);
   }
 
 
@@ -220,24 +220,25 @@ class nonseqIndexedClass {
   {
     std::cout<<"IN 1\n";
     std::div_t divRes = div(i, dim1);
-    return s.coeff(index1(divRes.rem), index2(floor(divRes.quot)));
+    return source.coeff(index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
   }
 
   
   result_type operator()(Index i, Index j) const
   {
     std::cout<<"IN 2\n";
-    return Arg1.coeff(index1(i), index2(j));
+    return source.coeff(index1(i)-1, index2(j)-1);
   }
 
   
 };
 
-template<typename DerivedObj, template DerivedI1, template DerivedI2>
-  CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const Derived I2 &i2) {
+template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
+  CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
   nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s, i1, i2);
-  return(CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, seqObj));
+  return(CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, nonseqIndexedObj));
 }
 
+#define nimNonseqIndexed nonseqIndexed<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXi>
 
 #endif
