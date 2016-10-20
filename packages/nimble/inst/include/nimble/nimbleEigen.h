@@ -6,6 +6,10 @@
 
 // should the template arguments (types) be Map<MatrixXd> instead of MatrixXd?
 
+// For more general: note each arg will need same scalar type which should be cast upward from logical->integer->double
+// Could make a template class for each of 2-5 (say) arguments with a single type for each
+// need to wrap constants
+
 // concatenation, c(A1, A2)
 template<typename Derived1, typename Derived2>
 class concatenateClass {
@@ -240,5 +244,39 @@ template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
 }
 
 #define nimNonseqIndexed nonseqIndexed<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXi>
+
+// vectorization of any scalar function:
+
+/* // need to make a different template for each number of arguments with matching number of template arguments (plus a F type and return type). */
+/* // need to consider vector vs. matrix return (maybe handled all from nimble types) */
+/* // see here for getting template types inferred: http://stackoverflow.com/questions/797594/when-a-compiler-can-infer-a-template-parameter */
+/* // 2 arguments: */
+/* template<typename DerivedA1, typename DerivedA2, typename F> */
+/* class vectorizedFun { */
+/*  public: */
+/*   const DerivedA1 &arg1; */
+/*   const DerivedA2 &arg2; */
+/*   int size1, size2, outputSize; */
+/*   F fun; */
+/*   typedef Eigen::internal::traits<MatrixXd>::Index Index; */
+  
+/*  vectorizedFun(const DerivedA1 &A1, const DerivedA2 &A2, int oSize, F f) : */
+/*   arg1(A1), */
+/*     arg2(A2), */
+/*     outputSize(oSize), */
+/*     fun(f) { */
+/*       size1 = A1.nrow(); */
+/*       size2 = A2.nrow(); */
+/*     } */
+/*   result_type operator()(Index i) const //Eigen::DenseIndex */
+/*   { */
+/*     std::cout<<"IN 1\n"; */
+/*     return fun(A1((i % size1) - 1), */
+/* 	       A2((i % size2) - 1));  */
+/*   } */
+/* }; */
+
+/* template<typename DerivedA1, typename DerivedA2, typename F> */
+/*   vectorizedFun<DerivedA1, DerivedA2, F> newVectorizedFun(const DerivedA1 &A1, const DerivedA2 &A2, F f) {return vectorizedFun(A1, A2, f);} */
 
 #endif
