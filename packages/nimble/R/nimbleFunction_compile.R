@@ -280,10 +280,9 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     outputNames <- character()
     if(setupOrig) {
     	setupSymTab <<- symbolTable(parentST = NULL)
-    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
+    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator),  nf_getArgOutputNames(nfGenerator))
+    	if(length(outputNames)>0) outputNames <- unique(outputNames)
     }
-    outputNames <- c(outputNames, nf_getArgOutputNames(nfGenerator))
-    if(length(outputNames)>0) outputNames <- unique(outputNames)
     if(setupNew) {
         ## Kluge that results from adding string handling to the compiler:
         ## Previously any character objects were assigned a symbol object with
@@ -301,6 +300,7 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
         ## that are really created as intermediates for others that are really needed
         ## during the keyword processing, the newSetupOutputNames is used for
         ## bookkeeping, so it would not be trivial to remove them at an earlier stage.
+        
         origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
         declaredSetupOutputs <- getFunctionEnvVar(nfGenerator, 'declaredSetupOutputNames')
         origSetupOutputs <- setdiff(origSetupOutputs, declaredSetupOutputs)

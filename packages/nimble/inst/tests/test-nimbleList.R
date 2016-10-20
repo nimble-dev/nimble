@@ -19,7 +19,7 @@ options( warn = 1 )
 innerNlTestFunc1 <- nimbleFunction(
   setup = function(){},
   run = function(nimList = testListDef()){
-    nimList$a[1] <- 1
+    nimList$a <- 1
     returnType(testListDef())
     return(nimList)
 })
@@ -39,9 +39,12 @@ nlTestFunc1 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('a','b','c'), types = c('double(1)', 'double(1)', 'double(2)'))
+testTypes <- list(vars = c('a'), types = c('double(0)'))
 testListDef <- nimble:::nimbleList(testTypes)
-
+testList <- testListDef(a = 5.5)
+testInst <- innerNlTestFunc1()
+ctestInst <- compileNimble(testInst, control = list(debug =  F))
+ctestInst$run(testList)
 
 testInst <- nlTestFunc1()
 ctestInst <- compileNimble(testInst, control = list(debug =  F))

@@ -109,5 +109,10 @@ getDefinition <- function(nf) {
     defList
 }
 
+setListElement <- function(nimList, elementName, elementValue){
+  browser()
+  eval(substitute(nimList$ELEMENTNAME <- ELEMENTVALUE, list(ELEMENTNAME = elementName,
+                                                            ELEMENTVALUE = elementValue)))
+}
 
 

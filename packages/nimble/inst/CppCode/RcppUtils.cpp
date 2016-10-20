@@ -151,6 +151,26 @@ SEXP vectorInt_2_SEXP(const vector<int> &v) {
   return(Sans);
 }
 
+
+void vectorDouble_2_SEXP(const vector<double> &v, SEXP Sn) {
+  int nn = v.size();
+  PROTECT(Sn = allocVector(REALSXP, nn));
+  if(nn > 0) {
+    copy(v.begin(), v.end(), REAL(Sn));
+  }
+  UNPROTECT(1);
+}
+
+void vectorInt_2_SEXP(const vector<int> &v, SEXP Sn) {
+  int nn = v.size();
+  PROTECT(Sn = allocVector(INTSXP, nn));
+  if(nn > 0) {
+    copy(v.begin(), v.end(), INTEGER(Sn));
+  }
+  UNPROTECT(1);
+}
+
+
 struct opIntegerShift {
 public:
   int c;

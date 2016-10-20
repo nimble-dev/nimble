@@ -73,6 +73,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
+                                     print("dont forget to switch returnArgsAsList")
+                                     returnArgsAsList <- TRUE
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
@@ -209,7 +211,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                      ## Put GetRNGstate() and PutRNGstate() around the call.    
                                      fullCall <- substitute({GetRNGstate(); FULLCALL; PutRNGstate()}, list(FULLCALL = fullCall))
-                                     
                                      returnAllArgs <- TRUE
                                      ## Pack up all inputs and the return value in a list.
                                      if(returnAllArgs) {
@@ -233,7 +234,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                                                                      objects$getSymbolObject('S_returnValue_1234'), 
                                                                                                      returnCall = TRUE)
                                                  if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                                   numNimbleList <- numNimbleList + 2
+                                                   numNimbleList <- numNimbleList + 1
                                                    CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                                  }
                                                  RCfunProc$compileInfo$returnSymbol$name <<- rsName
@@ -242,7 +243,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              }
                                              returnLine <- quote(return(S_returnValue_LIST_1234))
                                              #update below so that nimbleList symbols do not add to unprotectLine
-                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid - numNimbleList))
+                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs - numNimbleList + 1 + !returnVoid))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
                                                                               returnCopyLines, returnListLines, list(unprotectLine), list(returnLine)))
                                   
