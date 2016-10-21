@@ -93,7 +93,18 @@ nfMethodRC <-
 nf_checkDSLcode <- function(code) {  
     dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords)
     calls <- setdiff(all.names(code), all.vars(code))
-    nonDSLcalls <- calls[!(calls %in% dslCalls)]
+    # find cases of x$y() and x[]$y and x[[]]$y (this also unnecessarily finds x$y)
+    names <- all.names(code)
+    dollars <- which(names == "$")
+    if(length(dollars)) {
+        lhs <- dollars+1
+        while(sum(names[lhs] %in% c('[', '[[')))
+            lhs[names[lhs] %in% c('[', '[[')] <- lhs[names[lhs] %in% c('[', '[[')] + 1
+        lhs <- lhs[lhs <= length(names)]
+        otherVars <- unique(names[lhs])
+    } else otherVars <- NULL
+    
+    nonDSLcalls <- calls[!(calls %in% c(dslCalls, otherVars))]
     if(length(nonDSLcalls)) {
         objInR <- sapply(nonDSLcalls, exists)
         nonDSLnonR <- nonDSLcalls[!objInR]
@@ -101,11 +112,11 @@ nf_checkDSLcode <- function(code) {
         if(length(nonDSLinR)) {
             nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, is.nf, inputIsName = TRUE) |
                                      sapply(nonDSLinR, is.rcf, inputIsName = TRUE))]
-            warning(paste0("Detected possible use of R functions in nimbleFunction run code. These functions must defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLinR, collapse = ', '), ".\n"))
+            warning(paste0("Detected possible use of R functions in nimbleFunction run code. These functions must defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLinR, collapse = ', '), "."))
             print(code)
         }
         if(length(nonDSLnonR))
-            warning(paste0("Expecting these functions are defined as nimbleFunctions: ", paste(nonDSLnonR, collapse = ', '), ".\n"))
+            warning(paste0("These functions must be defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLnonR, collapse = ', '), "."))
     }
     return(0)
 }

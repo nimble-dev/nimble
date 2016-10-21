@@ -32,7 +32,8 @@ test3 <- nimbleFunction(
         out <- lm(y ~ x)
         return(out$coefficients)
     }
-    )))
+    )
+))
 
 
 test_that("Test of DSL check of invalid RCfunction with check turned off", expect_silent(
@@ -54,7 +55,8 @@ test4 <- nimbleFunction(
         returnType(double(0))
         tmp <- aa()
         return(tmp)
-    })
+    }
+)
 ))
 
 test_that("Test of DSL check of valid nimbleFunction with other nimbleFunctions present", expect_warning(
@@ -70,4 +72,5 @@ test5 <- nimbleFunction(
         tmp = my_decideAndJump(0,0,0,0)
         return(tmp)
     }
-)))
+)
+))
