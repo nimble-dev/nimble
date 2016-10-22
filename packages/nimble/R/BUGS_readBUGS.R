@@ -9,7 +9,9 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
       stop("BUGSmodel: 'dimensions' must be a named list")
     if(length(data) && sum(names(data) == ""))
         stop("BUGSmodel: 'data' must be a named list")
-    ## constantLengths <- unlist(lapply(constants, length))
+    if(any(!sapply(data, is.numeric)))
+        stop("BUGSmodel: elements of 'data' must be numeric and cannot be data frames")
+     ## constantLengths <- unlist(lapply(constants, length))
     ## if(any(constantLengths > 1)) {
     ##     iLong <- which(constantLengths > 1)
     ##     message(paste0('Constant(s) ', paste0(names(constants)[iLong], sep=" ", collapse = " "), ' are non-scalar and will be handled as inits.'))
