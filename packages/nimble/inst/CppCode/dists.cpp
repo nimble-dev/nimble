@@ -394,7 +394,7 @@ void rmulti(int *ans, double size, double* prob, int K) // Calling functions nee
       ans[i] = R_NaN;
     return;
   }
-  for(int i = 0; i < K; i++) 
+  for(i = 0; i < K; i++) 
     prob[i] /= sumProb;
   rmultinom((int) size, prob, K, ans);
 }
