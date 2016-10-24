@@ -96,7 +96,7 @@ sampler_RW <- nimbleFunction(
         timesAdapted  <- 0
         optimalAR     <- 0.44
         gamma1        <- 0
-        range <- getDistribution(model$getNodeDistribution(target))$range
+        range <- getDistributionInfo(model$getDistribution(target))$range
         ## checks
         if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
         if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
@@ -387,7 +387,7 @@ sampler_ess <- nimbleFunction(
         ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
         ## checks
         if(length(target) > 1)                              stop('elliptical slice sampler only applies to one target node')
-        if(model$getNodeDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
     },
     run = function() {
         u <- getLogProb(model, calcNodes) - rexp(1, 1)
@@ -956,7 +956,7 @@ sampler_RW_multinomial <- nimbleFunction(
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         my_decideAndJump       <- decideAndJump(model, mvSaved, calcNodes)
         ## checks
-        if(model$getNodeDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
+        if(model$getDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
         if(length(targetAllNodes) > 1)                      stop('cannot use RW_multinomial sampler on more than one target')
         if(adaptive & adaptInterval < 100)                  stop('adaptInterval < 100 is not recommended for RW_multinomial sampler')
     },

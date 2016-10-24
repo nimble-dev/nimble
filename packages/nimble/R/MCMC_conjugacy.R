@@ -121,7 +121,7 @@ conjugacyRelationshipsClass <- setRefClass(
                 nodeIDsFromOneDecl <- declID2nodeIDs[[i]]
                 firstNodeName <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[1]]
                 if(model$isTruncated(firstNodeName)) next   ## we say non-conjugate if the targetNode is truncated
-                dist <- model$getNodeDistribution(firstNodeName)
+                dist <- model$getDistribution(firstNodeName)
 
                 conjugacyObj <- conjugacys[[dist]]
                 if(is.null(conjugacyObj)) next
@@ -189,7 +189,7 @@ conjugacyRelationshipsClass <- setRefClass(
         checkConjugacy_singleDeclaration = function(model, nodes) {
             ##browser()   ## removed by DT, July 2015, not sure why this was here
             if(model$isTruncated(nodes[1])) return(list())   ## we say non-conjugate if the targetNode is truncated
-            dist <- model$getNodeDistribution(nodes[1])
+            dist <- model$getDistribution(nodes[1])
             if(!dist %in% names(conjugacys)) return(list())
             conjugacyObj <- conjugacys[[dist]]
             ## temporary -- but works fine!
@@ -260,12 +260,12 @@ conjugacyClass <- setRefClass(
         ## used by new checkConjugacy2 system
         ## see checkConjugacy for more explanation of each step
         checkConjugacyOneDep = function(model, targetNode, depNode) {
-            if(model$getNodeDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
+            if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
-            depNodeDist <- model$getNodeDistribution(depNode)
+            depNodeDist <- model$getDistribution(depNode)
             if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
             dependentObj <- dependents[[depNodeDist]]
-            linearityCheckExpr <- model$getNodeParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+            linearityCheckExpr <- model$getParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
             linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
             if(!cc_nodeInExpr(targetNode, linearityCheckExpr))                return(NULL)
             if(cc_vectorizedComponentCheck(targetNode, linearityCheckExpr))   return(NULL)   # if targetNode is vectorized, make sure none of its components appear in expr
@@ -276,7 +276,7 @@ conjugacyClass <- setRefClass(
         },
         ## workhorse for checking conjugacy
         checkConjugacy = function(model, targetNode) {
-            if(model$getNodeDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
+            if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             control <- list()
 
             depNodes <- model$getDependencies(targetNode, stochOnly = TRUE, self = FALSE)
@@ -284,10 +284,10 @@ conjugacyClass <- setRefClass(
 
             for(depNode in depNodes) {
                 if(model$isTruncated(depNode)) return(NULL)   # if depNode is truncated, then not conjugate
-                depNodeDist <- model$getNodeDistribution(depNode)
+                depNodeDist <- model$getDistribution(depNode)
                 if(!(depNodeDist %in% dependentDistNames))     return(NULL)    # check sampling distribution of depNode
                 dependentObj <- dependents[[depNodeDist]]
-                linearityCheckExpr <- model$getNodeParamExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
+                linearityCheckExpr <- model$getNodeExpr(depNode, dependentObj$param)   # extracts the expression for 'param' from 'depNode'
                 linearityCheckExpr <- cc_expandDetermNodesInExpr(model, linearityCheckExpr)
                 ## next line prevents the following potential error:
                 ## when targetNode doesn't appear in 'param' expr (hence passes the linearlity check),
@@ -338,7 +338,7 @@ conjugacyClass <- setRefClass(
             })
 
             ## if this conjugate sampler is for a multivariate node (i.e., nDim > 0), then we need to determine the size (d)
-            if(distributions[[prior]]$types$value$nDim > 0) {
+            if(getDimension(prior, 'value') > 0) {
                 functionBody$addCode(d <- max(determineNodeIndexSizes(target)))
             }
 
@@ -347,14 +347,14 @@ conjugacyClass <- setRefClass(
             ## NEWNODEFXN changes
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
-                ##depNodeValueNdim <- getDistribution(distName)$types$value$nDim
+                ##depNodeValueNdim <- getDimension(distName, 'value')
                 functionBody$addCode({
                     DEP_NODENAMES <- control$DEP_CONTROL_NAME
                     N_DEP <- length(control$DEP_CONTROL_NAME)
                 }, list(DEP_NODENAMES    = as.name(paste0(  'dep_', distName, '_nodeNames')),
                         N_DEP            = as.name(paste0('N_dep_', distName)),
                         DEP_CONTROL_NAME = as.name(paste0(  'dep_', distName))))
-                if(distributions[[distName]]$types$value$nDim > 0) {
+                if(getDimension(distName, 'value') > 0) {
                     functionBody$addCode({
                         DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
                         if(length(DEP_NODESIZES) == 1) DEP_NODESIZES <- c(DEP_NODESIZES, -1)    ## guarantee to be a vector, for indexing and size processing
@@ -373,7 +373,7 @@ conjugacyClass <- setRefClass(
                 ##                           ))
                 ## neededParams <- dependents[[distName]]$neededParamsForPosterior
                 ## for(param in neededParams) {
-                ##     depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
+                ##     depNodeParamNdim <- getDimension(distName, param) 
                 ##     ## NEWNODEFXN
                 ##     functionBody$addCode(DEP_PARAM_VAR <- array(0, dim = DECLARE_SIZE),
                 ##                          list(DEP_PARAM_VAR      = as.name(paste0('dep_', distName, '_', param)),              ## DECLARE() statement
@@ -471,7 +471,7 @@ conjugacyClass <- setRefClass(
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 neededParams <- dependents[[distName]]$neededParamsForPosterior
-                depNodeValueNdim <- getDistribution(distName)$types$value$nDim
+                depNodeValueNdim <- getDimension(distName, 'value')
 
                 forLoopBody <- codeBlockClass()
 
@@ -484,7 +484,7 @@ conjugacyClass <- setRefClass(
                 ##functionBody$addCode(thisNodeSize <- 0) ## annoyingly this is to avoid a windows compiler warning about possible uninitialized use of thisNodeSize
                 ## get *value* of each dependent node
                 ## NEWNODEFXN
-                if(distributions[[distName]]$types$value$nDim > 0) {
+                if(getDimension(distName, 'value') > 0) {
                     forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                         list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
@@ -493,7 +493,7 @@ conjugacyClass <- setRefClass(
                                          DEP_NODENAMES = as.name(paste0('dep_', distName,'_nodeNames'))))
 
                 for(param in neededParams) {
-                    depNodeParamNdim <- getDistribution(distName)$types[[param]]$nDim
+                    depNodeParamNdim <- getDimension(distName, param)
                     ## DECLARE() statement for each dependent node *parameter* value
                     ## NEWNODEFXN - no change needed here (can be moved to setup)
                     functionBody$addCode(declare(DEP_PARAM_VAR, double(DEP_PARAM_VAR_NDIM, DECLARE_SIZE)),                     ## DECLARE() statement
@@ -516,7 +516,7 @@ conjugacyClass <- setRefClass(
 
             ## if we need to determine 'coeff' and/or 'offset'
             if(needsLinearityCheck) {
-                targetNdim <- getDistribution(prior)$types$value$nDim
+                targetNdim <- getDimension(prior, 'value')
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
                 for(iDepCount in seq_along(dependentCounts)) {
@@ -682,7 +682,7 @@ conjugacyClass <- setRefClass(
 
             } # end if(needsLinearityCheck)
 
-            targetNdim <- getDistribution(prior)$types$value$nDim
+            targetNdim <- getDimension(prior, 'value')
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
             ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
             for(contributionName in posteriorObject$neededContributionNames) {
@@ -711,16 +711,16 @@ conjugacyClass <- setRefClass(
                 ## August 2016
                 nonRaggedSizeExpr <- if(targetNdim < 2) quote(thisNodeSize) else quote(d)
                 subList <- lapply(depParamsAvailable, function(param)
-                    makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDistribution(distName)$types[[param]]$nDim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr))
+                    makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDimension(distName, param), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr))
                 names(subList) <- depParamsAvailable
                 
-                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDistribution(distName)$types$value$nDim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDimension(distName, value), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
                 subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
                 subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
 
-                if(distributions[[distName]]$types$value$nDim > 0) {
+                if(getDimension(distName, 'value') > 0) {
                     if(targetNdim == 1) ## 1D
                         forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
@@ -808,7 +808,7 @@ posteriorClass <- setRefClass(
         },
         inferContributionTermDimensions = function(prior) {
             distToLookup <- if(dDistribution %in% distributions$namesVector) dDistribution else if(prior %in% distributions$namesVector) prior else stop('cannot locate prior or posterior distribution in conjugacy processing')
-            targetNdim <- getDistribution(distToLookup)$types$value$nDim
+            targetNdim <- getDimension(distToLookup, 'value')
             ## if posterior distribution is univariate, assume all contributions are scalar
             if(targetNdim == 0) {
                 theDims <- lapply(neededContributionNames, function(x) 0)
@@ -817,12 +817,12 @@ posteriorClass <- setRefClass(
             }
             ## if posterior distribution is multivariate, attempt to infer contribution dimensionality from the *name* of each contribution term
             theDims <- list()
-            typeNamesAvailable <- names(getDistribution(distToLookup)$types)
+            typeNamesAvailable <- getParamNames(distToLookup) 
             for(contribName in neededContributionNames) {
                 contribNameBase <- gsub('^contribution_', '', contribName)
                 if(contribNameBase %in% typeNamesAvailable) {
                     ## contribution base name matches a parameter name of the posterior
-                    theDims[[contribName]] <- getDistribution(distToLookup)$types[[contribNameBase]]$nDim
+                    theDims[[contribName]] <- getDimension(distToLookup, contribNameBase)
                 } else {
                     ## contribution base name doesn't match any parameter; can't easily infer the dimensionality
                     browser()
@@ -873,7 +873,7 @@ cc_expandDetermNodesInExpr <- function(model, expr) {
             }
             if(type == 'stoch') return(expr)
             if(type == 'determ') {
-                newExpr <- model$getNodeValueExpr(exprText)
+                newExpr <- model$getValueExpr(exprText)
                 return(cc_expandDetermNodesInExpr(model, newExpr))
             }
             if(type == 'RHSonly') return(expr)
@@ -922,7 +922,7 @@ cc_linkCheck <- function(linearityCheck, link) {
 ## checks the parameter expressions in the stochastic distribution of depNode
 ## returns FALSE if we find 'targetNode' in ***more than one*** of these expressions
 cc_otherParamsCheck <- function(model, depNode, targetNode) {
-    paramsList <- as.list(model$getNodeValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
+    paramsList <- as.list(model$getValueExpr(depNode)[-1])       # extracts the list of all parameters, for the distribution of depNode
     timesFound <- 0   ## for success, we'll find targetNode in only *one* parameter expression
     for(i in seq_along(paramsList)) {
         expr <- cc_expandDetermNodesInExpr(model, paramsList[[i]])

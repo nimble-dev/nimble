@@ -28,7 +28,7 @@ distributionsClass <- setRefClass(
         add = function(dil) {
               distObjectsNew <- list()
               nms <- names(dil)
-              dupl <- which(nms %in% getDistributionsInfo('namesVector', userOnly = TRUE))
+              dupl <- which(nms %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
               if(length(dupl)) {
                   distObjects[dupl] <<- NULL
                   namesVector <<- namesVector[-dupl]
@@ -111,6 +111,7 @@ distClass <- setRefClass(
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
             range <<- if(is.null(distInputList$range))    c(-Inf, Inf)    else    distInputList$range
+            provide <<- if(is.null(distInputList$provider)) 'nimble' else distInputList$provider
             init_types(distInputList)
             init_paramIDs()
         },
@@ -326,14 +327,14 @@ registerDistributions <- function(distributionsInputList) {
         if(!is.list(distributionsInputList[[1]])) stop("'distributionsInputList' should be a named list of lists")
 
         nms <- names(distributionsInputList)
-        dupl <- nms[nms %in% getDistributionsInfo('namesVector', nimbleOnly = TRUE)]
+        dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
             distributionsInputList[dupl] <- NULL
             cat("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions:", nms, ". Please rename to avoid the conflict.\n", sep = "")
         }
         sapply(distributionsInputList, checkDistributionsInput)
         sapply(distributionsInputList, checkDistributionsFunctions)
-
+        
         if(exists('distributions', nimbleUserNamespace)) {
             nimbleUserNamespace$distributions$add(distributionsInputList)
         } else 
@@ -359,7 +360,7 @@ registerDistributions <- function(distributionsInputList) {
 deregisterDistributions <- function(distributionsNames) {
     if(!exists('distributions', nimbleUserNamespace)) 
         cat("No user-supplied distributions are registered.\n")
-    matched <- distributionsNames %in% getDistributionsInfo('namesVector', userOnly = TRUE)
+    matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) 
         cat(paste("Deregistering ", distributionsNames[matched], " from user-registered distributions.\n"))
     if(sum(!matched))
@@ -382,18 +383,6 @@ deregisterDistributions <- function(distributionsNames) {
 #####################################################################################################
 #####################################################################################################
 
-# this could be more elegant, e.g., providing
-# - isDiscrete(distName)
-# - pqAvail(distName)
-# - getDistributionNames()
-# at the moment it is still somewhat tied to the internal structure of our distributionsClass
-# note that if we do implement these we need to account for user-supplied distributions too
-# - Chris
-
-# this is a hack because having trouble calling getDistribution() from within nodeInfoClass$isDiscrete; (as of 5/8/15 doesn't seem to be needed)
-getDistribution2 <- function(distName) {
-    getDistribution(distName)
-}
 
 getDistributionList <- function(distNames) {
     boolNative <- distNames %in% distributions$namesVector
@@ -414,14 +403,14 @@ getDistributionList <- function(distNames) {
     stop(paste0('In getDistributions, distributions named ', paste(notFound, sep = ',', collapse = ","), ' could not be found.')) 
 }
 
-getDistribution <- function(distName) {
+getDistributionInfo <- function(distName) {
     if(distName %in% distributions$namesVector) return(distributions[[distName]])
     if(exists('distributions', nimbleUserNamespace) && distName %in% nimbleUserNamespace$distributions$namesVector)
         return(nimbleUserNamespace$distributions[[distName]])
-    stop(paste0("getDistribution: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
+    stop(paste0("getDistributionInfo: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
-getDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
+getAllDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
     if(kind %in% c('namesVector', 'namesExprList', 'translations')) {
         if(userOnly) out <- NULL else out <- get(kind, distributions)
         if(!nimbleOnly && exists('distributions', nimbleUserNamespace))
@@ -434,7 +423,7 @@ getDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
             out <- c(out, sapply(nimbleUserNamespace$distributions$distObjects, '[[', kind))
         return(out)
     }
-    stop(paste0("getDistributionInfo: ", kind, " is not available from the distributions information."))
+    stop(paste0("getAllDistributionInfo: ", kind, " is not available from the distributions information."))
 }
 
 evalInDistsMatchCallEnv <- function(expr) {
@@ -451,14 +440,83 @@ stripPrefix <- function(vec, prefix = "d")
     return(gsub(paste0("^", prefix), "", vec))
 
 BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
-    Rdists <- lapply(getDistributionsInfo('translations'), `[[`, 1)
+    Rdists <- lapply(getAllDistributionsInfo('translations'), `[[`, 1)
     if(!dIncluded) names(Rdists) <- stripPrefix(names(Rdists))
     results <- unlist(Rdists[BUGSdists])
     names(results) <- NULL
     if(!dIncluded) return(stripPrefix(results)) else return(results)
 }
 
-     
+isDiscrete <- function(dist) {
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("isDiscrete: 'dist' should be a character vector of length 1")
+    return(getDistributionInfo(dist)$discrete)
+}
+
+isUserDistribution <- function(dist) {
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("isUserDistribution: 'dist' should be a character vector of length 1")
+    if(exists('distributions', nimbleUserNamespace) && distName %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)) return(TRUE) else return(FALSE)
+}
+
+pqAvail <- function(dist) {
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("pqAvail: 'dist' should be a character vector of length 1")
+   return(getDistributionInfo(dist)$pqAvail)
+} 
+
+getDimension <- function(dist, params) {
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("getDimension: 'dist' should be a character vector of length 1")
+    distInfo <- getDistributionInfo(dist)
+    if(missing(params)) {
+        params <- names(distInfo$types)
+        notFound <- NULL
+    } else notFound <- which(!params %in% names(distInfo$types))
+    if(length(notFound)) 
+        stop("getDimension: ", params[notFound], " not found as the random variable (denoted by 'value') or as a parameter")
+    out <- sapply(params, function(p) distInfo$types[[p]]$nDim)
+    return(out)
+}
+
+getParamID <- function(dist, params) {
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("getParamID: 'dist' should be a character vector of length 1")
+    distInfo <- getDistributionInfo(dist)
+    if(missing(params)) {
+        params <- names(distInfo$types)
+        notFound <- NULL
+    } else notFound <- which(!params %in% names(distInfo$types))
+    if(length(notFound)) 
+        stop("getParamID: ", params[notFound], " not found as the random variable (denoted by 'value') or as a parameter")
+    out <- distInfo$paramIDs[params]
+    return(out)
+}
+
+getType <- function(dist, params) {
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("getType: 'dist' should be a character vector of length 1")
+    distInfo <- getDistributionInfo(dist)
+    if(missing(params)) {
+        params <- names(distInfo$types)
+        notFound <- NULL
+    } else notFound <- which(!params %in% names(distInfo$types))
+    if(length(notFound)) 
+        stop("getType: ", params[notFound], " not found as the random variable (denoted by 'value') or as a parameter")
+    out <- sapply(params, function(p) distInfo$types[[p]]$type)
+    return(out)
+}
+
+# perhaps have args to allow only reqdArgs or only altParams?
+getParamNames <- function(dist, includeValue = TRUE) {
+    if(length(dist) > 1 || class(dist) != 'character')
+        stop("getParamNames: 'dist' should be a character vector of length 1")
+    names <- names(distInfo(dist)$paramIDs)
+    if(!includeValue)
+        names <- names[!names == 'value']
+    return(names)
+}
+
 #####################################################################################################
 #####################################################################################################
 #####  executable code, creates global system variable 'distributions' and 'distribution_aliases  ###
@@ -484,10 +542,10 @@ processDistributionAliases <- function(distributionsInputList) {
 distributionAliases <- processDistributionAliases(distributionsInputList) 
 
 
-distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector'), dIncluded = TRUE)
+distribution_dFuns <- BUGSdistToRdist(getAllDistributionsInfo('namesVector'), dIncluded = TRUE)
 distribution_rFuns <- gsub("^d", "r", distribution_dFuns)
 
-pqAvail <- names(which(getDistributionsInfo('pqAvail')))
+pqAvail <- names(which(getAllDistributionsInfo('pqAvail')))
 pqDists <- BUGSdistToRdist(pqAvail, dIncluded = TRUE)
 
 distribution_pFuns <- gsub("^d", "p", pqDists)

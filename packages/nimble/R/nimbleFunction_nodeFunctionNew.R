@@ -100,38 +100,41 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
             ## add accessor function for node value; used in multivariate conjugate sampler functions
-            typeList <- getDistribution(distName)$types[['value']]
-            methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, typeList$type, typeList$nDim)
+            typeList <- getDistributionInfo(distName)$types[['value']]
+            type = getType(distName, 'value')
+            nDim <- getDimension(distName, 'value')
+            methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, type, nDim)
             ## add accessor functions for stochastic node distribution parameters
             for(param in names(RHS[-1])) {
                 if(!param %in% c("lower", "upper")) {
-                    typeList <- getDistribution(distName)$types[[param]]
-                    methodList[[paste0('get_',param)]] <- ndf_generateGetParamFunction(RHS[[param]], typeList$type, typeList$nDim)
+                    type = getType(distName, param)
+                    nDim <- getDimension(distName, param)
+                    methodList[[paste0('get_',param)]] <- ndf_generateGetParamFunction(RHS[[param]], type, nDim)
                 }
             }
             for(i in seq_along(altParams)) {
                 altParamName <- names(altParams)[i]
-                typeList <- getDistribution(distName)$types[[altParamName]]
-                methodList[[paste0('get_',altParamName)]] <- ndf_generateGetParamFunction(altParams[[altParamName]], typeList$type, typeList$nDim)
+                type = getType(distName, altParamName)
+                nDim <- getDimension(distName, altParamName)
+                methodList[[paste0('get_',altParamName)]] <- ndf_generateGetParamFunction(altParams[[altParamName]], type, nDim)
             }
         }
         } ## if(FALSE) to cut out old get_XXX param system
             ## new for getParam, eventually to replace get_XXX where XXX is each param name
             ## TO-DO: unfold types and nDims more thoroughly (but all types are implemented as doubles anyway)
-            ## understand use of altParams vs. all entries in typesListAllParams
+            ## understand use of altParams vs. all entries in typesListAllParams (i.e., getDistributionInfo(distName)$types
         ## need a value Entry
         distName <- as.character(RHS[[1]])
 
         allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
-        typesListAllParams <- getDistribution(distName)$types
-        ##numParams <- length(typesListAllParams)
-        typesNDims <- unlist(lapply(typesListAllParams, `[[`, 'nDim'))
-        typesTypes <- unlist(lapply(typesListAllParams, `[[`, 'type'))
-        paramIDs <- getDistribution(distName)$paramIDs
+
+        typesNDims <- getDimension(distName)
+        typesTypes <- getType(distName)
+        paramIDs <- getParamID(distName)
         ## rely on only double for now
         for(nDimSupported in c(0, 1, 2)) {
             boolThisCase <- typesNDims == nDimSupported ## & typesTypes == 'double' ## until (if ever) we have separate handling of integer params, these should be folded in with doubles.  We don't normally have any integer params, because we handle integers as doubles
-            paramNamesToUse <- names(typesListAllParams)[boolThisCase]
+            paramNamesToUse <- getParamNames(distName)[boolThisCase]
             caseName <- paste0("getParam_",nDimSupported,"D_double")
             if(length(paramNamesToUse) > 0)
                 methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported)

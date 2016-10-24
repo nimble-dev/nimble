@@ -432,7 +432,7 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
 
         tmp <- as.character(newCode[[3]][[1]])
-        distRange <- getDistribution(tmp)$range
+        distRange <- getDistributionInfo(tmp)$range
 
         if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") {
             BUGSdecl$range$lower <- BUGSdecl$valueExpr[[3]]
@@ -452,7 +452,7 @@ modelDefClass$methods(removeTruncationWrapping = function() {
         BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
 
         dist <- as.character(BUGSdeclClassObject$valueExpr[[1]])
-        if(!getDistributionsInfo('pqAvail')[dist]) 
+        if(!getAllDistributionsInfo('pqAvail')[dist]) 
             stop("Cannot implement truncation for ", dist, "; 'p' and 'q' functions not available.")
 
         declInfo[[i]] <<- BUGSdeclClassObject
@@ -555,8 +555,8 @@ modelDefClass$methods(reparameterizeDists = function() {
         code <- BUGSdecl$code   ## grab the original code
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         distName <- as.character(valueExpr[[1]])
-        if(!(distName %in% getDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
-        distRule <- getDistribution(distName)
+        if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
+        distRule <- getDistributionInfo(distName)
         numArgs <- length(distRule$reqdArgs)
         if(numArgs==0) next; ## a user-defined distribution might have 0 arguments
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
@@ -620,7 +620,7 @@ modelDefClass$methods(addRemainingDotParams = function() {
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         newValueExpr <- valueExpr
-        defaultParamExprs <- getDistribution(as.character(newValueExpr[[1]]))$altParams
+        defaultParamExprs <- getDistributionInfo(as.character(newValueExpr[[1]]))$altParams
         if(length(defaultParamExprs) == 0)   next   ## skip if there are no altParams defined in distributions
         
         defaultParamNames <- names(defaultParamExprs)
@@ -741,7 +741,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             allReplaceable <- TRUE
         }
         if(allReplaceable) {
-            if(!any(code[[1]] == getDistributionsInfo('namesVector'))) {
+            if(!any(code[[1]] == getAllDistributionsInfo('namesVector'))) {
                 callChar <- as.character(code[[1]])
                 if(exists(callChar, constEnv)) {
                     # if(callChar != ':') {
@@ -857,7 +857,7 @@ modelDefClass$methods(addIndexVarsToDeclInfo = function() {
 modelDefClass$methods(genSymbolicParentNodes = function() {
     ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
     
-    nimFunNames <- getDistributionsInfo('namesExprList')
+    nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)){
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
@@ -867,7 +867,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
     
-    nimFunNames <- getDistributionsInfo('namesExprList')
+    nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)) {
         declInfo[[i]]$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)

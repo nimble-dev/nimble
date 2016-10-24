@@ -178,7 +178,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             	node <- nodes[i]
                 discrete <- model$isDiscrete(node)
                 binary <- model$isBinary(node)
-                nodeDist <- model$getNodeDistribution(node)
+                nodeDist <- model$getDistribution(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 

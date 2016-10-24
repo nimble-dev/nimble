@@ -49,10 +49,10 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   	if(all == TRUE)		return(modelDef$maps)
                                   	return(modelDef$maps[[mapName]])
                                    },
-                                   isNodeEnd = function(nodeNames){  #Note: it says nodeNames, but graphIDs are fine too. Actually they are better
-                                   	if(is.character(nodeNames))
-                                   		nodeNames = expandNodeNames(nodeNames, returnType = 'ids')
-                                   	return(modelDef$maps$isEndNode_byGID[nodeNames])
+                                   isNodeEnd = function(nodes){  #Note: it says nodes, but graphIDs are fine too. Actually they are better
+                                   	if(is.character(nodes))
+                                   		nodes = expandNodeNames(nodes, returnType = 'ids')
+                                   	return(modelDef$maps$isEndNode_byGID[nodes])
                                    },
 
                                   ## returns the type of one or more node names, e.g., 'stoch' or 'determ'
@@ -91,14 +91,13 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
                                   
                                   ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
-                                  getNodeDistribution = function(nodes) {
-                                      if(length(nodes)==1) getDeclInfo(nodes)[[1]][['distributionName']]
-                                      else unlist(lapply(getDeclInfo(nodes), `[[`, 'distributionName'))
-                                      ##getDeclInfo(nodes)[[1]]$getDistributionName()
+                                  getDistribution = function(nodes) {
+                                      nodes <- expandNodeNames(nodes)
+                                      sapply(getDeclInfo(nodes), getDistributionName)
                                   },
 
                                   ## returns the expr corresponding to 'param' in the distribution of 'node'
-                                  getNodeParamExpr = function(node, param) {
+                                  getParamExpr = function(node, param) {
                                       di <- getDeclInfo(node)[[1]]
                                       if(di$type != 'stoch')  stop('getting parameter expression for a non-stochastic node')
                                       if(param %in% names(di$valueExprReplaced)) {
@@ -112,35 +111,57 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
 
                                   ##  returns the entire RHS valueExpr for 'node'
-                                  getNodeValueExpr = function(node) {
+                                  getValueExpr = function(node) {
                                       expr <- getDeclInfo(node)[[1]]$valueExprReplaced
                                       unrolledIndices <- getUnrolledIndicesList(node)
                                       subExpr <- eval(substitute(substitute(EXPR, unrolledIndices), list(EXPR = expr)))
                                       return(subExpr)
                                   },
 
-                                  isDiscrete = function(node) {
-                                      dist <- getNodeDistribution(node)
+                                  getDistribution = function(nodes) {
+                                      nodes <- expandNodeNames(nodes)
+                                      sapply(getDeclInfo(nodes), getDistributionName)
+                                  },
+
+                                  isDiscrete = function(nodes) {
+                                      dist <- getDistribution(nodes)
                                       # explicit reference to namespace needed as class definition objects inheriting from modelBaseClass not in namespace
-                                      discrete <- nimble:::getDistribution(dist)$discrete
+                                      discrete <- sapply(dist, isDiscrete)
+                                      #discrete <- nimble:::getDistributionInfo(dist)$discrete
                                       return(discrete)
                                   },
 
-                                  isBinary = function(node) {
-                                      dist <- getNodeDistribution(node)
-                                      if(dist == 'dbern') return(TRUE)
-                                      if(dist == 'dbin') {
-                                          if(getNodeParamExpr(node, 'size') == 1)
-                                              return(TRUE)
-                                      }
-                                      return(FALSE)
+                                  isBinary = function(nodes) {
+                                      nodes <- expandNodeNames(nodes)  # needed below but duplicates what happens in getDistribution
+                                      dist <- getDistribution(nodes)
+                                      
+                                      binary <- rep(FALSE, length(dist))
+                                      binary[dist == 'dbern'] <- TRUE
+                                      binomInds <- which(dist == 'dbin')
+                                      tmp <- sapply(binomInds, function(ind) getParamExpr(nodes[ind], 'size') == 1)
+                                      binary[binomInds[tmp]] <- TRUE
+                                      return(binary)
                                   },
 
-                                  isTruncated = function(node) {
-                                      di <- getDeclInfo(node)[[1]]
-                                      if(di$truncated) return(TRUE) else return(FALSE)
+                                  isTruncated = function(nodes) {
+                                      nodes <- expandNodeNames(nodes)
+                                      sapply(getDeclInfo(nodes), isTruncated)
                                   },
 
+                                  isUnivariate = function(nodes) {
+                                      nodes <- expandNodeNames(nodes)
+                                      dims <- sapply(nodes, getDistribution)
+                                      return(dims == 1)
+                                  }
+                                      
+                                  getDimension = function(node, params) {
+                                      dist <- getDistribution(node)
+                                      if(length(dist) > 1)
+                                          stop("getDimension: 'node' should be a single node in the model")
+                                      if(missing(params)) 
+                                          dim <- getDimension(dist) else dim <- getDimension(dist, params)
+                                      return(dim)
+                                  }
 
                                   getVarNames = function(includeLogProb = FALSE, nodes, includeData = TRUE) {                                  
                                       '
@@ -223,13 +244,13 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       return(ans)                                      
                                   },
                                   
-                                  expandNodeNames = function(nodeNames, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE){
+                                  expandNodeNames = function(nodes, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE){
                                       '
-Takes a vector of nodeNames and returns the unique and expanded names in the model, i.e. \'x\' expands to \'x[1]\', \'x[2]\', ...
+Takes a vector of names of nodes or variables and returns the unique and expanded names in the model, i.e. \'x\' expands to \'x[1]\', \'x[2]\', ...
 
 Arguments:
 
-nodeNames: a vector of characters of nodes to be expanded. Alternatively, can be a vector of integer graph IDs, but this use is intended only for advanced users 
+nodes: a vector of names of nodes (or variables) to be expanded. Alternatively, can be a vector of integer graph IDs, but this use is intended only for advanced users 
 
 returnScalarComponents: should multivariate nodes (i.e. dmnorm or dmulti) be broken up into scalar components?
 
@@ -238,14 +259,14 @@ returnType: return type. Options are \'names\' (character vector) or \'ids\' (gr
 sort: should names be topologically sorted before being returned?
 '
 
-                                      if(length(nodeNames) == 0) return(if(returnType=='names') character() else numeric())
-                                      graphID <- modelDef$nodeName2GraphIDs(nodeNames, !returnScalarComponents)
+                                      if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
+                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
                                       if(sort) 
                                           graphID <- sort(graphID)
                                       if(returnType == 'names'){
-                                          if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
-                                          else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
-                                          return(nodeNames)
+                                          if(returnScalarComponents) nodes <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
+                                          else nodes <- modelDef$maps$graphID_2_nodeName[graphID]
+                                          return(nodes)
                                       }
                                       if(returnType == 'ids'){
                                           if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 
@@ -255,22 +276,22 @@ sort: should names be topologically sorted before being returned?
                                       	stop('instead expandNodeNames, imporper returnType chosen')
                                   },
                                   
-                                  topologicallySortNodes = function(nodeNames, returnType = 'names') {
+                                  topologicallySortNodes = function(nodes, returnType = 'names') {
                                       '
 Sorts the input list of node names according to the topological dependence ordering of the model structure. 
 
 Arguments:
 
-nodeNames: A character vector of node names, which is to be topologically sorted. Alternatively can be a numeric vector of graphIDs
+nodes: A character vector of node or variable names, which is to be topologically sorted. Alternatively can be a numeric vector of graphIDs
 
 returnType: character vector indicating return type. Choices are "names" or "ids"
 
 Details: This function merely reorders its input argument.  This may be inportany prior to calls such as simulate(model, nodes) or calculate(model, nodes), to enforce that the operation is performed in topological order.
 '
-                                      nodeIDs <- expandNodeNames(nodeNames, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodeNames]
+                                      nodeIDs <- expandNodeNames(nodes, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodes]
                                       nodeIDs <- sort(nodeIDs)
-                                      nodeNames <- expandNodeNames(nodeIDs, returnType = returnType)
-                                      return(nodeNames)
+                                      nodes <- expandNodeNames(nodeIDs, returnType = returnType)
+                                      return(nodes)
                                   },
                                   
                                   getVarInfo = function(name, includeLogProb = TRUE) {
@@ -383,23 +404,23 @@ Details: If a provided value (or the current value in the model when only a name
                                       return(invisible(NULL))
                                   },
                                   
-                                  isData = function(nodeNames) {
+                                  isData = function(nodes) {
 '
 Returns a vector of logical TRUE / FALSE values, corresponding to the \'data\' flags of the input node names. 
 
 Arguments:
 
-nodeNames: A character vector containing model variable or node names.
+nodes: A character vector of node or variable names.
 
 Details: The variable or node names specified is expanded into a vector of model node names.  A logical vector is returned, indicating whether each model node has been flagged as containing \'data\'.
 '
-                                  g_id = modelDef$nodeName2GraphIDs(nodeNames)
+                                  g_id = modelDef$nodeName2GraphIDs(nodes)
                                   		return(isDataFromGraphID(g_id))                                  
                                   },
 
                                   isDataFromGraphID = function(g_id){
-                                   	nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]	
-                                  	ret <- unlist(lapply(as.list(nodeNames),
+                                   	nodes <- modelDef$maps$graphID_2_nodeName[g_id]	
+                                  	ret <- unlist(lapply(as.list(nodes),
                                                   function(nn)     
                                                     return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]],
                                                                                 envir=isDataEnv))[[1]])))
@@ -518,7 +539,7 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       if(returnType == 'names') {
                                           if(returnScalarComponents)
                                               return(modelDef$maps$elementNames[depIDs])
-                                          retVal <- modelDef$maps$nodeNames[depIDs]
+                                          retVal <- modelDef$maps$nodes[depIDs]
                                           return(retVal)
                                       }
                                       if(!(returnType %in% c('ids', 'names')))
@@ -617,9 +638,8 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
-                                                  distDims <- as.integer(sapply(nimble:::getDistribution(dist)$types, function(x) x$nDim))
-                                                  nms <- names(nimble:::getDistribution(dist)$types)
-                                                  names(distDims) <- nms
+                                                  distDims <- as.integer(getDimension(dist))
+                                                  nms <- names(distDims)
                                                   
                                                   sizes <- list(); length(sizes) <- length(nms); names(sizes) <- nms
 
