@@ -2,7 +2,6 @@
 #include "nimble/NamedObjects.h"
 #include "nimble/RcppNimbleUtils.h"
 #include "nimble/dllFinalizer.h"
-#include "Rdefines.h"
 //#include "nimble/RcppUtils.h"
 #include "nimble/Utils.h"
 #include<iostream>

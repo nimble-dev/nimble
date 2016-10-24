@@ -79,6 +79,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
                                      argNames <- names(argsCode)
+                                     browser()
                                      
                                      if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
                                          warning("creating a .Call() expression with no DLL information")
@@ -133,6 +134,17 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                               ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
                                      funCode[[4]] <- NULL
+                                     if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
+                                       funCode[[4]] <- substitute({returnListDef <- nimbleList(TYPES, NAME); a <- 3},
+                                                  list(TYPES = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$types,
+                                                       NAME = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$className))
+                                       
+                                       substitute(returnList <- returnListDef$new(), list())
+                                       
+                                       substitute(for(i in 1:length(ans)){
+                                         returnList[[names(ans)[i]]] <- ans[i]
+                                       }, list())
+                                     }
                                      if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
                                      if(eval) {
                                          fun = eval(funCode)

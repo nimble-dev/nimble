@@ -861,8 +861,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                  }
                                              }
                                          }
-                                     }
-##                                     Cname <- nf_getRefClassObject(funList[[1]])$Cname
+                                     }  
+                                   ##                                     Cname <- nf_getRefClassObject(funList[[1]])$Cname
                                      if(!exists('name', envir = nf_getRefClassObject(funList[[1]]), inherits = FALSE)) stop('Something is wrong if by this point in compileNimbleFunction there is no name.', call. = FALSE)
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
