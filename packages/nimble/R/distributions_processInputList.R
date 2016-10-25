@@ -111,7 +111,6 @@ distClass <- setRefClass(
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
             range <<- if(is.null(distInputList$range))    c(-Inf, Inf)    else    distInputList$range
-            provide <<- if(is.null(distInputList$provider)) 'nimble' else distInputList$provider
             init_types(distInputList)
             init_paramIDs()
         },
@@ -511,7 +510,8 @@ getType <- function(dist, params) {
 getParamNames <- function(dist, includeValue = TRUE) {
     if(length(dist) > 1 || class(dist) != 'character')
         stop("getParamNames: 'dist' should be a character vector of length 1")
-    names <- names(distInfo(dist)$paramIDs)
+    distInfo <- getDistributionInfo(dist)
+    names <- names(distInfo$paramIDs)
     if(!includeValue)
         names <- names[!names == 'value']
     return(names)

@@ -152,7 +152,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       nodes <- expandNodeNames(nodes)
                                       dims <- sapply(nodes, getDistribution)
                                       return(dims == 1)
-                                  }
+                                  },
                                       
                                   getDimension = function(node, params) {
                                       dist <- getDistribution(node)
@@ -161,7 +161,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       if(missing(params)) 
                                           dim <- getDimension(dist) else dim <- getDimension(dist, params)
                                       return(dim)
-                                  }
+                                  },
 
                                   getVarNames = function(includeLogProb = FALSE, nodes, includeData = TRUE) {                                  
                                       '
