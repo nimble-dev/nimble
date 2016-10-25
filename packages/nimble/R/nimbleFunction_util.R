@@ -30,8 +30,8 @@ is.Cnf <- function(f) {
 }
 
 is.nlGenerator <- function(f){
-  return(is.function(f) && 
-           existsFunctionEnvVar(f, 'nlDefClassObject'))
+  return(is.list(f) && (is.function(f$new) && 
+           existsFunctionEnvVar(f$new, 'nlDefClassObject')))
   
 }
 
@@ -85,12 +85,12 @@ nf_getSetupOutputNames <- function(f, hidden = FALSE) {
 nf_getArgOutputNames <- function(f, hidden = FALSE) {
   nfEnv <- environment(f)
   methodList <- nfEnv$methodList
-  
-  methodArgListCode <- lapply(methodList, function(x) x$argInfo[[1]][[1]])
-  argObjIndex <- unlist(sapply(methodArgListCode, function(x)return(!(as.character(x) %in%
-                                                  c('double', 'integer', 'character', 'logical', 'internalType')))))
-  if(any(argObjIndex == TRUE))
-  return(c(unlist(methodArgListCode[argObjIndex])))
+  methodArgListCode <- lapply(methodList, function(x) as.character(x$argInfo[[1]][[1]]))
+  for(i in 1:length(methodArgListCode)){
+    methodArgListCode[[i]] <- methodArgListCode[[i]][!(methodArgListCode[[i]] %in%   c('double', 'integer', 'character', 'logical', 'internalType'))]
+    if(length(methodArgListCode[[i]]) == 0)        methodArgListCode[[i]] <- NULL
+  }
+  return(methodArgListCode)
 }
 
 #'
@@ -109,5 +109,9 @@ getDefinition <- function(nf) {
     defList
 }
 
+setListElement <- function(nimList, elementName, elementValue){
+  eval(substitute(nimList$ELEMENTNAME <- ELEMENTVALUE, list(ELEMENTNAME = elementName,
+                                                            ELEMENTVALUE = elementValue)))
+}
 
 

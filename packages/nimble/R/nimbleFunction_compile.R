@@ -280,10 +280,9 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
     outputNames <- character()
     if(setupOrig) {
     	setupSymTab <<- symbolTable(parentST = NULL)
-    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator))
+    	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator),  nf_getArgOutputNames(nfGenerator))
+    	if(length(outputNames)>0) outputNames <- unique(outputNames)
     }
-    outputNames <- c(outputNames, nf_getArgOutputNames(nfGenerator))
-    if(length(outputNames)>0) outputNames <- unique(outputNames)
     if(setupNew) {
         ## Kluge that results from adding string handling to the compiler:
         ## Previously any character objects were assigned a symbol object with
@@ -301,6 +300,7 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
         ## that are really created as intermediates for others that are really needed
         ## during the keyword processing, the newSetupOutputNames is used for
         ## bookkeeping, so it would not be trivial to remove them at an earlier stage.
+        
         origSetupOutputs <- nf_getSetupOutputNames(nfGenerator)
         declaredSetupOutputs <- getFunctionEnvVar(nfGenerator, 'declaredSetupOutputNames')
         origSetupOutputs <- setdiff(origSetupOutputs, declaredSetupOutputs)
@@ -364,22 +364,20 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## this is a function that could use a lot of polishing, but it's ok for now.
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
   isNLG <- FALSE
-  if(is.character(name)){
-    if(is.nlGenerator(instances[[1]][[name]])){
-      nlList <- instances[[1]][[name]]()
-      isNLG <- TRUE
-    }
-  } else if(exists(as.character(name), envir = globalenv()) && is.nlGenerator(eval(name))){
-      nlList <- eval(name)()
+  if(is.nlGenerator(instances[[1]][[name]])){
+    nlList <- instances[[1]][[name]]$new()
+    isNLG <- TRUE
+  } else if(exists(name, envir = globalenv()) && is.nlGenerator(eval(parse(text = name, keep.source = FALSE)))){
+      nlList <- eval(parse(text = paste0(name, "$new"), keep.source = FALSE))()
       isNLG <- TRUE
   }
   if(isNLG){
     ## Need to change to accomidate multiple nlGenerators
     nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
     className <- nlList$nimbleListDef$className
-    newSym <- symbolNimbleList(name = as.character(name), type = 'nimbleList', nlProc = nlp)
+    newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
     if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
-    returnSym <- symbolNimbleListGenerator(name = as.character(name), type = 'nimbleListGenerator', nlProc = nlp)
+    returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
     return(returnSym)
   }
   if(is.nl(instances[[1]][[name]])) {

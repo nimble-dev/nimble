@@ -140,10 +140,6 @@ template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans );
 
 template<int ndim>
-void copyNimArr_2_SEXP(NimArr<ndim, double> &val, SEXP Sn);
-
-
-template<int ndim>
 SEXP NimArr_2_SEXP(const NimArr<ndim, double> &val);
 template<int ndim>
 SEXP NimArr_2_SEXP(const NimArr<ndim, int> &val);
@@ -214,23 +210,6 @@ void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
   }
 }
 
-template<int ndim>
-void copyNimArr_2_SEXP(NimArr<ndim, double> &val, SEXP *Sn) {
-  int outputLength = val.size();
-  PROTECT(*Sn = allocVector(REALSXP, outputLength));
-  Rprintf("Length = %d\n", outputLength);
-  double *ans = REAL(*Sn);
-  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
-  if(val.numDims() > 1) {
-    SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, val.numDims() ) );
-    for(int idim = 0; idim < val.numDims(); ++idim) INTEGER(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(*Sn, R_DimSymbol, Sdim);
-    UNPROTECT(2);
-  } else {
-    UNPROTECT(1);
-  }
-}
 
 template<int ndim>
 SEXP NimArr_2_SEXP(NimArr<ndim, double> &val) {
@@ -386,7 +365,7 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 				 	int numOtherArgs, ...);
 					
 SEXP getClassElement(SEXP Sobject, const char *name);
-
+void setClassElement(SEXP Sobject, const char *name, SEXP setObject);
 
 #endif
 

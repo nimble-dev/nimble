@@ -1114,6 +1114,19 @@ SEXP getClassElement(SEXP Sobject, const char *name) {
   return(EVAL(call));
 }
 
+void setClassElement(SEXP Sobject, const char *name, SEXP setObject) {
+  SEXP call, Sname;
+  PROTECT(Sname = allocVector(STRSXP, 1));
+  SET_STRING_ELT(Sname, 0, mkChar(name));
+  PROTECT(call = allocList(4));
+  SET_TYPEOF(call, LANGSXP);
+  SETCAR(call, install("setListElement"));
+  SETCADR(call, Sobject);
+  SETCADDR(call, Sname);
+  SETCADDDR(call, setObject);
+  EVAL(call); 
+  UNPROTECT(2); 
+}
 
 /* forwardsolve, backsolve */
 //

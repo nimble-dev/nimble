@@ -1314,10 +1314,9 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     ## must be nfObj$member(args)
     nfName <- as.character(nfPart) ## nfObj
     memFunName <- deparse(dollarSignPart[[3]])
-    
     if((exists(nfName, where = globalenv())) && ((is.nlGenerator(eval(nfPart))) &&
                                                  !(nfProc$setupSymTab$symbolExists(nfName)))){
-      nlList <- eval(nfPart)()
+      nlList <- eval(nfPart)$new()
       nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
       className <- nlList$nimbleListDef$className
       newSym <- symbolNimbleList(name = nfName, type = 'nimbleList', nlProc = nlp)

@@ -60,7 +60,7 @@ nimbleList <- function(types,
            NLREFCLASS_FIELDS = fields,
            NLDEFCLASSOBJECT = nlDefClassObject,
            where =where)))
-    return(nlGeneratorFunction)
+    return(list(new = nlGeneratorFunction))
 }
 
 ## nimbleList processing class
@@ -108,40 +108,25 @@ nlProcessing <- setRefClass('nlProcessing',
                                         }
                                     }
                                     if(debug) browser()
-                                    buildSymbolTable()
+                                    if(inherits(symTab, "uninitializedField")) buildSymbolTable()
                                 },
                                 buildSymbolTable = function() {
+                                  if(!inherits(symTab, "uninitializedField")) return(warning("Symbol Table for nimbleList already built."))
                                   if(length(nimbleListObj$types$types) != length(nimbleListObj$types$vars))
                                     stop("Number of nimbleList vars provided is not equal to number of nimbleList types provided")
-                                  if(is.null(nimbleListObj$types$sizes)){  ## if sizes haven't been provided, construct them from types
-                                    nimbleListObj$types$sizes <<- list()
-                                    varDims <- as.numeric(strsplit(gsub("[^0-9]", "", nimbleListObj$types$types), ""))
-                                    for(i in seq_along(nimbleListObj$types$vars)){
-                                      if(is.na(varDims[i])) nimbleListObj$types$sizes[[i]] <<-  NA
-                                      else nimbleListObj$types$sizes[[i]] <<- rep(NA, varDims[i])
-                                    }
-                                  }
+                                  # if(is.null(nimbleListObj$types$sizes)){  ## if sizes haven't been provided, construct them from types
+                                  #   nimbleListObj$types$sizes <<- list()
+                                  varDims <- as.numeric(strsplit(gsub("[^0-9]", "", nimbleListObj$types$types), ""))
                                   symTab <<- symbolTable()
-                                  for(i in seq_along(nimbleListObj$types$vars)){ ## ensure that types are of form "double", not "double(1)"
-                                    nimbleListObj$types$types[i] <<- unlist(strsplit(nimbleListObj$types$types[i], "\\("))[1]
-                                    ## first make work for nlDefs defined outside of function
-                                    ## also consider what happens if nimbleProject doesn't exist!
-                                    if(exists(nimbleListObj$types$types[i], envir = globalenv()) && 
-                                       is.nlGenerator(eval(parse(text = nimbleListObj$types$types[i], keep.source = FALSE)))){
-                                      nlList <- eval(parse(text = nimbleListObj$types$types[i], keep.source = FALSE))()
-                                      nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
-                                      className <- nlList$nimbleListDef$className
-                                      newSym <- symbolNimbleList(name = nimbleListObj$types$vars[i], type = 'nimbleList', nlProc = nlp)
-                                      symTab$addSymbol(newSym)
-                                      if(!(className %in% names(neededTypes))) neededTypes[[className]] <<- newSym
-                                    }
-                                    else{
-                                      symTab$addSymbol(symbolBasic(name = nimbleListObj$types$vars[i], 
-                                                                   type = nimbleListObj$types$type[i], 
-                                                                   nDim = length(nimbleListObj$types$size[[i]]), 
-                                                                   size =nimbleListObj$types$ size[[i]]))
-                                    }
+                                  for(i in seq_along(nimbleListObj$types$vars)){
+                                          ## ensure that types are of form "double", not "double(1)"
+                                    nimbleListObj$types$types[i] <<- strsplit(nimbleListObj$types$types[i], "\\(")[[1]][1]
+                                    symTab$addSymbol(argType2symbol(call(nimbleListObj$types$types[i], varDims[i]),
+                                                                    neededTypes, nimbleListObj$types$vars[i]))
                                   }
+            
+                                  # symTab <<- nimble:::buildSymbolTable(nimbleListObj$types$vars, nimbleListObj$types$types,
+                                  #                                      nimbleListObj$types$sizes)
                                 },
                                 getSymbolTable = function() symTab
                             ))
