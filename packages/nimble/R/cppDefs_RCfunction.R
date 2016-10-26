@@ -73,14 +73,11 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
-                                     print("dont forget to switch returnArgsAsList")
-                                     returnArgsAsList <- TRUE
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
                                      argNames <- names(argsCode)
-                                     browser()
-                                     
+
                                      if(is.character(SEXPinterfaceCname) && is.null(dll) && eval) {
                                          warning("creating a .Call() expression with no DLL information")
                                          browser()                                     
@@ -101,6 +98,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      for(i in seq_along(argNames)) dotCall[[i+2]] <- as.name(argNames[i])
                                      if(asMember & is.character(includeDotSelf)) dotCall[[length(argNames) + 3]] <- as.name(includeDotSelf)
                                      if(returnArgsAsList) {
+                                       ansReturnName <- substitute(ans$return, list())
                                          argNamesAssign <- if(length(argNames) > 0) paste0('\"',argNames, '\"') else character(0)
                                          if(!returnVoid) argNamesAssign <- c(argNamesAssign, '\"return\"')
                                          if(length(argNamesAssign) > 0)
@@ -108,6 +106,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          else
                                              namesAssign <- quote(ans <- NULL)
                                      } else {
+                                       ansReturnName <- substitute(ans, list())
                                          if(length(argNames)+!returnVoid > 0 & !returnVoid)
                                              namesAssign <- parse(text = paste0('ans <- ans[[',length(argNames)+!returnVoid,']]'), keep.source = FALSE)[[1]]
                                          else
@@ -121,30 +120,37 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      
+                                     if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
+                                       listCode <-  substitute({returnListDef <- nimbleList(TYPES, NAME);
+                                                                returnList <- returnListDef$new();
+                                                                for(i in 1:length(ANS)){
+                                                                 returnList[[names(ANS)[i]]] <- ANS[[i]]
+                                                                };
+                                                                ANS <- returnList;},
+                                                               list(TYPES = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$types,
+                                                                    NAME = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$className,
+                                                                    ANS = ansReturnName))
+                                     }
+                                     else{
+                                       listCode <- NULL
+                                     }
+                                       
                                      funCode <- parse(text = paste0('function(', paste0(argNamesCall, collapse = ','),') A'), keep.source = FALSE)[[1]]
                                      ## the first warning may be removed later if there is no CnativeSymbolInfo_ to be created or if eval is FALSE (as for a nimbleFunction member
                                      if(asMember & is.character(includeDotSelf))
                                          bodyCode <- substitute({
-                                             if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
-                                             if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
-                                             ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign, DOTSELFNAME = includeDotSelf))
-                                     else
+                                           if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
+                                           if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
+                                           ans <- DOTCALL; NAMESASSIGN; LISTCODE; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
+                                                                                             DOTSELFNAME = includeDotSelf, LISTCODE = listCode))
+                                         
+                                      else
                                          bodyCode <- substitute({
                                              if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
-                                              ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign))
+                                              ans <- DOTCALL; NAMESASSIGN; LISTCODE; ans}, 
+                                             list(DOTCALL = dotCall, LISTCODE = listCode, NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
                                      funCode[[4]] <- NULL
-                                     if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                       funCode[[4]] <- substitute({returnListDef <- nimbleList(TYPES, NAME); a <- 3},
-                                                  list(TYPES = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$types,
-                                                       NAME = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$className))
-                                       
-                                       substitute(returnList <- returnListDef$new(), list())
-                                       
-                                       substitute(for(i in 1:length(ans)){
-                                         returnList[[names(ans)[i]]] <- ans[i]
-                                       }, list())
-                                     }
                                      if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
                                      if(eval) {
                                          fun = eval(funCode)

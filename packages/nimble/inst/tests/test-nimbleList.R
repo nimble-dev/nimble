@@ -1,11 +1,15 @@
 ## Tests for building, compiling, and using nimbleList objects
-## These use some of the same internals (accessors), so they are in the same testing file.
-## Checks are made internally for uncompiled and compiled cases.  Then uncompiled and compiled outcomes are compared to check that they behaved identically.
+## There are three distinct ways that a nimbleList can be created for use in a nimbleFunction:
+## 1) nimbleListDef is created outside of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in setup code
+## 2) nimbleListDef is created outside of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in run code
+## 3) nimbleListDef is created in setup code of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in setup code
+## 4) nimbleListDef is created in setup code of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in run code
 
 context('nimbleList() tests')
 
 
 library(nimble)
+library(testthat)
 nimbleOptions(showCompilerOutput = TRUE)
 # nimbleOptions(debugCppLineByLine = TRUE)
 # nimbleOptions(debugSizeProcessing = TRUE)
@@ -13,10 +17,9 @@ nimbleOptions(showCompilerOutput = TRUE)
 options( warn = 1 )
 
 ########
-#Test of creating new nimbleList in run code and specifying initial values for that list
-#Here, the nlDef is created in the global environment, outside of setup code
+## Test of creating new nimbleList in run code and specifying initial values for that list
+## Here, the nlDef is created in the global environment, outside of setup code
 ########
-
 
 nlTestFunc1 <- nimbleFunction(
   setup = function(){
@@ -24,7 +27,7 @@ nlTestFunc1 <- nimbleFunction(
   },
   run = function(){
     doubleScalar <- 1
-    doubleVector <- numeric(1, 1)
+    doubleVector <- numeric(2, 1)
     newList1 <- testListDef1$new(nlVector = doubleVector, nlMatrix = doubleMatrix)
     newList1$nlScalar <- doubleScalar
     returnType(testListDef1())
@@ -35,14 +38,27 @@ nlTestFunc1 <- nimbleFunction(
 testTypes <- list(vars = c('nlScalar', 'nlVector', 'nlMatrix'), types = c('double(0)', "double(1)", "double(2)"))
 testListDef1 <- nimbleList(testTypes)
 testInst <- nlTestFunc1()
-ctestInst <- compileNimble(testInst, control = list(debug =  F))
-ctestInst$run()
+RnimbleList <- testInst$run()
+CtestInst <- compileNimble(testInst, control = list(debug =  F))
+CnimbleList <- CtestInst$run()
 
-
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlScalar, 1)
+expect_identical(RnimbleList$nlVector, c(1, 1))
+expect_identical(RnimbleList$nlMatrix, diag(1))
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
+expect_identical(RnimbleList$nlVector, CnimbleList$nlVector)
+expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+test_that("return objects are nimbleLists", 
+          {
+            is.nl(RnimbleList)
+            is.nl(CnimbleList)
+          })
 
 ########
-#Test of creating new nimbleList in run code and specifying initial value for that list
-#Here, the nlDef is created in setup code.  Inital value is an expression.
+## Test of creating new nimbleList in run code and specifying initial value for that list
+## Here, the nlDef is created in setup code.  Inital value is an expression.
 ########
 
 nlTestFunc2 <- nimbleFunction(
@@ -59,17 +75,55 @@ nlTestFunc2 <- nimbleFunction(
 )
 
 testInst <- nlTestFunc2()
+RnimbleList <- testInst$run()
 ctestInst <- compileNimble(testInst, control = list(debug =  F))
-ctestInst$run()
+CnimbleList <- ctestInst$run()
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlScalar, 2)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
+test_that("return objects are nimbleLists", 
+          {
+            is.nl(RnimbleList)
+            is.nl(CnimbleList)
+          })
+
+########
+#Test of creating nimbleListDef outside function code and creating new nimbleList in setup code 
+########
+
+nlTestFunc3 <- nimbleFunction(
+  setup = function(){
+    setupList3 <- testListDef3$new(nlCharacter = "hello world")
+  },
+  run = function(){
+    returnType(testListDef3())
+    return(setupList3)
+  }
+)
+
+testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+testListDef3 <- nimbleList(testTypes)
+testInst <- nlTestFunc3()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlScalar, 2)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
+test_that("return objects are nimbleLists", 
+          {
+            is.nl(RnimbleList)
+            is.nl(CnimbleList)
+          })
 
 ########
 #Test of creating new nimbleList in setup code and specifying initial values for that list
 ########
-
-
-
-
-
 
 nlTestFunc3 <- nimbleFunction(
   setup = function(){
@@ -84,8 +138,20 @@ nlTestFunc3 <- nimbleFunction(
 )
 
 testInst <- nlTestFunc3()
-ctestInst <- compileNimble(testInst, control = list(debug =  T))
-ctestInst$run()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlScalar, 2)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
+test_that("return objects are nimbleLists", 
+          {
+            is.nl(RnimbleList)
+            is.nl(CnimbleList)
+          })
 
 
 ########
