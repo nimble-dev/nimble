@@ -52,8 +52,8 @@ expect_identical(RnimbleList$nlVector, CnimbleList$nlVector)
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
 test_that("return objects are nimbleLists", 
           {
-            is.nl(RnimbleList)
-            is.nl(CnimbleList)
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
           })
 
 ########
@@ -85,44 +85,14 @@ expect_identical(RnimbleList$nlScalar, 2)
 expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
 test_that("return objects are nimbleLists", 
           {
-            is.nl(RnimbleList)
-            is.nl(CnimbleList)
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
           })
 
-########
-#Test of creating nimbleListDef outside function code and creating new nimbleList in setup code 
-########
-
-nlTestFunc3 <- nimbleFunction(
-  setup = function(){
-    setupList3 <- testListDef3$new(nlCharacter = "hello world")
-  },
-  run = function(){
-    returnType(testListDef3())
-    return(setupList3)
-  }
-)
-
-testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
-testListDef3 <- nimbleList(testTypes)
-testInst <- nlTestFunc3()
-RnimbleList <- testInst$run()
-ctestInst <- compileNimble(testInst)
-CnimbleList <- ctestInst$run()
-
-
-## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlScalar, 2)
-## test for identical values of R and C nimbleLists
-expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
-test_that("return objects are nimbleLists", 
-          {
-            is.nl(RnimbleList)
-            is.nl(CnimbleList)
-          })
 
 ########
-#Test of creating new nimbleList in setup code and specifying initial values for that list
+## Test of creating new nimbleList in setup code and specifying initial values for that list.
+## Here, the nlDef is created in setup code
 ########
 
 nlTestFunc3 <- nimbleFunction(
@@ -142,20 +112,19 @@ RnimbleList <- testInst$run()
 ctestInst <- compileNimble(testInst)
 CnimbleList <- ctestInst$run()
 
-
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlScalar, 2)
+expect_identical(RnimbleList$nlCharacter, "hello world")
 ## test for identical values of R and C nimbleLists
-expect_identical(RnimbleList$nlScalar, CnimbleList$nlScalar)
+expect_identical(RnimbleList$nlCharacter, CnimbleList$nlCharacter)
 test_that("return objects are nimbleLists", 
           {
-            is.nl(RnimbleList)
-            is.nl(CnimbleList)
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
           })
 
 
 ########
-#Test of using a nimbleList as a run function argument 
+## Test of using a nimbleList as a run function argument 
 ########
 
 
@@ -171,17 +140,27 @@ nlTestFunc4 <- nimbleFunction(
 
 testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
 testListDef4 <- nimble:::nimbleList(testTypes)
-testList4 <- testListDef4$new(nlMatrix = diag(5))
+testList4 <- testListDef4$new(nlMatrix = diag(2))
 
 testInst <- nlTestFunc4()
+RnimbleList <- testInst$run(testList4)
 ctestInst <- compileNimble(testInst, control = list(debug =  F))
-ctestInst$run(testList4)
+CnimbleList <- ctestInst$run(testList4)
 
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow =  2))
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+})
 
 
 
 ########
-#Test of using a nimbleList as an argument to a function within a nimbleFunction  
+## Test of using a nimbleList as an argument to a function within a nimbleFunction  
 ########
 
 
@@ -210,45 +189,91 @@ testListDef5 <- nimble:::nimbleList(testTypes)
 testList5 <- testListDef5$new(a = 0)
 
 testInst <- nlTestFunc5()
+RnimbleList <- testInst$run(testList5)
 ctestInst <- compileNimble(testInst, control = list(debug =  F))
-ctestInst$run(testList5)
+CnimbleList <- ctestInst$run(testList5)
 
-innerNlTestFunc1 <- nimbleFunction(
-  setup = function(){},
-  run = function(nimList = testListDef()){
-    nimList$a <- 1
-    returnType(testListDef())
-    return(nimList)
-})
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$a, 2)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$a, CnimbleList$a)
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
 
-nlTestFunc1 <- nimbleFunction(
+
+########
+## Test of using a nimbleList returned from a nimbleFunction as a run argument to another nimble function
+########
+
+
+nlTestFunc6 <- nimbleFunction(
   setup = function(){
-    doubleMatrix <- diag(1)
-    innerFunc <- innerNlTestFunc1()
-    },
-  run = function(){
-    doubleScalar <- 1
-    doubleVector <- numeric(1, 1)
-    argList <- testListDef$new(b = doubleVector, c = doubleMatrix)
-    argList <- innerFunc(argList)
-    returnType(testListDef())
-    return(argList)
+  },
+  run = function(argList6 = testListDef6()){
+    argList6$nlMatrix[1,2] <- argList6$nlMatrix[1,2] + 10
+    returnType(testListDef6())
+    return(argList6)
   }
 )
 
-testTypes <- list(vars = c('a'), types = c('double(0)'))
-testListDef <- nimble:::nimbleList(testTypes)
-testList <- testListDef(a = 5.5)
-testInst <- innerNlTestFunc1()
+testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
+testListDef6 <- nimble:::nimbleList(testTypes)
+testList6 <- testListDef4$new(nlMatrix = diag(2))
+
+testInst <- nlTestFunc6()
+RnimbleList <- testInst$run(testList6)
+RnimbleList <- testInst$run(RnimbleList)
 ctestInst <- compileNimble(testInst, control = list(debug =  F))
-ctestInst$run(testList)
+CnimbleList <- ctestInst$run(testList6)
+CnimbleList <- ctestInst$run(CnimbleList)
 
-testInst <- nlTestFunc1()
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow =  2))
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+########
+## Test of using two nimbleLists as  run function arguments 
+########
+
+
+nlTestFunc7 <- nimbleFunction(
+  setup = function(){
+    diamat <- diag(2)
+  },
+  run = function(argList7a = testListDef7(), argList7b = testListDef7()){
+    testMat <- argList7a$nlMatrix %*% diamat
+    returnType(testListDef7())
+    return(argList7a)
+  }
+)
+
+testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
+testListDef7 <- nimble:::nimbleList(testTypes)
+testList7a <- testListDef7$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
+testList7b <- testListDef7$new(nlMatrix = matrix(2, nrow = 2, ncol = 2))
+
+testInst <- nlTestFunc7()
+RnimbleList <- testInst$run(testList7a, testList7b)
 ctestInst <- compileNimble(testInst, control = list(debug =  F))
-ctestInst$run()
+CnimbleList <- ctestInst$run(testList7a, testList7b)
 
-
-
-
-
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow =  2))
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
 

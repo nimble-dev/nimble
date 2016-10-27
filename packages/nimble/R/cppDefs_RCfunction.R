@@ -121,7 +121,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      
                                      if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                       listCode <-  substitute({returnListDef <- nimbleList(TYPES, NAME);
+                                       listCode <-  substitute({browser();
+                                                                returnListDef <- nimbleList(TYPES, NAME);
                                                                 returnList <- returnListDef$new();
                                                                 for(i in 1:length(ANS)){
                                                                  returnList[[names(ANS)[i]]] <- ANS[[i]]
