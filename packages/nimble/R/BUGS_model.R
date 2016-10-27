@@ -118,11 +118,6 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       return(subExpr)
                                   },
 
-                                  getDistribution = function(nodes) {
-                                      nodes <- expandNodeNames(nodes)
-                                      sapply(getDeclInfo(nodes), getDistributionName)
-                                  },
-
                                   isDiscrete = function(nodes) {
                                       dist <- getDistribution(nodes)
                                       # explicit reference to namespace needed as class definition objects inheriting from modelBaseClass not in namespace
