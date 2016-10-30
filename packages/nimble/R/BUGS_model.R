@@ -50,9 +50,10 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   	return(modelDef$maps[[mapName]])
                                    },
                                    isNodeEnd = function(nodes){  #Note: it says nodes, but graphIDs are fine too. Actually they are better
-                                   	if(is.character(nodes))
-                                   		nodes = expandNodeNames(nodes, returnType = 'ids')
-                                   	return(modelDef$maps$isEndNode_byGID[nodes])
+                                       nodeNames <- nodes  # needed so don't have local assignment into 'nodes'
+                                   	if(is.character(nodeNames))
+                                   		nodeNames = expandNodeNames(nodeNames, returnType = 'ids')
+                                   	return(modelDef$maps$isEndNode_byGID[nodeNames])
                                    },
 
                                   ## returns the type of one or more node names, e.g., 'stoch' or 'determ'
@@ -92,8 +93,8 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   
                                   ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
                                   getDistribution = function(nodes) {
-                                      nodes <- expandNodeNames(nodes)
-                                      sapply(getDeclInfo(nodes), getDistributionName)
+                                      nodeNames <- expandNodeNames(nodes)
+                                      sapply(getDeclInfo(nodeNames), getDistributionName)
                                   },
 
                                   ## returns the expr corresponding to 'param' in the distribution of 'node'
@@ -127,34 +128,34 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
 
                                   isBinary = function(nodes) {
-                                      nodes <- expandNodeNames(nodes)  # needed below but duplicates what happens in getDistribution
-                                      dist <- getDistribution(nodes)
+                                      nodeNames <- expandNodeNames(nodes)  # needed below but duplicates what happens in getDistribution
+                                      dist <- getDistribution(nodeNames)
                                       
                                       binary <- rep(FALSE, length(dist))
                                       binary[dist == 'dbern'] <- TRUE
                                       binomInds <- which(dist == 'dbin')
-                                      tmp <- sapply(binomInds, function(ind) getParamExpr(nodes[ind], 'size') == 1)
+                                      tmp <- sapply(binomInds, function(ind) getParamExpr(nodeNames[ind], 'size') == 1)
                                       binary[binomInds[tmp]] <- TRUE
                                       return(binary)
                                   },
 
                                   isTruncated = function(nodes) {
-                                      nodes <- expandNodeNames(nodes)
-                                      sapply(getDeclInfo(nodes), isTruncated)
+                                      nodeNames <- expandNodeNames(nodes)
+                                      sapply(getDeclInfo(nodeNames), isTruncated)
                                   },
 
                                   isUnivariate = function(nodes) {
-                                      nodes <- expandNodeNames(nodes)
-                                      dims <- sapply(nodes, getDistribution)
+                                      nodeNames <- expandNodeNames(nodes)
+                                      dims <- sapply(nodeNames, getDistribution)
                                       return(dims == 1)
                                   },
                                       
-                                  getDimension = function(node, params) {
+                                  getDimension = function(node, params = NULL, includeValue = TRUE,
+                                                          includeParams = !is.null(params)) {
                                       dist <- getDistribution(node)
                                       if(length(dist) > 1)
                                           stop("getDimension: 'node' should be a single node in the model")
-                                      if(missing(params)) 
-                                          dim <- getDimension(dist) else dim <- getDimension(dist, params)
+                                      dim <- getDimension(dist, params, includeValue, includeParams)
                                       return(dim)
                                   },
 
@@ -285,8 +286,8 @@ Details: This function merely reorders its input argument.  This may be inportan
 '
                                       nodeIDs <- expandNodeNames(nodes, returnType = 'ids')			#modelDef$maps$nodeName_2_graphID[nodes]
                                       nodeIDs <- sort(nodeIDs)
-                                      nodes <- expandNodeNames(nodeIDs, returnType = returnType)
-                                      return(nodes)
+                                      nodeNames <- expandNodeNames(nodeIDs, returnType = returnType)
+                                      return(nodeNames)
                                   },
                                   
                                   getVarInfo = function(name, includeLogProb = TRUE) {
@@ -414,8 +415,8 @@ Details: The variable or node names specified is expanded into a vector of model
                                   },
 
                                   isDataFromGraphID = function(g_id){
-                                   	nodes <- modelDef$maps$graphID_2_nodeName[g_id]	
-                                  	ret <- unlist(lapply(as.list(nodes),
+                                   	nodeNames <- modelDef$maps$graphID_2_nodeName[g_id]	
+                                  	ret <- unlist(lapply(as.list(nodeNames),
                                                   function(nn)     
                                                     return(as.vector(eval(parse(text=nn, keep.source = FALSE)[[1]],
                                                                                 envir=isDataEnv))[[1]])))
