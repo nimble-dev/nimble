@@ -20,6 +20,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
                     getParam = 'sizeGetParam',
+                    getBound = 'sizeGetBound',
                     nimSwitch = 'sizeSwitch',
                     asDoublePtr = 'sizeasDoublePtr',
                    '[' = 'sizeIndexingBracket',
@@ -276,6 +277,35 @@ sizeGetParam <- function(code, symTab, typeEnv) {
     }
     return(asserts)
 }
+
+sizeGetBound <- function(code, symTab, typeEnv) {
+    if(length(code$args) > 3) {
+        asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, FALSE, FALSE, rep(TRUE, length(code$args)-3)))
+        for(i in 4:length(code$args)) {
+            if(inherits(code$args[[i]], 'exprClass')) {
+                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeGetParam: There is an expression beyond the third argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+            }
+        }
+    } else {
+        asserts <- list()
+    }
+ 
+    
+    boundInfoSym <- symTab$getSymbolObject(code$args[[3]]$name, inherits = TRUE)
+    code$type <- boundInfoSym$boundInfo$type
+    code$nDim <- boundInfoSym$boundInfo$nDim
+    code$sizeExprs <- vector(mode = 'list', length = code$nDim)
+    code$toEigenize <- 'no'
+
+    if(!(code$caller$name %in% assignmentOperators)) {
+        if(!is.null(code$caller$name))
+            if(!(code$caller$name == '{')) ## could be on its own line -- useless but possible
+                asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        code$toEigenize <- 'maybe'
+    }
+    return(asserts)
+}
+
 
 sizeSwitch <- function(code, symTab, typeEnv) {
     if(length(code$args) <= 2) return(invisible(NULL))

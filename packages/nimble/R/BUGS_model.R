@@ -40,6 +40,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   getLogProb = function(nodes) nimble::getLogProb(.self, nodes),
                                   simulate = function(nodes, includeData = FALSE) nimble::simulate(.self, nodes, includeData),
                                   getParam = function(node, param) nimble::getParam(.self, node, param),
+                                  getBound = function(node, bound) nimble::getBound(.self, node, bound),
                                   
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
@@ -866,8 +867,11 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            code <- nimble:::insertSingleIndexBrackets(code, modelDef$varInfo)
                                            LHS <- code[[2]]
                                            RHS <- code[[3]]
+
                                            altParams <- BUGSdecl$altParamExprs
                                            altParams <- lapply(altParams, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
+                                           bounds <- BUGSdecl$boundExprs
+                                           bounds <- lapply(bounds, nimble:::insertSingleIndexBrackets, modelDef$varInfo)
                                            logProbNodeExpr <- BUGSdecl$logProbNodeExpr
                                            logProbNodeExpr <- nimble:::insertSingleIndexBrackets(logProbNodeExpr, modelDef$logProbVarInfo)
                                            setupOutputExprs <- BUGSdecl$replacementNameExprs
@@ -878,7 +882,7 @@ RmodelBaseClass <- setRefClass("RmodelBaseClass",
                                            ## make a unique name
                                            thisNodeGeneratorName <- paste0(nimble:::Rname2CppName(BUGSdecl$targetVarName), '_L', BUGSdecl$sourceLineNumber, '_', nimble:::nimbleUniqueID())
                                            ## create the nimbleFunction generator (i.e. unspecialized nimbleFunction)
-                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
+                                           nfGenerator <- nimble:::nodeFunctionNew(LHS=LHS, RHS=RHS, name = thisNodeGeneratorName, altParams=altParams, bounds=bounds, logProbNodeExpr=logProbNodeExpr, type=type, setupOutputExprs=setupOutputExprs, evaluate=TRUE, where = where)
                                            nodeGenerators[[i]] <<- nfGenerator
                                            names(nodeGenerators)[i] <<- thisNodeGeneratorName
                                            nodeFunctionGeneratorNames[i] <<- thisNodeGeneratorName
