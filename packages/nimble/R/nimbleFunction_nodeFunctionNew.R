@@ -11,6 +11,7 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, logProbNodeExpr, typ
                            setup         = SETUPFUNCTION,
                            methods       = METHODS,
                            name          = name,
+                           check         = FALSE,
                            where = where),
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function

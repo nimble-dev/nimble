@@ -4,6 +4,9 @@ USER LEVEL CHANGES
 
 -- dmulti(), rmulti(), dcat() and rcat() now allow 'probs' argument with arbitrary non-negative values and internally normalize these so they sum to one, to be consistent with R's multinom behavior.
 
+-- Added optional (turned on by default) checking of nimbleFunction run code to warn users if they are calling functions (in particular, R functions) that are not part of the NIMBLE DSL.
+
+
                            CHANGES IN VERSION 0.6-1 (October 2016)
 
 DEVELOPER LEVEL CHANGES
