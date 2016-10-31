@@ -49,13 +49,14 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   	if(all == TRUE)		return(modelDef$maps)
                                   	return(modelDef$maps[[mapName]])
                                    },
-                                   isNodeEnd = function(nodes){  #Note: it says nodes, but graphIDs are fine too. Actually they are better
-                                       nodeNames <- nodes  # needed so don't have local assignment into 'nodes'
-                                   	if(is.character(nodeNames))
-                                   		nodeNames = expandNodeNames(nodeNames, returnType = 'ids')
-                                   	return(modelDef$maps$isEndNode_byGID[nodeNames])
-                                   },
-
+                                  
+                                  isEndNode = function(nodes){  #Note: it says nodes, but graphIDs are fine too. Actually they are better
+                                      nodeNames <- nodes  # needed so don't have local assignment into 'nodes'
+                                      if(is.character(nodeNames))
+                                          nodeNames = expandNodeNames(nodeNames, returnType = 'ids', unique = FALSE)
+                                      return(modelDef$maps$isEndNode_byGID[nodeNames])
+                                  },
+                                  
                                   ## returns the type of one or more node names, e.g., 'stoch' or 'determ'
                                   getNodeType = function(nodes) {
                                       graphIDs <- modelDef$nodeName2GraphIDs(nodes)
@@ -93,7 +94,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   
                                   ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
                                   getDistribution = function(nodes) {
-                                      nodeNames <- expandNodeNames(nodes)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       sapply(getDeclInfo(nodeNames), getDistributionName)
                                   },
 
@@ -128,7 +129,7 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
 
                                   isBinary = function(nodes) {
-                                      nodeNames <- expandNodeNames(nodes)  # needed below but duplicates what happens in getDistribution
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)  # needed below but duplicates what happens in getDistribution
                                       dist <- getDistribution(nodeNames)
                                       
                                       binary <- rep(FALSE, length(dist))
@@ -140,12 +141,12 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
 
                                   isTruncated = function(nodes) {
-                                      nodeNames <- expandNodeNames(nodes)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       sapply(getDeclInfo(nodeNames), isTruncated)
                                   },
 
                                   isUnivariate = function(nodes) {
-                                      nodeNames <- expandNodeNames(nodes)
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       dims <- sapply(nodeNames, getDistribution)
                                       return(dims == 1)
                                   },
