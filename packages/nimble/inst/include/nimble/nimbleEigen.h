@@ -11,52 +11,87 @@
 // need to wrap constants
 
 // concatenation, c(A1, A2)
-template<typename Derived1, typename Derived2>
-class concatenateClass {
-public:
-  const Derived1 &Arg1;
-  const Derived2 &Arg2;
-  int size1, size2;
-  typedef double result_type;
-  concatenateClass(const Derived1 &A1, const Derived2 &A2) : Arg1(A1), Arg2(A2) {
-    // add more complete checking of row vs. col vector here
-    // assume col vector for now
-    size1 = Arg1.rows();
-    size2 = Arg2.rows();
-  };
-  typedef Eigen::internal::traits<MatrixXd>::Index Index;
-  result_type operator()() const
-  {
-    std::cout<<"IN 0\n";
-    return Arg1.coeff(0);
-  }
+template<bool useLinearAccess, typename result_type, typename eigenType, typename Index>
+struct nimble_eigen_coeff_impl;
 
+template<typename result_type, typename eigenType, typename Index>
+struct nimble_eigen_coeff_impl<true, result_type, eigenType, Index> {
+  static result_type getCoeff(const eigenType &Arg, Index i) {return Arg.coeff(i);}
+};
 
-  result_type operator()(Index i) const //Eigen::DenseIndex
-  {
-    std::cout<<"IN 1\n";
-    if(i < size1)
-      return Arg1.coeff(i);
-    else
-      return Arg2.coeff(i - size1);
-  }
-
-  // added this
-  result_type operator()(Index i, Index j) const
-  {
-    std::cout<<"IN 2\n";
-    return Arg1.coeff(0, 0);
+template<typename result_type, typename eigenType, typename Index>
+struct nimble_eigen_coeff_impl<false, result_type, eigenType, Index> {
+  static result_type getCoeff(const eigenType &Arg, Index i) {
+    std::div_t divRes = div(i, Arg.rows());
+    return Arg.coeff(divRes.rem, floor(divRes.quot));
   }
 };
 
 template<typename Derived1, typename Derived2>
-CwiseNullaryOp<concatenateClass<Derived1, Derived2>, MatrixXd > concatenate(const Derived1 &A1, const Derived1 &A2) {
-  concatenateClass<Derived1, Derived2> c(A1, A2);
-  return(CwiseNullaryOp<concatenateClass<Derived1, Derived2>, MatrixXd >(A1.rows() + A2.rows(), 1, c));
+class concatenateClass {
+ public:
+  const Derived1 &Arg1;
+  const Derived2 &Arg2;
+  int size1, size2;
+  typedef double result_type;
+ concatenateClass(const Derived1 &A1, const Derived2 &A2) : Arg1(A1), Arg2(A2) {
+    size1 = Arg1.size();
+    size2 = Arg2.size();
+  };
+  
+  typedef typename Eigen::internal::traits<Derived1>::Index Index1;
+  typedef typename Eigen::internal::traits<Derived2>::Index Index2;
+  
+  result_type operator()(Index1 i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
+  {
+    std::cout<<"IN 1\n";
+    if(i < size1)
+      return nimble_eigen_coeff_impl< Eigen::internal::traits<Derived1>::Flags & LinearAccessBit, result_type, Derived1, Index1 >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
+    else
+      return nimble_eigen_coeff_impl< Eigen::internal::traits<Derived2>::Flags & LinearAccessBit, result_type, Derived2, Index1 >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
+  }
+
+  result_type operator()(Index1 i, Index2 j) const // I don't think this should normally be called, but if it does, act like a vector
+  {
+    std::cout<<"IN 2\n";
+    return operator()(i);
+  }
+};
+
+
+namespace Eigen{
+  namespace internal{
+    template<typename Derived1, typename Derived2>
+    // 3 options for linear_access:
+      //1. turn it off: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = 0 }; }; 
+      //2. turn it on: (and let it be resolved by nimble_eigen_coeff_impl>:
+    struct functor_has_linear_access<concatenateClass<Derived1, Derived2> > { enum { ret = 1}; }; 
+      //3. Set it once according to arguments: (problem here is that if it is off for this expression, that may make expressions using this one forbidden from using linear access, which is a bit harsh: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = traits<Derived1>::Flags & traits<Derived2>::Flags & LinearAccessBit }; };
+      template<typename Derived1, typename Derived2>
+      struct functor_traits<concatenateClass<Derived1, Derived2> >
+      {
+	enum
+	{
+	  Cost = 10, // there are templated costs available to pick up for this
+	  PacketAccess = false, // happy to keep this false for now
+	  IsRepeatable = true // default was false. 
+	};
+      };    
+  }
 }
 
-#define nimC concatenate<Eigen::MatrixXd, Eigen::MatrixXd>
+template<typename returnDerived>
+struct concatenate_impl {
+  template<typename Derived1, typename Derived2>
+    static CwiseNullaryOp<concatenateClass<const Derived1, const Derived2>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
+    concatenateClass<const Derived1, const Derived2> c(A1.derived(), A2.derived());
+    return(CwiseNullaryOp<concatenateClass<const Derived1, const Derived2>, returnDerived >(A1.size() + A2.size(), 1, c));
+  }
+};
 
+#define nimCd concatenate_impl<MatrixXd>::concatenate
+#define nimCi concatenate_impl<MatrixXi>::concatenate
+#define nimCb concatenate_imple<MatrixXb>::concatenate
 
 // rep, rep(x, times, each)
 template<typename Derived1>
@@ -74,7 +109,7 @@ public:
     each(eachIn) {
     // add more complete checking of row vs. col vector here
     // assume col vector for now
-    sizeArg1 = Arg1.rows();
+    sizeArg1 = Arg1.size();
     if(each > 1)
       if(times > 1)
 	eachTimesCase = useBoth;
@@ -84,48 +119,64 @@ public:
       eachTimesCase = useTimes;
     // may need to handle times = 0 or each = 0
   };
-  typedef Eigen::internal::traits<MatrixXd>::Index Index;
-  result_type operator()() const
-  {
-    std::cout<<"IN 0 rep\n";
-    return Arg1.coeff(0);
-  }
+  typedef typename Eigen::internal::traits<Derived1>::Index Index1;
 
-
-  result_type operator()(Index i) const //Eigen::DenseIndex
+  result_type operator()(Index1 i) const //Eigen::DenseIndex
   {
+    Index1 iUse;
     std::cout<<"IN 1 rep\n";
     switch(eachTimesCase) {
     case useEach:
-      return(Arg1.coeff(floor(i/each)));
+      iUse = floor(i/each);
       break;
     case useTimes:
-      return(Arg1.coeff(i % sizeArg1));
+      iUse = i % sizeArg1;
       break;
     case useBoth:
-      return(Arg1.coeff(static_cast<int>(floor(i / each)) % sizeArg1));
+      iUse = static_cast<int>(floor(i / each)) % sizeArg1;
+      break;
     default:
-      return(0); //error
+      iUse = 0; //error
     }
-    
+    return nimble_eigen_coeff_impl< Eigen::internal::traits<Derived1>::Flags & LinearAccessBit, result_type, Derived1, Index1 >::getCoeff(Arg1, iUse);
   }
 
-  // added this
-  result_type operator()(Index i, Index j) const
+  result_type operator()(Index1 i, Index1 j) const
   {
     std::cout<<"IN 2 rep\n";
-    return Arg1.coeff(0, 0);
+    return operator()(i);
   }
 };
 
-template<typename Derived1>
-CwiseNullaryOp<repClass<Derived1>, MatrixXd > rep(const Derived1 &A1, int reps, int each) {
-repClass<Derived1> repObj(A1, reps, each);
-return(CwiseNullaryOp<repClass<Derived1>, MatrixXd >(A1.rows() * reps * each, 1, repObj));
+namespace Eigen{
+  namespace internal{
+    template<typename Derived1>
+    struct functor_has_linear_access<repClass<Derived1> > { enum { ret = 1}; }; 
+      template<typename Derived1>
+      struct functor_traits<repClass<Derived1> >
+      {
+	enum
+	{
+	  Cost = 10, // there are templated costs available to pick up for this
+	  PacketAccess = false, // happy to keep this false for now
+	  IsRepeatable = true // default was false. 
+	};
+      };    
+  }
 }
 
-#define nimRep rep<Eigen::MatrixXd>
+template<typename returnDerived>
+struct rep_impl {
+  template<typename Derived1>
+  static CwiseNullaryOp<repClass<const Derived1>, returnDerived > rep(const Derived1 &A1, int reps, int each) {
+    repClass<const Derived1> repObj(A1, reps, each);
+    return(CwiseNullaryOp<repClass<const Derived1>, returnDerived >(A1.rows() * reps * each, 1, repObj));
+  }
+};
 
+#define nimRepd rep_impl<MatrixXd>::rep
+#define nimRepi rep_impl<MatrixXi>::rep
+#define nimRepb rep_impl<MatrixXb>::rep
 
 // sequences, seq(from, to, by, length.out)  not implementing along.with for now
 // not implementing this for `:` because we already have special treatment `:` in for-loop context, so want to tread carefully there

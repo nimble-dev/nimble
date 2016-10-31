@@ -44,7 +44,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimArr_rcat = 'sizeScalarRecurse',
                     nimArr_rinterval = 'sizeScalarRecurse',
                     nimPrint = 'sizeforceEigenize',
-                    nimCat = 'sizeforceEigenize',
+                    ##nimCat = 'sizeforceEigenize',
                     as.integer = 'sizeUnaryCwise', ## Note as.integer and as.numeric will not work on a non-scalar yet
                     as.numeric = 'sizeUnaryCwise',
                     nimArrayGeneral = 'sizeNimArrayGeneral',
@@ -165,25 +165,42 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
     return(ans)
 }
 
-sizeConcatenate <- function(code, symTab, typeEnv) {
+productSizeExprs <- function(sizeExprs) {
+    if(length(sizeExprs)==1) return(sizeExprs[[1]])
+    ans <- substitute( (A), list(A = sizeExprs[[1]]))
+    for(i in 2:length(sizeExprs)) {
+        ans <- substitute(A * (B), list(A = ans, B = sizeExprs[[i]]))
+    }
+    ans
+}
+
+sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument version
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-    code$type <- code$args[[1]]$type
-    if(code$args[[1]]$nDim != 1 | code$args[[2]]$nDim !=1) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must be vectors for now.')), call. = FALSE)
+    code$type <- arithmeticOutputType(code$args[[1]]$type, code$args[[2]]$type)
+    if(code$type == 'double') code$name <- 'nimCd' ## this change could get moved to genCpp_generateCpp 
+    if(code$type == 'integer') code$name <- 'nimCi'
+    if(code$type == 'logical') code$name <- 'nimCb'
+    
+    if(code$args[[1]]$nDim > 2 | code$args[[2]]$nDim > 2) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must have dimension <= 2 for now.')), call. = FALSE)
     ## need to deal with lifting size expressions to get them fully compiled.
     ## otherwise we could end up with an assertion output somewhat incorrectly
     ## insertAssertions does convert to exprClasses but does not eigenize etc
     thisSizeExpr <- substitute( AAA_ + BBB_,
-                               list(AAA_ = code$args[[1]]$sizeExprs[[1]],
-                                    BBB_ = code$args[[2]]$sizeExprs[[1]]) )
+                               list(AAA_ = productSizeExprs(code$args[[1]]$sizeExprs),   ## need to create products of sizeExprs in general
+                                    BBB_ = productSizeExprs(code$args[[2]]$sizeExprs)) )
     code$sizeExprs <- list(thisSizeExpr)
     code$nDim <- 1
     code$toEigenize <- 'yes'
     return(asserts)
 }
 
-sizeRep <- function(code, symTab, typeEnv) {
+sizeRep <- function(code, symTab, typeEnv) { 
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     code$type <- code$args[[1]]$type
+    if(code$type == 'double') code$name <- 'nimRepd' ## this change could get moved to genCpp_generateCpp 
+    if(code$type == 'integer') code$name <- 'nimRepi'
+    if(code$type == 'logical') code$name <- 'nimRepb'
+
     if(code$args[[1]]$nDim != 1) stop(exprClassProcessingErrorMsg(code, paste0('First argument to rep() must be a vector for now.')), call. = FALSE)
     ## requiring for now that times and each arguments are given as integers, not expressions
     ## Since these will go into sizeExprs, which are then processed as R expressions, then as exprClasses but not fully size processed,
@@ -546,7 +563,7 @@ sizeOneEigenCommand <- function(code, symTab, typeEnv) {
     invisible(NULL)
 }
 
-## This is used for nimPrint and nimCat
+## This is used for nimPrint 
 ## If anything has toEigenize == "maybe", the whole expression gets "yes"
 ## That way cout<<X;  will use an eigen map for X
 sizeforceEigenize <- function(code, symTab, typeEnv) {
@@ -1095,11 +1112,21 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         if(!simpleBlockOK)
             code$name <- 'nimNonseqIndexed'
         else {
-            newExpr <- makeMapExprFromBrackets(code, dropBool)
-            newExpr$sizeExprs <- code$sizeExprs
-            newExpr$type <- code$type
-            newExpr$nDim <- code$nDim
-            newExpr$toEigenize <- code$toEigenize
+            if(code$args[[1]]$nDim > 2) { ## old-style blocking
+                newExpr <- makeMapExprFromBrackets(code, dropBool)
+                newExpr$sizeExprs <- code$sizeExprs
+                newExpr$type <- code$type
+                newExpr$nDim <- code$nDim
+                newExpr$toEigenize <- code$toEigenize
+            }
+            else { ## blocking via Eigen
+                newExpr <- makeEigenBlockExprFromBrackets(code, dropBool) ## at this point it is ok that code is messed up (first arg re-used in newExpr)
+                newExpr$sizeExprs <- code$sizeExprs
+                newExpr$type <- code$type
+                newExpr$nDim <- code$nDim
+                newExpr$toEigenize <- 'yes'
+                ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
+            }
             setArg(code$caller, code$callerArgID, newExpr)
         }
     }
@@ -1116,6 +1143,14 @@ sizeColonOperator <- function(code, symTab, typeEnv) {
         if(code$args[[2]]$nDim != 0) message('WARNING, second arg to : is not scalar in expression', nimDeparse(code))
     }
 
+    for(i in 1:2) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(!code$args[[i]]$isName) {
+                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+            }
+        }
+    }
+    
     code$type <- 'integer'
     code$nDim <- 1
     code$toEigenize <- 'maybe' ## doesn't really matter since are used in maps

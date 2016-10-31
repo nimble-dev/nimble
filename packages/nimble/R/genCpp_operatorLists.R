@@ -70,7 +70,8 @@ eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigMatrix = 'matrix',
                        eigInverse = 'inverse',
                        setAll = 'setConstant',
-                       eigEval = 'eval')
+                       eigEval = 'eval',
+                       eigenBlock = 'block') ## created in makeEigenBlockExprFromBrackets called from sizeIndexingBracket
 
 newEPT <- reductionUnaryOperators
 names(newEPT) <- paste0('eig', reductionUnaryOperators)

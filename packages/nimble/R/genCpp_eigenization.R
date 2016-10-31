@@ -93,6 +93,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     list('t' = 'eigenize_cWiseUnaryEither',
+         eigenBlock = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps'
          )
@@ -143,7 +144,8 @@ eigenizeTranslate <- list(abs = 'cwiseAbs',
                           'det' = 'eigDeterminant',
                           
                           '<-' = '<-',
-                          '(' = '('
+                          '(' = '(',
+                          eigenBlock = 'eigenBlock' ## always inserted by sizeIndexingBracket as 'eigenBlock'
                           )
 
 ETentriesFromExternalUnaries <- as.list(names(eigProxyTranslateExternalUnary))
