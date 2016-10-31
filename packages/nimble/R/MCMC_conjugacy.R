@@ -516,7 +516,7 @@ conjugacyClass <- setRefClass(
 
             ## if we need to determine 'coeff' and/or 'offset'
             if(needsLinearityCheck) {
-                targetNdim <- getDimension(prior, 'value')
+                targetNdim <- getDimension(prior)
                 targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
 
                 for(iDepCount in seq_along(dependentCounts)) {
@@ -682,7 +682,7 @@ conjugacyClass <- setRefClass(
 
             } # end if(needsLinearityCheck)
 
-            targetNdim <- getDimension(prior, 'value')
+            targetNdim <- getDimension(prior)
             targetCoeffNdim <- switch(as.character(targetNdim), `0`=0, `1`=2, `2`=2, stop())
             ## adding declarations for the contribution terms, to remove Windows compiler warnings, DT August 2015
             for(contributionName in posteriorObject$neededContributionNames) {
@@ -808,7 +808,7 @@ posteriorClass <- setRefClass(
         },
         inferContributionTermDimensions = function(prior) {
             distToLookup <- if(dDistribution %in% distributions$namesVector) dDistribution else if(prior %in% distributions$namesVector) prior else stop('cannot locate prior or posterior distribution in conjugacy processing')
-            targetNdim <- getDimension(distToLookup, 'value')
+            targetNdim <- getDimension(distToLookup)
             ## if posterior distribution is univariate, assume all contributions are scalar
             if(targetNdim == 0) {
                 theDims <- lapply(neededContributionNames, function(x) 0)

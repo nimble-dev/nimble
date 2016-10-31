@@ -464,52 +464,70 @@ pqAvail <- function(dist) {
    return(getDistributionInfo(dist)$pqAvail)
 } 
 
-getDimension <- function(dist, params = NULL, includeValue = TRUE,
-                         includeParams = !is.null(params)) {
-    if(length(dist) > 1 || class(dist) != 'character')
-        stop("getDimension: 'dist' should be a character vector of length 1")
-    distInfo <- getDistributionInfo(dist)
-
-    if(!includeParams && !includeValue)
-        stop("getDimension: no parameters or value requested")
+getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
+                         !includeParams, includeParams = !is.null(params)) {
+  if(length(dist) > 1 || class(dist) != 'character')
+    stop("getDimension: 'dist' should be a character vector of length 1")
+  distInfo <- getDistributionInfo(dist)
+  
+  if(!includeParams && !valueOnly)
+    stop("getDimension: no parameters or value requested")
+  if(valueOnly && (!is.null(params) || includeParams))
+    stop("getDimension: 'valueOnly' cannot be TRUE if parameters also requested")
+  if(valueOnly) {
+    params <- 'value'
+  } else {  
     if(includeParams && is.null(params)) 
-        params <- getParamNames(dist, includeValue = FALSE)
-    if(includeValue)
-        params <- c('value', params)
-    out <- sapply(params, function(p) distInfo$types[[p]]$nDim)
-    return(out)
+      params <- getParamNames(dist, includeValue = TRUE)
+  }
+  notFound <- which(! params %in% getParamNames(dist))
+  if(length(notFound))
+    stop("getDimension: these parameter names not found: ", params[notFound])
+  out <- sapply(params, function(p) distInfo$types[[p]]$nDim)
+  return(out)
 }
 
-getParamID <- function(dist, params = NULL, includeValue = TRUE,
-                         includeParams = TRUE) {
-    if(length(dist) > 1 || class(dist) != 'character')
-        stop("getType: 'dist' should be a character vector of length 1")
-    distInfo <- getDistributionInfo(dist)
-    
-    if(!includeParams && !includeValue)
-        stop("getType: no parameters or value requested")
+getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
+                       !includeParams, includeParams = !is.null(params)) {
+  if(length(dist) > 1 || class(dist) != 'character')
+    stop("getType: 'dist' should be a character vector of length 1")
+  distInfo <- getDistributionInfo(dist)
+  
+  if(!includeParams && !valueOnly)
+    stop("getDimension: no parameters or value requested")
+  if(valueOnly && (!is.null(params) || includeParams))
+    stop("getDimension: 'valueOnly' cannot be TRUE if parameters also requested")
+  if(valueOnly) {
+    params <- 'value'
+  } else {  
     if(includeParams && is.null(params)) 
-        params <- getParamNames(dist, includeValue = FALSE)
-    if(includeValue)
-        params <- c('value', params)
-    out <- distInfo$paramIDs[params]
-    return(out)
+      params <- getParamNames(dist, includeValue = TRUE)
+  }
+  notFound <- which(! params %in% getParamNames(dist))
+  if(length(notFound))
+    stop("getParamID: these parameter names not found: ", params[notFound])
+  out <- distInfo$paramIDs[params]
+  return(out)
 }
 
 #notFound <- which(!params %in% names(distInfo$types))
 
-getType <- function(dist, params = NULL, includeValue = TRUE,
-                         includeParams = !is.null(params)) {
+getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
+                       !includeParams, includeParams = !is.null(params)) {
     if(length(dist) > 1 || class(dist) != 'character')
         stop("getType: 'dist' should be a character vector of length 1")
     distInfo <- getDistributionInfo(dist)
     
-    if(!includeParams && !includeValue)
-        stop("getType: no parameters or value requested")
+  if(!includeParams && !valueOnly)
+    stop("getDimension: no parameters or value requested")
+  if(valueOnly && (!is.null(params) || includeParams))
+    stop("getDimension: 'valueOnly' cannot be TRUE if parameters also requested")
+  if(valueOnly) {
+    params <- 'value'
+  } else {  
     if(includeParams && is.null(params)) 
-        params <- getParamNames(dist, includeValue = FALSE)
-    if(includeValue)
-        params <- c('value', params)
+      params <- getParamNames(dist, includeValue = TRUE)
+  }
     notFound <- which(! params %in% getParamNames(dist))
     if(length(notFound))
         stop("getType: these parameter names not found: ", params[notFound])

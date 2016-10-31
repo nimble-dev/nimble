@@ -441,7 +441,6 @@ SEXP C_rmulti(SEXP size, SEXP prob) {
   int K = LENGTH(prob);
 
   SEXP ans;
-  int i;
 
   if(K == 0) {
     PROTECT(ans = allocVector(INTSXP, 0));

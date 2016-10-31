@@ -151,8 +151,8 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       return(dims == 1)
                                   },
                                       
-                                  getDimension = function(node, params = NULL, includeValue = TRUE,
-                                                          includeParams = !is.null(params)) {
+                                  getDimension = function(node, params = NULL, valueOnly = is.null(params)
+                                    && !includeParams, includeParams = !is.null(params)) {
                                       dist <- getDistribution(node)
                                       if(length(dist) > 1)
                                           stop("getDimension: 'node' should be a single node in the model")
@@ -263,9 +263,9 @@ unique: should names be the unique names or should original ordering of nodes (a
                                       if(sort) 
                                           graphID <- sort(graphID)
                                       if(returnType == 'names'){
-                                          if(returnScalarComponents) nodes <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
-                                          else nodes <- modelDef$maps$graphID_2_nodeName[graphID]
-                                          return(nodes)
+                                          if(returnScalarComponents) nodeNames <- modelDef$maps$elementNames[graphID] ## these are really elementIDs
+                                          else nodeNames <- modelDef$maps$graphID_2_nodeName[graphID]
+                                          return(nodeNames)
                                       }
                                       if(returnType == 'ids'){
                                           if(returnScalarComponents) print("NIMBLE development warning: returning IDs of scalar components may not be meaningful.  Checking to see if we ever see this message.") 

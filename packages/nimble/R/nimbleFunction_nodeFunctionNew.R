@@ -102,7 +102,7 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
             ## add accessor function for node value; used in multivariate conjugate sampler functions
             typeList <- getDistributionInfo(distName)$types[['value']]
             type = getType(distName, 'value')
-            nDim <- getDimension(distName, 'value')
+            nDim <- getDimension(distName)
             methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, type, nDim)
             ## add accessor functions for stochastic node distribution parameters
             for(param in names(RHS[-1])) {
