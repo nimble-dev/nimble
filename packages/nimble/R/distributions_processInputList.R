@@ -510,9 +510,9 @@ getType <- function(dist, params = NULL, includeValue = TRUE,
         params <- getParamNames(dist, includeValue = FALSE)
     if(includeValue)
         params <- c('value', params)
-    notFound <- which(! params %in% getParamNames)
-    if(length(which))
-        stop("getType: params not found: ", params[wh])
+    notFound <- which(! params %in% getParamNames(dist))
+    if(length(notFound))
+        stop("getType: these parameter names not found: ", params[notFound])
     out <- sapply(params, function(p) distInfo$types[[p]]$type)
     return(out)
 }
