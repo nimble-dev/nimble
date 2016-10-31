@@ -494,16 +494,20 @@ getParamID <- function(dist, params) {
     return(out)
 }
 
-getType <- function(dist, params) {
+#notFound <- which(!params %in% names(distInfo$types))
+
+getType <- function(dist, params = NULL, includeValue = TRUE,
+                         includeParams = !is.null(params)) {
     if(length(dist) > 1 || class(dist) != 'character')
         stop("getType: 'dist' should be a character vector of length 1")
     distInfo <- getDistributionInfo(dist)
-    if(missing(params)) {
-        params <- names(distInfo$types)
-        notFound <- NULL
-    } else notFound <- which(!params %in% names(distInfo$types))
-    if(length(notFound)) 
-        stop("getType: ", params[notFound], " not found as the random variable (denoted by 'value') or as a parameter")
+    
+    if(!includeParams && !includeValue)
+        stop("getType: no parameters or value requested")
+    if(includeParams && is.null(params)) 
+        params <- getParamNames(dist, includeValue = FALSE)
+    if(includeValue)
+        params <- c('value', params)
     out <- sapply(params, function(p) distInfo$types[[p]]$type)
     return(out)
 }

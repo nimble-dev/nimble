@@ -240,7 +240,7 @@ Details: Multiple logical input arguments may be used simultaneously.  For examp
                                       return(ans)                                      
                                   },
                                   
-                                  expandNodeNames = function(nodes, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE){
+                                  expandNodeNames = function(nodes, env = parent.frame(), returnScalarComponents = FALSE, returnType = 'names', sort = FALSE, unique = TRUE){
                                       '
 Takes a vector of names of nodes or variables and returns the unique and expanded names in the model, i.e. \'x\' expands to \'x[1]\', \'x[2]\', ...
 
@@ -253,10 +253,12 @@ returnScalarComponents: should multivariate nodes (i.e. dmnorm or dmulti) be bro
 returnType: return type. Options are \'names\' (character vector) or \'ids\' (graph IDs)
 
 sort: should names be topologically sorted before being returned?
+
+unique: should names be the unique names or should original ordering of nodes (after expansion of any variable names into node names) be preserved
 '
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
-                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
+                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, doUnique = unique)
                                       if(sort) 
                                           graphID <- sort(graphID)
                                       if(returnType == 'names'){
