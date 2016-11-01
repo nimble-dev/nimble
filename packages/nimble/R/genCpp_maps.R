@@ -100,16 +100,16 @@ blockIndexInfo <- function(code) {
 }
 
 makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
-    if(code$args[[1]]$name == 'map') {
-        sourceVarName <- code$args[[1]]$args[[1]]
-        sourceSizeExprs <- code$args[[1]]$args[[4]]
-        sourceNdim <- length(sourceSizeExprs)
-    } else {
-        sourceVarName <- code$args[[1]]$name
-        if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
-        sourceSizeExprs <- code$args[[1]]$sizeExprs
-        sourceNdim <- length(sourceSizeExprs)
-    }
+    ## if(code$args[[1]]$name == 'map') {
+    ##     sourceVarName <- code$args[[1]]$args[[1]]
+    ##     sourceSizeExprs <- code$args[[1]]$args[[4]]
+    ##     sourceNdim <- length(sourceSizeExprs)
+    ## } else {
+    ##     sourceVarName <- code$args[[1]]$name
+    ##     if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
+    ##     sourceSizeExprs <- code$args[[1]]$sizeExprs
+    ##     sourceNdim <- length(sourceSizeExprs)
+    ## }
     thisBlockIndexInfo <- blockIndexInfo(code)
     blockBool <- thisBlockIndexInfo$blockBool
     firstIndexRexprs <- thisBlockIndexInfo$firstIndexRexprs
@@ -120,10 +120,50 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
         if(is.numeric(firstIndexRexprs[[i]])) firstIndexRexprs[[i]] <- firstIndexRexprs[[i]]-1
         else firstIndexRexprs[[i]] <- substitute(fIR - 1, list(fIR = firstIndexRexprs[[i]]))
     }
+
+    needTranspose <- FALSE
+    if(identical(blockBool, c(TRUE, TRUE))) {
+        P <- code$sizeExprs[[1]]
+        Q <- code$sizeExprs[[2]]
+    } else 
+        if(identical(blockBool, c(TRUE, FALSE))) {
+            P <- code$sizeExprs[[1]]
+            Q <- 1
+        } else
+            if(identical(blockBool, c(FALSE, TRUE))) {
+                P <- 1
+                Q <- code$sizeExprs[[1]]
+                if(drop) needTranspose <- TRUE ## This is a case like A[3, 2:4] where we need to make Eigen handle it like a 3x1 matrix implementing a nimble vector internally, not 1x3
+            } else
+                if(identical(blockBool, c(FALSE, FALSE))) {
+                    P <- 1
+                    Q <- 1
+                    if(drop) warning("Possible error handling a 1x1 block with drop = TRUE")
+                }
+
+
     ## this will make the I J P Q come out as properly arranged exprClasses
-    newExpr <- RparseTree2ExprClasses( substitute(eigenBlock(1, I, J, P, Q), list(I = firstIndexRexprs[[1]], J = firstIndexRexprs[[2]], P = code$sizeExprs[[1]], Q = code$sizeExprs[[2]])))
+    newExpr <- RparseTree2ExprClasses( substitute(eigenBlock(1, I, J, P, Q), list(I = firstIndexRexprs[[1]], J = firstIndexRexprs[[2]], P = P, Q = Q)))
     ## but the target variable already is an exprClass and so needs to be inserted properly separately:
     setArg(newExpr, 1, code$args[[1]])
+    for(i in 2:5) {
+        if(inherits(newExpr$args[[i]], 'exprClass')) {
+            newExpr$args[[i]]$nDim <- 0
+            newExpr$args[[i]]$type <- 'integer'
+            newExpr$args[[i]]$sizeExprs <- list(1)
+            newExpr$args[[i]]$toEigenize <- 'maybe'
+        }
+    }
+    if(needTranspose) { ## STOPPED HERE
+        newExpr$nDim <- code$nDim
+        newExpr$type <- code$type
+        newExpr$sizeExprs <- code$sizeExprs
+        newExpr$toEigenize <- 'yes'
+        newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'transpose', args = list(1))
+        setArg(newExpr2, 1, newExpr)
+        ## newExpr2 gets annotated in the calling function, sizeIndexingBracket
+        newExpr <- newExpr2
+    }
     newExpr
 }
 

@@ -76,3 +76,7 @@ cTests <- list(
 ## add some that use a c() in an expression
 )
 
+blockTests <- list(
+    list(name = "3x3 block", expr = quote(out <- arg1[2:4, 2:4] + 2), args = list(arg1 = quote(double(2))),
+         setArgVals = quote(arg1 <- matrix(1:25, nrow = 5)), outputType = quote(double(2)))
+    )

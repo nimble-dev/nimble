@@ -1071,9 +1071,9 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             next
         } else {
             if(isExprClass) ## Need to think through cases here more
-                if(code$args[[i+1]]$name != ':') simpleBlockOK <- FALSE
+                if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
         }
-        needMap <- TRUE
+        needMap <- TRUE ## If the "next" in if(dropThisDim) {} is always hit, then needMap will never be set to TRUE
         if(isExprClass) {
             if(code$args[[i+1]]$name != "") {
                 ## An entry that is a variable possibly with a length
