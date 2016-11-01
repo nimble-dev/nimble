@@ -51,22 +51,34 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                    },
                                   
                                   isEndNode = function(nodes){  #Note: it says nodes, but graphIDs are fine too. Actually they are better
+                                                                          '
+Determines whether one or more nodes are end nodes (nodes with no stochastic dependences)
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
+
                                       nodeNames <- nodes  # needed so don't have local assignment into 'nodes'
                                       if(is.character(nodeNames))
                                           nodeNames = expandNodeNames(nodeNames, returnType = 'ids', unique = FALSE)
-                                      return(modelDef$maps$isEndNode_byGID[nodeNames])
+                                             out <- modelDef$maps$isEndNode_byGID[nodeNames]
+                                      names(out) <- nodeNames
+                                            return(out)
                                   },
                                   
                                   ## returns the type of one or more node names, e.g., 'stoch' or 'determ'
                                   getNodeType = function(nodes) {
-                                      graphIDs <- modelDef$nodeName2GraphIDs(nodes)
+                                      graphIDs <- modelDef$nodeName2GraphIDs(nodes, unique = FALSE)
                                       types <- getMaps('types')[graphIDs]
                                       return(types)
                                   },
 
                                   ## returns the declaration ID corresponding to nodes
                                   getDeclID = function(nodes) {
-                                      graphIDs <- modelDef$nodeName2GraphIDs(nodes)
+                                      graphIDs <- modelDef$nodeName2GraphIDs(nodes, unique = FALSE)
                                       declIDs <- getMaps('graphID_2_declID')[graphIDs]
                                       return(declIDs)
                                   },
@@ -94,8 +106,19 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   
                                   ## returns the text for the distribution of a stochastic node, e.g., 'dnorm'
                                   getDistribution = function(nodes) {
+                                                                          '
+Returns the names of the distributions for the requested node or nodes
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
-                                      sapply(getDeclInfo(nodeNames), getDistributionName)
+                                      out <- sapply(getDeclInfo(nodeNames), getDistributionName)
+                                      names(out) <- nodeNames
+                                      return(out)
                                   },
 
                                   ## returns the expr corresponding to 'param' in the distribution of 'node'
@@ -121,6 +144,15 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
 
                                   isDiscrete = function(nodes) {
+                                                                          '
+Determines whether one or more nodes represent discrete random variables
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
                                       dist <- getDistribution(nodes)
                                       # explicit reference to namespace needed as class definition objects inheriting from modelBaseClass not in namespace
                                       discrete <- sapply(dist, isDiscrete)
@@ -129,10 +161,20 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   },
 
                                   isBinary = function(nodes) {
+                                    '
+Determines whether one or more nodes represent binary random variables
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)  # needed below but duplicates what happens in getDistribution
                                       dist <- getDistribution(nodeNames)
                                       
                                       binary <- rep(FALSE, length(dist))
+                                      names(binary) <- names(dist)
                                       binary[dist == 'dbern'] <- TRUE
                                       binomInds <- which(dist == 'dbin')
                                       tmp <- sapply(binomInds, function(ind) getParamExpr(nodeNames[ind], 'size') == 1)
@@ -140,23 +182,89 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                       return(binary)
                                   },
 
+                                # user-facing, in contrast to getNodeTypes
+                                isStoch = function(nodes) {
+                                  '
+Determines whether one or more nodes are stochastic
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
+                                  nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                  type <- getNodeType(nodeNames)
+                                  out <- type == "stoch"
+                                  names(out) <- nodeNames
+                                  return(out)
+                                }
+
+                                isDeterm = function(nodes) {
+                                  '
+Determines whether one or more nodes are deterministic
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
+'
+                                  !isStoch(nodes)
+                                }
+
                                   isTruncated = function(nodes) {
+                                                                      '
+Determines whether one or more nodes are truncated
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input
+'
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
-                                      sapply(getDeclInfo(nodeNames), isTruncated)
+                                      out <- sapply(getDeclInfo(nodeNames), isTruncated)
+                                      names(out) <- nodeNames
+                                      return(out)
                                   },
 
                                   isUnivariate = function(nodes) {
+                                                                                                       '
+Determines whether one or more nodes represent univariate random variables
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input
+'
+
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       dims <- sapply(nodeNames, getDistribution)
-                                      return(dims == 1)
+                                      out <- dims == 1
+                                      names(out) <- nodeNames)
+                                      return(out)
                                   },
                                       
                                   getDimension = function(node, params = NULL, valueOnly = is.null(params)
                                     && !includeParams, includeParams = !is.null(params)) {
+                                                                                                                                           '
+Determines the dimension of the value and/or parameters of the node
+
+HER HERE
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input
+'
+
                                       dist <- getDistribution(node)
                                       if(length(dist) > 1)
                                           stop("getDimension: 'node' should be a single node in the model")
-                                      dim <- getDimension(dist, params, includeValue, includeParams)
+                                      dim <- getDimension(dist, params, valueOnly, includeParams)
                                       return(dim)
                                   },
 
@@ -186,7 +294,7 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                   },
 
                                   getNodeFunctions = function(nodes) {
-                                      gids <- modelDef$nodeName2GraphIDs(nodes)
+                                      gids <- modelDef$nodeName2GraphIDs(nodes, unique = FALSE)
                                       dclids <- modelDef$graphIDs2indexedNodeInfo(gids)$declIDs
                                       if(length(dclids) == 1)
                                           return(nodeFunctions[[dclids]])
@@ -259,7 +367,7 @@ unique: should names be the unique names or should original ordering of nodes (a
 '
 
                                       if(length(nodes) == 0) return(if(returnType=='names') character() else numeric())
-                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, doUnique = unique)
+                                      graphID <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents, unique = unique)
                                       if(sort) 
                                           graphID <- sort(graphID)
                                       if(returnType == 'names'){
@@ -413,7 +521,7 @@ nodes: A character vector of node or variable names.
 
 Details: The variable or node names specified is expanded into a vector of model node names.  A logical vector is returned, indicating whether each model node has been flagged as containing \'data\'.
 '
-                                  g_id = modelDef$nodeName2GraphIDs(nodes)
+                                                g_id = modelDef$nodeName2GraphIDs(nodes, unique = FALSE)
                                   		return(isDataFromGraphID(g_id))                                  
                                   },
 

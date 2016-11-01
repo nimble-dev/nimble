@@ -100,8 +100,7 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
         if(nimbleOptions()$compileAltParamFunctions) {
             distName <- as.character(RHS[[1]])
             ## add accessor function for node value; used in multivariate conjugate sampler functions
-            typeList <- getDistributionInfo(distName)$types[['value']]
-            type = getType(distName, 'value')
+            type = getType(distName)
             nDim <- getDimension(distName)
             methodList[['get_value']] <- ndf_generateGetParamFunction(LHS, type, nDim)
             ## add accessor functions for stochastic node distribution parameters
@@ -128,9 +127,9 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
 
         allParams <- c(list(value = LHS), as.list(RHS[-1]), altParams)
 
-        typesNDims <- getDimension(distName)
-        typesTypes <- getType(distName)
-        paramIDs <- getParamID(distName)
+        typesNDims <- getDimension(distName, includeParams = TRUE)
+        typesTypes <- getType(distName, includeParams = TRUE)
+        paramIDs <- getParamID(distName, includeParams = TRUE)
         ## rely on only double for now
         for(nDimSupported in c(0, 1, 2)) {
             boolThisCase <- typesNDims == nDimSupported ## & typesTypes == 'double' ## until (if ever) we have separate handling of integer params, these should be folded in with doubles.  We don't normally have any integer params, because we handle integers as doubles

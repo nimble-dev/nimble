@@ -2181,13 +2181,13 @@ modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     list(declIDs = declIDs, unrolledIndicesMatrixRows = rowIndices)
 })
 
-modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, doUnique=TRUE){
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE){
     if(length(nodeName) == 0)
         return(NULL)
-    ## If doUnique is FALSE, we still use unique for each element of nodeName
+    ## If unique is FALSE, we still use unique for each element of nodeName
     ## but we allow non-uniqueness across elements in the result
     if(nodeFunctionID) {
-        if(doUnique)
+        if(unique)
             output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
         else
             output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly), unique))

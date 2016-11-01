@@ -338,7 +338,7 @@ conjugacyClass <- setRefClass(
             })
 
             ## if this conjugate sampler is for a multivariate node (i.e., nDim > 0), then we need to determine the size (d)
-            if(getDimension(prior, 'value') > 0) {
+            if(getDimension(prior) > 0) {
                 functionBody$addCode(d <- max(determineNodeIndexSizes(target)))
             }
 
@@ -347,14 +347,14 @@ conjugacyClass <- setRefClass(
             ## NEWNODEFXN changes
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
-                ##depNodeValueNdim <- getDimension(distName, 'value')
+                ##depNodeValueNdim <- getDimension(distName)
                 functionBody$addCode({
                     DEP_NODENAMES <- control$DEP_CONTROL_NAME
                     N_DEP <- length(control$DEP_CONTROL_NAME)
                 }, list(DEP_NODENAMES    = as.name(paste0(  'dep_', distName, '_nodeNames')),
                         N_DEP            = as.name(paste0('N_dep_', distName)),
                         DEP_CONTROL_NAME = as.name(paste0(  'dep_', distName))))
-                if(getDimension(distName, 'value') > 0) {
+                if(getDimension(distName) > 0) {
                     functionBody$addCode({
                         DEP_NODESIZES <- sapply(DEP_NODENAMES, function(node) max(determineNodeIndexSizes(node)), USE.NAMES = FALSE)
                         if(length(DEP_NODESIZES) == 1) DEP_NODESIZES <- c(DEP_NODESIZES, -1)    ## guarantee to be a vector, for indexing and size processing
@@ -471,7 +471,7 @@ conjugacyClass <- setRefClass(
             for(iDepCount in seq_along(dependentCounts)) {
                 distName <- names(dependentCounts)[iDepCount]
                 neededParams <- dependents[[distName]]$neededParamsForPosterior
-                depNodeValueNdim <- getDimension(distName, 'value')
+                depNodeValueNdim <- getDimension(distName)
 
                 forLoopBody <- codeBlockClass()
 
@@ -484,7 +484,7 @@ conjugacyClass <- setRefClass(
                 ##functionBody$addCode(thisNodeSize <- 0) ## annoyingly this is to avoid a windows compiler warning about possible uninitialized use of thisNodeSize
                 ## get *value* of each dependent node
                 ## NEWNODEFXN
-                if(getDimension(distName, 'value') > 0) {
+                if(getDimension(distName) > 0) {
                     forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                         list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
                 }
@@ -714,13 +714,13 @@ conjugacyClass <- setRefClass(
                     makeIndexedVariable(as.name(paste0('dep_', distName, '_', param)), getDimension(distName, param), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr))
                 names(subList) <- depParamsAvailable
                 
-                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDimension(distName, value), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
+                subList$value  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_values')), getDimension(distName), indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
                 subList$offset <- makeIndexedVariable(as.name(paste0('dep_', distName, '_offset')), targetNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = nonRaggedSizeExpr)
                 subList$coeff  <- makeIndexedVariable(as.name(paste0('dep_', distName, '_coeff')),  targetCoeffNdim, indexExpr = quote(iDep), secondSize = nonRaggedSizeExpr, thirdSize = quote(d))
                 
                 forLoopBody <- codeBlockClass()
 
-                if(getDimension(distName, 'value') > 0) {
+                if(getDimension(distName) > 0) {
                     if(targetNdim == 1) ## 1D
                         forLoopBody$addCode(thisNodeSize <- DEP_NODESIZES[iDep],
                                             list(DEP_NODESIZES = as.name(paste0('dep_', distName, '_nodeSizes'))))
