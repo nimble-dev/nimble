@@ -252,13 +252,17 @@ Details: The return value is a character vector with an element for each node in
                                                                                                                                            '
 Determines the dimension of the value and/or parameters of the node
 
-HER HERE
-
 Arguments:
 
-nodes: A character vector specifying one or more node or variable names.  
+node: A character vector specifying a single node
 
-Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input
+params: an optional character vector of names of parameters for which dimensions are desired (possibly including \'value\' and alternate parameters)
+
+valueOnly: a logical indicating whether to only return the dimension of the value of the node
+
+includeParams: a logical indicating whether to return dimensions of parameters. If TRUE and \'params\' is NULL then dimensions of all parameters, including the dimension of the value of the node, are returned
+
+Details: The return value is a numeric vector with an element for each parameter/value requested.
 '
 
                                       dist <- getDistribution(node)

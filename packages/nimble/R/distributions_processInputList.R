@@ -474,6 +474,8 @@ getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
     stop("getDimension: no parameters or value requested")
   if(valueOnly && (!is.null(params) || includeParams))
     stop("getDimension: 'valueOnly' cannot be TRUE if parameters also requested")
+  if(!includeParams && !is.null(params))
+    stop("getDimension: 'params' is not NULL but 'includeParams' is FALSE")
   if(valueOnly) {
     params <- 'value'
   } else {  
@@ -497,6 +499,8 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
     stop("getDimension: no parameters or value requested")
   if(valueOnly && (!is.null(params) || includeParams))
     stop("getDimension: 'valueOnly' cannot be TRUE if parameters also requested")
+  if(!includeParams && !is.null(params))
+    stop("getDimension: 'params' is not NULL but 'includeParams' is FALSE")
   if(valueOnly) {
     params <- 'value'
   } else {  
@@ -522,6 +526,8 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
     stop("getDimension: no parameters or value requested")
   if(valueOnly && (!is.null(params) || includeParams))
     stop("getDimension: 'valueOnly' cannot be TRUE if parameters also requested")
+  if(!includeParams && !is.null(params))
+    stop("getDimension: 'params' is not NULL but 'includeParams' is FALSE")
   if(valueOnly) {
     params <- 'value'
   } else {  
