@@ -1107,7 +1107,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     if(needMap) {
         ## If this is a map on an *expression* that is not a map, lift it
         ## e.g. (A + B)[1:4] must become (Interm <- A + B; Interm[1:4])
-        if(!code$args[[1]]$isName) if(code$args[[1]]$name != 'map') asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+        if(!code$args[[1]]$isName) if(code$args[[1]]$name != 'map' && code$args[[1]]$name != "eigenBlock") asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
         ## Replace with a map expression if needed
         if(!simpleBlockOK)
             code$name <- 'nimNonseqIndexed'

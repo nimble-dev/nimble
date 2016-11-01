@@ -159,7 +159,7 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
         newExpr$type <- code$type
         newExpr$sizeExprs <- code$sizeExprs
         newExpr$toEigenize <- 'yes'
-        newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'transpose', args = list(1))
+        newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 't', args = list(1))
         setArg(newExpr2, 1, newExpr)
         ## newExpr2 gets annotated in the calling function, sizeIndexingBracket
         newExpr <- newExpr2
