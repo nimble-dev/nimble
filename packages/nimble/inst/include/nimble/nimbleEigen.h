@@ -250,51 +250,72 @@ CwiseNullaryOp<seqClass, MatrixXd > seqLen(double from, double to, double NOTUSE
 template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
 class nonseqIndexedClass {
  public:
-  const DerivedObj &source;
+  const DerivedObj &obj;
   const DerivedI1 &index1;
   const DerivedI2 &index2;
   int dim1, dim2;
   typedef double result_type;
  nonseqIndexedClass(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) :
-  source(s),
+  obj(s),
     index1(i1),
     index2(i2) {
-      dim1 = i1.rows();
-      dim2 = i2.rows();
+      dim1 = i1.size();
+      dim2 = i2.size();
     }
-  typedef Eigen::internal::traits<MatrixXd>::Index Index;
+  typedef typename Eigen::internal::traits<DerivedObj>::Index IndexObj;
 
-  result_type operator()() const
-  {
-    std::cout<<"IN 0\n";
-    return source.coeff(0);
-  }
-
-
-  result_type operator()(Index i) const //Eigen::DenseIndex
+  result_type operator()(IndexObj i) const //Eigen::DenseIndex
   {
     std::cout<<"IN 1\n";
     std::div_t divRes = div(i, dim1);
-    return source.coeff(index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
+    return obj.coeff(nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI1>::Flags & LinearAccessBit, result_type, DerivedI1, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index1, divRes.rem) - 1,
+		     nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI2>::Flags & LinearAccessBit, result_type, DerivedI2, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
+    //index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
   }
-
-  
-  result_type operator()(Index i, Index j) const
+  result_type operator()(IndexObj i, IndexObj j) const
   {
     std::cout<<"IN 2\n";
-    return source.coeff(index1(i)-1, index2(j)-1);
-  }
+    return obj.coeff(nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI1>::Flags & LinearAccessBit, result_type, DerivedI1, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index1, i) - 1,
+		     nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI2>::Flags & LinearAccessBit, result_type, DerivedI2, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index2, j) - 1);
 
-  
+    //return obj.coeff(index1(i)-1,
+    //		     index2(j)-1);
+  }
 };
 
-template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
-  CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
-  nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s, i1, i2);
-  return(CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, DerivedObj >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, nonseqIndexedObj));
+namespace Eigen{
+  namespace internal{
+    template<typename DerivedObj, typename Derived1, typename Derived2>
+    // 3 options for linear_access:
+      //1. turn it off: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = 0 }; }; 
+      //2. turn it on: (and let it be resolved by nimble_eigen_coeff_impl>:
+      struct functor_has_linear_access<nonseqIndexedClass<DerivedObj, Derived1, Derived2> > { enum { ret = 1}; }; 
+    //3. Set it once according to arguments: (problem here is that if it is off for this expression, that may make expressions using this one forbidden from using linear access, which is a bit harsh: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = traits<Derived1>::Flags & traits<Derived2>::Flags & LinearAccessBit }; };
+    template<typename DerivedObj, typename Derived1, typename Derived2>
+      struct functor_traits<nonseqIndexedClass<DerivedObj, Derived1, Derived2> >
+      {
+	enum
+	{
+	  Cost = 10, // there are templated costs available to pick up for this
+	  PacketAccess = false, // happy to keep this false for now
+	  IsRepeatable = true // default was false. 
+	};
+      };    
+  }
 }
 
-#define nimNonseqIndexed nonseqIndexed<Eigen::MatrixXd, Eigen::MatrixXi, Eigen::MatrixXi>
+template<typename returnDerived>
+struct nonseqIndexed_impl {
+  template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
+    static CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, returnDerived > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
+    nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s.derived(), i1.derived(), i2.derived());
+    return(CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, returnDerived >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, nonseqIndexedObj));
+  }
+};
+
+#define nimNonseqIndexedd nonseqIndexed_impl<MatrixXd>::nonseqIndexed
+#define nimNonseqIndexedi nonseqIndexed_impl<MatrixXi>::nonseqIndexed
+#define nimNonseqIndexedb nonseqIndexed_imple<MatrixXb>::nonseqIndexed
 
 // vectorization of any scalar function:
 

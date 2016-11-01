@@ -4,6 +4,21 @@
 #include "NimArr.h"
 #include "dists.h"
 
+/* template<int nDim> */
+/* void which(NimArr<1, int> &output, NimArr<nDim, bool> &input) { */
+/*   unsigned int lenOut(0); */
+/*   unsigned int lenIn = input.size(); */
+/*   unsigned int i, iOut(0); */
+/*   if(input.boolMap) { */
+/*     for(i = 0; i < lenIn; i++) lenOut += input[i]; */
+/*   } else { */
+/*     lenOut = std::accumulate(input.getVptr(), input.getVptr() + lenIn, 0); */
+/*   } */
+/*   output.setSize(lenOut, false, false); */
+/*   for(i = 0; i < lenIn; i++) { */
+/*     if(input[i]) output[iOut++] = i + 1; // return as 1-based indexing for consistency */
+/*   } */
+/* } */
 
 double nim_dnorm(double x, double mu, double sigma, int give_log);
 
