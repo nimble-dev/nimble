@@ -259,7 +259,8 @@ getBound_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc) {
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE)
+        errorContext <- deparse(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
                 stop('nodes argument cannot be provided to getParam if nodeFunctionIndex is specified')
@@ -277,6 +278,7 @@ getBound_keywordInfo <- keywordInfoClass(
             if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+            nodeFunVec_ArgList$sortUnique <- FALSE
         }
 
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
@@ -290,12 +292,12 @@ getBound_keywordInfo <- keywordInfoClass(
         addNecessarySetupCode(nodeFunName, nodeFunVec_ArgList, nodeFunctionVector_SetupTemplate, nfProc)
         addNecessarySetupCode(boundInfoName, boundInfo_ArgList, boundInfo_SetupTemplate, nfProc)
         if(!useNodeFunctionVectorByIndex)
-            newRunCode <- substitute(getBound(nodeFunction = NODEFUNVEC_NAME, paboundID = BOUNDID_NAME, paramInfo = BOUNDINFO_NAME),
+            newRunCode <- substitute(getBound(nodeFunction = NODEFUNVEC_NAME, boundID = BOUNDID_NAME, boundInfo = BOUNDINFO_NAME),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName), BOUNDID_NAME = as.name(boundIDname), BOUNDINFO_NAME = as.name(boundInfoName)))
         else
             newRunCode <- substitute(getBound(nodeFunction = NODEFUNVEC_NAME, boundID = BOUNDID_NAME, boundInfo = BOUNDINFO_NAME, nodeFunctionIndex = NODEFUNVECINDEX),
                                      list(NODEFUNVEC_NAME = as.name(nodeFunName), BOUNDID_NAME = as.name(boundIDname), BOUNDINFO_NAME = as.name(boundInfoName), NODEFUNVECINDEX = nodesIndexExpr))
-        
+                                               
         return(newRunCode)
     }
 )
