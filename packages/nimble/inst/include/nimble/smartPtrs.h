@@ -19,6 +19,10 @@ class nimSmartPtr {
     realPtr = inputPtr;
     realPtr->newWatcher();
   };
+  
+  bool equalsPtr(const nimSmartPtr & otherPtr) {
+	  return(realPtr == otherPtr.realPtr);
+  }
 
   nimSmartPtr & operator=(const nimSmartPtr & rhs) {
     if(this == &rhs)
