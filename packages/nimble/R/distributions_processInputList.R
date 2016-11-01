@@ -224,21 +224,25 @@ checkDistributionsInput <- function(distributionsInput) {
 }
 
 checkDistributionsFunctions <- function(distributionsInput) {
-    if(exists('Rdist', distributionsInput))
+    if(is.list(distributionsInput)) {
+      if(exists('Rdist', distributionsInput))
         inputString <- distributionsInput$Rdist else inputString <- distributionsInput$BUGSdist
-    densityName <- as.character(parse(text = inputString)[[1]][[1]])
-    simulateName <- sub('^d', 'r', densityName)
-    if(!is.rcf(get(densityName)) || !is.rcf(get(simulateName)))
+      densityName <- as.character(parse(text = inputString)[[1]][[1]])
+    } else densityName <- distributionInput
+      simulateName <- sub('^d', 'r', densityName)
+      if(!is.rcf(get(densityName)) || !is.rcf(get(simulateName)))
         stop(paste0("Either density or random generation functions for ", densityName,
                     " are not available as nimbleFunctions without setup code."))
-    # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
-    if(!is.null(distributionsInput) && exists("pqAvail", distributionsInput) && distributionsInput$pqAvail) {
+                                        # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
+      if(!is.null(distributionsInput) && is.list(distributionsInput) && exists("pqAvail", distributionsInput) && distributionsInput$pqAvail) {
         cdfName <- sub('^d', 'p', densityName)
         quantileName <- sub('^d', 'q', densityName)
         if(!is.rcf(get(cdfName)) || !is.rcf(get(quantileName)))
-            stop(paste0("Either distribution (CDF) or quantile (inverse CDF) functions for ", densityName,
-                        " are not available as nimbleFunctions without setup code."))
-    }
+          stop(paste0("Either distribution (CDF) or quantile (inverse CDF) functions for ", densityName,
+                      " are not available as nimbleFunctions without setup code."))
+      }
+    } else {
+      
     invisible(NULL)
 }
 
@@ -249,17 +253,34 @@ getMaxDim <- function(typeList)
 getValueDim <- function(distObject) 
     distObject$types$value$nDim
 
-
-
+prepareDistributionInput <- function(dist) {
+  out <- list()
+  args <- formals(dist)
+  args <- args[!names(args) %in% c('x', 'log_value')]
+  if(!length(args))
+    argInfo <- NULL
+  if(length(args) == 1)
+    argInfo <- names(args)
+  if(length(args) > 1)
+    argInfo <- paste0(paste0(names(args)[-length(args)], sep = ',', collapse = ''), names(args)[length(args)],
+                      collapse = '')
+  out$BUGSdist <- paste0(dist, "(", argInfo, ")", collapse = '')
+    cdfName <- sub('^d', 'p', dist)
+  quantileName <- sub('^d', 'q', dist)
+  out$pqAvail <- exists(cdfName) && exists(quantileName) && is.rcf(get(cdfName)) && is.rcf(get(quantileName))
+  return(out)
+}
+    
 #' Add user-supplied distributions for use in NIMBLE BUGS models
 #'
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInputList a list of lists in the form of that shown in \code{distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. See Details for more information. If only one distribution is supplied it may be a list rather than a list containing a list.
+#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, either a list of lists or single list in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
 #' @author Christopher Paciorek
 #' @export
 #' @details
+#' When \code{distributionsInput is a list of lists (or a list when only one distribution is supplied), see below for more information on the structure of the list. When \code{distributionsInput} is a character vector, the distribution is assumed to be of standard form, with parameters assumed to be the arguments provided in the density nimbleFunction, no alternative parameterizations, and the distribution assumed to be continuous with range from minus infinity to infinity. The availability of distribution and quantile functions is inferred from whether appropriately-named functions exist in the global environment.
 #' \itemize{
 #' \item{\code{BUGSdist}} {
 #' a character string in the form of the density name (starting with 'd') followed by the names of the parameters in parentheses. When alternative parameterizations are given in \code{Rdist}, this should be an exhaustive list of the unique parameter names from all possible parameterizations, with the default parameters specified first.
@@ -319,25 +340,41 @@ getValueDim <- function(distObject)
 #' m$resetData()
 #' simulate(m, 'y')
 #' m$y
-registerDistributions <- function(distributionsInputList) {
-    if(missing(distributionsInputList)) {
+#'
+#' # alternatively, simply specify the name of the 'd' function
+#' # if the 'r' function is not provided, a placeholder will be created
+#' # but any algorithms trying to use the 'r' function will fail
+#' deregisterDistributions('dmyexp')
+#' registerDistributions(c('dmyexp'))
+registerDistributions <- function(distributionsInput) {
+    if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
     } else {
-        if(!is.list(distributionsInputList[[1]])) stop("'distributionsInputList' should be a named list of lists")
+        if((!is.list(distributionsInput && !is.list(distributionsInput[[1]])) && !is.character(distributionsInput))
+          stop("'distributionsInput' should be a named list of lists or a character vector")
 
-        nms <- names(distributionsInputList)
+        if(is.character(distributionsInput)) {
+           nms <- distributionsInput
+         } else {
+            nms <- names(distributionsInput)
+          }
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
-            distributionsInputList[dupl] <- NULL
+            distributionsInput[dupl] <- NULL
             cat("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions:", nms, ". Please rename to avoid the conflict.\n", sep = "")
         }
-        sapply(distributionsInputList, checkDistributionsInput)
-        sapply(distributionsInputList, checkDistributionsFunctions)
-        
+
+        if(is.list(distributionsInput)) 
+           sapply(distributionsInput, checkDistributionsInput)
+        sapply(distributionsInput, checkDistributionsFunctions)
+
+        if(is.character(distributionsInput)) {
+          distributionsInput <- sapply(distributionsInput, prepareDistributionInput)
+           
         if(exists('distributions', nimbleUserNamespace)) {
-            nimbleUserNamespace$distributions$add(distributionsInputList)
+            nimbleUserNamespace$distributions$add(distributionsInput)
         } else 
-            nimbleUserNamespace$distributions <- distributionsClass(distributionsInputList)
+            nimbleUserNamespace$distributions <- distributionsClass(distributionsInput)
     }
     virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
     createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
@@ -383,18 +420,18 @@ deregisterDistributions <- function(distributionsNames) {
 #####################################################################################################
 
 
-getDistributionList <- function(distNames) {
-    boolNative <- distNames %in% distributions$namesVector
-    if(all(boolNative)) return(distributions[distNames])
-    missingDists <- distNames[!boolNative]
+getDistributionList <- function(dists) {
+    boolNative <- dists %in% distributions$namesVector
+    if(all(boolNative)) return(distributions[dists])
+    missingDists <- dists[!boolNative]
     allFound <- FALSE
     if(exists('distributions', nimbleUserNamespace)) {
         if(all(missingDists %in% nimbleUserNamespace$distributions$namesVector))
             allFound <- TRUE
     }
     if(allFound) {
-        ans <- vector('list', length(distNames))
-        ans[boolNative] <- distributions[distNames[boolNative]]
+        ans <- vector('list', length(dists))
+        ans[boolNative] <- distributions[dists[boolNative]]
         ans[!boolNative] <- nimbleUserNamespace$distributions[missingDists]
         return(ans)
     }
@@ -402,11 +439,24 @@ getDistributionList <- function(distNames) {
     stop(paste0('In getDistributions, distributions named ', paste(notFound, sep = ',', collapse = ","), ' could not be found.')) 
 }
 
-getDistributionInfo <- function(distName) {
-    if(distName %in% distributions$namesVector) return(distributions[[distName]])
-    if(exists('distributions', nimbleUserNamespace) && distName %in% nimbleUserNamespace$distributions$namesVector)
-        return(nimbleUserNamespace$distributions[[distName]])
-    stop(paste0("getDistributionInfo: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
+#' Get information about a distribution
+#'
+#' Gives an extensive set of information about each BUGS distribution
+#'
+#' @param dist a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @details
+#' Returns an internal data structure (a list) providing various information about the distribution
+#' @examples
+#' distInfo <- getDistributionInfo('dnorm')
+#' distInfo$XXX
+getDistributionInfo <- function(dist) {
+    if(dist %in% distributions$namesVector) return(distributions[[dist]])
+    if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
+        return(nimbleUserNamespace$distributions[[dist]])
+    stop(paste0("getDistributionInfo: ", dist, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
 getAllDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) {
@@ -426,13 +476,13 @@ getAllDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) 
 }
 
 evalInDistsMatchCallEnv <- function(expr) {
-    distName <- as.character(expr[[1]])
-    if(distName %in% distributions$namesVector)
+    dist <- as.character(expr[[1]])
+    if(dist %in% distributions$namesVector)
         return(eval(expr, distributions$matchCallEnv))
     if(exists('distributions', nimbleUserNamespace) &&
-       distName %in% nimbleUserNamespace$distributions$namesVector)
+       dist %in% nimbleUserNamespace$distributions$namesVector)
         return(eval(expr, nimbleUserNamespace$distributions$matchCallEnv))
-    stop(paste0("evalInDistsMatchCallEnv: ", distName, " is not a distribution provided by NIMBLE or supplied by the user."))
+    stop(paste0("evalInDistsMatchCallEnv: ", dist, " is not a distribution provided by NIMBLE or supplied by the user."))
 }
 
 stripPrefix <- function(vec, prefix = "d")
@@ -446,24 +496,79 @@ BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
     if(!dIncluded) return(stripPrefix(results)) else return(results)
 }
 
+#' Tests if a distribution is a discrete
+#'
+#' Tests if a BUGS distribution is that of a discrete random variable
+#'
+#' @param dist a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @examples
+#' isDiscrete('dbinom')
 isDiscrete <- function(dist) {
     if(length(dist) > 1 || class(dist) != 'character')
         stop("isDiscrete: 'dist' should be a character vector of length 1")
     return(getDistributionInfo(dist)$discrete)
 }
 
+#' Tests if a distribution is user-defined
+#'
+#' Tests if a BUGS distribution is defined by the user using nimbleFunctions versus provided by NIMBLE
+#'
+#' @param dist a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @examples
+#' isUserDistribution('dbinom')
 isUserDistribution <- function(dist) {
     if(length(dist) > 1 || class(dist) != 'character')
         stop("isUserDistribution: 'dist' should be a character vector of length 1")
-    if(exists('distributions', nimbleUserNamespace) && distName %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)) return(TRUE) else return(FALSE)
+    if(exists('distributions', nimbleUserNamespace) && dist %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
+      return(TRUE) else return(FALSE)
 }
 
+#' Tests if a distribution provides distribution and quantile functions
+#'
+#' Tests if a BUGS distribution provides distribution ('p') and quantile ('q') functions
+#'
+#' @param dist a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @examples
+#' pqAvail('dgamma')
+#' pqAvail('dmnorm')
 pqAvail <- function(dist) {
     if(length(dist) > 1 || class(dist) != 'character')
         stop("pqAvail: 'dist' should be a character vector of length 1")
    return(getDistributionInfo(dist)$pqAvail)
 } 
 
+
+#' Provide the dimension of the value and/or parameters of a distribution
+#'
+#' Provides the dimension of the value and/or parameters of a BUGS distribution
+#'
+#' @param dist: a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
+#'
+#' @param params:  an optional character vector of names of parameters for which dimensions are desired (possibly including \'value\' and alternate parameters)
+#'
+#' @param valueOnly: a logical indicating whether to only return the dimension of the value of the node
+#'
+#' @param includeParams: a logical indicating whether to return dimensions of parameters. If TRUE and \'params\' is NULL then dimensions of all parameters, including the dimension of the value of the node, are returned
+#'
+#' @details The return value is a numeric vector with an element for each parameter/value requested.
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @examples
+#' getDimension('dnorm')
+#' getDimension('dnorm', includeParams = TRUE)
+#' getDimension('dnorm', c('var', 'sd'))
+#' getDimension('dcat', includeParams = TRUE)
+#' getDimension('dwishart', includeParams = TRUE)
 getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
                          !includeParams, includeParams = !is.null(params)) {
     if(length(dist) == 1 && is.na(dist)) return(NA)  # in case of passing a determ node
@@ -516,8 +621,28 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
   return(out)
 }
 
-#notFound <- which(!params %in% names(distInfo$types))
-
+#' Provide the type of the value and/or parameters of a distribution
+#'
+#' Provides the type (numeric, logical, integer) of the value and/or parameters of a BUGS distribution
+#'
+#' @param dist: a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
+#'
+#' @param params:  an optional character vector of names of parameters for which dimensions are desired (possibly including \'value\' and alternate parameters)
+#'
+#' @param valueOnly: a logical indicating whether to only return the dimension of the value of the node
+#'
+#' @param includeParams: a logical indicating whether to return dimensions of parameters. If TRUE and \'params\' is NULL then dimensions of all parameters, including the dimension of the value of the node, are returned
+#'
+#' @details The return value is a character vector with an element for each parameter/value requested. At present, all quantities are stored as numeric (double) values, so this function is of little practical use but could be exploited in the future.
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @examples
+#' getDimension('dnorm')
+#' getDimension('dnorm', includeParams = TRUE)
+#' getDimension('dnorm', c('var', 'sd'))
+#' getDimension('dcat', includeParams = TRUE)
+#' getDimension('dwishart', includeParams = TRUE)
 getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
                        !includeParams, includeParams = !is.null(params)) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
@@ -545,6 +670,22 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
 }
 
 # perhaps have args to allow only reqdArgs or only altParams?
+
+#' Provide the names of the value and/or parameters of a distribution
+#'
+#' Provides the value and/or parameter names of a BUGS distribution
+#'
+#' @param dist: a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
+#'
+#' @param includeValue: a logical indicating whether to return 'value', which is the name of the node value
+#'
+#' @details The return value is a character vector with an element for each parameter and (if requested) the value. 
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @examples
+#' getParamNames('dnorm', includeValue = FALSE)
+#' getDimension('dmnorm')
 getParamNames <- function(dist, includeValue = TRUE) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
     if(length(dist) > 1 || class(dist) != 'character')
@@ -593,3 +734,4 @@ distribution_qFuns <- gsub("^d", "q", pqDists)
 distributionFuns <- c(distribution_dFuns, distribution_rFuns, distribution_pFuns, distribution_qFuns)
 
 
+print('test the new user-defined dist spec')
