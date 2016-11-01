@@ -466,8 +466,9 @@ pqAvail <- function(dist) {
 
 getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
                          !includeParams, includeParams = !is.null(params)) {
-  if(length(dist) > 1 || class(dist) != 'character')
-    stop("getDimension: 'dist' should be a character vector of length 1")
+    if(length(dist) == 1 && is.na(dist)) return(NA)  # in case of passing a determ node
+    if(length(dist) > 1 || class(dist) != 'character')
+      stop("getDimension: 'dist' should be a character vector of length 1")
   distInfo <- getDistributionInfo(dist)
   
   if(!includeParams && !valueOnly)
@@ -491,7 +492,8 @@ getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
 
 getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
                        !includeParams, includeParams = !is.null(params)) {
-  if(length(dist) > 1 || class(dist) != 'character')
+    if(length(dist) == 1 && is.na(dist)) return(NA)
+    if(length(dist) > 1 || class(dist) != 'character')
     stop("getType: 'dist' should be a character vector of length 1")
   distInfo <- getDistributionInfo(dist)
   
@@ -518,6 +520,7 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
 
 getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
                        !includeParams, includeParams = !is.null(params)) {
+    if(length(dist) == 1 && is.na(dist)) return(NA)
     if(length(dist) > 1 || class(dist) != 'character')
         stop("getType: 'dist' should be a character vector of length 1")
     distInfo <- getDistributionInfo(dist)
@@ -543,6 +546,7 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
 
 # perhaps have args to allow only reqdArgs or only altParams?
 getParamNames <- function(dist, includeValue = TRUE) {
+    if(length(dist) == 1 && is.na(dist)) return(NA)
     if(length(dist) > 1 || class(dist) != 'character')
         stop("getParamNames: 'dist' should be a character vector of length 1")
     distInfo <- getDistributionInfo(dist)

@@ -179,6 +179,7 @@ Details: The return value is a character vector with an element for each node in
                                       binomInds <- which(dist == 'dbin')
                                       tmp <- sapply(binomInds, function(ind) getParamExpr(nodeNames[ind], 'size') == 1)
                                       binary[binomInds[tmp]] <- TRUE
+                                      binary[is.na(dist)] <- NA
                                       return(binary)
                                   },
 
