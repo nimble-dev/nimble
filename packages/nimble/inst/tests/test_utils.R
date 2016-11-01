@@ -40,15 +40,15 @@ make_input <- function(dim, size = 3, logicalArg) {
   stop("not set for dimension greater than 2")
 }
 
-test_math <- function(input, verbose = TRUE, size = 3) {
+test_math <- function(input, verbose = TRUE, size = 3, dirName = NULL) {
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFun(input)
   nfR <- nimbleFunction(  # formerly nfGen
       #       setup = TRUE,
              run = runFun)
   #nfR <- nfGen()
-  project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
-  nfC <- compileNimble(nfR, project = project)
+##  project <- nimble:::nimbleProjectClass(NULL, name = 'foo')
+  nfC <- compileNimble(nfR, dirName = dirName)##, project = project)
 
   nArgs <- length(input$inputDim)
   logicalArgs <- rep(FALSE, nArgs)
@@ -56,17 +56,27 @@ test_math <- function(input, verbose = TRUE, size = 3) {
     logicalArgs <- input$logicalArgs
 
   arg1 <- make_input(input$inputDim[1], size = size, logicalArgs[1])
-  if(nArgs == 2)
-    arg2 <- make_input(input$inputDim[2], size = size, logicalArgs[2])
-  if("Rcode" %in% names(input)) {
-    eval(input$Rcode)
+  if(nArgs > 1)
+      arg2 <- make_input(input$inputDim[2], size = size, logicalArgs[2])
+  if(nArgs > 2)
+      arg3 <- make_input(input$inputDim[3], size = size, logicalArgs[3])
+  if(nArgs > 3)
+      stop("test_math not set up for >3 args yet")
+  
+  if("Rcode" %in% names(input)) {      
+      eval(input$Rcode)
   } else {
-    eval(input$expr)
+      eval(input$expr)
   }
+  if(nArgs == 3) {
+      out_nfR = nfR(arg1, arg2, arg3)
+      out_nfC = nfC(arg1, arg2, arg3)
+  }  
   if(nArgs == 2) {
-    out_nfR = nfR(arg1, arg2)
-    out_nfC = nfC(arg1, arg2)
-  } else {
+      out_nfR = nfR(arg1, arg2)
+      out_nfC = nfC(arg1, arg2)
+  }
+  if(nArgs == 1) {
     out_nfR = nfR(arg1)
     out_nfC = nfC(arg1)
   }
@@ -78,7 +88,7 @@ test_math <- function(input, verbose = TRUE, size = 3) {
   try(test_that(paste0("Test of math (direct R calc vs. C nimbleFunction): ", input$name),
                 expect_equal(out, out_nfC)))
   # unload DLL as R doesn't like to have too many loaded
-  if(.Platform$OS.type != 'windows') dyn.unload(project$cppProjects[[1]]$getSOName())
+  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
   invisible(NULL)
 }
 
@@ -104,7 +114,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
     # single multivar sampler: samplers(type = "RW_block", target = 'x')
     # multiple multivar samplers: samplers(type = "RW_block", target = list('x', c('theta', 'mu')))
 
-    
+
     setSampler <- function(var, conf) {
         currentTargets <- sapply(conf$samplerConfs, function(x) x$target)
                                         # remove already defined scalar samplers
@@ -117,9 +127,9 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
                                         #          gsub("\\[[0-9]+\\]", "", x$target))
                                         #                         %in% var$target)
         conf$removeSamplers(inds, print = FALSE)
-        
+
         if(is.list(var$target) && length(var$target) == 1) var$target <- var$target[[1]]
-        if(length(var$target) == 1 || (var$type %in% c("RW_block", "RW_PF_block", "RW_llFunction_block") && !is.list(var$target))) 
+        if(length(var$target) == 1 || (var$type %in% c("RW_block", "RW_PF_block", "RW_llFunction_block") && !is.list(var$target)))
             tmp <- conf$addSampler(type = var$type, target = var$target, control = var$control, print = FALSE) else tmp <- sapply(var$target, function(x) conf$addSampler(type = var$type, target = x, control = var$control, print = FALSE))
     }
 
@@ -157,7 +167,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   }
   if(!is.null(mcmcControl)) mcmcConf <- configureMCMC(Rmodel, control = mcmcControl) else mcmcConf <- configureMCMC(Rmodel)
   if(removeAllDefaultSamplers) mcmcConf$removeSamplers()
-  
+
   if(!is.null(samplers)) {
       sapply(samplers, setSampler, mcmcConf)
       if(verbose) {
@@ -169,7 +179,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
   vars <- Rmodel$getDependencies(Rmodel$getNodeNames(topOnly = TRUE, stochOnly = TRUE), stochOnly = TRUE, includeData = FALSE, downstream = TRUE)
   vars <- unique(nimble:::removeIndexing(vars))
   mcmcConf$addMonitors(vars, print = FALSE)
-  
+
   Rmcmc <- buildMCMC(mcmcConf)
   if(doCpp) {
       Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
@@ -348,9 +358,10 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
     if(doCpp) {
         if(.Platform$OS.type != "windows") {
-            dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
-            dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
-            }
+            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rmcmc have the same project so they are interchangeable in these lines.
+            ##dyn.unload(getNimbleProject(Rmcmc)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
+            nimble:::clearCompiled(Rmodel)
+        }
     }
   return(returnVal)
 }
@@ -362,7 +373,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
                         numItsC_results = numItsC,
                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,
                         doubleCompare = FALSE, filterType2 = NULL,
-                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL) {
+                        doR = TRUE, doCpp = TRUE, returnSamples = FALSE, name = NULL, dirName = NULL) {
   # There are two modes of testing:
   # 1) basic = TRUE: compares R and C Particle Filter likelihoods and sampled states
   # 2) if you pass 'results', it will compare Filter output to known latent state posterior summaries, top-level parameter posterior summaries,
@@ -396,7 +407,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     Rmodel <- readBUGSmodel(model, dir = "", data = data, inits = inits, useInits = TRUE, check = FALSE)
   }
   if(doCpp) {
-    Cmodel <- compileNimble(Rmodel)
+    Cmodel <- compileNimble(Rmodel, dirName = dirName)
     cat('done compiling model\n')
   }
   cat("Building filter\n")
@@ -418,7 +429,7 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
   }
 
   if(doCpp) {
-    Cfilter <- compileNimble(Rfilter, project = Rmodel)
+    Cfilter <- compileNimble(Rfilter, project = Rmodel, dirName = dirName)
   }
 
   if(basic) {
@@ -600,8 +611,9 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
 
     if(doCpp) {
         if(.Platform$OS.type != 'windows') {
-            dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rfilter have the same project so they are interchangeable in these lines.
-            dyn.unload(getNimbleProject(Rmodel)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
+            nimble:::clearCompiled(Rmodel)
+            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[1]]$getSOName()) ## Rmodel and Rfilter have the same project so they are interchangeable in these lines.
+            ##dyn.unload(getNimbleProject(Rmodel)$cppProjects[[2]]$getSOName())  ## Really it is the [[1]] and [[2]] that matter
         }
     }
   return(returnVal)

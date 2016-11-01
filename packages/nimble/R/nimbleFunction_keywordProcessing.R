@@ -246,7 +246,8 @@ getParam_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc) {
         if(!isCodeArgBlank(code, 'nodeFunction'))
             return(code)
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE)
+        errorContext <- deparse(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$node, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
                 stop('nodes argument cannot be provided to getParam if nodeFunctionIndex is specified')
@@ -264,6 +265,7 @@ getParam_keywordInfo <- keywordInfoClass(
             if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+            nodeFunVec_ArgList$sortUnique <- FALSE
         }
 
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)
@@ -292,7 +294,8 @@ calculate_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+        errorContext <- deparse(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
@@ -313,6 +316,7 @@ calculate_keywordInfo <- keywordInfoClass(
             if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+            nodeFunVec_ArgList$sortUnique <- FALSE
         }
 
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -332,7 +336,8 @@ calculateDiff_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+        errorContext <- deparse(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
                 stop('nodes argument cannot be provided to calculateDiff if nodeFunctionIndex is specified')
@@ -353,6 +358,7 @@ calculateDiff_keywordInfo <- keywordInfoClass(
             if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+            nodeFunVec_ArgList$sortUnique <- FALSE
         }
         
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -376,8 +382,8 @@ simulate_keywordInfo <- keywordInfoClass(
         }
         if(!isCodeArgBlank(code, 'INDEXEDNODEINFO_'))
             return(code)
-
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData)
+        errorContext <- deparse(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = code$includeData, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
                 stop('nodes argument cannot be provided to simulate if nodeFunctionIndex is specified')
@@ -397,6 +403,7 @@ simulate_keywordInfo <- keywordInfoClass(
             if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+            nodeFunVec_ArgList$sortUnique <- FALSE # If includeData = FALSE, this can trigger error from nodeFunctionVector if nodes does contain data
         }
   
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -417,7 +424,8 @@ getLogProb_keywordInfo <- keywordInfoClass(
     processor = function(code, nfProc){
         if(!isCodeArgBlank(code, 'nodeFxnVector'))
             return(code)
-        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE)
+        errorContext <- deparse(code)
+        nodeFunVec_ArgList <- list(model = code$model, nodes = code$nodes, includeData = TRUE, sortUnique = TRUE, errorContext = errorContext)
         if(!isCodeArgBlank(code, 'nodeFunctionIndex')) { ## new case: calculate(myNodeFunctionVector, nodeFunctionIndex = i), if myNodeFunctionVector was hand-created in setup code
             if(!isCodeArgBlank(code, 'nodes'))
                 stop('nodes argument cannot be provided to getLogProb if nodeFunctionIndex is specified')
@@ -437,6 +445,7 @@ getLogProb_keywordInfo <- keywordInfoClass(
             if(length(nodeFunVec_ArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- nodeFunVec_ArgList$nodes[[3]]
             nodeFunVec_ArgList$nodes <- nodeFunVec_ArgList$nodes[[2]]
+            nodeFunVec_ArgList$sortUnique <- FALSE
         }
 
         nodeFunName <- nodeFunctionVector_SetupTemplate$makeName(nodeFunVec_ArgList)	
@@ -1036,16 +1045,19 @@ modelValuesAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
 
 
 nodeFunctionVector_SetupTemplate <- setupCodeTemplateClass(
-	#Note to programmer: required fields of argList are model, nodes and includeData
-	
-	makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), sep = '_'))},
-	codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA)), 
-	makeCodeSubList = function(resultName, argList){
-		list(NODEFXNVECNAME = as.name(resultName),
-			MODEL = argList$model,
-			NODES = argList$nodes,
-			EXCLUDEDATA = !argList$includeData)
-	})
+                                        #Note to programmer: required fields of argList are model, nodes and includeData
+    
+    makeName = function(argList){Rname2CppName(paste(deparse(argList$model), deparse(argList$nodes), 'nodeFxnVector_includeData', deparse(argList$includeData), if(argList$sortUnique) "SU" else "notSU", sep = '_'))},
+    codeTemplate = quote(NODEFXNVECNAME <- nimble:::nodeFunctionVector(model = MODEL, nodeNames = NODES, excludeData = EXCLUDEDATA, sortUnique = SORTUNIQUE, errorContext = ERRORCONTEXT)), 
+    makeCodeSubList = function(resultName, argList){
+        list(NODEFXNVECNAME = as.name(resultName),
+             MODEL = argList$model,
+             NODES = argList$nodes,
+             EXCLUDEDATA = !argList$includeData,
+             SORTUNIQUE = argList$sortUnique,
+             ERRORCONTEXT = argList$errorContext
+             )
+    })
 
 paramInfo_SetupTemplate <- setupCodeTemplateClass(
     #Note to programmer: required fields of argList are model, node and param

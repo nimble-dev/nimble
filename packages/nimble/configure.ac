@@ -64,6 +64,9 @@ if test -n "$EIGEN_DIR" && ! test "${EIGEN_DIR}" = "" ; then
    export CPPFLAGS="-I${EIGEN_DIR}"
 fi
 
+
+CXX=`"${R_HOME}/bin/R" CMD config CXX`
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
 AC_LANG([C++])
 dnl  AC_LANG_PUSH([C++]);
 
@@ -73,7 +76,7 @@ AC_CHECK_HEADERS([Eigen/Dense],
                  [echo "Found Eigen/Dense";
 dnl                rm -rf inst/Eigen_local
 		  if test -e "NOT_IN_TARBALL" ; then
-		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6.tar.gz or something similar." 
+		   echo "Providing your own Eigen only works if installing from a tarball.  Try R CMD BUILD nimble; R CMD INSTALL --configure-args='--with-eigen=YOUR_EIGEN_PATH' nimble_0.6-1.tar.gz or something similar." 
 		  else
 		   echo "Not installing Eigen with NIMBLE"
 		   rm -r inst/include/Eigen
@@ -123,7 +126,7 @@ fi
 AC_SUBST(NIMBLE_LIB_DIR)
 
 
-R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[a-z]" "[A-Z]"`
+R_ENABLE_LIB=`echo "${ENABLE_LIB}" | tr "[[a-z]]" "[[A-Z]]"`
 echo "ENABLE_LIB=${ENABLE_LIB}"
 AC_SUBST(R_ENABLE_LIB)
 
@@ -155,6 +158,9 @@ if test "${ENABLE_LIB}" != "false" ; then
 # fi
  #cp inst/CppCode/libnimble.dylib $R_PACKAGE_DIR/libs/libnimble.dylib 
 else 
-  cp inst/CppCode/*.cpp src
+#  cp inst/CppCode/*.cpp src
+  cp inst/CppCode/dists.cpp src
+  cp inst/CppCode/RcppUtils.cpp src
+  cp inst/CppCode/nimbleGraph.cpp src
   (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi

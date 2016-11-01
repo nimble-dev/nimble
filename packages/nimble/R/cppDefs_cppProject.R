@@ -97,7 +97,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    dirName = 'ANY', #'character',
                                    cppDefs = 'ANY', #'list',
                                    dll = 'ANY', #"DLLInfoOrNULL",
-                                   outputSOfile = 'ANY'# "character"
+                                   outputSOfile = 'ANY',# "character"
+                                   Oincludes = 'ANY'
                                    ),
                                methods = list(
                                		initialize = function(...){dirName <<- character(); cppDefs <<- list(); dll <<- NULL; outputSOfile <<- character();callSuper(...)},
@@ -149,6 +150,12 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            CPPincludes <- c(CPPincludes[iEigenInclude], CPPincludes[-iEigenInclude])
                                        }
 
+                                       ## at this point strip out CPPincludes other than EigenTypedefs that have .cpp and gsub .cpp to .o
+                                       boolConvertCppIncludeToOinclude <- grepl("\\.cpp", CPPincludes)
+                                       if(length(iEigenInclude) > 0) boolConvertCppIncludeToOinclude[1] <- FALSE
+                                       Oincludes <<- gsub("\\.cpp", ".o", CPPincludes[boolConvertCppIncludeToOinclude])
+                                       CPPincludes <- CPPincludes[!boolConvertCppIncludeToOinclude]
+
                                        CPPusings <- unlist(lapply(defs, function(x) x$getCPPusings()))
                                        CPPusings <- unique(CPPusings)
 
@@ -161,6 +168,9 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                                               ifndefName = ifndefName)
                                        selfInclude <- if(is.character(con)) paste0('"', con, '.h', '"') else '"[FILENAME].h"'
                                        CPPincludes <- c(CPPincludes, selfInclude) ## selfInclude has to come last because Rinternals.h makes a name conflict with Eigen
+                                       
+                                     ##  CPPincludes <- c(CPPincludes, ('\"nimble/dynamicRegistrations.cpp\"'))
+                                       
                                        cppIfndefName <- paste0(ifndefName,'_CPP')
                                        cppFile <- cppCPPfileClass(filename = filename,
                                                                   includes = CPPincludes,
@@ -172,6 +182,25 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        if(is.character(con)) createDir()
                                        hFile$writeFile(con = con, dir = dirName)
                                        cppFile$writeFile(con = con, dir = dirName)
+                                   },
+                                   writeDynamicRegistrationsDotCpp = function(dynamicRegistrationsCppName, dllName) {
+                                       ## this writes dynamicRegistrations.cpp to include <nimble/dynamicRegistrations.h> and
+                                       ## then add an R_init function, which must have the name R_init_[outputSOfile]
+                                       ##
+                                       ## At the moment this step is called immediately before doing R CMD SHLIB
+                                       ## And it is only at that stage that the outputSOfile is known, since the SOname includes a time stamp
+                                       ## for uniqueness that is created right before R CMD SHLIB.
+                                       ## However this content for this file could be integrated into the cppDefs
+                                       ## and then automatically written as part of writeFiles.  Doing so would require
+                                       ## that the SOname be generated earlier, which would probably be fine.
+                                       contentLines <- c(
+                                            "#include <nimble/dynamicRegistrations.h>",
+                                           "",
+                                           "extern \"C\"",
+                                           paste0("void R_init_", dllName, "(DllInfo *dll) {"),
+                                           "  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);",
+                                           "}")
+                                       writeLines(contentLines, con = dynamicRegistrationsCppName)
                                    },
                                    compileFile = function(names, .useLib = UseLibraryMakevars) {
                                        cppPermList <- c('RcppUtils.cpp',
@@ -196,15 +225,23 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        ## 	            } else
                                        ##                 character()
 
+                                       timeStamp <- format(Sys.time(), "%m_%d_%H_%M_%S")
+
+                                       dynamicRegistrationsDllName <- paste0("dynamicRegistrations_", timeStamp)
+                                       dynamicRegistrationsCppName <- paste0(dynamicRegistrationsDllName, ".cpp")
+                                       
+                                       ## mainfiles <- paste(paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' '), dynamicRegistrationsCppName)
                                        mainfiles <- paste(basename(file.path(dirName, paste0(names,'.cpp'))), collapse = ' ')
 
 
 				       if(!file.exists(file.path(dirName, sprintf("Makevars%s", if(isWindows) ".win" else ""))) && NeedMakevarsFile) # should reverse the order here in the long term.
 				           createMakevars(.useLib = .useLib, dir = dirName)
 
-                                       outputSOfile <<- file.path(dirName, paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), .Platform$dynlib.ext))
+                                       dllName <- paste0(names[1], "_", timeStamp)
+                                       
+                                       outputSOfile <<- file.path(dirName, paste0(dllName, .Platform$dynlib.ext))
 
-
+                                       includes <- c(includes, Oincludes)
                                        SHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', paste(c(mainfiles, includes), collapse = ' '), '-o', basename(outputSOfile))
 
                                        cur = getwd()
@@ -212,11 +249,33 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        on.exit(setwd(cur))
 
                                        showOutput <- getNimbleOption('showCompilerOutput')
-                                       if(!showOutput) {
-                                           logFile <- paste0(names[1], format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+
+
+                                       if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
+                                           writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
+                                           ssDllName <- file.path(dirName, paste0(dynamicRegistrationsDllName, .Platform$dynlib.ext))
+                                           ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
+                                           if(!showOutput) {
+                                               logFile <- paste0("dynamicRegistrations_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
+                                               ssdSHLIBcmd <- paste(ssdSHLIBcmd, ">", logFile)
+                                               ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
+                                           }
+                                           if(isWindows)
+                                               status = system(ssdSHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput, show.output.on.console = showOutput)
+                                           else
+                                               status = system(ssdSHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput)
+                                           if(status != 0) 
+                                               stop(structure(simpleError("Failed to create the shared library"),
+                                                              class = c("SHLIBCreationError", "ShellError", "simpleError", "error", "condition")))
+                                           nimbleUserNamespace$sessionSpecificDll <- dyn.load(ssDllName, local = TRUE)
+                                       }
+
+                                       if(!showOutput) { 
+                                           logFile <- paste0(names[1], "_", format(Sys.time(), "%m_%d_%H_%M_%S"), ".log")
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
                                            ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
                                        }
+                                       
                                        if(isWindows)
                                            status = system(SHLIBcmd, ignore.stdout = !showOutput, ignore.stderr = !showOutput, show.output.on.console = showOutput)
                                        else
@@ -228,8 +287,14 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                    loadSO = function(name) {
                                        dll <<- dyn.load(getSOName(name, dirName), local = TRUE)
                                    },
-                                   unloadSO = function(name) {
+                                   unloadSO = function(check = TRUE, force = FALSE) { ## The book-keeping on different names isn't quite connected to here yet.  Instead we just unload dll.
 				       if(!is.null(dll)) {
+                                           objectNames <- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$RNimble_Ptr_CheckAndRunAllDllFinalizers, dll[['handle']], force))
+                                           if(length(objectNames) > 0 & check) {
+                                               warning(paste0("A DLL to be unloaded has non-zero (", paste(objectNames, collapse = ", "), ") objects that need to be finalized first. ", if(force) "It's objects were cleared and it was unloaded anyway." else "It was not unloaded." ))
+                                               browser()
+                                               if(!force) return(NULL)
+                                           }
                                            status = dyn.unload(dll[["path"]])
                                            dll <<- NULL
                                            status

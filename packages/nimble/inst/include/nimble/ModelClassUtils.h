@@ -2,7 +2,7 @@
 #define __MODELCLASSUTILS
 
 #include "NamedObjects.h"
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include "Values.h"
 
 class ModelBase : public NamedObjects{
@@ -21,11 +21,11 @@ extern "C" {
   // is pointed to by rPtr
   
   SEXP derefPtr(SEXP SmultiPtr);
-  SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
-  SEXP setSinglePtrFromSinglePtr(SEXP SPtrTo, SEXP SPtrToSet);
+  //SEXP setSinglePtrFromSinglePtr(SEXP SPtrTo, SEXP SPtrToSet);
  }
 
 
 NimArrType** cGetModelElementPtr(SEXP Sextptr, SEXP Sname);	// Gets the ptr to an element of name Sname from
 // the ModelValues object pointed to by Sextptr
+
 #endif

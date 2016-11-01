@@ -90,7 +90,7 @@ rdirch <- function(n = 1, alpha) {
 #' @param x vector of values.
 #' @param n number of observations (only \code{n=1} is handled currently).
 #' @param size number of trials.
-#' @param prob vector of probabilities, summing to one, of same length as \code{x}
+#' @param prob vector of probabilities, internally normalized to sum to one, of same length as \code{x}
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
 #' @export
@@ -127,7 +127,7 @@ rmulti <- function(n = 1, size, prob) {
 #' 
 #' @param x non-negative integer-value numeric value.
 #' @param n number of observations.
-#' @param prob vector of probabilities, summing to one.
+#' @param prob vector of probabilities, internally normalized to sum to one.
 #' @param log logical; if TRUE, probability density is returned on the log scale.
 #' @author Christopher Paciorek
 #' @export

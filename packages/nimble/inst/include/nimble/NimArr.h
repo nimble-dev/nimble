@@ -16,7 +16,8 @@ public:
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0]));};
   T &operator()(int i) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i)]);} // could add asserts here
 
-  ~NimArr<1, T>() {};
+  ~NimArr<1, T>() {//PRINTF("In NimArr<1, T> destructor\n");
+  };
 
   template<class Tother>
   NimArr<1, T> &mapCopy(const NimArr<1, Tother> &other) {
@@ -1002,7 +1003,9 @@ class NimArr<4, T> : public NimArrBase<T> {
 template<int ndim, class T>
 class VecNimArr : public VecNimArrBase<T>  {
  public:
-  ~VecNimArr<ndim, T>() {};
+  ~VecNimArr<ndim, T>() {
+    //  PRINTF("In VecNimArr destructor\n");
+  };
   std::vector< NimArr<ndim, T> > values;
   NimArr<ndim, T> &operator[](unsigned int i) {
     if(i >= values.size()) {

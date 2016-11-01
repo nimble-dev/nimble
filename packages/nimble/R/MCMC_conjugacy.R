@@ -161,7 +161,10 @@ conjugacyRelationshipsClass <- setRefClass(
                                 control <- lapply(uniqueDepTypes,
                                                   function(oneType) {
                                                       boolMatch <- depTypes == oneType
-                                                      depEnds[boolMatch]
+                                                      ## prevent multiple instances of same dependent node name
+                                                      ## (via different graph dependency paths   -DT Oct 2016
+                                                      ##depEnds[boolMatch]
+                                                      unique(depEnds[boolMatch])
                                                   })
                                 names(control) <- uniqueDepTypes
                                 list(prior = conjugacyObj$prior, type = conjugacyObj$samplerType, target = targetNode, control = control)

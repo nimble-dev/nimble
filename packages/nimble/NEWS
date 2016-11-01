@@ -1,3 +1,25 @@
+                           CHANGES IN VERSION 0.6-2 (November 2016)
+
+USER LEVEL CHANGES
+
+-- dmulti(), rmulti(), dcat() and rcat() now allow 'probs' argument with arbitrary non-negative values and internally normalize these so they sum to one, to be consistent with R's multinom behavior.
+
+                           CHANGES IN VERSION 0.6-1 (October 2016)
+
+DEVELOPER LEVEL CHANGES
+
+-- Changes to configure.ac to address Solaris installation issues and removal of some lingering std::cout calls.
+
+-- Rearranged some parts of package and compileNimble compilation.  nimble.so no longer includes redundant compilation involving classes used only at the compileNimble stage.  A sessions-specific DLL is created the first time compileNimble is used.  It contains R function registration and a finalizer management system and links to CppCode/libnimble.[a|dylib|dll].
+
+-- Added a layer to manage finalizers registered with R for nimble C++ objects.  This allows nimble to manually finalize objects and then safely handle R's calls to finalizers.
+
+-- Added an internal clearCompiled system to manually finalize C++ objects and safely manage any external pointers to them in R.  This is not yet safe on Windows (can cause crash later upon exiting R) and is intended for developer use at this stage.
+
+-- Fixed bug in making an internal function accessible to Nimble generated code.
+
+-- Fixed bug in use of nimSwitch in getParam.
+
                            CHANGES IN VERSION 0.6 (August 2016)
 
 USER LEVEL CHANGES
