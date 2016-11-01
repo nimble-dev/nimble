@@ -110,7 +110,7 @@ distClass <- setRefClass(
             init_altParams(distInputList)
             discrete <<- if(is.null(distInputList$discrete))    FALSE    else    distInputList$discrete
             pqAvail <<- if(is.null(distInputList$pqAvail))    FALSE    else    distInputList$pqAvail
-            range <<- if(is.null(distInputList$range))    c(-Inf, Inf)    else    distInputList$range
+            init_range(distInputList)
             init_types(distInputList)
             init_paramIDs()
         },
@@ -152,6 +152,22 @@ distClass <- setRefClass(
             return(args)
         },
         
+        init_range = function(distInputList) {
+            if(!is.null(distInputList$range)) {
+                if(length(distInputList$range) != 2)
+                    stop("'Range' element of ", BUGSdistExpr[[1]], " must be a vector of length two.")
+                if(is.numeric(distInputList$range)) {
+                    range <<-list(lower = distInputList$range[1], upper = distInputList$range[2])
+                } else {  
+                    parsedRangeArg <- lapply(distInputList$range, function(x) parse(text=x)[[1]])
+                    range <<- lapply(parsedRangeArg, function(x) x[[3]])
+                    names(range) <<- unlist(lapply(parsedRangeArg, function(x) x[[2]]))
+                    if(!identical(names(range), c('lower', 'upper')))
+                        stop("'Range' element of ", BUGSdistExpr[[1]], " expected to contain 'lower' and 'upper'.")
+                }
+            } else range <<- list(lower = -Inf, upper = Inf)
+        },
+
         init_altParams = function(distInputList) {
             altParams <<- list()
             if(!is.null(distInputList$altParams)) {

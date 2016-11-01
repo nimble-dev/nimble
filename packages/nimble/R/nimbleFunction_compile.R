@@ -505,6 +505,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     if(inherits(instances[[1]][[name]], 'getParam_info')) {
         return(symbolGetParamInfo(name = name, paramInfo = instances[[1]][[name]]))
     }
+    if(inherits(instances[[1]][[name]], 'getBound_info')) {
+        return(symbolGetBoundInfo(name = name, boundInfo = instances[[1]][[name]]))
+    }
     ## if(is.character(instances[[1]][[name]])) {
     ##     return(symbolBase(name = name, type = 'Ronly'))
     ## }

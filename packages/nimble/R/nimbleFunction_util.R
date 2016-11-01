@@ -18,18 +18,27 @@ nfGetDefVar <- function(f, var) {
 #'
 #' @seealso \link{nimbleFunction} for how to create a nimbleFunction
 #' @export
-is.nf <- function(f) {
+is.nf <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
     if(inherits(f, 'nimbleFunctionBase')) return(TRUE)
-    return(is.function(f) && 
+    return(is.function(f) && !is.null(environment(f)) &&  
                existsFunctionEnvVar(f, 'nfRefClassObject') ) 	
 }
 
-is.Cnf <- function(f) {
+is.Cnf <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
     if(inherits(f, 'CnimbleFunctionBase')) return(TRUE)
     return(FALSE)
 }
 
-is.nfGenerator <- function(f) {
+is.rcf <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
+    return(is.function(f) && !is.null(environment(f)) &&
+           existsFunctionEnvVar(f, 'nfMethodRCobject') ) 	
+} 
+
+is.nfGenerator <- function(f, inputIsName = FALSE) {
+    if(inputIsName) f <- get(f)
     return(is.function(f) && 
                existsFunctionEnvVar(f, 'generatorFunction') &&
                existsFunctionEnvVar(f, 'nfRefClassDef') &&

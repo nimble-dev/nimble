@@ -1,9 +1,10 @@
-nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, logProbNodeExpr, type, setupOutputExprs, evaluate = TRUE, where = globalenv()) {
+nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, bounds, logProbNodeExpr, type, setupOutputExprs, evaluate = TRUE, where = globalenv()) {
     if(!(type %in% c('stoch', 'determ')))       stop(paste0('invalid argument to nodeFunction(): type = ', type))
     setupOutputLabels <- nndf_makeNodeFunctionIndexLabels(setupOutputExprs) ## should perhaps move to the declInfo for preservation
     LHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(LHS, setupOutputLabels)
     RHSrep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(RHS, setupOutputLabels)
     altParamsRep <- lapply(altParams, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
+    boundsRep <- lapply(bounds, nndf_replaceSetupOutputsWithIndexedNodeInfo, setupOutputLabels)
     logProbNodeExprRep <- nndf_replaceSetupOutputsWithIndexedNodeInfo(logProbNodeExpr, setupOutputLabels)
     nodeFunctionTemplate <-
         substitute(
@@ -11,10 +12,11 @@ nodeFunctionNew <- function(LHS, RHS, name = NA, altParams, logProbNodeExpr, typ
                            setup         = SETUPFUNCTION,
                            methods       = METHODS,
                            name          = name,
+                           check         = FALSE,
                            where = where),
             list(##CONTAINS      = nndf_createContains(RHS, type), ## this was used for intermediate classes for get_scale style parameter access, prior to getParam
                  SETUPFUNCTION = nndf_createSetupFunction(),  ##nndf = new node function
-                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, logProbNodeExprRep, type),
+                 METHODS       = nndf_createMethodList(LHSrep, RHSrep, altParamsRep, boundsRep, logProbNodeExprRep, type),
                  where         = where)
         )
     if(evaluate)    return(eval(nodeFunctionTemplate))     else       return(nodeFunctionTemplate)
@@ -69,8 +71,8 @@ indexedNodeInfoTableClass <- function(BUGSdecl) {
              class = 'indexedNodeInfoTableClass')
 }
 
-## creates a list of the methods calculate, simulate, and getLogProb, corresponding to LHS, RHS, and type arguments
-nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
+## creates a list of the methods calculate, simulate, getParam, getBound, and getLogProb, corresponding to LHS, RHS, and type arguments
+nndf_createMethodList <- function(LHS, RHS, altParams, bounds, logProbNodeExpr, type) {
     if(type == 'determ') {
         methodList <- eval(substitute(
             list(
@@ -136,9 +138,12 @@ nndf_createMethodList <- function(LHS, RHS, altParams, logProbNodeExpr, type) {
             if(length(paramNamesToUse) > 0)
                 methodList[[caseName]] <- nndf_generateGetParamSwitchFunction(allParams[paramNamesToUse], paramIDs[paramNamesToUse], type = 'double', nDim = nDimSupported)
         }
+        nDimSupported <- 0  # even multivar nodes have single lower and single upper since truncation not supported for mv distributions, so lower and upper come from distribution 'range'
+        caseName <- paste0("getBound_",nDimSupported,"D_double")
+        methodList[[caseName]] <- nndf_generateGetBoundSwitchFunction(bounds, seq_along(bounds), type = 'double', nDim = nDimSupported)
     }
     ## add model$ in front of all names, except the setupOutputs
-    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "INDEXEDNODEINFO_"))
+    methodList <- nndf_addModelDollarSignsToMethods(methodList, exceptionNames = c("LocalAns", "LocalNewLogProb","PARAMID_","PARAMANSWER_", "BOUNDID_", "BOUNDANSWER_", "INDEXEDNODEINFO_"))
     return(methodList)
 }
 
@@ -184,3 +189,34 @@ nndf_generateGetParamSwitchFunction <- function(typesListAll, paramIDs, type, nD
     ans
 }
 
+nndf_generateGetBoundSwitchFunction <- function(typesListAll, boundIDs, type, nDim) {
+    if(any(unlist(lapply(typesListAll, is.null)))) stop(paste('problem creating switch function for getBound from ', paste(paste(names(typesListAll), as.character(typesListAll), sep='='), collapse=',')))
+    boundIDs <- as.integer(boundIDs)
+    answerAssignmentExpressions <- lapply(typesListAll, function(x) substitute(BOUNDANSWER_ <- ANSEXPR, list(ANSEXPR = x)))
+    switchCode <- as.call(c(list(quote(nimSwitch), quote(BOUNDID_), boundIDs), answerAssignmentExpressions))
+    if(nDim == 0) {
+        answerInitCode <- quote(BOUNDANSWER_ <- 0)  ## this avoids a Windows compiler warning about a possibly unassigned return variable
+
+        ans <- try(eval(substitute(
+            function(BOUNDID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
+                returnType(TYPE(NDIM))
+                ANSWERINITCODE
+                SWITCHCODE
+                return(BOUNDANSWER_)
+            },
+            list(TYPE = as.name(type), NDIM=nDim, ANSWERINITCODE = answerInitCode, SWITCHCODE = switchCode)
+        )))
+    } else {
+        ans <- try(eval(substitute(
+            function(BOUNDID_ = integer(), INDEXEDNODEINFO_ = internalType(indexedNodeInfoClass)) {
+                returnType(TYPE(NDIM))
+                SWITCHCODE
+                return(BOUNDANSWER_)
+            },
+            list(TYPE = as.name(type), NDIM=nDim, SWITCHCODE = switchCode)
+        )))
+    }
+    if(inherits(ans, 'try-error')) browser()
+    attr(ans, 'srcref') <- NULL
+    ans
+}
