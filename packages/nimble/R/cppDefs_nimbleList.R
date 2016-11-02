@@ -58,42 +58,29 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         protectLines <- list()
                                         writeToSexpLines <- list()
                                         copyToListLines <- list()
-                                        nameLines <- list()
                                         Snames <- character(length(argNames))
-                                        Rnames <- character(length(argNames))
                                         returnType <- "void"
                                         listElementTable <- symbolTable()
                                         numArgs <- length(argNames)
                                         
-                                        environmentCPPName <- Rname2CppName('.xData')
+                                        environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
                                         envLine <- substitute({PROTECT(ENVNAME <- allocVector(STRSXP, 1));
                                                               SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
                                                               list(ENVNAME = as.name(environmentCPPName)))
                                                            
-                                        printLine <-  substitute({Rprintf("copyto: doub is : %f\n", doub);})
-
-                                             
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                          Rnames[i] <- paste0('R_', argNames)
-                                          listElementTable$addSymbol(cppSEXP(name = Rnames[i]))
-                                          nameLines[[i]] <- substitute({PROTECT(RNAME <- allocVector(STRSXP, 1));
-                                            SET_STRING_ELT(RNAME, 0, mkChar(ARGNAME));}, 
-                                            list(RNAME = as.name(Rnames[i]), ARGNAME = argNames[i]))
-                                          
                                           writeToSexpLines[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
                                                                                        listElementTable$getSymbolObject(Snames[i]))
                                           copyToListLines[[i]] <- substitute(defineVar(install(ARGNAME), VALUE, GET_SLOT(S_nimList_, XDATA)),
                                                                              list(ARGNAME = argNames[i], VALUE = as.name(Snames[i]),
                                                                                   XDATA = as.name(environmentCPPName)))
-                                            
                                         }
-                                        unprotectLineNoReturn <- list(substitute(UNPROTECT(N), list(N = 2*numArgs + 1)))
-                                        allCode <- embedListInRbracket(c(list(printLine), list(envLine), nameLines, writeToSexpLines,
+                                        unprotectLineNoReturn <- list(substitute(UNPROTECT(N), list(N = numArgs + 1)))
+                                        allCode <- embedListInRbracket(c(list(envLine), writeToSexpLines,
                                                                          copyToListLines, unprotectLineNoReturn))
-                                        
                                         functionDefs[[paste0(name, "_copyTo")]] <<- cppFunctionDef(name = "copyToSEXP",
                                                                                args = interfaceArgs,
                                                                                code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
@@ -106,52 +93,34 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         functionArgName <-  Rname2CppName(paste0('S_nimList_'))
                                         interfaceArgs <- symbolTable()
                                         interfaceArgs$addSymbol(cppSEXP(name = functionArgName))
-                                        
                                         objects <- symbolTable2cppVars(nimCompProc$symTab)
                                         argNames <- nimCompProc$symTab$getSymbolNames() ##not actually arg names any more, but names of nimbleListElements
-                                        nameLines <- list()
                                         copyFromListLines <- list()
                                         copyLines <- list()
                                         Snames <- character(length(argNames))
-                                        Rnames <- character(length(argNames))
                                         returnType <- "void"
                                         listElementTable <- symbolTable()
                                         
-                                        environmentCPPName <- Rname2CppName('.xData')
+                                        environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
                                         envLine <- substitute({PROTECT(ENVNAME <- allocVector(STRSXP, 1));
                                           SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
                                           list(ENVNAME = as.name(environmentCPPName)))
-                                        environmentCPP <- Rname2CppName("nimListEnvironment")
-                                        listElementTable$addSymbol(cppSEXP(name = environmentCPP))
-                                        envLine2 <- substitute({
-                                          ENVNAME <- GET_SLOT(S_nimList_, XDATA);}, 
-                                          list(ENVNAME = as.name(environmentCPP),
-                                               XDATA = as.name(environmentCPPName)))
-                                        
-                                        printLine <-  substitute({Rprintf("copyfrom: doub is : %f\n", doub);})
-                                        
+
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
-                                          
-                                          Rnames[i] <- paste0('R_', argNames)
-                                          listElementTable$addSymbol(cppSEXP(name = Rnames[i]))
-                                          nameLines[[i]] <- substitute({PROTECT(RNAME <- allocVector(STRSXP, 1));
-                                            SET_STRING_ELT(RNAME, 0, mkChar(ARGNAME));}, 
-                                            list(RNAME = as.name(Rnames[i]), ARGNAME = argNames[i]))
-                                            
-                                            copyFromListLines[[i]] <- substitute(PROTECT(SVAR <- findVarInFrame(ENVNAME, install(RNAME))),
-                                                                               list(RNAME = argNames[i], ENVNAME = as.name(environmentCPP),
-                                                                                    SVAR = as.name(Snames[i])))
+                                            copyFromListLines[[i]] <- substitute(PROTECT(SVAR <- findVarInFrame(GET_SLOT(S_nimList_, XDATA), install(ARGNAME))),
+                                                                               list(ARGNAME = argNames[i], 
+                                                                                    SVAR = as.name(Snames[i]),
+                                                                                    XDATA = as.name(environmentCPPName)))
                                             copyLines[[i]] <- buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
                                                                                     nimCompProc$symTab$getSymbolObject(argNames[i]))
                                         }
-                                        
                                         numArgs <- length(argNames)
-                                        unprotectLine <- substitute(UNPROTECT(N), list(N = 2*numArgs + 1))
-                                        allCode <- embedListInRbracket(c(envLine, envLine2, nameLines, copyFromListLines, copyLines,
-                                                                         list(printLine), list(unprotectLine)))
+                                        unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1))
+                                        allCode <- embedListInRbracket(c(envLine, copyFromListLines, copyLines,
+                                                                         list(unprotectLine)))
                                         functionDefs[[paste0(name, "_copyFrom")]] <<- cppFunctionDef(name = "copyFromSEXP",
                                                                                 args = interfaceArgs,
                                                                                 code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),

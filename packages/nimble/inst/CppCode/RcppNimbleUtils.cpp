@@ -1131,7 +1131,7 @@ void setClassElement(SEXP Sobject, const char *name, SEXP setObject) {
 SEXP makeNewNimbleList() {
   SEXP call;
   PROTECT(call = allocVector(LANGSXP, 1));
-  SETCAR(call, install("makeNewNimListFromC"));
+  SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
   UNPROTECT(1);
   return(EVAL(call));
 }
