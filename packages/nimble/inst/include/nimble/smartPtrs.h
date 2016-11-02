@@ -59,8 +59,11 @@ class pointedToBase {
  public:
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
-  void newWatcher() {watcherCount++;}
+  void newWatcher() {PRINTF("Watcher ++");
+watcherCount++;}
   void removeWatcher() {
+	  	PRINTF("Watcher --");
+
     watcherCount--;
     if(watcherCount <= 0) {
       if(watcherCount < 0) {

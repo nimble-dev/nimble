@@ -39,6 +39,17 @@ argType2symbol <- function(AT, neededTypes, name = character()) {
           return(listST)
       }
     }
+    if(name == "return" && exists(as.character(AT), envir = globalenv())){
+      if(is.nlGenerator(eval(parse(text = as.character(AT), keep.source = FALSE)))){
+        nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
+        isANeededType <- (nlList$nimbleListDef$className == names(neededTypes))
+        if(any(isANeededType == 1)){
+          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy()
+          listST$name <- name
+          return(listST)
+        }
+      }
+    }
     nDim <- if(length(AT)==1) 0 else AT[[2]]
     size <- if(nDim == 0) 1 else {
         if(length(AT) < 3)
