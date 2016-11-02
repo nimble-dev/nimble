@@ -181,39 +181,30 @@ struct rep_impl {
 // sequences, seq(from, to, by, length.out)  not implementing along.with for now
 // not implementing this for `:` because we already have special treatment `:` in for-loop context, so want to tread carefully there
 
+typedef enum{useBy, useLength} byOrLength;
+
 // to-do: make native integer handling where appropriate
 // right now from and to are doubles
+template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy, byOrLength>
+  class seqClass;
+
+
 template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
-class seqClass {
+  class seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useBy> {
 public:
   scalarFrom from;
   scalarBy by;
   unsigned int length_out;
-  typedef enum{useBy, useLength} byOrLength;
+  //  typedef enum{useBy, useLength} byOrLength;
   
   typedef double result_type; // need to pull this from DerivedOut
- seqClass(scalarFrom fromIn, scalarTo toIn, scalarBy byIn, int length_outIn, byOrLength bOl) :
-  from(fromIn) {
+ seqClass(scalarFrom fromIn, scalarTo toIn, scalarBy byIn) :
+  from(fromIn),
+    by(byIn) {
     printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
-    if(bOl == useBy) {
-      by = byIn;
       length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn));
-    } else {
-      printf("doing length\n");
-      length_out = length_outIn;
-      std::cout<<"length_out = "<<length_out<<"\n";
-      if(length_out == 1) {
-	std::cout<<"setting by to 0\n";
-	by = 0;
-      }
-      else {
-	std::cout<<static_cast<double>(toIn)<<" "<<static_cast<double>(from)<<" "<<static_cast<double>(length_out)<<"\n";
-	by = (static_cast<double>(toIn) - static_cast<double>(from)) / (static_cast<double>(length_out) - 1.);
-      }
-      std::cout<<"by = " << by <<"\n";
-    }
-  };
-    
+    };
+  
   typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
   result_type operator()(Index i) const //Eigen::DenseIndex
   {
@@ -228,12 +219,109 @@ public:
   }
 };
 
+template<typename DerivedOut, typename scalarFrom, typename scalarTo>
+  class seqClass<DerivedOut, scalarFrom, scalarTo, int, useLength> {
+public:
+  scalarFrom from;
+  double by;
+  unsigned int length_out;
+  //  typedef enum{useBy, useLength} byOrLength;
+  
+  typedef double result_type; // need to pull this from DerivedOut
+ seqClass(scalarFrom fromIn, scalarTo toIn, unsigned int length_outIn) :
+  from(fromIn),
+    length_out(length_outIn)
+    {
+      printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
+      if(length_out == 1) {
+	std::cout<<"setting by to 0\n";
+	by = 0;
+      } else {
+	std::cout<<static_cast<double>(toIn)<<" "<<static_cast<double>(from)<<" "<<static_cast<double>(length_out)<<"\n";
+	by = (static_cast<double>(toIn) - static_cast<double>(from)) / (static_cast<double>(length_out) - 1.);
+      }
+    };
+
+  
+  typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
+  result_type operator()(Index i) const //Eigen::DenseIndex
+  {
+    std::cout<<"IN 1 seq\n";
+    return( from + static_cast<int>(i) * by );
+  }
+  result_type operator()(Index i, Index j) const
+  {
+    std::cout<<"IN 2 seq\n";
+    if(j != 0) printf("Problem calling seq in C++ with two indices\n");
+    return( from + static_cast<int>(i) * by);
+  }
+};
+
+
+/*  { */
+/* public: */
+/*   scalarFrom from; */
+/*   scalarBy by; */
+/*   double byD; */
+/*   unsigned int length_out; */
+/*   //  typedef enum{useBy, useLength} byOrLength; */
+  
+/*   typedef double result_type; // need to pull this from DerivedOut */
+/*  seqClass(scalarFrom fromIn, scalarTo toIn, scalarBy byIn, int length_outIn, byOrLength bOl) : */
+/*   from(fromIn) { */
+/*     printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n"); */
+/*     if(bOl == useBy) { */
+/*       by = byIn; */
+/*       length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn)); */
+/*     } else { */
+/*       printf("doing length\n"); */
+/*       length_out = length_outIn; */
+/*       std::cout<<"length_out = "<<length_out<<"\n"; */
+/*       if(length_out == 1) { */
+/* 	std::cout<<"setting by to 0\n"; */
+/* 	by = 0; */
+/*       } */
+/*       else { */
+/* 	std::cout<<static_cast<double>(toIn)<<" "<<static_cast<double>(from)<<" "<<static_cast<double>(length_out)<<"\n"; */
+/* 	by = (static_cast<double>(toIn) - static_cast<double>(from)) / (static_cast<double>(length_out) - 1.); */
+/*       } */
+/*       std::cout<<"by = " << by <<"\n"; */
+/*     } */
+/*   }; */
+    
+/*   typedef typename Eigen::internal::traits<DerivedOut>::Index Index; */
+/*   result_type operator()(Index i) const //Eigen::DenseIndex */
+/*   { */
+/*     std::cout<<"IN 1 seq\n"; */
+/*     return( from + static_cast<int>(i) * by ); */
+/*   } */
+/*   result_type operator()(Index i, Index j) const */
+/*   { */
+/*     std::cout<<"IN 2 seq\n"; */
+/*     if(j != 0) printf("Problem calling seq in C++ with two indices\n"); */
+/*     return( from + static_cast<int>(i) * by); */
+/*   } */
+/* }; */
+
 namespace Eigen{
   namespace internal{
     template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
-      struct functor_has_linear_access<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy> > { enum { ret = 1}; }; 
+      struct functor_has_linear_access<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useBy> > { enum { ret = 1}; }; 
     template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
-      struct functor_traits<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy> >
+      struct functor_traits<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useBy> >
+      {
+	enum
+	{
+	  Cost = 10, // there are templated costs available to pick up for this
+	  PacketAccess = false, // happy to keep this false for now
+	  IsRepeatable = true // default was false. 
+	};
+      };    
+  
+  template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
+    struct functor_has_linear_access<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useLength> > { enum { ret = 1}; }; 
+  template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
+    struct functor_traits<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useLength> >
       {
 	enum
 	{
@@ -249,14 +337,14 @@ namespace Eigen{
 template<typename DerivedOut>
 struct seq_impl {
   template<typename scalarFrom, typename scalarTo, typename scalarBy>
-  static CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy>, DerivedOut > seqBy(scalarFrom from, scalarTo to, scalarBy by, unsigned int len) {
-    seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy> seqObj(from, to, by, len, seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy>::useBy);
-    return(CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy> , DerivedOut >(seqObj.length_out, 1, seqObj));
+    static CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useBy>, DerivedOut > seqBy(scalarFrom from, scalarTo to, scalarBy by, unsigned int len) {
+    seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useBy> seqObj(from, to, by);
+    return(CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useBy> , DerivedOut >(seqObj.length_out, 1, seqObj));
   }
   template<typename scalarFrom, typename scalarTo, typename scalarBy>
-  static CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy>, DerivedOut > seqLen(scalarFrom from, scalarTo to, scalarBy by, unsigned int len) {
-    seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy> seqObj(from, to, by, len, seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy>::useLength);
-    return(CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy> , DerivedOut >(seqObj.length_out, 1, seqObj));
+    static CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useLength>, DerivedOut > seqLen(scalarFrom from, scalarTo to, scalarBy by, unsigned int len) {
+    seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useLength> seqObj(from, to, len);
+    return(CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useLength> , DerivedOut >(seqObj.length_out, 1, seqObj));
   }
 };
 
@@ -338,6 +426,15 @@ struct nonseqIndexed_impl {
 #define nimNonseqIndexedb nonseqIndexed_imple<MatrixXb>::nonseqIndexed
 
 // vectorization of any scalar function:
+
+// simple function as prototype for recylcing rule
+/* double add(double arg1, double arg2) {return arg1 + arg2;} */
+
+/* class add_functor{ // or use a struct with static member for this role? */
+/*   double operator()(double arg1, double arg2) {return add(arg1, arg2);} */
+/* }; */
+
+
 
 /* // need to make a different template for each number of arguments with matching number of template arguments (plus a F type and return type). */
 /* // need to consider vector vs. matrix return (maybe handled all from nimble types) */
