@@ -11,7 +11,7 @@ context('nimbleList() tests')
 library(nimble)
 library(testthat)
 nimbleOptions(showCompilerOutput = TRUE)
-# nimbleOptions(debugCppLineByLine = TRUE)
+ # nimbleOptions(debugCppLineByLine = TRUE)
 # nimbleOptions(debugSizeProcessing = TRUE)
 # debug(nimble:::sizeAssignAfterRecursing)
 options( warn = 1 )
@@ -151,6 +151,8 @@ CnimbleList <- ctestInst$run(testList4)
 expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow =  2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+## test for identical values of testList4 and CnimbleList
+expect_identical(testList4$nlMatrix, CnimbleList$nlMatrix)
 test_that("return objects are nimbleLists", 
           {
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)
@@ -197,6 +199,8 @@ CnimbleList <- ctestInst$run(testList5)
 expect_identical(RnimbleList$a, 2)
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$a, CnimbleList$a)
+## test for identical values of testList5 and CnimbleList
+expect_identical(testList5$a, CnimbleList$a)
 test_that("return objects are nimbleLists", 
           {
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)
@@ -231,9 +235,12 @@ CnimbleList <- ctestInst$run(testList6)
 CnimbleList <- ctestInst$run(CnimbleList)
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow =  2))
+expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,40,1),nrow =  2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+##test for identical values of testList6 and CnimbleList
+expect_identical(testList6$nlMatrix, CnimbleList$nlMatrix)
+
 test_that("return objects are nimbleLists", 
           {
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)
@@ -251,7 +258,7 @@ nlTestFunc7 <- nimbleFunction(
     diamat <- diag(2)
   },
   run = function(argList7a = testListDef7(), argList7b = testListDef7()){
-    testMat <- argList7a$nlMatrix %*% diamat
+    argList7a$nlMatrix <- argList7a$nlMatrix %*% argList7b$nlMatrix
     returnType(testListDef7())
     return(argList7a)
   }
@@ -268,9 +275,11 @@ ctestInst <- compileNimble(testInst, control = list(debug =  F))
 CnimbleList <- ctestInst$run(testList7a, testList7b)
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlMatrix, matrix(c(1,0,10,1),nrow =  2))
+expect_identical(RnimbleList$nlMatrix, matrix(c(16,16,16,16),nrow =  2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+## test for identical values of testList7a and CnimbleList
+expect_identical(testList7a$nlMatrix, CnimbleList$nlMatrix)
 test_that("return objects are nimbleLists", 
           {
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)

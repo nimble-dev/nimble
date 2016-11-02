@@ -356,7 +356,7 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
 
 buildCopyLineToSEXP <- function(fromSym, toSym, returnCall = FALSE, conditionalText = "") {
     if(inherits(fromSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
-      if(returnCall == TRUE)  ansText  <- paste0("PROTECT(",conditionalText, toSym$name, " = ",fromSym$name, "->writeToSEXP());")
+      if(returnCall == TRUE)  ansText  <- paste0(conditionalText, "PROTECT(", toSym$name, " = ",fromSym$name, "->writeToSEXP());")
       else ansText  <- paste0(fromSym$name, "->copyToSEXP(", toSym$name, ");")
       ans <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
