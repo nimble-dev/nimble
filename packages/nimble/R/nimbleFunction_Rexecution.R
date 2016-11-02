@@ -9,11 +9,19 @@ nimRep <- function(arg1, times = 1, each = 1) {
     rep(arg1, times = times, each = each)
 }
 
-nimSeq <- function(from, to, by = -1L, length.out = -1L) { ## this creates default arguments filled in at keyword matching that are then useful in cppOutput step to determine if C++ should use nimSeqBy or nimSeqLen
-    if(by == -1)
-        seq(from, to, length.out = length.out)
+nimSeq <- function(from, to, by, length.out) { ## this creates default arguments filled in at keyword matching that are then useful in cppOutput step to determine if C++ should use nimSeqBy or nimSeqLen
+    haveBy <- !missing(by)
+    haveLen <- !missing(length.out)
+    if(haveBy)
+        if(haveLen)
+            seq(from, to, by, length.out)
+        else
+            seq(from, to, by)
     else
-        seq(from, to, by = by)
+        if(haveLen)
+            seq(from, to, length.out = length.out)
+        else
+            seq(from, to)
 }
 
 #' Explicitly declare objects created in setup code to be preserved and compiled as member data

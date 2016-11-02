@@ -15,6 +15,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen'), 'cppOutputCallAsIs'),
                     list(
+                        ':' = 'cppOutputColon',
                         size = 'cppOutputSize',
                          'for' = 'cppOutputFor',
                          'if' = 'cppOutputIfWhile',
@@ -282,6 +283,11 @@ cppOutputNFmethod <- function(code, symTab) {
     if(length(code$args) < 2) stop('Error: expecting at least 2 arguments for operator ',code$name)
     paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]) ##, ## No nimGenerateCpp on code$args[[2]] because it should be a string
     ## This used to take method args in this argList.  But now they are in a chainedCall
+}
+
+cppOutputColon <- function(code, symTab) {
+    if(length(code$args) != 2) stop('Error: expecting 2 arguments for operator ',code$name)
+    paste0( 'seqByI', nimGenerateCpp(code$args[[1]], symTab), nimGeneralCpp(code$args[[2]], symTab), 1, 0);
 }
 
 cppOutputMidOperator <- function(code, symTab) {

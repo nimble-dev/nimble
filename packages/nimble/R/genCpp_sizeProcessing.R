@@ -19,7 +19,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     which = 'sizeWhich',
                     nimC = 'sizeConcatenate',
                     nimRep = 'sizeRep',
-                    nimSeq = 'sizeSeq',
+                    nimSeqBy = 'sizeSeq',
+                    nimSeqLen = 'sizeSeq',
                    'return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
@@ -1121,10 +1122,10 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
     message('still need to handle -1L sequences')
     message('check that arguments are scalars')
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
-    byProvided <- identical(code$args[[3]], -1L) ## need a better way to indicate missingness when we fill in arguments
-    lengthProvided <- identical(code$args[[4]], -1L)
+    byProvided <- code$name == 'nimSeqBy' ##identical(code$args[[3]], -1L) ## need a better way to indicate missingness when we fill in arguments
+    lengthProvided <- code$name == 'nimSeqLen' ##identical(code$args[[4]], -1L)
     typeFrom <- if(inherits(code$args[[1]], 'exprClass')) code$args[[1]]$type else storage.mode(code$args[[1]])
-    if(byProvided && lengthProvided) stop(exprClassProcessingErrorMsg(code, 'Cannot provide both by and length arguments to seq.'), call.=FALSE)
+    ##if(byProvided && lengthProvided) stop(exprClassProcessingErrorMsg(code, 'Cannot provide both by and length arguments to seq.'), call.=FALSE)
     typeTo <- if(inherits(code$args[[2]], 'exprClass')) code$args[[2]]$type else storage.mode(code$args[[2]])
     typeBy <- if(inherits(code$args[[3]], 'exprClass')) code$args[[3]]$type else storage.mode(code$args[[3]])
     liftExprRanges <- TRUE
@@ -1140,7 +1141,7 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
             byProvided <- TRUE
         }
         if(byProvided) {
-            code$name <- 'nimSeqBy'
+            code$name <- 'nimSeqByD'
             ## lift any expression arguments
             for(i in 1:2) {
                 if(inherits(code$args[[i]], 'exprClass')) {
@@ -1155,7 +1156,7 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
                                             BY_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]]))
             
         } else { ## must be lengthProvided
-            code$name <- 'nimSeqLen'
+            code$name <- 'nimSeqLenD'
             thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
         }
     }
@@ -1200,7 +1201,7 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     
     code$type <- 'integer'
     code$nDim <- 1
-    code$toEigenize <- 'maybe' ## doesn't really matter since are used in maps
+    code$toEigenize <- 'maybe' 
     
     ## could generate an assertiong that second arg is >= first arg
     if(is.numeric(code$args[[1]]) & is.numeric(code$args[[2]])) {

@@ -11,8 +11,8 @@
 /*   unsigned int i, iOut(0); */
 /*   if(input.boolMap) { */
 /*     for(i = 0; i < lenIn; i++) lenOut += input[i]; */
-/*   } else { */
-/*     lenOut = std::accumulate(input.getVptr(), input.getVptr() + lenIn, 0); */
+/*   } ELSE { */
+/*     LENOUT = STD::ACCUMULATE(INPUT.GETVPTR(), INPUT.GETVPTR() + LENIN, 0); */
 /*   } */
 /*   output.setSize(lenOut, false, false); */
 /*   for(i = 0; i < lenIn; i++) { */

@@ -188,6 +188,23 @@ nimOptim_keywordInfo <- keywordInfoClass(
 	}
 )
 
+nimSeq_keywordInfo <- keywordInfoClass(
+    keyword = 'nimSeq',
+    processor = function(code, nfProc) {
+        useBy <- !isCodeArgBlank(code, 'by')
+        useLen <- !isCodeArgBlank(code, 'length.out')
+        if(useBy && useLen)
+            stop("Cannot provide both 'by' and 'length.out' arguments to seq")
+        if(useLen) {
+            newRunCode <- substitute(nimSeqLen(FROM, TO, 0, LEN), list(FROM = code$from, TO = code$to, LEN = code$length.out))
+        } else {
+            byVal <- if(useBy) code$by else 1
+            newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = code$by))
+        }
+        return(newRunCode)
+    }
+)
+    
 
 values_keywordInfo <- keywordInfoClass(
     keyword = 'values',
@@ -694,6 +711,7 @@ length_char_keywordInfo <- keywordInfoClass(
 
 #	KeywordList
 keywordList <- new.env()
+keywordList[['nimSeq']] <- nimSeq_keywordInfo
 keywordList[['getParam']] <- getParam_keywordInfo
 keywordList[['values']] <- values_keywordInfo
 keywordList[['calculate']] <- calculate_keywordInfo
