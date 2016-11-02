@@ -189,7 +189,7 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   asserts <- list()
   if(symTab$parentST$symbolExists(listDefName)){
     nlSym <- symTab$getSymbolObject(listDefName, inherits = TRUE)
-    code$type <- "nimbleList"
+    code$type <- "symbolNimbleList"
     listST <- symTab$getParentST()$getSymbolObject(listDefName)
     code$sizeExprs <- listST
     code$toEigenize <- "no"
@@ -556,7 +556,7 @@ sizeSetSize <- function(code, symTab, typeEnv) {
     if(code$args[[1]]$name == 'nfVar'){
       useArg1 <- TRUE
       sym <- symTab$getSymbolObject(code$args[[1]]$args[[1]]$name)
-      if(sym$type == 'nimbleList'){
+      if(sym$type == 'symbolNimbleList'){
         sym <- sym$nlProc$symTab$getSymbolObject(code$args[[1]]$args[[2]])
       }
     }
@@ -725,9 +725,10 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
-                    if(RHStype == "nimbleList") {
-                      assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type=  RHStype, sizeExprs = RHS$sizeExprs), envir = typeEnv)
-                      symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = RHS$sizeExprs$nlProc))
+                    if(RHStype == "symbolNimbleList") {
+                      LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
+                      if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
+                      symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = LHSnlProc))
                     }
                     else
                         stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: LHS is not in typeEnv or symTab and cannot be added now.')), call. = FALSE)

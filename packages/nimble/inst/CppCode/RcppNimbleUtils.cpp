@@ -1128,6 +1128,15 @@ void setClassElement(SEXP Sobject, const char *name, SEXP setObject) {
   UNPROTECT(2); 
 }
 
+SEXP makeNewNimbleList() {
+  SEXP call;
+  PROTECT(call = allocVector(LANGSXP, 1));
+  SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
+  UNPROTECT(1);
+  return(EVAL(call));
+}
+
+
 /* forwardsolve, backsolve */
 //
 //NimArr<1, double> forwardsolve(NimArr<2, double> A, NimArr<1, double> b) {

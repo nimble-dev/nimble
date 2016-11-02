@@ -19,6 +19,10 @@ class nimSmartPtr {
     realPtr = inputPtr;
     realPtr->newWatcher();
   };
+  
+  bool equalsPtr(const nimSmartPtr & otherPtr) {
+	  return(realPtr == otherPtr.realPtr);
+  }
 
   nimSmartPtr & operator=(const nimSmartPtr & rhs) {
     if(this == &rhs)
@@ -55,8 +59,11 @@ class pointedToBase {
  public:
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
-  void newWatcher() {watcherCount++;}
+  void newWatcher() {PRINTF("Watcher ++");
+watcherCount++;}
   void removeWatcher() {
+	  	PRINTF("Watcher --");
+
     watcherCount--;
     if(watcherCount <= 0) {
       if(watcherCount < 0) {

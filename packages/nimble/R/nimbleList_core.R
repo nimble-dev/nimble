@@ -32,34 +32,29 @@ nimbleList <- function(types,
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
 
-    fields <- as.list(rep('ANY', length(types$vars)))
-    names(fields) <- types$vars
-    fields[[length(fields)+1]] <- "ANY"
-    names(fields)[length(fields)] <- "nimbleListDef"
+    classFields <- as.list(rep('ANY', length(types$vars)))
+    names(classFields) <- types$vars
+    classFields[[length(classFields)+1]] <- "ANY"
+    names(classFields)[length(classFields)] <- "nimbleListDef"
 
-
+    
+    nlRefClassObject <- setRefClass(
+      Class = name,
+      fields = classFields,
+      contains = 'nimbleListBase',
+      methods = list(
+        initialize = function(NLDEFCLASSOBJECT, ...){
+          nimbleListDef <<- NLDEFCLASSOBJECT
+          callSuper(...)
+        }
+      ),
+      where = where
+    )
 
     nlGeneratorFunction <-   eval(  substitute(
       function(...){
-      nlDefClassObject <- NLDEFCLASSOBJECT
-      
-      nlRefClassObject <- setRefClass(
-          Class = NLREFCLASS_CLASSNAME,
-          fields = NLREFCLASS_FIELDS,
-          contains = 'nimbleListBase',
-          methods = list(
-            initialize = function(nlDefClassObject, ...){
-              nimbleListDef <<- nlDefClassObject
-              callSuper(...)
-            }
-          ),
-          where = where
-          )
-      return(nlRefClassObject(nlDefClassObject, ...))},
-      list(NLREFCLASS_CLASSNAME = name,
-           NLREFCLASS_FIELDS = fields,
-           NLDEFCLASSOBJECT = nlDefClassObject,
-           where =where)))
+      return(nlRefClassObject(NLDEFCLASSOBJECT, ...))},
+      list(NLDEFCLASSOBJECT = nlDefClassObject)))
     return(list(new = nlGeneratorFunction))
 }
 

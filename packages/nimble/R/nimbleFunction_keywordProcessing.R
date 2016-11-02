@@ -1319,9 +1319,9 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
       nlList <- eval(nfPart)$new()
       nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
       className <- nlList$nimbleListDef$className
-      newSym <- symbolNimbleList(name = nfName, type = 'nimbleList', nlProc = nlp)
+      newSym <- symbolNimbleList(name = nfName, type = 'symbolNimbleList', nlProc = nlp)
       if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
-      addSym <- symbolNimbleListGenerator(name = nfName, type = 'nimbleListGenerator', nlProc = nlp)
+      addSym <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
       nfProc$setupSymTab$addSymbol(addSym)
     }
     

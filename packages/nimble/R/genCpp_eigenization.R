@@ -585,7 +585,9 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     code$eigMatrix <- TRUE
 
     deparsedCode <- parse(text = nimDeparse(code), keep.source = FALSE)[[1]]
-    setArg(code$caller, code$callerArgID, RparseTree2ExprClasses(as.name(EigenName)))
+    argSet <-  RparseTree2ExprClasses(as.name(EigenName))
+    argSet$eigMatrix <- TRUE    ##  these two lines added so that the value provided to setArg has an eigMatrix entry
+    setArg(code$caller, code$callerArgID, argSet)
 
     if(!thisMapAlreadySet) {
         return(RparseTree2ExprClasses(
