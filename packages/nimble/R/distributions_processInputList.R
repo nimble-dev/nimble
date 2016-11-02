@@ -207,42 +207,41 @@ distClass <- setRefClass(
 #####################################################################################################
 #####################################################################################################
 
-checkDistributionsInput <- function(distributionsInput) {
+checkDistributionInput <- function(distributionInput) {
     allowedFields <- unique(unlist(sapply(distributionsInputList, names)))
-    if(sum(!names(distributionsInput) %in% allowedFields)) 
-        stop(paste0(names(distributionsInput), " has unknown field."))
-    if(!sum(is.character(distributionsInput$BUGSdist))) stop(paste0(distributionsInput$BUGSdist, ": field 'BUGSdist' is not of type character."))
-    if(exists("Rdist", distributionsInput) && !sum(is.character(distributionsInput$Rdist))) stop(paste0(distributionsInput$BUGSdist, ": field 'Rdist' is not type of character."))
-    if(exists("discrete", distributionsInput) && !sum(is.logical(distributionsInput$discrete))) stop(paste0(distributionsInput$BUGSdist, ": field 'discrete' is not type logical."))
-    if(exists("pqAvail", distributionsInput) && !sum(is.logical(distributionsInput$pqAvail))) stop(paste0(distributionsInput$BUGSdist, ": field 'pqAvail' is not of type logical."))
-    if(exists("range", distributionsInput) && (!is.numeric(distributionsInput$range) || length(distributionsInput$range) != 2)) stop(paste0(distributionsInput$BUGSdist, ": field 'range' is not a vector of two numeric values."))
-    if(exists("types", distributionsInput) && !sum(is.character(distributionsInput$types))) stop(paste0(distributionsInput$BUGSdist, ": field 'types' is not of type character."))
-    if(exists("altParams", distributionsInput) && !sum(is.character(distributionsInput$altParams))) stop(paste0(distributionsInput$BUGSdist, ": field 'altParams' is not of type character."))
-    if(length(distributionsInput$BUGSdist) > 1 || (exists('discrete', distributionsInputList) && length(distributionsInputList$discrete) > 1) || (exists('pqAvail', distributionsInputList) && length(distributionsInputList$pqAvail) > 1))
-        stop(paste0(names(distributionsInput), " field 'BUGSdist', 'discrete', 'altParams', or 'pqAvail' is not of length one."))
+    if(sum(!names(distributionInput) %in% allowedFields)) 
+        stop(paste0(names(distributionInput), " has unknown field."))
+    if(!sum(is.character(distributionInput$BUGSdist))) stop(paste0(distributionInput$BUGSdist, ": field 'BUGSdist' is not of type character."))
+    if(exists("Rdist", distributionInput) && !sum(is.character(distributionInput$Rdist))) stop(paste0(distributionInput$BUGSdist, ": field 'Rdist' is not type of character."))
+    if(exists("discrete", distributionInput) && !sum(is.logical(distributionInput$discrete))) stop(paste0(distributionInput$BUGSdist, ": field 'discrete' is not type logical."))
+    if(exists("pqAvail", distributionInput) && !sum(is.logical(distributionInput$pqAvail))) stop(paste0(distributionInput$BUGSdist, ": field 'pqAvail' is not of type logical."))
+    if(exists("range", distributionInput) && (!is.numeric(distributionInput$range) || length(distributionInput$range) != 2)) stop(paste0(distributionInput$BUGSdist, ": field 'range' is not a vector of two numeric values."))
+    if(exists("types", distributionInput) && !sum(is.character(distributionInput$types))) stop(paste0(distributionInput$BUGSdist, ": field 'types' is not of type character."))
+    if(exists("altParams", distributionInput) && !sum(is.character(distributionInput$altParams))) stop(paste0(distributionInput$BUGSdist, ": field 'altParams' is not of type character."))
+    if(length(distributionInput$BUGSdist) > 1 || (exists('discrete', distributionInput) && length(distributionInput$discrete) > 1) || (exists('pqAvail', distributionInput) && length(distributionInput$pqAvail) > 1))
+        stop(paste0(names(distributionInput), " field 'BUGSdist', 'discrete', 'altParams', or 'pqAvail' is not of length one."))
     invisible(NULL)
 }
 
-checkDistributionsFunctions <- function(distributionsInput) {
-    if(is.list(distributionsInput)) {
-      if(exists('Rdist', distributionsInput))
-        inputString <- distributionsInput$Rdist else inputString <- distributionsInput$BUGSdist
+checkDistributionFunctions <- function(distributionInput) {
+    if(is.list(distributionInput)) {
+      if(exists('Rdist', distributionInput))
+        inputString <- distributionInput$Rdist else inputString <- distributionInput$BUGSdist
       densityName <- as.character(parse(text = inputString)[[1]][[1]])
     } else densityName <- distributionInput
       simulateName <- sub('^d', 'r', densityName)
-      if(!is.rcf(get(densityName)) || !is.rcf(get(simulateName)))
+      if(!exists(densityName) || !exists(simulateName) ||
+         !is.rcf(get(densityName)) || !is.rcf(get(simulateName)))
         stop(paste0("Either density or random generation functions for ", densityName,
                     " are not available as nimbleFunctions without setup code."))
                                         # FIXME: deal with finding by R's scoping rules here and in genCpp_sizeProcessing (currently line 139)
-      if(!is.null(distributionsInput) && is.list(distributionsInput) && exists("pqAvail", distributionsInput) && distributionsInput$pqAvail) {
+      if(!is.null(distributionInput) && is.list(distributionInput) && exists("pqAvail", distributionInput) && distributionInput$pqAvail) {
         cdfName <- sub('^d', 'p', densityName)
         quantileName <- sub('^d', 'q', densityName)
         if(!is.rcf(get(cdfName)) || !is.rcf(get(quantileName)))
           stop(paste0("Either distribution (CDF) or quantile (inverse CDF) functions for ", densityName,
                       " are not available as nimbleFunctions without setup code."))
       }
-    } else {
-      
     invisible(NULL)
 }
 
@@ -276,11 +275,11 @@ prepareDistributionInput <- function(dist) {
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, either a list of lists or single list in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
+#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
 #' @author Christopher Paciorek
 #' @export
 #' @details
-#' When \code{distributionsInput is a list of lists (or a list when only one distribution is supplied), see below for more information on the structure of the list. When \code{distributionsInput} is a character vector, the distribution is assumed to be of standard form, with parameters assumed to be the arguments provided in the density nimbleFunction, no alternative parameterizations, and the distribution assumed to be continuous with range from minus infinity to infinity. The availability of distribution and quantile functions is inferred from whether appropriately-named functions exist in the global environment.
+#' When \code{distributionsInput is a list of lists, see below for more information on the structure of the list. When \code{distributionsInput} is a character vector, the distribution is assumed to be of standard form, with parameters assumed to be the arguments provided in the density nimbleFunction, no alternative parameterizations, and the distribution assumed to be continuous with range from minus infinity to infinity. The availability of distribution and quantile functions is inferred from whether appropriately-named functions exist in the global environment.
 #' \itemize{
 #' \item{\code{BUGSdist}} {
 #' a character string in the form of the density name (starting with 'd') followed by the names of the parameters in parentheses. When alternative parameterizations are given in \code{Rdist}, this should be an exhaustive list of the unique parameter names from all possible parameterizations, with the default parameters specified first.
@@ -350,9 +349,9 @@ registerDistributions <- function(distributionsInput) {
     if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
     } else {
-        if((!is.list(distributionsInput && !is.list(distributionsInput[[1]])) && !is.character(distributionsInput))
-          stop("'distributionsInput' should be a named list of lists or a character vector")
-
+        if(!(is.character(distributionsInput) || (is.list(distributionsInput) &&
+                                                  (length(distributionsInput) == 1 || is.list(distributionsInput[[1]])))))
+                                                   stop("'distributionsInput' should be a named list of lists or a character vector")
         if(is.character(distributionsInput)) {
            nms <- distributionsInput
          } else {
@@ -362,26 +361,27 @@ registerDistributions <- function(distributionsInput) {
         if(length(dupl)) {
             distributionsInput[dupl] <- NULL
             cat("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions:", nms, ". Please rename to avoid the conflict.\n", sep = "")
-        }
+          }
 
         if(is.list(distributionsInput)) 
-           sapply(distributionsInput, checkDistributionsInput)
-        sapply(distributionsInput, checkDistributionsFunctions)
-
+           sapply(distributionsInput, checkDistributionInput)
+        sapply(distributionsInput, checkDistributionFunctions)
         if(is.character(distributionsInput)) {
-          distributionsInput <- sapply(distributionsInput, prepareDistributionInput)
+          distributionsInput <- lapply(distributionsInput, prepareDistributionInput)
+          names(distributionsInput) <- nms
+        }
            
         if(exists('distributions', nimbleUserNamespace)) {
             nimbleUserNamespace$distributions$add(distributionsInput)
         } else 
             nimbleUserNamespace$distributions <- distributionsClass(distributionsInput)
-    }
-    virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
-    createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
+        virtualNodeFunctionDefinitions <- ndf_createVirtualNodeFunctionDefinitionsList(userAdded = TRUE)
+        createNamedObjectsFromList(virtualNodeFunctionDefinitions, envir = .GlobalEnv)
 
     # note don't use rFunHandler as rUserDist nimbleFunction needs n as first arg so it works on R side, therefore we have n in the C version of the nimbleFunction and don't want to strip it out in Cpp generation
-
+      }
     invisible(NULL)
+        
 }
 
 
@@ -448,10 +448,11 @@ getDistributionList <- function(dists) {
 #' @author Christopher Paciorek
 #' @export
 #' @details
-#' Returns an internal data structure (a list) providing various information about the distribution
+#' Returns an internal data structure (a reference class object) providing various information about the distribution
 #' @examples
 #' distInfo <- getDistributionInfo('dnorm')
-#' distInfo$XXX
+#' distInfo
+#' distInfo$range
 getDistributionInfo <- function(dist) {
     if(dist %in% distributions$namesVector) return(distributions[[dist]])
     if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
@@ -538,9 +539,9 @@ isUserDistribution <- function(dist) {
 #' @author Christopher Paciorek
 #' @export
 #' @examples
-#' pqAvail('dgamma')
-#' pqAvail('dmnorm')
-pqAvail <- function(dist) {
+#' pqExist('dgamma')
+#' pqExist('dmnorm')
+pqExist <- function(dist) {
     if(length(dist) > 1 || class(dist) != 'character')
         stop("pqAvail: 'dist' should be a character vector of length 1")
    return(getDistributionInfo(dist)$pqAvail)
@@ -568,7 +569,7 @@ pqAvail <- function(dist) {
 #' getDimension('dnorm', includeParams = TRUE)
 #' getDimension('dnorm', c('var', 'sd'))
 #' getDimension('dcat', includeParams = TRUE)
-#' getDimension('dwishart', includeParams = TRUE)
+#' getDimension('dwish', includeParams = TRUE)
 getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
                          !includeParams, includeParams = !is.null(params)) {
     if(length(dist) == 1 && is.na(dist)) return(NA)  # in case of passing a determ node
@@ -638,11 +639,11 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
 #' @author Christopher Paciorek
 #' @export
 #' @examples
-#' getDimension('dnorm')
-#' getDimension('dnorm', includeParams = TRUE)
-#' getDimension('dnorm', c('var', 'sd'))
-#' getDimension('dcat', includeParams = TRUE)
-#' getDimension('dwishart', includeParams = TRUE)
+#' getType('dnorm')
+#' getType('dnorm', includeParams = TRUE)
+#' getType('dnorm', c('var', 'sd'))
+#' getType('dcat', includeParams = TRUE)
+#' getType('dwish', includeParams = TRUE)
 getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
                        !includeParams, includeParams = !is.null(params)) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
@@ -651,11 +652,11 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
     distInfo <- getDistributionInfo(dist)
     
   if(!includeParams && !valueOnly)
-    stop("getDimension: no parameters or value requested")
+    stop("getType: no parameters or value requested")
   if(valueOnly && (!is.null(params) || includeParams))
-    stop("getDimension: 'valueOnly' cannot be TRUE if parameters also requested")
+    stop("getType: 'valueOnly' cannot be TRUE if parameters also requested")
   if(!includeParams && !is.null(params))
-    stop("getDimension: 'params' is not NULL but 'includeParams' is FALSE")
+    stop("getType: 'params' is not NULL but 'includeParams' is FALSE")
   if(valueOnly) {
     params <- 'value'
   } else {  
@@ -685,7 +686,7 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
 #' @export
 #' @examples
 #' getParamNames('dnorm', includeValue = FALSE)
-#' getDimension('dmnorm')
+#' getParamNames('dmnorm')
 getParamNames <- function(dist, includeValue = TRUE) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
     if(length(dist) > 1 || class(dist) != 'character')

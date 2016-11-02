@@ -199,7 +199,7 @@ Details: The return value is a character vector with an element for each node in
                                   out <- type == "stoch"
                                   names(out) <- nodeNames
                                   return(out)
-                                }
+                                },
 
                                 isDeterm = function(nodes) {
                                   '
@@ -212,7 +212,7 @@ nodes: A character vector specifying one or more node or variable names.
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input.
 '
                                   !isStoch(nodes)
-                                }
+                                },
 
                                   isTruncated = function(nodes) {
                                                                       '
@@ -244,7 +244,7 @@ Details: The return value is a character vector with an element for each node in
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
                                       dims <- sapply(nodeNames, getDistribution)
                                       out <- dims == 1
-                                      names(out) <- nodeNames)
+                                      names(out) <- nodeNames
                                       return(out)
                                   },
                                       
