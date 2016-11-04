@@ -17,6 +17,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     RRtest_add = 'sizeRecyclingRule',
+                    dnorm = 'sizeRecyclingRule', ## temporarily supercedes later entry
                     which = 'sizeWhich',
                     nimC = 'sizeConcatenate',
                     nimRep = 'sizeRep',
@@ -201,7 +202,12 @@ multiMaxSizeExprs <- function(code) {
 
 sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in eigenization.
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-    code$sizeExprs <- multiMaxSizeExprs(code)
+    newSizeExprs <- multiMaxSizeExprs(code)
+    if(length(newSizeExprs)==1)
+        if(is.numeric(newSizeExprs[[1]]))
+            if(newSizeExprs[[1]] == 1)
+                return(c(asserts, sizeScalarRecurse(code, symTab, typeEnv, recurse = FALSE)))
+    code$sizeExprs <- newSizeExprs
     code$type <- 'double' ## will need to look up from a list
     code$nDim <- 1
     code$toEigenize <- TRUE
@@ -985,11 +991,11 @@ sizeSimulate <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
-sizeScalarRecurse <- function(code, symTab, typeEnv) {
+sizeScalarRecurse <- function(code, symTab, typeEnv, recurse = TRUE) {
     ## use something different for distributionFuns
-    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
 
-    ## This just forces any argument expression to be lifted.  Can we life only things to be eigenized?
+    ## This just forces any argument expression to be lifted.  Can we lift only things to be eigenized?
     for(i in seq_along(code$args)) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
@@ -1004,7 +1010,7 @@ sizeScalarRecurse <- function(code, symTab, typeEnv) {
     else code$type <- outputType
     code$sizeExprs <- list()
     code$toEigenize <- 'maybe' ## a scalar can be eigenized or not
-    asserts
+    if(length(asserts)==0) NULL else asserts
 }
 
 sizeUndefined <- function(code, symTab, typeEnv) {
