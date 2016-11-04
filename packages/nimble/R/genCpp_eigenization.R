@@ -92,6 +92,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
     ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
+    makeCallList(scalar_distribution_dFuns, 'eigenize_recyclingRuleFunction'),
     list('t' = 'eigenize_cWiseUnaryEither',
          eigenBlock = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',

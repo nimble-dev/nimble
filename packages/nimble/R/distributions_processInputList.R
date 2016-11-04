@@ -495,4 +495,3 @@ distribution_qFuns <- gsub("^d", "q", pqDists)
 
 distributionFuns <- c(distribution_dFuns, distribution_rFuns, distribution_pFuns, distribution_qFuns)
 
-

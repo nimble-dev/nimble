@@ -17,7 +17,6 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     RRtest_add = 'sizeRecyclingRule',
-                    dnorm = 'sizeRecyclingRule', ## temporarily supercedes later entry
                     which = 'sizeWhich',
                     nimC = 'sizeConcatenate',
                     nimRep = 'sizeRep',
@@ -55,7 +54,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr',
                     run.time = 'sizeRunTime'),
-               makeCallList(distributionFuns, 'sizeScalarRecurse'),
+               makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
+               makeCallList(distributionFuns[!(distributionFuns %in% scalar_distribution_dFuns)], 'sizeScalarRecurse'),
                # R dist functions that are not used by NIMBLE but we allow in DSL
                makeCallList(paste0(c('d','r','q','p'), 't'), 'sizeScalarRecurse'),
                makeCallList(paste0(c('d','r','q','p'), 'exp'), 'sizeScalarRecurse'),
@@ -170,6 +170,7 @@ sizeProxyForDebugging <- function(code, symTab, typeEnv) {
 }
 
 productSizeExprs <- function(sizeExprs) {
+    if(length(sizeExprs)==0) return(1)
     if(length(sizeExprs)==1) return(sizeExprs[[1]])
     ans <- substitute( (A), list(A = sizeExprs[[1]]))
     for(i in 2:length(sizeExprs)) {
@@ -179,7 +180,6 @@ productSizeExprs <- function(sizeExprs) {
 }
 
 multiMaxSizeExprs <- function(code) {
-    browser()
     if(length(code$args)==0) return(list()) ## probably something wrong
     totalLengthExprs <- lapply(code$args, function(x) if(inherits(x, 'exprClass')) productSizeExprs(x$sizeExprs) else 1)
     if(length(code$args)==1) return(totalLengthExprs) ## a list of length 1
@@ -193,8 +193,8 @@ multiMaxSizeExprs <- function(code) {
     if(numArgs == 1) return(totalLengthExprs[[1]]) ## but check anyway
     lastMax <- substitute(max(A, B), list(A = totalLengthExprs[[numArgs]], B = totalLengthExprs[[numArgs-1]]))
     if(numArgs > 2) {
-        for(i in (length(numArgs)-2):1) {
-            lastMax <- substitute(max(A, B), list(A = totalLengthExprs[[numArgs]], B = lastMax))
+        for(i in (numArgs-2):1) {
+            lastMax <- substitute(max(A, B), list(A = totalLengthExprs[[i]], B = lastMax))
         }
     }
     return(list(lastMax))
