@@ -258,51 +258,6 @@ public:
 };
 
 
-/*  { */
-/* public: */
-/*   scalarFrom from; */
-/*   scalarBy by; */
-/*   double byD; */
-/*   unsigned int length_out; */
-/*   //  typedef enum{useBy, useLength} byOrLength; */
-  
-/*   typedef double result_type; // need to pull this from DerivedOut */
-/*  seqClass(scalarFrom fromIn, scalarTo toIn, scalarBy byIn, int length_outIn, byOrLength bOl) : */
-/*   from(fromIn) { */
-/*     printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n"); */
-/*     if(bOl == useBy) { */
-/*       by = byIn; */
-/*       length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn)); */
-/*     } else { */
-/*       printf("doing length\n"); */
-/*       length_out = length_outIn; */
-/*       std::cout<<"length_out = "<<length_out<<"\n"; */
-/*       if(length_out == 1) { */
-/* 	std::cout<<"setting by to 0\n"; */
-/* 	by = 0; */
-/*       } */
-/*       else { */
-/* 	std::cout<<static_cast<double>(toIn)<<" "<<static_cast<double>(from)<<" "<<static_cast<double>(length_out)<<"\n"; */
-/* 	by = (static_cast<double>(toIn) - static_cast<double>(from)) / (static_cast<double>(length_out) - 1.); */
-/*       } */
-/*       std::cout<<"by = " << by <<"\n"; */
-/*     } */
-/*   }; */
-    
-/*   typedef typename Eigen::internal::traits<DerivedOut>::Index Index; */
-/*   result_type operator()(Index i) const //Eigen::DenseIndex */
-/*   { */
-/*     std::cout<<"IN 1 seq\n"; */
-/*     return( from + static_cast<int>(i) * by ); */
-/*   } */
-/*   result_type operator()(Index i, Index j) const */
-/*   { */
-/*     std::cout<<"IN 2 seq\n"; */
-/*     if(j != 0) printf("Problem calling seq in C++ with two indices\n"); */
-/*     return( from + static_cast<int>(i) * by); */
-/*   } */
-/* }; */
-
 namespace Eigen{
   namespace internal{
     template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
@@ -425,47 +380,132 @@ struct nonseqIndexed_impl {
 #define nimNonseqIndexedi nonseqIndexed_impl<MatrixXi>::nonseqIndexed
 #define nimNonseqIndexedb nonseqIndexed_imple<MatrixXb>::nonseqIndexed
 
-// vectorization of any scalar function:
+// vectorization of any scalar function: R's so-called "Recycling Rule"
 
-// simple function as prototype for recylcing rule
-/* double add(double arg1, double arg2) {return arg1 + arg2;} */
+// wrap access to Eigen's traits::..::LinearAccessBit so we can proxy it with true for a scalar type (double, int, bool)
+template<typename T>
+struct nimble_eigen_traits {
+  enum {LinearAccessBit = int(Eigen::internal::traits<T>::Flags & LinearAccessBit)};
+};
 
-/* class add_functor{ // or use a struct with static member for this role? */
-/*   double operator()(double arg1, double arg2) {return add(arg1, arg2);} */
-/* }; */
+template<>
+struct nimble_eigen_traits<double> {
+  enum {LinearAccessBit = int(1)};
+};
+
+template<>
+struct nimble_eigen_traits<int> {
+  enum {LinearAccessBit = int(1)};
+};
+
+template<>
+struct nimble_eigen_traits<bool> {
+  enum {LinearAccessBit = int(1)};
+};
+
+// put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
+template<typename T>
+struct nimble_size_impl {
+  static unsigned int getSize(const T &arg) {return arg.size();}
+};
+
+template<>
+struct nimble_size_impl<double> {
+  static unsigned int getSize(const double &arg) {return 1;}
+};
+
+template<>
+struct nimble_size_impl<int> {
+  static unsigned int getSize(const ing &arg) {return 1;}
+};
+
+template<>
+struct nimble_size_impl<bool> {
+  static unsigned int getSize(const bool &arg) {return 1;}
+};
+
+// put the call to arg.coeff(...) in a struct so we can proxy it when LinearAccessBit is false and we can proxy it for a scalar 
+template<bool useLinearAccess, typename result_type, typename eigenType, typename Index>
+struct nimble_eigen_coeff_mod_impl;
+
+template<typename result_type, typename eigenType, typename Index>
+struct nimble_eigen_coeff_mod_impl<true, result_type, eigenType, Index> {
+  static result_type getCoeff(const eigenType &Arg, Index i, unsigned int size) {return Arg.coeff(i % size);}
+};
+
+template<typename result_type, typename eigenType, typename Index>
+struct nimble_eigen_coeff_mod_impl<false, result_type, eigenType, Index> {
+  static result_type getCoeff(const eigenType &Arg, Index i, unsigned int size) {
+    std::div_t divRes = div(i % size, Arg.rows());
+    return Arg.coeff(divRes.rem, floor(divRes.quot));
+  }  
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_mod_impl<true, result_type, double, Index> {
+  static result_type getCoeff(const double Arg, Index i, unsigned int size) {return Arg;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_mod_impl<true, result_type, int, Index> {
+  static result_type getCoeff(const int Arg, Index i, unsigned int size) {return Arg;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_mod_impl<true, result_type, bool, Index> {
+  static result_type getCoeff(const bool Arg, Index i, unsigned int size) {return Arg;}
+};
+
+// Here is a test function
+double RRtest_add(double a1, double a2) {std::cout<<a1<<" "<<a2<<" "<<a1+a2<<"\n"; return a1 + a2;}
+
+// Here is the large macro for creating a functor class to be used in a NullaryExpr
+#define MAKE_RECYCLING_RULE_CLASS2(FUNNAME, RETURNSCALARTYPE, ARG1SCALARTYPE, ARG2SCALARTYPE) \
+template<typename Index, typename DerivedA1, typename DerivedA2> \
+class FUNNAME ## RecyclingRuleClass { \
+public: \
+  const DerivedA1 &Arg1;\
+  const DerivedA2 &Arg2;\
+  unsigned int size1, size2, outputSize;\
+  FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2 ) :\
+  Arg1(A1), Arg2(A2)\
+{\
+  outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
+  size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
+  if(size2 > outputSize) outputSize = size2; \
+  } \
+  RETURNSCALARTYPE operator()(Index i) const { \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
+  }\
+  RETURNSCALARTYPE operator()(Index i, Index j) const {\
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
+  }\
+}; \
+\
+ namespace Eigen{\
+  namespace internal{\
+    template<typename Index, typename Derived1, typename Derived2>	\
+    struct functor_has_linear_access<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2> > { enum { ret = 1}; }; \
+    template<typename Index, typename Derived1, typename Derived2>\
+      struct functor_traits<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true}; }; \
+  }\
+}\
+\
+template<typename DerivedReturn>\
+struct FUNNAME ## _RR_impl {\
+  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  template<typename Derived1, typename Derived2>\
+  static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >\
+  FUNNAME(const Derived1 &A1, const Derived2 &A2) {\
+    FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2> obj(A1, A2);\
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >(obj.outputSize, 1, obj));\
+  }\
+};
 
 
+MAKE_RECYCLING_RULE_CLASS2(RRtest_add, double, double, double)
 
-/* // need to make a different template for each number of arguments with matching number of template arguments (plus a F type and return type). */
-/* // need to consider vector vs. matrix return (maybe handled all from nimble types) */
-/* // see here for getting template types inferred: http://stackoverflow.com/questions/797594/when-a-compiler-can-infer-a-template-parameter */
-/* // 2 arguments: */
-/* template<typename DerivedA1, typename DerivedA2, typename F> */
-/* class vectorizedFun { */
-/*  public: */
-/*   const DerivedA1 &arg1; */
-/*   const DerivedA2 &arg2; */
-/*   int size1, size2, outputSize; */
-/*   F fun; */
-/*   typedef Eigen::internal::traits<MatrixXd>::Index Index; */
-  
-/*  vectorizedFun(const DerivedA1 &A1, const DerivedA2 &A2, int oSize, F f) : */
-/*   arg1(A1), */
-/*     arg2(A2), */
-/*     outputSize(oSize), */
-/*     fun(f) { */
-/*       size1 = A1.nrow(); */
-/*       size2 = A2.nrow(); */
-/*     } */
-/*   result_type operator()(Index i) const //Eigen::DenseIndex */
-/*   { */
-/*     std::cout<<"IN 1\n"; */
-/*     return fun(A1((i % size1) - 1), */
-/* 	       A2((i % size2) - 1));  */
-/*   } */
-/* }; */
-
-/* template<typename DerivedA1, typename DerivedA2, typename F> */
-/*   vectorizedFun<DerivedA1, DerivedA2, F> newVectorizedFun(const DerivedA1 &A1, const DerivedA2 &A2, F f) {return vectorizedFun(A1, A2, f);} */
 
 #endif

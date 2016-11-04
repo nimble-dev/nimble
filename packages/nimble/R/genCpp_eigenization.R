@@ -95,7 +95,8 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     list('t' = 'eigenize_cWiseUnaryEither',
          eigenBlock = 'eigenize_cWiseUnaryEither',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
-         'chol' = 'eigenize_matrixOps'
+         'chol' = 'eigenize_matrixOps',
+         RRtest_add = 'eigenize_recyclingRuleFunction'
          )
 )
 
@@ -292,6 +293,15 @@ eigenize_reductionBinaryEither <- function(code, symTab, typeEnv, workEnv) {
 ##    for(i in 1:2) 
 ##        if(code$args[[i]]$eigMatrix) eigenizeArrayize(code$args[[i]])
 
+    invisible(NULL)
+}
+
+eigenize_recyclingRuleFunction <- function(code, symTab, typeEnv, workEnv) {
+    if(code$nDim == 0) return(NULL)
+##    newName <- eigenizeTranslate[[code$name]]
+##    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+##    code$name <- newName
+    code$eigMatrix <- TRUE
     invisible(NULL)
 }
 

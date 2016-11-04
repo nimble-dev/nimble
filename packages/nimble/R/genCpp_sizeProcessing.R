@@ -16,6 +16,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixEigenOperators, 'sizeEigenOp'), ## TO DO
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
+                    RRtest_add = 'sizeRecyclingRule',
                     which = 'sizeWhich',
                     nimC = 'sizeConcatenate',
                     nimRep = 'sizeRep',
@@ -174,6 +175,37 @@ productSizeExprs <- function(sizeExprs) {
         ans <- substitute(A * (B), list(A = ans, B = sizeExprs[[i]]))
     }
     ans
+}
+
+multiMaxSizeExprs <- function(code) {
+    browser()
+    if(length(code$args)==0) return(list()) ## probably something wrong
+    totalLengthExprs <- lapply(code$args, function(x) if(inherits(x), 'exprClass') productSizeExprs(x$sizeExprss) else 1)
+    if(length(code$args)==1) return(totalLengthExprs) ## a list of length 1
+    numericTotalLengths <- lapply(totalLengthExprs, is.numeric)
+    if(length(numericTotalLengths) > 0) {
+        maxKnownSize <- max(unlist(totalLengthExprs[numericTotalLengths]))
+        if(length(numericTotalLengths)==length(totalLengthExprs)) return(list(maxKnownSize))
+        totalLengthExprs <- c(list(maxKnownSize), totalLengthExprs[-numericalTotalLenghts])
+    }
+    numArgs <- length(totalLengthExprs) ## must be > 1 or it would have returned two lines above
+    if(numArgs == 1) return(totalLengthExprs[[1]]) ## but check anyway
+    lastMax <- substitute(max(A, B), list(A = totalLengthExprs[[numArgs]], B = totalLengthExprs[[numArgs-1]]))
+    if(numArgs > 2) {
+        for(i in (length(numArgs)-2):1) {
+            lastMax <- substitute(max(A, B), list(A = totalLengthExprs[[numArgs]], B = lastMax))
+        }
+    }
+    return(list(lastMax))
+}
+
+sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in eigenization.
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    code$sizeExprs <- multiMaxSizeExprs(code)
+    code$type <- 'double' ## will need to look up from a list
+    code$nDim <- 1
+    code$toEigenize <- TRUE
+    return(asserts)
 }
 
 sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument version
