@@ -381,6 +381,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
     # if(!(className %in% names(neededTypes))) 
     neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
+    for(nestedList in seq_along(nlList$nestedListDefList)){
+      makeTypeObject(nlList)
+    }
     returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
     return(returnSym)
   }

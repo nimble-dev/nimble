@@ -31,20 +31,36 @@ nimbleList <- function(types,
     ## one that has the nimbleListDefClass object
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
+    basicTypes <- c("double", "integer", "character", "logical")
+    nestedListDefs <- list()
+    elementTypes <- strsplit(types$types, '\\(')
+    for(i in seq_along(types$types)){
+      if(!(elementTypes[[i]][1] %in% basicTypes)){
+        for(searchEnvironment in c(parent.frame(), globalenv())){
+          if(is.nlGenerator(get(elementTypes[[i]][1], envir = searchEnvironment))){
+            nestedListDefs[[types$vars[i]]] <- get(elementTypes[[i]][1], envir = searchEnvironment)$new()$nimbleListDef
+            break
+          }
+        }
+      }
+    }
 
     classFields <- as.list(rep('ANY', length(types$vars)))
     names(classFields) <- types$vars
     classFields[[length(classFields)+1]] <- "ANY"
     names(classFields)[length(classFields)] <- "nimbleListDef"
+    classFields[[length(classFields)+1]] <- "ANY"
+    names(classFields)[length(classFields)] <- "nestedListDefList"
 
-    
+    browser()
     nlRefClassObject <- setRefClass(
       Class = name,
       fields = classFields,
       contains = 'nimbleListBase',
       methods = list(
-        initialize = function(NLDEFCLASSOBJECT, ...){
+        initialize = function(NLDEFCLASSOBJECT, NESTEDDEFLIST, ...){
           nimbleListDef <<- NLDEFCLASSOBJECT
+          nestedListDefList <<- NESTEDDEFLIST
           callSuper(...)
         }
       ),
@@ -53,8 +69,9 @@ nimbleList <- function(types,
 
     nlGeneratorFunction <-   eval(  substitute(
       function(...){
-      return(nlRefClassObject(NLDEFCLASSOBJECT, ...))},
-      list(NLDEFCLASSOBJECT = nlDefClassObject)))
+      return(nlRefClassObject(NLDEFCLASSOBJECT, NESTEDDEFLIST, ...))},
+      list(NLDEFCLASSOBJECT = nlDefClassObject,
+           NESTEDDEFLIST = nestedListDefs)))
     return(list(new = nlGeneratorFunction))
 }
 
@@ -76,6 +93,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                     writeLines(paste0('nlProcessing object ', nimbleListObj$className))
                                 },
                                 initialize = function(nimLists = NULL, className, project, ...) {
+                                  browser()
                                   neededTypes <<- list()
                                   callSuper(...)
                                   if(!is.null(nimLists)) {
