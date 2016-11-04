@@ -180,13 +180,13 @@ productSizeExprs <- function(sizeExprs) {
 multiMaxSizeExprs <- function(code) {
     browser()
     if(length(code$args)==0) return(list()) ## probably something wrong
-    totalLengthExprs <- lapply(code$args, function(x) if(inherits(x), 'exprClass') productSizeExprs(x$sizeExprss) else 1)
+    totalLengthExprs <- lapply(code$args, function(x) if(inherits(x, 'exprClass')) productSizeExprs(x$sizeExprs) else 1)
     if(length(code$args)==1) return(totalLengthExprs) ## a list of length 1
-    numericTotalLengths <- lapply(totalLengthExprs, is.numeric)
-    if(length(numericTotalLengths) > 0) {
+    numericTotalLengths <- unlist(lapply(totalLengthExprs, is.numeric))
+    if(sum(numericTotalLengths) > 0) {
         maxKnownSize <- max(unlist(totalLengthExprs[numericTotalLengths]))
-        if(length(numericTotalLengths)==length(totalLengthExprs)) return(list(maxKnownSize))
-        totalLengthExprs <- c(list(maxKnownSize), totalLengthExprs[-numericalTotalLenghts])
+        if(sum(numericTotalLengths)==length(totalLengthExprs)) return(list(maxKnownSize))
+        totalLengthExprs <- c(list(maxKnownSize), totalLengthExprs[-which(numericTotalLengths)])
     }
     numArgs <- length(totalLengthExprs) ## must be > 1 or it would have returned two lines above
     if(numArgs == 1) return(totalLengthExprs[[1]]) ## but check anyway

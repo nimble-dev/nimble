@@ -302,6 +302,7 @@ eigenize_recyclingRuleFunction <- function(code, symTab, typeEnv, workEnv) {
 ##    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
 ##    code$name <- newName
     code$eigMatrix <- TRUE
+    code$name <- paste0(code$name, '_RR_impl<MatrixXd>::', code$name,'_RecyclingRule')
     invisible(NULL)
 }
 

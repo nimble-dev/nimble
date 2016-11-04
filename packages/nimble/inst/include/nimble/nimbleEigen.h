@@ -38,7 +38,7 @@ class concatenateClass {
     size1 = Arg1.size();
     size2 = Arg2.size();
   };
-  
+  // Index types should come in as template argument based on DerivedReturn
   typedef typename Eigen::internal::traits<Derived1>::Index Index1;
   typedef typename Eigen::internal::traits<Derived2>::Index Index2;
   
@@ -416,7 +416,7 @@ struct nimble_size_impl<double> {
 
 template<>
 struct nimble_size_impl<int> {
-  static unsigned int getSize(const ing &arg) {return 1;}
+  static unsigned int getSize(const int &arg) {return 1;}
 };
 
 template<>
@@ -498,12 +498,11 @@ struct FUNNAME ## _RR_impl {\
   typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
   template<typename Derived1, typename Derived2>\
   static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >\
-  FUNNAME(const Derived1 &A1, const Derived2 &A2) {\
+  FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2) {\
     FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2> obj(A1, A2);\
     return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >(obj.outputSize, 1, obj));\
   }\
 };
-
 
 MAKE_RECYCLING_RULE_CLASS2(RRtest_add, double, double, double)
 
