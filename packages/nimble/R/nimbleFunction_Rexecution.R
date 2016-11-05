@@ -771,8 +771,6 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #'        
 #' nf2 <- nfGen2()
 #' nf2$run()
-#' Cnf2 <- compileNimble(nf2)
-#' Cnf2$run()
 nfVar <- function(nf, varName) {
     refClassObj <- nf_getRefClassObject(nf)
     v <- refClassObj[[varName]]
