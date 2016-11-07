@@ -116,7 +116,7 @@ nodes: A character vector specifying one or more node or variable names.
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
 '
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
-                                      out <- sapply(getDeclInfo(nodeNames), getDistributionName)
+                                      out <- sapply(nodeNames, function(x) getDeclInfo(x)$getDistributionName())
                                       names(out) <- nodeNames
                                       return(out)
                                   },
@@ -171,7 +171,7 @@ nodes: A character vector specifying one or more node or variable names.
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
 '
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)  # needed below but duplicates what happens in getDistribution
-                                      dist <- getDistribution(nodeNames)
+                                      dist <- retDistribution(nodeNames)
                                       
                                       binary <- rep(FALSE, length(dist))
                                       names(binary) <- names(dist)
@@ -750,8 +750,10 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   #   3) sizes of vecs and row/column sizes all match for non-scalar quantities (only for Nimble-provided distributions)
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
-                                                  distDims <- as.integer(getDimension(dist))
+							# nimble:::getDimension so uses function not model method
+                                                  distDims <- nimble:::getDimension(dist)
                                                   nms <- names(distDims)
+						  distDims <- as.integer(distDims)
                                                   
                                                   sizes <- list(); length(sizes) <- length(nms); names(sizes) <- nms
 
