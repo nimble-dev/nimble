@@ -7,7 +7,49 @@
 
 
 
-// concatenation, c(A1, A2)
+// put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
+// wrap access to Eigen's traits::..::LinearAccessBit so we can proxy it with true for a scalar type (double, int, bool)
+template<typename T>
+struct nimble_eigen_traits {
+  enum {LinearAccessBit = int(Eigen::internal::traits<T>::Flags & LinearAccessBit)};
+};
+
+template<>
+struct nimble_eigen_traits<double> {
+  enum {LinearAccessBit = int(1)};
+};
+
+template<>
+struct nimble_eigen_traits<int> {
+  enum {LinearAccessBit = int(1)};
+};
+
+template<>
+struct nimble_eigen_traits<bool> {
+  enum {LinearAccessBit = int(1)};
+};
+
+template<typename T>
+struct nimble_size_impl {
+  static unsigned int getSize(const T &arg) {return arg.size();}
+};
+
+template<>
+struct nimble_size_impl<double> {
+  static unsigned int getSize(const double &arg) {return 1;}
+};
+
+template<>
+struct nimble_size_impl<int> {
+  static unsigned int getSize(const int &arg) {return 1;}
+};
+
+template<>
+struct nimble_size_impl<bool> {
+  static unsigned int getSize(const bool &arg) {return 1;}
+};
+
+
 template<bool useLinearAccess, typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_impl;
 
@@ -24,8 +66,25 @@ struct nimble_eigen_coeff_impl<false, result_type, eigenType, Index> {
   }
 };
 
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_impl<true, result_type, double, Index> {
+  static result_type getCoeff(const double Arg, Index i) {return Arg;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_impl<true, result_type, int, Index> {
+  static result_type getCoeff(const int Arg, Index i) {return Arg;}
+};
+
+template<typename result_type, typename Index>
+struct nimble_eigen_coeff_impl<true, result_type, bool, Index> {
+  static result_type getCoeff(const bool Arg, Index i) {return Arg;}
+};
+
+
 #include "nimbleEigenNimArr.h"
 
+//concatenation c()
 template<typename Derived1, typename Derived2>
 class concatenateClass {
  public:
@@ -309,7 +368,7 @@ struct seq_impl {
 
 // nonseqIndexed
 
-template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
+template<typename IndexObj, typename DerivedObj, typename DerivedI1, typename DerivedI2>
 class nonseqIndexedClass {
  public:
   const DerivedObj &obj;
@@ -321,24 +380,23 @@ class nonseqIndexedClass {
   obj(s),
     index1(i1),
     index2(i2) {
-      dim1 = i1.size();
-      dim2 = i2.size();
+      dim1 = nimble_size_impl<DerivedI1>::getSize(i1);
+      dim2 = nimble_size_impl<DerivedI2>::getSize(i2);
     }
-  typedef typename Eigen::internal::traits<DerivedObj>::Index IndexObj;
 
   result_type operator()(IndexObj i) const //Eigen::DenseIndex
   {
     std::cout<<"IN 1\n";
     std::div_t divRes = div(i, dim1);
-    return obj.coeff(nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI1>::Flags & LinearAccessBit, result_type, DerivedI1, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index1, divRes.rem) - 1,
-		     nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI2>::Flags & LinearAccessBit, result_type, DerivedI2, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
+    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::LinearAccessBit), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
+		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::LinearAccessBit), result_type, DerivedI2, IndexObj >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
     //index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
   }
   result_type operator()(IndexObj i, IndexObj j) const
   {
     std::cout<<"IN 2\n";
-    return obj.coeff(nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI1>::Flags & LinearAccessBit, result_type, DerivedI1, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index1, i) - 1,
-		     nimble_eigen_coeff_impl< Eigen::internal::traits<DerivedI2>::Flags & LinearAccessBit, result_type, DerivedI2, typename Eigen::internal::traits<DerivedI2>::Index >::getCoeff(index2, j) - 1);
+    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::LinearAccessBit), result_type, DerivedI1, IndexObj >::getCoeff(index1, i) - 1,
+		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::LinearAccessBit), result_type, DerivedI2, IndexObj >::getCoeff(index2, j) - 1);
 
     //return obj.coeff(index1(i)-1,
     //		     index2(j)-1);
@@ -347,31 +405,20 @@ class nonseqIndexedClass {
 
 namespace Eigen{
   namespace internal{
-    template<typename DerivedObj, typename Derived1, typename Derived2>
-    // 3 options for linear_access:
-      //1. turn it off: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = 0 }; }; 
-      //2. turn it on: (and let it be resolved by nimble_eigen_coeff_impl>:
-      struct functor_has_linear_access<nonseqIndexedClass<DerivedObj, Derived1, Derived2> > { enum { ret = 1}; }; 
-    //3. Set it once according to arguments: (problem here is that if it is off for this expression, that may make expressions using this one forbidden from using linear access, which is a bit harsh: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = traits<Derived1>::Flags & traits<Derived2>::Flags & LinearAccessBit }; };
-    template<typename DerivedObj, typename Derived1, typename Derived2>
-      struct functor_traits<nonseqIndexedClass<DerivedObj, Derived1, Derived2> >
-      {
-	enum
-	{
-	  Cost = 10, // there are templated costs available to pick up for this
-	  PacketAccess = false, // happy to keep this false for now
-	  IsRepeatable = true // default was false. 
-	};
-      };    
+    template<typename IndexObj, typename DerivedObj, typename Derived1, typename Derived2>
+      struct functor_has_linear_access<nonseqIndexedClass<IndexObj, DerivedObj, Derived1, Derived2> > { enum { ret = 1}; }; 
+    template<typename IndexObj, typename DerivedObj, typename Derived1, typename Derived2>
+      struct functor_traits<nonseqIndexedClass<IndexObj, DerivedObj, Derived1, Derived2> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
   }
 }
 
 template<typename returnDerived>
 struct nonseqIndexed_impl {
+  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
   template<typename DerivedObj, typename DerivedI1, typename DerivedI2>
-    static CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, returnDerived > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
-    nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s.derived(), i1.derived(), i2.derived());
-    return(CwiseNullaryOp<nonseqIndexedClass<DerivedObj, DerivedI1, DerivedI2 >, returnDerived >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, nonseqIndexedObj));
+    static CwiseNullaryOp<nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 >, returnDerived > nonseqIndexed(const DerivedObj &s, const DerivedI1 &i1, const DerivedI2 &i2) {
+    nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 > nonseqIndexedObj(s.derived(), i1, i2);
+    return(CwiseNullaryOp<nonseqIndexedClass<IndexReturn, DerivedObj, DerivedI1, DerivedI2 >, returnDerived >(nonseqIndexedObj.dim1, nonseqIndexedObj.dim2, nonseqIndexedObj));
   }
 };
 
@@ -381,47 +428,7 @@ struct nonseqIndexed_impl {
 
 // vectorization of any scalar function: R's so-called "Recycling Rule"
 
-// wrap access to Eigen's traits::..::LinearAccessBit so we can proxy it with true for a scalar type (double, int, bool)
-template<typename T>
-struct nimble_eigen_traits {
-  enum {LinearAccessBit = int(Eigen::internal::traits<T>::Flags & LinearAccessBit)};
-};
 
-template<>
-struct nimble_eigen_traits<double> {
-  enum {LinearAccessBit = int(1)};
-};
-
-template<>
-struct nimble_eigen_traits<int> {
-  enum {LinearAccessBit = int(1)};
-};
-
-template<>
-struct nimble_eigen_traits<bool> {
-  enum {LinearAccessBit = int(1)};
-};
-
-// put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
-template<typename T>
-struct nimble_size_impl {
-  static unsigned int getSize(const T &arg) {return arg.size();}
-};
-
-template<>
-struct nimble_size_impl<double> {
-  static unsigned int getSize(const double &arg) {return 1;}
-};
-
-template<>
-struct nimble_size_impl<int> {
-  static unsigned int getSize(const int &arg) {return 1;}
-};
-
-template<>
-struct nimble_size_impl<bool> {
-  static unsigned int getSize(const bool &arg) {return 1;}
-};
 
 // put the call to arg.coeff(...) in a struct so we can proxy it when LinearAccessBit is false and we can proxy it for a scalar 
 template<bool useLinearAccess, typename result_type, typename eigenType, typename Index>

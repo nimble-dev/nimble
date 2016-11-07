@@ -163,6 +163,7 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
 sizeProxyForDebugging <- function(code, symTab, typeEnv) {
     browser()
     origValue <- .nimbleOptions$debugSizeProcessing
+    message('Entering into size processing debugging. You may need to do nimbleOptions(debugSizeProcessing = FALSE) if this exits in any non-standard way.')
     setNimbleOption('debugSizeProcessing', TRUE)
     ans <- recurseSetSizes(code, symTab, typeEnv)
     removeExprClassLayer(code$caller, 1)
@@ -819,7 +820,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         }
     }
     ## update size info in typeEnv
-
     assert <- NULL
     
     if(LHS$name == 'values' && length(LHS$args) == 1) { ## It is values(model_values_accessor) <- STUFF
@@ -844,7 +844,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     code$toEigenize <-if(inherits(RHS, 'exprClass')) {
         if(RHS$toEigenize == 'no') 'no' else {
             if(RHS$toEigenize == 'unknown') 'no' else {
-                if(RHS$toEigenize != 'yes' & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
+                if(RHS$toEigenize != 'yes' & (!(LHS$name == 'eigenBlock')) & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
                 else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
             }
         }
@@ -1162,6 +1162,10 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             if(code$type == 'double') code$name <- 'nimNonseqIndexedd' ## this change could get moved to genCpp_generateCpp 
             if(code$type == 'integer') code$name <- 'nimNonseqIndexedi'
             if(code$type == 'logical') code$name <- 'nimNonseqIndexedb'
+            if(nDimVar == 1) {
+                if(length(code$args)==2)
+                    code$args[[3]] <- 1
+            }
         }
         else {
             if(code$args[[1]]$nDim > 2) { ## old-style blocking
@@ -1185,18 +1189,31 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     if(length(asserts)==0) NULL else asserts
 }
 
+isIntegerEquivalent <- function(code) {
+    if(inherits(code, 'exprClass')) {
+        if(code$type == 'integer') return(TRUE)
+        return(FALSE)
+    }
+    if(is.logical(code)) return(FALSE)
+    if(storage.mode(code) == 'integer') return(TRUE)
+    code == floor(code) ## storage.mode must be 'double' so check if it's equivalent to an integer 
+}
+
 sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
     message('still need to handle -1L sequences')
     message('check that arguments are scalars')
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
     byProvided <- code$name == 'nimSeqBy' ##identical(code$args[[3]], -1L) ## need a better way to indicate missingness when we fill in arguments
     lengthProvided <- code$name == 'nimSeqLen' ##identical(code$args[[4]], -1L)
-    typeFrom <- if(inherits(code$args[[1]], 'exprClass')) code$args[[1]]$type else storage.mode(code$args[[1]])
+    ##typeFrom <- if(inherits(code$args[[1]], 'exprClass')) code$args[[1]]$type else storage.mode(code$args[[1]])
+    integerFrom <- isIntegerEquivalent(code$args[[1]])
     ##if(byProvided && lengthProvided) stop(exprClassProcessingErrorMsg(code, 'Cannot provide both by and length arguments to seq.'), call.=FALSE)
-    typeTo <- if(inherits(code$args[[2]], 'exprClass')) code$args[[2]]$type else storage.mode(code$args[[2]])
-    typeBy <- if(inherits(code$args[[3]], 'exprClass')) code$args[[3]]$type else storage.mode(code$args[[3]])
+    ##typeTo <- if(inherits(code$args[[2]], 'exprClass')) code$args[[2]]$type else storage.mode(code$args[[2]])
+    integerTo <- isIntegerEquivalent(code$args[[2]])
+    ##typeBy <- if(inherits(code$args[[3]], 'exprClass')) code$args[[3]]$type else storage.mode(code$args[[3]])
     liftExprRanges <- TRUE
-    if(typeFrom == 'integer' && typeTo == 'integer') { ## convert +1 integer sequences to `:`
+    ##if(typeFrom == 'integer' && typeTo == 'integer') { ## convert +1 integer sequences to `:`
+    if(isIntegerFrom && isIntegerTo) {
         if((!byProvided && !lengthProvided) || (byProvided && is.numeric(code$args[[3]]) && code$args[[3]] == 1)) {
             code$name = ':'
             asserts <- c(asserts, sizeColonOperator(code, symTab, typeEnv, recurse = FALSE))
@@ -1243,13 +1260,13 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
         if(code$args[[1]]$nDim != 0) message('WARNING, first arg to : is not scalar in expression', nimDeparse(code))
         if(code$args[[1]]$type == 'double') moveToSeqBy1 <- TRUE
     } else {
-        if(storage.mode(code$args[[1]]) == 'double') moveToSeqBy1 <- TRUE
+        if(storage.mode(code$args[[1]]) == 'double') if(code$args[[1]] != floor(code$args[[1]])) moveToSeqBy1 <- TRUE
     }
     if(inherits(code$args[[2]], 'exprClass')) {
         if(code$args[[2]]$nDim != 0) message('WARNING, second arg to : is not scalar in expression', nimDeparse(code))
         if(code$args[[2]]$type == 'double') moveToSeqBy1 <- TRUE
     } else {
-        if(storage.mode(code$args[[2]]) == 'double') moveToSeqBy1 <- TRUE
+        if(storage.mode(code$args[[2]]) == 'double') if(code$args[[2]] != floor(code$args[[2]])) moveToSeqBy1 <- TRUE
     }
 
     if(moveToSeqBy1) {
