@@ -527,7 +527,7 @@ getDistributionList <- function(dists) {
 #' @param includeValue: a logical indicating whether to return the string 'value', which is the name of the node value
 #'
 #' @author Christopher Paciorek
-#' @aliases isUserDefined pqExist getType getParamNames
+#' @aliases isUserDefined pqDefined getType getParamNames
 #' @export
 #' @details
 #' NIMBLE provides various functions to give information about a BUGS distribution. In some cases, functions of the same name and similar functionality operate on the node(s) of a model as well (see \code{help(modelBaseClass)}).
@@ -554,8 +554,8 @@ getDistributionList <- function(dists) {
 #' 
 #' isUserDefined('dbin')
 #' 
-#' pqExist('dgamma')
-#' pqExist('dmnorm')
+#' pqDefined('dgamma')
+#' pqDefined('dmnorm')
 #' 
 #' getDimension('dnorm')
 #' getDimension('dnorm', includeParams = TRUE)
@@ -572,6 +572,7 @@ getDistributionList <- function(dists) {
 #' getParamNames('dnorm', includeValue = FALSE)
 #' getParamNames('dmnorm')
 getDistributionInfo <- function(dist) {
+    if(is.na(dist)) return(NA)
     if(dist %in% distributions$namesVector) return(distributions[[dist]])
     if(exists('distributions', nimbleUserNamespace) && dist %in% nimbleUserNamespace$distributions$namesVector)
         return(nimbleUserNamespace$distributions[[dist]])
@@ -585,7 +586,8 @@ getAllDistributionsInfo <- function(kind, nimbleOnly = FALSE, userOnly = FALSE) 
             out <- c(out, get(kind, nimbleUserNamespace$distributions))
         return(out)
     }
-    if(kind %in% c('pqAvail', 'discrete')) {
+
+if(kind %in% c('pqAvail', 'discrete')) {
         if(userOnly) out <- NULL else out <- sapply(distributions$distObjects, '[[', kind)
         if(!nimbleOnly && exists('distributions', nimbleUserNamespace))
             out <- c(out, sapply(nimbleUserNamespace$distributions$distObjects, '[[', kind))
@@ -618,6 +620,7 @@ BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
 #' @rdname getDistributionInfo
 #' @export
 isDiscrete <- function(dist) {
+    if(is.na(dist)) return(NA)
     if(length(dist) > 1 || class(dist) != 'character')
         stop("isDiscrete: 'dist' should be a character vector of length 1")
     return(getDistributionInfo(dist)$discrete)
@@ -626,6 +629,7 @@ isDiscrete <- function(dist) {
 #' @rdname getDistributionInfo
 #' @export 
 isUserDefined <- function(dist) {
+    if(is.na(dist)) return(dist)
     if(length(dist) > 1 || class(dist) != 'character')
         stop("isUserDistribution: 'dist' should be a character vector of length 1")
     if(exists('distributions', nimbleUserNamespace) && dist %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
@@ -634,9 +638,10 @@ isUserDefined <- function(dist) {
 
 #' @rdname getDistributionInfo
 #' @export
-pqExist <- function(dist) {
+pqDefined <- function(dist) {
+    if(is.na(dist)) return(NA)
     if(length(dist) > 1 || class(dist) != 'character')
-        stop("pqAvail: 'dist' should be a character vector of length 1")
+        stop("pqDefined: 'dist' should be a character vector of length 1")
    return(getDistributionInfo(dist)$pqAvail)
 } 
 

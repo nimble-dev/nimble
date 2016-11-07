@@ -62,10 +62,11 @@ Details: The return value is logical vector with an element for each node indica
 '
 
                                       nodeNames <- nodes  # needed so don't have local assignment into 'nodes'
-                                      if(is.character(nodeNames))
+                                      nms <- nodeNames	
+				      if(is.character(nodeNames))
                                           nodeNames = expandNodeNames(nodeNames, returnType = 'ids', unique = FALSE)
                                              out <- modelDef$maps$isEndNode_byGID[nodeNames]
-                                      names(out) <- nodeNames
+                                            names(out) <- nms
                                             return(out)
                                   },
                                   
@@ -116,7 +117,8 @@ nodes: A character vector specifying one or more node or variable names.
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
 '
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
-                                      out <- sapply(nodeNames, function(x) getDeclInfo(x)$getDistributionName())
+                                      out <- sapply(nodeNames, function(x)
+				      	getDeclInfo(x)[[1]]$getDistributionName())
                                       names(out) <- nodeNames
                                       return(out)
                                   },
@@ -155,7 +157,7 @@ Details: The return value is a character vector with an element for each node in
 '
                                       dist <- getDistribution(nodes)
                                       # explicit reference to namespace needed as class definition objects inheriting from modelBaseClass not in namespace
-                                      discrete <- sapply(dist, isDiscrete)
+                                      discrete <- sapply(dist, nimble::isDiscrete)
                                       #discrete <- nimble:::getDistributionInfo(dist)$discrete
                                       return(discrete)
                                   },
@@ -171,7 +173,7 @@ nodes: A character vector specifying one or more node or variable names.
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
 '
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)  # needed below but duplicates what happens in getDistribution
-                                      dist <- retDistribution(nodeNames)
+                                      dist <- getDistribution(nodeNames)
                                       
                                       binary <- rep(FALSE, length(dist))
                                       names(binary) <- names(dist)
@@ -225,7 +227,8 @@ nodes: A character vector specifying one or more node or variable names.
 Details: The return value is a character vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent nodes names, so the length of the output may be longer than that of the input
 '
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
-                                      out <- sapply(getDeclInfo(nodeNames), isTruncated)
+                                      out <- sapply(nodeNames, function(x)
+	    					getDeclInfo(x)[[1]]$isTruncated())
                                       names(out) <- nodeNames
                                       return(out)
                                   },
@@ -242,7 +245,8 @@ Details: The return value is a character vector with an element for each node in
 '
 
                                       nodeNames <- expandNodeNames(nodes, unique = FALSE)
-                                      dims <- sapply(nodeNames, getDistribution)
+                                      dists <- getDistribution(nodeNames)	
+				  dims <- sapply(dists, getDimension)
                                       out <- dims == 1
                                       names(out) <- nodeNames
                                       return(out)
@@ -269,7 +273,7 @@ Details: The return value is a numeric vector with an element for each parameter
                                       dist <- getDistribution(node)
                                       if(length(dist) > 1)
                                           stop("getDimension: 'node' should be a single node in the model")
-                                      dim <- getDimension(dist, params, valueOnly, includeParams)
+                                      dim <- nimble::getDimension(dist, params, valueOnly, includeParams)
                                       return(dim)
                                   },
 
@@ -751,10 +755,10 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
 							# nimble:::getDimension so uses function not model method
-                                                  distDims <- nimble:::getDimension(dist)
+                                                  distDims <- nimble::getDimension(dist)
                                                   nms <- names(distDims)
-						  distDims <- as.integer(distDims)
-                                                  
+                                                  distDims <- as.integer(distDims); names(distDims) <- nms
+
                                                   sizes <- list(); length(sizes) <- length(nms); names(sizes) <- nms
 
                                                   for(k in seq_along(nms)) {
