@@ -35,12 +35,15 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         returnType <- "SEXP"
                                         listElementTable <- symbolTable()
                                         listElementTable$addSymbol(cppSEXP(name = "S_newNimList"))
-                                        newListLine[[1]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList()),
-                                                                           list())
+                                        browser()
+                                        newListLine[[1]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(NAME)),
+                                                                           list(NAME = 'a'))
                                         newListLine[[2]] <- substitute(copyToSEXP(S_newNimList), list())
                                         newListLine[[3]] <-   substitute(UNPROTECT(1), list())
                                         returnLine <- list(quote(cppLiteral("return(S_newNimList);")))
                                         allCode <- embedListInRbracket(c(newListLine, returnLine))
+                                        browser()
+                                        
                                         functionDefs[[paste0(name, "_writeTo")]] <<- cppFunctionDef(name = "writeToSEXP",
                                                                                                     args = interfaceArgs,
                                                                                                     code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
@@ -81,6 +84,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         unprotectLineNoReturn <- list(substitute(UNPROTECT(N), list(N = numArgs + 1)))
                                         allCode <- embedListInRbracket(c(list(envLine), writeToSexpLines,
                                                                          copyToListLines, unprotectLineNoReturn))
+                                        browser()
+                                        
                                         functionDefs[[paste0(name, "_copyTo")]] <<- cppFunctionDef(name = "copyToSEXP",
                                                                                args = interfaceArgs,
                                                                                code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
@@ -114,13 +119,16 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                                list(ARGNAME = argNames[i], 
                                                                                     SVAR = as.name(Snames[i]),
                                                                                     XDATA = as.name(environmentCPPName)))
-                                            copyLines[[i]] <- buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
-                                                                                    nimCompProc$symTab$getSymbolObject(argNames[i]))
+                                            copyLine <-  buildCopyLineFromSEXP(listElementTable$getSymbolObject(Snames[i]),
+                                                                               nimCompProc$symTab$getSymbolObject(argNames[i]))
+                                            copyLines <- c(copyLines, copyLine)
                                         }
                                         numArgs <- length(argNames)
                                         unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1))
                                         allCode <- embedListInRbracket(c(envLine, copyFromListLines, copyLines,
                                                                          list(unprotectLine)))
+                                        browser()
+                                        
                                         functionDefs[[paste0(name, "_copyFrom")]] <<- cppFunctionDef(name = "copyFromSEXP",
                                                                                 args = interfaceArgs,
                                                                                 code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
@@ -131,45 +139,3 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                       }
                                       )
                                   )
-
-
-buildCopyLineIntoSEXP <- function(fromSym, toSym) {
-  if(inherits(fromSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
-    ansText  <- paste0(fromSym$name, "->copyToSEXP(", toSym$name, ");")
-    ans <- substitute(cppLiteral(ANSWERTEXT), list(ANSWERTEXT = ansText))
-    return(ans)
-  }
-  if(inherits(fromSym, 'symbolBasic')) {
-    if(fromSym$nDim == 0) {
-      ans <- substitute(PROTECT(CONVERT(FROM, TO)), list(TO = as.name(toSym$name),
-                                                           FROM = as.name(fromSym$name),
-                                                           CONVERT = as.name(copyToSEXPscalarConvertFunctions[[fromSym$type]] ) ) )
-    } else {
-      if(fromSym$type == 'character') {
-        ans <- substitute(PROTECT(copyVectorString_2_STRSEXP(FROM, TO)), list(TO = as.name(toSym$name),
-                                                                            FROM = as.name(fromSym$name)))
-      } else {
-        ans <- substitute(PROTECT(template(copyNimArr_2_SEXP, NDIM)(FROM, TO)), list(TO = as.name(toSym$name),
-                                                                                   FROM = as.name(fromSym$name),
-                                                                                   NDIM = fromSym$nDim))
-      }
-    }
-    return(ans)
-  }
-  if(inherits(fromSym, 'symbolInternalType')) {
-    thisInternalType <- as.character(fromSym[['argList']][[1]])
-    if(thisInternalType == 'indexedNodeInfoClass') {
-      ans <- substitute(PROTECT(TO <- (copyVectorDouble_2_SEXP(FROM))), list(TO = as.name(toSym$name),
-                                                                         FROM = as.name(fromSym$name) ) )
-      return(ans)
-    } else {
-      stop(paste("Error, don't know how to make a SEXP copy line for something of class internal type, case", thisInternalType))
-    }
-  }
-  stop(paste("Error, don't know how to make a copy line to SEXP for something of class", class(fromSym)))
-}
-
-copyToSEXPscalarConvertFunctions <- list(double  = 'copyDouble_2_SEXP',
-                                     integer = 'copyInt_2_SEXP',
-                                     logical = 'copyBool_2_SEXP',
-                                     character = 'copyString_2_STRSEXP')

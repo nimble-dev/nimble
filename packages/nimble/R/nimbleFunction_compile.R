@@ -363,7 +363,6 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 ## but actually, right now, we use it inconsistently.
 ## this is a function that could use a lot of polishing, but it's ok for now.
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
-  browser()
   isNLG <- FALSE
   if(is.nlGenerator(instances[[1]][[name]])){
     nlList <- instances[[1]][[name]]$new()
@@ -379,11 +378,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
     className <- nlList$nimbleListDef$className
     newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
-    # if(!(className %in% names(neededTypes))) 
     neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
-    for(nestedList in seq_along(nlList$nestedListDefList)){
-      makeTypeObject(nlList)
-    }
     returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
     return(returnSym)
   }

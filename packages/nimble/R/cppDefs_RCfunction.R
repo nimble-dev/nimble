@@ -120,13 +120,34 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                       listCode <-  substitute({eval(makeNewNimListFromC <- function(){
-                                                                returnListDef <- nimbleList(TYPES, NAME);
-                                                                returnList <- returnListDef$new();
-                                                                return(returnList);}, envir = globalenv());
-                                         assign("makeNewNimListSEXPRESSIONFromC", makeNewNimListFromC, envir = globalenv())},
-                                                               list(TYPES = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$types,
-                                                                    NAME = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$className))
+                                       browser()
+                                       returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
+                                       returnListDefs <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nimbleListDef
+                                       returnListNestedLists <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nestedListGenList
+                                       returnListNew <- new(returnListObj$.refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
+                                                            NESTEDGENLIST = returnListNestedLists)
+                                      returnNimListGen <- list(new = function(){return(returnListNew)})
+                                      
+                                       getGenList <- function(nimListGen, genList = list()){
+                                         nimList <- nimListGen$new()
+
+                                         if(is.null(genList[[nimList$nimbleListDef$className]]))
+                                           genList[[nimList$nimbleListDef$className]] <- nimListGen
+                                         nestedNimLists <- nimList$nestedListGenList
+                                         for(i in seq_along(nestedNimLists)){
+                                           tempGenList <- nestedNimLists[[i]]
+                                           genList <- getGenList(tempGenList, genList)
+                                         }
+                                         return(genList)
+                                       }
+                                       genList <- getGenList(returnNimListGen)
+
+                                       listCode <-  substitute({eval(makeNewNimListFromC <- function(name){
+                                         genList <- GENLIST
+                                         returnList <- genList[[name]]$new();
+                                         return(returnList)}, envir = globalenv());
+                                         assign("c", makeNewNimListFromC, envir = globalenv())},
+                                                               list(GENLIST = genList))
                                      }
                                      else{
                                        listCode <- NULL
@@ -198,14 +219,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                            CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                            numNimbleList <- numNimbleList + 1
                                          }
-                                         if(is.list(tempLines)){
-                                           copyLines <- c(copyLines, tempLines)
-                                           copyLineCounter <- copyLineCounter + length(tempLines)
-                                         }
-                                         else{
-                                           copyLines[[copyLineCounter]] <- tempLines 
-                                           copyLineCounter <- copyLineCounter + 1
-                                         }
+                                          copyLines <- c(copyLines, tempLines)
                                      }
 
                                      RHScall <- as.call(c(list(as.name(name)),
