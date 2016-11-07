@@ -5,11 +5,7 @@
 #include <cstdlib>
 #include<Rmath.h>
 
-// should the template arguments (types) be Map<MatrixXd> instead of MatrixXd?
 
-// For more general: note each arg will need same scalar type which should be cast upward from logical->integer->double
-// Could make a template class for each of 2-5 (say) arguments with a single type for each
-// need to wrap constants
 
 // concatenation, c(A1, A2)
 template<bool useLinearAccess, typename result_type, typename eigenType, typename Index>
@@ -27,6 +23,8 @@ struct nimble_eigen_coeff_impl<false, result_type, eigenType, Index> {
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }
 };
+
+#include "nimbleEigenNimArr.h"
 
 template<typename Derived1, typename Derived2>
 class concatenateClass {

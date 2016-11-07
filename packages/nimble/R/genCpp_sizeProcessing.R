@@ -1,4 +1,5 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich')
+setSizeNotNeededOperators <- c('setWhich')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
@@ -198,6 +199,27 @@ multiMaxSizeExprs <- function(code) {
         }
     }
     return(list(lastMax))
+}
+
+sizeWhich <- function(code, symTab, typeEnv) {
+    ## which is a somewhat unique construction.
+    ## It should only appear as
+    ## answer <- which(boolExpr)
+    ## and should be lifted to an intermediate if necessary
+    ## The sizeExprs on "which" in the syntax tree will be NULL
+    ## which will trigger sizeAssignAfterRecursing to make default size expressions on "answer"
+    ## and then it will transform to
+    ## setWhich(answer, boolExpr) for C++ output
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    if(!(code$caller$name %in% assignmentOperators)) {
+        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    }
+    code$type = 'integer'
+    code$sizeExprs <- list(NULL)
+    code$nDim <- 1
+    code$toEigenize <- 'yes'
+    code$name <- 'setWhich'
+    return(asserts)
 }
 
 sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in eigenization.
@@ -836,7 +858,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             browser()
         }
         if(RHSnDim > 0) {
-            if(TRUE) { ## !identical(LHSdrop$sizeExprs, RHSdrop$sizeExprs)) {## This was too clever: it was to prevent redundant calls to setSize, but the problem is the previous call could have been generated inside an if-then-else, so we can't rely on it
+            if(!(RHS$name %in% setSizeNotNeededOperators)) { 
                 if(LHS$isName) {
                     assert <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
                     for(i in seq_along(RHSsizeExprs)) {
@@ -1050,7 +1072,14 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
 
     if(code$args[[1]]$type == 'symbolVecNimArrPtr') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
-  
+
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(code$args[[i]]$type == 'logical')
+                asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
+        }
+    }
+    
     nDimVar <- code$args[[1]]$nDim
 
     dropBool <- TRUE

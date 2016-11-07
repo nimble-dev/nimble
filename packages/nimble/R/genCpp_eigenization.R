@@ -106,7 +106,8 @@ eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRi
     list(nfVar = 'eigenize_nfVar',
          chainedCall = 'eigenize_chainedCall',
          '<-' = 'eigenize_assign_before_recurse',
-         mvAccessRow = 'eigenize_nfVar') )
+         mvAccessRow = 'eigenize_nfVar',
+         setWhich = 'eigenize_setWhich') )
 
 ## This is a list of translations for the C++ code generation system.
 ## e.g. if abs(X) gets eigenized, it is turned into cwiseAbs(X)
@@ -267,6 +268,10 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
 
 eigenize_doNotRecurse <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
+}
+
+eigenize_setWhich <- function(code, symTab, typeEnv, workEnv) {## first arg should be left as NimArr
+    exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv)
 }
 
 ## eigenizeHandlers
