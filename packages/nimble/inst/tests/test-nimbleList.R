@@ -286,3 +286,40 @@ test_that("return objects are nimbleLists",
             expect_identical(is.nl(CnimbleList), TRUE)
           })
 
+
+
+nlTestFunc8 <- nimbleFunction(
+  setup = function(){
+    diamat <- diag(2)
+  },
+  run = function(argList8 = testListDef8()){
+    argList8 <- testListDef8$new(nlMatrix = diamat)
+    returnType(testListDef8())
+    return(argList8)
+  }
+)
+
+testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
+testListDef8 <- nimble:::nimbleList(testTypes)
+testList8 <- testListDef8$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
+
+trace(nimble:::cppNewNimbleList, browser)
+
+testInst <- nlTestFunc8()
+RnimbleList <- testInst$run(testList8)
+ctestInst <- compileNimble(testInst, control = list(debug =  F))
+CnimbleList <- ctestInst$run(testList8)
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlMatrix, matrix(c(16,16,16,16),nrow =  2))
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+## test for identical values of testList7a and CnimbleList
+expect_identical(testList7a$nlMatrix, CnimbleList$nlMatrix)
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
