@@ -21,7 +21,7 @@ reductionBinaryOperatorsEither <- c('inprod')
 reductionBinaryOperators <- reductionBinaryOperatorsEither
 
 coreRmanipulationCalls <- c('nimC','nimRepd','nimRepi','nimRepb','nimNonseqIndexedd','nimNonseqIndexedi', 'nimNonseqIndexedb',
-                            'nimSeqByD','nimSeqLenD','nimSeqByI','nimSeqLenI')
+                            'nimSeqByD','nimSeqLenD','nimSeqByI','nimSeqLenI', 'nimDiagonalD','nimDiagonalI','nimDiagonalB')
 nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls)
 
 matrixMultOperators <- c('%*%')
@@ -77,6 +77,7 @@ eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigInverse = 'inverse',
                        setAll = 'setConstant',
                        eigEval = 'eval',
+                       eigDiagonal = 'diagonal',
                        eigenBlock = 'block') ## created in makeEigenBlockExprFromBrackets called from sizeIndexingBracket
 
 newEPT <- reductionUnaryOperators

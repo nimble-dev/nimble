@@ -51,6 +51,10 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
 
 }
 
+diagTests <- list(
+    list(name = "diag(scalar)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(0))),
+         setArgVals = quote({arg1 <- 3}), outputType = double(1)))
+
 cTests <- list(
     list(name = "c(double, double)", expr = quote(out <- c(arg1, arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:5)}), outputType = quote(double(1))),

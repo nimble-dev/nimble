@@ -93,8 +93,10 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     makeCallList(scalar_distribution_dFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     list('t' = 'eigenize_cWiseUnaryEither',
          eigenBlock = 'eigenize_cWiseUnaryEither',
+         diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps',
          RRtest_add = 'eigenize_recyclingRuleFunction'
@@ -134,6 +136,7 @@ eigenizeTranslate <- list(abs = 'cwiseAbs',
                           
                           pmin = 'eigpmin',
                           pmax = 'eigpmax',
+                          diagonal = 'eigDiagonal',
                           
                           '*' = 'cwiseProduct', ## detailed handling in eigenize_cWiseMultDiv
                           '/' = 'cwiseQuotient',
@@ -327,6 +330,15 @@ eigenize_reductionArray <- function(code, symTab, typeEnv, workEnv) {
 ##    code$eigMatrix <- code$args[[1]]$eigMatrix
     if(length(code$args[[1]]$eigMatrix) == 0) stop(paste0("Trying it eigenize ", nimDeparse(code), " but information from the argument is not complete."), call. = FALSE)
     if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    invisible(NULL)
+}
+
+eigenize_nimbleNullaryClass <- function(code, symTab, typeEnv, workEnv) {
+    if(code$nDim == 0) return(NULL)
+    ##newName <- eigenizeTranslate[[code$name]]
+    ##if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+    ##code$name <- newName
+    code$eigMatrix <- TRUE
     invisible(NULL)
 }
 

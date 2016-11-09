@@ -287,7 +287,7 @@ cppOutputNFmethod <- function(code, symTab) {
 
 cppOutputColon <- function(code, symTab) {
     if(length(code$args) != 2) stop('Error: expecting 2 arguments for operator ',code$name)
-    paste0( 'nimSeqByI(', paste(nimGenerateCpp(code$args[[1]], symTab), nimGenerateCpp(code$args[[2]], symTab), 1, 0, sep = ','),')');
+    paste0( 'nimSeqByD(', paste(nimGenerateCpp(code$args[[1]], symTab), nimGenerateCpp(code$args[[2]], symTab), 1, 0, sep = ','),')');
 }
 
 cppOutputMidOperator <- function(code, symTab) {

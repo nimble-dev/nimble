@@ -32,21 +32,29 @@ struct nimble_eigen_traits<bool> {
 template<typename T>
 struct nimble_size_impl {
   static unsigned int getSize(const T &arg) {return arg.size();}
+  static unsigned int getDiagRows(const T &arg) {return arg.rows();}
+  static unsigned int getDiagCols(const T &arg) {return arg.cols();}
 };
 
 template<>
 struct nimble_size_impl<double> {
   static unsigned int getSize(const double &arg) {return 1;}
+  static unsigned int getDiagRows(const double &arg) {return floor(arg);}
+  static unsigned int getDiagCols(const double &arg) {return floor(arg);}
 };
 
 template<>
 struct nimble_size_impl<int> {
   static unsigned int getSize(const int &arg) {return 1;}
+  static unsigned int getDiagRows(const int &arg) {return arg;}
+  static unsigned int getDiagCols(const int &arg) {return arg;}
 };
 
 template<>
 struct nimble_size_impl<bool> {
   static unsigned int getSize(const bool &arg) {return 1;}
+  static unsigned int getDiagRows(const bool &arg) {return arg;}
+  static unsigned int getDiagCols(const bool &arg) {return arg;}
 };
 
 
@@ -56,6 +64,7 @@ struct nimble_eigen_coeff_impl;
 template<typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_impl<true, result_type, eigenType, Index> {
   static result_type getCoeff(const eigenType &Arg, Index i) {return Arg.coeff(i);}
+  static result_type getDiagCoeff(const eigenType &Arg, Index i) {return Arg.coeff(i);}
 };
 
 template<typename result_type, typename eigenType, typename Index>
@@ -64,25 +73,86 @@ struct nimble_eigen_coeff_impl<false, result_type, eigenType, Index> {
     std::div_t divRes = div(i, Arg.rows());
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }
+  static result_type getDiagCoeff(const eigenType &Arg, Index i) {
+    std::div_t divRes = div(i, Arg.rows());
+    return Arg.coeff(divRes.rem, floor(divRes.quot));
+  }
 };
 
 template<typename result_type, typename Index>
 struct nimble_eigen_coeff_impl<true, result_type, double, Index> {
   static result_type getCoeff(const double Arg, Index i) {return Arg;}
+  static result_type getDiagCoeff(const double Arg, Index i) {return 1.0;}
 };
 
 template<typename result_type, typename Index>
 struct nimble_eigen_coeff_impl<true, result_type, int, Index> {
   static result_type getCoeff(const int Arg, Index i) {return Arg;}
+  static result_type getDiagCoeff(const int Arg, Index i) {return 1;}
 };
 
 template<typename result_type, typename Index>
 struct nimble_eigen_coeff_impl<true, result_type, bool, Index> {
   static result_type getCoeff(const bool Arg, Index i) {return Arg;}
+  static result_type getDiagCoeff(const bool Arg, Index i) {return true;}
 };
 
-
 #include "nimbleEigenNimArr.h"
+// diagonal, cases diag(scalar) and diag(vector) to create something behaving like a matrix
+template<typename DerivedIndex, typename DerivedSource>
+  class diagonalClass {
+ public:
+  const DerivedSource &src;
+  int dim1, dim2;
+  typedef double result_type;
+ diagonalClass(const DerivedSource &s) : src(s) {
+    dim1 = nimble_size_impl<DerivedSource>::getDiagRows(src);
+    dim2 = nimble_size_impl<DerivedSource>::getDiagCols(src);
+  }
+    result_type operator()(DerivedIndex i) const //Eigen::DenseIndex
+  {
+    std::cout<<"IN 1\n";
+    std::div_t divRes = div(i, dim1);
+    // iRow = divRes.rem
+    // iCol = floor(divRes.quot)
+    if(divRes.rem == floor(divRes.quot)) { // on diagonal
+      return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::LinearAccessBit), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, divRes.rem);
+    }
+    return 0; // off diagonal
+  }
+  result_type operator()(DerivedIndex i, DerivedIndex j) const
+  {
+    std::cout<<"IN 2\n";
+    if(i == j) { // on diagonal
+      return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::LinearAccessBit), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, i);
+    }
+    return 0; // off diagonal
+  }
+};
+
+namespace Eigen{
+  namespace internal{
+    template<typename DerivedIndex, typename DerivedSource>
+      struct functor_has_linear_access<diagonalClass<DerivedIndex, DerivedSource> > { enum { ret = 1}; }; 
+    template<typename DerivedIndex, typename DerivedSource>
+      struct functor_traits<diagonalClass<DerivedIndex, DerivedSource> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
+  }
+}
+
+template<typename returnDerived>
+struct diagonal_impl {
+  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
+  template<typename DerivedSource>
+  static CwiseNullaryOp<diagonalClass<IndexReturn, DerivedSource >, returnDerived > diagonal(const DerivedSource &s) {
+    diagonalClass<IndexReturn, DerivedSource > obj(s);
+    return(CwiseNullaryOp<diagonalClass<IndexReturn, DerivedSource >, returnDerived >(obj.dim1, obj.dim2, obj));
+  }
+};
+
+#define nimDiagonalD diagonal_impl<MatrixXd>::diagonal
+#define nimDiagonalI diagonal_impl<MatrixXd>::diagonal  // We will always return a MatrixXd from diag(), so really these could be one case
+#define nimDiagonalB diagonal_imple<MatrixXd>::diagonal
+
 
 //concatenation c()
 template<typename Derived1, typename Derived2>

@@ -24,6 +24,9 @@ typedef Map<MatrixXb, Unaligned, EigStrDyn > EigenMapStrb;
 /*   return(ans); */
 /* } */
 
+// Diagonal: Tried using Eigen::DiagonalMatrix<> but one can't do much with this.  It doesn't have same flexibility and member functions as a regular Eigen::MatrixXd
+// So we'll use a NullaryExpr approach instead
+
 template<class derived1, class derived2>
 MatrixXd EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
   MatrixXd ycopy = y; // in case y was a map, which it will always be from nimble

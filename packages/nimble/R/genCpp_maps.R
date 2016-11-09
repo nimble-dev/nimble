@@ -122,6 +122,10 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
     }
 
     needTranspose <- FALSE
+    if(length(blockBool)==1) {
+        blockBool <- c(blockBool, FALSE)
+        firstIndexRexprs[[2]] <- 0
+    }
     if(identical(blockBool, c(TRUE, TRUE))) {
         P <- code$sizeExprs[[1]]
         Q <- code$sizeExprs[[2]]
