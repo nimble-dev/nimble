@@ -204,7 +204,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      copyLineCounter <- 1
-                                     browser()
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -282,6 +281,69 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                        }
                                                      }
                                                    }
+                                                   browser()
+                                                   listSymTab <- RCfunProc$compileInfo$returnSymbol$nlProc$symTab$symbols
+                                                   
+                                                   recurseCreateListConditionalStatements(listSymTab, argNames, 
+                                                                                          RCfunProc$compileInfo$origLocalSymTab)
+                                                   
+                                                   
+                                                   recurseCreateListConditionalStatements <- function(returnListSymTab,
+                                                                                                      argNames,
+                                                                                                      argSymTab,
+                                                                                                      LHSName = '',
+                                                                                                      RHSName = '',
+                                                                                                      LHS_SName = '',
+                                                                                                      RHS_SName = '',
+                                                                                                      recurseOnArgs = FALSE,
+                                                                                                      ifOnly = TRUE){
+                                                     returnConditionalList <- list()
+                                                     if(!recurseOnArgs){
+                                                       for(i in seq_along(returnListSymTab)){
+                                                         if(inherits(listSymTab[[i]], 'symbolNimbleList')){
+                                                           returnConditionalList <- c(returnConditionalList, 
+                                                                                      recurseCreateListConditionalStatements(listSymTab[[i]],
+                                                                                                                             argNames,
+                                                                                                                             argSymTab,
+                                                                                                                             LHSName = paste0('(*',LHSName, ').', lystSymTab[[i]]$name)
+                                                                                                                             RHSName = RHSName,
+                                                                                                                             recurseOnArgs = TRUE,
+                                                                                                                             ifOnly = TRUE))
+                                                           returnConditionalList <- c(returnConditionalList,
+                                                                                      recurseCreateListConditionalStatements(listSymTab[[i]],
+                                                                                                                             argNames,
+                                                                                                                             argSymTab,
+                                                                                                                             LHSName = paste0('(*',LHSName, ').', lystSymTab[[i]]$name)
+                                                                                                                             RHSName = RHSName,
+                                                                                                                             recurseOnArgs = FALSE)))
+                                                         }
+                                                       }
+                                                     }
+                                                     else{
+                                                       returnListClass <- returnListSymTab$nlProc$name
+                                                       for(i in seq_along(argNames)){
+                                                         thisArgSym <- argSymTab$getSymbolObject(argNames[i])
+                                                         if(inherits(thisArgSym, 'symbolNimbleList')){
+                                                           if(thisArgSym$nlProc$nimbleListObj$className == returnListClass){
+                                                             conditionalText <- if(ifOnly) "if(" else "else if("
+                                                             copyText  <- paste0(conditionalText, LHSName, ".equalsPtr(", argNames[i], '))  defineVar(install("',returnListSymTab$name'"), 
+                                                                                 findVarInFrame(GET_SLOT(', RHS_SName, ', S_pxData), install(', thisArgSym$name, ')), GET_SLOT(', RHS_SName, 
+                                                                                 ', S_pxData));')
+                                                             returnLine <- substitute(cppLiteral(COPYTEXT),
+                                                                                      list(COPYTEXT = copytext))
+                                                             return(returnLine)
+                                                           }
+                                                           else{
+                                                             return(recurseCreateListConditionalStatements(
+
+                                                             
+                                                           }
+
+                                                           
+                                                         
+                                                       }
+                                                     }
+                                                     
                                                    CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                                  }
                                                  conditionalText <- if(checkLineCounter > 1) "else " else ""

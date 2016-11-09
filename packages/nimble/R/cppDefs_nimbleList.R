@@ -35,15 +35,17 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         returnType <- "SEXP"
                                         listElementTable <- symbolTable()
                                         listElementTable$addSymbol(cppSEXP(name = "S_newNimList"))
-                                        browser()
-                                        newListLine[[1]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(NAME)),
-                                                                           list(NAME = 'a'))
-                                        newListLine[[2]] <- substitute(copyToSEXP(S_newNimList), list())
-                                        newListLine[[3]] <-   substitute(UNPROTECT(1), list())
+                                        listElementTable$addSymbol(cppSEXP(name = "S_listName"))
+                                      
+                                        newListLine[[1]] <- substitute({PROTECT(S_listName <- allocVector(STRSXP, 1));
+                                          SET_STRING_ELT(S_listName, 0, mkChar(LISTNAME));}, 
+                                          list(LISTNAME = nimCompProc$nimbleListObj$className))
+                                        newListLine[[2]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(S_listName)),
+                                                                           list())
+                                        newListLine[[3]] <- substitute(copyToSEXP(S_newNimList), list())
+                                        newListLine[[4]] <-   substitute(UNPROTECT(2), list())
                                         returnLine <- list(quote(cppLiteral("return(S_newNimList);")))
                                         allCode <- embedListInRbracket(c(newListLine, returnLine))
-                                        browser()
-                                        
                                         functionDefs[[paste0(name, "_writeTo")]] <<- cppFunctionDef(name = "writeToSEXP",
                                                                                                     args = interfaceArgs,
                                                                                                     code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
@@ -84,8 +86,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         unprotectLineNoReturn <- list(substitute(UNPROTECT(N), list(N = numArgs + 1)))
                                         allCode <- embedListInRbracket(c(list(envLine), writeToSexpLines,
                                                                          copyToListLines, unprotectLineNoReturn))
-                                        browser()
-                                        
                                         functionDefs[[paste0(name, "_copyTo")]] <<- cppFunctionDef(name = "copyToSEXP",
                                                                                args = interfaceArgs,
                                                                                code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
@@ -127,8 +127,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1))
                                         allCode <- embedListInRbracket(c(envLine, copyFromListLines, copyLines,
                                                                          list(unprotectLine)))
-                                        browser()
-                                        
                                         functionDefs[[paste0(name, "_copyFrom")]] <<- cppFunctionDef(name = "copyFromSEXP",
                                                                                 args = interfaceArgs,
                                                                                 code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
