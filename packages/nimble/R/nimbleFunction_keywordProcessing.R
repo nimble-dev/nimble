@@ -767,7 +767,7 @@ keywordListModelMemberFuns[['getParam']] <- modelMemberFun_keywordInfo
 
 matchFunctions <- new.env()
 matchFunctions[['nimC']] <- nimC
-matchFunctions[['nimRep']] <- nimRep
+matchFunctions[['nimRep']] <- function(x, times = 1, each = 1, length.out) {}
 matchFunctions[['nimSeq']] <- nimSeq
 matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
 matchFunctions[['nimInteger']] <- function(length = 0, value = 0, init = TRUE) {}

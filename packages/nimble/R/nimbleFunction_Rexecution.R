@@ -5,8 +5,8 @@ nimC <- function(arg1, arg2) {
     c(arg1, arg2)
 }
 
-nimRep <- function(arg1, times = 1, each = 1) {
-    rep(arg1, times = times, each = each)
+nimRep <- function(x, ...) {
+    rep(x, ...)
 }
 
 nimSeq <- function(from, to, by, length.out) { ## this creates default arguments filled in at keyword matching that are then useful in cppOutput step to determine if C++ should use nimSeqBy or nimSeqLen

@@ -296,22 +296,43 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
     return(asserts)
 }
 
-sizeRep <- function(code, symTab, typeEnv) { 
+sizeRep <- function(code, symTab, typeEnv) {
+    ## if times is a vector: If length.out is provided, times is always ignored
+    ## otherwise lift and use assignEigenToNIMBLE
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-    code$type <- code$args[[1]]$type
+    xIsExpr <- inherits(code$args[[1]], 'exprClass')
+    code$type <- if(xIsExpr) code$args[[1]]$type else 'double'
     if(code$type == 'double') code$name <- 'nimRepd' ## this change could get moved to genCpp_generateCpp 
     if(code$type == 'integer') code$name <- 'nimRepi'
     if(code$type == 'logical') code$name <- 'nimRepb'
 
-    if(code$args[[1]]$nDim != 1) stop(exprClassProcessingErrorMsg(code, paste0('First argument to rep() must be a vector for now.')), call. = FALSE)
+##    if((!inherits(code$args[[1]], 'exprClass')) || code$args[[1]]$nDim != 1) stop(exprClassProcessingErrorMsg(code, paste0('First argument to rep() must be a vector for now.')), call. = FALSE)
+    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim != 0) stop(exprClassProcessingErrorMsg(code, paste0('NIMBLE does not compile rep() with a vector \"times\" argument yet.')), call. = FALSE)
+
     ## requiring for now that times and each arguments are given as integers, not expressions
     ## Since these will go into sizeExprs, which are then processed as R expressions, then as exprClasses but not fully size processed,
     ## any expression should be lifted
-    thisSizeExpr <- substitute( AAA_ * BBB_ * CCC_,
-                               list(AAA_ = code$args[[1]]$sizeExprs[[1]],
-                                    BBB_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
-                                    CCC_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]] ))
-    code$sizeExprs <- list(thisSizeExpr)
+    if(length(code$args) > 3) { ## there is a "length.out" argument
+        ## need to lift length.out if it is more than a name or constant
+        if(inherits(code$args[[4]], 'exprClass')) {
+            if(!is.name(code$args[[4]])) 
+                asserts <- c(asserts, sizeInsertIntermediate(code, 4, symTab, typeEnv))
+            code$sizeExprs <- list( parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]])
+        } else {
+            code$sizeExprs <- list(code$args[[4]])
+        }
+    } else {
+        for(i in 2:3) {
+            if(inherits(code$args[[i]], 'exprClass'))
+                if(!is.name(code$args[[i]])) 
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
+        }
+        thisSizeExpr <- substitute( AAA_ * BBB_ * CCC_,
+                                   list(AAA_ = if(xIsExpr) code$args[[1]]$sizeExprs[[1]] else 1,
+                                        BBB_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
+                                        CCC_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]] ))
+        code$sizeExprs <- list(thisSizeExpr)
+    }
     code$nDim <- 1
     code$toEigenize <- 'yes'
     return(asserts)

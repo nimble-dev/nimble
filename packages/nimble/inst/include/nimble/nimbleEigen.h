@@ -222,22 +222,20 @@ struct concatenate_impl {
 #define nimCb concatenate_imple<MatrixXb>::concatenate
 
 // rep, rep(x, times, each)
-template<typename Derived1>
+template<typename Index1, typename Derived1>
 class repClass {
 public:
   const Derived1 &Arg1;
   int times, each;
   typedef enum{useEach, useTimes, useBoth} eachTimesCaseType;
   eachTimesCaseType eachTimesCase;
-  int sizeArg1;
+  int sizeArg1, outputLength;
   typedef double result_type;
  repClass(const Derived1 &A1, int timesIn, int eachIn) :
   Arg1(A1),
     times(timesIn),
     each(eachIn) {
-    // add more complete checking of row vs. col vector here
-    // assume col vector for now
-    sizeArg1 = Arg1.size();
+    sizeArg1 = nimble_size_impl<Derived1>::getSize(Arg1);
     if(each > 1)
       if(times > 1)
 	eachTimesCase = useBoth;
@@ -246,8 +244,24 @@ public:
     else
       eachTimesCase = useTimes;
     // may need to handle times = 0 or each = 0
+    outputLength = sizeArg1 * timesIn * eachIn;
   };
-  typedef typename Eigen::internal::traits<Derived1>::Index Index1;
+ repClass(const Derived1 &A1, int timesIn, int eachIn, int outputLengthIn) : //ignore timesIn in this case
+  Arg1(A1),
+    each(eachIn),
+    outputLength(outputLengthIn)
+    {      
+      sizeArg1 = nimble_size_impl<Derived1>::getSize(Arg1);
+      times = ceil( outputLengthIn / static_cast<double>(sizeArg1 * each) ); // only used for purposes of setting eachTimesCase next
+      if(each > 1)
+	if(times > 1)
+	  eachTimesCase = useBoth;
+	else
+	  eachTimesCase = useEach;
+      else
+	eachTimesCase = useTimes;
+      // may need to handle times = 0 or each = 0
+    };
 
   result_type operator()(Index1 i) const //Eigen::DenseIndex
   {
@@ -266,7 +280,7 @@ public:
     default:
       iUse = 0; //error
     }
-    return nimble_eigen_coeff_impl< Eigen::internal::traits<Derived1>::Flags & LinearAccessBit, result_type, Derived1, Index1 >::getCoeff(Arg1, iUse);
+    return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index1 >::getCoeff(Arg1, iUse);
   }
 
   result_type operator()(Index1 i, Index1 j) const
@@ -278,27 +292,26 @@ public:
 
 namespace Eigen{
   namespace internal{
-    template<typename Derived1>
-    struct functor_has_linear_access<repClass<Derived1> > { enum { ret = 1}; }; 
-      template<typename Derived1>
-      struct functor_traits<repClass<Derived1> >
-      {
-	enum
-	{
-	  Cost = 10, // there are templated costs available to pick up for this
-	  PacketAccess = false, // happy to keep this false for now
-	  IsRepeatable = true // default was false. 
-	};
-      };    
+    template<typename Index, typename Derived1>
+      struct functor_has_linear_access<repClass<Index, Derived1> > { enum { ret = 1}; }; 
+    template<typename Index, typename Derived1>
+      struct functor_traits<repClass<Index, Derived1> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true}; };
   }
 }
 
 template<typename returnDerived>
 struct rep_impl {
+  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
+
   template<typename Derived1>
-  static CwiseNullaryOp<repClass<const Derived1>, returnDerived > rep(const Derived1 &A1, int reps, int each) {
-    repClass<const Derived1> repObj(A1, reps, each);
-    return(CwiseNullaryOp<repClass<const Derived1>, returnDerived >(A1.rows() * reps * each, 1, repObj));
+  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int reps, int each) {
+    repClass<IndexReturn, Derived1> repObj(A1, reps, each);
+    return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
+  }
+  template<typename Derived1>
+  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int reps, int each, int length_out) {
+    repClass<IndexReturn, Derived1> repObj(A1, reps, each, length_out);
+    return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
   }
 };
 
