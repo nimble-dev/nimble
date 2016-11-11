@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr')
 setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
@@ -278,22 +278,123 @@ sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in 
 
 sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument version
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-    code$type <- arithmeticOutputType(code$args[[1]]$type, code$args[[2]]$type)
-    if(code$type == 'double') code$name <- 'nimCd' ## this change could get moved to genCpp_generateCpp 
-    if(code$type == 'integer') code$name <- 'nimCi'
-    if(code$type == 'logical') code$name <- 'nimCb'
-    
-    if(code$args[[1]]$nDim > 2 | code$args[[2]]$nDim > 2) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must have dimension <= 2 for now.')), call. = FALSE)
-    ## need to deal with lifting size expressions to get them fully compiled.
-    ## otherwise we could end up with an assertion output somewhat incorrectly
-    ## insertAssertions does convert to exprClasses but does not eigenize etc
-    thisSizeExpr <- substitute( AAA_ + BBB_,
-                               list(AAA_ = productSizeExprs(code$args[[1]]$sizeExprs),   ## need to create products of sizeExprs in general
-                                    BBB_ = productSizeExprs(code$args[[2]]$sizeExprs)) )
-    code$sizeExprs <- list(thisSizeExpr)
-    code$nDim <- 1
-    code$toEigenize <- 'yes'
+
+    ## must recurse to get nDims set
+    isScalar <- unlist(lapply(code$args, function(x) if(inherits(x, 'exprClass')) x$nDim == 0 else TRUE))
+    ##isExprClass <- unlist(lapply(code$args, function(x) inherits(x, 'exprClass')))
+    argRLE <- rle(isScalar)
+    newNumArgs <- sum(argRLE$values) + sum(argRLE$lengths[!argRLE$values]) ## number of scalar runs + sum of non-scalar runs * run-lengths
+    newArgs <- vector(length(newNumArgs), mode = 'list')
+    iInput <- 1
+    iOutput <- 1
+    concatenateIntermLabelMaker <- labelFunctionCreator("ConcatenateInterm")
+    asserts <- NULL
+    for(i in seq_along(argRLE$values)) {
+        thisLength <- argRLE$lengths[i]
+        if(!(argRLE$values[i])) {
+            newArgs[(iOutput-1) + (1:thisLength)] <- code$args[(iInput-1) + (1:thisLength)]
+            iInput <- iInput + thisLength
+            iOutput <- iOutput + thisLength
+        } else {
+            newTempFixedName <- concatenateIntermLabelMaker()
+            newTempVecName <- concatenateIntermLabelMaker()
+            newExpr <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = "concatenateTemp", nDim = 1, sizeExprs = list(thisLength), type = 'double')
+            setArg(newExpr, 1, exprClass(isName = TRUE, isCall = FALSE, isAssign = FALSE, name = newTempVecName, nDim = 1, sizeExprs = list(thisLength), type = 'double'))
+            valuesExpr <- quote(hardCodedVectorInitializer())
+            thisType <- 'logical'
+            for(j in 1:thisLength) {
+                valuesExpr[[j+1]] <- parse(text = nimDeparse(code$args[[iInput - 1 + j]]), keep.source = FALSE)[[1]]
+                if(inherits(code$args[[iInput - 1 + j]], 'exprClass'))
+                    thisType <- arithmeticOutputType(thisType, code$args[[iInput - 1 + j]]$type)
+                else
+                    thisType <- 'double'
+            }
+            newExpr$type <- thisType
+            newExpr$args[[1]]$type <- thisType
+            iInput <- iInput + thisLength
+            if(thisType == 'integer') thisType <- 'int'
+            if(thisType == 'logical') thisType <- 'bool'
+            newAssert <- substitute(MAKE_FIXED_VECTOR(newTempVecName, newTempFixedName, thisLength, valuesExpr, thisType),
+                                    list(newTempVecName = newTempVecName, newTempFixedName = newTempFixedName,
+                                         thisLength = as.numeric(thisLength), valuesExpr = valuesExpr, thisType = thisType))
+            newAssert <- as.call(newAssert)
+            asserts <- c(asserts, list(newAssert))
+            newArgs[[iOutput]] <- newExpr
+            iOutput <- iOutput + 1
+        }
+    }
+
+    maxArgsOneCall <- 4
+    numArgGroups <- ceiling(newNumArgs / (maxArgsOneCall-1))
+    splitArgIDs <- split(1:newNumArgs, rep(1:numArgGroups, each = maxArgsOneCall-1, length.out = newNumArgs))
+    ## if last is a singleton it can be put with previous group
+    if(length(splitArgIDs[[numArgGroups]]) == 1) {
+        if(numArgGroups > 1) {
+            splitArgIDs[[numArgGroups-1]] <- c(splitArgIDs[[numArgGroups-1]], splitArgIDs[[numArgGroups]])
+            splitArgIDs[[numArgGroups]] <- NULL
+            numArgGroups <- numArgGroups-1
+        }
+    }
+
+    newExprList <- vector(numArgGroups, mode = 'list')
+    for(i in seq_along(splitArgIDs)) {
+        newExprList[[i]] <- exprClass(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'nimC', nDim = 1, toEigenize = 'yes', type = 'double')
+        for(j in seq_along(splitArgIDs[[i]])) setArg(newExprList[[i]], j, newArgs[[splitArgIDs[[i]][j]]])
+    }
+    ## Last step is to set up nesting and make sizeExprs
+    for(i in seq_along(splitArgIDs)) {
+        if(i != length(splitArgIDs)) {
+            setArg(newExprList[[i]], maxArgsOneCall, newExprList[[i+1]])
+        }
+    }
+    for(i in rev(seq_along(splitArgIDs))) {
+        if(inherits(newExprList[[i]]$args[[1]], 'exprClass')) {
+            thisSizeExpr <-productSizeExprs(newExprList[[i]]$args[[1]]$sizeExprs) 
+            thisType <- newExprList[[i]]$args[[1]]$type
+        } else {
+            thisSizeExpr <- 1
+            thisType <- 'double'
+        }
+        for(j in seq_along(newExprList[[i]]$args)) {
+            if(j == 1) next
+            if(inherits(newExprList[[i]]$args[[j]], 'exprClass')) {
+                thisSizeExpr <- substitute( (A) + (B),
+                                           list(A = thisSizeExpr,
+                                                B = productSizeExprs(newExprList[[i]]$args[[j]]$sizeExprs)
+                                                ))
+                thisType <- arithmeticOutputType(thisType, newExprList[[i]]$args[[j]]$type)
+            } else {
+                thisSizeExpr <- substitute( (A) + 1,
+                                           list(A = thisSizeExpr
+                                                ))
+                thisType <- 'double'
+            }
+        }
+        if(thisType == 'double') newExprList[[i]]$name <- 'nimCd' ## this change could get moved to genCpp_generateCpp 
+        if(thisType == 'integer') newExprList[[i]]$name <- 'nimCi'
+        if(thisType == 'logical') newExprList[[i]]$name <- 'nimCb'
+        newExprList[[i]]$type <- thisType
+        newExprList[[i]]$sizeExprs <- list(thisSizeExpr)
+    }
+    setArg(code$caller, code$callerArgID, newExprList[[1]])
     return(asserts)
+    
+    ## code$type <- arithmeticOutputType(code$args[[1]]$type, code$args[[2]]$type)
+    ## if(code$type == 'double') code$name <- 'nimCd' ## this change could get moved to genCpp_generateCpp 
+    ## if(code$type == 'integer') code$name <- 'nimCi'
+    ## if(code$type == 'logical') code$name <- 'nimCb'
+    
+    ## if(code$args[[1]]$nDim > 2 | code$args[[2]]$nDim > 2) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must have dimension <= 2 for now.')), call. = FALSE)
+    ## ## need to deal with lifting size expressions to get them fully compiled.
+    ## ## otherwise we could end up with an assertion output somewhat incorrectly
+    ## ## insertAssertions does convert to exprClasses but does not eigenize etc
+    ## thisSizeExpr <- substitute( AAA_ + BBB_,
+    ##                            list(AAA_ = productSizeExprs(code$args[[1]]$sizeExprs),   ## need to create products of sizeExprs in general
+    ##                                 BBB_ = productSizeExprs(code$args[[2]]$sizeExprs)) )
+    ## code$sizeExprs <- list(thisSizeExpr)
+    ## code$nDim <- 1
+    ## code$toEigenize <- 'yes'
+    ## return(asserts)
 }
 
 sizeRep <- function(code, symTab, typeEnv) {
@@ -414,6 +515,7 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     code$nDim <- nDim
     code$sizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse)
     code$toEigenize <- 'no'
+    ##if(inherits(code$args[[1]], 'exprClass')) if(code$args[[4]]$nDim > 0) code$name <- 'assignVectorToNimArr'
     return(asserts)
 }
 

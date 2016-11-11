@@ -1255,7 +1255,10 @@ matchAndFill.call <- function(def, call){
   ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
   ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
   ## tacked on even without a '...' in the def
+  if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
+
   indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+
   for(thisIndex in indexAdditionalArgs) {
       thisName <- names(matchedCall)[thisIndex+1]
       if(thisName=="")

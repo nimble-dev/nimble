@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include<Rmath.h>
-
+#include<vector>
 
 
 // put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
@@ -29,9 +29,16 @@ struct nimble_eigen_traits<bool> {
   enum {LinearAccessBit = int(1)};
 };
 
+template<typename V>
+struct nimble_eigen_traits<std::vector<V> > {
+  enum {LinearAccessBit = int(1)};
+};
+
 template<typename T>
 struct nimble_size_impl {
   static unsigned int getSize(const T &arg) {return arg.size();}
+  static unsigned int getRows(const T &arg) {return arg.rows();}
+  static unsigned int getCols(const T &arg) {return arg.cols();}
   static unsigned int getDiagRows(const T &arg) {return arg.rows();}
   static unsigned int getDiagCols(const T &arg) {return arg.cols();}
 };
@@ -39,6 +46,8 @@ struct nimble_size_impl {
 template<>
 struct nimble_size_impl<double> {
   static unsigned int getSize(const double &arg) {return 1;}
+  static unsigned int getRows(const double &arg) {return 1;}
+  static unsigned int getCols(const double &arg) {return 1;}
   static unsigned int getDiagRows(const double &arg) {return floor(arg);}
   static unsigned int getDiagCols(const double &arg) {return floor(arg);}
 };
@@ -46,6 +55,8 @@ struct nimble_size_impl<double> {
 template<>
 struct nimble_size_impl<int> {
   static unsigned int getSize(const int &arg) {return 1;}
+  static unsigned int getRows(const int &arg) {return 1;}
+  static unsigned int getCols(const int &arg) {return 1;}
   static unsigned int getDiagRows(const int &arg) {return arg;}
   static unsigned int getDiagCols(const int &arg) {return arg;}
 };
@@ -53,6 +64,8 @@ struct nimble_size_impl<int> {
 template<>
 struct nimble_size_impl<bool> {
   static unsigned int getSize(const bool &arg) {return 1;}
+  static unsigned int getRows(const bool &arg) {return 1;}
+  static unsigned int getCols(const bool &arg) {return 1;}
   static unsigned int getDiagRows(const bool &arg) {return arg;}
   static unsigned int getDiagCols(const bool &arg) {return arg;}
 };
@@ -96,6 +109,13 @@ struct nimble_eigen_coeff_impl<true, result_type, bool, Index> {
   static result_type getCoeff(const bool Arg, Index i) {return Arg;}
   static result_type getDiagCoeff(const bool Arg, Index i) {return true;}
 };
+
+template<typename result_type, typename Index, typename V>
+  struct nimble_eigen_coeff_impl<true, result_type, std::vector<V>, Index> {
+  static result_type getCoeff(const std::vector<V> &Arg, Index i) {return Arg[i];}
+  static result_type getDiagCoeff(const std::vector<V> &Arg, Index i) {return Arg[i];} // should never be called
+};
+
 
 #include "nimbleEigenNimArr.h"
 // diagonal, cases diag(scalar) and diag(vector) to create something behaving like a matrix
@@ -156,31 +176,29 @@ struct diagonal_impl {
 
 
 //concatenation c()
-template<typename Derived1, typename Derived2>
+template<typename Index, typename Derived1, typename Derived2>
 class concatenateClass {
  public:
   const Derived1 &Arg1;
   const Derived2 &Arg2;
-  int size1, size2;
+  int size1, size2, totalLength;
   typedef double result_type;
  concatenateClass(const Derived1 &A1, const Derived2 &A2) : Arg1(A1), Arg2(A2) {
-    size1 = Arg1.size();
-    size2 = Arg2.size();
+    size1 = nimble_size_impl<Derived1>::getSize(Arg1);
+    size2 = nimble_size_impl<Derived2>::getSize(Arg2);
+    totalLength = size1 + size2;
   };
-  // Index types should come in as template argument based on DerivedReturn
-  typedef typename Eigen::internal::traits<Derived1>::Index Index1;
-  typedef typename Eigen::internal::traits<Derived2>::Index Index2;
   
-  result_type operator()(Index1 i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
+  result_type operator()(Index i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
   {
     std::cout<<"IN 1\n";
     if(i < size1)
-      return nimble_eigen_coeff_impl< Eigen::internal::traits<Derived1>::Flags & LinearAccessBit, result_type, Derived1, Index1 >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
     else
-      return nimble_eigen_coeff_impl< Eigen::internal::traits<Derived2>::Flags & LinearAccessBit, result_type, Derived2, Index1 >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::LinearAccessBit, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
   }
 
-  result_type operator()(Index1 i, Index2 j) const // I don't think this should normally be called, but if it does, act like a vector
+  result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
   {
     std::cout<<"IN 2\n";
     return operator()(i);
@@ -190,14 +208,14 @@ class concatenateClass {
 
 namespace Eigen{
   namespace internal{
-    template<typename Derived1, typename Derived2>
+    template<typename Index, typename Derived1, typename Derived2>
     // 3 options for linear_access:
       //1. turn it off: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = 0 }; }; 
       //2. turn it on: (and let it be resolved by nimble_eigen_coeff_impl>:
-    struct functor_has_linear_access<concatenateClass<Derived1, Derived2> > { enum { ret = 1}; }; 
+      struct functor_has_linear_access<concatenateClass<Index, Derived1, Derived2> > { enum { ret = 1}; }; 
       //3. Set it once according to arguments: (problem here is that if it is off for this expression, that may make expressions using this one forbidden from using linear access, which is a bit harsh: struct functor_has_linear_access<gConcatenateClass<Derived1, Derived2> > { enum { ret = traits<Derived1>::Flags & traits<Derived2>::Flags & LinearAccessBit }; };
-      template<typename Derived1, typename Derived2>
-      struct functor_traits<concatenateClass<Derived1, Derived2> >
+    template<typename Index, typename Derived1, typename Derived2>
+      struct functor_traits<concatenateClass<Index, Derived1, Derived2> >
       {
 	enum
 	{
@@ -211,16 +229,17 @@ namespace Eigen{
 
 template<typename returnDerived>
 struct concatenate_impl {
+  typedef typename Eigen::internal::traits<returnDerived>::Index Index;
   template<typename Derived1, typename Derived2>
-    static CwiseNullaryOp<concatenateClass<const Derived1, const Derived2>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
-    concatenateClass<const Derived1, const Derived2> c(A1.derived(), A2.derived());
-    return(CwiseNullaryOp<concatenateClass<const Derived1, const Derived2>, returnDerived >(A1.size() + A2.size(), 1, c));
+    static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
+    concatenateClass<Index, Derived1, Derived2> c(A1, A2);
+    return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived >(c.totalLength, 1, c));
   }
 };
 
 #define nimCd concatenate_impl<MatrixXd>::concatenate
 #define nimCi concatenate_impl<MatrixXi>::concatenate
-#define nimCb concatenate_imple<MatrixXb>::concatenate
+#define nimCb concatenate_impl<MatrixXb>::concatenate
 
 // rep, rep(x, times, each)
 template<typename Index1, typename Derived1> // times and each should be scalar but if non-scalar first value is used
@@ -721,5 +740,55 @@ MAKE_RECYCLING_RULE_CLASS4(dunif, double)
 MAKE_RECYCLING_RULE_CLASS4(dweibull, double)
 MAKE_RECYCLING_RULE_CLASS4(dt_nonstandard, double)
 
+// matrix, array, as.numeric, as.matrix, as.array
+
+// need the additional parts below to make newMatrixClass work
+// for array, will need to make something in nimbleEigenNimArr and always lift to a full copy operation
+// can write as.numeric here
+// as.matrix may be basically the same as matrix
+
+template<typename IndexObj, typename DerivedInput>
+  class newMatrixClass {
+ public:
+  const DerivedInput &input;
+  int dim1, dim2, totalLength, inputLength, inputRows;
+  typedef double result_type;
+ newMatrixClass(const DerivedInput &inputIn, unsigned int rowsIn, unsigned int colsIn) :
+  input(inputIn) {
+    inputLength = nimble_size_impl<DerivedInput>::getSize(input);
+    inputRows = nimble_size_impl<DerivedInput>::getRows(input);
+    bool rowsProvided = rowsIn > 0;
+    bool colsProvided = colsIn > 0;
+    if(!rowsProvided) {
+      if(!colsProvided) {
+	dim1 = inputLength;
+	dim2 = 1;
+      } else {
+	dim2 = colsIn;
+	dim1 = floor(double(inputLength) / double(colsIn));
+      }
+    } else {
+      if(!colsProvided) {
+	dim1 = rowsIn;
+	dim2 = floor(double(inputLength) / double(rowsIn));
+      } else {
+	dim1 = rowsIn;
+	dim2 = colsIn;
+      }
+    }
+    totalLength = dim1 * dim2;
+  }
+  result_type operator()(Index i) const 
+  {
+    std::cout<<"IN 1\n";
+    return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::LinearAccessBit), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
+  }
+
+  result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
+  {
+    std::cout<<"IN 2\n";
+    return operator()(i + j*inputRows);
+  }
+};
 
 #endif

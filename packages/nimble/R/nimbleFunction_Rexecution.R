@@ -1,8 +1,8 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
-nimC <- function(arg1, arg2) {
-    c(arg1, arg2)
+nimC <- function(...) {
+    c(...)
 }
 
 nimRep <- function(x, ...) {

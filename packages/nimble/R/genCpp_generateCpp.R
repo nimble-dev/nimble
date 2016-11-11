@@ -15,6 +15,8 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen'), 'cppOutputCallAsIs'),
                     list(
+                        MAKE_FIXED_VECTOR = 'cppOutputMakeFixedVector',
+                        concatenateTemp = 'cppOutputEigBlank',
                         ':' = 'cppOutputColon',
                         size = 'cppOutputSize',
                          'for' = 'cppOutputFor',
@@ -105,6 +107,15 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
     } else {
         return(code$name)
     }
+}
+
+cppOutputMakeFixedVector <- function(code, symTab) {
+    type <- code$args[[5]]
+    fixedName <- code$args[[2]]
+    vecName <- code$args[[1]]
+    len <- code$args[[3]]
+    fixedValues <- paste0(unlist(lapply(code$args[[4]]$args, nimGenerateCpp, symTab) ), collapse = ',')
+    paste0(type, ' ', fixedName,'[] = {', fixedValues, '}; std::vector<', type, '> ', vecName,'(', fixedName, ',', fixedName, ' + ', len, ')')
 }
 
 cppOutputVoidPtr <- function(code, symTab) {
