@@ -287,6 +287,10 @@ test_that("return objects are nimbleLists",
           })
 
 
+########
+## Test of assigning a new nimbleList object to a nimbleList object that was passed as a run argument
+########
+
 
 nlTestFunc8 <- nimbleFunction(
   setup = function(){
@@ -311,6 +315,44 @@ ctestInst <- compileNimble(testInst, control = list(debug =  F))
 CnimbleList <- ctestInst$run(testList8)
 
 ## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlMatrix, diag(2))
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
+## test that testList8 doesn't get changed by function
+expect_identical(testList8$nlMatrix, matrix(1, nrow = 2, ncol = 2))
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+
+########
+## Test of using two nimbleLists as  run function arguments, assigning one list to the other within the function
+########
+
+nlTestFunc9 <- nimbleFunction(
+  setup = function(){
+  },
+  run = function(argList9a = testListDef9(), argList9b = testListDef9()){
+    argList9a <- argList9b
+    returnType(testListDef9())
+    return(argList9a)
+  }
+)
+
+testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
+testListDef9 <- nimble:::nimbleList(testTypes)
+testList9a <- testListDef9$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
+testList9b <- testListDef9$new(nlMatrix = matrix(2, nrow = 2, ncol = 2))
+
+testInst <- nlTestFunc9()
+RnimbleList <- testInst$run(testList9a, testList9b)
+ctestInst <- compileNimble(testInst, control = list(debug =  F))
+CnimbleList <- ctestInst$run(testList9a, testList9b)
+
+## test for correct values of R nimbleList
 expect_identical(RnimbleList$nlMatrix, matrix(c(16,16,16,16),nrow =  2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
@@ -321,5 +363,4 @@ test_that("return objects are nimbleLists",
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)
             expect_identical(is.nl(CnimbleList), TRUE)
           })
-
 
