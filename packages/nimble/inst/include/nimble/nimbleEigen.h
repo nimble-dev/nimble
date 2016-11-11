@@ -99,6 +99,7 @@ struct nimble_eigen_coeff_impl<true, result_type, bool, Index> {
 
 #include "nimbleEigenNimArr.h"
 // diagonal, cases diag(scalar) and diag(vector) to create something behaving like a matrix
+
 template<typename DerivedIndex, typename DerivedSource>
   class diagonalClass {
  public:
@@ -222,7 +223,7 @@ struct concatenate_impl {
 #define nimCb concatenate_imple<MatrixXb>::concatenate
 
 // rep, rep(x, times, each)
-template<typename Index1, typename Derived1>
+template<typename Index1, typename Derived1> // times and each should be scalar but if non-scalar first value is used
 class repClass {
 public:
   const Derived1 &Arg1;
@@ -303,9 +304,14 @@ template<typename returnDerived>
 struct rep_impl {
   typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
 
-  template<typename Derived1>
-  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int reps, int each) {
-    repClass<IndexReturn, Derived1> repObj(A1, reps, each);
+  template<typename Derived1, typename DerivedTimes, typename DerivedEach>
+  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, const DerivedTimes &timesIn, const DerivedEach &each) {
+    times(nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedTimes>::LinearAccessBit, int, DerivedTimes, unsigned int >::getCoeff(timesIn, 0)),
+    each(nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::LinearAccessBit, int, DerivedEach, unsigned int >::getCoeff(timesEach, 0)) {
+
+    repClass<IndexReturn, Derived1> repObj(A1,
+					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedTimes>::LinearAccessBit, int, DerivedTimes, unsigned int >::getCoeff(timesIn, 0),
+					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::LinearAccessBit, int, DerivedEach, unsigned int >::getCoeff(each, 0));
     return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
   }
   template<typename Derived1>

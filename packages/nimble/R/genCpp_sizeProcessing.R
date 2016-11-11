@@ -1,5 +1,5 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich')
-setSizeNotNeededOperators <- c('setWhich')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes')
+setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
@@ -302,18 +302,29 @@ sizeRep <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     xIsExpr <- inherits(code$args[[1]], 'exprClass')
     code$type <- if(xIsExpr) code$args[[1]]$type else 'double'
+
+    ##    if((!inherits(code$args[[1]], 'exprClass')) || code$args[[1]]$nDim != 1) stop(exprClassProcessingErrorMsg(code, paste0('First argument to rep() must be a vector for now.')), call. = FALSE)
+    includesLengthOut <- length(code$args) > 3
+    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim != 0 && !includesLengthOut) {
+        if(!(code$caller$name %in% assignmentOperators)) {
+            asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        }
+        if(length(code$args) > 2) code$args[[3]] <- NULL
+        code$name <- 'setRepVectorTimes'
+        code$sizeExprs <- list(NULL)
+        code$nDim <- 1
+        code$toEigenize <- 'yes'
+        return(asserts)
+    }##stop(exprClassProcessingErrorMsg(code, paste0('NIMBLE does not compile rep() with a vector \"times\" argument yet.')), call. = FALSE)
+    
     if(code$type == 'double') code$name <- 'nimRepd' ## this change could get moved to genCpp_generateCpp 
     if(code$type == 'integer') code$name <- 'nimRepi'
     if(code$type == 'logical') code$name <- 'nimRepb'
 
-##    if((!inherits(code$args[[1]], 'exprClass')) || code$args[[1]]$nDim != 1) stop(exprClassProcessingErrorMsg(code, paste0('First argument to rep() must be a vector for now.')), call. = FALSE)
-    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim != 0) stop(exprClassProcessingErrorMsg(code, paste0('NIMBLE does not compile rep() with a vector \"times\" argument yet.')), call. = FALSE)
-
     ## requiring for now that times and each arguments are given as integers, not expressions
     ## Since these will go into sizeExprs, which are then processed as R expressions, then as exprClasses but not fully size processed,
     ## any expression should be lifted
-    if(length(code$args) > 3) { ## there is a "length.out" argument
-        ## need to lift length.out if it is more than a name or constant
+    if(includesLengthOut) { ## there is a "length.out" argument        ## need to lift length.out if it is more than a name or constant
         if(inherits(code$args[[4]], 'exprClass')) {
             if(!is.name(code$args[[4]])) 
                 asserts <- c(asserts, sizeInsertIntermediate(code, 4, symTab, typeEnv))
@@ -327,8 +338,8 @@ sizeRep <- function(code, symTab, typeEnv) {
                 if(!is.name(code$args[[i]])) 
                     asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
         }
-        thisSizeExpr <- substitute( AAA_ * BBB_ * CCC_,
-                                   list(AAA_ = if(xIsExpr) code$args[[1]]$sizeExprs[[1]] else 1,
+        thisSizeExpr <- substitute( (AAA_) * (BBB_) * (CCC_),
+                                   list(AAA_ = if(xIsExpr) productSizeExprs(code$args[[1]]$sizeExprs) else 1,
                                         BBB_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
                                         CCC_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]] ))
         code$sizeExprs <- list(thisSizeExpr)

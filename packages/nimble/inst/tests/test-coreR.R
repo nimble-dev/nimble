@@ -26,20 +26,28 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
   nfR <- nimbleFunction(run = runFun)
   nfC <- compileNimble(nfR, dirName = dirName)
   nArgs <- length(input$args)
-  eval(input$setArgVals)
-  eval(input$expr)
-   if(nArgs == 3) {
-      out_nfR = nfR(arg1, arg2, arg3)
-      out_nfC = nfC(arg1, arg2, arg3)
+  evalEnv <- new.env()
+  eval(input$setArgVals, envir = evalEnv)
+  savedArgs <- as.list(evalEnv)
+  eval(input$expr, envir = evalEnv)
+  savedOutputs <- as.list(evalEnv)
+  list2env(savedArgs, envir = evalEnv)
+  if(nArgs == 3) {
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
+      list2env(savedArgs, envir = evalEnv)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
   }  
   if(nArgs == 2) {
-      out_nfR = nfR(arg1, arg2)
-      out_nfC = nfC(arg1, arg2)
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2)
+      list2env(savedArgs, envir = evalEnv)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2)
   }
   if(nArgs == 1) {
-    out_nfR = nfR(arg1)
-    out_nfC = nfC(arg1)
+      out_nfR = nfR(evalEnv$arg1)
+      list2env(savedArgs, envir = evalEnv)
+      out_nfC = nfC(evalEnv$arg1)
   }
+  out <- savedOutputs$out
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
   try(test_that(paste0("Test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
                 expect_identical(out, out_nfR)))

@@ -108,8 +108,14 @@ eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRi
     list(nfVar = 'eigenize_nfVar',
          chainedCall = 'eigenize_chainedCall',
          '<-' = 'eigenize_assign_before_recurse',
-         mvAccessRow = 'eigenize_nfVar',
-         setWhich = 'eigenize_setWhich') )
+         mvAccessRow = 'eigenize_nfVar') )##,
+         ##setWhich = 'eigenize_setWhich') )
+
+eigenizeUseArgs <- c(
+    list(
+        setWhich = c(FALSE, TRUE),
+        setRepVectorTimes = c(FALSE, TRUE, TRUE)
+        ))
 
 ## This is a list of translations for the C++ code generation system.
 ## e.g. if abs(X) gets eigenized, it is turned into cwiseAbs(X)
@@ -252,8 +258,13 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
 
         IsetAliasRisk <- FALSE
         if(code$name %in% c('t', 'asRow')) {IsetAliasRisk <- workEnv[['aliasRisk']] <- TRUE}
+
+
+        iArgs <- seq_along(code$args)
+        useArgs <- eigenizeUseArgs[[code$name]]
+        if(!is.null(useArgs)) iArgs <- iArgs[-which(!useArgs)] ## this allows iArgs to be longer than useArgs.  if equal length, iArgs[useArgs] would work 
         
-        for(i in seq_along(code$args)) {
+        for(i in iArgs) {
             if(inherits(code$args[[i]], 'exprClass'))
                 setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[i]], symTab, typeEnv, workEnv))
         }
@@ -273,9 +284,9 @@ eigenize_doNotRecurse <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
 
-eigenize_setWhich <- function(code, symTab, typeEnv, workEnv) {## first arg should be left as NimArr
-    exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv)
-}
+## eigenize_setWhich <- function(code, symTab, typeEnv, workEnv) {## first arg should be left as NimArr
+##     exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv)
+## }
 
 ## eigenizeHandlers
 eigenize_asRowOrCol <- function(code, symTab, typeEnv, workEnv) {
