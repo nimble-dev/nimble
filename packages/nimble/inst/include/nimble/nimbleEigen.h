@@ -304,19 +304,19 @@ template<typename returnDerived>
 struct rep_impl {
   typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
 
-  template<typename Derived1, typename DerivedTimes, typename DerivedEach>
-  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, const DerivedTimes &timesIn, const DerivedEach &each) {
-    times(nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedTimes>::LinearAccessBit, int, DerivedTimes, unsigned int >::getCoeff(timesIn, 0)),
-    each(nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::LinearAccessBit, int, DerivedEach, unsigned int >::getCoeff(timesEach, 0)) {
-
+  template<typename Derived1, typename DerivedEach> // timesIn can always be int here because if it is non-int this code isn't used
+  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedEach &each) {
     repClass<IndexReturn, Derived1> repObj(A1,
-					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedTimes>::LinearAccessBit, int, DerivedTimes, unsigned int >::getCoeff(timesIn, 0),
+					   timesIn,
 					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::LinearAccessBit, int, DerivedEach, unsigned int >::getCoeff(each, 0));
     return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
   }
-  template<typename Derived1>
-  static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int reps, int each, int length_out) {
-    repClass<IndexReturn, Derived1> repObj(A1, reps, each, length_out);
+  
+  template<typename Derived1, typename DerivedLengthOut, typename DerivedEach>
+    static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedLengthOut &length_out, const DerivedEach &eachIn) {
+    repClass<IndexReturn, Derived1> repObj(A1, timesIn,
+					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::LinearAccessBit, int, DerivedEach, unsigned int >::getCoeff(eachIn, 0),
+					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedLengthOut>::LinearAccessBit, int, DerivedLengthOut, unsigned int >::getCoeff(length_out, 0));
     return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
   }
 };

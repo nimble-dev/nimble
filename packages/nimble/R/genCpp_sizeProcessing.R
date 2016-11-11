@@ -305,7 +305,7 @@ sizeRep <- function(code, symTab, typeEnv) {
 
     ##    if((!inherits(code$args[[1]], 'exprClass')) || code$args[[1]]$nDim != 1) stop(exprClassProcessingErrorMsg(code, paste0('First argument to rep() must be a vector for now.')), call. = FALSE)
     includesLengthOut <- length(code$args) > 3
-    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim != 0 && !includesLengthOut) {
+    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim != 0 && !includesLengthOut) { ## times is a vector and length.out not provided
         if(!(code$caller$name %in% assignmentOperators)) {
             asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
         }
@@ -315,7 +315,7 @@ sizeRep <- function(code, symTab, typeEnv) {
         code$nDim <- 1
         code$toEigenize <- 'yes'
         return(asserts)
-    }##stop(exprClassProcessingErrorMsg(code, paste0('NIMBLE does not compile rep() with a vector \"times\" argument yet.')), call. = FALSE)
+    }
     
     if(code$type == 'double') code$name <- 'nimRepd' ## this change could get moved to genCpp_generateCpp 
     if(code$type == 'integer') code$name <- 'nimRepi'
@@ -325,23 +325,32 @@ sizeRep <- function(code, symTab, typeEnv) {
     ## Since these will go into sizeExprs, which are then processed as R expressions, then as exprClasses but not fully size processed,
     ## any expression should be lifted
     if(includesLengthOut) { ## there is a "length.out" argument        ## need to lift length.out if it is more than a name or constant
-        if(inherits(code$args[[4]], 'exprClass')) {
-            if(!is.name(code$args[[4]])) 
-                asserts <- c(asserts, sizeInsertIntermediate(code, 4, symTab, typeEnv))
-            code$sizeExprs <- list( parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]])
+        if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim > 0) stop(exprClassProcessingErrorMsg(code, paste0('times argument to rep() must be scalar is length.out is also provided.')), call. = FALSE)
+        if(inherits(code$args[[3]], 'exprClass')) { ## if length.out is present, it is argument 3
+            if(!is.name(code$args[[3]])) 
+                asserts <- c(asserts, sizeInsertIntermediate(code, 3, symTab, typeEnv))
+            if(code$args[[3]]$nDim > 0)
+                code$sizeExprs <- list( parse(text = paste0(nimDeparse(code$args[[3]]),'[1]'), keep.source = FALSE)[[1]])
+            else
+                code$sizeExprs <- list( parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]])
         } else {
-            code$sizeExprs <- list(code$args[[4]])
+            code$sizeExprs <- list(code$args[[3]])
         }
-    } else {
+    } else { ## length.out absent, so times is second and each is third
         for(i in 2:3) {
             if(inherits(code$args[[i]], 'exprClass'))
                 if(!is.name(code$args[[i]])) 
                     asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
         }
+        part2 <- nimDeparse(code$args[[2]])
+        if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$nDim > 0) part2 <- paste0(part2, '[1]')
+        part3 <- nimDeparse(code$args[[3]])
+        if(inherits(code$args[[3]], 'exprClass')) if(code$args[[3]]$nDim > 0) part3 <- paste0(part3, '[1]')
+
         thisSizeExpr <- substitute( (AAA_) * (BBB_) * (CCC_),
                                    list(AAA_ = if(xIsExpr) productSizeExprs(code$args[[1]]$sizeExprs) else 1,
-                                        BBB_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
-                                        CCC_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]] ))
+                                        BBB_ = parse(text = part2, keep.source = FALSE)[[1]],
+                                        CCC_ = parse(text = part3, keep.source = FALSE)[[1]] ))
         code$sizeExprs <- list(thisSizeExpr)
     }
     code$nDim <- 1
