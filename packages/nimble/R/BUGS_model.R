@@ -659,7 +659,7 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                       if(returnType == 'names') {
                                           if(returnScalarComponents)
                                               return(modelDef$maps$elementNames[depIDs])
-                                          retVal <- modelDef$maps$nodes[depIDs]
+                                          retVal <- modelDef$maps$nodeNames[depIDs]
                                           return(retVal)
                                       }
                                       if(!(returnType %in% c('ids', 'names')))
