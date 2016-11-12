@@ -265,8 +265,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
-            if(code[[i]][[1]] == '~') 
+            if(code[[i]][[1]] == '~') {
                 code[[i]] <- replaceDistributionAliases(code[[i]])
+                checkUserDefinedDistribution(code[[i]])
+            }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
 
@@ -305,6 +307,14 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+# check if distribution is defined and if not, attempt to register it
+checkUserDefinedDistribution <- function(code) {
+    dist <- as.character(code[[3]][[1]])
+    if(!dist %in% distributions$namesVector && (!exists('distributions', nimbleUserNamespace) || dist %in% nimbleUserNamespace$distributions$namesVector))
+        registerDistributions(dist)
+}
+        
 
 replaceDistributionAliases <- function(code) {
     dist <- as.character(code[[3]][[1]])

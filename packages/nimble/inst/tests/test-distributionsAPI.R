@@ -234,21 +234,6 @@ rdirchmulti <- nimbleFunction(
                 return(rmulti(1, size = size, prob = p))
 })
 
-try(test_that("Test of registerDistributions for multivariate distribution",
-              expect_silent(registerDistributions('ddirchmulti'))))
-
-# won't be correct because haven't used registerDistributions such that it's noted as discrete
-## try(test_that("Test of isDiscrete for user-defined ddirchmulti",
-##                                                    expect_identical(isDiscrete('ddirchmulti'), TRUE,
-##                                                                                                                                               info = "isDiscrete says ddirchmulti is not discrete")))
-
-output <- c(1,1,0); names(output) <- c('value', 'alpha', 'size')
-
-try(test_that("Test of getDimension, value and params, for user-defined ddirchmulti",
-              expect_equal(getDimension('ddirchmulti', includeParams = TRUE), output,
-                               info = "incorrect param dimensions for ddirchmulti")))
-
-
 code <- nimbleCode({
     for(i in 1:n)
                                         # likelihood 
@@ -264,6 +249,19 @@ alphaInits <- rbind(c(10, 30, 100, 3), c(12, 15, 15, 8))
 
 m <- nimbleModel(code, constants = const,
                   inits = list(alpha = alphaInits))
+
+# won't be correct because haven't used registerDistributions such that it's noted as discrete
+## try(test_that("Test of isDiscrete for user-defined ddirchmulti",
+##                                                    expect_identical(isDiscrete('ddirchmulti'), TRUE,
+##                                                                                                                                               info = "isDiscrete says ddirchmulti is not discrete")))
+
+output <- c(1,1,0); names(output) <- c('value', 'alpha', 'size')
+
+try(test_that("Test of getDimension, value and params, for user-defined ddirchmulti",
+              expect_equal(getDimension('ddirchmulti', includeParams = TRUE), output,
+                               info = "incorrect param dimensions for ddirchmulti")))
+
+
 set.seed(0)
 try(test_that("Test of use of ddirchmulti in R model",
               expect_silent(m$simulate('y'))))
