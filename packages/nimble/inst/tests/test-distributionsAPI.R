@@ -49,6 +49,9 @@ rmyexp <- nimbleFunction(
 try(test_that("Test of registerDistributions with character string",
               expect_silent(registerDistributions('dmyexp'))))
 
+try(test_that("Test of registerDistributions with character string for missing distribution",
+              expect_error(registerDistributions('dfoo'))))
+
 try(test_that("Test of isUserDefined",
                                                                  expect_identical(isUserDefined('dmyexp'), TRUE,
                                                                                                                                     info = "isUserDefined says dmyexp is not user-defined")))
@@ -112,6 +115,22 @@ code <- nimbleCode({
 m <- nimbleModel(code, data = list(y = rnorm(10)),
                  constants = list(zeroes = rep(0,2), prec = diag(rep(1,2))))
 
+code2 <- nimbleCode({
+    for(i in 1:10)
+        y[i] ~ dnorm(mu, sd = sigma)
+    mu ~ dnorm(0, 1)
+    sigma ~ T(dgamma(a, 1), 0, 5)
+    a ~ dgamma(1, 1)
+    z <- mu + 3
+    u ~ dmyexp(a)
+    w <- u + 3
+    x[1:2] ~ dmnorm(zeroes[1:2], prec[1:2, 1:2])
+    yy ~ dpois(a)
+})
+
+m2 <- nimbleModel(code2, data = list(y = rnorm(10)),
+                 constants = list(zeroes = rep(0,2), prec = diag(rep(1,2))))
+
 out <- c(rep(TRUE, 10), FALSE, TRUE)
 names(out) <- m$expandNodeNames(c('y', 'mu', 'w'))
 
@@ -146,6 +165,15 @@ names(out) <- m$expandNodeNames(vars)
 try(test_that("Test of isBinary model method",
               expect_identical(m$isBinary(vars), out,
                                info = "incorrect results from isBinary")))
+
+vars <- c('y', 'yy', 'w', 'x')
+out <- c(rep(FALSE, 10), FALSE, NA, FALSE)
+names(out) <- m$expandNodeNames(vars)
+
+try(test_that("Test of isBinary model method",
+              expect_identical(m2$isBinary(vars), out,
+                               info = "incorrect results from isBinary")))
+
 
 vars <- c('y', 'yy', 'w', 'x', 'uu', 'z')
 out <- !c(rep(FALSE, 10), FALSE, TRUE, FALSE, FALSE, TRUE)
