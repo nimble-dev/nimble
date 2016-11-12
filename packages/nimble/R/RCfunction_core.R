@@ -113,7 +113,6 @@ nf_checkDSLcode <- function(code) {
             nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, is.nf, inputIsName = TRUE) |
                                      sapply(nonDSLinR, is.rcf, inputIsName = TRUE))]
             warning(paste0("Detected possible use of R functions in nimbleFunction run code. These functions must defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLinR, collapse = ', '), "."))
-            print(code)
         }
         if(length(nonDSLnonR))
             warning(paste0("These functions must be defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLnonR, collapse = ', '), "."))
