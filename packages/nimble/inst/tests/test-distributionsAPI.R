@@ -2,12 +2,14 @@
 
 context('Testing distributions API')
 
+# tests of distribution functions applied to distribution name
+
 try(test_that("Test that requesting unknown distribution returns error",
               expect_error(getDistributionInfo('dfoobar'),
     info = "No error when 'dfoobar' provided to getDistributionInfo")))
 
 try(test_that("Test that getDistributionInfo returns parameter dimension",
-                 expect_identical(getDistributionInfo('dnorm')$tau$nDim, 0,
+                 expect_identical(getDistributionInfo('dnorm')$types$tau$nDim, 0,
                  info = "getDistributionInfo doesn't correctly give dimension of tau in dnorm")))
 
 try(test_that("Test that requesting unknown distribution returns error",
@@ -52,8 +54,8 @@ try(test_that("Test of isUserDefined",
                                                                                                                                     info = "isUserDefined says dmyexp is not user-defined")))
 
 try(test_that("Test of pqDefined",
-                                 expect <- identical(pqDefined('dmyexp'), FALSE,
-                                 info = "isUserDefined says pqDefined is TRUE for dmyexp")))
+                                 expect_identical(pqDefined('dmyexp'), FALSE,
+                                 info = "pqDefined says pqDefined is TRUE for dmyexp")))
 
 try(test_that("Test of pqDefined",
                                                   expect_identical(pqDefined('dnorm'), TRUE,
@@ -89,6 +91,8 @@ try(test_that("Test of getParamNames",
 try(test_that("Test of getParamNames",
            expect_identical(getParamNames('dnorm', includeValue = FALSE), c('mean','sd','tau','var'),
                                        info = "incorrect param names without value from getParamNames for dnorm")))
+
+# test of distribution functions applied to model variables/nodes
 
 code <- nimbleCode({
     for(i in 1:10)
@@ -204,4 +208,71 @@ try(test_that("Test of getDimension, value only",
 try(test_that("Test of getDimension, value only",
               expect_error(m$getDimension('x', params = 'foo'),
                                info = "not detecting missing param in getDimension")))
+
+# test of user-defined distributions
+
+ddirchmulti <- nimbleFunction(
+            run = function(x = double(1), alpha = double(1), size = double(0),
+                log = integer(0, default = 0)) {
+
+                returnType(double(0))
+                logProb <- lgamma(size) - sum(lgamma(x)) + 
+                        lgamma(sum(alpha)) -
+                        sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - 
+                        lgamma(sum(alpha) + size)
+                if(log) return(logProb)
+                        else return(exp(logProb))
+})
+
+rdirchmulti <- nimbleFunction(
+            run = function(n = integer(0), alpha = double(1), 
+                size = double(0)) {
+
+                returnType(double(1))
+                if(n != 1) print("rdirchmulti only allows n = 1; using n = 1.")
+                p <- rdirch(1, alpha)
+                return(rmulti(1, size = size, prob = p))
+})
+
+try(test_that("Test of registerDistributions for multivariate distribution",
+              expect_silent(registerDistributions('ddirchmulti'))))
+
+# won't be correct because haven't used registerDistributions such that it's noted as discrete
+## try(test_that("Test of isDiscrete for user-defined ddirchmulti",
+##                                                    expect_identical(isDiscrete('ddirchmulti'), TRUE,
+##                                                                                                                                               info = "isDiscrete says ddirchmulti is not discrete")))
+
+output <- c(1,1,0); names(output) <- c('value', 'alpha', 'size')
+
+try(test_that("Test of getDimension, value and params, for user-defined ddirchmulti",
+              expect_equal(getDimension('ddirchmulti', includeParams = TRUE), output,
+                               info = "incorrect param dimensions for ddirchmulti")))
+
+
+code <- nimbleCode({
+    for(i in 1:n)
+                                        # likelihood 
+        y[i,1:K] ~ ddirchmulti(alpha[topic[i], 1:K], N[i])
+                                        # priors for hyperparameters
+    for(tp in 1:M)
+        for(k in 1:K)
+            alpha[tp, k] ~ dunif(0, 100)
+})
+const <- list(M = 2, K = 4, n = 5, N = rep(1000, 5),
+      topic = c(1, 1, 1, 2, 2))
+alphaInits <- rbind(c(10, 30, 100, 3), c(12, 15, 15, 8))
+
+m <- nimbleModel(code, constants = const,
+                  inits = list(alpha = alphaInits))
+set.seed(0)
+try(test_that("Test of use of ddirchmulti in R model",
+              expect_silent(m$simulate('y'))))
+try(test_that("Test of use of ddirchmulti in R model",
+              expect_equal(m$y[5,4], 149, info = "unexpected result from use of ddirchmulti")))
+set.seed(0)
+cm <- compileNimble(m)
+try(test_that("Test of use of ddirchmulti in R model",
+              expect_silent(cm$simulate('y'))))
+try(test_that("Test of use of user-defined ddirchmulti",
+              expect_identical(m$y, cm$y, info = "R and compiled model values from ddirchmulti not the same")))
 

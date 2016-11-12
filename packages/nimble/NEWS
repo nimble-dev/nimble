@@ -4,6 +4,11 @@ USER LEVEL CHANGES
 
 -- dmulti(), rmulti(), dcat() and rcat() now allow 'probs' argument with arbitrary non-negative values and internally normalize these so they sum to one, to be consistent with R's multinom behavior.
 
+-- cleaned up and added functionality to get information about a distribution based on its name or to get distributional information about model nodes or variables. This functionality is expected to be useful in querying nodes in nimbleFunction setup code when writing algorithms. See help on getDistributionInfo for getting information based on distribution name and help on modelBaseClass for getting distribution information about nodes and variables.
+
+-- increased flexibility with regard to registering user-defined distributions. Distributions can be registered simply by either (1) using the distribution in BUGS code or (2) using registerDistributions() with the the name of the nimbleFunction density function. Parameters and dimensions are determined automatically from the nimbleFunction density function. However, in cases where users want to provide alternative parameterizations, the range of the distribution, or indication the distribution is discrete, registerDistributions should be used in its full functionality.
+
+
                            CHANGES IN VERSION 0.6-1 (October 2016)
 
 DEVELOPER LEVEL CHANGES

@@ -62,12 +62,14 @@ Details: The return value is logical vector with an element for each node indica
 '
 
                                       nodeNames <- nodes  # needed so don't have local assignment into 'nodes'
-                                      nms <- nodeNames	
-				      if(is.character(nodeNames))
+                                      nms <- nodeNames
+				      if(is.character(nodeNames)) {
+                                          nms <- expandNodeNames(nodeNames, unique = FALSE)
                                           nodeNames = expandNodeNames(nodeNames, returnType = 'ids', unique = FALSE)
-                                             out <- modelDef$maps$isEndNode_byGID[nodeNames]
-                                            names(out) <- nms
-                                            return(out)
+                                      }
+                                      out <- modelDef$maps$isEndNode_byGID[nodeNames]                                      
+                                      names(out) <- nms
+                                      return(out)
                                   },
                                   
                                   ## returns the type of one or more node names, e.g., 'stoch' or 'determ'
