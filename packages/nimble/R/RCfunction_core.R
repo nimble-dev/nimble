@@ -110,8 +110,9 @@ nf_checkDSLcode <- function(code) {
         nonDSLnonR <- nonDSLcalls[!objInR]
         nonDSLinR <- nonDSLcalls[objInR]
         if(length(nonDSLinR)) {
-            nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, is.nf, inputIsName = TRUE) |
-                                     sapply(nonDSLinR, is.rcf, inputIsName = TRUE))]
+            # problem with passing inputIsName when run through roxygen...
+            nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, function(x) is.nf(x, inputIsName = TRUE)) |
+                                     sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)))]
             warning(paste0("Detected possible use of R functions in nimbleFunction run code. These functions must defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLinR, collapse = ', '), "."))
         }
         if(length(nonDSLnonR))

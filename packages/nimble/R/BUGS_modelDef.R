@@ -437,7 +437,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
         callName <- deparse(BUGSdecl$valueExpr[[1]])
         if(!(callName %in% c("T", "I"))) {
             truncated <- FALSE
-            boundExprs <- getDistribution(callName)$range
+            boundExprs <- getDistributionInfo(callName)$range
         } else {
             truncated <- TRUE
             if(callName == "I")
@@ -447,10 +447,10 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
             newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
 
             distName <- as.character(newCode[[3]][[1]])
-            if(!getDistributionsInfo('pqAvail')[distName]) 
+            if(!getAllDistributionsInfo('pqAvail')[distName]) 
                 stop("Cannot implement truncation for ", distName, "; 'p' and 'q' functions not available.")
 
-            distRange <- getDistribution(distName)$range
+            distRange <- getDistributionInfo(distName)$range
             boundExprs <- distRange
 
         
