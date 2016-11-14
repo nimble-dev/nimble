@@ -8,6 +8,11 @@ USER LEVEL CHANGES
 
 -- Added getBound() functionality that provides dynamic access to lower and upper bounds on a node (from R or in the DSL), based on the underlying distribution and any user-defined truncation. Functionality is analogous to getParam(). Now used in the reflection sampler.
 
+-- cleaned up and added functionality to get information about a distribution based on its name or to get distributional information about model nodes or variables. This functionality is expected to be useful in querying nodes in nimbleFunction setup code when writing algorithms. See help on getDistributionInfo for getting information based on distribution name and help on modelBaseClass for getting distribution information about nodes and variables.
+
+-- user-defined distributions can be used in BUGS code without registration, which will be done automatically behind the scenes. Parameters and dimensions are determined automatically from the nimbleFunction density function. However, in cases where users want to provide alternative parameterizations, the range of the distribution, or indication the distribution is discrete, registerDistributions should be used in its full functionality.
+
+
                            CHANGES IN VERSION 0.6-1 (October 2016)
 
 DEVELOPER LEVEL CHANGES

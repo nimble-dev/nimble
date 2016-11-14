@@ -89,21 +89,21 @@ asCol <- function(x) {
 #' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 makeParamInfo <- function(model, nodes, param) {
     ## updating to allow nodes to be a vector. getParam only works for a scalar but in a case like nodes[i] the param info is set up for the entire vector.
-    distInfo <- getDistributionList(model$getNodeDistribution(nodes))
+    distNames <- model$getDistribution(nodes)
 
     ## if(length(nodes) != 1) stop(paste0("Problem with nodes argument while setting up getParam.  Should be length 1 but was: ", paste0(nodes, collapse = ",")))
-    ## distInfo <- getDistributionList(model$getNodeDistribution(nodes))[[1]]
+    ## distInfo <- getDistributionList(model$getDistribution(nodes))[[1]]
     ## ## If nodes is invalid, an error from the above line will be trapped in parseEvalNumericMany
     if(length(param) != 1) stop(paste0(paste0('Problem with param(s) ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
                  '\nOnly one parameter is allowed.')))
     ## paramID <- distInfo$paramIDs[param]
     ## if(length(paramID)!=1 | any(is.na(paramID))) stop(paste0('Problem with param ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
     ##                                    '\nThe parameter name is not valid.'))
-    paramIDvec <- unlist(lapply(distInfo, function(x) x$paramIDs[param]))
-    typeVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$type))
-    nDimVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$nDim))
-    if(length(unique(typeVec)) != 1 | length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
-    ans <- c(list(paramID = paramIDvec), distInfo[[1]]$types[[param]])
+    paramIDvec <- sapply(distNames, getParamID, param)
+    typeVec <- sapply(distNames, getType, param)
+    nDimVec <- sapply(distNames, getDimension, param)
+    if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
+    ans <- c(list(paramID = paramIDvec), type = typeVec[1], nDim = nDimVec[1])
     class(ans) <- 'getParam_info'
     ans
 }
