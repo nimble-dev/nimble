@@ -527,7 +527,7 @@ getDistributionList <- function(dists) {
 #' @param includeValue: a logical indicating whether to return the string 'value', which is the name of the node value
 #'
 #' @author Christopher Paciorek
-#' @aliases isUserDefined pqDefined getType getParamNames
+#' @aliases isUserDefined pqDefined isDiscrete getDimension getType getParamNames
 #' @export
 #' @details
 #' NIMBLE provides various functions to give information about a BUGS distribution. In some cases, functions of the same name and similar functionality operate on the node(s) of a model as well (see \code{help(modelBaseClass)}).

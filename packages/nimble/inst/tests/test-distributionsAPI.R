@@ -36,6 +36,7 @@ dmyexp <- nimbleFunction(
                             if(log) return(logProb)
                     else return(exp(logProb))
         })
+assign('dmyexp', dmyexp, envir = .GlobalEnv)
 
 rmyexp <- nimbleFunction(
         run = function(n = integer(0), rate = double(0, default = 1)) {
@@ -44,7 +45,7 @@ rmyexp <- nimbleFunction(
                     dev <- runif(1)
                             return(-log(1-dev) / rate)
         })
-
+assign('rmyexp', rmyexp, envir = .GlobalEnv)
 
 try(test_that("Test of registerDistributions with character string",
               expect_silent(registerDistributions('dmyexp'))))
@@ -251,6 +252,7 @@ ddirchmulti <- nimbleFunction(
                 if(log) return(logProb)
                         else return(exp(logProb))
 })
+assign('ddirchmulti', ddirchmulti, envir = .GlobalEnv)
 
 rdirchmulti <- nimbleFunction(
             run = function(n = integer(0), alpha = double(1), 
@@ -261,6 +263,7 @@ rdirchmulti <- nimbleFunction(
                 p <- rdirch(1, alpha)
                 return(rmulti(1, size = size, prob = p))
 })
+assign('rdirchmulti', rdirchmulti, envir = .GlobalEnv)
 
 code <- nimbleCode({
     for(i in 1:n)
