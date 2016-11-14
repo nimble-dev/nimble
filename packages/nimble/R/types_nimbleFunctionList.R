@@ -16,7 +16,14 @@ nimPointerList <- setRefClass('nimPointerList', ## A base class for a list of ob
                                   )
                                )
                               
-
+#' Create a list of nimbleFunctions
+#' 
+#' Create an empty list of nimbleFunctions that all will inherit from a base class.
+#' 
+#' @author NIMBLE development team
+#' @export
+#' @details
+#' See the User Manual for information about creating and populating a \code{nimbleFunctionList}.
 nimbleFunctionList <- setRefClass('nimbleFunctionList',
                                   contains = 'nimPointerList',
                                   methods = list(

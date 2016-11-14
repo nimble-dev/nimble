@@ -483,7 +483,7 @@ addSamplerToConf <- function(Rmodel, conf, nodeGroup) {
         conf$addSampler(target = nodeGroup, type = 'binary', print = FALSE); return()
     }
     if(Rmodel$isDiscrete(nodeGroup)) {
-        if(Rmodel$getNodeDistribution(nodeGroup) == 'dmulti') {
+        if(Rmodel$getDistribution(nodeGroup) == 'dmulti') {
             conf$addSampler(target = nodeGroup, type = 'RW_multinomial', print = FALSE); return()
         }
         conf$addSampler(target = nodeGroup, type = 'slice', print = FALSE); return()

@@ -127,5 +127,4 @@ class nodeFun : public NamedObjects {
   }
 };
 
-
 #endif

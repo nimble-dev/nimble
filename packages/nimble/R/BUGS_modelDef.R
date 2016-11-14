@@ -264,8 +264,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
-            if(code[[i]][[1]] == '~') 
+            if(code[[i]][[1]] == '~') {
                 code[[i]] <- replaceDistributionAliases(code[[i]])
+                checkUserDefinedDistribution(code[[i]])
+            }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
 
@@ -304,6 +306,16 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+# check if distribution is defined and if not, attempt to register it
+checkUserDefinedDistribution <- function(code) {
+    dist <- as.character(code[[3]][[1]])
+    if(dist %in% c("T", "I")) 
+        dist <- as.character(code[[3]][[2]][[1]])
+    if(!dist %in% distributions$namesVector && (!exists('distributions', nimbleUserNamespace) || dist %in% nimbleUserNamespace$distributions$namesVector))
+        registerDistributions(dist)
+}
+        
 
 replaceDistributionAliases <- function(code) {
     dist <- as.character(code[[3]][[1]])
@@ -440,6 +452,7 @@ modelDefClass$methods(processBoundsAndTruncation = function() {
 
             distRange <- getDistribution(distName)$range
             boundExprs <- distRange
+
         
             if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") 
                 boundExprs$lower <- BUGSdecl$valueExpr[[3]]
@@ -549,8 +562,8 @@ modelDefClass$methods(reparameterizeDists = function() {
         code <- BUGSdecl$code   ## grab the original code
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         distName <- as.character(valueExpr[[1]])
-        if(!(distName %in% getDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
-        distRule <- getDistribution(distName)
+        if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
+        distRule <- getDistributionInfo(distName)
         numArgs <- length(distRule$reqdArgs)
         if(numArgs==0) next; ## a user-defined distribution might have 0 arguments
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
@@ -633,7 +646,7 @@ modelDefClass$methods(reparameterizeDists = function() {
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         newValueExpr <- valueExpr
-        defaultParamExprs <- getDistribution(as.character(newValueExpr[[1]]))$altParams
+        defaultParamExprs <- getDistributionInfo(as.character(newValueExpr[[1]]))$altParams
         if(length(defaultParamExprs) == 0)   next   ## skip if there are no altParams defined in distributions
         
         defaultParamNames <- names(defaultParamExprs)
@@ -728,7 +741,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             allReplaceable <- TRUE
         }
         if(allReplaceable) {
-            if(!any(code[[1]] == getDistributionsInfo('namesVector'))) {
+            if(!any(code[[1]] == getAllDistributionsInfo('namesVector'))) {
                 callChar <- as.character(code[[1]])
                 if(exists(callChar, constEnv)) {
                     # if(callChar != ':') {
@@ -844,7 +857,7 @@ modelDefClass$methods(addIndexVarsToDeclInfo = function() {
 modelDefClass$methods(genSymbolicParentNodes = function() {
     ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
     
-    nimFunNames <- getDistributionsInfo('namesExprList')
+    nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)){
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
@@ -854,7 +867,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
     
-    nimFunNames <- getDistributionsInfo('namesExprList')
+    nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)) {
         declInfo[[i]]$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
@@ -2175,21 +2188,18 @@ modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     list(declIDs = declIDs, unrolledIndicesMatrixRows = rowIndices)
 })
 
-modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE){
     if(length(nodeName) == 0)
         return(NULL)
+    ## If unique is FALSE, we still use unique for each element of nodeName
+    ## but we allow non-uniqueness across elements in the result
     if(nodeFunctionID) {
-        ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-        ## old system had IDs for RHSonly things here.  This puts that back in for now.
-        ##output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
-        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
+        if(unique)
+            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
+        else
+            output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly), unique))
     } else {
-        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
-        ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
-        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
         output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
-        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
     }
     output <- output2
     return(output[!is.na(output)])
@@ -2276,6 +2286,19 @@ parseEvalNumericMany <- function(x, env) {
        ,
         error = function(cond) {
            parseEvalNumericManyHandleError(cond, x, env)
+        }
+    )
+}
+
+parseEvalNumericManyList <- function(x, env) {
+    withCallingHandlers(
+        if(length(x) > 1) {
+            eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
+        } else 
+            eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
+       ,
+        error = function(cond) {
+            parseEvalNumericManyHandleError(cond, x, env)
         }
     )
 }

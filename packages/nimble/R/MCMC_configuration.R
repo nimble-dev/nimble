@@ -169,7 +169,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                                                                  nodes <- model$expandNodeNames(nodes)            }
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            isNodeEnd <- model$isNodeEnd(nodes)
+            isEndNode <- model$isEndNode(nodes)
 
 
             if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy2(nodes)
@@ -178,12 +178,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
             	node <- nodes[i]
                 discrete <- model$isDiscrete(node)
                 binary <- model$isBinary(node)
-                nodeDist <- model$getNodeDistribution(node)
+                nodeDist <- model$getDistribution(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-                if(isNodeEnd[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
+                if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                 if(nodeLength > 1) {

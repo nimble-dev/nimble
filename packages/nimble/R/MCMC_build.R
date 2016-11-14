@@ -15,7 +15,7 @@
 #'
 #' \code{niter}: The number of iterations to run the MCMC.
 #'
-#' \code{reset}: Boolean specifying whether to reset the model and stored samples.  This will simulate into any stochastic nodes with value NA, propagate values through any deterministic nodes, and calculate all model probabilities. This will also reset the internal stored MCMC samples. Specifying \code{reset=FALSE} allows the MCMC algorithm to continue running from where it left off. Generally, \code{reset=FALSE} should only be used when the MCMC has already been run (default = TRUE).
+#' \code{reset}: Boolean specifying whether to reset the internal MCMC sampling algorithms to their initial state (in terms of self-adapting tuning parameters), and begin recording posterior sample chains anew. Specifying \code{reset=FALSE} allows the MCMC algorithm to continue running from where it left off, appending additional posterior samples to the already existing sample chains. Generally, \code{reset=FALSE} should only be used when the MCMC has already been run (default = TRUE).
 #'
 #' \code{simulateAll}: Boolean specifying whether to simulate into all stochastic nodes.  This will overwrite the current values in all stochastic nodes (default = FALSE).
 #'

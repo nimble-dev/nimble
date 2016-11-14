@@ -1,8 +1,8 @@
 #include "nimble/NamedObjects.h"
 #include "nimble/Utils.h"
 #include "nimble/Model.h"
+#include "nimble/dllFinalizer.h"
 #include "R.h"
-
 
 void* NamedObjects::getObjectPtr( string &name ) {
   //  cout<<name<<"\n";
@@ -104,14 +104,29 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 	return(ans);
 }
 
+SEXP register_numberedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
+  //  std::cout<< "In register_numberedObjects_Finalizer\n";
+  //  R_RegisterCFinalizerEx(Snp, &numberedObjects_Finalizer, TRUE);
+  RegisterNimbleFinalizer(Snp, Dll, &numberedObjects_Finalizer, Slabel);
+  return(Snp);
+}
 
 void numberedObjects_Finalizer(SEXP Snp){
+  //  std::cout<< "In numberedObjects_Finalizer\n";
   NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);
 }
 
+SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
+  //  std::cout<< "In register_namedObjects_Finalizer\n";
+  //R_RegisterCFinalizerEx(Snp, &namedObjects_Finalizer, TRUE);
+  RegisterNimbleFinalizer(Snp, Dll, &namedObjects_Finalizer, Slabel);
+  return(Snp);
+}
+
 void namedObjects_Finalizer(SEXP Snp){
+  //  std::cout<< "In namedObjects_Finalizer\n";
   NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);
@@ -122,7 +137,8 @@ SEXP newNumberedObjects(){
 	NumberedObjects* np = new NumberedObjects;
 	SEXP rPtr = R_MakeExternalPtr(np, R_NilValue, R_NilValue);
 	PROTECT(rPtr);
-	R_RegisterCFinalizerEx(rPtr, &numberedObjects_Finalizer, TRUE);
+	// register from R to ensure finalizer will never be unloaded with this dll
+	//R_RegisterCFinalizerEx(rPtr, &numberedObjects_Finalizer, TRUE);
 	UNPROTECT(1);
 	return(rPtr);
 }

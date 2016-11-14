@@ -10,6 +10,7 @@ Make sure src/Makevars.win is present.
 R CMD build nimble
 R CMD INSTALL nimble_${VERSION}.tar.gz
 # before running prep_pkg make sure there is a config.R in nimble/R - copy over from another repos if needed but it should not be in the repository per DTL instructions (or do in separate copy of repository: make configure; cd nimble; ./configure - note that if do this the configure step will have an error in building libnimble.a and that a bunch of files will be created in src that should not be in the repository (all but *.in and nimble.cpp do not belong)
+
 ./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
 
 (this seems to be obviated by new prep_pkg... as of v0.6)
@@ -31,7 +32,7 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="compareMCMCs copy declare distributions dsl_dists filtering getBound getParam getDependencies math mcem mcmc models setData size trunc user"
+types="compareMCMCs copy declare distributions distributionsAPI dsl_dists filtering getBound getParam getDependencies math mcem mcmc models setData size trunc user"
 for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
@@ -84,6 +85,7 @@ git push --tags    ## this is how you push *tags* to the remote
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
+and change to requireNamespace('rstan') from require('rstan')
 
 ### building binaries
 
@@ -115,3 +117,33 @@ if you're in the directory with the batch file (build.bat), then just type "buil
 Not clear (should check with DTL) if the resulting installed package can then simply be zipped and if that is equivalent to what CRAN does when it builds the Windows binary.
 
 NOTE: as of v0.6, mcmc testing seemed to run fine on Savio (SciLinux) and run but give compiler warnings related to Eigen on NERSC Edison (SUSE).
+
+
+==========
+Solaris testing
+
+Can use VirtualBox Solaris VM on Paciorek smeagol Linux box. See solaris.sh for notes
+
+==========
+sanitizer testing
+
+CRAN seems only to use UBSAN (undefined behavior sanitizer) though Kurt Hornik indicated that he built R with ASAN (address sanitizer) and UBSAN
+
+to set up R-devel with SAN:
+
+# configuration for ASAN, UBSAN, SAN (UBSAN+ASAN)
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-asan 'CC=/tmp/clang/bin/clang -fsanitize=address -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=address  -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+ ./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-san 'CC=/tmp/clang/bin/clang -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr  -fno-omit-frame-pointer' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero,vptr -fno-omit-frame-pointer' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack
+
+./configure --prefix=/usr/local/R-devel_2016-09-12-clang39-ubsan 'CC=/tmp/clang/bin/clang -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CFLAGS=-pipe -std=gnu99 -Wall -pedantic -g' 'F77=gfortran' 'FFLAGS=-pipe -Wall -pedantic -g' 'CXX=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'CXXFLAGS=-pipe -Wall -pedantic -g' 'CXX1X=/tmp/clang/bin/clang++ -fsanitize=undefined -fno-sanitize=float-divide-by-zero,vptr' 'FC=gfortran' 'FCFLAGS=-pipe -Wall -pedantic -g' --with-cairo --with-jpeglib --with-readline --with-tcltk --with-lapack 
+
+on paciorek smeagol box:
+need to turn vm.overcommit_memory to 2 on my Linux box or building R will fail because conftest will not run as ASAN tries to allocate a ridiculous amount of memory.
+
+export LD_LIBRARY_PATH=/tmp/clang/lib:$LD_LIBRARY_PATH
+
+CRAN might use valgrind (Cliff suggested this). If so, may want to check package examples with:
+R -d valgrind --vanilla < nimble.Rcheck/mypkg-Ex.R
+R -d "valgrind --tool=memcheck --leak-check=full" --vanilla <
+   nimble.Rcheck/mypkg-Ex.R

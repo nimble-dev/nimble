@@ -28,7 +28,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
     className <- name
     ## We make this look like a nimbleFunction in relevants ways for compilation
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
-    methodList <- lapply(methodList, nfMethodRC)
+    methodList <- lapply(methodList, nfMethodRC, check = FALSE)
 ##    CclassName <- as.character(NA) ##Rname2CppName(className)
     generatorFunction <- function() {}
     force(contains)
@@ -47,6 +47,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
 #' @param globalSetup For internal use only
 #' @param contains An optional object returned from \link{nimbleFunctionVirtual} that defines arguments and returnTypes for \code{run} and/or methods, to which the current nimbleFunction must conform
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
+#' @param check Boolean indicating whether to check the run (DSL) code for function calls that NIMBLE cannot compile. Checking can be turned off for all calls to \code{nimbleFunction} using \code{nimbleOptions(checkNimbleFunction = FALSE)}.
 #' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
 #'
 #' @author NIMBLE development team
@@ -71,6 +72,7 @@ nimbleFunction <- function(setup         = NULL,
                            globalSetup   = NULL,
                            contains      = NULL,
                            name          = NA,
+                           check         = getNimbleOption('checkNimbleFunction'),
                            where         = getNimbleFunctionEnvironment()
                            ) {
 
@@ -79,7 +81,7 @@ nimbleFunction <- function(setup         = NULL,
     if(is.null(setup)) {
         if(length(methods) > 0) stop('Cannot provide multiple methods if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
         if(!is.null(contains)) stop('Cannot provide a contains argument if there is no setup function.  Use "setup = function(){}" or "setup = TRUE" if you need a setup function that does not do anything', call. = FALSE)
-        return(RCfunction(run, name = name))
+        return(RCfunction(run, name = name, check = check))
     }
    
     virtual <- FALSE
@@ -89,7 +91,7 @@ nimbleFunction <- function(setup         = NULL,
     className <- name
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
-    methodList <- lapply(methodList, nfMethodRC)
+    methodList <- lapply(methodList, nfMethodRC, check = check)
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
     declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
@@ -99,7 +101,7 @@ nimbleFunction <- function(setup         = NULL,
     nfRefClass    <- eval(nfRefClassDef)
 
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
-    .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, nf_assignmentLHSvars(body(globalSetup)))
+    .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
     ## create a list to hold all specializations (instances) of this nimble function.  The following objects are accessed in environment(generatorFunction) in the future
     ## create the generator function, which is returned from nimbleFunction()
@@ -170,7 +172,7 @@ nf_createRefClassDef_fields <- function(setup, methodList, globalSetup, declared
 nf_createSetupOutputNames <- function(setup, methodList, declaredSetupOutputNames, globalSetup) {
     setupOutputNames <- character(0)
     setupOutputNames <- c(setupOutputNames, names(formals(setup)))   # add all setupArgs to potential setupOutputs
-    setupOutputNames <- c(setupOutputNames, nf_assignmentLHSvars(body(setup)), nf_assignmentLHSvars(body(globalSetup)))  # add all variables on LHS of <- in setup to potential setupOutputs
+    setupOutputNames <- c(setupOutputNames, nf_assignmentLHSvars(body(setup)), if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character())  # add all variables on LHS of <- in setup to potential setupOutputs
     setupOutputNames <- intersect(setupOutputNames, nf_createAllNamesFromMethodList(methodList))
     setupOutputNames <- c(setupOutputNames, declaredSetupOutputNames)
     setupOutputNames <- unique(setupOutputNames)

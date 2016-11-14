@@ -10,7 +10,7 @@
 #include "NimArrBase.h"
 #include "NimArr.h"			
 #include "ModelClassUtils.h"
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include <Rinternals.h>
 #include "R.h"
 
@@ -635,32 +635,31 @@ SingleModelValuesAccess* cMakeSingleModelValuesAccessor(NimVecType* varPtr, int 
 SingleVariableAccess* cMakeSingleVariableAccessor(NimArrType** varPtr, int beginIndex, int endIndex);
 
 extern "C" {
-  SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex);
-  SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex);
+  //  SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex);
+  //  SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex);
 
   SEXP getModelAccessorValues(SEXP accessor);
   SEXP getMVAccessorValues(SEXP accessor);
 
   //SEXP newNodeFxnVector(SEXP size);
-  SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
+  //SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
   //SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size);
   //  SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index);
   //SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll);
 	
-  SEXP newManyVariableAccessor(SEXP size);
+  //  SEXP newManyVariableAccessor(SEXP size);
   SEXP addSingleVariableAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
   SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size);
   SEXP removeModelVariableAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
 	
-  SEXP newManyModelValuesAccessor(SEXP size);
+  //  SEXP newManyModelValuesAccessor(SEXP size);
   SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size);
   SEXP addSingleModelValuesAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
   SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
 	 
   SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
 
-  SEXP parseVar(SEXP Sinput);
-  SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr);
+  //  SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr);
   SEXP getVarAndIndices(SEXP Sstring);
   SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim);
   SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim);
@@ -680,12 +679,13 @@ extern "C" {
   SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj);
   SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_LP_GIDs, SEXP S_LP_numberedObj);
 
-  SEXP new_SingleModelValuesAccessor_NumberedObjects();
-  SEXP new_SingleModelVariablesAccessor_NumberedObjects();
+  //  SEXP new_SingleModelValuesAccessor_NumberedObjects();
+  //  SEXP new_SingleModelVariablesAccessor_NumberedObjects();
 }
-void  SingleVA_Finalizer ( SEXP Sv );
-void  SingleMVA_Finalizer ( SEXP Sv );
+//void  SingleVA_Finalizer ( SEXP Sv );
+//void  SingleMVA_Finalizer ( SEXP Sv );
 void NodeVector_Finalizer( SEXP Sv);
 void ManyVariable_Finalizer(SEXP Sv);
 void ManyMV_Finalizer(SEXP Sv);
-#endif 			
+
+#endif
