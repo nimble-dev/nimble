@@ -312,8 +312,10 @@ checkUserDefinedDistribution <- function(code) {
     dist <- as.character(code[[3]][[1]])
     if(dist %in% c("T", "I")) 
         dist <- as.character(code[[3]][[2]][[1]])
-    if(!dist %in% distributions$namesVector && (!exists('distributions', nimbleUserNamespace) || dist %in% nimbleUserNamespace$distributions$namesVector))
-        registerDistributions(dist)
+    if(!dist %in% distributions$namesVector) 
+        if(!exists('distributions', nimbleUserNamespace) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
+            registerDistributions(dist)
+        }
 }
         
 

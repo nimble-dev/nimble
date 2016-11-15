@@ -526,7 +526,7 @@ getDistributionList <- function(dists) {
     stop(paste0('In getDistributions, distributions named ', paste(notFound, sep = ',', collapse = ","), ' could not be found.')) 
 }
 
-
+# note that getDimension and isDiscrete are not included as aliases below because they have the same name as modelBaseClass methods so we are having help for them direct to help(modelBaseClass) as we expect more usage of the modelBaseClass methods by users
 
 #' Get information about a distribution
 #'
@@ -543,7 +543,7 @@ getDistributionList <- function(dists) {
 #' @param includeValue: a logical indicating whether to return the string 'value', which is the name of the node value
 #'
 #' @author Christopher Paciorek
-#' @aliases isUserDefined pqDefined isDiscrete getDimension getType getParamNames
+#' @aliases isUserDefined pqDefined getType getParamNames
 #' @export
 #' @details
 #' NIMBLE provides various functions to give information about a BUGS distribution. In some cases, functions of the same name and similar functionality operate on the node(s) of a model as well (see \code{help(modelBaseClass)}).
@@ -633,7 +633,6 @@ BUGSdistToRdist <- function(BUGSdists, dIncluded = FALSE) {
     if(!dIncluded) return(stripPrefix(results)) else return(results)
 }
 
-#' @rdname getDistributionInfo
 #' @export
 isDiscrete <- function(dist) {
     if(is.na(dist)) return(NA)
@@ -662,7 +661,6 @@ pqDefined <- function(dist) {
 } 
 
 
-#' @rdname getDistributionInfo
 #' @export
 getDimension <- function(dist, params = NULL, valueOnly = is.null(params) &&
                          !includeParams, includeParams = !is.null(params)) {
