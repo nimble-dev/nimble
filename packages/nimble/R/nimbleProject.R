@@ -613,7 +613,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                              else ## they should all be new in this case anyway
                                                  ans[[ uGN ]] <- thisAns
                                          } else {
-                                             ans[thisBool] <- if(is.list(thisAns)) thisAns else list(thisAns)
+                                             ans[thisBool] <- thisAns ##if(is.list(thisAns)) thisAns else list(thisAns)
                                          }
                                      }
                                      ans
@@ -666,39 +666,64 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          }
                                      }
 ##                                     Cname <- nf_getRefClassObject(funList[[1]])$Cname
-                                     
+
                                      if(!exists('name', envir = nf_getRefClassObject(funList[[1]]), inherits = FALSE)) stop('Something is wrong if by this point in compileNimbleFunction there is no name.', call. = FALSE)
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
 
-                                     if(!nfCompInfos[[generatorName]]$written && control$writeFiles) {
-                                         cppProj <- cppProjectClass(dirName = dirName)
-                                         cppProjects[[ generatorName ]] <<- cppProj
-                                         if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(generatorName))
-                                         cppProj$addClass(cppClass, generatorName, filename)
-                                         cppProj$writeFiles(filename)
-                                         nfCompInfos[[generatorName]]$written <<- TRUE
-                                     } else {
-                                         if(!control$writeFiles) return(cppProj)
-                                         cppProj <- cppProjects[[ generatorName ]]
-                                     }
-                                     if(!nfCompInfos[[generatorName]]$cppCompiled && control$compileCpp) {
-                                         if(control$compileCpp) {
-                                             cppProj$compileFile(filename)
-                                             nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
-                                         } else writeLines('Skipping compilation because control$compileCpp is FALSE')
-                                     } else {if(!control$compileCpp) return(cppProj)}#writeLines('Using previously compiled C++ code.')
-                                     if(!nfCompInfos[[generatorName]]$loaded && control$loadSO) {
-                                         cppProj$loadSO(filename)
-                                         nfCompInfos[[generatorName]]$loaded <<- TRUE
-                                     } else{if(!control$loadSO) return(cppProj)}# writeLines('Using previously loaded compilation unit.')
-                                     
-                                     ans <- vector('list', length(funList))
 
-                                     for(i in seq_along(funList)) {
-                                         ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll, asTopLevel = TRUE)
+                                     ## At this point we are ready to write, compile, load and instantiate.
+                                     ## However the system for tracking these steps is not perfect.
+                                     ## Specifically, if another nimbleFunction containing an object of the current nimbleFunction
+                                     ## has already been compiled, then the files for the current one will have been written and
+                                     ## compiled, but that status is not recorded in its nfCompInfos object.
+                                     ## Also there could be other objects in the current funList that have not been instantiated.
+                                     ## As a kludgy fix, we determine whether any of the objects already have a .CobjectInterface
+                                     ## If they do, we skip over writing, compiling and loading steps.
+                                     hasCobjectInterface <- unlist(lapply(funList, function(x) {
+                                         RCO <- nf_getRefClassObject(x)
+                                         !(class(RCO$.CobjectInterface) == 'uninitializedField' || is.null(RCO$.CobjectInterface))
+                                     }))
+
+                                     if(!any(hasCobjectInterface)) {
+                                         if(!nfCompInfos[[generatorName]]$written && control$writeFiles) {
+                                             cppProj <- cppProjectClass(dirName = dirName)
+                                             cppProjects[[ generatorName ]] <<- cppProj
+                                             if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(generatorName))
+                                             cppProj$addClass(cppClass, generatorName, filename)
+                                             cppProj$writeFiles(filename)
+                                             nfCompInfos[[generatorName]]$written <<- TRUE
+                                         } else {
+                                             if(!control$writeFiles) return(cppProj)
+                                             cppProj <- cppProjects[[ generatorName ]]
+                                         }
+                                         if(!nfCompInfos[[generatorName]]$cppCompiled && control$compileCpp) {
+                                             if(control$compileCpp) {
+                                                 cppProj$compileFile(filename)
+                                                 nfCompInfos[[generatorName]]$cppCompiled <<- TRUE
+                                             } else writeLines('Skipping compilation because control$compileCpp is FALSE')
+                                         } else {if(!control$compileCpp) return(cppProj)}#writeLines('Using previously compiled C++ code.')
+                                         if(!nfCompInfos[[generatorName]]$loaded && control$loadSO) {
+                                             cppProj$loadSO(filename)
+                                             nfCompInfos[[generatorName]]$loaded <<- TRUE
+                                         } else{if(!control$loadSO) return(cppProj)}# writeLines('Using previously loaded compilation unit.')
                                      }
-                                     if(length(ans) == 1) ans[[1]] else ans
+                                     ans <- vector('list', length(funList))
+                                     
+                                     for(i in seq_along(funList)) {
+                                         if(!(hasCobjectInterface[i]))
+                                             ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$buildCallable(funList[[i]], cppProj$dll, asTopLevel = TRUE)
+                                         else {
+                                             ## A curious possibility: If a nf was built first nested in another nf,
+                                             ## its interface may be a Cmulti interface, which is not directly user friendly
+                                             ## But if we are here via compileNimbleFunction, the user has included it in the compile request and wants
+                                             ## a full interface
+                                             ## Hence we call promote interface which checks and builds a new one if needed
+                                             ans[[i]] <- nfCompInfos[[generatorName]]$cppDef$promoteCallable(funList[[i]]) ##nf_getRefClassObject(funList[[i]])$.CobjectInterface
+                                         }
+                                     }
+                                     ##if(length(ans) == 1) ans[[1]] else ans
+                                     ans
                                  }
                                  )
                              )
