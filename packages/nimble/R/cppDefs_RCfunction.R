@@ -253,7 +253,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                      conditionalLineList <- generateConditionalLines(RCfunProc$compileInfo$returnSymbol,
                                                                                                 'S_returnValue_1234', RCfunProc$compileInfo$origLocalSymTab,
                                                                                                 argNames, objects, TRUE)
-                                                      for(i in 1:numArgs){
+                                                      for(i in seq_along(argNames)){
                                                         conditionalLineList <- c(conditionalLineList,
                                                                                 generateConditionalLines(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
                                                                                                          paste0('S_', argNames[i]), RCfunProc$compileInfo$origLocalSymTab,
@@ -453,18 +453,21 @@ generateConditionalLines <- function(LHSSymTab, LHSSName,
         conditionalText <- if(checkLineCounter == 1) "if(" else "else if("
         copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) PROTECT(", LHSSName, " = ",
                             paste0('S_', argNames[i]), ");")
-        # conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
-        #                                                    list(COPYTEXT = copyText))
-        conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(paste0(conditionalText, 'printf("aaa");')))
+        # copyText <- paste0(conditionalText,LHSSymTab$name, ".equalsPtr(", argNames[i], '))     printf("A pointer is %p ", ARG1_argList9a_.realPtr);')
+        conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
+                                                           list(COPYTEXT = copyText))
         checkLineCounter <- checkLineCounter+1
       }
     }
   }
   conditionalText <- if(checkLineCounter > 1) "else " else ""
   RHSSymTab <- if(isArg) objects$getSymbolObject(LHSSName, inherits = TRUE) else objects$getSymbolObject(LHSSName)
-  # conditionalLines <- c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab, 
-  #                                                             returnCall = returnCall, conditionalText = conditionalText))
-  conditionalLines <- c(conditionalLines, substitute(cppLiteral(paste0(conditionalText, 'printf("bbb");'))))
+  conditionalLines <- c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
+                                                              returnCall = returnCall, conditionalText = conditionalText))
+  # copyText <- paste0(conditionalText, '  printf("B value is %p ", ARG2_argList9b_.realPtr);')
+  # 
+  # conditionalLines <- c(conditionalLines, substitute(cppLiteral(COPYTEXT),
+  #                                                    list(COPYTEXT = copyText)))
                                                      
   
   return(conditionalLines)

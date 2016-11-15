@@ -342,6 +342,12 @@ nlTestFunc9 <- nimbleFunction(
   }
 )
 
+
+testTypes <- list(vars = c('nlMatrix'), types = c('double(0)'))
+testListDef9 <- nimble:::nimbleList(testTypes)
+testList9a <- testListDef9$new(nlMatrix = 1)
+testList9b <- testListDef9$new(nlMatrix = 2)
+
 testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
 testListDef9 <- nimble:::nimbleList(testTypes)
 testList9a <- testListDef9$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
