@@ -2,6 +2,8 @@
 
 USER LEVEL CHANGES
 
+-- Added ability to add conjugate (Gibbs) samplers to particular nodes in an MCMC configuration object using: conf$addSampler(nodeName, 'conjugate').
+
 -- dmulti(), rmulti(), dcat() and rcat() now allow 'probs' argument with arbitrary non-negative values and internally normalize these so they sum to one, to be consistent with R's multinom behavior.
 
 -- Added optional (turned on by default) checking of nimbleFunction run code to warn users if they are calling functions (in particular, R functions) that are not part of the NIMBLE DSL.
