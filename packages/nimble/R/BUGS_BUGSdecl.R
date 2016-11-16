@@ -287,7 +287,7 @@ BUGSdeclClass$methods(genBounds = function() {
             boundExprs <<- as.list(RHSreplaced[boundNames])
             if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
                 distName <- as.character(RHSreplaced[[1]])
-                distRange <- getDistribution(distName)$range
+                distRange <- getDistributionInfo(distName)$range
                 if(is.numeric(boundExprs$lower) && is.numeric(distRange$lower) &&
                    is.numeric(boundExprs$upper) && is.numeric(distRange$upper) &&
                    boundExprs$lower <= distRange$lower && boundExprs$upper >= distRange$upper)  # user specified bounds irrelevant

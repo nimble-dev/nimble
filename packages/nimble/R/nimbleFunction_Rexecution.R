@@ -181,7 +181,7 @@ makeBoundInfo <- function(model, nodes, bound) {
     # note: would be good to work through this and makeParamInfo to ensure that both give good error messages and handle situation where user tries to pass in multiple nodes or multiple params/bounds
     # note: also, it should be fine to combine symbolTable and sizeProcessing stuff for param and bound to avoid repetitive code
     if(length(nodes) > 1) stop("'getBound' only set up to work with a single node'") # I think this is consistent with current getParam behavior
-    distInfo <- getDistributionList(model$getNodeDistribution(nodes))
+    distInfo <- getDistributionList(model$getDistribution(nodes))
     boundIDvec <- c('lower'=1,'upper'=2)[bound]
     typeVec <- unlist(lapply(distInfo, function(x) x$types[['value']]$type)) # should always be 'double'
     

@@ -13,7 +13,7 @@ gpScalar <- nimbleFunction(
     })
 
 testGetParam <- function(distCall) {
-    dist <- nimble:::getDistribution(as.character(distCall[[1]]))
+    dist <- nimble:::getDistributionInfo(as.character(distCall[[1]]))
     code <- substitute({x ~ DISTCALL}, list(DISTCALL = distCall))
     m <- nimbleModel( code = code )
     cm <- compileNimble(m)

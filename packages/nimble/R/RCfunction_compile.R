@@ -84,7 +84,8 @@ RCfunction <- function(f, name = NA, returnCallable = TRUE, check) {
     if(returnCallable) nfm$generateFunctionObject(keep.nfMethodRC = TRUE) else nfm
 }
 
-is.rcf <- function(x) {
+is.rcf <- function(x, inputIsName = FALSE) {
+    if(inputIsName) x <- get(x)
     if(inherits(x, 'nfMethodRC')) return(TRUE)
     if(is.function(x)) {
         if(is.null(environment(x))) return(FALSE)
