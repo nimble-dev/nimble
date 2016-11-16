@@ -44,6 +44,8 @@ modelBaseClass <- setRefClass('modelBaseClass',
                                   
                                   getGraph = function() graph,
                                   setGraph = function(value) graph <<- value,
+                                  plotGraph = function() igraph::plot.igraph(graph),
+                                  plot      = function() plotGraph(),
                                   getModelDef = function() modelDef,
                                   setModelDef = function(value) modelDef <<- value,
                                   getMaps = function(mapName, all = FALSE){
