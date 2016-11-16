@@ -73,6 +73,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
+                                   browser()
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
@@ -182,6 +183,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      copyLineCounter <- 1
+                                     browser()
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -249,13 +251,11 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                  RCfunProc$compileInfo$returnSymbol$name <<- LHSvar$name
                                                  checkLineCounter <- 1
                                                    ## if so, we point the return nimbleList to the argument nimbleList
-                                                   browser()
                                                      conditionalLineList <- generateConditionalLines(RCfunProc$compileInfo$returnSymbol,
                                                                                                 'S_returnValue_1234', RCfunProc$compileInfo$origLocalSymTab,
                                                                                                 argNames, objects, TRUE)
                                                       for(i in seq_along(argNames)){
-                                                        conditionalLineList <- c(conditionalLineList,
-                                                                                generateConditionalLines(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
+                                                        conditionalLineList <- c(conditionalLineList, generateConditionalLines(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
                                                                                                          paste0('S_', argNames[i]), RCfunProc$compileInfo$origLocalSymTab,
                                                                                                          argNames, objects, FALSE))
                                                       }
@@ -451,8 +451,8 @@ generateConditionalLines <- function(LHSSymTab, LHSSName,
          (argSymTab$nlProc$nimbleListObj$className == LHSSymTab$nlProc$nimbleListObj$className  &&
           paste0('S_', argNames[i]) != LHSSName)){
         conditionalText <- if(checkLineCounter == 1) "if(" else "else if("
-        copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) PROTECT(", LHSSName, " = ",
-                            paste0('S_', argNames[i]), ");")
+        copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) ", if(returnCall == TRUE) "PROTECT(", LHSSName, " = ",
+                            paste0('S_', argNames[i]), if(returnCall == TRUE)")", ";")
         # copyText <- paste0(conditionalText,LHSSymTab$name, ".equalsPtr(", argNames[i], '))     printf("A pointer is %p ", ARG1_argList9a_.realPtr);')
         conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
                                                            list(COPYTEXT = copyText))
@@ -468,7 +468,7 @@ generateConditionalLines <- function(LHSSymTab, LHSSName,
   # 
   # conditionalLines <- c(conditionalLines, substitute(cppLiteral(COPYTEXT),
   #                                                    list(COPYTEXT = copyText)))
-                                                     
+  #                                                    
   
   return(conditionalLines)
 }

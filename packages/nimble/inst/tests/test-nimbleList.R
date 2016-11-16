@@ -336,6 +336,7 @@ nlTestFunc9 <- nimbleFunction(
   setup = function(){
   },
   run = function(argList9a = testListDef9(), argList9b = testListDef9()){
+    argList9a$nlMatrix <- 5
     argList9a <- argList9b
     returnType(testListDef9())
     return(argList9a)
@@ -343,10 +344,6 @@ nlTestFunc9 <- nimbleFunction(
 )
 
 
-testTypes <- list(vars = c('nlMatrix'), types = c('double(0)'))
-testListDef9 <- nimble:::nimbleList(testTypes)
-testList9a <- testListDef9$new(nlMatrix = 1)
-testList9b <- testListDef9$new(nlMatrix = 2)
 
 testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
 testListDef9 <- nimble:::nimbleList(testTypes)
@@ -370,3 +367,8 @@ test_that("return objects are nimbleLists",
             expect_identical(is.nl(CnimbleList), TRUE)
           })
 
+
+testFunc <- function(lista, listb){
+  lista$nlMatrix = listb$nlMatrix
+}
+testFunc(testList9a, testList9b)
