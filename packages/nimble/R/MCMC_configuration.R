@@ -222,7 +222,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult) {
+        addConjugateSampler = function(conjugacyResult, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -238,7 +238,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
-            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, name = nameToPrint)
+            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
         addSampler = function(target, type = 'RW', control = list(), print = FALSE, name) {
@@ -267,6 +267,12 @@ Invisibly returns a list of the current sampler configurations, which are sample
 
             nameProvided <- !missing(name)
             if(is.character(type)) {
+                if(type == 'conjugate') {
+                    conjugacyResult <- model$checkConjugacy2(target)[[target]]
+                    if(!is.null(conjugacyResult)) {
+                        return(addConjugateSampler(conjugacyResult = conjugacyResult, print = print))
+                    } else stop(paste0('Cannot assign conjugate sampler to non-conjugate node: \'', target, '\''))
+                }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))
