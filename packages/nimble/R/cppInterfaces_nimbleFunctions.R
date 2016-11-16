@@ -192,7 +192,6 @@ makeNFBindingFields <- function(symTab, cppNames) {
                 next
             }
             warning("Warning: scalar datatype not current supported for variable ", vn, "\n", call. = FALSE)
-            browser()
             return(NULL)
         }
         warning('Warning in trying to build interface: symbol ', vn, ' not understood.', call. = FALSE)
@@ -343,7 +342,7 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                            nimbleInternalFunctions$nimbleFinalize(.basePtr)
                                        },
                                        initialize = function(dll = NULL, project = NULL, test = TRUE, ...) {
-                                       		neededObjects <<- list()
+                                           neededObjects <<- list()
                                            if(!test) {
                                                dll <<- dll
                                                if(is.null(project)) {
@@ -351,8 +350,8 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                                }
                                                nimbleProject <<- project
                                            }
-                                                callSuper(...)
-                                            },
+                                           callSuper(...)
+                                       },
                                        getDefinition = function()
                                            nimble:::getDefinition(.self),
                                        setRobject = function(Robj) {
@@ -763,18 +762,22 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
     defaults$basePtrCall <- basePtrCall
 
     # substitute on parsed text string to avoid CRAN issues with .Call registration
-    fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, ...){		#cModel removed from here
+    fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, ..., existingBasePtr = NULL){		#cModel removed from here
         defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE) ## in case this instance was not used during nfProc$process
         callSuper(dll = dll, project = project, test = FALSE, ...)
-        basePtrCall <- if(is.character(defaults$basePtrCall)) {
-            if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
-            lookupSymbol(defaults$basePtrCall)
-        } else defaults$basePtrCall
-        # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
-        .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-        regLabel <- try(get('name', envir = nfObject), silent = TRUE)
-        if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
-        eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll[['handle']], regLabel))
+        if(is.null(existingBasePtr)) {
+            basePtrCall <- if(is.character(defaults$basePtrCall)) {
+                if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
+                lookupSymbol(defaults$basePtrCall)
+            } else defaults$basePtrCall
+                                        # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
+            .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+            regLabel <- try(get('name', envir = nfObject), silent = TRUE)
+            if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
+            eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll[['handle']], regLabel))
+        } else {
+            .basePtr <<- existingBasePtr
+        }
         # .basePtr <<- .Call(basePtrCall)
         cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr))
         cppCopyTypes <<- defaults$cppCT
@@ -783,12 +786,21 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
         for(vn in seq_along(cppNames) ){
             .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn], dll = dll)
         }
-         if(!missing(nfObject)) {
+        if(!missing(nfObject)) { ## I don't know when nfObject could be missing in a correct usage
+            if(!is.null(existingBasePtr)) {
+                oldCobjectInterface <- nfObject$.CobjectInterface
+                if(!is.list(oldCobjectInterface)) stop('Problem promoting nimbleFunction interface from CmultiInterface to full interface')
+            }
             setRobject(nfObject)
             ##buildNeededObjects()
-            neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
+            if(!is.null(existingBasePtr)) {
+                neededObjects <<- oldCobjectInterface[[1]]$getNeededObjects( oldCobjectInterface[[2]] )
+                oldCobjectInterface[[1]]$clearInstance( oldCobjectInterface[[2]] )
+            } else {
+                neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
+                nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self, dll)
+            }
             ##copyFromRobject()
-            nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self, dll)
         }
     }, list())
 
@@ -809,9 +821,9 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
                                               where = where),
                     list(FIELDS = NFBF, ML = methodsList ) ) )
 
-    ans <- function(nfObject, dll = NULL, project) {
+    ans <- function(nfObject, dll = NULL, project, existingBasePtr = NULL) {
     	wrappedInterfaceBuild <- newClass$new
-    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project) ## Only purpose of wrappedInterfaceBuild is to have a helpful name for Rprof that is not "new"
+    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project, existingBasePtr = existingBasePtr) ## Only purpose of wrappedInterfaceBuild is to have a helpful name for Rprof that is not "new"
 #        newClass$new(nfObject, defaults, dll = dll, project = project)
     }
     return(ans)
@@ -901,6 +913,21 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              },
+                                             clearInstance = function(index) { ## this is called when a Cmulti interface was built and later needs to be replaced with a full interface
+                                                 ## But we cannot remove entries from the lists because the indices of remaining objects must not change
+                                                 ## therefore we use the mylist[i] <- list(NULL) method
+                                                 basePtrList[index] <<- list(NULL)
+                                                 RobjectList[index] <<- list(NULL)
+                                                 neededObjectsList[index] <<- list(NULL)
+                                                 invisible(NULL)
+                                             },
+                                             getNeededObjects = function(index) {
+                                                 neededObjectsList[[index]]
+                                             },
+                                             getBasePtr = function(index) {
+                                                 basePtrList[[index]]
+                                             },
+
                                              callMemberFunction = function(index, funName, ...) {
                                                  callEnv[[funName]](..., .basePtr = basePtrList[[index]])
                                              },
