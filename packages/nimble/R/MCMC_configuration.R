@@ -172,7 +172,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             isEndNode <- model$isEndNode(nodes)
 
 
-            if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy2(nodes)
+            if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
 
             for(i in seq_along(nodes)) {
             	node <- nodes[i]
@@ -268,7 +268,7 @@ Invisibly returns a list of the current sampler configurations, which are sample
             nameProvided <- !missing(name)
             if(is.character(type)) {
                 if(type == 'conjugate') {
-                    conjugacyResult <- model$checkConjugacy2(target)[[target]]
+                    conjugacyResult <- model$checkConjugacy(target)[[target]]
                     if(!is.null(conjugacyResult)) {
                         return(addConjugateSampler(conjugacyResult = conjugacyResult, print = print))
                     } else stop(paste0('Cannot assign conjugate sampler to non-conjugate node: \'', target, '\''))

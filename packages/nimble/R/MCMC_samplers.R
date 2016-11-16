@@ -481,7 +481,7 @@ sampler_crossLevel <- nimbleFunction(
         lowConjugateGetLogDensityFunctions <- nimbleFunctionList(getPosteriorDensityFromConjSampler_virtual)
         for(iLN in seq_along(lowNodes)) {
             lowNode <- lowNodes[iLN]
-            conjugacyResult <- model$checkConjugacy2(lowNode)[[lowNode]]
+            conjugacyResult <- model$checkConjugacy(lowNode)[[lowNode]]
             if(is.null(conjugacyResult))     stop('non-conjugate lowNode \'', lowNode, '\' in crossLevel updater')
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)

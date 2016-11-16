@@ -112,7 +112,7 @@ conjugacyRelationshipsClass <- setRefClass(
             }
             names(conjugacys) <<- unlist(lapply(conjugacys, function(cr) cr$prior))
         },
-        checkConjugacy2 = function(model, nodeIDs) {
+        checkConjugacy = function(model, nodeIDs) {
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
             declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
@@ -175,34 +175,37 @@ conjugacyRelationshipsClass <- setRefClass(
             }
             if(length(ansList) > 0) do.call('c', ansList) else ansList
         },
-        checkConjugacy = function(model, nodes) {
-            ## checks conjugacy of multiple nodes at once.
-            ## the return object is a named list, containing the conjugacyResult lists
-            ## *only* for nodes which are conjugate
-            conjugacyResultsAll <- list()
-            declarationIDs <- model$getDeclID(nodes)
-            nodesSplitByDeclaration <- split(nodes, declarationIDs)
-            for(theseNodes in nodesSplitByDeclaration)
-                conjugacyResultsAll <- c(conjugacyResultsAll, checkConjugacy_singleDeclaration(model, theseNodes))
-            return(conjugacyResultsAll)
-        },
-        checkConjugacy_singleDeclaration = function(model, nodes) {
-            ##browser()   ## removed by DT, July 2015, not sure why this was here
-            if(model$isTruncated(nodes[1])) return(list())   ## we say non-conjugate if the targetNode is truncated
-            dist <- model$getDistribution(nodes[1])
-            if(!dist %in% names(conjugacys)) return(list())
-            conjugacyObj <- conjugacys[[dist]]
-            ## temporary -- but works fine!
-            retList <- list()
-            for(node in nodes) {
-                result <- conjugacyObj$checkConjugacy(model, node)
-                if(!is.null(result))   retList[[node]] <- result
-            }
-            return(retList)
-            ## END temporary -- but works fine!
-            ## next line: this would be the new, more efficient approach -- not yet implemented
-            ##conjugacyObj$checkConjugacyAll(model, nodes) -- not yet implemented
-        },
+        ## older version of checkConjugacy(), which checks nodes one at a time (much slower)
+        ## deprecated
+        ## -DT Nov. 2016
+        ##checkConjugacy = function(model, nodes) {
+        ##    ## checks conjugacy of multiple nodes at once.
+        ##    ## the return object is a named list, containing the conjugacyResult lists
+        ##    ## *only* for nodes which are conjugate
+        ##    conjugacyResultsAll <- list()
+        ##    declarationIDs <- model$getDeclID(nodes)
+        ##    nodesSplitByDeclaration <- split(nodes, declarationIDs)
+        ##    for(theseNodes in nodesSplitByDeclaration)
+        ##        conjugacyResultsAll <- c(conjugacyResultsAll, checkConjugacy_singleDeclaration(model, theseNodes))
+        ##    return(conjugacyResultsAll)
+        ##},
+        ##checkConjugacy_singleDeclaration = function(model, nodes) {
+        ##    ##browser()   ## removed by DT, July 2015, not sure why this was here
+        ##    if(model$isTruncated(nodes[1])) return(list())   ## we say non-conjugate if the targetNode is truncated
+        ##    dist <- model$getDistribution(nodes[1])
+        ##    if(!dist %in% names(conjugacys)) return(list())
+        ##    conjugacyObj <- conjugacys[[dist]]
+        ##    ## temporary -- but works fine!
+        ##    retList <- list()
+        ##    for(node in nodes) {
+        ##        result <- conjugacyObj$checkConjugacy(model, node)
+        ##        if(!is.null(result))   retList[[node]] <- result
+        ##    }
+        ##    return(retList)
+        ##    ## END temporary -- but works fine!
+        ##    ## next line: this would be the new, more efficient approach -- not yet implemented
+        ##    ##conjugacyObj$checkConjugacyAll(model, nodes) -- not yet implemented
+        ##},
         ## update May 2016: old (non-dynamic) system is no longer supported -DT
         ##generateConjugateSamplerDefinitions = function() {
         ##    conjugateSamplerDefinitions <- list()
@@ -257,7 +260,7 @@ conjugacyClass <- setRefClass(
             dependentDistNames <<- names(dependents)
         },
 
-        ## used by new checkConjugacy2 system
+        ## used by new checkConjugacy() system
         ## see checkConjugacy for more explanation of each step
         checkConjugacyOneDep = function(model, targetNode, depNode) {
             if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
@@ -275,6 +278,10 @@ conjugacyClass <- setRefClass(
             return(paste0('dep_', depNodeDist))
         },
         ## workhorse for checking conjugacy
+        ## is this still used?????? (since transition to the "new" checkConjugacy, which
+        ## checks multiple nodes from BUGS declarations at a time)
+        ## should investigate if still used.  I'm honestly not certain.
+        ## -DT Nov. 2016
         checkConjugacy = function(model, targetNode) {
             if(model$getDistribution(targetNode) != prior)     return(NULL)    # check prior distribution of targetNode
             control <- list()

@@ -696,6 +696,15 @@ inits: A named list.  The names of list elements must correspond to model variab
                                       }
                                   },
                                   
+
+                                  ## original (older) version of checkConjugacy(), deprecated
+                                  ## DT, Nov. 2016
+                                  ##checkConjugacy = function(nodeVector) {
+                                  ##    if(missing(nodeVector))
+                                  ##        nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
+                                  ##    nodeVector <- expandNodeNames(nodeVector)
+                                  ##    nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
+                                  ##},
                                   checkConjugacy = function(nodeVector) {
                                       '
 Determines whether or not the input nodes appear in conjugate relationships
@@ -706,15 +715,9 @@ nodeVector: A character vector specifying one or more node or variable names.  I
 
 Details: The return value is a named list, with an element corresponding to each conjugate node.  The list names are the conjugate node names, and list elements are the control list arguments required by the corresponding MCMC conjugate sampler functions.  If no model nodes are conjugate, an empty list is returned.
 '
-                                      if(missing(nodeVector))
-                                          nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
-                                      nodeVector <- expandNodeNames(nodeVector)
-                                      nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeVector)
-                                  },
-                                  checkConjugacy2 = function(nodeVector) {
                                       if(missing(nodeVector)) nodeVector <- getNodeNames(stochOnly=TRUE, includeData=FALSE)
                                       nodeIDs <- expandNodeNames(nodeVector, returnType = 'ids')
-                                      nimble:::conjugacyRelationshipsObject$checkConjugacy2(.self, nodeIDs)
+                                      nimble:::conjugacyRelationshipsObject$checkConjugacy(.self, nodeIDs)
                                   },
                                   checkBasics = function() {
                                       '
