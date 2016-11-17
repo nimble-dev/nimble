@@ -38,8 +38,34 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
   return(ans);
 }
 
+class EIGEN_EIGENCLASS : public NamedObjects, public pointedToBase {
+public:
+  double nlScalar;
+  NimArr<1, double> values;
+  NimArr<2, double> vectors;
+void  copyFromSEXP ( SEXP S_nimList_ );
+void  copyToSEXP ( SEXP S_nimList_ );
+SEXP  writeToSEXP (  );
+ EIGEN_EIGENCLASS (  );
+};
+
+
+// idea: use makeEigenTypeLabel() to generate template class to feed to function.  argument can then be 
 template<class derived1>
-MatrixXd EIGEN_EIGENVECS(const MatrixBase<derived1> &x) {
+nimSmartPtr<EIGEN_EIGENCLASS> EIGEN_EIGENVECS(const MatrixBase<derived1> &x) {
+	Map<MatrixXd> Eig_chol1(0,0,0);
+Map<MatrixXd> Eig_A(0,0,0);
+if(A.dim()[0] != A.dim()[1]) {
+ _nimble_global_output <<"Run-time size error: expected A to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
+}
+chol1.setSize(A.dim()[0], A.dim()[0]);
+new (&Eig_chol1) Map< MatrixXd >(chol1.getPtr(),A.dim()[0],A.dim()[0]);
+new (&Eig_A) Map< MatrixXd >(A.getPtr(),A.dim()[0],A.dim()[1]);
+Eig_chol1 = EIGEN_CHOL(Eig_A);
+return(chol1);
+}
+	
+  nimSmartPtr<EIGEN_EIGENCLASS> eigenClass = new EIGEN_EIGENCLASS;
   MatrixXd xcopy = x;	
   MatrixXd ans = EigenSolver<MatrixXd>(xcopy, true).eigenvectors().real();
   return(ans); 
