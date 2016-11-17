@@ -104,9 +104,9 @@ getMCEMRanges <- nimbleFunction(
 #' @param mcmcControl	list passed to \code{configureMCMC}, which builds the MCMC sampler. See \code{help(configureMCMC)} for more details
 #' @param boxConstraints list of box constraints for the nodes that will be maximized over. Each constraint is a list in which the first element is a character vector of node names to which the constraint applies and the second element is a vector giving the lower and upper limits.  Limits of \code{-Inf} or \code{Inf} are allowed.  Any nodes that are not given constrains will have their constraints automatically determined by NIMBLE
 #' @param buffer			A buffer amount for extending the boxConstraints. Many functions with boundary constraints will produce \code{NaN} or -Inf when parameters are on the boundary.  This problem can be prevented by shrinking the boundary a small amount. 
-#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.01. 
-#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.01.
-#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.01.
+#' @param alpha   probability of a type one error - here, the probability of accepting a parameter estimate that does not increase the likelihood.  Default is 0.25. 
+#' @param beta    probability of a type two error - here, the probability of rejecting a parameter estimate that does increase the likelihood.  Default is 0.25.
+#' @param gamma   probability of deciding that the algorithm has converged, that is, that the difference between two Q functions is less than C, when in fact it has not.  Default is 0.05.
 #' @param C      determines when the algorithm has converged - when C falls above a (1-gamma) confidence interval around the difference in Q functions from time point t-1 to time point t, we say the algorithm has converged. Default is 0.001.
 #' @param numReps number of bootstrap samples to use for asymptotic variance calculation. 
 #' @param verbose logical indicating whether to print additional logging information
@@ -160,8 +160,8 @@ getMCEMRanges <- nimbleFunction(
 #' # Could also use latentNodes = 'theta' and buildMCEM() would figure out this means 'theta[1:10]'
 #' 
 buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adaptInterval = 100),
-                      boxConstraints = list(), buffer = 10^-6, alpha = 0.01, beta = 0.01, 
-                      gamma = 0.01, C = 0.001, numReps = 300, verbose = TRUE) {
+                      boxConstraints = list(), buffer = 10^-6, alpha = 0.25, beta = 0.25, 
+                      gamma = 0.05, C = 0.001, numReps = 300, verbose = TRUE) {
   latentNodes = model$expandNodeNames(latentNodes)
   latentNodes <- intersect(latentNodes, model$getNodeNames(stochOnly = TRUE))
   allStochNonDataNodes = model$getNodeNames(includeData = FALSE, stochOnly = TRUE)
