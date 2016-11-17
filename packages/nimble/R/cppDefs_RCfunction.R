@@ -437,22 +437,17 @@ generateConditionalLines <- function(LHSSymTab, LHSSName,
                                      objects,  returnCall){
   checkLineCounter <- 1
   conditionalLines <- list()
-  startNum <- which(LHSSymTab$name == argNames)
-  isArg <- TRUE
-  if(length(startNum) != 1){ 
-    startNum = 1
-    isArg <- FALSE
-  }
+  isArg <- if(length(which(LHSSymTab$name == argNames) == 1)) TRUE else FALSE
   isList <- inherits(LHSSymTab, 'symbolNimbleList')
-  if(isList){
-    for(i in startNum:length(argNames)){
+  if(isList && returnCall){
+    for(i in seq_along(argNames)){
       argSymTab <- RHSNameSymTab$getSymbolObject(argNames[i])
       if(inherits(argSymTab, 'symbolNimbleList') &&
          (argSymTab$nlProc$nimbleListObj$className == LHSSymTab$nlProc$nimbleListObj$className  &&
           paste0('S_', argNames[i]) != LHSSName)){
         conditionalText <- if(checkLineCounter == 1) "if(" else "else if("
-        copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) ", if(returnCall == TRUE) "PROTECT(", LHSSName, " = ",
-                            paste0('S_', argNames[i]), if(returnCall == TRUE)")", ";")
+        copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) PROTECT(", LHSSName, " = ",
+                            paste0('S_', argNames[i]), ")", ";")
         # copyText <- paste0(conditionalText,LHSSymTab$name, ".equalsPtr(", argNames[i], '))     printf("A pointer is %p ", ARG1_argList9a_.realPtr);')
         conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
                                                            list(COPYTEXT = copyText))
