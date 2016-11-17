@@ -85,14 +85,14 @@ buildMCMC <- nimbleFunction(
             mvSamples2_offset <- 0
             resize(mvSamples,  niter/thin)
             resize(mvSamples2, niter/thin2)
-            samplerTimes <<- numeric(length(samplerFunctions))       ## default inititialization to zero
+            samplerTimes <<- numeric(length(samplerFunctions) + 1)       ## default inititialization to zero
         } else {
             mvSamples_offset  <- getsize(mvSamples)
             mvSamples2_offset <- getsize(mvSamples2)
             resize(mvSamples,  mvSamples_offset  + niter/thin)
             resize(mvSamples2, mvSamples2_offset + niter/thin2)
-            if(dim(samplerTimes)[1] != length(samplerFunctions))
-                samplerTimes <<- numeric(length(samplerFunctions))   ## first run: default inititialization to zero
+            if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)
+                samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
         }
         if(niter < progressBarLength+3) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
         if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }
@@ -120,7 +120,7 @@ buildMCMC <- nimbleFunction(
     methods = list(
         getTimes = function() {
             returnType(double(1))
-            return(samplerTimes)
+            return(samplerTimes[1:(length(samplerTimes)-1)])
         }),
     where = getLoadingNamespace()
 )
