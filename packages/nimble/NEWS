@@ -8,7 +8,7 @@ USER LEVEL CHANGES
 
 -- Added optional (turned on by default) checking of nimbleFunction run code to warn users if they are calling functions (in particular, R functions) that are not part of the NIMBLE DSL.
 
--- Added getBound() functionality that provides dynamic access to lower and upper bounds on a node (from R or in the DSL), based on the underlying distribution and any user-defined truncation. Functionality is analogous to getParam(). Now used in the reflection sampler.
+-- Added getBound() functionality that provides dynamic access to lower and upper bounds on a node (from R or in the DSL), based on the underlying distribution and any user-defined truncation. Functionality is analogous to getParam(). Now used in the reflection sampler and the MCEM algorithm.
 
 -- cleaned up and added functionality to get information about a distribution based on its name or to get distributional information about model nodes or variables. This functionality is expected to be useful in querying nodes in nimbleFunction setup code when writing algorithms. See help on getDistributionInfo for getting information based on distribution name and help on modelBaseClass for getting distribution information about nodes and variables.
 
