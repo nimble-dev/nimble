@@ -38,6 +38,7 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
   return(ans);
 }
 
+template<class T>
 class EIGEN_EIGENCLASS : public NamedObjects, public pointedToBase {
 public:
   double nlScalar;
@@ -50,22 +51,24 @@ SEXP  writeToSEXP (  );
 };
 
 
-// idea: use makeEigenTypeLabel() to generate template class to feed to function.  argument can then be 
 template<class derived1>
-nimSmartPtr<EIGEN_EIGENCLASS> EIGEN_EIGENVECS(const MatrixBase<derived1> &x) {
-	Map<MatrixXd> Eig_chol1(0,0,0);
-Map<MatrixXd> Eig_A(0,0,0);
-if(A.dim()[0] != A.dim()[1]) {
- _nimble_global_output <<"Run-time size error: expected A to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
-}
-chol1.setSize(A.dim()[0], A.dim()[0]);
-new (&Eig_chol1) Map< MatrixXd >(chol1.getPtr(),A.dim()[0],A.dim()[0]);
-new (&Eig_A) Map< MatrixXd >(A.getPtr(),A.dim()[0],A.dim()[1]);
-Eig_chol1 = EIGEN_CHOL(Eig_A);
-return(chol1);
-}
-	
-  nimSmartPtr<EIGEN_EIGENCLASS> eigenClass = new EIGEN_EIGENCLASS;
+nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const MatrixBase<derived1> &x, bool valuesOnly) {
+  MatrixXd xcopy = x;
+  nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
+  Map<MatrixXd> Eig_eigVals(0,0,0);
+  new (&Eig_eigVals) Map< MatrixXd >((*returnClass).values.getPtr(),x.dim()[0],1);
+  EigenSolver<MatrixXd> solver = EigenSolver<MatrixXd>(xcopy, valuesOnly);
+  Eig_eigVals = solver.eigenvectors().real();
+  if(!valuesOnly){
+	Map<MatrixXd> Eig_eigVecs(0,0,0);
+	new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
+	Eig_eigVecs = solver.eigenvalues().real();
+  }
+  return(returnClass);
+};
+
+/* template<class derived1>
+MatrixXd EIGEN_EIGENVECS(const MatrixBase<derived1> &x) {
   MatrixXd xcopy = x;	
   MatrixXd ans = EigenSolver<MatrixXd>(xcopy, true).eigenvectors().real();
   return(ans); 
@@ -76,7 +79,7 @@ VectorXd EIGEN_EIGENVALS(const MatrixBase<derived1> &x) {
   MatrixXd xcopy = x;	
   VectorXd ans = EigenSolver<MatrixXd>(xcopy, false).eigenvalues().real();
   return(ans); 
-}
+} */
 
 template<class derived1>
 VectorXd EIGEN_SVDD(const MatrixBase<derived1> &x) {
