@@ -765,7 +765,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                   dist <- deparse(declInfo$valueExprReplaced[[1]])
 
 							# nimble:::getDimension so uses function not model method
-                                                  distDims <- nimble::getDimension(dist)
+                                                  distDims <- nimble::getDimension(dist, includeParams = TRUE)
                                                   nms <- names(distDims)
                                                   distDims <- as.integer(distDims); names(distDims) <- nms
 
