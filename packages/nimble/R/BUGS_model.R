@@ -821,7 +821,7 @@ Checks for size/dimension mismatches and for presence of NAs in model variables 
                                                       if(dist %in% names(nimble:::distributionsInputList)) {
                                                           stop("Size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code))
                                                       } else {
-                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes.")                                                                                                                                   }
+                                                          warning("Possible size/dimension mismatch amongst vectors and matrices in BUGS expression: ", deparse(declInfo$code), ". Ignore this warning if the user-provided distribution has multivariate parameters with distinct sizes or size of variable differs from sizes of parameters.")                                                                                                                                   }
                                                   
                                               }
                                       }

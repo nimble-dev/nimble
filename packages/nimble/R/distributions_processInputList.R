@@ -495,7 +495,7 @@ deregisterDistributions <- function(distributionsNames) {
         if(sum(!nimbleUserNamespace$distributions$namesVector %in% distributionsNames)) {
             sapply(distributionsNames, function(x) nimbleUserNamespace$distributions$remove(x))
         } else {  # all distributions to be removed
-              rm(distributions, envir = nimbleUserNamespace$distributions)
+              rm(distributions, envir = nimbleUserNamespace)
         }
     }
     invisible(NULL)
