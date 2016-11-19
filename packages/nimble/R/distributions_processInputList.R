@@ -487,17 +487,18 @@ deregisterDistributions <- function(distributionsNames) {
     if(sum(matched)) 
         cat(paste("Deregistering ", distributionsNames[matched], " from user-registered distributions.\n"))
     if(sum(!matched))
-        cat(paste(distributionsNames[!matched], " are not user-registered distributions; ignoring.\n"))
+        for(nm in distributionsNames[!matched])
+            cat(paste0("Cannot deregister ", nm, " as it is not registered as a user-defined distribution.\n"))
     
     distributionsNames <- distributionsNames[matched]
     if(length(distributionsNames)) {
         if(sum(!nimbleUserNamespace$distributions$namesVector %in% distributionsNames)) {
             sapply(distributionsNames, function(x) nimbleUserNamespace$distributions$remove(x))
         } else {  # all distributions to be removed
-              nimbleUserNamespace$distributions <- NULL
-          }
+              rm(distributions, envir = nimbleUserNamespace$distributions)
+        }
     }
-    return(NULL)
+    invisible(NULL)
 }
     
 #####################################################################################################
