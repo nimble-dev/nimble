@@ -495,10 +495,28 @@ sizemap <- function(code, symTab, typeEnv) {
 ## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
 sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, FALSE, FALSE, TRUE, TRUE))  ## recurse on initialValue and initialLogical only
+
+    useNewMatrix <- FALSE
+    if(nDim == 2) {
+        if(inherits(code$args[[4]], 'exprClass'))
+            if(code$args[[4]]$nDim > 0)
+                useNewMatrix <- TRUE
+    }
+    
     cSizeExprs <- code$args[[3]]
     if(!inherits(cSizeExprs, 'exprClass'))        stop('something wrong 1')
     if(cSizeExprs$name != 'c')                    stop('something wrong 2')
     if(code$args[[2]] != length(cSizeExprs$args)) stop('something wrong 3')
+
+    missingSizes <- unlist(lapply(code$args[[3]]$args, identical, NA))
+    ## only case where we do something useful with missingSizes is matrix(value = non-scalar, ...)
+    if(any(missingSizes)) {
+        if(useNewMatrix) code$args[[3]]$args[missingSizes] <- -1
+        else code$args[[3]]$args[missingSizes] <- 1
+        ## STOPPED HERE: CREATE CORRECT SIZE EXPRS if useNewMatrix is TRUE
+        cSizeExprs <- code$args[[3]]
+    }
+    
     asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
     type <- code$args[[1]]    ## args[[1]]: 'type' argument
     nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
@@ -513,8 +531,17 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     }
     code$type <- type
     code$nDim <- nDim
-    code$sizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse)
     code$toEigenize <- 'no'
+    ## check for nimNewMatrix case
+    if(useNewMatrix) {
+        suffix <- 'D'
+        if(code$type == 'integer') suffix <- 'I'
+        if(code$type == 'logical') suffix <- 'B'
+        code$name <- paste0("nimNewMatrix", suffix)
+        code$toEigenize <- "yes"
+    }
+    code$sizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse)
+
     ##if(inherits(code$args[[1]], 'exprClass')) if(code$args[[4]]$nDim > 0) code$name <- 'assignVectorToNimArr'
     return(asserts)
 }

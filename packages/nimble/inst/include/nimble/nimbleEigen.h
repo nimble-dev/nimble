@@ -747,14 +747,16 @@ MAKE_RECYCLING_RULE_CLASS4(dt_nonstandard, double)
 // can write as.numeric here
 // as.matrix may be basically the same as matrix
 
-template<typename IndexObj, typename DerivedInput>
+template<typename Index, typename DerivedInput>
   class newMatrixClass {
  public:
   const DerivedInput &input;
   int dim1, dim2, totalLength, inputLength, inputRows;
+  bool init; // would be a bit silly to call with init = FALSE, but it is allowed to simplify code generation
   typedef double result_type;
- newMatrixClass(const DerivedInput &inputIn, unsigned int rowsIn, unsigned int colsIn) :
-  input(inputIn) {
+ newMatrixClass(const DerivedInput &inputIn, bool initIn, int rowsIn, int colsIn) :
+  input(inputIn),
+    init(initIn) {
     inputLength = nimble_size_impl<DerivedInput>::getSize(input);
     inputRows = nimble_size_impl<DerivedInput>::getRows(input);
     bool rowsProvided = rowsIn > 0;
@@ -781,14 +783,41 @@ template<typename IndexObj, typename DerivedInput>
   result_type operator()(Index i) const 
   {
     std::cout<<"IN 1\n";
-    return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::LinearAccessBit), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
+    if(init)
+      return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::LinearAccessBit), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
+    return 0;
   }
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
   {
     std::cout<<"IN 2\n";
-    return operator()(i + j*inputRows);
+    if(init) 
+      return operator()(i + j*dim1);
+    return 0;
   }
 };
+
+namespace Eigen{
+  namespace internal{
+    template<typename IndexObj, typename DerivedObj>
+      struct functor_has_linear_access<newMatrixClass<IndexObj, DerivedObj> > { enum { ret = 1}; }; 
+    template<typename IndexObj, typename DerivedObj>
+      struct functor_traits<newMatrixClass<IndexObj, DerivedObj> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true }; }; 
+  }
+}
+
+template<typename returnDerived>
+struct newMatrix_impl {
+  typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
+  template<typename DerivedObj>
+  static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, int nRowIn, int nColIn) {
+    newMatrixClass<IndexReturn, DerivedObj > obj(s, initIn, nRowIn, nColIn);
+    return(CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived >(obj.dim1, obj.dim2, obj));
+  }
+};
+
+#define nimNewMatrixD newMatrix_impl<MatrixXd>::newMatrix
+#define nimNewMatrixI newMatrix_impl<MatrixXi>::newMatrix
+#define nimNewMatrixB newMatrix_impl<MatrixXb>::newMatrix
 
 #endif
