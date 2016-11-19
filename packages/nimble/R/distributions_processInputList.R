@@ -393,10 +393,10 @@ prepareDistributionInput <- function(dist) {
 #' }
 #' @examples
 #' dmyexp <- nimbleFunction(
-#'    run = function(x = double(0), rate = double(0), log_value = integer(0)) {
+#'    run = function(x = double(0), rate = double(0), log = integer(0)) {
 #'        returnType(double(0))
 #'        logProb <- log(rate) - x*rate
-#'        if(log_value) {
+#'        if(log) {
 #'            return(logProb)
 #'        } else {
 #'            return(exp(logProb))
@@ -532,18 +532,21 @@ getDistributionList <- function(dists) {
 #'
 #' Give information about each BUGS distribution
 #'
+#' @name distributionInfo
+#' @aliases isUserDefined pqDefined getType getParamNames getDistributionInfo
+#' 
 #' @param dist a character vector of length one, giving the name of the distribution (as used in BUGS code), e.g. \code{'dnorm'}
 #'
-#' @param params:  an optional character vector of names of parameters for which dimensions are desired (possibly including \'value\' and alternate parameters)
+#' @param params an optional character vector of names of parameters for which dimensions are desired (possibly including \'value\' and alternate parameters)
 #'
-#' @param valueOnly: a logical indicating whether to only return the dimension of the value of the node
+#' @param valueOnly a logical indicating whether to only return the dimension of the value of the node
 #'
-#' @param includeParams: a logical indicating whether to return dimensions of parameters. If TRUE and \'params\' is NULL then dimensions of all parameters, including the dimension of the value of the node, are returned
+#' @param includeParams a logical indicating whether to return dimensions of parameters. If TRUE and \'params\' is NULL then dimensions of all parameters, including the dimension of the value of the node, are returned
 #'
-#' @param includeValue: a logical indicating whether to return the string 'value', which is the name of the node value
+#' @param includeValue a logical indicating whether to return the string 'value', which is the name of the node value
 #'
 #' @author Christopher Paciorek
-#' @aliases isUserDefined pqDefined getType getParamNames
+#' 
 #' @export
 #' @details
 #' NIMBLE provides various functions to give information about a BUGS distribution. In some cases, functions of the same name and similar functionality operate on the node(s) of a model as well (see \code{help(modelBaseClass)}).
@@ -587,6 +590,11 @@ getDistributionList <- function(dists) {
 #'
 #' getParamNames('dnorm', includeValue = FALSE)
 #' getParamNames('dmnorm')
+#'
+NULL
+
+#' @rdname distributionInfo
+#' @export
 getDistributionInfo <- function(dist) {
     if(is.na(dist)) return(NA)
     if(dist %in% distributions$namesVector) return(distributions[[dist]])
@@ -641,7 +649,7 @@ isDiscrete <- function(dist) {
     return(getDistributionInfo(dist)$discrete)
 }
 
-#' @rdname getDistributionInfo
+#' @rdname distributionInfo
 #' @export 
 isUserDefined <- function(dist) {
     if(is.na(dist)) return(dist)
@@ -651,7 +659,7 @@ isUserDefined <- function(dist) {
       return(TRUE) else return(FALSE)
 }
 
-#' @rdname getDistributionInfo
+#' @rdname distributionInfo
 #' @export
 pqDefined <- function(dist) {
     if(is.na(dist)) return(NA)
@@ -714,7 +722,7 @@ getParamID <- function(dist, params = NULL, valueOnly = is.null(params) &&
   return(out)
 }
 
-#' @rdname getDistributionInfo
+#' @rdname distributionInfo
 #' @export
 getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
                        !includeParams, includeParams = !is.null(params)) {
@@ -744,7 +752,7 @@ getType <- function(dist, params = NULL, valueOnly = is.null(params) &&
 
 # perhaps have args to allow only reqdArgs or only altParams?
 
-#' @rdname getDistributionInfo
+#' @rdname distributionInfo
 #' @export
 getParamNames <- function(dist, includeValue = TRUE) {
     if(length(dist) == 1 && is.na(dist)) return(NA)
