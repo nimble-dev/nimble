@@ -767,12 +767,12 @@ template<typename Index, typename DerivedInput>
 	dim2 = 1;
       } else {
 	dim2 = colsIn;
-	dim1 = floor(double(inputLength) / double(colsIn));
+	dim1 = floor((double(inputLength)-1) / double(colsIn)) + 1;
       }
     } else {
       if(!colsProvided) {
 	dim1 = rowsIn;
-	dim2 = floor(double(inputLength) / double(rowsIn));
+	dim2 = floor((double(inputLength)-1) / double(rowsIn)) + 1;
       } else {
 	dim1 = rowsIn;
 	dim2 = colsIn;

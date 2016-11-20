@@ -495,31 +495,52 @@ sizemap <- function(code, symTab, typeEnv) {
 ## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
 sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, FALSE, FALSE, TRUE, TRUE))  ## recurse on initialValue and initialLogical only
+    type <- code$args[[1]]    ## args[[1]]: 'type' argument
+    nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
 
+    ## if it is a call to matrix() and the value argument is non-scalar,
+    ## we will generate it in C++ as nimNewMatrix
     useNewMatrix <- FALSE
     if(nDim == 2) {
         if(inherits(code$args[[4]], 'exprClass'))
             if(code$args[[4]]$nDim > 0)
                 useNewMatrix <- TRUE
     }
-    
-    cSizeExprs <- code$args[[3]]
+                
+    cSizeExprs <- code$args[[3]] ## these are the size expressions encompassed by c(), needed for purposes of the C++ line to be generated
     if(!inherits(cSizeExprs, 'exprClass'))        stop('something wrong 1')
-    if(cSizeExprs$name != 'c')                    stop('something wrong 2')
+    if(cSizeExprs$name != 'collectSizes')                    stop('something wrong 2')
     if(code$args[[2]] != length(cSizeExprs$args)) stop('something wrong 3')
 
-    missingSizes <- unlist(lapply(code$args[[3]]$args, identical, NA))
+    annotationSizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse) ## and this is for purposes of the sizeExprs in the AST exprClass object
+    
+    missingSizes <- unlist(lapply(cSizeExprs$args, identical, as.numeric(NA)))
     ## only case where we do something useful with missingSizes is matrix(value = non-scalar, ...)
     if(any(missingSizes)) {
-        if(useNewMatrix) code$args[[3]]$args[missingSizes] <- -1
-        else code$args[[3]]$args[missingSizes] <- 1
-        ## STOPPED HERE: CREATE CORRECT SIZE EXPRS if useNewMatrix is TRUE
-        cSizeExprs <- code$args[[3]]
+        ## modify sizes in generated C++ line
+        if(useNewMatrix) cSizeExprs$args[missingSizes] <- -1
+        else cSizeExprs$args[missingSizes] <- 1
+
+        ## modify annotation sizeExprs
+        totalInputLengthExpr <- if(inherits(code$args[[4]], 'exprClass')) productSizeExprs(code$args[[4]]$sizeExprs) else 1 ## should always be exprClass in here anyway
+        ## see newMatrixClass in nimbleEigen.h
+        if(missingSizes[1]) { ## missing nrow
+            if(missingSizes[2]) { ## missing both
+                annotationSizeExprs[[1]] <- totalInputLengthExpr
+                annotationSizeExprs[[2]] <- 1
+            } else { ## ncol provided
+                annotationSizeExprs[[1]] <- substitute(floor( ((A)-1) / (B)) + 1, ## avoids errors from integer arithmetic
+                                              list(A = totalInputLengthExpr,
+                                                   B = annotationSizeExprs[[2]]))
+            }
+        } else { ## nrow provided, ncol missing (is both provided, we wouldn't be in this code
+                annotationSizeExprs[[2]] <- substitute(floor( ((A)-1) / (B)) + 1,
+                                              list(A = totalInputLengthExpr,
+                                                   B = annotationSizeExprs[[1]]))
+        }
     }
     
     asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
-    type <- code$args[[1]]    ## args[[1]]: 'type' argument
-    nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
     if(!(type %in% c('double', 'integer', 'logical')))       stop('unknown type in nimArrayGeneral')
     code$name <- 'initialize'
     code$args <- c(code$args[4:5], cSizeExprs$args)  ##  args: initialize(initializeValue, initializeLogical, sizeExpr1, sizeExpr2, etc...)
@@ -532,6 +553,15 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     code$type <- type
     code$nDim <- nDim
     code$toEigenize <- 'no'
+        ## insert intermediate unless it will be newNimMatrix
+    code$sizeExprs <- annotationSizeExprs
+
+    if(!useNewMatrix) 
+        if(inherits(code$caller, 'exprClass'))
+            if(!(code$caller$name %in% assignmentOperators))
+                if(!is.null(code$caller$name))
+                    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    
     ## check for nimNewMatrix case
     if(useNewMatrix) {
         suffix <- 'D'
@@ -540,9 +570,8 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
         code$name <- paste0("nimNewMatrix", suffix)
         code$toEigenize <- "yes"
     }
-    code$sizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse)
+    
 
-    ##if(inherits(code$args[[1]], 'exprClass')) if(code$args[[4]]$nDim > 0) code$name <- 'assignVectorToNimArr'
     return(asserts)
 }
 

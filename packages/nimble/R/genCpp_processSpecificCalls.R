@@ -179,35 +179,37 @@ nimArrayGeneralHandler <- function(code, symTab) {
         code$args <- if(code$args[[2]] == 0) code$args[1] else code$args[1:2]
         return()
     }
+    ## collectSizes is just a parse tree annotation, not a real function
     switch(code$name,
            ##nimNumeric(length = 0, value = 0, init = TRUE)
            nimNumeric = {
-               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('numeric doesnt handle c() in length')
-               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[1], caller=code, callerArgID=3)
+##               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('numeric doesnt handle c() in length')
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
                newArgs <- list('double', 1, sizeExprs, code$args[[2]], code$args[[3]])
            },
            ##nimInteger(length = 0, value = 0, init = TRUE)
            nimInteger = {
-               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
-               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[1], caller=code, callerArgID=3)
+##               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
                newArgs <- list('integer', 1, sizeExprs, code$args[[2]], code$args[[3]])
            },
            ##nimVector(type = 'double', length = 0, value = 0, init = TRUE)
            ##nimVector = {},
            ##nimMatrix(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double')
-           nimMatrix = {
-               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[2:3], caller=code, callerArgID=3)
+           nimMatrix = { 
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[2:3], caller=code, callerArgID=3)
                newArgs <- list(code$args[[5]], 2, sizeExprs, code$args[[1]], code$args[[4]])
            },
            ##nimArray(value = 0, dim = c(1, 1), init = TRUE, type = 'double')
            nimArray = {
                ## nimArray will handle dim=c(...), and also dim=EXPR
-               if(inherits(code$args[[2]], 'exprClass') && code$args[[2]]$isCall && code$args[[2]]$name == 'c') {
+               if(inherits(code$args[[2]], 'exprClass') && code$args[[2]]$isCall && code$args[[2]]$name == 'nimC') {
                    ## dim argument is c(...)
+                   code$args[[2]]$name <- 'collectSizes'
                    newArgs <- list(code$args[[4]], length(code$args[[2]]$args), code$args[[2]], code$args[[1]], code$args[[3]])
                } else {
                    ## dim argument is a single number or expression
-                   sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='c', args=code$args[2], caller=code, callerArgID=3)
+                   sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[2], caller=code, callerArgID=3)
                    newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
                }
            },
