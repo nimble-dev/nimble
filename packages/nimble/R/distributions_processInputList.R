@@ -267,7 +267,7 @@ checkDistributionFunctions <- function(distributionInput) {
     rargs <- rargs[-1]
     
     if(!identical(dargs, rargs))
-        stop(paste0("checkDistributionFunctions: parameter arguments not the same amongst density and simulation functions for ", densityName, "."))
+        warning(paste0("checkDistributionFunctions: parameter arguments not the same amongst density and simulation functions for ", densityName, ". Continuing anyway based on arguments to the density function; algorithms using the simulation function are unlikely to function properly."))
     if(!is.null(distributionInput) && is.list(distributionInput) && exists("pqAvail", distributionInput) && distributionInput$pqAvail) {
         cdfName <- sub('^d', 'p', densityName)
         quantileName <- sub('^d', 'q', densityName)
@@ -444,6 +444,7 @@ registerDistributions <- function(distributionsInput) {
          } else {
             nms <- names(distributionsInput)
           }
+        cat("Registering the following user-provided distributions: ", nms, ".\n", sep = "")
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
             distributionsInput[dupl] <- NULL
@@ -485,7 +486,7 @@ deregisterDistributions <- function(distributionsNames) {
         cat("No user-supplied distributions are registered.\n")
     matched <- distributionsNames %in% getAllDistributionsInfo('namesVector', userOnly = TRUE)
     if(sum(matched)) 
-        cat(paste("Deregistering ", distributionsNames[matched], " from user-registered distributions.\n"))
+        cat(paste("Deregistering", distributionsNames[matched], "from user-registered distributions.\n"))
     if(sum(!matched))
         for(nm in distributionsNames[!matched])
             cat(paste0("Cannot deregister ", nm, " as it is not registered as a user-defined distribution.\n"))

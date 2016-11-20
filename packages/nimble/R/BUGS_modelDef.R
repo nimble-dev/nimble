@@ -312,9 +312,10 @@ checkUserDefinedDistribution <- function(code) {
     dist <- as.character(code[[3]][[1]])
     if(dist %in% c("T", "I")) 
         dist <- as.character(code[[3]][[2]][[1]])
-    if(!dist %in% distributions$namesVector) 
+    if(!dist %in% distributions$namesVector)
         if(!exists('distributions', nimbleUserNamespace) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
             registerDistributions(dist)
+            cat("NIMBLE has registered ", dist, " as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.\n", sep = "") 
         }
 }
         
