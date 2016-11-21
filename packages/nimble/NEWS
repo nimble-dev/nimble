@@ -14,6 +14,9 @@ USER LEVEL CHANGES
 
 -- user-defined distributions can be used in BUGS code without registration, which will be done automatically behind the scenes. Parameters and dimensions are determined automatically from the nimbleFunction density function. However, in cases where users want to provide alternative parameterizations, the range of the distribution, or indication the distribution is discrete, registerDistributions should be used in its full functionality.
 
+DEVELOPER LEVEL CHANGES
+
+-- Various bug fixes including: cases where compileNimble would not return a correct interface for a nimbleFunction used in multiple particular ways; access to one nimbleFunction's member data from another.
 
                            CHANGES IN VERSION 0.6-1 (October 2016)
 
