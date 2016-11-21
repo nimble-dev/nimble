@@ -495,3 +495,13 @@ distribution_qFuns <- gsub("^d", "q", pqDists)
 
 distributionFuns <- c(distribution_dFuns, distribution_rFuns, distribution_pFuns, distribution_qFuns)
 
+## following sections are added for use in genCpp_operatorLists and other places.  Slightly different need is to have separate list of scalar distributions and to use Rdist names
+scalar_distribution_bool <- unlist(lapply(getDistributionsInfo('namesVector'), function(x) all(unlist(lapply(getDistribution(x)$types, function(y) y$nDim == 0 )))))
+scalar_distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector')[scalar_distribution_bool], dIncluded = TRUE)
+
+scalar_pqAvail_bool <- nimble:::getDistributionsInfo('pqAvail') & scalar_distribution_bool
+scalar_pqAvail_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector')[scalar_pqAvail_bool], dIncluded = TRUE)
+scalar_distribution_pFuns <- gsub("^d", "p", scalar_pqAvail_dFuns)
+scalar_distribution_qFuns <- gsub("^d", "q", scalar_pqAvail_dFuns)
+
+rm(scalar_distribution_bool, scalar_pqAvail_bool, scalar_pqAvail_dFuns)

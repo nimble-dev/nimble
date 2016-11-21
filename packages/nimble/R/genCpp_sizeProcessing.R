@@ -57,7 +57,9 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     voidPtr = 'sizeVoidPtr',
                     run.time = 'sizeRunTime'),
                makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
-               makeCallList(distributionFuns[!(distributionFuns %in% scalar_distribution_dFuns)], 'sizeScalarRecurse'),
+               makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
+               makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
+               makeCallList(distributionFuns[!(distributionFuns %in% c(scalar_distribution_dFuns, scalar_distribution_pFuns, scalar_distribution_qFuns))], 'sizeScalarRecurse'),
                # R dist functions that are not used by NIMBLE but we allow in DSL
                makeCallList(paste0(c('d','r','q','p'), 't'), 'sizeScalarRecurse'),
                makeCallList(paste0(c('d','r','q','p'), 'exp'), 'sizeScalarRecurse'),
@@ -1105,7 +1107,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                     }
                 } else { ## We have an indexed LHS of an eigenizable expression
                     ## need special handling if it is a row assignment like x[i,] <- ...
-                    ## also need to generate size assertions
+                    ## also need to generate size assertions                    
                     if(LHS$nDim == 1) {
                         if(RHS$nDim == 2) {
                             if(is.numeric(RHS$sizeExprs[[1]])) {

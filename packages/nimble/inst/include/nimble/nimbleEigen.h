@@ -618,6 +618,103 @@ struct FUNNAME ## _RR_impl {\
   }\
 };
 
+
+// This is for "r" functions where the first argument, or the length of the first argument if not 1, gives the result size
+#define MAKE_RECYCLING_RULE_CLASS_r2(FUNNAME, RETURNSCALARTYPE)		\
+  template<typename Index, typename DerivedN, typename DerivedA1, typename DerivedA2> \
+    class FUNNAME ## RecyclingRuleClass {				\
+public:									\
+    const DerivedA1 &Arg1;						\
+    const DerivedA2 &Arg2;						\
+    const DerivedN &ArgN;						\
+    std::vector<RETURNSCALARTYPE> values;				\
+    unsigned int outputSize;						\
+    FUNNAME ## RecyclingRuleClass(const DerivedN &AN, const DerivedA1 &A1, const DerivedA2 &A2 ) : \
+    ArgN(AN), Arg1(A1), Arg2(A2)					\
+    {									\
+      int sizeN = nimble_size_impl<DerivedA1>::getSize(ArgN);		\
+      if(sizeN > 1) outputSize = sizeN;					\
+      else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedAN>::LinearAccessBit), RETURNSCALARTYPE, DerivedAN, Index >::getCoeff(ArgN, 0); \
+      for(int i = 0; i < outputSize; i++) {				\
+	values[i] = FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+			    nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
+      }									\
+    }									\
+  RETURNSCALARTYPE operator()(Index i) const { \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
+  }\
+  RETURNSCALARTYPE operator()(Index i, Index j) const {\
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
+  }\
+}; \
+\
+ namespace Eigen{\
+  namespace internal{\
+    template<typename Index, typename Derived1, typename Derived2>	\
+    struct functor_has_linear_access<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2> > { enum { ret = 1}; }; \
+    template<typename Index, typename Derived1, typename Derived2>\
+      struct functor_traits<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true}; }; \
+  }\
+}\
+\
+template<typename DerivedReturn>\
+struct FUNNAME ## _RR_impl {\
+  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  template<typename Derived1, typename Derived2>\
+  static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >\
+  FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2) {\
+    FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2> obj(A1, A2);\
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >(obj.outputSize, 1, obj));\
+  }\
+};
+
+
+// This case doesn't even really recycle, but for consistency:
+#define MAKE_RECYCLING_RULE_CLASS1_1scalar(FUNNAME, RETURNSCALARTYPE) \
+template<typename Index, typename DerivedA1, typename DerivedA2> \
+class FUNNAME ## RecyclingRuleClass { \
+public: \
+  const DerivedA1 &Arg1;\
+  const DerivedA2 &Arg2;\
+  unsigned int size1, outputSize;\
+  FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2 ) :\
+  Arg1(A1), Arg2(A2)\
+{\
+  outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
+  } \
+  RETURNSCALARTYPE operator()(Index i) const { \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0, size2)); \
+  }\
+  RETURNSCALARTYPE operator()(Index i, Index j) const {\
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0, size2)); \
+  }\
+}; \
+\
+ namespace Eigen{\
+  namespace internal{\
+    template<typename Index, typename Derived1, typename Derived2>	\
+    struct functor_has_linear_access<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2> > { enum { ret = 1}; }; \
+    template<typename Index, typename Derived1, typename Derived2>\
+      struct functor_traits<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true}; }; \
+  }\
+}\
+\
+template<typename DerivedReturn>\
+struct FUNNAME ## _RR_impl {\
+  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  template<typename Derived1, typename Derived2>\
+  static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >\
+  FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2) {\
+    FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2> obj(A1, A2);\
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2>, DerivedReturn >(obj.outputSize, 1, obj));\
+  }\
+};
+
+
 // Here is the large macro for creating a functor class to be used in a NullaryExpr
 #define MAKE_RECYCLING_RULE_CLASS3(FUNNAME, RETURNSCALARTYPE) \
   template<typename Index, typename DerivedA1, typename DerivedA2, typename DerivedA3>	\
@@ -667,6 +764,54 @@ struct FUNNAME ## _RR_impl {\
     return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3>, DerivedReturn >(obj.outputSize, 1, obj)); \
   }\
 };
+
+#define MAKE_RECYCLING_RULE_CLASS2_1scalar(FUNNAME, RETURNSCALARTYPE) \
+  template<typename Index, typename DerivedA1, typename DerivedA2, typename DerivedA3>	\
+class FUNNAME ## RecyclingRuleClass { \
+public: \
+  const DerivedA1 &Arg1;\
+  const DerivedA2 &Arg2;\
+  const DerivedA3 &Arg3;\
+  unsigned int size1, size2, outputSize;				\
+  FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3 ) : \
+  Arg1(A1), Arg2(A2), Arg3(A3) \
+{\
+  outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
+  size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
+  if(size2 > outputSize) outputSize = size2;	      \
+}						      \
+  RETURNSCALARTYPE operator()(Index i) const { \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0, size3)); \
+  }\
+  RETURNSCALARTYPE operator()(Index i, Index j) const {\
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0, size3)); \
+  }\
+}; \
+\
+ namespace Eigen{\
+  namespace internal{\
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3>	\
+      struct functor_has_linear_access<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2, Derived3> > { enum { ret = 1}; }; \
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3>	\
+      struct functor_traits<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2, Derived3> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true}; }; \
+  }\
+}\
+\
+template<typename DerivedReturn>\
+struct FUNNAME ## _RR_impl {\
+  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  template<typename Derived1, typename Derived2, typename Derived3>			\
+    static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3>, DerivedReturn > \
+    FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) { \
+    FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3> obj(A1, A2, A3); \
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3>, DerivedReturn >(obj.outputSize, 1, obj)); \
+  }\
+};
+
 
 // Here is the large macro for creating a functor class to be used in a NullaryExpr
 #define MAKE_RECYCLING_RULE_CLASS4(FUNNAME, RETURNSCALARTYPE) \
@@ -724,21 +869,159 @@ struct FUNNAME ## _RR_impl {\
 };
 
 
+// 3 recycling rule arguments and 1 argument whose first value only will be used
+#define MAKE_RECYCLING_RULE_CLASS3_1scalar(FUNNAME, RETURNSCALARTYPE) \
+  template<typename Index, typename DerivedA1, typename DerivedA2, typename DerivedA3, typename DerivedA4>	\
+class FUNNAME ## RecyclingRuleClass { \
+public: \
+  const DerivedA1 &Arg1;\
+  const DerivedA2 &Arg2;\
+  const DerivedA3 &Arg3;\
+  const DerivedA4 &Arg4;\
+  unsigned int size1, size2, size3, outputSize;			\
+  FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4 ) : \
+  Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4) \
+{\
+  outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
+  size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
+  size3 = nimble_size_impl<DerivedA3>::getSize(Arg3); \
+  if(size2 > outputSize) outputSize = size2; \
+  if(size3 > outputSize) outputSize = size3; \
+  } \
+  RETURNSCALARTYPE operator()(Index i) const { \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0, size4)); \
+  }\
+  RETURNSCALARTYPE operator()(Index i, Index j) const {\
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0, size4)); \
+  }\
+}; \
+\
+ namespace Eigen{\
+  namespace internal{\
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4> \
+      struct functor_has_linear_access<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2, Derived3, Derived4> > { enum { ret = 1}; }; \
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4> \
+      struct functor_traits<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2, Derived3, Derived4> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true}; }; \
+  }\
+}\
+\
+template<typename DerivedReturn>\
+struct FUNNAME ## _RR_impl {\
+  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  template<typename Derived1, typename Derived2, typename Derived3, typename Derived4>	\
+    static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4>, DerivedReturn > \
+    FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) { \
+    FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4> obj(A1, A2, A3, A4); \
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4>, DerivedReturn >(obj.outputSize, 1, obj)); \
+  }\
+};
+
+
+// 3 recycling rule arguments and 2 argument whose first value only will be used
+#define MAKE_RECYCLING_RULE_CLASS3_2scalar(FUNNAME, RETURNSCALARTYPE) \
+  template<typename Index, typename DerivedA1, typename DerivedA2, typename DerivedA3, typename DerivedA4, typename DerivedA5> \
+class FUNNAME ## RecyclingRuleClass { \
+public: \
+  const DerivedA1 &Arg1;\
+  const DerivedA2 &Arg2;\
+  const DerivedA3 &Arg3;\
+  const DerivedA4 &Arg4;\
+  const DerivedA5 &Arg5;\
+  unsigned int size1, size2, size3, outputSize;			\
+  FUNNAME ## RecyclingRuleClass(const DerivedA1 &A1, const DerivedA2 &A2, const DerivedA3 &A3, const DerivedA4 &A4, const DerivedA5 &A5 ) : \
+  Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4), Arg5(A5)			\
+{\
+  outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
+  size2 = nimble_size_impl<DerivedA2>::getSize(Arg2); \
+  size3 = nimble_size_impl<DerivedA3>::getSize(Arg3); \
+  if(size2 > outputSize) outputSize = size2; \
+  if(size3 > outputSize) outputSize = size3; \
+  } \
+  RETURNSCALARTYPE operator()(Index i) const { \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0, size4), \
+    		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA5>::LinearAccessBit), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0, size5)); \
+  }\
+  RETURNSCALARTYPE operator()(Index i, Index j) const {\
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0, size4), \
+    		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA5>::LinearAccessBit), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0, size5)); \
+  }\
+}; \
+\
+ namespace Eigen{\
+  namespace internal{\
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4, typename Derived5> \
+      struct functor_has_linear_access<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2, Derived3, Derived4, Derived5> > { enum { ret = 1}; }; \
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4, typename Derived5> \
+      struct functor_traits<FUNNAME ## RecyclingRuleClass<Index, Derived1, Derived2, Derived3, Derived4, Derived5> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true}; }; \
+  }\
+}\
+\
+template<typename DerivedReturn>\
+struct FUNNAME ## _RR_impl {\
+  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  template<typename Derived1, typename Derived2, typename Derived3, typename Derived4, typename Derived5>	\
+    static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4, Derived5>, DerivedReturn > \
+    FUNNAME ## _RecyclingRule(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4, const Derived5 &A5) { \
+    FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4, Derived5> obj(A1, A2, A3, A4, A5); \
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, Derived1, Derived2, Derived3, Derived4, Derived5>, DerivedReturn >(obj.outputSize, 1, obj)); \
+  }\
+};
+
 MAKE_RECYCLING_RULE_CLASS2(RRtest_add, double) // only return type is needed here, and correct number of arguments as last digit of macro name
 
 // number of arguments is always 2 more than number of distribution parameters (1 for x and 1 for log)
-MAKE_RECYCLING_RULE_CLASS4(dbinom, double)
-MAKE_RECYCLING_RULE_CLASS3(dexp_nimble, double)
-MAKE_RECYCLING_RULE_CLASS4(dnbinom, double)
-MAKE_RECYCLING_RULE_CLASS3(dpois, double)
-MAKE_RECYCLING_RULE_CLASS3(dchisq, double)
-MAKE_RECYCLING_RULE_CLASS4(dbeta, double)
-MAKE_RECYCLING_RULE_CLASS4(dnorm, double)
-MAKE_RECYCLING_RULE_CLASS4(dgamma, double)
-MAKE_RECYCLING_RULE_CLASS4(dlnorm, double)
-MAKE_RECYCLING_RULE_CLASS4(dunif, double)
-MAKE_RECYCLING_RULE_CLASS4(dweibull, double)
-MAKE_RECYCLING_RULE_CLASS4(dt_nonstandard, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dbinom, double)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(dexp_nimble, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dnbinom, double)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(dpois, double)
+MAKE_RECYCLING_RULE_CLASS2_1scalar(dchisq, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dbeta, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dnorm, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dgamma, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dlnorm, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dunif, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dweibull, double)
+MAKE_RECYCLING_RULE_CLASS3_1scalar(dt_nonstandard, double)
+
+MAKE_RECYCLING_RULE_CLASS3_2scalar(pbinom, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(pexp_nimble, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(pnbinom, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(ppois, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(pchisq, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(pbeta, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(pnorm, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(pgamma, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(plnorm, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(punif, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(pweibull, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(pt_nonstandard, double)
+
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qbinom, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(qexp_nimble, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qnbinom, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(qpois, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(qchisq, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qbeta, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qnorm, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qgamma, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qlnorm, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qunif, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qweibull, double)
+MAKE_RECYCLING_RULE_CLASS3_2scalar(qt_nonstandard, double)
+
+MAKE_RECYCLING_RULE_CLASS_r2(rnorm, double)
 
 // matrix, array, as.numeric, as.matrix, as.array
 

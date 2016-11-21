@@ -38,10 +38,7 @@ midOperators <- c(midOperators, list('$' = '$', '%*%' = ' %*% ', ':' = ':', '%o%
 
 brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
 
-## pick out the distributions that are scalar in value and all parameters: these can be recycling-rule-ized ## see end of distributions_processInputList.R for some related information
-scalar_distribution_bool <- unlist(lapply(nimble:::getDistributionsInfo('namesVector'), function(x) all(unlist(lapply(nimble:::getDistribution(x)$types, function(y) y$nDim == 0 )))))
-scalar_distribution_dFuns <- BUGSdistToRdist(getDistributionsInfo('namesVector')[scalar_distribution_bool], dIncluded = TRUE)
-rm(scalar_distribution_bool)
+## see distributions_processInputList for some relevant lists of distributions functions 
 
 callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals', 'startNimbleTimer', 'endNimbleTimer')
 
