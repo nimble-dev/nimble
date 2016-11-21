@@ -93,6 +93,9 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
     makeCallList(scalar_distribution_dFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(scalar_distribution_pFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(scalar_distribution_rFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     list('t' = 'eigenize_cWiseUnaryEither',
          eigenBlock = 'eigenize_cWiseUnaryEither',

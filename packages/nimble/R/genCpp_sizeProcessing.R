@@ -59,7 +59,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
-               makeCallList(distributionFuns[!(distributionFuns %in% c(scalar_distribution_dFuns, scalar_distribution_pFuns, scalar_distribution_qFuns))], 'sizeScalarRecurse'),
+               makeCallList(scalar_distribution_rFuns, 'sizeRecyclingRuleRfunction'),
+               makeCallList(distributionFuns[!(distributionFuns %in% c(scalar_distribution_dFuns, scalar_distribution_pFuns, scalar_distribution_qFuns, scalar_distribution_rFuns))], 'sizeScalarRecurse'),
                # R dist functions that are not used by NIMBLE but we allow in DSL
                makeCallList(paste0(c('d','r','q','p'), 't'), 'sizeScalarRecurse'),
                makeCallList(paste0(c('d','r','q','p'), 'exp'), 'sizeScalarRecurse'),
@@ -184,10 +185,11 @@ productSizeExprs <- function(sizeExprs) {
     ans
 }
 
-multiMaxSizeExprs <- function(code) {
+multiMaxSizeExprs <- function(code, useArgs = rep(TRUE, length(code$args))) {
     if(length(code$args)==0) return(list()) ## probably something wrong
-    totalLengthExprs <- lapply(code$args, function(x) if(inherits(x, 'exprClass')) productSizeExprs(x$sizeExprs) else 1)
-    if(length(code$args)==1) return(totalLengthExprs) ## a list of length 1
+    codeArgsUsed <- code$args[useArgs]
+    totalLengthExprs <- lapply(codeArgsUsed, function(x) if(inherits(x, 'exprClass')) productSizeExprs(x$sizeExprs) else 1)
+    if(length(codeArgsUsed)==1) return(totalLengthExprs) ## a list of length 1
     numericTotalLengths <- unlist(lapply(totalLengthExprs, is.numeric))
     if(sum(numericTotalLengths) > 0) {
         maxKnownSize <- max(unlist(totalLengthExprs[numericTotalLengths]))
@@ -266,17 +268,69 @@ sizeWhich <- function(code, symTab, typeEnv) {
 
 sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in eigenization.
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-    newSizeExprs <- multiMaxSizeExprs(code)
+    ## for now this is entirely for d, p and q distribution functions, so we'll look up number of arguments for recycling
+    numArgs <- length(code$args)
+    if(numArgs == 0) return(asserts)
+
+    recycleArgs <- rep(TRUE, numArgs)
+
+    dFunName <- code$name
+    substr(dFunName, 1, 1) <- 'd' 
+    
+    thisDist <- distributions$distObjects[[dFunName]]
+    if(!is.null(thisDist)) {
+        numReqdArgs <- length(thisDist$reqdArgs)
+        recycleArgs[-(1:(numReqdArgs+1))] <- FALSE
+    }
+    newSizeExprs <- multiMaxSizeExprs(code, recycleArgs)
     if(length(newSizeExprs)==1)
         if(is.numeric(newSizeExprs[[1]]))
             if(newSizeExprs[[1]] == 1)
-                return(c(asserts, sizeScalarRecurse(code, symTab, typeEnv, recurse = FALSE)))
+                return(c(asserts, sizeScalarRecurse(code, symTab, typeEnv, recurse = FALSE))) ## ALSO NEED ALL ARGS TO HAVE nDim 0
     code$sizeExprs <- newSizeExprs
     code$type <- 'double' ## will need to look up from a list
     code$nDim <- 1
     code$toEigenize <- TRUE
     return(asserts)
 }
+
+sizeRecyclingRuleRfunction <- function(code, symTab, typeEnv) {
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    ## for now this is entirely for r distribution functions, so we'll look up number of arguments for recycling
+    numArgs <- length(code$args)
+    if(numArgs == 0) return(asserts)
+
+    ## Size determined by first arg
+    ## If scalar, that gives size
+    ## If vector, size is length of first argument.
+    ## Problem is vector of length 1, where size should be value of first element, not length of 1.
+    if(inherits(code$args[[1]], 'exprClass')) {
+        if(!code$args[[1]]$isName) {
+            asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+        }
+        newSizeExprs <- list(substitute(rFunLength(X), list(X = as.name(code$args[[1]]$name))))
+    } else {
+        newSizeExprs <- list(code$args[[1]])
+    }
+    
+    if(length(newSizeExprs)==1)
+        if(is.numeric(newSizeExprs[[1]]))
+            if(newSizeExprs[[1]] == 1) {
+                code$args[[1]] <- NULL ## strip the first argument, which should be a 1 if we are here
+                for(i in seq_along(code$args)) {
+                    if(inherits(code$args[[i]], 'exprClass')) {
+                        code$args[[i]]$callerArgID <- code$args[[i]]$callerArgID - 1
+                    }
+                }
+                return(c(asserts, sizeScalarRecurse(code, symTab, typeEnv, recurse = FALSE)))
+            }
+    code$sizeExprs <- newSizeExprs
+    code$type <- 'double' ## will need to look up from a list
+    code$nDim <- 1
+    code$toEigenize <- TRUE
+    return(asserts)
+}
+
 
 sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument version
     asserts <- recurseSetSizes(code, symTab, typeEnv)

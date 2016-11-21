@@ -50,9 +50,9 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 d_gamma_keywordInfo <- keywordInfoClass(
 	keyword = 'dgamma',
 	processor = function(code, nfProc){
-		logArg <- code$log
-		if(logArg == TRUE)	code$log <- 1
-			else code$log <- 0
+		##logArg <- code$log
+		##if(logArg == TRUE)	code$log <- 1
+		##	else code$log <- 0
 		code <- handleScaleAndRateForGamma(code)
 	return(code)
 	}) 
@@ -60,13 +60,13 @@ d_gamma_keywordInfo <- keywordInfoClass(
 pq_gamma_keywordInfo <- keywordInfoClass(
 	keyword = 'pq_gamma',
 	processor = function(code, nfProc){
-		lower.tailArg <- code$lower.tail
-		if(lower.tailArg == TRUE) code$lower.tail <- 1
-			else code$lower.tail <- 0
+		##lower.tailArg <- code$lower.tail
+		##if(lower.tailArg == TRUE) code$lower.tail <- 1
+		##	else code$lower.tail <- 0
 			
-		logArg <- code$log.p
-		if(logArg == TRUE)	code$log.p <- 1
-			else code$log.p <- 0
+		##logArg <- code$log.p
+		##if(logArg == TRUE)	code$log.p <- 1
+		##	else code$log.p <- 0
 		code <- handleScaleAndRateForGamma(code)
 	return(code)
 })
@@ -82,9 +82,9 @@ rgamma_keywordInfo <- keywordInfoClass(
 d_exp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'dexp_nimble',
 	processor = function(code, nfProc){
-		logArg <- code$log
-		if(logArg == TRUE)	code$log <- 1
-			else code$log <- 0
+		##logArg <- code$log
+		##if(logArg == TRUE)	code$log <- 1
+		##	else code$log <- 0
 		code <- handleScaleAndRateForExpNimble(code)
 	return(code)
 	}) 
@@ -92,13 +92,13 @@ d_exp_nimble_keywordInfo <- keywordInfoClass(
 pq_exp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'pq_exp_nimble',
 	processor = function(code, nfProc){
-		lower.tailArg <- code$lower.tail
-		if(lower.tailArg == TRUE) code$lower.tail <- 1
-			else code$lower.tail <- 0
+		##lower.tailArg <- code$lower.tail
+		##if(lower.tailArg == TRUE) code$lower.tail <- 1
+		##	else code$lower.tail <- 0
 			
-		logArg <- code$log.p
-		if(logArg == TRUE)	code$log.p <- 1
-			else code$log.p <- 0
+		##logArg <- code$log.p
+		##if(logArg == TRUE)	code$log.p <- 1
+		##	else code$log.p <- 0
 		code <- handleScaleAndRateForExpNimble(code)
 	return(code)
 })
@@ -112,30 +112,29 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 )
 
 
-d_dist_keywordInfo <- keywordInfoClass(
-	keyword = 'd',
-	processor = function(code, nfProc){
-		logArg <- code$log
-		if(logArg == TRUE)	code$log <- 1
-			else code$log <- 0
-			
-		return(code)
-	}
-)
+## These are no longer needed
+## d_dist_keywordInfo <- keywordInfoClass(
+## 	keyword = 'd',
+## 	processor = function(code, nfProc){
+## 		logArg <- code$log
+##             if(logArg == TRUE)	code$log <- 1
+##             else code$log <- 0			
+## 		return(code)
+## 	}
+## )
 
-qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
-	keyword = 'p',
-	processor = function(code, nfProc){
-		lower.tailArg	<- code$lower.tail
-		if(lower.tailArg == TRUE) code$lower.tail <- 1
-			else code$lower.tail <- 0
-			
-		logArg <- code$log.p
-		if(logArg == TRUE)	code$log.p <- 1
-			else code$log.p <- 0
-		return(code)		
-	}
-	)
+## qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
+## 	keyword = 'p',
+## 	processor = function(code, nfProc){
+## 		lower.tailArg	<- code$lower.tail
+## 		if(lower.tailArg == TRUE) code$lower.tail <- 1
+## 			else code$lower.tail <- 0
+## 		logArg <- code$log.p
+## 		if(logArg == TRUE)	code$log.p <- 1
+## 			else code$log.p <- 0
+## 		return(code)		
+## 	}
+## 	)
 
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
@@ -827,7 +826,7 @@ for(distfun in paste0(c('d','p','q','r'), 'nbinom'))
 # the following are standard in terms of both matchFunctions and keywordList
 matchDistList <- list('binom', 'cat', 'dirch', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'norm', 'pois', 't_nonstandard', 'unif', 'weibull', 'wish_chol')
 # these are standard for keywordList and handled specially above for matchFunctions
-keywordOnlyMatchDistList <- list('t', 'beta', 'chisq', 'nbinom')
+##keywordOnlyMatchDistList <- list('t', 'beta', 'chisq', 'nbinom')
 
 addDistList2matchFunctions <- function(distList, matchFunEnv){
 	for(thisDist in distList){
@@ -845,21 +844,21 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 	}
 }
 
-addDistKeywordProcessors <- function(distList, keywordEnv){
-		for(thisDist in distList) {
-                    pFun <- paste0('p', thisDist)
-                    qFun <- paste0('q', thisDist)
-                    dFun <- paste0('d', thisDist)
+## addDistKeywordProcessors <- function(distList, keywordEnv){
+## 		for(thisDist in distList) {
+##                     pFun <- paste0('p', thisDist)
+##                     qFun <- paste0('q', thisDist)
+##                     dFun <- paste0('d', thisDist)
                     
-                    keywordEnv[[dFun]] <- d_dist_keywordInfo
-                    keywordEnv[[pFun]] <- qp_dist_keywordInfo
-                    keywordEnv[[qFun]] <- qp_dist_keywordInfo
-		}
-            }
+##                     keywordEnv[[dFun]] <- d_dist_keywordInfo
+##                     keywordEnv[[pFun]] <- qp_dist_keywordInfo
+##                     keywordEnv[[qFun]] <- qp_dist_keywordInfo
+## 		}
+##             }
           
 
 addDistList2matchFunctions(matchDistList, matchFunctions)
-addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
+##addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
 
 #	processKeyword function to be called by nfProc
 processKeyword <- function(code, nfProc){

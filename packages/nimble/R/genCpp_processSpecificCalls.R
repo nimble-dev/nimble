@@ -40,7 +40,7 @@ specificCallHandlers = c(
          max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
-    makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
+    ##makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
     makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
