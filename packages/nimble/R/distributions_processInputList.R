@@ -30,10 +30,11 @@ distributionsClass <- setRefClass(
               nms <- names(dil)
               dupl <- which(nms %in% getAllDistributionsInfo('namesVector', userOnly = TRUE))
               if(length(dupl)) {
-                  distObjects[dupl] <<- NULL
-                  namesVector <<- namesVector[-dupl]
-                  namesExprList[dupl] <<- NULL
-                  translations[dupl] <<- NULL
+                  for(i in seq_along(dupl)) remove(nms[dupl])
+                  ## distObjects[dupl] <<- NULL
+                  ## namesVector <<- namesVector[-dupl]
+                  ## namesExprList[dupl] <<- NULL
+                  ## translations[dupl] <<- NULL
                   cat("Overwriting the following user-supplied distributions:", nms[dupl], ".\n", sep = " ")
               }
               for(i in seq_along(dil))     distObjectsNew[[i]] <- distClass(dil[[i]], nms[i])
@@ -42,7 +43,7 @@ distributionsClass <- setRefClass(
 
               distObjects <<- c(distObjects, distObjectsNew)
               namesVector <<- c(namesVector, nms)
-              namesExprList <<- c(namesExprList, lapply(namesVector, as.name))
+              namesExprList <<- c(namesExprList, lapply(nms, as.name))
               for(distName in nms) assign(distName, distObjects[[distName]]$makeMatchCallFunction(), matchCallEnv)
           },
 
@@ -452,11 +453,11 @@ registerDistributions <- function(distributionsInput) {
          } else {
             nms <- names(distributionsInput)
           }
-        cat("Registering the following user-provided distributions: ", nms, ".\n", sep = "")
+        cat("Registering the following user-provided distributions:", nms, ".\n")
         dupl <- nms[nms %in% getAllDistributionsInfo('namesVector', nimbleOnly = TRUE)]
         if(length(dupl)) {
             distributionsInput[dupl] <- NULL
-            cat("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions:", nms, ". Please rename to avoid the conflict.\n", sep = "")
+            cat("Ignoring the following user-supplied distributions as they have the same names as default NIMBLE distributions:", dupl, ". Please rename to avoid the conflict.\n")
           }
 
         if(is.list(distributionsInput)) 

@@ -113,10 +113,11 @@ nf_checkDSLcode <- function(code) {
             # problem with passing inputIsName when run through roxygen...
             nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, function(x) is.nf(x, inputIsName = TRUE)) |
                                      sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)))]
-            warning(paste0("Detected possible use of R functions in nimbleFunction run code. These functions must defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLinR, collapse = ', '), "."))
+            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these functions must defined as nimbleFunctions or nimbleFunction methods: ", paste(nonDSLinR, collapse = ', '), "."))
+            if("c" %in% nonDSLinR) warning("Note that until version 0.6-3 of NIMBLE, c() cannot be used as a stand-alone function, but its use to create vector arguments to a function may be valid.")
         }
         if(length(nonDSLnonR))
-            warning(paste0("These functions must be defined as nimbleFunctions or nimbleFunction methods for this nimbleFunction to compile: ", paste(nonDSLnonR, collapse = ', '), "."))
+            warning(paste0("For this nimbleFunction to compile, these functions must be defined as nimbleFunctions or nimbleFunction methods: ", paste(nonDSLnonR, collapse = ', '), "."))
     }
     return(0)
 }

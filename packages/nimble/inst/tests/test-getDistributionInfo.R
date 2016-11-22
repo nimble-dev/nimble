@@ -48,7 +48,8 @@ rmyexp <- nimbleFunction(
 assign('rmyexp', rmyexp, envir = .GlobalEnv)
 
 try(test_that("Test of registerDistributions with character string",
-              expect_silent(registerDistributions('dmyexp'))))
+              expect_output(registerDistributions('dmyexp'),
+                            "Registering the following user-provided distributions: dmyexp.")))
 
 try(test_that("Test of registerDistributions with character string for missing distribution",
               expect_error(registerDistributions('dfoo'))))
