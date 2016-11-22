@@ -116,7 +116,7 @@ nf_checkDSLcode <- function(code) {
             warning(paste0("Detected possible use of R functions in nimbleFunction run code. These functions must defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLinR, collapse = ', '), "."))
         }
         if(length(nonDSLnonR))
-            warning(paste0("These functions must be defined as nimbleFunctions for this nimbleFunction to compile: ", paste(nonDSLnonR, collapse = ', '), "."))
+            warning(paste0("These functions must be defined as nimbleFunctions or nimbleFunction methods for this nimbleFunction to compile: ", paste(nonDSLnonR, collapse = ', '), "."))
     }
     return(0)
 }
