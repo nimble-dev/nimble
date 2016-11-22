@@ -1,5 +1,5 @@
 # for use in DSL code check:
-otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double")
+otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample")
 
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
