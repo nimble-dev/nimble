@@ -363,11 +363,15 @@ prepareDistributionInput <- function(dist) {
 #' Register distributional information so that NIMBLE can process
 #' user-supplied distributions in BUGS model code
 #'
-#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions.
+#' @param distributionsInput either a list or character vector specifying the user-supplied distributions. If a list, it should be a named list of lists in the form of that shown in \code{nimble:::distributionsInputList} with each list having required field \code{BUGSdist} and optional fields \code{Rdist}, \code{altParams}, \code{discrete}, \code{pqAvail}, \code{types}, and with the name of the list the same as that of the density function. Alternatively, simply a character vector providing the names of the density functions for the user-supplied distributions. 
 #' @author Christopher Paciorek
 #' @export
 #' @details
 #' When \code{distributionsInput} is a list of lists, see below for more information on the structure of the list. When \code{distributionsInput} is a character vector, the distribution is assumed to be of standard form, with parameters assumed to be the arguments provided in the density nimbleFunction, no alternative parameterizations, and the distribution assumed to be continuous with range from minus infinity to infinity. The availability of distribution and quantile functions is inferred from whether appropriately-named functions exist in the global environment.
+#'
+#' Finally, note that one no longer needs to explicitly call \code{registerDistributions} as it will be called automatically when the user-supplied distribution is used for the first time in BUGS code. However, if one wishes to provide alternative parameterizations, to provide a range, or to indicate a distribution is discrete, then one still must explicitly register the distribution using \code{registerDistributions} with the argument in the list format.
+#'
+#' Format of the component lists when \code{distributionsInput} is a list of lists:
 #' \itemize{
 #' \item{\code{BUGSdist}} {
 #' a character string in the form of the density name (starting with 'd') followed by the names of the parameters in parentheses. When alternative parameterizations are given in \code{Rdist}, this should be an exhaustive list of the unique parameter names from all possible parameterizations, with the default parameters specified first.
@@ -432,6 +436,10 @@ prepareDistributionInput <- function(dist) {
 #' # name of one or more 'd' functions
 #' deregisterDistributions('dmyexp')
 #' registerDistributions('dmyexp')
+#'
+#' # or simply use in BUGS code without registration
+#' deregisterDistributions('dmyexp')
+#' m <- nimbleModel(code, inits = list(r = 1), data = list(y = 2))
 registerDistributions <- function(distributionsInput) {
     if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
@@ -560,6 +568,7 @@ getDistributionList <- function(dists) {
 #' \code{isUserDefined} tests if a BUGS distribution is a user-defined distribution.
 #'
 #' \code{pqAvail} tests if a BUGS distribution provides distribution ('p') and quantile ('q') functions.
+#' 
 #' \code{getDimension} provides the dimension of the value and/or parameters of a BUGS distribution. The return value is a numeric vector with an element for each parameter/value requested.
 #'
 #' \code{getType} provides the type (numeric, logical, integer) of the value and/or parameters of a BUGS distribution. The return value is a character vector with an element for each parameter/value requested. At present, all quantities are stored as numeric (double) values, so this function is of little practical use but could be exploited in the future.
