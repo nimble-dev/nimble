@@ -15,8 +15,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
                makeCallList(matrixMatrixOperators, 'sizeMatrixMatrixReduction'), 
                makeCallList(matrixVectorOperators, 'sizeMatrixVectorReduction'),
-               makeCallList(matrixSquareVectorOperators, 'sizeMatrixSquareVectorReduction'),
-               makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
+               makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
+               makeCallList(matrixEigenListOperators, 'sizeMatrixEigenList'),
                list('return' = 'sizeReturn',
                     'makeNewNimbleListObject' = 'sizeNewNimbleList',
                     'debugSizeProcessing' = 'sizeProxyForDebugging',
@@ -1288,6 +1288,39 @@ sizeMatrixVectorReduction <- function(code, symTab, typeEnv) {
   invisible(asserts)
 }
 
+#for eigen() function
+sizeMatrixEigenList <- function(code, symTab, typeEnv){
+  if(length(code$args) != 2){
+    stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument length != 2.'), call. = FALSE)
+  }
+  asserts <- recurseSetSizes(code, symTab, typeEnv)
+  a1 <- code$args[[1]]
+  if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixSquareVectorReduction called with argument that is not an expression.'), call. = FALSE)
+  if(a1$toEigenize == 'no') {
+    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+    a1 <- code$args[[1]]
+  }
+  if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixSquareVectorReduction called with argument that is not a matrix.'), call. = FALSE)
+  if(!identical(a1$sizeExprs[[1]], a1$sizeExprs[[2]])) {
+    asserts <- c(asserts, identityAssert(a1$sizeExprs[[1]], a1$sizeExprs[[2]], paste0("Run-time size error: expected ", nimDeparse(a1), " to be square.") ))
+  }
+  
+  code$type <- 'symbolNimbleList'
+  listST <- symTab$getParentST()$getSymbolObject('EIGEN_EIGENCLASS')
+  code$sizeExprs <- listST
+  code$toEigenize <- "no"
+  code$nDim <- 0
+  return(NULL)
+}
+  
+#   code$nDim <- 1
+#   code$sizeExprs <- list(newSize)
+#   code$type <- a1$type
+#   code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
+#   print(asserts)
+#   invisible(asserts)
+# }
+# 
 
 #for eigenvalues
 sizeMatrixSquareVectorReduction <- function(code, symTab, typeEnv) {

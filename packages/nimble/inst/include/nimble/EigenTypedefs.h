@@ -1,7 +1,12 @@
 #ifndef __NIMBLE_EIGEN_TYPEDEFS
 #define __NIMBLE_EIGEN_TYPEDEFS
-
 #include <Eigen/Dense>
+#include <iostream> // must go before other things because R defines a "length" macro
+#include <nimble/NamedObjects.h>
+#include <nimble/NimArr.h>
+#include <nimble/smartPtrs.h>
+#include <nimble/RcppNimbleUtils.h>
+
 using namespace Eigen;
 
 typedef Stride<Dynamic, Dynamic> EigStrDyn;
@@ -38,33 +43,44 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
   return(ans);
 }
 
-template<class T>
 class EIGEN_EIGENCLASS : public NamedObjects, public pointedToBase {
 public:
   double nlScalar;
   NimArr<1, double> values;
   NimArr<2, double> vectors;
-void  copyFromSEXP ( SEXP S_nimList_ );
 void  copyToSEXP ( SEXP S_nimList_ );
 SEXP  writeToSEXP (  );
  EIGEN_EIGENCLASS (  );
 };
 
 
-template<class derived1>
-nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const MatrixBase<derived1> &x, bool valuesOnly) {
-  MatrixXd xcopy = x;
-  nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
-  Map<MatrixXd> Eig_eigVals(0,0,0);
-  new (&Eig_eigVals) Map< MatrixXd >((*returnClass).values.getPtr(),x.dim()[0],1);
-  EigenSolver<MatrixXd> solver = EigenSolver<MatrixXd>(xcopy, valuesOnly);
-  Eig_eigVals = solver.eigenvectors().real();
-  if(!valuesOnly){
+template<class T>
+nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
+		Rprintf("Break 1 \n");
+
+	Map<MatrixXd> Eig_x(0,0,0);
+	if(x.dim()[0] != x.dim()[1]) {
+	 _nimble_global_output <<"Run-time size error: expected diamat to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
+	}
+	Rprintf("Break 2 \n");
+
+	new (&Eig_x) Map< MatrixXd >(x.getPtr(),x.dim()[0],x.dim()[1]);
+	nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
+	Map<MatrixXd> Eig_eigVals(0,0,0);
+		Rprintf("Break 3 \n");
+
+	new (&Eig_eigVals) Map< MatrixXd >((*returnClass).values.getPtr(),x.dim()[0],1);
+	EigenSolver<MatrixXd> solver;
+	solver.compute(Eig_x, !valuesOnly);
+	Eig_eigVals = solver.eigenvectors().real();
+		Rprintf("Break 4 \n");
+
+	if(!valuesOnly){
 	Map<MatrixXd> Eig_eigVecs(0,0,0);
 	new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
 	Eig_eigVecs = solver.eigenvalues().real();
-  }
-  return(returnClass);
+	}
+	return(returnClass);
 };
 
 /* template<class derived1>

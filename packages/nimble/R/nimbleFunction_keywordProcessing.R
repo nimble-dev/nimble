@@ -143,11 +143,16 @@ qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
 eigen_keywordInfo <- keywordInfoClass(
   keyword = "eigen",
   processor = function(code, nfProc){
-    eigenValsArg <- code$only.values
-    print(code)
-    if(eigenValsArg == TRUE) code[[1]] <- parse(text = 'eigenvals')[[1]]
-    else  code[[1]] <- parse(text = 'eigenvecs')[[1]]
-    code[[3]] <- NULL #remove only.values argument
+    thisProj <- nfProc$nimbleProject
+    eigenNimbleListDef <- nimbleList(list(vars = c("values", "vectors"), types = c("double(1)", "double(2)")),
+                                     name = "EIGEN_EIGENCLASS")
+    eigenNimbleList <- eigenNimbleListDef$new() 
+    nlp <- thisProj$compileNimbleList(eigenNimbleList, initialTypeInferenceOnly = TRUE)
+    eigenSym <- symbolNimbleList(name = "EIGEN_EIGENCLASS", type = 'nimbleList', nlProc = nlp)
+    nfProc$neededTypes[[ "EIGEN_EIGENCLASS"]] <- eigenSym 
+    # returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
+    nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = "EIGEN_EIGENCLASS", type = 'nimbleListGenerator', nlProc = nlp))
+    code[[1]] <- parse(text = 'EIGEN_EIGEN')[[1]]
     return(code)
   }
 )
@@ -769,6 +774,7 @@ keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['eigen']] <- eigen_keywordInfo
+
 keywordList[['svd']] <- svd_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
@@ -911,7 +917,6 @@ addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList
 #	processKeyword function to be called by nfProc
 processKeyword <- function(code, nfProc){
   thisKeywordInfo <- keywordList[[ as.character(code[[1]]) ]]
-  print(thisKeywordInfo)
   if(!is.null(thisKeywordInfo))
     return(thisKeywordInfo$processor(code, nfProc))
   return(code)
@@ -1407,8 +1412,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
 matchKeywordCode <- function(code, nfProc){
     callName <- as.character(code[[1]])
     thisFunctionMatch <- matchFunctions[[ callName ]]
-    print(callName)
-    print(thisFunctionMatch)
     ## see if this is a member function of an nf object
     if(!is.null(nfProc)) {
         modCallName <- if(callName == "run") "operator()" else callName
