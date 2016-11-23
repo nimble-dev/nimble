@@ -125,7 +125,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
             }
             return(invisible(NULL))
         }
-        
         sizeCall <- sizeCalls[[code$name]]
 
         if(!is.null(sizeCall)) {
@@ -351,7 +350,8 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     code$nDim <- objSym$nDim
     code$type <- objSym$type
     if(isSymList){
-      a1 <- code$args[[1]]
+      if(code$args[[1]]$isCall)
+        recurseSetSizes(code$args[[1]], symTab, typeEnv)
       a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
       a1$type <- a1$args[[1]]$type
       a1$nDim <- a1$args[[1]]$nDim
