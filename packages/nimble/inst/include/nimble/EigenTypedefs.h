@@ -45,7 +45,6 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
 
 class EIGEN_EIGENCLASS : public NamedObjects, public pointedToBase {
 public:
-  double nlScalar;
   NimArr<1, double> values;
   NimArr<2, double> vectors;
 void  copyToSEXP ( SEXP S_nimList_ );
@@ -53,32 +52,23 @@ SEXP  writeToSEXP (  );
  EIGEN_EIGENCLASS (  );
 };
 
-
 template<class T>
 nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
-		Rprintf("Break 1 \n");
-
-	Map<MatrixXd> Eig_x(0,0,0);
+    nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
+	(*returnClass).values.initialize(0, 0, x.dim()[0]);
+	Map<VectorXd> Eig_eigVals(0,0);
+	new (&Eig_eigVals) Map< VectorXd >((*returnClass).values.getPtr(),x.dim()[0]);
+	Map<MatrixXd> Eig_x(x.getPtr(),x.dim()[0],x.dim()[1]);
 	if(x.dim()[0] != x.dim()[1]) {
 	 _nimble_global_output <<"Run-time size error: expected diamat to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
-	}
-	Rprintf("Break 2 \n");
-
-	new (&Eig_x) Map< MatrixXd >(x.getPtr(),x.dim()[0],x.dim()[1]);
-	nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
-	Map<MatrixXd> Eig_eigVals(0,0,0);
-		Rprintf("Break 3 \n");
-
-	new (&Eig_eigVals) Map< MatrixXd >((*returnClass).values.getPtr(),x.dim()[0],1);
-	EigenSolver<MatrixXd> solver;
-	solver.compute(Eig_x, !valuesOnly);
-	Eig_eigVals = solver.eigenvectors().real();
-		Rprintf("Break 4 \n");
-
+	}	
+	EigenSolver<MatrixXd> solver(Eig_x, !valuesOnly);
+	Eig_eigVals = solver.eigenvalues().real();
 	if(!valuesOnly){
-	Map<MatrixXd> Eig_eigVecs(0,0,0);
-	new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
-	Eig_eigVecs = solver.eigenvalues().real();
+	    (*returnClass).vectors.initialize(0, 0, x.dim()[0], x.dim()[0]);
+		Map<MatrixXd> Eig_eigVecs(0,0,0);
+		new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
+		Eig_eigVecs = solver.eigenvectors().real();	
 	}
 	return(returnClass);
 };

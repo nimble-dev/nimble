@@ -151,7 +151,7 @@ eigen_keywordInfo <- keywordInfoClass(
     eigenSym <- symbolNimbleList(name = "EIGEN_EIGENCLASS", type = 'nimbleList', nlProc = nlp)
     nfProc$neededTypes[[ "EIGEN_EIGENCLASS"]] <- eigenSym 
     # returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
-    nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = "EIGEN_EIGENCLASS", type = 'nimbleListGenerator', nlProc = nlp))
+    nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = "EIGEN_EIGEN", type = 'nimbleListGenerator', nlProc = nlp))
     code[[1]] <- parse(text = 'EIGEN_EIGEN')[[1]]
     return(code)
   }
@@ -657,16 +657,16 @@ dollarSign_keywordInfo <- keywordInfoClass(
 		#	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
 		
 		
-		if(length(callerCode) > 1)
-			callerCode <- callerCode[[2]]
+		if((length(callerCode) > 1) && as.character(callerCode[[1]]) != 'eigen')
+		    callerCode <- callerCode[[2]]
 		#	This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
 		#	May be a better way to do this
 		
 		class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
-		if(is.null(class)){  ##assume that an element of a run-time provided nimbleList is being accessed
-		  nl_charName <- as.character(callerCode)
+		if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
+		  nl_charName <- callerCode
 		  nl_fieldName <-as.character(code[[3]])
-		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = nl_charName, VARNAME = nl_fieldName))
 		  return(newRunCode)				
 		}
 		if(class == 'symbolNimPtrList'){
