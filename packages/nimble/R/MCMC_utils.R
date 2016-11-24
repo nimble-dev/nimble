@@ -252,6 +252,7 @@ mcmc_generateControlListArgument <- function(requiredControlNames, samplerFuncti
 
 mcmc_listContentsToStr <- function(ls) {
     ##if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
+    if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     defaultOptions <- getNimbleOption('MCMCcontrolDefaultList')

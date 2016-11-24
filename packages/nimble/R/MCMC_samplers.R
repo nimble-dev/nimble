@@ -94,9 +94,9 @@ sampler_RW <- nimbleFunction(
         timesRan      <- 0
         timesAccepted <- 0
         timesAdapted  <- 0
+        ##scaleHistory  <- c(0, 0)   ## scaleHistory
         optimalAR     <- 0.44
         gamma1        <- 0
-        range <- getDistribution(model$getNodeDistribution(target))$range
         ## checks
         if(length(targetAsScalar) > 1)   stop('cannot use RW sampler on more than one target; try RW_block sampler')
         if(model$isDiscrete(target))     stop('cannot use RW sampler on discrete-valued target; try slice sampler')
@@ -108,9 +108,14 @@ sampler_RW <- nimbleFunction(
         if(logScale) { propLogScale <- rnorm(1, mean = 0, sd = scale)
                        propValue <- currentValue * exp(propLogScale)
                    } else         propValue <- rnorm(1, mean = currentValue,  sd = scale)
-        if(reflective)   while(propValue < range[1] | propValue > range[2]) {
-            if(propValue < range[1]) propValue <- 2*range[1] - propValue
-            if(propValue > range[2]) propValue <- 2*range[2] - propValue    }
+        if(reflective) {
+            lower <- model$getBound(target, 'lower')
+            upper <- model$getBound(target, 'upper')
+            while(propValue < lower | propValue > upper) {
+                if(propValue < lower) propValue <- 2*lower - propValue
+                if(propValue > upper) propValue <- 2*upper - propValue
+            }
+        }
         model[[target]] <<- propValue
         logMHR <- calculateDiff(model, calcNodes) + propLogScale
         jump <- decide(logMHR)
@@ -122,6 +127,8 @@ sampler_RW <- nimbleFunction(
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
+            ##setSize(scaleHistory, timesRan)       ## scaleHistory
+            ##scaleHistory[timesRan] <<- scale      ## scaleHistory
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
@@ -138,6 +145,7 @@ sampler_RW <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
+            ##scaleHistory  <<- scaleHistory * 0    ## scaleHistory
             gamma1 <<- 0
         }
     ), where = getLoadingNamespace()
@@ -169,6 +177,8 @@ sampler_RW_block <- nimbleFunction(
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
+        ##scaleHistory  <- c(0, 0)                        ## scaleHistory
+        ##propCovHistory <- array(0, dim = c(2, d, d))    ## scaleHistory
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
         chol_propCov <- chol(propCov)
@@ -200,6 +210,16 @@ sampler_RW_block <- nimbleFunction(
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
             if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
+            ##setSize(scaleHistory, timesRan)           ## scaleHistory
+            ##scaleHistory[timesRan] <<- scale          ## scaleHistory
+            ##propCovTemp <- propCovHistory             ## scaleHistory
+            ##setSize(propCovHistory, timesRan, d, d)   ## scaleHistory
+            ##if(timesRan > 1) {                        ## scaleHistory
+            ##    for(iTA in 1:(timesRan-1)) {          ## scaleHistory
+            ##        propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
+            ##    }                                     ## scaleHistory
+            ##}                                         ## scaleHistory
+            ##propCovHistory[timesRan, 1:d, 1:d] <<- propCov[1:d, 1:d]   ## scaleHistory
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
@@ -226,6 +246,10 @@ sampler_RW_block <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
+            ##scaleHistory  <<- scaleHistory * 0        ## scaleHistory
+            ##for(iTA in 1:dim(scaleHistory)[1]) {      ## scaleHistory
+            ##    propCovHistory[iTA, 1:d, 1:d] <<- propCovHistory[1, 1:d, 1:d] * 0   ## scaleHistory
+            ##}                                         ## scaleHistory
             my_calcAdaptationFactor$reset()
         }
     ), where = getLoadingNamespace()
@@ -387,7 +411,7 @@ sampler_ess <- nimbleFunction(
         ##target_nodeFunctionList[[1]] <- model$nodeFunctions[[target]]
         ## checks
         if(length(target) > 1)                              stop('elliptical slice sampler only applies to one target node')
-        if(model$getNodeDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
+        if(model$getDistribution(target) != 'dmnorm')   stop('elliptical slice sampler only applies to multivariate normal distributions')
     },
     run = function() {
         u <- getLogProb(model, calcNodes) - rexp(1, 1)
@@ -457,7 +481,7 @@ sampler_crossLevel <- nimbleFunction(
         lowConjugateGetLogDensityFunctions <- nimbleFunctionList(getPosteriorDensityFromConjSampler_virtual)
         for(iLN in seq_along(lowNodes)) {
             lowNode <- lowNodes[iLN]
-            conjugacyResult <- model$checkConjugacy2(lowNode)[[lowNode]]
+            conjugacyResult <- model$checkConjugacy(lowNode)[[lowNode]]
             if(is.null(conjugacyResult))     stop('non-conjugate lowNode \'', lowNode, '\' in crossLevel updater')
             prior <- conjugacyResult$prior
             dependentCounts <- sapply(conjugacyResult$control, length)
@@ -956,7 +980,7 @@ sampler_RW_multinomial <- nimbleFunction(
         my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
         my_decideAndJump       <- decideAndJump(model, mvSaved, calcNodes)
         ## checks
-        if(model$getNodeDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
+        if(model$getDistribution(target) != 'dmulti')   stop('can only use RW_multinomial sampler for multinomial distributions')
         if(length(targetAllNodes) > 1)                      stop('cannot use RW_multinomial sampler on more than one target')
         if(adaptive & adaptInterval < 100)                  stop('adaptInterval < 100 is not recommended for RW_multinomial sampler')
     },

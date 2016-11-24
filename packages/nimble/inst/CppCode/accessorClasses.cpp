@@ -30,6 +30,18 @@ NimArr<2, double> getParam_2D_double(int paramID, const oneNodeUseInfo &useInfo,
 //template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
 
+// code for getBound copied over from getParam; none of this currently used as we only have scalar bounds for multivariate nodes
+NimArr<1, double> getBound_1D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  if(iNodeFunction == 0) boundID += 0;
+  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID, useInfo.useInfo));
+}
+
+NimArr<2, double> getBound_2D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  if(iNodeFunction == 0) boundID += 0;
+  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID, useInfo.useInfo));
+}
+
+
 double calculate(NodeVectorClassNew &nodes) {
   double ans(0);
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
