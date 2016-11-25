@@ -127,11 +127,11 @@ sampler_RW <- nimbleFunction(
         adaptiveProcedure = function(jump = logical()) {
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
-            ##setSize(scaleHistory, timesRan)       ## scaleHistory
-            ##scaleHistory[timesRan] <<- scale      ## scaleHistory
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
+                ##setSize(scaleHistory, timesAdapted)         ## scaleHistory
+                ##scaleHistory[timesAdapted] <<- scale        ## scaleHistory
                 gamma1 <<- 1/((timesAdapted + 3)^0.8)
                 gamma2 <- 10 * gamma1
                 adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
@@ -140,6 +140,13 @@ sampler_RW <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
+        ##getScaleHistory = function() { returnType(double(1)); return(scaleHistory) },          ## scaleHistory
+        ##getScaleHistoryExpanded = function() {                                                 ## scaleHistory
+        ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)            ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                         ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                      ## scaleHistory
+        ##            scaleHistoryExpanded[(iTA-1)*adaptInterval+j] <- scaleHistory[iTA]         ## scaleHistory
+        ##    returnType(double(1)); return(scaleHistoryExpanded) },                             ## scaleHistory
         reset = function() {
             scale <<- scaleOriginal
             timesRan      <<- 0
@@ -177,7 +184,7 @@ sampler_RW_block <- nimbleFunction(
         timesAccepted <- 0
         timesAdapted  <- 0
         d <- length(targetAsScalar)
-        ##scaleHistory  <- c(0, 0)                        ## scaleHistory
+        ##scaleHistory   <- c(0, 0)                       ## scaleHistory
         ##propCovHistory <- array(0, dim = c(2, d, d))    ## scaleHistory
         if(is.character(propCov) && propCov == 'identity')     propCov <- diag(d)
         propCovOriginal <- propCov
@@ -210,19 +217,17 @@ sampler_RW_block <- nimbleFunction(
             timesRan <<- timesRan + 1
             if(jump)     timesAccepted <<- timesAccepted + 1
             if(!adaptScaleOnly)     empirSamp[timesRan, 1:d] <<- values(model, target)
-            ##setSize(scaleHistory, timesRan)           ## scaleHistory
-            ##scaleHistory[timesRan] <<- scale          ## scaleHistory
-            ##propCovTemp <- propCovHistory             ## scaleHistory
-            ##setSize(propCovHistory, timesRan, d, d)   ## scaleHistory
-            ##if(timesRan > 1) {                        ## scaleHistory
-            ##    for(iTA in 1:(timesRan-1)) {          ## scaleHistory
-            ##        propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
-            ##    }                                     ## scaleHistory
-            ##}                                         ## scaleHistory
-            ##propCovHistory[timesRan, 1:d, 1:d] <<- propCov[1:d, 1:d]   ## scaleHistory
             if(timesRan %% adaptInterval == 0) {
                 acceptanceRate <- timesAccepted / timesRan
                 timesAdapted <<- timesAdapted + 1
+                ##setSize(scaleHistory, timesAdapted)                                     ## scaleHistory
+                ##scaleHistory[timesAdapted] <<- scale                                    ## scaleHistory
+                ##propCovTemp <- propCovHistory                                           ## scaleHistory
+                ##setSize(propCovHistory, timesAdapted, d, d)                             ## scaleHistory
+                ##if(timesAdapted > 1)                                                    ## scaleHistory
+                ##    for(iTA in 1:(timesAdapted-1))                                      ## scaleHistory
+                ##        propCovHistory[iTA, 1:d, 1:d] <<- propCovTemp[iTA, 1:d, 1:d]    ## scaleHistory
+                ##propCovHistory[timesAdapted, 1:d, 1:d] <<- propCov[1:d, 1:d]            ## scaleHistory
                 adaptFactor <- my_calcAdaptationFactor$run(acceptanceRate)
                 scale <<- scale * adaptFactor
                 ## calculate empirical covariance, and adapt proposal covariance
@@ -238,6 +243,20 @@ sampler_RW_block <- nimbleFunction(
                 timesAccepted <<- 0
             }
         },
+        ##getScaleHistory   = function() { returnType(double(1)); return(scaleHistory)   },                   ## scaleHistory
+        ##getPropCovHistory = function() { returnType(double(3)); return(propCovHistory) },                   ## scaleHistory
+        ##getScaleHistoryExpanded = function() {                                                              ## scaleHistory
+        ##    scaleHistoryExpanded <- numeric(timesAdapted*adaptInterval, init=FALSE)                         ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                                   ## scaleHistory
+        ##            scaleHistoryExpanded[(iTA-1)*adaptInterval+j] <- scaleHistory[iTA]                      ## scaleHistory
+        ##    returnType(double(1)); return(scaleHistoryExpanded) },                                          ## scaleHistory
+        ##getPropCovHistoryExpanded = function() {                                                            ## scaleHistory
+        ##    propCovHistoryExpanded <- array(dim=c(timesAdapted*adaptInterval,d,d), init=FALSE)              ## scaleHistory
+        ##    for(iTA in 1:timesAdapted)                                                                      ## scaleHistory
+        ##        for(j in 1:adaptInterval)                                                                   ## scaleHistory
+        ##            propCovHistoryExpanded[(iTA-1)*adaptInterval+j,1:d,1:d] <- propCovHistory[iTA,1:d,1:d]  ## scaleHistory
+        ##    returnType(double(3)); return(propCovHistoryExpanded) },                                        ## scaleHistory
         reset = function() {
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
@@ -246,10 +265,9 @@ sampler_RW_block <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
-            ##scaleHistory  <<- scaleHistory * 0        ## scaleHistory
-            ##for(iTA in 1:dim(scaleHistory)[1]) {      ## scaleHistory
-            ##    propCovHistory[iTA, 1:d, 1:d] <<- propCovHistory[1, 1:d, 1:d] * 0   ## scaleHistory
-            ##}                                         ## scaleHistory
+            ##scaleHistory  <<- scaleHistory * 0                                       ## scaleHistory
+            ##for(iTA in 1:dim(scaleHistory)[1])                                       ## scaleHistory
+            ##    propCovHistory[iTA, 1:d, 1:d] <<- propCovHistory[1, 1:d, 1:d] * 0    ## scaleHistory
             my_calcAdaptationFactor$reset()
         }
     ), where = getLoadingNamespace()
