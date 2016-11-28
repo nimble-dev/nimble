@@ -14,6 +14,7 @@ notifications:
 branches:
   only:
     - devel
+    - travisTests
 ##  - master
 
 install:
@@ -25,7 +26,37 @@ install:
   - R CMD INSTALL packages/nimble
 
 script:
-    - Rscript packages/nimble/inst/tests/test-mcmc.R
-    - Rscript packages/nimble/inst/tests/test-models.R
+    - Rscript packages/nimble/inst/tests/test-mcmc.R    ##
+    - Rscript packages/nimble/inst/tests/test-models.R  ## about 50 mins for models+mcmc
+    - Rscript packages/nimble/inst/tests/test-getDependencies.R  ## ??
 ##  - Rscript packages/nimble/inst/tests/test-trunc.R
 ##  - Rscript packages/nimble/inst/tests/test-others.R
+
+
+##test-mcmc.R
+##test-Mcmc2.R
+##test-Mcmc3.R
+##test-models.R
+##test-getDependencies.R
+
+##test-Filtering2.R
+##test-Math2.R
+##test-checkDSL.R
+##test-compareMCMCs.R
+##test-copy.R
+##test-declare.R
+##test-distributions.R
+##test-dsl_dists.R
+##test-filtering.R
+##test-getBound.R
+##test-getDistributionInfo.R
+##test-getParam.R
+##test-math.R
+##test-mcem.R
+##test-misc.R
+##test-setData.R
+##test-size.R
+##test-trunc.R
+##test-user.R
+
+
