@@ -10,7 +10,9 @@ writeLines(c("need to get Scalar instead of result_type",
 gen_runFunCore <- function(input) {
     runFun <- function() {}
     formalsList <- input$args
-    if(is.null(names(formalsList))) names(formalsList) <- paste0('arg', seq_along(input$args))
+    if(is.null(names(formalsList)))
+        if(length(formalsList) > 0)
+            names(formalsList) <- paste0('arg', seq_along(input$args))
     formals(runFun) <- formalsList
     tmp <- quote({})
     tmp[[2]] <- input$expr
@@ -47,21 +49,31 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
       list2env(savedArgs, envir = evalEnv)
       out_nfC = nfC(evalEnv$arg1)
   }
+  if(nArgs == 0) {
+      out_nfR = nfR()
+      list2env(savedArgs, envir = evalEnv)
+      out_nfC = nfC()
+  }
   out <- savedOutputs$out
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
-  try(test_that(paste0("Test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                expect_identical(out, out_nfR)))
-  try(test_that(paste0("Test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                expect_identical(out, out_nfC)))
+  checkEqual <- input[['checkEqual']]
+  if(is.null(checkEqual)) checkEqual <- FALSE
+  if(!checkEqual) {
+      try(test_that(paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
+                    expect_identical(out, out_nfR)))
+      try(test_that(paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name),
+                    expect_identical(out, out_nfC)))
+  } else {
+      try(test_that(paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
+                    expect_equal(out, out_nfR)))
+      try(test_that(paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name),
+                    expect_equal(out, out_nfC)))
+  }
   # unload DLL as R doesn't like to have too many loaded
   if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
   invisible(NULL)
 
 }
-
-diagTests <- list(
-    list(name = "diag(scalar)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(0))),
-         setArgVals = quote({arg1 <- 3}), outputType = double(1)))
 
 cTests <- list(
     list(name = "c(double, double)", expr = quote(out <- c(arg1, arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
@@ -176,3 +188,168 @@ blockTests <- list(
     ## input passed non-trivially as map
     ## all scalar indices
 )
+
+repTests <- list(
+    ##1
+    ## basic cases with x and times
+    list(name = "rep(1, 3)", expr = quote(out <- rep(1, 3)), args = list(arg1 = quote(double(0))),
+         setArgVals = quote({arg1 <- 3}), outputType = quote(double(1))),
+    list(name = "rep(vector double, 3)", expr = quote(out <- rep(arg1, 3)), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(1))),
+    list(name = "rep(vector integer, 3)", expr = quote(out <- rep(arg1, 3)), args = list(arg1 = quote(integer(1))),
+         setArgVals = quote({arg1 <- as.integer(1:3)}), outputType = quote(integer(1))),
+    list(name = "rep(vector logical, 3)", expr = quote(out <- rep(arg1, 3)), args = list(arg1 = quote(logical(1))),
+         setArgVals = quote({arg1 <- c(TRUE, FALSE, FALSE)}), outputType = quote(logical(1))),
+    list(name = "rep(vector double, variable)", expr = quote(out <- rep(arg1, arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(integer())),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4}), outputType = quote(double(1))),
+    ##6
+    ## cases with x and each
+    list(name = "rep(1, 3)", expr = quote(out <- rep(1, each = 3)), args = list(arg1 = quote(double(0))),
+         setArgVals = quote({arg1 <- 3}), outputType = quote(double(1))),
+    list(name = "rep(vector double, 3)", expr = quote(out <- rep(arg1, each = 3)), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(1))),
+    list(name = "rep(vector integer, 3)", expr = quote(out <- rep(arg1, each = 3)), args = list(arg1 = quote(integer(1))),
+         setArgVals = quote({arg1 <- as.integer(1:3)}), outputType = quote(integer(1))),
+    list(name = "rep(vector logical, 3)", expr = quote(out <- rep(arg1, each = 3)), args = list(arg1 = quote(logical(1))),
+         setArgVals = quote({arg1 <- c(TRUE, FALSE, FALSE)}), outputType = quote(logical(1))),
+    list(name = "rep(vector double, variable)", expr = quote(out <- rep(arg1, each = arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(integer())),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4}), outputType = quote(double(1))),
+    ##11
+    list(name = "rep(vector double, first arg)", expr = quote(out <- rep(arg1, each = arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(integer(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.integer(4:5)}), outputType = quote(double(1))),
+
+    ## basic cases with x, times and each
+    list(name = "rep(vector double, variable, each = 2)", expr = quote(out <- rep(arg1, times = arg2, each = 2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(4))}), outputType = quote(double(1))),
+    list(name = "rep(vector double, variable, variable)", expr = quote(out <- rep(arg1, times = arg2, each = arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4); arg3 <- 5}), outputType = quote(double(1))),
+    list(name = "rep(vector double, variable, firstarg)", expr = quote(out <- rep(arg1, times = arg2, each = arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4; arg3 <- c(5, 7)}), outputType = quote(double(1))),
+    ## basic cases with x and length.out
+    list(name = "rep(1, lenght.out = 3)", expr = quote(out <- rep(1, length.out = 3)), args = list(arg1 = quote(double(0))),
+         setArgVals = quote({arg1 <- 3}), outputType = quote(double(1))),
+    ## 16
+    list(name = "rep(vector double, length.out = larger than vector)", expr = quote(out <- rep(arg1, length.out = 5)), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(1))),
+    list(name = "rep(vector double, length.out = smaller than vector)", expr = quote(out <- rep(arg1, length.out = 2)), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(1))),
+    list(name = "rep(vector double, length.out = 0)", expr = quote(out <- rep(arg1, length.out = 0)), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(1))),
+    list(name = "rep(vector double, length.out = first arg)", expr = quote(out <- rep(arg1, length.out = arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
+    list(name = "rep(vector double, length.out = scalar from vectors)", expr = quote(out <- rep(arg1, length.out = sum(arg2))), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
+    #21
+    list(name = "rep(vector double, times to ignore, length.out = scalar from vectors)", expr = quote(out <- rep(arg1, times = 5, length.out = sum(arg2))), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
+    list(name = "rep(vector double, each, length.out = scalar from vectors)", expr = quote(out <- rep(arg1, each = 3, length.out = sum(arg2))), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
+    list(name = "rep(vector double, times to ignore, each, length.out = scalar from vectors)", expr = quote(out <- rep(arg1, each = 3, times = 10, length.out = sum(arg2))), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8))}), outputType = quote(double(1))),
+    list(name = "rep(vector double, times to ignore, each = first arg, length.out = first arg)", expr = quote(out <- rep(arg1, each = arg3, times = 10, length.out = arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(7, 8)); arg3 <- as.numeric(4:5)}), outputType = quote(double(1))),
+    
+
+    ## x, times expressions
+    list(name = "rep(vector double expression, expression)", expr = quote(out <- rep(exp(arg1), arg2^2)), args = list(arg1 = quote(double(1)), arg2 = quote(integer())),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- 4}), outputType = quote(double(1))),
+    ##26
+    list(name = "rep(vector double expression, non-scalar expression)", expr = quote(out <- rep(exp(arg1), sum(arg2^2))), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(2,3))}), outputType = quote(double(1))),
+        
+
+    list(name = "rep(matrix, 3)", expr = quote(out <- rep(arg1, 3)), args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:9), nrow = 3)}),outputType = quote(double(1))),
+
+    list(name = "rep(vector, vector)", expr = quote(out <- rep(arg1, arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))), ## not built yet
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(2:4)}), outputType = quote(double(1)))
+
+)
+
+diagTests <- list(
+    ## could add some where non-scalar inputs are copied in order to get different map behavior
+    ## 
+    ##1
+    ## diag(scalar)
+    list(name = "diag(scalar)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(0))),
+         setArgVals = quote({arg1 <- 3}), outputType = quote(double(2))),
+    list(name = "diag(scalar expression)", expr = quote(out <- diag(arg1 + arg2)), args = list(arg1 = quote(double(0)), arg2 = quote(double(0))),
+         setArgVals = quote({arg1 <- 3; arg2 <- 2}), outputType = quote(double(2))),
+    list(name = "diag(scalar-producing vector expression)", expr = quote(out <- diag(sum(arg1))), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3);}), outputType = quote(double(2))),    
+    list(name = "diag(scalar) with expr", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(0)), arg2 = quote(double(2))),
+         setArgVals = quote({arg1 <- 3; arg2 = matrix(1:9, nrow = 3)}), outputType = quote(double(2))),
+    list(name = "diag(0)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(0))),
+         setArgVals = quote({arg1 <- 0}), outputType = quote(double(2))),
+    ## 6
+    ## diag(vector)
+    list(name = "diag(vector)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(2))),
+    list(name = "diag(vector expression)", expr = quote(out <- diag(arg1 + arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(10,20, 30))}), outputType = quote(double(2))),
+    list(name = "diag(vector) with epxression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(11:13)}), outputType = quote(double(2))),
+
+    ## diag(matrix)
+    list(name = "diag(square matrix)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(rnorm(25), nrow = 5)}), outputType = quote(double(1))),
+    list(name = "diag(square matrix from expression)", expr = quote(out <- diag(exp(arg1) + arg2)), args = list(arg1 = quote(double(2)), arg2 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(rnorm(25), nrow = 5); arg2 <- matrix(1:25, nrow = 5)}), outputType = quote(double(1))),
+    ## 11
+    list(name = "diag(non-square matrix)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(rnorm(12), nrow = 3)}), outputType = quote(double(1))),
+
+    list(name = "diag(square matrix) <-", expr = quote({diag(arg1) <- arg2; out <- arg1}), args = list(arg1 = quote(double(2)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- matrix(rnorm(25), nrow = 5); arg2 <- as.numeric(101:105)}), outputType = quote(double(2))),
+    list(name = "copy, then diag(square matrix) <-", expr = quote({A1 <- arg1; diag(A1) <- arg2; out <- A1}), args = list(arg1 = quote(double(2)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- matrix(rnorm(25), nrow = 5); arg2 <- as.numeric(101:105)}), outputType = quote(double(2))),
+    list(name = "diag(square matrix)[subset]", expr = quote(out <- diag(arg1)[2:4]), args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(rnorm(25), nrow = 5)}), outputType = quote(double(1))),
+    list(name = "diag(square matrix)[subset] <-", expr = quote({diag(arg1)[2:4] <- arg2[1:3]; out <- arg1}), args = list(arg1 = quote(double(2)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- matrix(rnorm(25), nrow = 5); arg2 <- rnorm(3)}), outputType = quote(double(2))),
+    ## 16
+    ## aliasing
+    list(name = "diag(matrix)[3:5] <- diag(matrix[1:3])", expr = quote({diag(arg1)[3:5] <- diag(arg1)[1:3]; out <- arg1}), args = list(arg1 = quote(double(2))),
+         setArgVals = quote({arg1 <- matrix(rnorm(25), nrow = 5)}), outputType = quote(double(2)))
+    
+)
+
+recyclingRuleTests <- list(
+    list(name = "dnorm all vector", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:2); arg3 <- as.numeric(c(2, 3, 5, 8))}), outputType = quote(double(1))),
+    list(name = "dnorm case 1", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(0)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(2); arg2 <- as.numeric(4:2); arg3 <- as.numeric(c(2, 3, 5, 8))}), outputType = quote(double(1))),
+    list(name = "dnorm case 2", expr = quote(out <- dnorm(arg1[1], arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(4:1); arg3 <- as.numeric(c(2, 3, 5, 8))}), outputType = quote(double(1))),
+    list(name = "dnorm case 3", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(c(2, 3, 5, 8))}), outputType = quote(double(1))),
+    list(name = "dnorm case 4", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
+         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1)))
+)
+
+seqTests <- list(
+    ##1
+    list(name = "1:5", expr = quote(out <- 1:5), args = list(),
+         setArgVals = quote({}), outputType = quote(double(1)), checkEqual = TRUE),
+    list(name = "seq(.1, 10, by = .1)", expr = quote(out <- seq(.1, 10, by = .1)), args = list(),
+         setArgVals = quote({}), outputType = quote(double(1))),
+    list(name = "seq(.1, 10, length.out = 11)", expr = quote(out <- seq(.1, 10, length.out = 11)), args = list(),
+         setArgVals = quote({}), outputType = quote(double(1))),
+    list(name = "seq(.1, 10, length.out = 11) in expression", expr = quote(out <- log(seq(.1, 10, length.out = 11)) + 2 + rep(1, 11)), args = list(),
+         setArgVals = quote({}), outputType = quote(double(1)))
+
+    ## need to handle this case
+##    list(name = "seq(.1, 10, by = .1)", expr = quote(out <- seq(.1, by = 0.1, length.out = 11)), args = list(),
+##         setArgVals = quote({}), outputType = quote(double(1)))
+    ## need to handle decreasing colon sequenences
+)
+## STATUS: need to handle by and length.out case.
+## need to handle decreasing colon sequences
+## need to cast from integer to double.  
+
+## lapply(cTests, test_coreRfeature)
+## lapply(blockTests, test_coreRfeature)
+## lapply(repTests, test_coreRfeature)
+## lapply(diagTests, test_coreRfeature)
+## lapply(recyclingRuleTests, test_coreRfeature)
+## lapply(seqTests, test_coreRfeature)

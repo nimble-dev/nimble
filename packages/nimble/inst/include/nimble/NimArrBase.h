@@ -80,7 +80,7 @@ class NimArrBase: public NimArrType {
   virtual int numDims() const = 0;
   virtual int dimSize(int i) const = 0;
   T &operator[](int i) const {return((*vPtr)[offset + i * stride1]);} // generic for nDim > 1, overloaded for other dimensions
-  T &valueNoMap(int i) const {return(*(vPtr + i));} // only to be used if not a map 
+  T &valueNoMap(int i) const {return(*(v + i));} // only to be used if not a map 
   virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;

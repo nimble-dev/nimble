@@ -108,7 +108,8 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
 
 eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
     makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam','getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
-    list(nfVar = 'eigenize_nfVar',
+    list(coeffSetter = 'eigenize_coeffSetter',
+         nfVar = 'eigenize_nfVar',
          chainedCall = 'eigenize_chainedCall',
          '<-' = 'eigenize_assign_before_recurse',
          mvAccessRow = 'eigenize_nfVar') )##,
@@ -244,7 +245,7 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
             setupExprs <- c(setupExprs, eigenizeNameStrided(code, symTab, typeEnv, workEnv))
             return(setupExprs)
         }
-        if(code$name == '[') { ## If there is still A[i] in the code, it is because it ces to a scalar and does not need eigenization
+        if(code$name == '[') { ## If there is still A[i] in the code, it is because it is equivalent to a scalar and does not need eigenization
             if(code$nDim == 0) {
 ##                writeLines(paste0('Not eigenizing ', nimDeparse(code)))
                 return(NULL)
@@ -363,6 +364,18 @@ eigenize_cWiseUnaryEither <- function(code, symTab, typeEnv, workEnv) {
     code$name <- newName
     code$eigMatrix <- code$args[[1]]$eigMatrix
     invisible(NULL)
+}
+
+eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
+    ## a peculiar case: we expect it to be on LHS but must take control of workEnv$OnLHSnow, which would have been set by eigenize_assign_before_recursing
+    setupExprs <- list()
+    workEnv$OnLHSnow <- TRUE
+    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
+    workEnv$OnLHSnow <- NULL
+    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
+    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[3]], symTab, typeEnv, workEnv))
+    workEnv$OnLHSnow <- TRUE
+    setupExprs
 }
 
 eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
@@ -597,7 +610,10 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     targetVarProxy <- EigenName ## don't have a more direct targetVar - a little redundant but keeps the code similar to eigenizeName and eigenizeNameStrided
     thisMapAlreadySet <- FALSE
     if(!is.null(workEnv[['OnLHSnow']])) { ## this is the var on the LHS
-        if(!is.null(workEnv[['LHSeigenName']])) stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
+        if(!is.null(workEnv[['LHSeigenName']])) {
+            browser()
+            stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
+        }
         workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = targetVarProxy)
         workEnv[[EigenName]] <- TRUE
     } else { ## This is on the RHS
@@ -694,7 +710,10 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
 
     thisMapAlreadySet <- FALSE
     if(!is.null(workEnv[['OnLHSnow']])) { ## this is the var on the LHS
-        if(!is.null(workEnv[['LHSeigenName']])) stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE) 
+        if(!is.null(workEnv[['LHSeigenName']])) {
+            browser()
+            stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
+        }
         workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = code$name)
         workEnv[[EigenName]] <- TRUE
     } else { ## This is on the RHS

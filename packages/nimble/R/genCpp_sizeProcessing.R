@@ -255,15 +255,17 @@ sizeWhich <- function(code, symTab, typeEnv) {
     ## and then it will transform to
     ## setWhich(answer, boolExpr) for C++ output
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-    if(!(code$caller$name %in% assignmentOperators)) {
-        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-    }
+
     code$type = 'integer'
     code$sizeExprs <- list(NULL)
     code$nDim <- 1
     code$toEigenize <- 'yes'
     code$name <- 'setWhich'
-    return(asserts)
+
+    if(!(code$caller$name %in% assignmentOperators)) {
+        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    }
+    if(length(asserts) == 0) NULL else asserts
 }
 
 sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in eigenization.
@@ -1138,7 +1140,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     code$toEigenize <-if(inherits(RHS, 'exprClass')) {
         if(RHS$toEigenize == 'no') 'no' else {
             if(RHS$toEigenize == 'unknown') 'no' else {
-                if(RHS$toEigenize != 'yes' & (!(LHS$name %in% c('eigenBlock', 'diagonal'))) & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
+                if(RHS$toEigenize != 'yes' & (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
                 else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
             }
         }
@@ -1371,8 +1373,18 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         if(i == 1) next
         if(inherits(code$args[[i]], 'exprClass')) {
             if(code$args[[i]]$name != "")
-                if(code$args[[i]]$type == 'logical')
-                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
+                if(code$args[[i]]$type == 'logical') {
+##                    browser()
+                    ## first insert which, then lift to intermediate
+                    newExpr <- insertExprClassLayer(code, i, 'which')
+                    useBool <- rep(FALSE, length(code$args))
+                    useBool[i] <- TRUE
+##                    browser()
+                    asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useBool))
+                    ## sizeWhich will lift it to an intermediate and annotate it 
+##                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
+                    
+                }
         }
     }
     
@@ -1436,8 +1448,6 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         code$sizeExprs <- list() ## it was a named, list.  this creates consistency. maybe unnecessary
         ##needMap will be FALSE if we are in this clause
         if(!code$args[[1]]$isName)
-##            if(code$args[[1]]$name != 'map')
-  ##              if(code$args[[1]]$name != 'dim') 
             if(!(code$args[[1]]$name %in% operatorsAllowedBeforeIndexBracketsWithoutLifting)) {## 'mvAccessRow'){
                 ## At this point we have decided to lift, and the next two if()s determine if that is weird due to being on LHS of assignment
                 if(code$caller$name %in% assignmentOperators)
@@ -1453,27 +1463,99 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         ## If this is a map on an *expression* that is not a map, we used to always lift it
         ## e.g. (A + B)[1:4] must become (Interm <- A + B; Interm[1:4])
         ## Now we only need to lift it if the map will not be impemented via eigenBlock
-        liftArg <- FALSE
-        mappingViaEigenBlock <- simpleBlockOK && code$args[[1]]$nDim <= 2
-        if(!code$args[[1]]$isName)                   ## In X[I], X is an expression, not just a name
-            if(!mappingViaEigenBlock) {              ## Handling of `[` will NOT be via .block() in Eigen
-                if(code$args[[1]]$name != 'map')     ## Lift unless it is already a map, which can be compounded
-                    liftArg <- TRUE
-            }
-        if(liftArg) asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+
+        ## Or maybe we never need to
+        ## liftArg <- FALSE
+        ## mappingViaEigenBlock <- simpleBlockOK && code$args[[1]]$nDim <= 2
+        ## if(!code$args[[1]]$isName)                   ## In X[I], X is an expression, not just a name
+        ##     if(!mappingViaEigenBlock) {              ## Handling of `[` will NOT be via .block() in Eigen
+        ##         if(code$args[[1]]$name != 'map')     ## Lift unless it is already a map, which can be compounded
+        ##             liftArg <- TRUE
+        ##     }
+        ## if(liftArg) asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+
+        ## for nested blocking, we have (nonseq | eigenBlock | map) x (nonseq | eigenBlock | map)
+        ##      [ coeffSetter is a version of nonseq ]
+        ## (map) x (eigenBlock | map) is already handled
+        ## (map) x (nonseq)           is already handled
+        ## (eigenBlock) x (eigenBlock) is already handled
+        ## 
+##        browser()
+        ## check whether to nest the indexing directly
+
+
+##         nestIndexing <- FALSE
+##         if(!code$args[[1]]$isName) { ## In X[i], X is an expression
+##             ## X is an indexing expression of some kind (other than a map, which is already a new object)
+##             ## It is not possible for it to be coeffSetter yet
+##             if(code$args[[1]]$name %in% c('eigenBlock','nimNonseqIndexedd' ,'nimNonseqIndexedi' ,'nimNonseqIndexedb' )) {
+##                 ## if it is not (eigenBlock) x (eigenBlock)
+##                 if(!( (code$args[[1]]$name == 'eigenBlock') & (simpleBlockOK)))
+##                     nestIndexing <- TRUE
+##             }
+##         }
+
+        
+##         if(nestIndexing) {
+##             ##browser()
+##             if(code$args[[1]]$name == 'eigenBlock') {
+##                 ## reach down to X and rename it
+##                 ## put `:`(start, finish) back together.
+##                 if(code$caller$name %in% assignmentOperators) {
+##                     code$args[[1]]$name <- 'coeffSetter'
+##                 } else {
+##                     if(code$type == 'double') code$args[[1]]$name <- 'nimNonseqIndexedd'
+##                     if(code$type == 'integer') code$args[[1]]$name <- 'nimNonseqIndexedi'
+##                     if(code$type == 'logical') code$args[[1]]$name <- 'nimNonseqIndexedb'
+##                 }
+##             } else {
+##                 ## it was already nonseq, but it might need to become coeffSetter
+##                 if(code$caller$name %in% assignmentOperators) {
+##                     code$args[[1]]$name <- 'coeffSetter'
+##                 }
+##             }
+##             code$args[[1]]$sizeExprs <- code$sizeExprs
+##             code$args[[1]]$nDim <- code$nDim
+##             code$args[[1]]$type <- code$type
+##             numIndices <- length(code$args) - 1
+##             for(iInd in 1:numIndices) {
+##                 ##browser()
+##                 newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
+##                 newExpr$type <- 'integer'
+##                 message('Need to deal with scalar nested indices')
+##                 newExpr$sizeExprs <- c(code$args[[iInd + 1]]$sizeExprs)
+##                 newExpr$nDim <- 1
+##                 newExpr$toEigenize <- 'yes'
+##                 ## sizeExprs, nDim, toEigenize?
+##                 setArg(newExpr, 1, code$args[[1]]$args[[iInd + 1]])
+##                 setArg(newExpr, 2, code$args[[iInd + 1]])
+##                 setArg(newExpr, 3, 1)
+##                 setArg(code$args[[1]], iInd + 1, newExpr)
+##             }
+## ##            browser()
+##             code$args[1+(1:numIndices)] <- NULL
+##             codeCaller <- code$caller
+##             removeExprClassLayer(code)
+##             code <- codeCaller$args[[1]]
+##             return(if(length(asserts)==0) NULL else asserts)
+##         }
         
         ## Replace with a map expression if needed
         if(!simpleBlockOK) {
-            if(code$type == 'double') code$name <- 'nimNonseqIndexedd' ## this change could get moved to genCpp_generateCpp 
-            if(code$type == 'integer') code$name <- 'nimNonseqIndexedi'
-            if(code$type == 'logical') code$name <- 'nimNonseqIndexedb'
+            if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
+                code$name <- 'coeffSetter'
+            } else {
+                if(code$type == 'double') code$name <- 'nimNonseqIndexedd' ## this change could get moved to genCpp_generateCpp 
+                if(code$type == 'integer') code$name <- 'nimNonseqIndexedi'
+                if(code$type == 'logical') code$name <- 'nimNonseqIndexedb'
+            }
             if(nDimVar == 1) {
                 if(length(code$args)==2)
                     code$args[[3]] <- 1
             }
         }
         else {
-            if(code$args[[1]]$nDim > 2) { ## old-style blocking
+            if(code$args[[1]]$nDim > 2) { ## old-style blocking from >2D down to 2D or 1D
                 newExpr <- makeMapExprFromBrackets(code, dropBool)
                 newExpr$sizeExprs <- code$sizeExprs
                 newExpr$type <- code$type
@@ -1481,7 +1563,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 newExpr$toEigenize <- code$toEigenize
             }
             else { ## blocking via Eigen
-                newExpr <- makeEigenBlockExprFromBrackets(code, dropBool) ## at this point it is ok that code is messed up (first arg re-used in newExpr)
+                newExpr <- makeEigenBlockExprFromBrackets(code, dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
                 newExpr$sizeExprs <- code$sizeExprs
                 newExpr$type <- code$type
                 newExpr$nDim <- code$nDim
@@ -1990,7 +2072,6 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'sizeBinaryCwise called with argument length != 2.'), call. = FALSE)
 
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-    
     ## sizes of arguments must have already been set
 
     ## pull out the two arguments

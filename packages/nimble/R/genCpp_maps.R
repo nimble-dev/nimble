@@ -158,7 +158,7 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
             newExpr$args[[i]]$toEigenize <- 'maybe'
         }
     }
-    if(needTranspose) { ## STOPPED HERE
+    if(needTranspose) { 
         newExpr$nDim <- code$nDim
         newExpr$type <- code$type
         newExpr$sizeExprs <- code$sizeExprs

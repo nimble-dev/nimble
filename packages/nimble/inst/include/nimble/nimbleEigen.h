@@ -205,6 +205,82 @@ class concatenateClass {
   }
 };
 
+template<typename Index, typename Derived1, typename Derived2, typename Derived3>
+class concatenateClass {
+ public:
+  const Derived1 &Arg1;
+  const Derived2 &Arg2;
+  const Derived3 &Arg3;
+  int size1, size2, size3, size12, totalLength;
+  typedef double result_type;
+ concatenateClass(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) : Arg1(A1), Arg2(A2), Arg3(A3) {
+    size1 = nimble_size_impl<Derived1>::getSize(Arg1);
+    size2 = nimble_size_impl<Derived2>::getSize(Arg2);
+    size12 = size1 + size2;
+    size3 = nimble_size_impl<Derived3>::getSize(Arg3);
+    totalLength = size12 + size3;
+  };
+  
+  result_type operator()(Index i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
+  {
+    std::cout<<"IN 1\n";
+    if(i < size1)
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
+    else
+      if(i < size12)
+	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::LinearAccessBit, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
+      else
+	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived3>::LinearAccessBit, result_type, Derived3, Index >::getCoeff(Arg3, i - size12);
+  }
+
+  result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
+  {
+    std::cout<<"IN 2\n";
+    return operator()(i);
+  }
+};
+
+template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
+class concatenateClass {
+ public:
+  const Derived1 &Arg1;
+  const Derived2 &Arg2;
+  const Derived3 &Arg3;
+  const Derived4 &Arg4;
+  int size1, size2, size3, size4, size12, size123, totalLength;
+  typedef double result_type;
+ concatenateClass(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) : Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4) {
+    size1 = nimble_size_impl<Derived1>::getSize(Arg1);
+    size2 = nimble_size_impl<Derived2>::getSize(Arg2);
+    size12 = size1 + size2;
+    size3 = nimble_size_impl<Derived3>::getSize(Arg3);
+    size123 = size12 + size3;
+    size4 = nimble_size_impl<Derived4>::getSize(Arg4);
+    totalLength = size123 + size4;
+  };
+  
+  result_type operator()(Index i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
+  {
+    std::cout<<"IN 1\n";
+    if(i < size1)
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
+    else
+      if(i < size12)
+	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::LinearAccessBit, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
+      else
+	if(i < size123)
+	  return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived3>::LinearAccessBit, result_type, Derived3, Index >::getCoeff(Arg3, i - size12);
+	else
+	  return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived4>::LinearAccessBit, result_type, Derived4, Index >::getCoeff(Arg4, i - size123);
+  }
+
+  result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
+  {
+    std::cout<<"IN 2\n";
+    return operator()(i);
+  }
+};
+
 
 namespace Eigen{
   namespace internal{
@@ -223,7 +299,18 @@ namespace Eigen{
 	  PacketAccess = false, // happy to keep this false for now
 	  IsRepeatable = true // default was false. 
 	};
-      };    
+      };
+
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3>
+      struct functor_has_linear_access<concatenateClass<Index, Derived1, Derived2, Derived3> > { enum { ret = 1}; }; 
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3>
+      struct functor_traits<concatenateClass<Index, Derived1, Derived2, Derived3> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
+
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
+      struct functor_has_linear_access<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4> > { enum { ret = 1}; }; 
+    template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
+      struct functor_traits<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
+
   }
 }
 
@@ -234,6 +321,16 @@ struct concatenate_impl {
     static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
     concatenateClass<Index, Derived1, Derived2> c(A1, A2);
     return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived >(c.totalLength, 1, c));
+  }
+  template<typename Derived1, typename Derived2, typename Derived3>
+    static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) {
+    concatenateClass<Index, Derived1, Derived2, Derived3> c(A1, A2, A3);
+    return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3>, returnDerived >(c.totalLength, 1, c));
+  }
+  template<typename Derived1, typename Derived2, typename Derived3, typename Derived4>
+    static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) {
+    concatenateClass<Index, Derived1, Derived2, Derived3, Derived4> c(A1, A2, A3, A4);
+    return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived >(c.totalLength, 1, c));
   }
 };
 
@@ -474,6 +571,61 @@ struct seq_impl {
 #define nimSeqByI seq_impl<MatrixXi>::seqBy
 #define nimSeqLenI seq_impl<MatrixXi>::seqLen
 
+// coeffSetter, for cases like X[indices] <- Y
+template<typename IndexType, typename DerivedTarget, typename DerivedIndex1, typename DerivedIndex2>
+class coeffSetterClass {
+public:
+  DerivedTarget &target;
+  const DerivedIndex1 &I1;
+  const DerivedIndex2 &I2;
+  int dim1, dim2, totSize;
+  coeffSetterClass(DerivedTarget &targetIn, const DerivedIndex1 &I1in, const DerivedIndex2 &I2in) :
+    target(targetIn),
+    I1(I1in),
+    I2(I2in) {
+    dim1 = I1.size();
+    dim2 = I2.size();
+    totSize = dim1 * dim2;
+  }
+  int size() const {return(totSize);}
+  int rows() const {return(dim1);}
+  int cols() const {return(dim2);}
+
+  template<typename fromType>
+  void operator=(const fromType &from) {
+    printf("In operator=\n");
+    if(from.size() < totSize) {
+      printf("PROBLEM\n");
+      return;
+    }
+    for(int i = 0 ; i  < totSize; i++) {
+      coeffRef(i) = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::LinearAccessBit), Scalar, fromType, IndexType >::getCoeff(from, i);
+      //      from(i);
+    }
+  }
+  // this will only work for Eigen types 
+  typedef typename Eigen::internal::traits<DerivedTarget>::Scalar Scalar;
+  Scalar &coeffRef(IndexType i) const {
+    std::div_t divRes = div(i, dim1);
+    return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::LinearAccessBit), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
+			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::LinearAccessBit), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, floor(divRes.quot))-1);
+
+    // use % to get the i-th total element
+  }
+  Scalar &coeffRef(IndexType i, IndexType j) const {
+    return target.coeffRef( nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::LinearAccessBit), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, i)-1,
+			    nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::LinearAccessBit), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, j)-1);
+  }
+  // accesses coeffRef of objects using provided indices.
+};
+
+
+template <typename DerivedTarget, typename DerivedIndex1, typename DerivedIndex2>
+  coeffSetterClass<typename Eigen::internal::traits<DerivedTarget>::Index, DerivedTarget, DerivedIndex1, DerivedIndex2> coeffSetter(DerivedTarget &targetIn, const DerivedIndex1 &I1in, const DerivedIndex2 &I2in ) {
+  return coeffSetterClass<typename Eigen::internal::traits<DerivedTarget>::Index, DerivedTarget, DerivedIndex1, DerivedIndex2>(targetIn, I1in, I2in);
+}
+// want coeffSetter(A, indices1, indices2) to work.  We pull out scalar type of A inside coeffSetterClass
+  
 // nonseqIndexed
 
 template<typename IndexObj, typename DerivedObj, typename DerivedI1, typename DerivedI2>
@@ -689,6 +841,60 @@ struct FUNNAME ## _RR_impl {\
     FUNNAME ## _RecyclingRule(const DerivedN &AN, const Derived1 &A1, const Derived2 &A2) { \
     FUNNAME ## RecyclingRuleClass<IndexReturn, DerivedN, Derived1, Derived2> obj(AN, A1, A2); \
     return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, DerivedN, Derived1, Derived2>, DerivedReturn >(obj.outputSize, 1, obj)); \
+  }\
+};
+
+
+// r1
+#define MAKE_RECYCLING_RULE_CLASS_r1(FUNNAME, RETURNSCALARTYPE)		\
+  template<typename Index, typename DerivedN, typename DerivedA1> \
+    class FUNNAME ## RecyclingRuleClass {				\
+public:									\
+    const DerivedA1 &Arg1;						\
+    const DerivedN &ArgN;						\
+    std::vector<RETURNSCALARTYPE> values;				\
+    unsigned int outputSize;						\
+    FUNNAME ## RecyclingRuleClass(const DerivedN &AN, const DerivedA1 &A1 ) : \
+    ArgN(AN), Arg1(A1)					\
+    {									\
+      int sizeN = nimble_size_impl<DerivedN>::getSize(ArgN);		\
+      if(sizeN > 1) outputSize = sizeN;					\
+      else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedN>::LinearAccessBit), RETURNSCALARTYPE, DerivedN, Index >::getCoeff(ArgN, 0); \
+      std::cout<<"chose outputsize "<<outputSize<<"\n";			\
+      int size1 = nimble_size_impl<DerivedA1>::getSize(Arg1);		\
+      values.reserve(outputSize);					\
+      for(int i = 0; i < outputSize; i++) {				\
+	values.push_back(FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1))); \
+      }									\
+      std::cout<<"finished init\n";\
+}					       \
+  RETURNSCALARTYPE operator()(Index i) const { \
+    std::cout<<"in 1 with i = "<<i<<" out of "<< values.size() <<"\n";	\
+    return values[i];\
+  }\
+  RETURNSCALARTYPE operator()(Index i, Index j) const {\
+    std::cout<<"in 2 with i = "<<i<<"\n";	       \
+    return values[i];\
+  }\
+}; \
+\
+ namespace Eigen{\
+  namespace internal{\
+    template<typename Index, typename DerivedN, typename Derived1> \
+      struct functor_has_linear_access<FUNNAME ## RecyclingRuleClass<Index, DerivedN, Derived1> > { enum { ret = 1}; }; \
+    template<typename Index, typename DerivedN, typename Derived1> \
+      struct functor_traits<FUNNAME ## RecyclingRuleClass<Index, DerivedN, Derived1> > { enum {Cost = 10, PacketAccess = false, IsRepeatable = true}; }; \
+  }\
+}\
+\
+template<typename DerivedReturn>\
+struct FUNNAME ## _RR_impl {\
+  typedef typename Eigen::internal::traits<DerivedReturn>::Index IndexReturn;\
+  template<typename DerivedN, typename Derived1>	\
+    static CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, DerivedN, Derived1>, DerivedReturn > \
+    FUNNAME ## _RecyclingRule(const DerivedN &AN, const Derived1 &A1) { \
+    FUNNAME ## RecyclingRuleClass<IndexReturn, DerivedN, Derived1> obj(AN, A1); \
+    return(CwiseNullaryOp<FUNNAME ## RecyclingRuleClass<IndexReturn, DerivedN, Derived1>, DerivedReturn >(obj.outputSize, 1, obj)); \
   }\
 };
 
@@ -1093,8 +1299,18 @@ MAKE_RECYCLING_RULE_CLASS3_2scalar(qunif, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(qweibull, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(qt_nonstandard, double)
 
+MAKE_RECYCLING_RULE_CLASS_r2(rbinom, double)
+MAKE_RECYCLING_RULE_CLASS_r1(rexp_nimble, double)
+MAKE_RECYCLING_RULE_CLASS_r2(rnbinom, double)
+MAKE_RECYCLING_RULE_CLASS_r1(rpois, double)
+MAKE_RECYCLING_RULE_CLASS_r1(rchisq, double)
+MAKE_RECYCLING_RULE_CLASS_r2(rbeta, double)
 MAKE_RECYCLING_RULE_CLASS_r2(rnorm, double)
-
+MAKE_RECYCLING_RULE_CLASS_r2(rgamma, double)
+MAKE_RECYCLING_RULE_CLASS_r2(rlnorm, double)
+MAKE_RECYCLING_RULE_CLASS_r2(runif, double)
+MAKE_RECYCLING_RULE_CLASS_r2(rweibull, double)
+MAKE_RECYCLING_RULE_CLASS_r2(rt_nonstandard, double)
 // matrix, array, as.numeric, as.matrix, as.array
 
 // need the additional parts below to make newMatrixClass work
