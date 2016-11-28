@@ -73,6 +73,40 @@ nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
 	return(returnClass);
 };
 
+class EIGEN_SVDCLASS : public NamedObjects, public pointedToBase {
+public:
+  NimArr<1, double> d;
+  NimArr<2, double> u;
+  NimArr<2, double> v;
+
+void  copyToSEXP ( SEXP S_nimList_ );
+SEXP  writeToSEXP (  );
+ EIGEN_EIGENCLASS (  );
+};
+
+template<class T>
+nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(NimArr<2, T> &x, bool valuesOnly) {
+    nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS;
+	(*returnClass).d.initialize(0, 0, x.dim()[0]);
+	(*returnClass).v.initialize(0, 0, x.dim()[0]);
+	(*returnClass).u.initialize(0, 0, x.dim()[0]);
+
+	Map<VectorXd> Eig_eigVals(0,0);
+	new (&Eig_eigVals) Map< VectorXd >((*returnClass).values.getPtr(),x.dim()[0]);
+	Map<MatrixXd> Eig_x(x.getPtr(),x.dim()[0],x.dim()[1]);
+	if(x.dim()[0] != x.dim()[1]) {
+	 _nimble_global_output <<"Run-time size error: expected diamat to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
+	}	
+	EigenSolver<MatrixXd> solver(Eig_x, !valuesOnly);
+	Eig_eigVals = solver.eigenvalues().real();
+	if(!valuesOnly){
+	    (*returnClass).vectors.initialize(0, 0, x.dim()[0], x.dim()[0]);
+		Map<MatrixXd> Eig_eigVecs(0,0,0);
+		new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
+		Eig_eigVecs = solver.eigenvectors().real();	
+	}
+	return(returnClass);
+};
 /* template<class derived1>
 MatrixXd EIGEN_EIGENVECS(const MatrixBase<derived1> &x) {
   MatrixXd xcopy = x;	

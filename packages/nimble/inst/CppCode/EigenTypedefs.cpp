@@ -3,7 +3,7 @@
 #include "nimble/nimDists.h"
 #include "nimble/RcppNimbleUtils.h"
 
-
+/*EIGEN_EIGEN class functions below */
 void  EIGEN_EIGENCLASS::copyToSEXP ( SEXP S_nimList_ )  {
 SEXP S_pxData;
 SEXP S_values;
@@ -36,3 +36,6 @@ PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));
 UNPROTECT(1);
 return(Sans);
 }
+
+/*EIGEN_SVD class functions below */
+
