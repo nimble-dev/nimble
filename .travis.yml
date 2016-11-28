@@ -28,7 +28,8 @@ install:
 script:
     - Rscript packages/nimble/inst/tests/test-mcmc.R    ##
     - Rscript packages/nimble/inst/tests/test-models.R  ## about 50 mins for models+mcmc
-    - Rscript packages/nimble/inst/tests/test-getDependencies.R  ## ??
+    - Rscript packages/nimble/inst/tests/test-getDependencies.R  ## basically no time added
+    - Rscript packages/nimble/inst/tests/test-getBound.R  ## ??
 ##  - Rscript packages/nimble/inst/tests/test-trunc.R
 ##  - Rscript packages/nimble/inst/tests/test-others.R
 
@@ -38,9 +39,8 @@ script:
 ##test-Mcmc3.R
 ##test-models.R
 ##test-getDependencies.R
+##test-getBound.R
 
-##test-Filtering2.R
-##test-Math2.R
 ##test-checkDSL.R
 ##test-compareMCMCs.R
 ##test-copy.R
@@ -48,10 +48,11 @@ script:
 ##test-distributions.R
 ##test-dsl_dists.R
 ##test-filtering.R
-##test-getBound.R
+##test-Filtering2.R
 ##test-getDistributionInfo.R
 ##test-getParam.R
 ##test-math.R
+##test-Math2.R
 ##test-mcem.R
 ##test-misc.R
 ##test-setData.R
