@@ -1136,16 +1136,22 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## Hence they are created generically above if the LHS$name is new
     ## typeEnv[[LHS$name]]$sizeExprs <- RHSsizeExprs
 
-    if(LHS$toEigenize == 'yes') message('Warning from sizeAssign: not expecting LHS to have toEigenize == yes')
-    code$toEigenize <-if(inherits(RHS, 'exprClass')) {
-        if(RHS$toEigenize == 'no') 'no' else {
-            if(RHS$toEigenize == 'unknown') 'no' else {
-                if(RHS$toEigenize != 'yes' & (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
-                else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
+    if(LHS$toEigenize == 'yes') {
+        code$toEigenize <- 'yes'
+##        message('Warning from sizeAssign: not expecting LHS to have toEigenize == yes')
+    } else {
+        code$toEigenize <-if(inherits(RHS, 'exprClass')) {
+            if(RHS$toEigenize == 'no') 'no' else {
+                if(RHS$toEigenize == 'unknown') 'no' else {
+                    if(RHS$toEigenize != 'yes' & (!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter'))) & (RHS$nDim == 0 | RHS$isName | (RHS$name == 'map' & NoEigenizeMap))) 'no' ## if it is scalar or is just a name or a map, we will do it via NimArr operator= .  Used to have "| RHS$name == 'map'", but this allowed X[1:3] <- X[2:4], which requires eigen, with eval triggered, to get right
+                    else 'yes' ## if it is 'maybe' and non-scalar and not just a name, default to 'yes'
+                }
             }
+        } else {
+            if(LHS$nDim > 0) 'yes'
+            else 'no'
         }
-    } else 'no'
-    
+    }
 
     if(code$toEigenize == 'yes') { ## this would make more sense in eigenize_assign
     ## generate setSize(LHS, ...) where ... are dimension expressions

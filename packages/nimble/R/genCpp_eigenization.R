@@ -97,6 +97,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_rFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
+    makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
     list('t' = 'eigenize_cWiseUnaryEither',
          eigenBlock = 'eigenize_cWiseUnaryEither',
          diagonal  = 'eigenize_cWiseUnaryMatrix',
@@ -357,6 +358,11 @@ eigenize_nimbleNullaryClass <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
 
+eigenize_alwaysMatrix <- function(code, symTab, typeenv, workEnv) {
+    code$eigMatrix <- TRUE
+    invisible(NULL)
+}
+
 eigenize_cWiseUnaryEither <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
     newName <- eigenizeTranslate[[code$name]]
@@ -372,8 +378,8 @@ eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
     workEnv$OnLHSnow <- NULL
-    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
-    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[3]], symTab, typeEnv, workEnv))
+    if(inherits(code$args[[2]], 'exprClass')) setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
+    if(inherits(code$args[[3]], 'exprClass')) setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[3]], symTab, typeEnv, workEnv))
     workEnv$OnLHSnow <- TRUE
     setupExprs
 }
@@ -384,13 +390,21 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
     workEnv$OnLHSnow <- NULL ## allows workEnv[['OnLHSnow']] to be NULL if is does not exist or if set to NULL
-    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
-
+    changeToFill <- FALSE
+    if(inherits(code$args[[2]], 'exprClass')) {
+        setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
+        if(code$args[[2]]$nDim == 0) if(code$args[[1]]$nDim > 0) changeToFill <- TRUE
+    } else {
+        changeToFill <- TRUE
+    }
     if(!is.null(workEnv[['mustAddEigenEval']])) insertExprClassLayer(code, 2, 'eigEval')
-    
-    newName <- eigenizeTranslate[[code$name]]
-    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
-    code$name <- newName
+
+    if(changeToFill) code$name <- 'fill'
+    else {
+        newName <- eigenizeTranslate[[code$name]]
+        if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+        code$name <- newName
+    }
     code$eigMatrix <- code$args[[1]]$eigMatrix
     setupExprs
 }

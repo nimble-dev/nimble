@@ -206,14 +206,14 @@ class concatenateClass {
 };
 
 template<typename Index, typename Derived1, typename Derived2, typename Derived3>
-class concatenateClass {
+class concatenate3Class {
  public:
   const Derived1 &Arg1;
   const Derived2 &Arg2;
   const Derived3 &Arg3;
   int size1, size2, size3, size12, totalLength;
   typedef double result_type;
- concatenateClass(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) : Arg1(A1), Arg2(A2), Arg3(A3) {
+ concatenate3Class(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) : Arg1(A1), Arg2(A2), Arg3(A3) {
     size1 = nimble_size_impl<Derived1>::getSize(Arg1);
     size2 = nimble_size_impl<Derived2>::getSize(Arg2);
     size12 = size1 + size2;
@@ -241,7 +241,7 @@ class concatenateClass {
 };
 
 template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
-class concatenateClass {
+class concatenate4Class {
  public:
   const Derived1 &Arg1;
   const Derived2 &Arg2;
@@ -249,7 +249,7 @@ class concatenateClass {
   const Derived4 &Arg4;
   int size1, size2, size3, size4, size12, size123, totalLength;
   typedef double result_type;
- concatenateClass(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) : Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4) {
+ concatenate4Class(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) : Arg1(A1), Arg2(A2), Arg3(A3), Arg4(A4) {
     size1 = nimble_size_impl<Derived1>::getSize(Arg1);
     size2 = nimble_size_impl<Derived2>::getSize(Arg2);
     size12 = size1 + size2;
@@ -302,14 +302,14 @@ namespace Eigen{
       };
 
     template<typename Index, typename Derived1, typename Derived2, typename Derived3>
-      struct functor_has_linear_access<concatenateClass<Index, Derived1, Derived2, Derived3> > { enum { ret = 1}; }; 
+      struct functor_has_linear_access<concatenate3Class<Index, Derived1, Derived2, Derived3> > { enum { ret = 1}; }; 
     template<typename Index, typename Derived1, typename Derived2, typename Derived3>
-      struct functor_traits<concatenateClass<Index, Derived1, Derived2, Derived3> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
+      struct functor_traits<concatenate3Class<Index, Derived1, Derived2, Derived3> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
 
     template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
-      struct functor_has_linear_access<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4> > { enum { ret = 1}; }; 
+      struct functor_has_linear_access<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4> > { enum { ret = 1}; }; 
     template<typename Index, typename Derived1, typename Derived2, typename Derived3, typename Derived4>
-      struct functor_traits<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
+      struct functor_traits<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
 
   }
 }
@@ -323,14 +323,14 @@ struct concatenate_impl {
     return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived >(c.totalLength, 1, c));
   }
   template<typename Derived1, typename Derived2, typename Derived3>
-    static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) {
-    concatenateClass<Index, Derived1, Derived2, Derived3> c(A1, A2, A3);
-    return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3>, returnDerived >(c.totalLength, 1, c));
+    static CwiseNullaryOp<concatenate3Class<Index, Derived1, Derived2, Derived3>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) {
+    concatenate3Class<Index, Derived1, Derived2, Derived3> c(A1, A2, A3);
+    return(CwiseNullaryOp<concatenate3Class<Index, Derived1, Derived2, Derived3>, returnDerived >(c.totalLength, 1, c));
   }
   template<typename Derived1, typename Derived2, typename Derived3, typename Derived4>
-    static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) {
-    concatenateClass<Index, Derived1, Derived2, Derived3, Derived4> c(A1, A2, A3, A4);
-    return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived >(c.totalLength, 1, c));
+    static CwiseNullaryOp<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3, const Derived4 &A4) {
+    concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4> c(A1, A2, A3, A4);
+    return(CwiseNullaryOp<concatenate4Class<Index, Derived1, Derived2, Derived3, Derived4>, returnDerived >(c.totalLength, 1, c));
   }
 };
 
@@ -583,8 +583,8 @@ public:
     target(targetIn),
     I1(I1in),
     I2(I2in) {
-    dim1 = I1.size();
-    dim2 = I2.size();
+    dim1 = nimble_size_impl<DerivedIndex1>::getSize(I1);
+    dim2 = nimble_size_impl<DerivedIndex2>::getSize(I2);
     totSize = dim1 * dim2;
   }
   int size() const {return(totSize);}
@@ -594,13 +594,21 @@ public:
   template<typename fromType>
   void operator=(const fromType &from) {
     printf("In operator=\n");
-    if(from.size() < totSize) {
+    if(nimble_size_impl<fromType>::getSize(from) < totSize) {
       printf("PROBLEM\n");
       return;
     }
     for(int i = 0 ; i  < totSize; i++) {
       coeffRef(i) = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::LinearAccessBit), Scalar, fromType, IndexType >::getCoeff(from, i);
       //      from(i);
+    }
+  }
+  template<typename fromType>
+  void fill(const fromType &from) {
+    Scalar val = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::LinearAccessBit), Scalar, fromType, IndexType >::getCoeff(from, 0);
+    printf("In from\n");
+    for(int i = 0 ; i  < totSize; i++) {
+      coeffRef(i) = val;
     }
   }
   // this will only work for Eigen types 

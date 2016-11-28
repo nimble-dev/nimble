@@ -31,27 +31,52 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
   evalEnv <- new.env()
   eval(input$setArgVals, envir = evalEnv)
   savedArgs <- as.list(evalEnv)
+  seedToUse <- if(is.null(input[['seed']])) 31415927 else input[['seed']]
+  set.seed(seedToUse)
   eval(input$expr, envir = evalEnv)
   savedOutputs <- as.list(evalEnv)
   list2env(savedArgs, envir = evalEnv)
+  if(nArgs == 5) {
+      set.seed(seedToUse)
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
+  }  
+  if(nArgs == 4) {
+      set.seed(seedToUse)
+      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+      list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
+      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
+  }  
+
   if(nArgs == 3) {
+      set.seed(seedToUse)
       out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
       list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
       out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
   }  
   if(nArgs == 2) {
+      set.seed(seedToUse)
       out_nfR = nfR(evalEnv$arg1, evalEnv$arg2)
       list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
       out_nfC = nfC(evalEnv$arg1, evalEnv$arg2)
   }
   if(nArgs == 1) {
+      set.seed(seedToUse)
       out_nfR = nfR(evalEnv$arg1)
       list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
       out_nfC = nfC(evalEnv$arg1)
   }
   if(nArgs == 0) {
+      set.seed(seedToUse)
       out_nfR = nfR()
       list2env(savedArgs, envir = evalEnv)
+      set.seed(seedToUse)
       out_nfC = nfC()
   }
   out <- savedOutputs$out
@@ -96,8 +121,49 @@ cTests <- list(
 
     
     list(name = "c(double(2), double)", expr = quote(out <- c(arg1, arg2)), args = list(arg1 = quote(double(2)), arg2 = quote(double(1))),
-         setArgVals = quote({arg1 <- matrix(as.numeric(1:4), nrow = 2); arg2 <- as.numeric(10:11)}), outputType = quote(double(1)))
-## add some that use a c() in an expression
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:4), nrow = 2); arg2 <- as.numeric(10:11)}), outputType = quote(double(1))),
+
+        list(name = "c(double, double, double)", expr = quote(out <- c(arg1, arg2, arg3)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3);
+                             arg2 <- as.numeric(4:5);
+                             arg3 <- as.numeric(10:15)}), outputType = quote(double(1))),
+    list(name = "c(double, double, double, double)", expr = quote(out <- c(arg1, arg2, arg3, arg4)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1)), arg4 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3);
+                             arg2 <- as.numeric(4:5);
+                             arg3 <- as.numeric(10:15);
+                             arg4 <- as.numeric(100:120)}), outputType = quote(double(1))),
+    list(name = "c(double, double, double, double, double)", expr = quote(out <- c(arg1, arg2, arg3, arg4, arg5)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1)), arg4 = quote(double(1)), arg5 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3);
+                             arg2 <- as.numeric(4:5);
+                             arg3 <- as.numeric(10:15);
+                             arg4 <- as.numeric(100:120);
+                             arg5 <- as.numeric(200:203)}), outputType = quote(double(1))),
+    list(name = "c(double, double, 1, 2, 3, double)", expr = quote(out <- c(arg1, arg2, 1, 2, 3, arg5)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1)), arg4 = quote(double(1)), arg5 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3);
+                             arg2 <- as.numeric(4:5);
+                             arg3 <- as.numeric(10:15);
+                             arg4 <- as.numeric(100:120);
+                             arg5 <- as.numeric(200:203)}), outputType = quote(double(1))),
+    list(name = "c(double, double, double, 1, 2, 3, double)", expr = quote(out <- c(arg1, arg2, arg3, 1, 2, 3, arg5)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1)), arg4 = quote(double(1)), arg5 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3);
+                             arg2 <- as.numeric(4:5);
+                             arg3 <- as.numeric(10:15);
+                             arg4 <- as.numeric(100:120);
+                             arg5 <- as.numeric(200:203)}), outputType = quote(double(1))),
+    list(name = "c(double, double, double, 1, 2, 3, double, 5, 6, 7, double)", expr = quote(out <- c(arg1, arg2, arg3, 1, 2, 3, arg4, 5, 6, 7, arg5)),
+         args = list(arg1 = quote(double(1)), arg2 = quote(double(1)), arg3 = quote(double(1)), arg4 = quote(double(1)), arg5 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3);
+                             arg2 <- as.numeric(4:5);
+                             arg3 <- as.numeric(10:15);
+                             arg4 <- as.numeric(100:120);
+                             arg5 <- as.numeric(200:203)}), outputType = quote(double(1))),
+    list(name = "expressions: c(double, double)", expr = quote(out <- log(c(arg1 + 1, arg2 + 2)) + 1), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:5)}), outputType = quote(double(1)))
 )
 
 blockTests <- list(
@@ -324,7 +390,13 @@ recyclingRuleTests <- list(
     list(name = "dnorm case 3", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(c(2, 3, 5, 8))}), outputType = quote(double(1))),
     list(name = "dnorm case 4", expr = quote(out <- dnorm(arg1, arg2, arg3)), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
+         setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1))),
+    list(name = "dnorm case 4 [with expressions]", expr = quote(out <- (dnorm(arg1 + 1.5, arg2 + 1.5, arg3) + 1)^2), args = list(arg1 = quote(double(1)), arg2 = quote(double(0)), arg3 = quote(double(0))),
          setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5); arg3 <- as.numeric(4.1)}), outputType = quote(double(1)))
+)
+
+rRecyclingRuleTests <- list(
+
 )
 
 seqTests <- list(
@@ -347,9 +419,119 @@ seqTests <- list(
 ## need to handle decreasing colon sequences
 ## need to cast from integer to double.  
 
+
+nonSeqIndexTests <- list(
+    ##1
+    list(name = "non-sequential indexing: out <- arg1[arg2, arg3]", expr = quote(out <- arg1[arg2, arg3]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- arg1[arg2, 2:4]", expr = quote(out <- arg1[arg2, 2:4]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- arg1[2:4, arg3]", expr = quote(out <- arg1[2:4, arg3]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- arg1[2, arg3, drop = FALSE]", expr = quote(out <- arg1[2, arg3, drop = FALSE]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- arg1[2, arg3]", expr = quote(out <- arg1[2, arg3]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(1))),
+    ##6
+    list(name = "non-sequential indexing: out <- arg1[arg2, arg3] with scalar arg2", expr = quote(out <- arg1[arg2, arg3]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(0)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- 2;
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(1))),
+    list(name = "non-sequential indexing: out <- arg1[arg2, arg3] with scalar arg3", expr = quote(out <- arg1[arg2, arg3]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(0))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- 3}),
+         outputType = quote(double(1))),
+    list(name = "non-sequential indexing: out <- arg1[arg2]", expr = quote(out <- arg1[arg2]),
+         args = list(arg1 = quote(double(1)), arg2 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4)}),
+         outputType = quote(double(1))),
+    list(name = "non-sequential indexing: out[arg2, arg3] <- arg1", expr = quote({out <- matrix(100, nrow = 5, ncol = 5); out[arg2, arg3] <- arg1}),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:6), nrow = 2);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out[2:3, arg3] <- arg1", expr = quote({out <- matrix(100, nrow = 5, ncol = 5); out[2:3, arg3] <- arg1}),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:6), nrow = 2);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+##11
+    list(name = "non-sequential indexing: out[arg2, 3:5] <- arg1", expr = quote({out <- matrix(100, nrow = 5, ncol = 5); out[arg2, 3:5] <- arg1}),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:6), nrow = 2);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- log(arg1[arg2, arg3]) + 1 [in expression]", expr = quote(out <- log(arg1[arg2, arg3]) + 1),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- arg1[arg2 - 1, arg3 + 1] [indices in expressions]", expr = quote(out <- arg1[arg2 - 1, arg3 + 1]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out[arg2] <- arg1", expr = quote({out <- numeric(5); out[1:5] <- 100; out[arg2] <- arg1}),
+         args = list(arg1 = quote(double(1)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:2);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(1))),
+    list(name = "non-sequential indexing: out[arg2] <- 200", expr = quote({out <- numeric(5); out[1:5] <- 100; out[arg2] <- 200}),
+         args = list(arg1 = quote(double(1)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:2);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(1))),
+    list(name = "non-sequential indexing: out[2, arg3] <- arg1 (row matrix)", expr = quote({out <- matrix(100, nrow = 5, ncol = 5); out[2, arg3] <- arg1}),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:3), nrow = 1);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out[2, arg3] <- arg1 (col matrix)", expr = quote({out <- matrix(100, nrow = 5, ncol = 5); out[2, arg3] <- arg1}),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:3), ncol = 1);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2)))
+)
+
+
 ## lapply(cTests, test_coreRfeature)
 ## lapply(blockTests, test_coreRfeature)
 ## lapply(repTests, test_coreRfeature)
 ## lapply(diagTests, test_coreRfeature)
 ## lapply(recyclingRuleTests, test_coreRfeature)
 ## lapply(seqTests, test_coreRfeature)
+## lapply(nonSeqIndexTests, test_coreRfeature)

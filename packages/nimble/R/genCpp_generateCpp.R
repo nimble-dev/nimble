@@ -15,6 +15,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen'), 'cppOutputCallAsIs'),
                     list(
+                        fill = 'cppOutputEigMemberFunctionNoTranslate',
                         MAKE_FIXED_VECTOR = 'cppOutputMakeFixedVector',
                         concatenateTemp = 'cppOutputEigBlank',
                         ':' = 'cppOutputColon',
