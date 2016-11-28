@@ -349,9 +349,13 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
     code$nDim <- objSym$nDim
     code$type <- objSym$type
+    asserts <- list()
     if(isSymList){
-      if(code$args[[1]]$isCall)
-        recurseSetSizes(code$args[[1]], symTab, typeEnv)
+      if(code$args[[1]]$isCall){
+        recurseSetSizes(code, symTab, typeEnv)
+        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+      }
+      else asserts <- NULL
       a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
       a1$type <- a1$args[[1]]$type
       a1$nDim <- a1$args[[1]]$nDim
@@ -366,7 +370,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     }
     code$toEigenize <- 'maybe'
     
-    NULL
+    if(length(asserts)==0) NULL else asserts
 }
 
 sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have only nimFunList[[i]](a), nfMethod(nf, 'foo')(a), or nfMethod(nf[[i]], 'foo')(a)
@@ -729,6 +733,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                     } 
                     if(RHStype == "symbolNimbleList") {
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
+                      if(is.null(LHSnlProc)) LHSnlProc <- symTab$getSymbolObject(RHS$name, inherits = TRUE)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = LHSnlProc))
                     }
