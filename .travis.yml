@@ -33,7 +33,8 @@ script:
     - Rscript packages/nimble/inst/tests/test-declare.R  ## added ~5 mins
     - Rscript packages/nimble/inst/tests/test-checkDSL.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-getParam.R  ## added ~4 mins
-    - Rscript packages/nimble/inst/tests/test-dsl_dists.R  ## ???
+    - Rscript packages/nimble/inst/tests/test-dsl_dists.R  ## basically no time added
+    - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## ???
 ##  - Rscript packages/nimble/inst/tests/test-trunc.R
 ##  - Rscript packages/nimble/inst/tests/test-others.R
 
@@ -48,13 +49,13 @@ script:
 ##test-checkDSL.R
 ##test-getParam.R
 ##test-dsl_dists.R
+##test-getDistributionInfo.R
 
 ##test-compareMCMCs.R
 ##test-copy.R
 ##test-distributions.R
 ##test-filtering.R
 ##test-Filtering2.R
-##test-getDistributionInfo.R
 ##test-math.R
 ##test-Math2.R
 ##test-mcem.R
