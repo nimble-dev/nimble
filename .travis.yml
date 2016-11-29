@@ -31,7 +31,8 @@ script:
     - Rscript packages/nimble/inst/tests/test-getDependencies.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-getBound.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-declare.R  ## added ~5 mins
-    - Rscript packages/nimble/inst/tests/test-checkDSL.R  ## ???
+    - Rscript packages/nimble/inst/tests/test-checkDSL.R  ## basically no time added
+    - Rscript packages/nimble/inst/tests/test-getParam.R  ## ???
 ##  - Rscript packages/nimble/inst/tests/test-trunc.R
 ##  - Rscript packages/nimble/inst/tests/test-others.R
 
@@ -44,6 +45,7 @@ script:
 ##test-getBound.R
 ##test-declare.R
 ##test-checkDSL.R
+##test-getParam.R
 
 ##test-compareMCMCs.R
 ##test-copy.R
@@ -52,7 +54,6 @@ script:
 ##test-filtering.R
 ##test-Filtering2.R
 ##test-getDistributionInfo.R
-##test-getParam.R
 ##test-math.R
 ##test-Math2.R
 ##test-mcem.R
