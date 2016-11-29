@@ -117,7 +117,7 @@ code <- nimbleCode({
 })
 
 m <- nimbleModel(code, data = list(y = rnorm(10)),
-                 constants = list(zeroes = rep(0,2), prec = diag(rep(1,2))))
+                 constants = list(zeroes = rep(0,2), prec = diag(rep(1,2))), calculate=FALSE)
 
 code2 <- nimbleCode({
     for(i in 1:10)
@@ -133,7 +133,7 @@ code2 <- nimbleCode({
 })
 
 m2 <- nimbleModel(code2, data = list(y = rnorm(10)),
-                 constants = list(zeroes = rep(0,2), prec = diag(rep(1,2))))
+                 constants = list(zeroes = rep(0,2), prec = diag(rep(1,2))), calculate=FALSE)
 
 out <- c(rep(TRUE, 10), FALSE, TRUE)
 names(out) <- m$expandNodeNames(c('y', 'mu', 'w'))
