@@ -36,8 +36,8 @@ script:
     - Rscript packages/nimble/inst/tests/test-dsl_dists.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-user.R  ## added ~3 mins
     - Rscript packages/nimble/inst/tests/test-setData.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-copy.R  ## ???
-##  - Rscript packages/nimble/inst/tests/test-trunc.R
+    - Rscript packages/nimble/inst/tests/test-copy.R  ## added ~ 7 mins
+    - Rscript packages/nimble/inst/tests/test-trunc.R
 ##  - Rscript packages/nimble/inst/tests/test-others.R
 ##  - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## having issues with this one
 
@@ -55,6 +55,7 @@ script:
 ##test-user.R
 ##test-setData.R
 ##test-copy.R
+##test-trunc.R
 
 ##test-compareMCMCs.R
 ##test-distributions.R
@@ -65,7 +66,6 @@ script:
 ##test-mcem.R
 ##test-misc.R
 ##test-size.R
-##test-trunc.R
 ##test-getDistributionInfo.R
 
 
