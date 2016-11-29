@@ -29,7 +29,8 @@ script:
     - Rscript packages/nimble/inst/tests/test-mcmc.R    ##
     - Rscript packages/nimble/inst/tests/test-models.R  ## about 50 mins for models+mcmc
     - Rscript packages/nimble/inst/tests/test-getDependencies.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-getBound.R  ## ??
+    - Rscript packages/nimble/inst/tests/test-getBound.R  ## basically no time added
+    - Rscript packages/nimble/inst/tests/test-declare.R  ## ??
 ##  - Rscript packages/nimble/inst/tests/test-trunc.R
 ##  - Rscript packages/nimble/inst/tests/test-others.R
 
@@ -40,11 +41,11 @@ script:
 ##test-models.R
 ##test-getDependencies.R
 ##test-getBound.R
+##test-declare.R
 
 ##test-checkDSL.R
 ##test-compareMCMCs.R
 ##test-copy.R
-##test-declare.R
 ##test-distributions.R
 ##test-dsl_dists.R
 ##test-filtering.R
