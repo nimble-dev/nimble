@@ -73,6 +73,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
+                                   browser()
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
@@ -204,6 +205,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      copyLineCounter <- 1
+                                     browser()
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -249,12 +251,12 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          numArgs <- length(argNames)
                                          if(numArgs + !returnVoid > 0) {
                                              objects$addSymbol(cppSEXP(name = 'S_returnValue_LIST_1234'))
-                                             returnListLines <- returnCopyLines <- vector('list', length = numArgs+!returnVoid)
+                                             returnListLines <- returnCopyLines <- vector('list', length = numArgs)
                                              allocVectorLine <- substitute(PROTECT(S_returnValue_LIST_1234 <- allocVector(VECSXP, nAp1)), list(nAp1 = numArgs + !returnVoid))
                                              if(numArgs > 0) {
                                                  for(i in 1:numArgs) {
-                                                     returnCopyLines[[i + !returnVoid]] <- buildCopyLineToSEXP(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
-                                                                                                 interfaceArgs$getSymbolObject(Snames[i]))
+                                                     # returnCopyLines[[i]] <- buildCopyLineToSEXP(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
+                                                     #                                             interfaceArgs$getSymbolObject(Snames[i]))
                                                      returnListLines[[i]] <- substitute(SET_VECTOR_ELT(S_returnValue_LIST_1234, Im1, THISSEXP),
                                                                                         list(Im1 = i-1, THISSEXP = as.name(Snames[i])))
                                                  }
@@ -263,94 +265,15 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                  rsName <- RCfunProc$compileInfo$returnSymbol$name
                                                  RCfunProc$compileInfo$returnSymbol$name <<- LHSvar$name
                                                  checkLineCounter <- 1
-                                                 if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){  ## if returning a nimbleList, must check to see if it was given as a run-time argument
                                                    ## if so, we point the return nimbleList to the argument nimbleList
-                                                   returnListClassName <- RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$className 
-                                                   if(numArgs > 0) {
-                                                     for(i in 1:numArgs){
-                                                       argSymTab <- RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i])
-                                                       if(inherits(argSymTab, 'symbolNimbleList') &&
-                                                          (argSymTab$nlProc$nimbleListObj$className == returnListClassName)){
-                                                         
-                                                         conditionalText <- if(checkLineCounter == 1) "if(" else "else if("
-                                                         copyText  <- paste0(conditionalText, LHSvar$name, ".equalsPtr(", argNames[i], ")) PROTECT(S_returnValue_1234 = ",
-                                                                             Snames[i], ");")
-                                                         nimListPtrCheckLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
-                                                                                                                list(COPYTEXT = copyText))
-                                                         checkLineCounter <- checkLineCounter+1
-                                                       }
-                                                     }
-                                                   }
-                                                   browser()
-                                                   listSymTab <- RCfunProc$compileInfo$returnSymbol$nlProc$symTab$symbols
-                                                   
-                                                   recurseCreateListConditionalStatements(listSymTab, argNames, 
-                                                                                          RCfunProc$compileInfo$origLocalSymTab)
-                                                   
-                                                   
-                                                   recurseCreateListConditionalStatements <- function(returnListSymTab,
-                                                                                                      argNames,
-                                                                                                      argSymTab,
-                                                                                                      LHSName = '',
-                                                                                                      RHSName = '',
-                                                                                                      LHS_SName = '',
-                                                                                                      RHS_SName = '',
-                                                                                                      recurseOnArgs = FALSE,
-                                                                                                      ifOnly = TRUE){
-                                                     returnConditionalList <- list()
-                                                     if(!recurseOnArgs){
-                                                       for(i in seq_along(returnListSymTab)){
-                                                         if(inherits(listSymTab[[i]], 'symbolNimbleList')){
-                                                           returnConditionalList <- c(returnConditionalList, 
-                                                                                      recurseCreateListConditionalStatements(listSymTab[[i]],
-                                                                                                                             argNames,
-                                                                                                                             argSymTab,
-                                                                                                                             LHSName = paste0('(*',LHSName, ').', lystSymTab[[i]]$name)
-                                                                                                                             RHSName = RHSName,
-                                                                                                                             recurseOnArgs = TRUE,
-                                                                                                                             ifOnly = TRUE))
-                                                           returnConditionalList <- c(returnConditionalList,
-                                                                                      recurseCreateListConditionalStatements(listSymTab[[i]],
-                                                                                                                             argNames,
-                                                                                                                             argSymTab,
-                                                                                                                             LHSName = paste0('(*',LHSName, ').', lystSymTab[[i]]$name)
-                                                                                                                             RHSName = RHSName,
-                                                                                                                             recurseOnArgs = FALSE)))
-                                                         }
-                                                       }
-                                                     }
-                                                     else{
-                                                       returnListClass <- returnListSymTab$nlProc$name
-                                                       for(i in seq_along(argNames)){
-                                                         thisArgSym <- argSymTab$getSymbolObject(argNames[i])
-                                                         if(inherits(thisArgSym, 'symbolNimbleList')){
-                                                           if(thisArgSym$nlProc$nimbleListObj$className == returnListClass){
-                                                             conditionalText <- if(ifOnly) "if(" else "else if("
-                                                             copyText  <- paste0(conditionalText, LHSName, ".equalsPtr(", argNames[i], '))  defineVar(install("',returnListSymTab$name'"), 
-                                                                                 findVarInFrame(GET_SLOT(', RHS_SName, ', S_pxData), install(', thisArgSym$name, ')), GET_SLOT(', RHS_SName, 
-                                                                                 ', S_pxData));')
-                                                             returnLine <- substitute(cppLiteral(COPYTEXT),
-                                                                                      list(COPYTEXT = copytext))
-                                                             return(returnLine)
-                                                           }
-                                                           else{
-                                                             return(recurseCreateListConditionalStatements(
-
-                                                             
-                                                           }
-
-                                                           
-                                                         
-                                                       }
-                                                     }
-                                                     
-                                                   CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
-                                                 }
-                                                 conditionalText <- if(checkLineCounter > 1) "else " else ""
-                                                 returnCopyLines[[1]] <- buildCopyLineToSEXP(RCfunProc$compileInfo$returnSymbol,
-                                                                                                     objects$getSymbolObject('S_returnValue_1234'), 
-                                                                                                     returnCall = TRUE, conditionalText = conditionalText)
-                                                 RCfunProc$compileInfo$returnSymbol$name <<- rsName
+                                                     conditionalLineList <- generateConditionalLines(RCfunProc$compileInfo$returnSymbol,
+                                                                                                'S_returnValue_1234', RCfunProc$compileInfo$origLocalSymTab,
+                                                                                                argNames, objects, TRUE)
+                                                      for(i in seq_along(argNames)){
+                                                        conditionalLineList <- c(conditionalLineList, generateConditionalLines(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
+                                                                                                         paste0('S_', argNames[i]), RCfunProc$compileInfo$origLocalSymTab,
+                                                                                                         argNames, objects, FALSE))
+                                                      }
                                                  returnListLines[[numArgs+1]] <- substitute(SET_VECTOR_ELT(S_returnValue_LIST_1234, I, THISSEXP),
                                                                                             list(I = numArgs, THISSEXP = as.name('S_returnValue_1234')))
                                              }
@@ -358,7 +281,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              #update below so that nimbleList symbols do not add to unprotectLine
                                              unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs - numNimbleList + 1 + !returnVoid))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
-                                                                              nimListPtrCheckLines, returnCopyLines,
+                                                                              conditionalLineList, 
                                                                               returnListLines, list(unprotectLine), list(returnLine)))
                                   
                                          } else { ## No input or return objects
@@ -435,7 +358,7 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
 buildCopyLineToSEXP <- function(fromSym, toSym, returnCall = FALSE, conditionalText = "") {
     if(inherits(fromSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
       if(returnCall == TRUE)  ansText  <- paste0(conditionalText, "PROTECT(", toSym$name, " = ",fromSym$name, "->writeToSEXP());")
-      else ansText  <- paste0(fromSym$name, "->copyToSEXP(", toSym$name, ");")
+      else ansText  <- paste0(conditionalText, fromSym$name, "->copyToSEXP(", toSym$name, ");")
       ans <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
     }
@@ -521,4 +444,41 @@ compileRCfunction <- function(fun, name, fileName, dirName, writeFiles = TRUE, c
     } else {
         cppProj$cppDefs[[1]]$buildRwrapperFunCode(includeLHS = FALSE, eval = TRUE, dll = cppProj$dll)
     }
+}
+
+
+generateConditionalLines <- function(LHSSymTab, LHSSName,
+                                     RHSNameSymTab, argNames,
+                                     objects,  returnCall){
+  checkLineCounter <- 1
+  conditionalLines <- list()
+  isArg <- if(length(which(LHSSymTab$name == argNames) == 1)) TRUE else FALSE
+  isList <- inherits(LHSSymTab, 'symbolNimbleList')
+  if(isList && returnCall){
+    for(i in seq_along(argNames)){
+      argSymTab <- RHSNameSymTab$getSymbolObject(argNames[i])
+      if(inherits(argSymTab, 'symbolNimbleList') &&
+         (argSymTab$nlProc$nimbleListObj$className == LHSSymTab$nlProc$nimbleListObj$className  &&
+          paste0('S_', argNames[i]) != LHSSName)){
+        conditionalText <- if(checkLineCounter == 1) "if(" else "else if("
+        copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) PROTECT(", LHSSName, " = ",
+                            paste0('S_', argNames[i]), ")", ";")
+        # copyText <- paste0(conditionalText,LHSSymTab$name, ".equalsPtr(", argNames[i], '))     printf("A pointer is %p ", ARG1_argList9a_.realPtr);')
+        conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
+                                                           list(COPYTEXT = copyText))
+        checkLineCounter <- checkLineCounter+1
+      }
+    }
+  }
+  conditionalText <- if(checkLineCounter > 1) "else " else ""
+  RHSSymTab <- if(isArg) objects$getSymbolObject(LHSSName, inherits = TRUE) else objects$getSymbolObject(LHSSName)
+  conditionalLines <- c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
+                                                              returnCall = returnCall, conditionalText = conditionalText))
+  # copyText <- paste0(conditionalText, '  printf("B value is %p ", ARG2_argList9b_.realPtr);')
+  # 
+  # conditionalLines <- c(conditionalLines, substitute(cppLiteral(COPYTEXT),
+  #                                                    list(COPYTEXT = copyText)))
+  #                                                    
+  
+  return(conditionalLines)
 }

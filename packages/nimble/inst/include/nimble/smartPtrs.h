@@ -25,9 +25,15 @@ class nimSmartPtr {
   }
 
   nimSmartPtr & operator=(const nimSmartPtr & rhs) {
+	  printf("RHS ptr %p", rhs.realPtr);
+	  printf("This ptr %p", realPtr);
+	  
+
     if(this == &rhs)
       return *this;
     setPtr(rhs);
+	printf("This ptr later %p", realPtr);
+
     return *this;
   }
   nimSmartPtr & operator=(const T* & rhs) {
@@ -59,10 +65,11 @@ class pointedToBase {
  public:
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
-  void newWatcher() {PRINTF("Watcher ++");
+  void newWatcher() {
+	  //PRINTF("Watcher ++");
 watcherCount++;}
   void removeWatcher() {
-	  	PRINTF("Watcher --");
+	//  	PRINTF("Watcher --");
 
     watcherCount--;
     if(watcherCount <= 0) {

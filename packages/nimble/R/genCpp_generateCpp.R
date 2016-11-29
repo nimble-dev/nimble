@@ -149,7 +149,9 @@ cppOutputChainedCall <- function(code, symTab) {
 }
 
 cppNewNimbleList <- function(code, symTab) {
-  paste0("new ", symTab$getSymbolObject(code$caller$args[[1]]$name)$templateArgs)
+  listType <- symTab$getSymbolObject(code$caller$args[[1]]$name)$templateArgs
+  if(is.null(listType)) listType <-  symTab$getSymbolObject(code$caller$args[[1]]$name, inherits = TRUE)$templateArgs
+  paste0("new ", listType)
 }
 
 cppOutputFor <- function(code, symTab) {

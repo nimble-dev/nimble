@@ -38,6 +38,26 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
   return(ans);
 }
 
+template<class derived1>
+MatrixXd EIGEN_EIGENVECS(const MatrixBase<derived1> &x) {
+  MatrixXd xcopy = x;	
+  MatrixXd ans = EigenSolver<MatrixXd>(xcopy, true).eigenvectors().real();
+  return(ans); 
+}
+
+template<class derived1>
+VectorXd EIGEN_EIGENVALS(const MatrixBase<derived1> &x) {
+  MatrixXd xcopy = x;	
+  VectorXd ans = EigenSolver<MatrixXd>(xcopy, false).eigenvalues().real();
+  return(ans); 
+}
+
+template<class derived1>
+VectorXd EIGEN_SVDD(const MatrixBase<derived1> &x) {
+  MatrixXd xcopy = x;	  
+  VectorXd ans = JacobiSVD<MatrixXd>(xcopy).singularValues();
+  return(ans); 
+}
 
 template <typename Derived1, typename Derived2>
 double eigenInprod(const ArrayBase<Derived1>& v1, const ArrayBase<Derived2>& v2) { 
