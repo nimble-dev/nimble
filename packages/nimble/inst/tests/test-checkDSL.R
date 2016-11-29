@@ -1,4 +1,4 @@
-
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 # need a test_dslCheck function???
 
