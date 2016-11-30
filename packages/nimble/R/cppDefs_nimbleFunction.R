@@ -192,11 +192,19 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            names(Rnames2CppNames) <<- objectDefs$getSymbolNames()
                                        },
                                        buildConstructorFunctionDef = function() {
-                                           code <- putCodeLinesInBrackets(list(namedObjectsConstructorCodeBlock()))
-                                           conFunDef <- cppFunctionDef(name = name,
-                                                                       returnType = emptyTypeInfo(),
-                                                                       code = cppCodeBlock(code = code, skipBrackets = TRUE))
-                                           functionDefs[['constructor']] <<- conFunDef
+                                         newNestedListLines <- list()
+                                         if(!(is.null(nimCompProc[['nimbleListObj']]))){
+                                           for(i in seq_along(nimCompProc$neededTypes)){
+                                             newListText <- paste0(nimCompProc$neededTypes[[i]]$name, " = new ", as.name(names(nimCompProc$neededTypes)[i]), ";")
+                                             newNestedListLines[[i]] <- substitute(NEWLISTTEXT,
+                                                                                   list(NEWLISTTEXT = as.name(newListText)))
+                                           }
+                                         }
+                                         code <- putCodeLinesInBrackets(c(newNestedListLines, list(namedObjectsConstructorCodeBlock())))
+                                         conFunDef <- cppFunctionDef(name = name,
+                                                                     returnType = emptyTypeInfo(),
+                                                                     code = cppCodeBlock(code = code, skipBrackets = TRUE))
+                                         functionDefs[['constructor']] <<- conFunDef
                                        }
                                        # buildFunctionDefs = function() {
                                        #   for(i in seq_along(nimCompProc$RCfunProcs)) {

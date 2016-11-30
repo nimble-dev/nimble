@@ -147,7 +147,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          genList <- GENLIST
                                          returnList <- genList[[name]]$new();
                                          return(returnList)}, envir = globalenv());
-                                         assign("c", makeNewNimListFromC, envir = globalenv())},
+                                         assign("makeNewNimListSEXPRESSIONFromC", makeNewNimListFromC, envir = globalenv())},
                                                                list(GENLIST = genList))
                                      }
                                      else{

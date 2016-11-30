@@ -127,7 +127,6 @@ nlProcessing <- setRefClass('nlProcessing',
                                     if(inherits(symTab, "uninitializedField")) buildSymbolTable()
                                 },
                                 buildSymbolTable = function() {
-                                  browser()
                                   if(!inherits(symTab, "uninitializedField")) return(warning("Symbol Table for nimbleList already built."))
                                   if(length(nimbleListObj$types$types) != length(nimbleListObj$types$vars))
                                     stop("Number of nimbleList vars provided is not equal to number of nimbleList types provided")

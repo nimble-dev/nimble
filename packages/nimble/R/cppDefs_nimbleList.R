@@ -42,8 +42,10 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           list(LISTNAME = nimCompProc$nimbleListObj$className))
                                         newListLine[[2]] <- substitute(PROTECT(S_newNimList <- makeNewNimbleList(S_listName)),
                                                                            list())
-                                        newListLine[[3]] <- substitute(copyToSEXP(S_newNimList), list())
-                                        newListLine[[4]] <-   substitute(UNPROTECT(2), list())
+                                        newListLine[[3]] <- substitute(printf("made new nl"))
+                                        
+                                        newListLine[[4]] <- substitute(copyToSEXP(S_newNimList), list())
+                                        newListLine[[5]] <-   substitute(UNPROTECT(2), list())
                                         returnLine <- list(quote(cppLiteral("return(S_newNimList);")))
                                         allCode <- embedListInRbracket(c(newListLine, returnLine))
                                         functionDefs[[paste0(name, "_writeTo")]] <<- cppFunctionDef(name = "writeToSEXP",
@@ -78,12 +80,15 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
                                           writeToSexpLines[[i]] <- buildCopyLineToSEXP(nimCompProc$symTab$getSymbolObject(argNames[i]),
-                                                                                       listElementTable$getSymbolObject(Snames[i]))
+                                                                                       listElementTable$getSymbolObject(Snames[i]), returnCall = TRUE)
                                           copyToListLines[[i]] <- substitute(defineVar(install(ARGNAME), VALUE, GET_SLOT(S_nimList_, XDATA)),
                                                                              list(ARGNAME = argNames[i], VALUE = as.name(Snames[i]),
                                                                                   XDATA = as.name(environmentCPPName)))
                                         }
                                         unprotectLineNoReturn <- list(substitute(UNPROTECT(N), list(N = numArgs + 1)))
+                                        writeToSexpLines[[3]] <- writeToSexpLines[[2]]
+                                        writeToSexpLines[[2]] <-  substitute(printf('copying now'))
+                                        # printLine <- substitute(printf('copying now'))
                                         allCode <- embedListInRbracket(c(list(envLine), writeToSexpLines,
                                                                          copyToListLines, unprotectLineNoReturn))
                                         functionDefs[[paste0(name, "_copyTo")]] <<- cppFunctionDef(name = "copyToSEXP",
