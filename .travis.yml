@@ -40,7 +40,8 @@ script:
     - Rscript packages/nimble/inst/tests/test-copy.R  ## added ~ 7 mins
     - Rscript packages/nimble/inst/tests/test-trunc.R  ## added ~ 5 minutes
     - Rscript packages/nimble/inst/tests/test-distributions.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-misc.R  ## ????
+    - Rscript packages/nimble/inst/tests/test-misc.R  ## basically no time added
+    - Rscript packages/nimble/inst/tests/test-size.R  ## ???
 ##  - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## having issues with this one
 
 
@@ -60,6 +61,7 @@ script:
 ##test-trunc.R
 ##test-distributions.R
 ##test-misc.R
+##test-size.R
 
 ##test-compareMCMCs.R
 ##test-filtering.R
@@ -67,7 +69,6 @@ script:
 ##test-math.R
 ##test-Math2.R
 ##test-mcem.R
-##test-size.R
 ##test-getDistributionInfo.R
 
 
