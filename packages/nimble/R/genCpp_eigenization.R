@@ -96,6 +96,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(scalar_distribution_pFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_rFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(c(paste0(c('d','r','q','p'), 't'), paste0(c('d','r','q','p'), 'exp')) , 'eigenize_recyclingRuleFunction'),
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
     list('t' = 'eigenize_cWiseUnaryEither',

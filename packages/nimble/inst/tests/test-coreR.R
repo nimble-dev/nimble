@@ -3,9 +3,7 @@
 context("Testing of core R functions in NIMBLE code")
 
 writeLines(c("need to get Scalar instead of result_type",
-             "rep needs to lift each and length expressions and handle vectors",
-             "c needs to handle multiple arguments",
-             "see notes in sizeConcatenate"))
+             "fix nbinom"))
 
 gen_runFunCore <- function(input) {
     runFun <- function() {}
@@ -328,7 +326,10 @@ repTests <- list(
          setArgVals = quote({arg1 <- matrix(as.numeric(1:9), nrow = 3)}),outputType = quote(double(1))),
 
     list(name = "rep(vector, vector)", expr = quote(out <- rep(arg1, arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))), ## not built yet
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(2:4)}), outputType = quote(double(1)))
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(2:4)}), outputType = quote(double(1))),
+
+     list(name = "rep(vector double, 3) in expression", expr = quote(out <- log(rep(arg1, 3))^2 + c(arg1, arg1, arg1)), args = list(arg1 = quote(double(1))),
+         setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(1)))
 
 )
 
