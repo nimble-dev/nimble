@@ -41,7 +41,8 @@ script:
     - Rscript packages/nimble/inst/tests/test-trunc.R  ## added ~ 5 minutes
     - Rscript packages/nimble/inst/tests/test-distributions.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-misc.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-size.R  ## ???
+    - Rscript packages/nimble/inst/tests/test-size.R  ## basically no time added
+    - Rscript packages/nimble/inst/tests/test-compareMCMCs.R  ## ???
 ##  - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## having issues with this one
 
 
@@ -62,8 +63,8 @@ script:
 ##test-distributions.R
 ##test-misc.R
 ##test-size.R
-
 ##test-compareMCMCs.R
+
 ##test-filtering.R
 ##test-Filtering2.R
 ##test-math.R
