@@ -132,7 +132,7 @@ template<typename DerivedIndex, typename DerivedSource>
   }
     result_type operator()(DerivedIndex i) const //Eigen::DenseIndex
   {
-    std::cout<<"IN 1\n";
+    //    std::cout<<"IN 1\n";
     std::div_t divRes = div(i, dim1);
     // iRow = divRes.rem
     // iCol = floor(divRes.quot)
@@ -143,7 +143,7 @@ template<typename DerivedIndex, typename DerivedSource>
   }
   result_type operator()(DerivedIndex i, DerivedIndex j) const
   {
-    std::cout<<"IN 2\n";
+    //std::cout<<"IN 2\n";
     if(i == j) { // on diagonal
       return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::LinearAccessBit), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, i);
     }
@@ -191,7 +191,7 @@ class concatenateClass {
   
   result_type operator()(Index i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
   {
-    std::cout<<"IN 1\n";
+    //    std::cout<<"IN 1\n";
     if(i < size1)
       return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
     else
@@ -200,7 +200,7 @@ class concatenateClass {
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
   {
-    std::cout<<"IN 2\n";
+    //std::cout<<"IN 2\n";
     return operator()(i);
   }
 };
@@ -223,7 +223,7 @@ class concatenate3Class {
   
   result_type operator()(Index i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
   {
-    std::cout<<"IN 1\n";
+    //std::cout<<"IN 1\n";
     if(i < size1)
       return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
     else
@@ -235,7 +235,7 @@ class concatenate3Class {
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
   {
-    std::cout<<"IN 2\n";
+    //std::cout<<"IN 2\n";
     return operator()(i);
   }
 };
@@ -261,7 +261,7 @@ class concatenate4Class {
   
   result_type operator()(Index i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
   {
-    std::cout<<"IN 1\n";
+    //std::cout<<"IN 1\n";
     if(i < size1)
       return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
     else
@@ -276,7 +276,7 @@ class concatenate4Class {
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
   {
-    std::cout<<"IN 2\n";
+    //std::cout<<"IN 2\n";
     return operator()(i);
   }
 };
@@ -383,7 +383,7 @@ public:
   result_type operator()(Index1 i) const //Eigen::DenseIndex
   {
     Index1 iUse;
-    std::cout<<"IN 1 rep\n";
+    //    std::cout<<"IN 1 rep\n";
     switch(eachTimesCase) {
     case useEach:
       iUse = floor(i/each);
@@ -402,7 +402,7 @@ public:
 
   result_type operator()(Index1 i, Index1 j) const
   {
-    std::cout<<"IN 2 rep\n";
+    //std::cout<<"IN 2 rep\n";
     return operator()(i);
   }
 };
@@ -471,12 +471,12 @@ public:
   typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
   result_type operator()(Index i) const //Eigen::DenseIndex
   {
-    std::cout<<"IN 1 seq\n";
+    //std::cout<<"IN 1 seq\n";
     return( from + static_cast<int>(i) * by );
   }
   result_type operator()(Index i, Index j) const
   {
-    std::cout<<"IN 2 seq\n";
+    //std::cout<<"IN 2 seq\n";
     if(j != 0) printf("Problem calling seq in C++ with two indices\n");
     return( from + static_cast<int>(i) * by);
   }
@@ -497,10 +497,10 @@ public:
     {
       printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
       if(length_out == 1) {
-	std::cout<<"setting by to 0\n";
+	//std::cout<<"setting by to 0\n";
 	by = 0;
       } else {
-	std::cout<<static_cast<double>(toIn)<<" "<<static_cast<double>(from)<<" "<<static_cast<double>(length_out)<<"\n";
+	//std::cout<<static_cast<double>(toIn)<<" "<<static_cast<double>(from)<<" "<<static_cast<double>(length_out)<<"\n";
 	by = (static_cast<double>(toIn) - static_cast<double>(from)) / (static_cast<double>(length_out) - 1.);
       }
     };
@@ -509,12 +509,12 @@ public:
   typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
   result_type operator()(Index i) const //Eigen::DenseIndex
   {
-    std::cout<<"IN 1 seq\n";
+    //std::cout<<"IN 1 seq\n";
     return( from + static_cast<int>(i) * by );
   }
   result_type operator()(Index i, Index j) const
   {
-    std::cout<<"IN 2 seq\n";
+    //std::cout<<"IN 2 seq\n";
     if(j != 0) printf("Problem calling seq in C++ with two indices\n");
     return( from + static_cast<int>(i) * by);
   }
@@ -579,7 +579,8 @@ public:
   const DerivedIndex1 &I1;
   const DerivedIndex2 &I2;
   int dim1, dim2, totSize;
-  coeffSetterClass(DerivedTarget &targetIn, const DerivedIndex1 &I1in, const DerivedIndex2 &I2in) :
+  //  coeffSetterClass(DerivedTarget &targetIn, const DerivedIndex1 &I1in, const DerivedIndex2 &I2in) :
+ coeffSetterClass(DerivedTarget &targetIn, const DerivedIndex1 &I1in, const DerivedIndex2 &I2in) :
     target(targetIn),
     I1(I1in),
     I2(I2in) {
@@ -654,7 +655,7 @@ class nonseqIndexedClass {
 
   result_type operator()(IndexObj i) const //Eigen::DenseIndex
   {
-    std::cout<<"IN 1\n";
+    //std::cout<<"IN 1\n";
     std::div_t divRes = div(i, dim1);
     return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::LinearAccessBit), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
 		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::LinearAccessBit), result_type, DerivedI2, IndexObj >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
@@ -662,7 +663,7 @@ class nonseqIndexedClass {
   }
   result_type operator()(IndexObj i, IndexObj j) const
   {
-    std::cout<<"IN 2\n";
+    //std::cout<<"IN 2\n";
     return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::LinearAccessBit), result_type, DerivedI1, IndexObj >::getCoeff(index1, i) - 1,
 		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::LinearAccessBit), result_type, DerivedI2, IndexObj >::getCoeff(index2, j) - 1);
 
@@ -801,9 +802,9 @@ struct FUNNAME ## _RR_impl {\
   template<typename Index, typename DerivedN, typename DerivedA1, typename DerivedA2> \
     class FUNNAME ## RecyclingRuleClass {				\
 public:									\
+    const DerivedN &ArgN;						\
     const DerivedA1 &Arg1;						\
     const DerivedA2 &Arg2;						\
-    const DerivedN &ArgN;						\
     std::vector<RETURNSCALARTYPE> values;				\
     unsigned int outputSize;						\
     FUNNAME ## RecyclingRuleClass(const DerivedN &AN, const DerivedA1 &A1, const DerivedA2 &A2 ) : \
@@ -812,7 +813,6 @@ public:									\
       int sizeN = nimble_size_impl<DerivedN>::getSize(ArgN);		\
       if(sizeN > 1) outputSize = sizeN;					\
       else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedN>::LinearAccessBit), RETURNSCALARTYPE, DerivedN, Index >::getCoeff(ArgN, 0); \
-      std::cout<<"chose outputsize "<<outputSize<<"\n";			\
       int size1 = nimble_size_impl<DerivedA1>::getSize(Arg1);		\
       int size2 = nimble_size_impl<DerivedA2>::getSize(Arg2);		\
       values.reserve(outputSize);					\
@@ -820,15 +820,12 @@ public:									\
 	values.push_back(FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
 				 nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2))); \
       }									\
-      std::cout<<"finished init\n";\
-}					       \
+    }									\
   RETURNSCALARTYPE operator()(Index i) const { \
-    std::cout<<"in 1 with i = "<<i<<" out of "<< values.size() <<"\n";	\
-    return values[i];\
+    return values[i];			       \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    std::cout<<"in 2 with i = "<<i<<"\n";	       \
-    return values[i];\
+    return values[i];				       \
   }\
 }; \
 \
@@ -858,8 +855,8 @@ struct FUNNAME ## _RR_impl {\
   template<typename Index, typename DerivedN, typename DerivedA1> \
     class FUNNAME ## RecyclingRuleClass {				\
 public:									\
-    const DerivedA1 &Arg1;						\
     const DerivedN &ArgN;						\
+    const DerivedA1 &Arg1;						\
     std::vector<RETURNSCALARTYPE> values;				\
     unsigned int outputSize;						\
     FUNNAME ## RecyclingRuleClass(const DerivedN &AN, const DerivedA1 &A1 ) : \
@@ -868,21 +865,17 @@ public:									\
       int sizeN = nimble_size_impl<DerivedN>::getSize(ArgN);		\
       if(sizeN > 1) outputSize = sizeN;					\
       else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedN>::LinearAccessBit), RETURNSCALARTYPE, DerivedN, Index >::getCoeff(ArgN, 0); \
-      std::cout<<"chose outputsize "<<outputSize<<"\n";			\
       int size1 = nimble_size_impl<DerivedA1>::getSize(Arg1);		\
       values.reserve(outputSize);					\
       for(int i = 0; i < outputSize; i++) {				\
 	values.push_back(FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1))); \
       }									\
-      std::cout<<"finished init\n";\
-}					       \
+    }									\
   RETURNSCALARTYPE operator()(Index i) const { \
-    std::cout<<"in 1 with i = "<<i<<" out of "<< values.size() <<"\n";	\
-    return values[i];\
+    return values[i];			       \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    std::cout<<"in 2 with i = "<<i<<"\n";	       \
-    return values[i];\
+    return values[i];				       \
   }\
 }; \
 \
@@ -1369,7 +1362,6 @@ template<typename Index, typename DerivedInput>
   }
   result_type operator()(Index i) const 
   {
-    std::cout<<"IN 1\n";
     if(init)
       return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::LinearAccessBit), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
     return 0;
@@ -1377,7 +1369,6 @@ template<typename Index, typename DerivedInput>
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
   {
-    std::cout<<"IN 2\n";
     if(init) 
       return operator()(i + j*dim1);
     return 0;
