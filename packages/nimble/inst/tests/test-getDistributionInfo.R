@@ -263,7 +263,7 @@ try(test_that("Test of getDimension, value and params",
               expect_identical(m$getDimension('x', includeParams = TRUE), out,
                                info = "incorrect result from getDimension for value and params, vector")))
 
-print('F gets here ok')
+print('F.1 gets here ok')
 
 out <- c(2,1)
 names(out) <- c('cov','mean')
@@ -271,9 +271,13 @@ try(test_that("Test of getDimension, specific params",
               expect_identical(m$getDimension('x', params = c('cov','mean')), out,
                                info = "incorrect result from getDimension for specific params, vector")))
 
+print('F.2 gets here ok')
+
 try(test_that("Test of getDimension, value only",
               expect_error(m$getDimension('foo', includeParams = TRUE),
                                info = "not detecting missing node in getDimension")))
+
+print('F.3 gets here ok')
 
 try(test_that("Test of getDimension, value only",
               expect_error(m$getDimension('x', params = 'foo'),
