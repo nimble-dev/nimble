@@ -41,13 +41,13 @@ script:
 ##    - Rscript packages/nimble/inst/tests/test-copy.R  ## added ~ 7 mins
 ##    - Rscript packages/nimble/inst/tests/test-trunc.R  ## added ~ 5 minutes
 ##    - Rscript packages/nimble/inst/tests/test-distributions.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-misc.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-size.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-compareMCMCs.R  ## added ~2 minutes
-    - Rscript packages/nimble/inst/tests/test-filtering.R  ## added ~10 minutes
+##    - Rscript packages/nimble/inst/tests/test-mcem.R  ## added ~20 minutes
+##    - Rscript packages/nimble/inst/tests/test-misc.R  ## basically no time added
+##    - Rscript packages/nimble/inst/tests/test-size.R  ## basically no time added
+##    - Rscript packages/nimble/inst/tests/test-compareMCMCs.R  ## added ~2 minutes
+##    - Rscript packages/nimble/inst/tests/test-filtering.R  ## added ~10 minutes
     - Rscript packages/nimble/inst/tests/test-math.R  ## added ~10 minutes
-    - Rscript packages/nimble/inst/tests/test-mcem.R  ## ???
-##  - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## having issues with this one
+    - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## ???  causes errors??
 
 
 ##test-mcmc.R
@@ -65,6 +65,7 @@ script:
 ##test-copy.R
 ##test-trunc.R
 ##test-distributions.R
+##test-mcem.R
 ##test-misc.R
 ##test-size.R
 ##test-compareMCMCs.R
@@ -72,8 +73,6 @@ script:
 ##test-Filtering2.R
 ##test-math.R
 ##test-Math2.R
-##test-mcem.R
-
 ##test-getDistributionInfo.R
 
 
