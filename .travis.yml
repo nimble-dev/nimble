@@ -45,7 +45,8 @@ script:
     - Rscript packages/nimble/inst/tests/test-size.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-compareMCMCs.R  ## added ~2 minutes
     - Rscript packages/nimble/inst/tests/test-filtering.R  ## added ~10 minutes
-    - Rscript packages/nimble/inst/tests/test-math.R  ## ???
+    - Rscript packages/nimble/inst/tests/test-math.R  ## added ~10 minutes
+    - Rscript packages/nimble/inst/tests/test-mcem.R  ## ???
 ##  - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## having issues with this one
 
 
@@ -71,8 +72,8 @@ script:
 ##test-Filtering2.R
 ##test-math.R
 ##test-Math2.R
-
 ##test-mcem.R
+
 ##test-getDistributionInfo.R
 
 
