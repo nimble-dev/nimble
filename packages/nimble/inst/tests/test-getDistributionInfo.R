@@ -135,60 +135,24 @@ code2 <- nimbleCode({
 m2 <- nimbleModel(code2, data = list(y = rnorm(10)),
                  constants = list(zeroes = rep(0,2), prec = diag(rep(1,2))), calculate=FALSE)
 
-print('A gets here ok')
-
 out <- c(rep(TRUE, 10), FALSE, TRUE)
 names(out) <- m$expandNodeNames(c('y', 'mu', 'w'))
-
-print('B.1 gets here ok')
 
 try(test_that("Test of isEndNode",
               expect_identical(m$isEndNode(c('y', 'mu', 'w')), out,
                                info = "incorrect results from isEndNode")))
 
-print('B.2 gets here ok')  ## this one ok
-
-
-##try(
-##    test_that("Test of isEndNode, unknown node",
-##              expect_error(
-##                  m$isEndNode(c('zzz', 'mu', 'w')),
-##                  ##m$isEndNode('w')
-##                  ##m$isEndNode('mu')
-##                  ##m$isEndNode('zzz')
-##                  out,
-##                  info = "unknown node not detected in isEndNode"
-##              )
-##              )
-##)
-## 
-## 
-## 
-## 
-## 
-##try(test_that("Test of isEndNode, unknown node",
-##              expect_error(m$isEndNode(c('zzz', 'mu', 'w')), out,
-##                               info = "unknown node not detected in isEndNode")))
-
-print('B.3 gets here ok')  ## NEVER GETS HERE
-
 vars <- c('y', 'mu', 'w', 'x')
 out <- c(rep('dnorm', 11), NA, 'dmnorm')
 names(out) <- m$expandNodeNames(vars)
-
-print('B.4 gets here ok')
 
 try(test_that("Test of getDistribution",
               expect_identical(m$getDistribution(vars), out,
                                info = "incorrect results from getDistribution")))
 
-print('B.5 gets here ok')
-
 vars <- c('y', 'yy', 'w', 'x')
 out <- c(rep(FALSE, 10), TRUE, NA, FALSE)
 names(out) <- m$expandNodeNames(vars)
-
-print('C gets here ok')
 
 try(test_that("Test of isDiscrete model method",
               expect_identical(m$isDiscrete(vars), out,
@@ -209,9 +173,6 @@ names(out) <- m$expandNodeNames(vars)
 try(test_that("Test of isBinary model method",
               expect_identical(m2$isBinary(vars), out,
                                info = "incorrect results from isBinary")))
-
-
-print('D gets here ok')
 
 vars <- c('y', 'yy', 'w', 'x', 'uu', 'z')
 out <- !c(rep(FALSE, 10), FALSE, TRUE, FALSE, FALSE, TRUE)
@@ -241,8 +202,6 @@ vars <- c('y', 'sigma', 'w', 'x', 'uu', 'z')
 out <- c(rep(FALSE, 10), FALSE, NA, TRUE, FALSE, NA)
 names(out) <- m$expandNodeNames(vars)
 
-print('E gets here ok')
-
 try(test_that("Test of isUnivariate model method",
               expect_identical(m$isUnivariate(vars), out,
                                info = "incorrect results from isUnivariate")))
@@ -263,43 +222,17 @@ try(test_that("Test of getDimension, value and params",
               expect_identical(m$getDimension('x', includeParams = TRUE), out,
                                info = "incorrect result from getDimension for value and params, vector")))
 
-print('F.1 gets here ok')
-
 out <- c(2,1)
 names(out) <- c('cov','mean')
 try(test_that("Test of getDimension, specific params",
               expect_identical(m$getDimension('x', params = c('cov','mean')), out,
                                info = "incorrect result from getDimension for specific params, vector")))
 
-print('F.2 gets here ok') ## reaches here
-
-## this next test fails:
-
-
-##m$getDimension('foo', includeParams = TRUE)
-## 
-##try(
-## 
-##    test_that("Test of getDimension, value only",
-##              expect_error(m$getDimension('foo', includeParams = TRUE),
-##                           info = "not detecting missing node in getDimension"))
-## 
-##)
-## 
-## 
-##try(test_that("Test of getDimension, value only",
-##              expect_error(m$getDimension('foo', includeParams = TRUE),
-##                               info = "not detecting missing node in getDimension")))
-
-print('F.3 gets here ok')  ## NOT HERE!!!
-
 try(test_that("Test of getDimension, value only",
               expect_error(m$getDimension('x', params = 'foo'),
                                info = "not detecting missing param in getDimension")))
 
 # test of user-defined distributions
-
-print('G gets here ok')
 
 ddirchmulti <- nimbleFunction(
             run = function(x = double(1), alpha = double(1), size = double(0),
@@ -315,8 +248,6 @@ ddirchmulti <- nimbleFunction(
 })
 assign('ddirchmulti', ddirchmulti, envir = .GlobalEnv)
 
-print('H gets here ok')
-
 rdirchmulti <- nimbleFunction(
             run = function(n = integer(0), alpha = double(1), 
                 size = double(0)) {
@@ -327,8 +258,6 @@ rdirchmulti <- nimbleFunction(
                 return(rmulti(1, size = size, prob = p))
 })
 assign('rdirchmulti', rdirchmulti, envir = .GlobalEnv)
-
-print('I gets here ok')
 
 code <- nimbleCode({
     for(i in 1:n)
@@ -343,8 +272,6 @@ const <- list(M = 2, K = 4, n = 5, N = rep(1000, 5),
       topic = c(1, 1, 1, 2, 2))
 alphaInits <- rbind(c(10, 30, 100, 3), c(12, 15, 15, 8))
 
-print('J gets here ok')
-
 m <- nimbleModel(code, constants = const,
                   inits = list(alpha = alphaInits))
 
@@ -353,11 +280,6 @@ m <- nimbleModel(code, constants = const,
 ##                                                    expect_identical(isDiscrete('ddirchmulti'), TRUE,
 ##                                                                                                                                               info = "isDiscrete says ddirchmulti is not discrete")))
 
-
-print('K gets here ok')
-
-
-
 output <- c(1,1,0); names(output) <- c('value', 'alpha', 'size')
 
 try(test_that("Test of getDimension, value and params, for user-defined ddirchmulti",
@@ -365,28 +287,18 @@ try(test_that("Test of getDimension, value and params, for user-defined ddirchmu
                                info = "incorrect param dimensions for ddirchmulti")))
 
 
-print('L gets here ok')
-
 set.seed(0)
 try(test_that("Test of use of ddirchmulti in R model",
               expect_silent(m$simulate('y'))))
 try(test_that("Test of use of ddirchmulti in R model",
               expect_equal(m$y[5,4], 149, info = "unexpected result from use of ddirchmulti")))
 
-print('M gets here ok')
-
-
 set.seed(0)
 cm <- compileNimble(m)
-
-print('N gets here ok')
-
 
 try(test_that("Test of use of ddirchmulti in R model",
               expect_silent(cm$simulate('y'))))
 try(test_that("Test of use of user-defined ddirchmulti",
               expect_identical(m$y, cm$y, info = "R and compiled model values from ddirchmulti not the same")))
-
-print('O gets here ok')
 
 
