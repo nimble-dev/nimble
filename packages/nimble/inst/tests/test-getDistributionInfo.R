@@ -140,23 +140,31 @@ print('A gets here ok')
 out <- c(rep(TRUE, 10), FALSE, TRUE)
 names(out) <- m$expandNodeNames(c('y', 'mu', 'w'))
 
-print('B gets here ok')
+print('B.1 gets here ok')
 
 try(test_that("Test of isEndNode",
               expect_identical(m$isEndNode(c('y', 'mu', 'w')), out,
                                info = "incorrect results from isEndNode")))
 
+print('B.2 gets here ok')
+
 try(test_that("Test of isEndNode, unknown node",
               expect_error(m$isEndNode(c('zzz', 'mu', 'w')), out,
                                info = "unknown node not detected in isEndNode")))
+
+print('B.3 gets here ok')
 
 vars <- c('y', 'mu', 'w', 'x')
 out <- c(rep('dnorm', 11), NA, 'dmnorm')
 names(out) <- m$expandNodeNames(vars)
 
+print('B.4 gets here ok')
+
 try(test_that("Test of getDistribution",
               expect_identical(m$getDistribution(vars), out,
                                info = "incorrect results from getDistribution")))
+
+print('B.5 gets here ok')
 
 vars <- c('y', 'yy', 'w', 'x')
 out <- c(rep(FALSE, 10), TRUE, NA, FALSE)
