@@ -100,16 +100,6 @@ blockIndexInfo <- function(code) {
 }
 
 makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
-    ## if(code$args[[1]]$name == 'map') {
-    ##     sourceVarName <- code$args[[1]]$args[[1]]
-    ##     sourceSizeExprs <- code$args[[1]]$args[[4]]
-    ##     sourceNdim <- length(sourceSizeExprs)
-    ## } else {
-    ##     sourceVarName <- code$args[[1]]$name
-    ##     if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
-    ##     sourceSizeExprs <- code$args[[1]]$sizeExprs
-    ##     sourceNdim <- length(sourceSizeExprs)
-    ## }
     thisBlockIndexInfo <- blockIndexInfo(code)
     blockBool <- thisBlockIndexInfo$blockBool
     firstIndexRexprs <- thisBlockIndexInfo$firstIndexRexprs

@@ -529,6 +529,8 @@ nonSeqIndexTests <- list(
 )
 
 
+
+
 ## lapply(cTests, test_coreRfeature)
 ## lapply(blockTests, test_coreRfeature)
 ## lapply(repTests, test_coreRfeature)

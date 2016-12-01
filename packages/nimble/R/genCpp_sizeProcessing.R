@@ -1408,7 +1408,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             else msg <- paste0(msg, "(A drop argument must be hard-coded as TRUE or FALSE, not given as a variable.)")
         }
         if(wrongIndices) stop(exprClassProcessingErrorMsg(code, msg), call. = FALSE)
-        code$args[[length(code$args)]] <- NULL
+##        code$args[[length(code$args)]] <- NULL ## keep this information for now and strip it out later
     }
     code$nDim <- nDimVar
     code$type <- code$args[[1]]$type
@@ -1488,68 +1488,70 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         ## (map) x (nonseq)           is already handled
         ## (eigenBlock) x (eigenBlock) is already handled
         ## 
-##        browser()
         ## check whether to nest the indexing directly
 
 
-##         nestIndexing <- FALSE
-##         if(!code$args[[1]]$isName) { ## In X[i], X is an expression
-##             ## X is an indexing expression of some kind (other than a map, which is already a new object)
-##             ## It is not possible for it to be coeffSetter yet
-##             if(code$args[[1]]$name %in% c('eigenBlock','nimNonseqIndexedd' ,'nimNonseqIndexedi' ,'nimNonseqIndexedb' )) {
-##                 ## if it is not (eigenBlock) x (eigenBlock)
-##                 if(!( (code$args[[1]]$name == 'eigenBlock') & (simpleBlockOK)))
-##                     nestIndexing <- TRUE
-##             }
-##         }
+        nestIndexing <- FALSE
+        if(!code$args[[1]]$isName) { ## In X[i], X is an expression
+            ## X is an indexing expression of some kind (other than a map, which is already a new object)
+            ## It can't be coeffSetter at this point in processing flow, because the nestedness implies its caller was not <-
+            if(code$args[[1]]$name %in% c('eigenBlock', 'nimNonseqIndexedd' ,'nimNonseqIndexedi' ,'nimNonseqIndexedb' )) {
+                ## if it is not (eigenBlock) x (eigenBlock)
+                if(!( (code$args[[1]]$name == 'eigenBlock') & (simpleBlockOK)))
+                    nestIndexing <- TRUE
+            }
+        }
+        
+        if(nestIndexing) {
+            browser()
+            if(code$args[[1]]$name == 'eigenBlock') {
+                ## reach down to X and rename it
+                ## put `:`(start, finish) back together.
+                if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
+                    code$args[[1]]$name <- 'coeffSetter'
+                } else {
+                    if(code$type == 'double') code$args[[1]]$name <- 'nimNonseqIndexedd'
+                    if(code$type == 'integer') code$args[[1]]$name <- 'nimNonseqIndexedi'
+                    if(code$type == 'logical') code$args[[1]]$name <- 'nimNonseqIndexedb'
+                }
+            } else {
+                ## it was already nonseq, but it might need to become coeffSetter
+                if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
+                    code$args[[1]]$name <- 'coeffSetter'
+                }
+            }
+            code$args[[1]]$sizeExprs <- code$sizeExprs
+            code$args[[1]]$nDim <- code$nDim
+            code$args[[1]]$type <- code$type
+            numIndices <- length(code$args) - 1
+            ## NEED TO SKIP SCALARS IF dropBool = TRUE for nested case.
+            for(iInd in 1:numIndices) {
+                ##browser()
+                newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
+                newExpr$type <- 'integer'
+                message('Need to deal with scalar nested indices')
+                newExpr$sizeExprs <- c(code$args[[iInd + 1]]$sizeExprs)
+                newExpr$nDim <- 1
+                newExpr$toEigenize <- 'yes'
+                ## sizeExprs, nDim, toEigenize?
+                setArg(newExpr, 1, code$args[[1]]$args[[iInd + 1]])
+                setArg(newExpr, 2, code$args[[iInd + 1]])
+                setArg(newExpr, 3, 1)
+                setArg(code$args[[1]], iInd + 1, newExpr)
+            }
+##            browser()
+            code$args[1+(1:numIndices)] <- NULL
+            codeCaller <- code$caller
+            codeCallerArgID <- code$callerArgID
+            removeExprClassLayer(code)
+            code <- codeCaller$args[[codeCallerArgID]]
+            return(if(length(asserts)==0) NULL else asserts)
+        }
 
-        
-##         if(nestIndexing) {
-##             ##browser()
-##             if(code$args[[1]]$name == 'eigenBlock') {
-##                 ## reach down to X and rename it
-##                 ## put `:`(start, finish) back together.
-##                 if(code$caller$name %in% assignmentOperators) {
-##                     code$args[[1]]$name <- 'coeffSetter'
-##                 } else {
-##                     if(code$type == 'double') code$args[[1]]$name <- 'nimNonseqIndexedd'
-##                     if(code$type == 'integer') code$args[[1]]$name <- 'nimNonseqIndexedi'
-##                     if(code$type == 'logical') code$args[[1]]$name <- 'nimNonseqIndexedb'
-##                 }
-##             } else {
-##                 ## it was already nonseq, but it might need to become coeffSetter
-##                 if(code$caller$name %in% assignmentOperators) {
-##                     code$args[[1]]$name <- 'coeffSetter'
-##                 }
-##             }
-##             code$args[[1]]$sizeExprs <- code$sizeExprs
-##             code$args[[1]]$nDim <- code$nDim
-##             code$args[[1]]$type <- code$type
-##             numIndices <- length(code$args) - 1
-##             for(iInd in 1:numIndices) {
-##                 ##browser()
-##                 newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
-##                 newExpr$type <- 'integer'
-##                 message('Need to deal with scalar nested indices')
-##                 newExpr$sizeExprs <- c(code$args[[iInd + 1]]$sizeExprs)
-##                 newExpr$nDim <- 1
-##                 newExpr$toEigenize <- 'yes'
-##                 ## sizeExprs, nDim, toEigenize?
-##                 setArg(newExpr, 1, code$args[[1]]$args[[iInd + 1]])
-##                 setArg(newExpr, 2, code$args[[iInd + 1]])
-##                 setArg(newExpr, 3, 1)
-##                 setArg(code$args[[1]], iInd + 1, newExpr)
-##             }
-## ##            browser()
-##             code$args[1+(1:numIndices)] <- NULL
-##             codeCaller <- code$caller
-##             removeExprClassLayer(code)
-##             code <- codeCaller$args[[1]]
-##             return(if(length(asserts)==0) NULL else asserts)
-##         }
-        
+        browser()
         ## Replace with a map expression if needed
         if(!simpleBlockOK) {
+            if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
             if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
                 code$name <- 'coeffSetter'
             } else {
@@ -1564,21 +1566,25 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         }
         else {
             if(code$args[[1]]$nDim > 2) { ## old-style blocking from >2D down to 2D or 1D
+                if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL
                 newExpr <- makeMapExprFromBrackets(code, dropBool)
                 newExpr$sizeExprs <- code$sizeExprs
                 newExpr$type <- code$type
                 newExpr$nDim <- code$nDim
                 newExpr$toEigenize <- code$toEigenize
+                setArg(code$caller, code$callerArgID, newExpr)
             }
             else { ## blocking via Eigen
-                newExpr <- makeEigenBlockExprFromBrackets(code, dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
-                newExpr$sizeExprs <- code$sizeExprs
-                newExpr$type <- code$type
-                newExpr$nDim <- code$nDim
-                newExpr$toEigenize <- 'yes'
-                ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
+                ## newExpr <- makeEigenBlockExprFromBrackets(code, dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
+                ## newExpr$sizeExprs <- code$sizeExprs
+                ## newExpr$type <- code$type
+                ## newExpr$nDim <- code$nDim
+                ## newExpr$toEigenize <- 'yes'
+                ## ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
+                code$name <- 'eigenBlock'
+                code$toEigenize <- 'yes'
             }
-            setArg(code$caller, code$callerArgID, newExpr)
+            ##setArg(code$caller, code$callerArgID, newExpr)
         }
     }
     if(length(asserts)==0) NULL else asserts

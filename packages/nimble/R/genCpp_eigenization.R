@@ -100,7 +100,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
     list('t' = 'eigenize_cWiseUnaryEither',
-         eigenBlock = 'eigenize_cWiseUnaryEither',
+         eigenBlock = 'eigenize_eigenBlock',
          diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps',
@@ -361,6 +361,24 @@ eigenize_nimbleNullaryClass <- function(code, symTab, typeEnv, workEnv) {
 
 eigenize_alwaysMatrix <- function(code, symTab, typeenv, workEnv) {
     code$eigMatrix <- TRUE
+    invisible(NULL)
+}
+
+eigenize_eigenBlock <- function(code, symTab, typeEnv, workEnv) {
+    ## re-arrange from i:j to i,j
+    ## we do this here rather than in size processing so that eigenBlock and nimNonSeqX can maintain same argument format during size processing
+    dropBool <- TRUE
+    nDimVar <- code$args[[1]]$nDim
+    if(nDimVar != length(code$args) - 1) dropBool <- code$args[[length(code$args)]]
+    
+    newExpr <- makeEigenBlockExprFromBrackets(code, drop = dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
+    newExpr$sizeExprs <- code$sizeExprs
+    newExpr$type <- code$type
+    newExpr$nDim <- code$nDim
+    newExpr$toEigenize <- 'yes'
+    setArg(code$caller, code$callerArgID, newExpr)
+    ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
+    code$eigMatrix <- code$args[[1]]$eigMatrix
     invisible(NULL)
 }
 
