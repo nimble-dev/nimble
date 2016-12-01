@@ -22,8 +22,8 @@ install:
   - Rscript -e "install.packages('igraph',   repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('coda',     repos = 'http://cran.us.r-project.org')"
   - Rscript -e "install.packages('testthat', repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('mvtnorm', repos = 'http://cran.us.r-project.org')"
-  - Rscript -e "install.packages('abind', repos = 'http://cran.us.r-project.org')"
+  - Rscript -e "install.packages('mvtnorm', repos = 'http://cran.us.r-project.org')"  ## needed for test-distributions.R
+  - Rscript -e "install.packages('abind', repos = 'http://cran.us.r-project.org')"    ## needed for test-compareMCMCs.R
   - R CMD build packages/nimble
   - R CMD INSTALL packages/nimble
 
@@ -43,7 +43,8 @@ script:
 ##    - Rscript packages/nimble/inst/tests/test-distributions.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-misc.R  ## basically no time added
     - Rscript packages/nimble/inst/tests/test-size.R  ## basically no time added
-    - Rscript packages/nimble/inst/tests/test-compareMCMCs.R  ## ???
+    - Rscript packages/nimble/inst/tests/test-compareMCMCs.R  ## added ~2 minutes
+    - Rscript packages/nimble/inst/tests/test-filtering.R  ## ???
 ##  - Rscript packages/nimble/inst/tests/test-getDistributionInfo.R  ## having issues with this one
 
 
@@ -65,9 +66,9 @@ script:
 ##test-misc.R
 ##test-size.R
 ##test-compareMCMCs.R
-
 ##test-filtering.R
 ##test-Filtering2.R
+
 ##test-math.R
 ##test-Math2.R
 ##test-mcem.R
