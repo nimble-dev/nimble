@@ -97,6 +97,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_rFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(c(paste0(c('d','r','q','p'), 't'), paste0(c('d','r','q','p'), 'exp')) , 'eigenize_recyclingRuleFunction'),
+    makeCallList(coreRnonSeqBlockCalls, 'eigenize_nonSeq'),
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
     list('t' = 'eigenize_cWiseUnaryEither',
@@ -364,13 +365,24 @@ eigenize_alwaysMatrix <- function(code, symTab, typeenv, workEnv) {
     invisible(NULL)
 }
 
+eigenize_nonSeq <- function(code, symTab, typeEnv, workEnv) {
+    nDimVar <- code$args[[1]]$nDim
+    if(nDimVar != length(code$args) - 1) {
+        dropBool <- code$args[[length(code$args)]]
+        code$args[[length(code$args)]] <- NULL
+    }
+    eigenize_nimbleNullaryClass(code, symTab, typeEnv, workEnv)
+}
+
 eigenize_eigenBlock <- function(code, symTab, typeEnv, workEnv) {
     ## re-arrange from i:j to i,j
     ## we do this here rather than in size processing so that eigenBlock and nimNonSeqX can maintain same argument format during size processing
     dropBool <- TRUE
     nDimVar <- code$args[[1]]$nDim
-    if(nDimVar != length(code$args) - 1) dropBool <- code$args[[length(code$args)]]
-    
+    if(nDimVar != length(code$args) - 1) {
+        dropBool <- code$args[[length(code$args)]]
+        code$args[[length(code$args)]] <- NULL
+    }
     newExpr <- makeEigenBlockExprFromBrackets(code, drop = dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
     newExpr$sizeExprs <- code$sizeExprs
     newExpr$type <- code$type
@@ -393,6 +405,11 @@ eigenize_cWiseUnaryEither <- function(code, symTab, typeEnv, workEnv) {
 
 eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
     ## a peculiar case: we expect it to be on LHS but must take control of workEnv$OnLHSnow, which would have been set by eigenize_assign_before_recursing
+    nDimVar <- code$args[[1]]$nDim
+    if(nDimVar != length(code$args) - 1) {
+     ##   dropBool <- code$args[[length(code$args)]]
+        code$args[[length(code$args)]] <- NULL
+    }
     setupExprs <- list()
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))

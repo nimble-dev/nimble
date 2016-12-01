@@ -20,9 +20,10 @@ matrixSquareReductionOperators <- c('det','logdet','trace')
 reductionBinaryOperatorsEither <- c('inprod')
 reductionBinaryOperators <- reductionBinaryOperatorsEither
 
-coreRmanipulationCalls <- c('nimC','nimRepd','nimRepi','nimRepb','nimNonseqIndexedd','nimNonseqIndexedi', 'nimNonseqIndexedb',
+coreRnonSeqBlockCalls <- c('nimNonseqIndexedd','nimNonseqIndexedi', 'nimNonseqIndexedb')
+coreRmanipulationCalls <- c('nimC','nimRepd','nimRepi','nimRepb',
                             'nimSeqByD','nimSeqLenD','nimSeqByI','nimSeqLenI', 'nimDiagonalD','nimDiagonalI','nimDiagonalB', 'nimNewMatrixD','nimNewMatrixI','nimNewMatrixB')
-nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls)
+nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls, coreRnonSeqBlockCalls)
 
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
@@ -91,8 +92,8 @@ newEPT <- reductionBinaryOperators
 names(newEPT) <- paste0('eig', reductionBinaryOperators)
 eigProxyTranslate <- c(eigProxyTranslate, newEPT)
 
-newEPT <- coreRmanipulationCalls
-names(newEPT) <- paste0('eig', coreRmanipulationCalls)
+newEPT <- c(coreRmanipulationCalls, coreRnonSeqBlockCalls)
+names(newEPT) <- paste0('eig', c(coreRmanipulationCalls, coreRnonSeqBlockCalls))
 eigProxyTranslate <- c(eigProxyTranslate, newEPT)
 
 newEPT <- matrixSquareReductionOperators

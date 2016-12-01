@@ -1399,6 +1399,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
     nDimVar <- code$args[[1]]$nDim
 
     dropBool <- TRUE
+    dropArgProvided <- FALSE
     if(nDimVar != length(code$args) - 1) {
         msg <- paste0('Error, wrong number of indices provided for ', nimDeparse(code),'.')
         wrongIndices <- TRUE
@@ -1408,7 +1409,8 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             else msg <- paste0(msg, "(A drop argument must be hard-coded as TRUE or FALSE, not given as a variable.)")
         }
         if(wrongIndices) stop(exprClassProcessingErrorMsg(code, msg), call. = FALSE)
-##        code$args[[length(code$args)]] <- NULL ## keep this information for now and strip it out later
+        ##        code$args[[length(code$args)]] <- NULL ## keep this information for now and strip it out later
+        dropArgProvided <- TRUE
     }
     code$nDim <- nDimVar
     code$type <- code$args[[1]]$type
@@ -1520,13 +1522,40 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     code$args[[1]]$name <- 'coeffSetter'
                 }
             }
+            nestedNargs <- length(code$args[[1]]$args)
+            nestedNdim <- code$args[[1]]$nDim
+            if(nestedNdim != nestedNargs - 1) {
+                dropBool <- code$args[[1]]$args[[nestedNargs]]
+                nestedNargs <- nestedNargs - 1
+            }
+            nestedBlockBool <- rep(TRUE, nestedNargs)    ## is it preserved as a block (can still be scalar if nestedDropBool is FALSE)
+            nestedScalarIndex <- rep(FALSE, nestedNargs)
+            nestedDropBool <- TRUE
+            
+            for(iInd in 1:nestedNargs) {
+                if(is(code$args[[1]]$args[[iInd]], 'exprClass'))  {
+                    if(code$args[[1]]$args[[iInd]]$nDim == 0) {
+                        nestedScalarIndex[iInd] <- TRUE
+                        if(nestedDropBool) nestedBlockBool[iInd] <- FALSE
+                    }
+                } else {
+                    nestedScalarIndex[iInd] <- TRUE
+                    if(nestedDropBool) nestedBlockBool[iInd] <- FALSE
+                }
+            }
+            
             code$args[[1]]$sizeExprs <- code$sizeExprs
             code$args[[1]]$nDim <- code$nDim
             code$args[[1]]$type <- code$type
-            numIndices <- length(code$args) - 1
+            numIndices <- length(code$args) - 1 - dropArgProvided
+            
             ## NEED TO SKIP SCALARS IF dropBool = TRUE for nested case.
+            nestedInds <- which(nestedBlockBool)
+            if(length(nestedInds) != numIndices) stop(exprClassProcessingErrorMsg(code, 'Wrong number of nested indices.'), call.=FALSE)
             for(iInd in 1:numIndices) {
                 ##browser()
+                nestedIind <- nestedInds[iInd]
+                message('need to deal with case that nested index is a scalar but nested drop = FALSE')
                 newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
                 newExpr$type <- 'integer'
                 message('Need to deal with scalar nested indices')
@@ -1534,7 +1563,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 newExpr$nDim <- 1
                 newExpr$toEigenize <- 'yes'
                 ## sizeExprs, nDim, toEigenize?
-                setArg(newExpr, 1, code$args[[1]]$args[[iInd + 1]])
+                setArg(newExpr, 1, code$args[[1]]$args[[nestedIind + 1]])
                 setArg(newExpr, 2, code$args[[iInd + 1]])
                 setArg(newExpr, 3, 1)
                 setArg(code$args[[1]], iInd + 1, newExpr)
@@ -1551,7 +1580,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         browser()
         ## Replace with a map expression if needed
         if(!simpleBlockOK) {
-            if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
+         ##   if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
             if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
                 code$name <- 'coeffSetter'
             } else {
