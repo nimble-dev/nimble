@@ -144,7 +144,6 @@ eigen_keywordInfo <- keywordInfoClass(
   keyword = "eigen",
   processor = function(code, nfProc){
     eigenValsArg <- code$only.values
-    print(code)
     if(eigenValsArg == TRUE) code[[1]] <- parse(text = 'eigenvals')[[1]]
     else  code[[1]] <- parse(text = 'eigenvecs')[[1]]
     code[[3]] <- NULL #remove only.values argument
@@ -155,7 +154,6 @@ eigen_keywordInfo <- keywordInfoClass(
 svd_keywordInfo <- keywordInfoClass(
   keyword = "svd",
   processor = function(code, nfProc){
-    print(code)
     nuArg <- code$nu
     nvArg <- code$nv
     if((nuArg == 0) && (nvArg > 0)){
@@ -647,21 +645,29 @@ dollarSign_keywordInfo <- keywordInfoClass(
 		}
 		browser()
 		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
-
 		callerCode <- code[[2]]
 		#	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
 		
-		
-		if(length(callerCode) > 1)
-			callerCode <- callerCode[[2]]
+		if(length(callerCode) > 1){
+		  if(callerCode[[1]] == '$'){ ## nested NL case
+		    callerCode <- processKeyword(callerCode, nfProc)
+		  }
+		  else 	callerCode <- callerCode[[2]]
+		}
 		#	This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
 		#	May be a better way to do this
 		
 		class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
-		if(is.null(class)){  ##assume that an element of a run-time provided nimbleList is being accessed
-		  nl_charName <- as.character(callerCode)
+		if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
+		  # if(exists(newRunCode)){
+		  #   nl_charName <- as.expression(paste(newRunCode))
+		  #   
+		  #   newerRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = newRunCode, VARNAME = nl_fieldName))
+		  #   
+		  # }
+		  # nl_charName <- as.character(callerCode)
 		  nl_fieldName <-as.character(code[[3]])
-		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
 		  return(newRunCode)				
 		}
 		if(class == 'symbolNimPtrList'){
@@ -911,7 +917,6 @@ addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList
 #	processKeyword function to be called by nfProc
 processKeyword <- function(code, nfProc){
   thisKeywordInfo <- keywordList[[ as.character(code[[1]]) ]]
-  print(thisKeywordInfo)
   if(!is.null(thisKeywordInfo))
     return(thisKeywordInfo$processor(code, nfProc))
   return(code)
@@ -1407,8 +1412,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
 matchKeywordCode <- function(code, nfProc){
     callName <- as.character(code[[1]])
     thisFunctionMatch <- matchFunctions[[ callName ]]
-    print(callName)
-    print(thisFunctionMatch)
     ## see if this is a member function of an nf object
     if(!is.null(nfProc)) {
         modCallName <- if(callName == "run") "operator()" else callName
