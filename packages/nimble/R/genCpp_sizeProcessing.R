@@ -1385,12 +1385,10 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(code$args[[i]]$name != "")
                 if(code$args[[i]]$type == 'logical') {
-##                    browser()
                     ## first insert which, then lift to intermediate
                     newExpr <- insertExprClassLayer(code, i, 'which')
                     useBool <- rep(FALSE, length(code$args))
                     useBool[i] <- TRUE
-##                    browser()
                     asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useBool))
                     ## sizeWhich will lift it to an intermediate and annotate it 
 ##                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
@@ -1522,7 +1520,6 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         }
         
         if(nestIndexing) {
-            browser()
             if(code$args[[1]]$name == 'eigenBlock') {
                 ## reach down to X and rename it
                 ## put `:`(start, finish) back together.
@@ -1573,17 +1570,14 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             nestedInds <- which(nestedBlockBool)
             if(length(nestedInds) != numIndices) stop(exprClassProcessingErrorMsg(code, 'Wrong number of nested indices.'), call.=FALSE)
             for(iInd in 1:numIndices) {
-                ##browser()
                 nestedIind <- nestedInds[iInd]
                 nestedIndexIsScalar <- if(inherits(code$args[[1]]$args[[nestedIind + 1]], 'exprClass')) code$args[[1]]$args[[nestedIind + 1]]$nDim == 0 else TRUE
                 if(nestedIndexIsScalar) {
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
                     if(!indexIsScalar) warning("There is nested indexing with drop=FALSE where an index must be scalar but isn't")
                 } else {
-                    message('need to deal with case that nested index is a scalar but nested drop = FALSE')
                     newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
                     newExpr$type <- 'integer'
-                    message('Need to deal with scalar nested indices')
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
                     newExpr$sizeExprs <- if(!indexIsScalar) c(code$args[[iInd + 1]]$sizeExprs) else list(1)
                     newExpr$nDim <- 1
@@ -1595,7 +1589,6 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     setArg(code$args[[1]], nestedIind + 1, newExpr)
                 }
             }
-##            browser()
             code$args[1+(1:numIndices)] <- NULL
             codeCaller <- code$caller
             codeCallerArgID <- code$callerArgID
@@ -1604,7 +1597,6 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             return(if(length(asserts)==0) NULL else asserts)
         }
         
-        browser()
         ## Replace with a map expression if needed
         if(!simpleBlockOK) {
             ##   if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
