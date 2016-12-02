@@ -525,6 +525,18 @@ nonSeqIndexTests <- list(
          setArgVals = quote({arg1 <- matrix(as.numeric(1:3), ncol = 1);
                              arg2 <- c(2, 4);
                              arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- arg1[, arg3]", expr = quote(out <- arg1[, 3:5]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
+         outputType = quote(double(2))),
+    list(name = "non-sequential indexing: out <- arg1[arg2, ]", expr = quote(out <- arg1[, 3:5]),
+         args = list(arg1 = quote(double(2)), arg2 = quote(integer(1)), arg3 = quote(integer(1))),
+         setArgVals = quote({arg1 <- matrix(as.numeric(1:25), nrow = 5);
+                             arg2 <- c(2, 4);
+                             arg3 <- c(1, 3, 4)}),
          outputType = quote(double(2)))
 )
 

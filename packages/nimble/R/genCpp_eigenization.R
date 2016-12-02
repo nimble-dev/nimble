@@ -210,7 +210,8 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
     setupExprs <- list()
     if(code$isName) {
         ## Generate EigenMap and "new" assignment
-        setupExprs <- c(setupExprs, eigenizeName(code, symTab, typeEnv, workEnv))
+##        if(code$name != "") ## can happen in a blank index, e.g. x[,i] ## actually we'll fill in blanks in sizeIndexingBracket
+            setupExprs <- c(setupExprs, eigenizeName(code, symTab, typeEnv, workEnv))
     }
     if(code$isCall) {
         if(code$name == '{') {
@@ -366,11 +367,12 @@ eigenize_alwaysMatrix <- function(code, symTab, typeenv, workEnv) {
 }
 
 eigenize_nonSeq <- function(code, symTab, typeEnv, workEnv) {
-    nDimVar <- code$args[[1]]$nDim
-    if(nDimVar != length(code$args) - 1) {
-        dropBool <- code$args[[length(code$args)]]
-        code$args[[length(code$args)]] <- NULL
-    }
+    dropBool <- TRUE
+    if(!is.null(names(code$args)))
+        if('drop' %in% names(code$args)) {
+            iDropArg <- which(names(code$args)=='drop')
+            code$args[[iDropArg]] <- NULL
+        }
     eigenize_nimbleNullaryClass(code, symTab, typeEnv, workEnv)
 }
 
@@ -378,11 +380,13 @@ eigenize_eigenBlock <- function(code, symTab, typeEnv, workEnv) {
     ## re-arrange from i:j to i,j
     ## we do this here rather than in size processing so that eigenBlock and nimNonSeqX can maintain same argument format during size processing
     dropBool <- TRUE
-    nDimVar <- code$args[[1]]$nDim
-    if(nDimVar != length(code$args) - 1) {
-        dropBool <- code$args[[length(code$args)]]
-        code$args[[length(code$args)]] <- NULL
-    }
+    if(!is.null(names(code$args)))
+        if('drop' %in% names(code$args)) {
+            iDropArg <- which(names(code$args)=='drop')
+            dropBool <- code$args[[iDropArg]]
+            code$args[[iDropArg]] <- NULL
+        }
+            
     newExpr <- makeEigenBlockExprFromBrackets(code, drop = dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
     newExpr$sizeExprs <- code$sizeExprs
     newExpr$type <- code$type
@@ -405,11 +409,12 @@ eigenize_cWiseUnaryEither <- function(code, symTab, typeEnv, workEnv) {
 
 eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
     ## a peculiar case: we expect it to be on LHS but must take control of workEnv$OnLHSnow, which would have been set by eigenize_assign_before_recursing
-    nDimVar <- code$args[[1]]$nDim
-    if(nDimVar != length(code$args) - 1) {
-     ##   dropBool <- code$args[[length(code$args)]]
-        code$args[[length(code$args)]] <- NULL
-    }
+    dropBool <- TRUE
+    if(!is.null(names(code$args)))
+        if('drop' %in% names(code$args)) {
+            iDropArg <- which(names(code$args)=='drop')
+            code$args[[iDropArg]] <- NULL
+        }
     setupExprs <- list()
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))

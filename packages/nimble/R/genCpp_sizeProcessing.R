@@ -1204,11 +1204,14 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             if(LHS$name == 'map') assert <- c(assert, sizeInsertIntermediate(code, 1, symTab, typeEnv) )
         }
     }
-    
-    code$nDim <- code$args[[1]]$nDim <- RHSnDim
-    code$type <- code$args[[1]]$type <- RHStype
-    code$sizeExprs <- code$args[[1]]$sizeExprs <- RHSsizeExprs
 
+    if(!(LHS$name %in% c('eigenBlock', 'diagonal', 'coeffSetter', 'nimNonseqIndexedd', 'nimNonseqIndexedi','nimNonseqIndexedb'))) {
+        ## should already be annotated if it is an indexed assignment.
+        ## It should be harmless to re-annotated EXCEPT in case like out[1:5] <- scalar
+        code$nDim <- code$args[[1]]$nDim <- RHSnDim
+        code$type <- code$args[[1]]$type <- RHStype
+        code$sizeExprs <- code$args[[1]]$sizeExprs <- RHSsizeExprs
+    }
     if(RHSname %in% assignmentAsFirstArgFuns) {
         code$name <- RHS$name
         oldArgs <- RHS$args
@@ -1400,17 +1403,25 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
 
     dropBool <- TRUE
     dropArgProvided <- FALSE
-    if(nDimVar != length(code$args) - 1) {
-        msg <- paste0('Error, wrong number of indices provided for ', nimDeparse(code),'.')
-        wrongIndices <- TRUE
-        if(nDimVar == length(code$args) - 2) {
-            dropBool <- code$args[[length(code$args)]] ## This is the only situation where RparseTree2ExprClasses will not convert logical to numeric
-            if(is.logical(dropBool)) wrongIndices <- FALSE
-            else msg <- paste0(msg, "(A drop argument must be hard-coded as TRUE or FALSE, not given as a variable.)")
+    if(!is.null(names(code$args)))
+        if('drop' %in% names(code$args)) {
+            dropArgProvided <- TRUE
+            iDropArg <- which(names(code$args) == 'drop')
         }
-        if(wrongIndices) stop(exprClassProcessingErrorMsg(code, msg), call. = FALSE)
-        ##        code$args[[length(code$args)]] <- NULL ## keep this information for now and strip it out later
-        dropArgProvided <- TRUE
+    if(nDimVar != length(code$args) - 1 - dropArgProvided) {
+        ## only valid case with fewer index arguments than source dimensions is matrix[indices]
+        if(!( (nDimVar == 2) & (length(code$args) - dropArgProvided) == 1)) {
+            msg <- paste0('Error, wrong number of indices provided for ', nimDeparse(code),'.')
+            stop(exprClassProcessingErrorMsg(code, msg), call. = FALSE)
+        }
+    }
+
+    if(dropArgProvided) {
+        dropBool <- code$args[[iDropArg]]
+        if(!is.logical(dropBool)) {
+            msg <- paste0(msg, "(A drop argument must be hard-coded as TRUE or FALSE, not given as a variable.)")
+            stop(exprClassProcessingErrorMsg(code, msg), call. = FALSE)
+        }
     }
     code$nDim <- nDimVar
     code$type <- code$args[[1]]$type
@@ -1426,7 +1437,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         if(is.numeric(code$args[[i+1]])) dropThisDim <- TRUE
         else if((code$args[[i+1]]$name != "") & (length(dropSingleSizes(code$args[[i+1]]$sizeExprs)$sizeExprs) == 0)) dropThisDim <- TRUE
 
-        isExprClass <- inherits(code$args[[1]], 'exprClass')
+        isExprClass <- inherits(code$args[[i+1]], 'exprClass') ## code$args[[1]] ???
         
         if(dropThisDim) { ## The index is a scalar
             if(nimbleOptions()$indexDrop & dropBool) {
@@ -1448,6 +1459,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             } else {
                 ## blank entry (e.g. A[,i]) is an exprClass with isName = TRUE and name = ""
                 code$sizeExprs[[iSizes]] <- code$args[[1]]$sizeExprs[[i]]
+                ## also at this point we will fill in a `:` expression for the indices
+                newIndexExpr <- RparseTree2ExprClasses(substitute(1:N, list(N = code$args[[1]]$sizeExprs[[i]])))
+                setArg(code, i+1, newIndexExpr)
+                useArgs <- rep(FALSE, length(code$args))
+                useArgs[i+1] <- TRUE
+                asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs))
             }
             iSizes <- iSizes + 1
             next
@@ -1522,19 +1539,22 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     code$args[[1]]$name <- 'coeffSetter'
                 }
             }
-            nestedNargs <- length(code$args[[1]]$args)
+            nestedNinds <- length(code$args[[1]]$args)-1
             nestedNdim <- code$args[[1]]$nDim
-            if(nestedNdim != nestedNargs - 1) {
-                dropBool <- code$args[[1]]$args[[nestedNargs]]
-                nestedNargs <- nestedNargs - 1
-            }
-            nestedBlockBool <- rep(TRUE, nestedNargs)    ## is it preserved as a block (can still be scalar if nestedDropBool is FALSE)
-            nestedScalarIndex <- rep(FALSE, nestedNargs)
             nestedDropBool <- TRUE
+            nestedDropArgProvided <- FALSE
+            if(!is.null(names(code$args[[1]]$args)))
+                if("drop" %in% names(code$args[[1]]$args)) {
+                    nestedDropArgProvided <- TRUE
+                    nestedDropBool <- code$args[[1]]$args[[ which(names(code$args[[1]]$args) == 'drop') ]]
+                    nestedNinds <- nestedNinds - 1
+                }
+            nestedBlockBool <- rep(TRUE, nestedNinds)    ## is it preserved as a block (can still be scalar if nestedDropBool is FALSE)
+            nestedScalarIndex <- rep(FALSE, nestedNinds) 
             
-            for(iInd in 1:nestedNargs) {
-                if(is(code$args[[1]]$args[[iInd]], 'exprClass'))  {
-                    if(code$args[[1]]$args[[iInd]]$nDim == 0) {
+            for(iInd in 1:nestedNinds) {
+                if(is(code$args[[1]]$args[[iInd+1]], 'exprClass'))  {
+                    if(code$args[[1]]$args[[iInd+1]]$nDim == 0) {
                         nestedScalarIndex[iInd] <- TRUE
                         if(nestedDropBool) nestedBlockBool[iInd] <- FALSE
                     }
@@ -1555,18 +1575,25 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             for(iInd in 1:numIndices) {
                 ##browser()
                 nestedIind <- nestedInds[iInd]
-                message('need to deal with case that nested index is a scalar but nested drop = FALSE')
-                newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
-                newExpr$type <- 'integer'
-                message('Need to deal with scalar nested indices')
-                newExpr$sizeExprs <- c(code$args[[iInd + 1]]$sizeExprs)
-                newExpr$nDim <- 1
-                newExpr$toEigenize <- 'yes'
-                ## sizeExprs, nDim, toEigenize?
-                setArg(newExpr, 1, code$args[[1]]$args[[nestedIind + 1]])
-                setArg(newExpr, 2, code$args[[iInd + 1]])
-                setArg(newExpr, 3, 1)
-                setArg(code$args[[1]], iInd + 1, newExpr)
+                nestedIndexIsScalar <- if(inherits(code$args[[1]]$args[[nestedIind + 1]], 'exprClass')) code$args[[1]]$args[[nestedIind + 1]]$nDim == 0 else TRUE
+                if(nestedIndexIsScalar) {
+                    indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
+                    if(!indexIsScalar) warning("There is nested indexing with drop=FALSE where an index must be scalar but isn't")
+                } else {
+                    message('need to deal with case that nested index is a scalar but nested drop = FALSE')
+                    newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
+                    newExpr$type <- 'integer'
+                    message('Need to deal with scalar nested indices')
+                    indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
+                    newExpr$sizeExprs <- if(!indexIsScalar) c(code$args[[iInd + 1]]$sizeExprs) else list(1)
+                    newExpr$nDim <- 1
+                    newExpr$toEigenize <- 'yes'
+                    ## sizeExprs, nDim, toEigenize?
+                    setArg(newExpr, 1, code$args[[1]]$args[[nestedIind + 1]])
+                    setArg(newExpr, 2, code$args[[iInd + 1]])
+                    setArg(newExpr, 3, 1)
+                    setArg(code$args[[1]], nestedIind + 1, newExpr)
+                }
             }
 ##            browser()
             code$args[1+(1:numIndices)] <- NULL
@@ -1576,11 +1603,11 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             code <- codeCaller$args[[codeCallerArgID]]
             return(if(length(asserts)==0) NULL else asserts)
         }
-
+        
         browser()
         ## Replace with a map expression if needed
         if(!simpleBlockOK) {
-         ##   if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
+            ##   if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
             if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
                 code$name <- 'coeffSetter'
             } else {
@@ -1588,14 +1615,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 if(code$type == 'integer') code$name <- 'nimNonseqIndexedi'
                 if(code$type == 'logical') code$name <- 'nimNonseqIndexedb'
             }
-            if(nDimVar == 1) {
-                if(length(code$args)==2)
-                    code$args[[3]] <- 1
-            }
+            if(length(code$args) - 1 - dropArgProvided == 1) ## only 1 index
+                code$args[[3]] <- 1 ## fill in extra 1 for a second dimension
         }
         else {
             if(code$args[[1]]$nDim > 2) { ## old-style blocking from >2D down to 2D or 1D
-                if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL
+                if(dropArgProvided) code$args[[iDropArg]] <- NULL
                 newExpr <- makeMapExprFromBrackets(code, dropBool)
                 newExpr$sizeExprs <- code$sizeExprs
                 newExpr$type <- code$type
