@@ -75,7 +75,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         envLine <- substitute({PROTECT(ENVNAME <- allocVector(STRSXP, 1));
                                                               SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
                                                               list(ENVNAME = as.name(environmentCPPName)))
-                                                           
+                                                           browser()
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))
@@ -86,9 +86,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                                   XDATA = as.name(environmentCPPName)))
                                         }
                                         unprotectLineNoReturn <- list(substitute(UNPROTECT(N), list(N = numArgs + 1)))
-                                        writeToSexpLines[[3]] <- writeToSexpLines[[2]]
-                                        writeToSexpLines[[2]] <-  substitute(printf('copying now'))
-                                        # printLine <- substitute(printf('copying now'))
                                         allCode <- embedListInRbracket(c(list(envLine), writeToSexpLines,
                                                                          copyToListLines, unprotectLineNoReturn))
                                         functionDefs[[paste0(name, "_copyTo")]] <<- cppFunctionDef(name = "copyToSEXP",
