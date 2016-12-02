@@ -743,7 +743,7 @@ logicalTests <- list(
          outputType = quote(double(2)))
 )
 
-    
+ 
 
 
 
@@ -755,4 +755,4 @@ lapply(recyclingRuleTests, test_coreRfeature)
 lapply(seqTests, test_coreRfeature)
 lapply(nonSeqIndexTests, test_coreRfeature)
 lapply(indexChainTests, test_coreRfeature)
-lapply(logicalTest, test_coreRfeature)
+lapply(logicalTests, test_coreRfeature)

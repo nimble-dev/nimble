@@ -1150,7 +1150,9 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                 }
             }
         } else {
-            if(LHS$nDim > 0) 'yes'
+            if(is.numeric(LHS$nDim))
+                if(LHS$nDim > 0) 'yes' ## This is for cases like out[1:4] <- scalar
+                else 'no'
             else 'no'
         }
     }

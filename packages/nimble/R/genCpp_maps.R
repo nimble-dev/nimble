@@ -152,8 +152,16 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
         newExpr$nDim <- code$nDim
         newExpr$type <- code$type
         newExpr$sizeExprs <- code$sizeExprs
-        newExpr$toEigenize <- 'yes'
-        newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 't', args = list(1))
+        newExpr$toEigenize <- 'yes' ## not really needed since will be called from eigenization
+
+        ## This used to be called from size processing, but now it is called from eigenization
+        ## so we need to annotate it 
+        newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
+        newExpr2$sizeExprs <- c(newExpr$sizeExprs[2], newExpr$sizeExprs[1])
+        newExpr2$toEigenize <- 'yes' ## ditto
+        newExpr2$nDim <-  newExpr$nDim
+        newExpr2$type <- newExpr$type
+               
         setArg(newExpr2, 1, newExpr)
         ## newExpr2 gets annotated in the calling function, sizeIndexingBracket
         newExpr <- newExpr2

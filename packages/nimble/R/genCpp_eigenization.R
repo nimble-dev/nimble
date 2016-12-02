@@ -392,9 +392,9 @@ eigenize_eigenBlock <- function(code, symTab, typeEnv, workEnv) {
     newExpr$type <- code$type
     newExpr$nDim <- code$nDim
     newExpr$toEigenize <- 'yes'
+    newExpr$eigMatrix <- code$args[[1]]$eigMatrix
     setArg(code$caller, code$callerArgID, newExpr)
     ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
-    code$eigMatrix <- code$args[[1]]$eigMatrix
     invisible(NULL)
 }
 
