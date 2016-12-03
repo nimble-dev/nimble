@@ -1,3 +1,10 @@
+                           CHANGES IN VERSION 0.6-3 (December 2016)
+
+USER LEVEL CHANGES
+
+-- Added checking at time of model definition to catch errors where implied dimensions of a variable are different in different BUGS declarations.
+
+
                            CHANGES IN VERSION 0.6-2 (November 2016)
 
 USER LEVEL CHANGES
