@@ -1631,6 +1631,8 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
         for(iV in seq_along(rhsVars)) {  ## Iterate over the RHS variables in a BUGS line
             rhsVar <- rhsVars[iV]
             nDim <- varInfo[[rhsVar]]$nDim
+            if(nDim != length(BUGSdecl$parentIndexNamePieces[[iV]]))  # this check should be redundant with equivalent check in genVarInfo3
+               stop("Dimension of ", rhsVar, " is ", nDim, ", which does not match its usage in '", deparse(BUGSdecl$code), "'.")
             if(nDim > 0) { ## Make the split.  This function is complicated.
                 splitAns <- splitVertices(vars_2_vertexOrigID[[rhsVar]], BUGSdecl$unrolledIndicesMatrix,
                                           contexts[[BUGSdecl$contextID]]$indexVarExprs, contexts[[BUGSdecl$contextID]]$indexVarNames,
@@ -2018,6 +2020,8 @@ modelDefClass$methods(genVarInfo3 = function() {
                                                        nDim = nDim,
                                                        anyStoch = FALSE)
             }
+            if(varInfo[[rhsVar]]$nDim != length(BUGSdecl$parentIndexNamePieces[[iV]]))
+                stop("Dimension of ", rhsVar, " is ", varInfo[[rhsVar]]$nDim, ", which does not match its usage in '", deparse(BUGSdecl$code), "'.")
             if(varInfo[[rhsVar]]$nDim > 0) {
                 for(iDim in 1:varInfo[[rhsVar]]$nDim) {
                     indexNamePieces <- BUGSdecl$parentIndexNamePieces[[iV]][[iDim]]

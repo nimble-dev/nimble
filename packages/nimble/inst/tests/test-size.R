@@ -352,8 +352,116 @@ testsTrunc <- list(
          inits = list(mu = vec2, sd = 1), data = list(y = 0))
 )
 
+
+testsLHSRHSmismatch <- list(
+    list(name = 'LHS 0 dim, RHS 1 dim, determ',
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             beta ~ dnorm(0, 1)
+             x <- beta[1] * z + beta[2] * z
+             z ~ dnorm(0, 1)
+         })
+         ),
+    list(name = 'LHS 0 dim, RHS 1 dim, stoch', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             beta ~ dnorm(0, 1)
+             x ~ dnorm(beta[1] * z + beta[2] * z, 1)
+             z ~ dnorm(0, 1)
+         })
+         ),
+    list(name = 'LHS 0 dim, RHS 2 dim, determ', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             beta ~ dnorm(0, 1)
+             x <- beta[1, 1] * z + beta[2] * z
+             z ~ dnorm(0, 1)
+         })
+         ),
+    list(name = 'LHS 0 dim, RHS 2 dim, stoch', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             beta ~ dnorm(0, 1)
+             x ~ dnorm(beta[1, 1] * z + beta[2] * z, 1)
+             z ~ dnorm(0, 1)
+         })
+         ),
+    list(name = 'LHS 1 dim, RHS 2 dim, determ', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             beta[1:3] ~ dmnorm(mu[1:3], prec[1:3, 1:3])
+             x <- beta[1, 1] * z + beta[2] * z
+             z ~ dnorm(0, 1)
+         }),
+         inits = list(mu = vec3, prec = mat3)
+         ),
+    list(name = 'LHS 1 dim, RHS 2 dim, stoch', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             beta[1:3] ~ dmnorm(mu[1:3], prec[1:3, 1:3])
+             x ~ dnorm(beta[1, 1] * z + beta[2] * z, 1)
+             z ~ dnorm(0, 1)
+         }),
+         inits = list(mu = vec3, prec = mat3)
+         ),
+    list(name = 'LHS 1 dim, RHS 0 dim, determ', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             x <- beta * z 
+             beta[1:3] ~ dmnorm(mu[1:3], prec[1:3, 1:3])
+             z ~ dnorm(0, 1)
+         }),
+         inits = list(mu = vec3, prec = mat3)
+         ),
+    list(name = 'LHS 1 dim, RHS 0 dim, stoch', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             x ~ dnorm(beta * z, 1)
+             beta[1:3] ~ dmnorm(mu[1:3], prec[1:3, 1:3])
+             z ~ dnorm(0, 1)
+         }),
+         inits = list(mu = vec3, prec = mat3)
+         ),
+    list(name = 'LHS 2 dim, RHS 0 dim, determ', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             y[1:2, 1:2] ~ dwish(R[1:2, 1:2], df)
+             x <- y + 3
+         }),
+         inits = list(df = 4, R = mat2)
+         ),  
+    list(name = 'LHS 2 dim, RHS 0 dim, stoch', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             y[1:2, 1:2] ~ dwish(R[1:2, 1:2], df)
+             x ~ dnorm( y + 3, 1)
+         }),
+         inits = list(df = 4, R = mat2)
+         )    ,
+    list(name = 'LHS 2 dim, RHS 1 dim, determ', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             y[1:2, 1:2] ~ dwish(R[1:2, 1:2], df)
+             x[1:2] <- y[1:2] + 3
+         }),
+         inits = list(df = 4, R = mat2)
+         ),  
+    list(name = 'LHS 2 dim, RHS 1 dim, stoch', 
+         correctErrorMsg = 'which does not match its usage',
+         expr = quote({
+             y[1:2, 1:2] ~ dwish(R[1:2, 1:2], df)
+             x[1:2] ~ dmnorm(y[1:2], R[1:2, 1:2])
+         }),
+         inits = list(df = 4, R = mat2)
+         )    
+)
+
+# for these we simply want errors caught at model-building not compilation
 sapply(testsScalar, test_size)
 sapply(testsMultivarParam, test_size)
 sapply(testsDeterm, test_size)
 sapply(testsMultivar, test_size)
 sapply(testsTrunc, test_size)
+
+# for these we want errors caught by NIMBLE error-checking not by R errors at model-building
+sapply(testsLHSRHSmismatch, test_size_specific_error)
