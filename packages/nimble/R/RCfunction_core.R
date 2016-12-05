@@ -100,13 +100,14 @@ nf_changeNimKeywords <- function(code){
     return(code)
 }
 
-nf_changeNimKeywordsOne <- function(code){
+
+nf_changeNimKeywordsOne <- function(code, first = FALSE){
     if(length(code) == 1){
-        if(as.character(code) %in% names(nimKeyWords) ) {
+        if(as.character(code) %in% names(nimKeyWords)) {
             if(is.call(code)) {
                 code[[1]] <- as.name( nimKeyWords[[as.character(code)]] )
             } else {
-                if(!is.character(code))
+                if(!is.character(code) & first)
                     code <- as.name( nimKeyWords[[as.character(code)]] )
             }
         }
@@ -114,7 +115,7 @@ nf_changeNimKeywordsOne <- function(code){
     else if(length(code) > 1){ 
         for(i in seq_along(code) ) {
             if(!is.null(code[[i]]) )
-                code[[i]] <- nf_changeNimKeywordsOne(code[[i]])
+                code[[i]] <- nf_changeNimKeywordsOne(code[[i]], first = i == 1)
         }
     }
     return(code)
