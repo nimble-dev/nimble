@@ -111,6 +111,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                addInheritance = function(newI) inheritance <<- c(inheritance, newI),
                                setPrivate = function(name) private[[name]] <<- TRUE,
                                generate = function(declaration = TRUE, definition = FALSE, ...) {
+                                 browser()
                                    if(declaration) {
                                        objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                        output <- c(generateClassHeader(name, inheritance),

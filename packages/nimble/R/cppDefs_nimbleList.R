@@ -8,11 +8,16 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       buildCmultiInterface = function(dll = NULL) {
+                                        browser()
                                           sym <- if(!is.null(dll))
                                                       getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                   else
                                                       SEXPgeneratorFun$name
-                                          # message('CmultiInterface for nimbleList does not exist')
+                                          RPointerSymbol <- symbolSEXP(name = 'RObjectPointer')
+                                          objectDefs$addSymbol(RPointerSymbol$genCppVar())
+                                          RCopiedSymbol <- symbolBasic(name = 'RCopiedFlag', type = 'logical',
+                                                                       nDim = 0)
+                                          objectDefs$addSymbol(RCopiedSymbol$genCppVar())
                                           CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                       },
                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
@@ -70,12 +75,14 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         listElementTable <- symbolTable()
                                         numArgs <- length(argNames)
                                         
+                                        setCopiedFlag <- substitute(RCOPIEDFLAG <- FALSE,
+                                                                    list(RCOPIEDFLAG = as.name('RCopiedFlag')))
+                                        
                                         environmentCPPName <- Rname2CppName('S_.xData')  ## create SEXP for ref class environment 
                                         listElementTable$addSymbol(cppSEXP(name = environmentCPPName))
                                         envLine <- substitute({PROTECT(ENVNAME <- allocVector(STRSXP, 1));
                                                               SET_STRING_ELT(ENVNAME, 0, mkChar(".xData"));}, 
                                                               list(ENVNAME = as.name(environmentCPPName)))
-                                                           browser()
                                         for(i in seq_along(argNames)) {
                                           Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                           listElementTable$addSymbol(cppSEXP(name = Snames[i]))

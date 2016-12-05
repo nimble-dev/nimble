@@ -643,7 +643,6 @@ dollarSign_keywordInfo <- keywordInfoClass(
 			newRunCode <- code[[2]]
 			return(newRunCode)
 		}
-		browser()
 		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
 		callerCode <- code[[2]]
 		#	This extracts myNimbleFunction from the expression myNimbleFunction$foo()

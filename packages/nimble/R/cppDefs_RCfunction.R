@@ -73,7 +73,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
-                                   browser()
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
@@ -121,7 +120,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                       browser()
                                        returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
                                        returnListDefs <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nimbleListDef
                                        returnListNestedLists <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nestedListGenList
@@ -205,7 +203,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      copyLineCounter <- 1
-                                     browser()
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function

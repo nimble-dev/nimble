@@ -193,14 +193,19 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                        },
                                        buildConstructorFunctionDef = function() {
                                          newNestedListLines <- list()
+                                         flagLine <- list()
                                          if(!(is.null(nimCompProc[['nimbleListObj']]))){
+                                           flagText <- paste0('RCopiedFlag = false;')
+                                           flagLine[[1]] <- substitute(FLAGTEXT, 
+                                                            list(FLAGTEXT = as.name(flagText)))
                                            for(i in seq_along(nimCompProc$neededTypes)){
                                              newListText <- paste0(nimCompProc$neededTypes[[i]]$name, " = new ", as.name(names(nimCompProc$neededTypes)[i]), ";")
                                              newNestedListLines[[i]] <- substitute(NEWLISTTEXT,
                                                                                    list(NEWLISTTEXT = as.name(newListText)))
                                            }
                                          }
-                                         code <- putCodeLinesInBrackets(c(newNestedListLines, list(namedObjectsConstructorCodeBlock())))
+                                         code <- putCodeLinesInBrackets(c(flagLine, newNestedListLines,
+                                                                          list(namedObjectsConstructorCodeBlock())))
                                          conFunDef <- cppFunctionDef(name = name,
                                                                      returnType = emptyTypeInfo(),
                                                                      code = cppCodeBlock(code = code, skipBrackets = TRUE))
