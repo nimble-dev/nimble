@@ -520,24 +520,24 @@ sizeRep <- function(code, symTab, typeEnv) {
 }
 
 
-sizeRMVNorm <- function(code, symTab, typeEnv) {
-    asserts <- recurseSetSizes(code, symTab, typeEnv)
-    if(code$args[[1]]$nDim != 1) {
-        writeLines(paste0('Uh oh, first arg to rmvnorm in ', nimDeparse(code), ' is not 1D.'))
-        browser()
-    }
-    if(code$args[[2]]$nDim != 1) {
-        writeLines(paste0('Uh oh, second arg to rmvnorm in ', nimDeparse(code), ' is not 1D.'))
-        browser()
-    }
-    if(!(code$caller %in% assignmentOperators)) {
-        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-    }
-    code$type <- 'double'
-    code$nDim <- 1
-    code$sizeExprs <- code$args[[1]]$sizeExprs ## already checked that it is 1D
-    code$toEigenize <- 'no'
-}
+## sizeRMVNorm <- function(code, symTab, typeEnv) {
+##     asserts <- recurseSetSizes(code, symTab, typeEnv)
+##     if(code$args[[1]]$nDim != 1) {
+##         writeLines(paste0('Uh oh, first arg to rmvnorm in ', nimDeparse(code), ' is not 1D.'))
+##         browser()
+##     }
+##     if(code$args[[2]]$nDim != 1) {
+##         writeLines(paste0('Uh oh, second arg to rmvnorm in ', nimDeparse(code), ' is not 1D.'))
+##         browser()
+##     }
+##     if(!(code$caller %in% assignmentOperators)) {
+##         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+##     }
+##     code$type <- 'double'
+##     code$nDim <- 1
+##     code$sizeExprs <- code$args[[1]]$sizeExprs ## already checked that it is 1D
+##     code$toEigenize <- 'no'
+## }
 
 sizemap <- function(code, symTab, typeEnv) {
     ## This will only be called on a map generated from setup
@@ -618,9 +618,12 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
 
     if(!useNewMatrix) 
         if(inherits(code$caller, 'exprClass'))
-            if(!(code$caller$name %in% assignmentOperators))
-                if(!is.null(code$caller$name))
+            if(!(code$caller$name %in% assignmentOperators)) {
+                if(!is.null(code$caller$name)) {
                     asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+                }
+            } else
+                typeEnv$.ensureNimbleBlocks <- TRUE
     
     ## check for nimNewMatrix case
     if(useNewMatrix) {
@@ -631,7 +634,6 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
         code$toEigenize <- "yes"
     }
     
-
     return(asserts)
 }
 
@@ -688,7 +690,8 @@ sizeGetParam <- function(code, symTab, typeEnv) {
             if(!(code$caller$name == '{')) ## could be on its own line -- useless but possible
                 asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
         code$toEigenize <- 'maybe'
-    }
+    } else
+        typeEnv$.ensureNimbleBlocks <- TRUE
     return(asserts)
 }
 
@@ -817,7 +820,8 @@ sizeValues <- function(code, symTab, typeEnv) {
                 assertSS <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
                 assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
                 asserts <- c(assertSS, asserts)
-            }
+            } else
+                typeEnv$.ensureNimbleBlocks <- TRUE
         } ## values(...) <- P, don't change it
     } else { ## values(...) embedded in a RHS expression
         code$name <- 'getValues'
@@ -825,7 +829,6 @@ sizeValues <- function(code, symTab, typeEnv) {
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
         code$toEigenize <- 'no'
     }
-    
     if(length(asserts)==0) NULL else asserts
 }
 
@@ -938,7 +941,7 @@ sizeSetSize <- function(code, symTab, typeEnv) {
         if(sym$nDim == 0) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Resizing a scalar does not make sense.'), call. = FALSE)
         firstSizeExpr <- code$args[[2]]
         if(inherits(firstSizeExpr, 'exprClass')) {
-            if(firstSizeExpr$name == 'c') { ## handle syntax of resize(Z, c(3, dim(A)[1]))
+            if(firstSizeExpr$name == 'nimC') { ## handle syntax of resize(Z, c(3, dim(A)[1]))
                 if(length(firstSizeExpr$args) != sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
                 asserts <- recurseSetSizes(firstSizeExpr, symTab, typeEnv) ## may set intermediates if needed
                 ## see comment below
@@ -1001,7 +1004,7 @@ sizeFor <- function(code, symTab, typeEnv) {
     ## Now the 3rd arg, the body of the loop, can be processed
     asserts <- c(asserts, exprClasses_setSizes(code$args[[3]], symTab, typeEnv))
     ## I think there shouldn't be any asserts returned since the body should be a bracket expression.
-    return(invisible(NULL))
+    return(if(length(asserts) == 0) invisible(NULL) else asserts)
 }
 
 sizeInsertIntermediate <- function(code, argID, symTab, typeEnv, forceAssign = FALSE) {
@@ -1048,7 +1051,7 @@ sizeAssign <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, TRUE))
     typeEnv$.AllowUnknowns <- TRUE
     asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, FALSE)))
-    
+    typeEnv[['.ensureNimbleBlocks']] <- FALSE ## may have been true from RHS of rmnorm etc.
     asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
     if(length(asserts) == 0) NULL else asserts
 }
@@ -1601,6 +1604,9 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         
         ## Replace with a map expression if needed
         if(!simpleBlockOK) {
+            if(typeEnv$.ensureNimbleBlocks) {
+                stop(exprClassProcessingErrorMsg(code, "LHS indexing for a multivariate random draw can only use sequential blocks (via ':')."), call. = FALSE)
+            }
             ##   if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
             if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
                 code$name <- 'coeffSetter'
@@ -1613,7 +1619,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 code$args[[3]] <- 1 ## fill in extra 1 for a second dimension
         }
         else {
-            if(code$args[[1]]$nDim > 2) { ## old-style blocking from >2D down to 2D or 1D
+            if(code$args[[1]]$nDim > 2 | typeEnv$.ensureNimbleBlocks) { ## old-style blocking from >2D down to 2D or 1D, or this is LHS for something like rmnorm, requiring a non-eigen map on LHS.
                 if(dropArgProvided) code$args[[iDropArg]] <- NULL
                 newExpr <- makeMapExprFromBrackets(code, dropBool)
                 newExpr$sizeExprs <- code$sizeExprs
@@ -2350,9 +2356,9 @@ sizeRmultivarFirstArg <- function(code, symTab, typeEnv) {
     if(code$nDim > 0) {
         if(!(code$caller$name %in% c('{','<-','<<-','='))) {
             asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-        }
+        } else
+            typeEnv$.ensureNimbleBlocks <- TRUE ## for purposes of sizeAssign, which recurses on assignment target after RHS
     }
-
     return(asserts)
 }
 
@@ -2424,8 +2430,8 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
     if(code$nDim > 0) {
         if(!(code$caller$name %in% c('{','<-','<<-','='))) {
             asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-        }
+        } else
+            typeEnv$.ensureNimbleBlocks <- TRUE
     }
-    
     return(asserts)
 }

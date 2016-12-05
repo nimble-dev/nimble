@@ -697,23 +697,23 @@ struct nonseqIndexed_impl {
 
 // get first element or length.  used for lengths of return values of recycling rule r functions needed for sizeExprs
 
-template<typename NimArrOfSomeKind>
-int rFunLength(const NimArrOfSomeKind &Arg) { //
-  if(Arg.size() == 1) return Arg[0];
-  return Arg.size();
-}
+/* template<typename NimArrOfSomeKind> */
+/* int rFunLength(const NimArrOfSomeKind &Arg) { // */
+/*   if(Arg.size() == 1) return Arg[0]; */
+/*   return Arg.size(); */
+/* } */
 
-int rFunLength(int Arg) {
-  return Arg;
-}
+/* int rFunLength(int Arg) { */
+/*   return Arg; */
+/* } */
 
-int rFunLength(double Arg) {
-  return Arg;
-}
+/* int rFunLength(double Arg) { */
+/*   return Arg; */
+/* } */
 
-int rFunLength(bool Arg) {
-  return Arg;
-}
+/* int rFunLength(bool Arg) { */
+/*   return Arg; */
+/* } */
 
 // vectorization of any scalar function: R's so-called "Recycling Rule"
 // put the call to arg.coeff(...) in a struct so we can proxy it when LinearAccessBit is false and we can proxy it for a scalar 
@@ -749,7 +749,7 @@ struct nimble_eigen_coeff_mod_impl<true, result_type, bool, Index> {
 };
 
 // Here is a test function
-double RRtest_add(double a1, double a2) {std::cout<<a1<<" "<<a2<<" "<<a1+a2<<"\n"; return a1 + a2;}
+// double RRtest_add(double a1, double a2) {std::cout<<a1<<" "<<a2<<" "<<a1+a2<<"\n"; return a1 + a2;}
 
 // Here is the large macro for creating a functor class to be used in a NullaryExpr
 #define MAKE_RECYCLING_RULE_CLASS2(FUNNAME, RETURNSCALARTYPE) \

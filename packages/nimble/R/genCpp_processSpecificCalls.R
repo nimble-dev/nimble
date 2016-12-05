@@ -88,7 +88,7 @@ declareHandler <- function(code, symTab) {
     if(code$args[[1]]$isName) {
         newNames <- code$args[[1]]$name
     } else { ## case of declaring multiple names at once.  This is not documented in User Manual and not supported by R declare() 
-        if(code$args[[1]]$name == 'c') {
+        if(code$args[[1]]$name == 'nimC') {
             newNames <- unlist(lapply(code$args[[1]]$args, `[[`, 'name'))
             if(length(newNames) == 0) stop('Error: no names provided to declare')
         } else stop('Error: first arg to declare should be a variable name or c(name1, name2, etc)')
@@ -109,7 +109,7 @@ declareHandler <- function(code, symTab) {
         if(length(typeDeclExpr$args) > 1) { ## sizes were provided
             typeSizeExpr <- typeDeclExpr$args[[2]]
             if(inherits(typeSizeExpr, 'exprClass')) { ## first size are is an expression
-                if(typeSizeExpr$name == 'c')  ## it's a concatenation
+                if(typeSizeExpr$name == 'nimC')  ## it's a concatenation
                     sizeExprs <- typeSizeExpr$args ## record the args
                 else { ## it's not a concatenation
                     if(nDim != 1) stop('confused in declareHandler')
