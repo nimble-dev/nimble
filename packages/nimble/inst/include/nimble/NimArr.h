@@ -86,7 +86,8 @@ public:
   }
 
   NimArr<1, T> &operator=(const NimArr<1, double> &other) {return(templateCopyOperator<double>(other));}
-  NimArr<1, T> &operator=(const NimArr<1, int> &other) {return(templateCopyOperator<int>(other));}  
+  NimArr<1, T> &operator=(const NimArr<1, int> &other) {return(templateCopyOperator<int>(other));}
+  NimArr<1, T> &operator=(const NimArr<1, bool> &other) {return(templateCopyOperator<bool>(other));}  
 
   NimArr<1, T> (const NimArr<1, T> &other) :
   NimArrBase<T>(other)
@@ -217,8 +218,13 @@ public:
   int size1, size2, stride2;
   int calculateIndex(int i, int j) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j);} // j * s1 + i);}
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1]));};
-    T &operator()(int i, int j) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);} // could add asserts here
-
+  T &operator()(int i, int j) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);} // could add asserts here
+  
+  T &operator[](int i) const {
+    std::div_t divRes = div(i, size1);
+    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes.rem, floor(divRes.quot))]);
+  }
+    
   ~NimArr<2, T>() {};
 
   template<class Tother>
@@ -447,6 +453,12 @@ class NimArr<3, T> : public NimArrBase<T> {
   int calculateIndex(int i, int j, int k) const {return(NimArrBase<T>::offset + NimArrBase<T>::stride1 * i + stride2 * j + stride3 * k);} //k * s1s2 + j*s1 + i);}
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1], i[2]));};
   T &operator()(int i, int j, int k) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)]);} // could add asserts here
+
+  T &operator[](int i) const {
+    std::div_t divRes1 = div(i, size1);
+    std::div_t divRes2 = div(floor(divRes1.quot), size2);
+    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, floor(divRes2.quot))]);
+  }
 
   ~NimArr<3, T>() {};
 
@@ -712,6 +724,13 @@ class NimArr<4, T> : public NimArrBase<T> {
   int calculateIndex(vector<int> &i) const {return(calculateIndex(i[0], i[1], i[2], i[3]));};
   T &operator()(int i, int j, int k, int l) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)]);} // could add asserts here
 
+  T &operator[](int i) const {
+    std::div_t divRes1 = div(i, size1);
+    std::div_t divRes2 = div(floor(divRes1.quot), size2);
+    std::div_t divRes3 = div(floor(divRes2.quot), size3);
+    return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes3.rem, floor(divRes3.quot))]);
+  }
+  
   ~NimArr<4, T>() {};
 
   template<class Tother>

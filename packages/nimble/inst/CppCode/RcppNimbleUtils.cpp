@@ -640,6 +640,26 @@ SEXP NimArrInt_2_SEXP(NimArrBase<int> &nimArrInt){
 	return(Sans);
  }
 
+SEXP NimArrBool_2_SEXP(NimArrBase<bool> &nimArrBl){
+  int len = nimArrBl.size();
+  SEXP Sans;  
+  PROTECT(Sans = allocVector(LGLSXP, len));
+  //		std::copy(nimArrInt.v.begin(), nimArrInt.v.end() , INTEGER(Sans) );
+  std::copy(nimArrBl.v, nimArrBl.v + len , LOGICAL(Sans) );  
+  int numDims = nimArrBl.numDims();
+  if(numDims > 1) {
+    SEXP Sdim;
+    PROTECT(Sdim = allocVector(INTSXP, numDims));
+    for(int idim = 0; idim < numDims; ++idim) INTEGER(Sdim)[idim] = nimArrBl.dimSize(idim);
+    setAttrib(Sans, R_DimSymbol, Sdim);
+    UNPROTECT(2);
+  }
+  else {
+    UNPROTECT(1);
+  } 
+  return(Sans);
+ }
+
 
 NimArrType* getNimTypePtr(SEXP &rPtr, SEXP &refNum)
 {
@@ -668,7 +688,7 @@ void SEXP_2_NimArrDouble (SEXP rValues, NimArrBase<double> &NimArrDbl){
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = REAL(rValues)[i];
   }
-  else if(isInteger(rValues) ) {
+  else if(isInteger(rValues) | isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrDbl[i] = INTEGER(rValues)[i];
   }
@@ -685,7 +705,7 @@ void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
     return;		
   }
   
-  if(isInteger(rValues) ) {
+  if(isInteger(rValues) | isLogical(rValues) ) {
     for(int i = 0; i < rLength; i++)
       NimArrInt[i] = INTEGER(rValues)[i];
   }
@@ -699,6 +719,29 @@ void SEXP_2_NimArrInt (SEXP rValues, NimArrBase<int> &NimArrInt){
   return;
 }
 
+void SEXP_2_NimArrBool (SEXP rValues, NimArrBase<bool> &NimArrBl){
+  int rLength = LENGTH(rValues);
+  if(rLength != NimArrBl.size() ) {
+    PRINTF("Warning: R object of different size than NimArrBl!\n");
+    return;		
+  }
+
+  // In R, Logical is represented as integer
+  if(isInteger(rValues) | isLogical(rValues)) {
+    for(int i = 0; i < rLength; i++)
+      NimArrBl[i] = INTEGER(rValues)[i];
+  }
+  else if(isReal(rValues) ) {
+    for(int i = 0; i < rLength; i++)
+      NimArrBl[i] = REAL(rValues)[i];
+  }
+  
+  else
+    PRINTF("WARNING: class of R object not recognized. Should be numeric or integer\n");    
+  return;
+}
+
+
 SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 	NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
 	if(!nimTypePtr)
@@ -711,6 +754,11 @@ SEXP Nim_2_SEXP(SEXP rPtr, SEXP NumRefers){
 		NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
 		return(NimArrDouble_2_SEXP( (*nimBase) ) );
 	}
+	if(	(*nimTypePtr).getNimType() == BOOL){
+	  NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
+	  return(NimArrBool_2_SEXP( (*nimBase) ) );
+	}
+
 	PRINTF("Datatype of NimArr not found\n");
 	return(R_NilValue);
 }
@@ -723,33 +771,46 @@ SEXP SEXP_2_Nim(SEXP rPtr, SEXP NumRefers, SEXP rValues, SEXP allowResize){
 	NimArrType* nimTypePtr = getNimTypePtr(rPtr, NumRefers);
 	if(!nimTypePtr)
 		return(R_NilValue);
-	if(	(*nimTypePtr).getNimType() == INT){
-		NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
-        int nimNumDims = (*nimBase).numDims();
-        if(nimNumDims != sexpNumDims){
+	if((*nimTypePtr).getNimType() == INT){
+	  NimArrBase<int>* nimBase = static_cast<NimArrBase<int> *>(nimTypePtr);
+	  int nimNumDims = (*nimBase).numDims();
+	  if(nimNumDims != sexpNumDims){
             if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-                PRINTF("Incorrect number of dimensions in copying\n");
-                return(R_NilValue);
+	      PRINTF("Incorrect number of dimensions in copying\n");
+	      return(R_NilValue);
             }
-        }
-        if(resize == true)
+	  }
+	  if(resize == true)
             (*nimBase).setSize(sexpDims);
-		SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
+	  SEXP_2_NimArrInt(rValues,  (*nimBase) ) ;
 	}
-	if(	(*nimTypePtr).getNimType() == DOUBLE){
-		
-		NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
-        int nimNumDims = (*nimBase).numDims();
-                
-        if(nimNumDims != sexpNumDims){
+	if((*nimTypePtr).getNimType() == DOUBLE){
+	  
+	  NimArrBase<double>* nimBase = static_cast<NimArrBase<double> *>(nimTypePtr);
+	  int nimNumDims = (*nimBase).numDims();
+	  
+	  if(nimNumDims != sexpNumDims){
             if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
-                PRINTF("Incorrect number of dimensions in copying\n");
-                return(R_NilValue);
+	      PRINTF("Incorrect number of dimensions in copying\n");
+	      return(R_NilValue);
             }
-        }
-        if((resize == true) & (nimNumDims == sexpNumDims))
+	  }
+	  if((resize == true) & (nimNumDims == sexpNumDims))
             (*nimBase).setSize(sexpDims);
-        SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
+	  SEXP_2_NimArrDouble( rValues, (*nimBase) ) ;
+	}
+	if((*nimTypePtr).getNimType() == BOOL){
+	  NimArrBase<bool>* nimBase = static_cast<NimArrBase<bool> *>(nimTypePtr);
+	  int nimNumDims = (*nimBase).numDims();
+	  if(nimNumDims != sexpNumDims){
+            if((LENGTH(rValues) != (*nimBase).size()) & (sexpNumDims != 1)){
+	      PRINTF("Incorrect number of dimensions in copying\n");
+	      return(R_NilValue);
+            }
+	  }
+	  if(resize == true)
+            (*nimBase).setSize(sexpDims);
+	  SEXP_2_NimArrBool(rValues,  (*nimBase) ) ;
 	}
 	return(R_NilValue);
 }

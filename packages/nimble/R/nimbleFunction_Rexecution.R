@@ -1,6 +1,29 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+nimC <- function(...) {
+    c(...)
+}
+
+nimRep <- function(x, ...) {
+    rep(x, ...)
+}
+
+nimSeq <- function(from, to, by, length.out) { ## this creates default arguments filled in at keyword matching that are then useful in cppOutput step to determine if C++ should use nimSeqBy or nimSeqLen
+    haveBy <- !missing(by)
+    haveLen <- !missing(length.out)
+    if(haveBy)
+        if(haveLen)
+            seq(from, to, by, length.out)
+        else
+            seq(from, to, by)
+    else
+        if(haveLen)
+            seq(from, to, length.out = length.out)
+        else
+            seq(from, to)
+}
+
 #' Explicitly declare objects created in setup code to be preserved and compiled as member data
 #'
 #' Normally a \code{nimbleFunction} determines what objects from \code{setup} code need to be preserved for \code{run} code or other member functions.  \code{setupOutputs} allows explicit declaration for cases when an object created in setup output is not use in member functions.
@@ -968,9 +991,22 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 #' @aliases matrix
 #' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{array}}
 #' @export
-nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
+nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'double') {
+    ## the -1's are used because nimble does not allow both missingness and default value
+    ## but R's matrix function relies on both possibilities
     fillValue <- makeFillValue(value, type, init)
-    base::matrix(fillValue, nrow, ncol)
+    mnrow <- missing(nrow) || is.na(nrow)
+    mncol <- missing(ncol) || is.na(ncol)
+    if(mnrow)
+        if(mncol)
+            base::matrix(fillValue)
+        else
+            base::matrix(fillValue, ncol = ncol)
+    else
+        if(mncol)
+            base::matrix(fillValue, nrow = nrow)
+        else
+            base::matrix(fillValue, nrow = nrow, ncol = ncol)
 }
 
 

@@ -435,12 +435,14 @@ symbolEigenMap <- setRefClass(Class = 'symbolEigenMap',
                                   genCppVar = function(functionArg = FALSE) {
                                       if(functionArg) stop('Error: cannot take Eigen Map as a function argument (without more work).')
                                       if(length(strides)==2 & eigMatrix) {
-                                          if(all(is.na(strides)))
+                                          if(all(is.na(strides))) {
+                                              baseType <- paste0('EigenMapStr', if(type == 'double') 'd' else if(type == 'integer') 'i' else 'b' )
                                               return(cppVarFull(name = name,
-                                                                baseType = 'EigenMapStr',
+                                                                baseType = baseType,
                                                                 constructor = '(0,0,0, EigStrDyn(0, 0))',
                                                                 ptr = 0,
                                                                 static = FALSE))
+                                          }
                                       }
                                       cppEigenMap(name = name,
                                                   type = type,

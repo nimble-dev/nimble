@@ -20,7 +20,10 @@ matrixSquareReductionOperators <- c('det','logdet','trace')
 reductionBinaryOperatorsEither <- c('inprod')
 reductionBinaryOperators <- reductionBinaryOperatorsEither
 
-nonNativeEigenCalls <- c('logdet','sd','var','inprod')
+coreRnonSeqBlockCalls <- c('nimNonseqIndexedd','nimNonseqIndexedi', 'nimNonseqIndexedb')
+coreRmanipulationCalls <- c('nimC','nimRepd','nimRepi','nimRepb',
+                            'nimSeqByD','nimSeqLenD','nimSeqByI','nimSeqLenI', 'nimDiagonalD','nimDiagonalI','nimDiagonalB', 'nimNewMatrixD','nimNewMatrixI','nimNewMatrixB')
+nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls, coreRnonSeqBlockCalls)
 
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
@@ -35,6 +38,8 @@ names(midOperators) <- c(binaryMidOperators, binaryMidLogicalOperators, binaryOr
 midOperators <- c(midOperators, list('$' = '$', '%*%' = ' %*% ', ':' = ':', '%o%' = '%o%'))
 
 brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
+
+## see distributions_processInputList for some relevant lists of distributions functions 
 
 callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals', 'startNimbleTimer', 'endNimbleTimer')
 
@@ -69,7 +74,9 @@ eigProxyTranslate <- c(eigTranspose = 'transpose',
                        eigMatrix = 'matrix',
                        eigInverse = 'inverse',
                        setAll = 'setConstant',
-                       eigEval = 'eval')
+                       eigEval = 'eval',
+                       eigDiagonal = 'diagonal',
+                       eigenBlock = 'block') ## created in makeEigenBlockExprFromBrackets called from sizeIndexingBracket
 
 newEPT <- reductionUnaryOperators
 names(newEPT) <- paste0('eig', reductionUnaryOperators)
@@ -85,11 +92,17 @@ newEPT <- reductionBinaryOperators
 names(newEPT) <- paste0('eig', reductionBinaryOperators)
 eigProxyTranslate <- c(eigProxyTranslate, newEPT)
 
+newEPT <- c(coreRmanipulationCalls, coreRnonSeqBlockCalls)
+names(newEPT) <- paste0('eig', c(coreRmanipulationCalls, coreRnonSeqBlockCalls))
+eigProxyTranslate <- c(eigProxyTranslate, newEPT)
+
 newEPT <- matrixSquareReductionOperators
 names(newEPT) <- paste0('eig', matrixSquareReductionOperators)
 eigProxyTranslate <- c(eigProxyTranslate, newEPT)
 eigProxyTranslate[['eigdet']] <- 'determinant'
 
+## nonNativeEigenProxyCalls should each appear in one of the other operatorLists feeding into eigProxyTranslate
+## Then they are removed from eigProxyCalls so that in cppOutputCalls the nonNativeEigenProxyCalls can be generated differently (as a function, not a member function)
 nonNativeEigenProxyCalls <- paste0('eig', nonNativeEigenCalls)
 eigProxyCalls <- setdiff(names(eigProxyTranslate), nonNativeEigenProxyCalls)
 

@@ -13,7 +13,13 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
-                    list(size = 'cppOutputSize',
+                    makeCallList(c('nimSeqBy','nimSeqLen'), 'cppOutputCallAsIs'),
+                    list(
+                        fill = 'cppOutputEigMemberFunctionNoTranslate',
+                        MAKE_FIXED_VECTOR = 'cppOutputMakeFixedVector',
+                        concatenateTemp = 'cppOutputEigBlank',
+                        ':' = 'cppOutputColon',
+                        size = 'cppOutputSize',
                          'for' = 'cppOutputFor',
                          'if' = 'cppOutputIfWhile',
                          'while' = 'cppOutputIfWhile',
@@ -103,6 +109,15 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
     } else {
         return(code$name)
     }
+}
+
+cppOutputMakeFixedVector <- function(code, symTab) {
+    type <- code$args[[5]]
+    fixedName <- code$args[[2]]
+    vecName <- code$args[[1]]
+    len <- code$args[[3]]
+    fixedValues <- paste0(unlist(lapply(code$args[[4]]$args, nimGenerateCpp, symTab) ), collapse = ',')
+    paste0(type, ' ', fixedName,'[] = {', fixedValues, '}; std::vector<', type, '> ', vecName,'(', fixedName, ',', fixedName, ' + ', len, ')')
 }
 
 cppOutputVoidPtr <- function(code, symTab) {
@@ -242,7 +257,9 @@ cppOutputEigenMapAssign <- function(code, symTab) {
     MapType <- if(!useStrides) {
         paste0('Map< ', code$args[[3]]$name,' >')
     } else {
-        if(bothStridesDyn) 'EigenMapStr'
+        if(bothStridesDyn) {
+            symTab$getSymbolObject(nimDeparse(code$args[[1]]))$baseType
+        } ##'EigenMapStr'
         else paste0('Map< ', code$args[[3]]$name, ', Unaligned, ', strideTemplateDec,' >')
     }
     paste0('new (&', nimGenerateCpp(code$args[[1]], symTab),') ', MapType, '(', paste(c(nimGenerateCpp(code$args[[2]], symTab), nimGenerateCpp(code$args[[4]], symTab), nimGenerateCpp(code$args[[5]], symTab), strideConstructor), collapse = ','), ')')
@@ -293,6 +310,11 @@ cppOutputNFmethod <- function(code, symTab) {
     if(length(code$args) < 2) stop('Error: expecting at least 2 arguments for operator ',code$name)
     paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]) ##, ## No nimGenerateCpp on code$args[[2]] because it should be a string
     ## This used to take method args in this argList.  But now they are in a chainedCall
+}
+
+cppOutputColon <- function(code, symTab) {
+    if(length(code$args) != 2) stop('Error: expecting 2 arguments for operator ',code$name)
+    paste0( 'nimSeqByD(', paste(nimGenerateCpp(code$args[[1]], symTab), nimGenerateCpp(code$args[[2]], symTab), 1, 0, sep = ','),')');
 }
 
 cppOutputMidOperator <- function(code, symTab) {
