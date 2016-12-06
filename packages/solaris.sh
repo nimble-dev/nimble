@@ -1,3 +1,6 @@
+need to remember where I got the Solaris VirtualBox VM - see Solaris website. 
+I believe it was sol-11_3-vbox
+
 login as paciorek with s1x2 as password
 scp paciorek@smeagol.berkeley.edu:~/research/perry/solaris/pkg.oracle.com.key.pem /tmp/.
 scp paciorek@smeagol.berkeley.edu:~/research/perry/solaris/pkg.oracle.com.certificate.pem /tmp/.
@@ -88,3 +91,39 @@ install.packages("nimble", repos = 'https://cran.cnr.berkeley.edu')
 
 export _R_CHECK_FORCE_SUGGESTS_=0  # so doesn't need various Suggests including Linux JAGS
 /usr/lib/R/R-3.3.1/bin/R CMD check --as-cran nimble_0.6-1.tar.gz
+
+
+### trying to use solarisstudio:
+# in usr/lib/Rcc
+
+export PATH=/opt/solarisstudio12.3/bin:$PATH
+
+config.site:
+CC="cc -xc99"
+CFLAGS='-O -xlibmieee -xlibmil -xtarget=native -nofstore'
+F77="f95"
+FFLAGS='-O -libmil -xtarget=native -nofstore'
+CXX="CC -library=stlport4"
+CXXFLAGS="-O -xlibmil -xtarget=native -nofstore"
+CXX1X="/opt/csw/bin/g++"
+CXX1XFLAGS="-O2"
+CXX1XPICFLAGS=-fPIC
+FC=$F77
+FCFLAGS=$FFLAGS
+SAFE_FFLAGS="-O -fstore"
+FCLIBS="-lfai -lfui -lfsu"
+R_LD_LIBRARY_PATH="/opt/solarisstudio12.3/lib:/usr/local/lib:/opt/csw/lib"
+
+./configure --with-internal-tzcode MAKE=gmake
+
+# seems to go fine, but having errors when installing Rcpp
+
+# I'm just copying library directory over from the other R
+
+# now nimble install fails (before where the examples fail according to cran)
+# in compiling RcppNimbleUtils.cpp
+# "error with RcppNimbleUtils.h, line 148: could not find a match for SEXP_2_NimArr<ndim>(SEXPREC*, NimArr<1,double>&)
+
+# when I put the CC stuff in Makevars, then I can get nfVar to fail but still use the nimble from teh gcc install
+# first failure is becaue of -W flags
+# if I remove those, I get the same failure as above with the match for SEXP_2_NimArr

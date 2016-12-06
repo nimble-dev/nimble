@@ -110,7 +110,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
 )
 
 eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
-    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam','getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
+    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
     list(coeffSetter = 'eigenize_coeffSetter',
          nfVar = 'eigenize_nfVar',
          chainedCall = 'eigenize_chainedCall',
@@ -703,8 +703,13 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     code$eigMatrix <- TRUE
 
     deparsedCode <- parse(text = nimDeparse(code), keep.source = FALSE)[[1]]
-    setArg(code$caller, code$callerArgID, RparseTree2ExprClasses(as.name(EigenName)))
-
+    newExpr <- RparseTree2ExprClasses(as.name(EigenName))
+    newExpr$type <- code$type
+    newExpr$sizeExprs <- code$sizeExprs
+    newExpr$nDim <- code$nDim
+    newExpr$eigMatrix <- code$eigMatrix
+    setArg(code$caller, code$callerArgID, newExpr)
+    
     if(!thisMapAlreadySet) {
         return(RparseTree2ExprClasses(
             EigenNewExpr(EigenName, deparsedCode, NULL, makeEigenTypeLabel(TRUE, code$type),

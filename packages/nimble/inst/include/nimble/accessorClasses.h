@@ -114,6 +114,44 @@ NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUs
 //extern template NimArr<2, double> getParam_2D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 //extern template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 
+// code for getBound copied over from getParam; only 0D currently used as we set bounds same for all values in multivariate nodes
+//getBound_0D
+inline double getBound_0D_double(int boundID, const oneNodeUseInfo &useInfo) {
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.useInfo));
+  //return(useInfo.nodeFunPtr->getBound_0D_double(boundID, (*(useInfo.nodeFunPtr->getIndexedNodeInfoTablePtr()))[ useInfo.useInfo.indicesForIndexedNodeInfo[0] ] ) );
+}
+inline double getBound_0D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) { 
+  /* iNodeFunction sometimes needs to be generated in a call even if not needed */
+  /* but we want to avoid compiled warnings about an unused argument */
+  /* the following line of code tries to make the compiler think iNodeFunction will be used */
+  if(iNodeFunction) boundID += 0;
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.useInfo));
+}
+template<typename boundIDtype>
+inline double getBound_0D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+}
+
+//getBound_1D
+NimArr<1, double> getBound_1D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
+
+
+template<class boundIDtype>
+NimArr<1, double> getBound_1D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+}
+
+
+//getBound_2D
+NimArr<2, double> getBound_2D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
+/* template<typename boundIDtype> */
+/* NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction); */
+template<class boundIDtype>
+NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+}
+
+
 /////////////////////
 // new version of variable accessors using maps (offset and strided windows into multivariate objects (NimArr<>s) )
 /////////////////////

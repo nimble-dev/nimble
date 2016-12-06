@@ -2,8 +2,7 @@
 
 context("Testing of core R functions in NIMBLE code")
 
-writeLines(c("need to get Scalar instead of result_type",
-             "fix nbinom"))
+## fix result_type in nimbleEigen.h
 
 gen_runFunCore <- function(input) {
     runFun <- function() {}
@@ -397,6 +396,80 @@ recyclingRuleTests <- list(
 )
 
 rRecyclingRuleTests <- list(
+ list(name = "rnorm case 1", expr = quote(out <- rnorm(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(0))),
+             setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5);}),
+             outputType = quote(double(1))),
+ list(name = "rnorm case 2 (with expressions)", expr = quote(out <- (1 + rnorm(5, arg1 + 1, arg2/2))^2),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(0))),
+             setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5);}),
+             outputType = quote(double(1))),
+ list(name = "rnorm case 3 (with assignment block)", expr = quote({out <- numeric(10); out[2:6] <- (1 + rnorm(5, arg1 + 1, arg2/2))^2}),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(0))),
+             setArgVals = quote({arg1 <- as.numeric(1:2); arg2 <- as.numeric(3.5);}),
+             outputType = quote(double(1))),
+ list(name = "rbinom case 1", expr = quote(out <- rbinom(5, prob = arg1, size = arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(integer(1))),
+             setArgVals = quote({arg1 <- seq(.1, .4, length = 10); arg2 <- 1:3}),
+             outputType = quote(double(1)), checkEqual = TRUE),
+ list(name = "exp all vector", expr = quote(out <- rexp(arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(4:2);}),
+             outputType = quote(double(1))),
+ list(name = "rexp_nimble case 1", expr = quote(out <- rexp_nimble(5, arg1)),
+             args = list(arg1 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(.1, .4, length = 10)}),
+             outputType = quote(double(1))),
+
+ list(name = "rexp case 1", expr = quote(out <- rexp(5, arg1)),
+             args = list(arg1 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(.1, .4, length = 10)}),
+             outputType = quote(double(1))),
+
+ list(name = "rnbinom case 1", expr = quote(out <- rnbinom(5, prob = arg1, size = arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(.1, .4, length = 10); arg2 <- seq(4, 1, length = 10)}),
+             outputType = quote(double(1)), checkEqual = TRUE),
+
+ list(name = "rpois case 1", expr = quote(out <- rpois(5, arg1)),
+             args = list(arg1 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(.1, .4, length = 10)}),
+             outputType = quote(double(1)), checkEqual = TRUE),
+
+ list(name = "rchisq case 1", expr = quote(out <- rchisq(5, arg1)),
+             args = list(arg1 = quote(integer(1))),
+             setArgVals = quote({arg1 <- 1:10}),
+             outputType = quote(double(1))),
+
+ list(name = "rbeta case 1", expr = quote(out <- rbeta(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rgamma case 1", expr = quote(out <- rgamma(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rlnorm case 1", expr = quote(out <- rgamma(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "runif case 1", expr = quote(out <- runif(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rweibull case 1", expr = quote(out <- rweibull(5, arg1, arg2)),
+             args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- seq(0.1, 0.4, length = 10); arg2 <- seq(0.9, 0.7, length = 3)}),
+             outputType = quote(double(1))),
+
+ list(name = "rt case 1", expr = quote(out <- rt(5, arg1)),
+             args = list(arg1 = quote(integer(1)), arg2 = quote(double(1))),
+             setArgVals = quote({arg1 <- 5:14; arg2 <- seq(0.9, 0.7, length = 3)}),
+      outputType = quote(double(1)))
 
 )
 
@@ -752,6 +825,7 @@ lapply(blockTests, test_coreRfeature)
 lapply(repTests, test_coreRfeature)
 lapply(diagTests, test_coreRfeature)
 lapply(recyclingRuleTests, test_coreRfeature)
+lapply(rRecyclingRuleTests, test_coreRfeature)
 lapply(seqTests, test_coreRfeature)
 lapply(nonSeqIndexTests, test_coreRfeature)
 lapply(indexChainTests, test_coreRfeature)

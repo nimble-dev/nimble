@@ -464,7 +464,7 @@ public:
  seqClass(scalarFrom fromIn, scalarTo toIn, scalarBy byIn) :
   from(fromIn),
     by(byIn) {
-    printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
+      //    printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
       length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn));
     };
   
@@ -495,7 +495,7 @@ public:
   from(fromIn),
     length_out(length_outIn)
     {
-      printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
+      //      printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
       if(length_out == 1) {
 	//std::cout<<"setting by to 0\n";
 	by = 0;
@@ -594,7 +594,7 @@ public:
 
   template<typename fromType>
   void operator=(const fromType &from) {
-    printf("In operator=\n");
+    //printf("In operator=\n");
     if(nimble_size_impl<fromType>::getSize(from) < totSize) {
       printf("PROBLEM\n");
       return;
@@ -697,23 +697,11 @@ struct nonseqIndexed_impl {
 
 // get first element or length.  used for lengths of return values of recycling rule r functions needed for sizeExprs
 
-/* template<typename NimArrOfSomeKind> */
-/* int rFunLength(const NimArrOfSomeKind &Arg) { // */
-/*   if(Arg.size() == 1) return Arg[0]; */
-/*   return Arg.size(); */
-/* } */
-
-/* int rFunLength(int Arg) { */
-/*   return Arg; */
-/* } */
-
-/* int rFunLength(double Arg) { */
-/*   return Arg; */
-/* } */
-
-/* int rFunLength(bool Arg) { */
-/*   return Arg; */
-/* } */
+template<typename NimArrOfSomeKind>
+int rFunLength(const NimArrOfSomeKind &Arg) { //
+  if(Arg.size() == 1) return Arg[0];
+  return Arg.size();
+}
 
 // vectorization of any scalar function: R's so-called "Recycling Rule"
 // put the call to arg.coeff(...) in a struct so we can proxy it when LinearAccessBit is false and we can proxy it for a scalar 
@@ -1289,7 +1277,7 @@ MAKE_RECYCLING_RULE_CLASS3_2scalar(plnorm, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(punif, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(pweibull, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(pt_nonstandard, double)
-MAKE_RECYCLING_RULE_CLASS3_2scalar(pt, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(pt, double)
 
 MAKE_RECYCLING_RULE_CLASS3_2scalar(qbinom, double)
 MAKE_RECYCLING_RULE_CLASS2_2scalar(qexp_nimble, double)
@@ -1304,7 +1292,7 @@ MAKE_RECYCLING_RULE_CLASS3_2scalar(qlnorm, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(qunif, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(qweibull, double)
 MAKE_RECYCLING_RULE_CLASS3_2scalar(qt_nonstandard, double)
-MAKE_RECYCLING_RULE_CLASS3_2scalar(qt, double)
+MAKE_RECYCLING_RULE_CLASS2_2scalar(qt, double)
 
 MAKE_RECYCLING_RULE_CLASS_r2(rbinom, double)
 MAKE_RECYCLING_RULE_CLASS_r1(rexp_nimble, double)
@@ -1319,7 +1307,7 @@ MAKE_RECYCLING_RULE_CLASS_r2(rlnorm, double)
 MAKE_RECYCLING_RULE_CLASS_r2(runif, double)
 MAKE_RECYCLING_RULE_CLASS_r2(rweibull, double)
 MAKE_RECYCLING_RULE_CLASS_r2(rt_nonstandard, double)
-MAKE_RECYCLING_RULE_CLASS_r2(rt, double)
+MAKE_RECYCLING_RULE_CLASS_r1(rt, double)
 // matrix, array, as.numeric, as.matrix, as.array
 
 // need the additional parts below to make newMatrixClass work

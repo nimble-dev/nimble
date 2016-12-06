@@ -169,21 +169,21 @@ print: A logical argument, specifying whether to print the ordered list of defau
                                                                  nodes <- model$expandNodeNames(nodes)            }
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
-            isNodeEnd <- model$isNodeEnd(nodes)
+            isEndNode <- model$isEndNode(nodes)
 
 
-            if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy2(nodes)
+            if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
 
             for(i in seq_along(nodes)) {
             	node <- nodes[i]
                 discrete <- model$isDiscrete(node)
                 binary <- model$isBinary(node)
-                nodeDist <- model$getNodeDistribution(node)
+                nodeDist <- model$getDistribution(node)
                 nodeScalarComponents <- model$expandNodeNames(node, returnScalarComponents = TRUE)
                 nodeLength <- length(nodeScalarComponents)
                 
                 ## if node has 0 stochastic dependents, assign 'posterior_predictive' sampler (e.g. for predictive nodes)
-                if(isNodeEnd[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
+                if(isEndNode[i]) { addSampler(target = node, type = 'posterior_predictive');     next }
                 
                 ## for multivariate nodes, either add a conjugate sampler, RW_multinomial, or RW_block sampler
                 if(nodeLength > 1) {
@@ -222,7 +222,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             if(print)   printSamplers()
         },
 
-        addConjugateSampler = function(conjugacyResult) {
+        addConjugateSampler = function(conjugacyResult, print = FALSE) {
             ## update May 2016: old (non-dynamic) system is no longer supported -DT
             ##if(!getNimbleOption('useDynamicConjugacy')) {
             ##    addSampler(target = conjugacyResult$target, type = conjugacyResult$type, control = conjugacyResult$control)
@@ -238,7 +238,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
             }
             conjSamplerFunction <- dynamicConjugateSamplerGet(conjSamplerName)
             nameToPrint <- gsub('^sampler_', '', conjSamplerName)
-            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, name = nameToPrint)
+            addSampler(target = conjugacyResult$target, type = conjSamplerFunction, control = conjugacyResult$control, print = print, name = nameToPrint)
         },
         
         addSampler = function(target, type = 'RW', control = list(), print = FALSE, name) {
@@ -267,6 +267,12 @@ Invisibly returns a list of the current sampler configurations, which are sample
 
             nameProvided <- !missing(name)
             if(is.character(type)) {
+                if(type == 'conjugate') {
+                    conjugacyResult <- model$checkConjugacy(target)[[target]]
+                    if(!is.null(conjugacyResult)) {
+                        return(addConjugateSampler(conjugacyResult = conjugacyResult, print = print))
+                    } else stop(paste0('Cannot assign conjugate sampler to non-conjugate node: \'', target, '\''))
+                }
                 thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', type)   ## removes 'sampler_' from beginning of name, if present
                 if(exists(type) && is.nfGenerator(eval(as.name(type)))) {   ## try to find sampler function 'type'
                     samplerFunction <- eval(as.name(type))

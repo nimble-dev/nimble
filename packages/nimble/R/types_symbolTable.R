@@ -346,6 +346,21 @@ symbolGetParamInfo <-
                         stop(paste('Error, you should not be generating a cppVar for symbolGetParamInfo', name))
                     } ))
 
+symbolGetBoundInfo <-
+    setRefClass(Class = 'symbolGetBoundInfo',
+                contains = 'symbolBase',
+                fields = list(boundInfo = 'ANY'), ## getBound_info, i.e. simple list
+                methods = list(
+                    initialize = function(boundInfo, ...) {
+                        callSuper(...)
+                        boundInfo <<- boundInfo
+                        type <<- 'Ronly'
+                    },
+                    show = function() writeLines(paste('symbolGetBoundInfo', name)),
+                    genCppVar = function(...) {
+                        stop(paste('Error, you should not be generating a cppVar for symbolGetBoundInfo', name))
+                    } ))
+
 symbolNumericList <- 
     setRefClass(Class = 'symbolNumericList',
                 contains = 'symbolBase', 

@@ -27,6 +27,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          mvAccessRow = 'cppOutputBracket',
                          nimSwitch = 'cppOutputNimSwitch',
                          getParam = 'cppOutputGetParam',
+                         getBound = 'cppOutputGetBound',
                          '(' = 'cppOutputParen',
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
@@ -219,6 +220,20 @@ cppOutputGetParam <- function(code, symTab) {
     } else {
         iNodeFunction <- paste(cppMinusOne(nimDeparse(code$args[[4]])))
         ans <- paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,
+                      '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
+    }
+    return(ans)
+##    return(paste0('getParam_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[',iNodeFunction,'])'))
+}
+
+cppOutputGetBound <- function(code, symTab) {
+    ##    return(paste0(code$args[[1]]$name,'.getNodeFunctionPtrs()[0]->getParam_',code$nDim,'D_',code$type,'(', code$args[[2]]$name, ')'))
+  ##  iNodeFunction <- if(length(code$args) < 3) 0 else paste(cppMinusOne(nimDeparse(code$args[[3]])))
+    if(length(code$args) < 4) {  ## code$args[[3]] is used for the paramInfo that is only used in size processing
+        ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,'.getUseInfoVec()[0])')
+    } else {
+        iNodeFunction <- paste(cppMinusOne(nimDeparse(code$args[[4]])))
+        ans <- paste0('getBound_',code$nDim,'D_',code$type,'(',code$args[[2]]$name,',',code$args[[1]]$name,
                       '.getUseInfoVec()[',iNodeFunction,'],', iNodeFunction ,')')
     }
     return(ans)
