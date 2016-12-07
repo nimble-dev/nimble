@@ -11,27 +11,27 @@
 // wrap access to Eigen's traits::..::LinearAccessBit so we can proxy it with true for a scalar type (double, int, bool)
 template<typename T>
 struct nimble_eigen_traits {
-  enum {LinearAccessBit = int(Eigen::internal::traits<T>::Flags & LinearAccessBit)};
+  enum {nimbleUseLinearAccess = int(Eigen::internal::traits<T>::Flags & LinearAccessBit)};
 };
 
 template<>
 struct nimble_eigen_traits<double> {
-  enum {LinearAccessBit = int(1)};
+  enum {nimbleUseLinearAccess = int(1)};
 };
 
 template<>
 struct nimble_eigen_traits<int> {
-  enum {LinearAccessBit = int(1)};
+  enum {nimbleUseLinearAccess = int(1)};
 };
 
 template<>
 struct nimble_eigen_traits<bool> {
-  enum {LinearAccessBit = int(1)};
+  enum {nimbleUseLinearAccess = int(1)};
 };
 
 template<typename V>
 struct nimble_eigen_traits<std::vector<V> > {
-  enum {LinearAccessBit = int(1)};
+  enum {nimbleUseLinearAccess = int(1)};
 };
 
 template<typename T>
@@ -137,7 +137,7 @@ template<typename DerivedIndex, typename DerivedSource>
     // iRow = divRes.rem
     // iCol = floor(divRes.quot)
     if(divRes.rem == floor(divRes.quot)) { // on diagonal
-      return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::LinearAccessBit), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, divRes.rem);
+      return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::nimbleUseLinearAccess), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, divRes.rem);
     }
     return 0; // off diagonal
   }
@@ -145,7 +145,7 @@ template<typename DerivedIndex, typename DerivedSource>
   {
     //std::cout<<"IN 2\n";
     if(i == j) { // on diagonal
-      return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::LinearAccessBit), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, i);
+      return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedSource>::nimbleUseLinearAccess), result_type, DerivedSource, DerivedIndex >::getDiagCoeff(src, i);
     }
     return 0; // off diagonal
   }
@@ -193,9 +193,9 @@ class concatenateClass {
   {
     //    std::cout<<"IN 1\n";
     if(i < size1)
-      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::nimbleUseLinearAccess, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
     else
-      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::LinearAccessBit, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::nimbleUseLinearAccess, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
   }
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
@@ -225,12 +225,12 @@ class concatenate3Class {
   {
     //std::cout<<"IN 1\n";
     if(i < size1)
-      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::nimbleUseLinearAccess, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
     else
       if(i < size12)
-	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::LinearAccessBit, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
+	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::nimbleUseLinearAccess, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
       else
-	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived3>::LinearAccessBit, result_type, Derived3, Index >::getCoeff(Arg3, i - size12);
+	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived3>::nimbleUseLinearAccess, result_type, Derived3, Index >::getCoeff(Arg3, i - size12);
   }
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
@@ -263,15 +263,15 @@ class concatenate4Class {
   {
     //std::cout<<"IN 1\n";
     if(i < size1)
-      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
+      return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::nimbleUseLinearAccess, result_type, Derived1, Index >::getCoeff(Arg1, i); //generalization of Arg1(i) or Arg1.coeff(i) 
     else
       if(i < size12)
-	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::LinearAccessBit, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
+	return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived2>::nimbleUseLinearAccess, result_type, Derived2, Index >::getCoeff(Arg2, i - size1); //Arg2(i - size1);
       else
 	if(i < size123)
-	  return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived3>::LinearAccessBit, result_type, Derived3, Index >::getCoeff(Arg3, i - size12);
+	  return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived3>::nimbleUseLinearAccess, result_type, Derived3, Index >::getCoeff(Arg3, i - size12);
 	else
-	  return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived4>::LinearAccessBit, result_type, Derived4, Index >::getCoeff(Arg4, i - size123);
+	  return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived4>::nimbleUseLinearAccess, result_type, Derived4, Index >::getCoeff(Arg4, i - size123);
   }
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
@@ -397,7 +397,7 @@ public:
     default:
       iUse = 0; //error
     }
-    return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::LinearAccessBit, result_type, Derived1, Index1 >::getCoeff(Arg1, iUse);
+    return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::nimbleUseLinearAccess, result_type, Derived1, Index1 >::getCoeff(Arg1, iUse);
   }
 
   result_type operator()(Index1 i, Index1 j) const
@@ -424,15 +424,15 @@ struct rep_impl {
   static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedEach &each) {
     repClass<IndexReturn, Derived1> repObj(A1,
 					   timesIn,
-					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::LinearAccessBit, int, DerivedEach, unsigned int >::getCoeff(each, 0));
+					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::nimbleUseLinearAccess, int, DerivedEach, unsigned int >::getCoeff(each, 0));
     return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
   }
   
   template<typename Derived1, typename DerivedLengthOut, typename DerivedEach>
     static CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived > rep(const Derived1 &A1, int timesIn, const DerivedLengthOut &length_out, const DerivedEach &eachIn) {
     repClass<IndexReturn, Derived1> repObj(A1, timesIn,
-					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::LinearAccessBit, int, DerivedEach, unsigned int >::getCoeff(eachIn, 0),
-					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedLengthOut>::LinearAccessBit, int, DerivedLengthOut, unsigned int >::getCoeff(length_out, 0));
+					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedEach>::nimbleUseLinearAccess, int, DerivedEach, unsigned int >::getCoeff(eachIn, 0),
+					   nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedLengthOut>::nimbleUseLinearAccess, int, DerivedLengthOut, unsigned int >::getCoeff(length_out, 0));
     return(CwiseNullaryOp<repClass<IndexReturn, Derived1>, returnDerived >(repObj.outputLength, 1, repObj));
   }
 };
@@ -600,13 +600,13 @@ public:
       return;
     }
     for(int i = 0 ; i  < totSize; i++) {
-      coeffRef(i) = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::LinearAccessBit), Scalar, fromType, IndexType >::getCoeff(from, i);
+      coeffRef(i) = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::nimbleUseLinearAccess), Scalar, fromType, IndexType >::getCoeff(from, i);
       //      from(i);
     }
   }
   template<typename fromType>
   void fill(const fromType &from) {
-    Scalar val = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::LinearAccessBit), Scalar, fromType, IndexType >::getCoeff(from, 0);
+    Scalar val = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::nimbleUseLinearAccess), Scalar, fromType, IndexType >::getCoeff(from, 0);
     printf("In from\n");
     for(int i = 0 ; i  < totSize; i++) {
       coeffRef(i) = val;
@@ -616,14 +616,14 @@ public:
   typedef typename Eigen::internal::traits<DerivedTarget>::Scalar Scalar;
   Scalar &coeffRef(IndexType i) const {
     std::div_t divRes = div(i, dim1);
-    return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::LinearAccessBit), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
-			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::LinearAccessBit), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, floor(divRes.quot))-1);
+    return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
+			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, floor(divRes.quot))-1);
 
     // use % to get the i-th total element
   }
   Scalar &coeffRef(IndexType i, IndexType j) const {
-    return target.coeffRef( nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::LinearAccessBit), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, i)-1,
-			    nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::LinearAccessBit), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, j)-1);
+    return target.coeffRef( nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, i)-1,
+			    nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, j)-1);
   }
   // accesses coeffRef of objects using provided indices.
 };
@@ -657,15 +657,15 @@ class nonseqIndexedClass {
   {
     //std::cout<<"IN 1\n";
     std::div_t divRes = div(i, dim1);
-    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::LinearAccessBit), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
-		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::LinearAccessBit), result_type, DerivedI2, IndexObj >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
+    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
+		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
     //index1(divRes.rem)-1, index2(floor(divRes.quot))-1);
   }
   result_type operator()(IndexObj i, IndexObj j) const
   {
     //std::cout<<"IN 2\n";
-    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::LinearAccessBit), result_type, DerivedI1, IndexObj >::getCoeff(index1, i) - 1,
-		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::LinearAccessBit), result_type, DerivedI2, IndexObj >::getCoeff(index2, j) - 1);
+    return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), result_type, DerivedI1, IndexObj >::getCoeff(index1, i) - 1,
+		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, j) - 1);
 
     //return obj.coeff(index1(i)-1,
     //		     index2(j)-1);
@@ -755,12 +755,12 @@ public: \
   if(size2 > outputSize) outputSize = size2; \
   } \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2)); \
   }\
 }; \
 \
@@ -800,13 +800,13 @@ public:									\
     {									\
       int sizeN = nimble_size_impl<DerivedN>::getSize(ArgN);		\
       if(sizeN > 1) outputSize = sizeN;					\
-      else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedN>::LinearAccessBit), RETURNSCALARTYPE, DerivedN, Index >::getCoeff(ArgN, 0); \
+      else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedN>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedN, Index >::getCoeff(ArgN, 0); \
       int size1 = nimble_size_impl<DerivedA1>::getSize(Arg1);		\
       int size2 = nimble_size_impl<DerivedA2>::getSize(Arg2);		\
       values.reserve(outputSize);					\
       for(int i = 0; i < outputSize; i++) {				\
-	values.push_back(FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-				 nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2))); \
+	values.push_back(FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+				 nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2))); \
       }									\
     }									\
   RETURNSCALARTYPE operator()(Index i) const { \
@@ -852,11 +852,11 @@ public:									\
     {									\
       int sizeN = nimble_size_impl<DerivedN>::getSize(ArgN);		\
       if(sizeN > 1) outputSize = sizeN;					\
-      else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedN>::LinearAccessBit), RETURNSCALARTYPE, DerivedN, Index >::getCoeff(ArgN, 0); \
+      else outputSize = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedN>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedN, Index >::getCoeff(ArgN, 0); \
       int size1 = nimble_size_impl<DerivedA1>::getSize(Arg1);		\
       values.reserve(outputSize);					\
       for(int i = 0; i < outputSize; i++) {				\
-	values.push_back(FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1))); \
+	values.push_back(FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1))); \
       }									\
     }									\
   RETURNSCALARTYPE operator()(Index i) const { \
@@ -902,12 +902,12 @@ public: \
   outputSize = size1 = nimble_size_impl<DerivedA1>::getSize(Arg1); \
   } \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, 0)); \
   }\
 }; \
 \
@@ -951,14 +951,14 @@ public: \
   if(size3 > outputSize) outputSize = size3; \
   } \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3)); \
   }\
 }; \
 \
@@ -998,14 +998,14 @@ public: \
   if(size2 > outputSize) outputSize = size2;	      \
 }						      \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0)); \
   }\
 }; \
 \
@@ -1046,16 +1046,16 @@ public: \
   if(size2 > outputSize) outputSize = size2;	      \
 }						      \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0), \
-    		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, 0), \
+    		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
 }; \
 \
@@ -1102,16 +1102,16 @@ public: \
   if(size4 > outputSize) outputSize = size4; \
   } \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, i, size4)); \
   }\
 }; \
 \
@@ -1156,16 +1156,16 @@ public: \
   if(size3 > outputSize) outputSize = size3; \
   } \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0)); \
   }\
 }; \
 \
@@ -1211,18 +1211,18 @@ public: \
   if(size3 > outputSize) outputSize = size3; \
   } \
   RETURNSCALARTYPE operator()(Index i) const { \
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0), \
-    		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::LinearAccessBit), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0), \
+    		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
   }\
   RETURNSCALARTYPE operator()(Index i, Index j) const {\
-    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::LinearAccessBit), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::LinearAccessBit), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
-		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::LinearAccessBit), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
-		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::LinearAccessBit), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0), \
-    		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::LinearAccessBit), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
+    return FUNNAME(nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA1>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA1, Index >::getCoeff(Arg1, i, size1), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA2>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA2, Index >::getCoeff(Arg2, i, size2), \
+		   nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedA3>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA3, Index >::getCoeff(Arg3, i, size3), \
+		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA4>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA4, Index >::getCoeff(Arg4, 0), \
+    		   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedA5>::nimbleUseLinearAccess), RETURNSCALARTYPE, DerivedA5, Index >::getCoeff(Arg5, 0)); \
   }\
 }; \
 \
@@ -1351,7 +1351,7 @@ template<typename Index, typename DerivedInput>
   result_type operator()(Index i) const 
   {
     if(init)
-      return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::LinearAccessBit), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
+      return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::nimbleUseLinearAccess), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
     return 0;
   }
 
