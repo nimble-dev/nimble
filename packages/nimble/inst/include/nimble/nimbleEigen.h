@@ -2,7 +2,7 @@
 #define __NIMBLE_EIGEN
 
 #include <iostream>
-#include <cstdlib>
+#include <stdlib.h>
 #include<Rmath.h>
 #include<vector>
 #include "dists.h"

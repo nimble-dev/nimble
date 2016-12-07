@@ -3,7 +3,7 @@
 
 #include "NimArrBase.h"
 #include "Utils.h"
-#include <cstdlib>
+#include <stdlib.h>
 
 template<int ndim, class T>
   class NimArr;
