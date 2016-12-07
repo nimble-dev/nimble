@@ -1,5 +1,7 @@
-SRC=RcppUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp nimbleGraph.cpp
+SRC=RcppUtils.cpp RcppNimbleUtils.cpp Utils.cpp NamedObjects.cpp ModelClassUtils.cpp accessorClasses.cpp dists.cpp nimDists.cpp dllFinalizer.cpp nimbleGraph.cpp
 OBJECTS=$(SRC:%.cpp=%.o)
+
+# nimbleGraph.cpp is only needed in SRC for --enable-dylib=true, but it's not a big deal to leave include it either way
 
 ifndef R_SHARE_DIR
  R_SHARE_DIR=$(R_HOME)/share

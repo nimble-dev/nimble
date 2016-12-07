@@ -10,7 +10,7 @@
 #include "NimArrBase.h"
 #include "NimArr.h"			
 #include "ModelClassUtils.h"
-#include "RcppUtils.h"
+#include "RcppNimbleUtils.h"
 #include <Rinternals.h>
 #include "R.h"
 
@@ -113,6 +113,44 @@ NimArr<2, double> getParam_2D_double(const paramIDtype &paramID, const oneNodeUs
 
 //extern template NimArr<2, double> getParam_2D_double<NimArr<1, int> >(const NimArr<1, int> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
 //extern template NimArr<2, double> getParam_2D_double<NimArr<1, double> >(const NimArr<1, double> &paramID, const oneNodeUseInfo &useInfo, int iNodeFunction);
+
+// code for getBound copied over from getParam; only 0D currently used as we set bounds same for all values in multivariate nodes
+//getBound_0D
+inline double getBound_0D_double(int boundID, const oneNodeUseInfo &useInfo) {
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.useInfo));
+  //return(useInfo.nodeFunPtr->getBound_0D_double(boundID, (*(useInfo.nodeFunPtr->getIndexedNodeInfoTablePtr()))[ useInfo.useInfo.indicesForIndexedNodeInfo[0] ] ) );
+}
+inline double getBound_0D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) { 
+  /* iNodeFunction sometimes needs to be generated in a call even if not needed */
+  /* but we want to avoid compiled warnings about an unused argument */
+  /* the following line of code tries to make the compiler think iNodeFunction will be used */
+  if(iNodeFunction) boundID += 0;
+  return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID, useInfo.useInfo));
+}
+template<typename boundIDtype>
+inline double getBound_0D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+return(useInfo.nodeFunPtr->getBound_0D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+}
+
+//getBound_1D
+NimArr<1, double> getBound_1D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
+
+
+template<class boundIDtype>
+NimArr<1, double> getBound_1D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getBound_1D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+}
+
+
+//getBound_2D
+NimArr<2, double> getBound_2D_double(int boundID, const oneNodeUseInfo &useInfo, int iNodeFunction = 0);
+/* template<typename boundIDtype> */
+/* NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction); */
+template<class boundIDtype>
+NimArr<2, double> getBound_2D_double(const boundIDtype &boundID, const oneNodeUseInfo &useInfo, int iNodeFunction) {
+  return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID[iNodeFunction], useInfo.useInfo));
+}
+
 
 /////////////////////
 // new version of variable accessors using maps (offset and strided windows into multivariate objects (NimArr<>s) )
@@ -597,32 +635,31 @@ SingleModelValuesAccess* cMakeSingleModelValuesAccessor(NimVecType* varPtr, int 
 SingleVariableAccess* cMakeSingleVariableAccessor(NimArrType** varPtr, int beginIndex, int endIndex);
 
 extern "C" {
-  SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex);
-  SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex);
+  //  SEXP makeSingleVariableAccessor(SEXP rModelPtr, SEXP elementName,  SEXP beginIndex, SEXP endIndex);
+  //  SEXP makeSingleModelValuesAccessor(SEXP rModelValuesPtr, SEXP elementName,  SEXP curRow, SEXP beginIndex, SEXP endIndex);
 
   SEXP getModelAccessorValues(SEXP accessor);
   SEXP getMVAccessorValues(SEXP accessor);
 
   //SEXP newNodeFxnVector(SEXP size);
-  SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
+  //SEXP setNodeModelPtr(SEXP nodeFxnPtr, SEXP modelElementPtr, SEXP nodeElementName);
   //SEXP resizeNodeFxnVector(SEXP nodeFxnVecPtr, SEXP size);
   //  SEXP addNodeFun(SEXP nVPtr, SEXP nFPtr, SEXP addAtEnd, SEXP index);
   //SEXP removeNodeFun(SEXP rPtr, SEXP index, SEXP removeAll);
 	
-  SEXP newManyVariableAccessor(SEXP size);
+  //  SEXP newManyVariableAccessor(SEXP size);
   SEXP addSingleVariableAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
   SEXP resizeManyModelVarAccessor(SEXP manyModelVarPtr, SEXP size);
   SEXP removeModelVariableAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
 	
-  SEXP newManyModelValuesAccessor(SEXP size);
+  //  SEXP newManyModelValuesAccessor(SEXP size);
   SEXP resizeManyModelValuesAccessor(SEXP manyModelValuesPtr, SEXP size);
   SEXP addSingleModelValuesAccessor(SEXP MVAPtr, SEXP SVAPtr, SEXP addAtEnd, SEXP index);
   SEXP removeModelValuesAccessor(SEXP rPtr, SEXP index, SEXP removeAll);
 	 
   SEXP manualSetNRows(SEXP Sextptr, SEXP nRows);
 
-  SEXP parseVar(SEXP Sinput);
-  SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr);
+  //  SEXP getVarAndIndicesExtPtr(SEXP Sstring, SEXP SboolExtPtr);
   SEXP getVarAndIndices(SEXP Sstring);
   SEXP varAndIndices2mapParts(SEXP SvarAndIndicesExtPtr, SEXP Ssizes, SEXP SnDim);
   SEXP var2mapParts(SEXP Sinput, SEXP Ssizes, SEXP SnDim);
@@ -642,12 +679,13 @@ extern "C" {
   SEXP populateNumberedObject_withSingleModelVariablesAccessors(SEXP modelPtr, SEXP varName, SEXP sGIDS, SEXP SvalidIndices, SEXP SnumbObj);
   SEXP populateModelVariablesAccessors_byGID(SEXP SmodelVariableAccessorVector, SEXP S_GIDs, SEXP SnumberedObj, SEXP S_LP_GIDs, SEXP S_LP_numberedObj);
 
-  SEXP new_SingleModelValuesAccessor_NumberedObjects();
-  SEXP new_SingleModelVariablesAccessor_NumberedObjects();
+  //  SEXP new_SingleModelValuesAccessor_NumberedObjects();
+  //  SEXP new_SingleModelVariablesAccessor_NumberedObjects();
 }
-void  SingleVA_Finalizer ( SEXP Sv );
-void  SingleMVA_Finalizer ( SEXP Sv );
+//void  SingleVA_Finalizer ( SEXP Sv );
+//void  SingleMVA_Finalizer ( SEXP Sv );
 void NodeVector_Finalizer( SEXP Sv);
 void ManyVariable_Finalizer(SEXP Sv);
 void ManyMV_Finalizer(SEXP Sv);
-#endif 			
+
+#endif

@@ -69,6 +69,10 @@ class nodeFun : public NamedObjects {
   virtual NimArr<1, double> getParam_1D_double(int paramID, const indexedNodeInfo &iNI) const {NimArr<1, double> ans; return(ans);}
   virtual NimArr<2, double> getParam_2D_double(int paramID, const indexedNodeInfo &iNI) const {NimArr<2, double> ans; return(ans);}
 
+  virtual double getBound_0D_double(int boundID, const indexedNodeInfo &iNI) const {return(0./0.);} 
+  virtual NimArr<1, double> getBound_1D_double(int boundID, const indexedNodeInfo &iNI) const {NimArr<1, double> ans; return(ans);}
+  virtual NimArr<2, double> getBound_2D_double(int boundID, const indexedNodeInfo &iNI) const {NimArr<2, double> ans; return(ans);}
+
   double calculateBlock(const useInfoForIndexedNodeInfo &biNI) const {
     double ans(0);
     vector<int>::const_iterator iIndex(biNI.indicesForIndexedNodeInfo.begin());
@@ -112,7 +116,15 @@ class nodeFun : public NamedObjects {
   NimArr<2, double> getParam_2D_double_block(int paramID, const useInfoForIndexedNodeInfo &biNI) const {
     return(getParam_2D_double(paramID, indexedNodeInfoTable[ biNI.indicesForIndexedNodeInfo[0] ]));
   }
+  double getBound_0D_double_block(int boundID, const useInfoForIndexedNodeInfo &biNI) const {
+    return(getBound_0D_double(boundID, indexedNodeInfoTable[ biNI.indicesForIndexedNodeInfo[0] ]));
+  }
+  NimArr<1, double> getBound_1D_double_block(int boundID, const useInfoForIndexedNodeInfo &biNI) const {
+    return(getBound_1D_double(boundID, indexedNodeInfoTable[ biNI.indicesForIndexedNodeInfo[0] ]));
+  }
+  NimArr<2, double> getBound_2D_double_block(int boundID, const useInfoForIndexedNodeInfo &biNI) const {
+    return(getBound_2D_double(boundID, indexedNodeInfoTable[ biNI.indicesForIndexedNodeInfo[0] ]));
+  }
 };
-
 
 #endif

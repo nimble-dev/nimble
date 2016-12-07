@@ -1,6 +1,29 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+nimC <- function(...) {
+    c(...)
+}
+
+nimRep <- function(x, ...) {
+    rep(x, ...)
+}
+
+nimSeq <- function(from, to, by, length.out) { ## this creates default arguments filled in at keyword matching that are then useful in cppOutput step to determine if C++ should use nimSeqBy or nimSeqLen
+    haveBy <- !missing(by)
+    haveLen <- !missing(length.out)
+    if(haveBy)
+        if(haveLen)
+            seq(from, to, by, length.out)
+        else
+            seq(from, to, by)
+    else
+        if(haveLen)
+            seq(from, to, length.out = length.out)
+        else
+            seq(from, to)
+}
+
 #' Explicitly declare objects created in setup code to be preserved and compiled as member data
 #'
 #' Normally a \code{nimbleFunction} determines what objects from \code{setup} code need to be preserved for \code{run} code or other member functions.  \code{setupOutputs} allows explicit declaration for cases when an object created in setup output is not use in member functions.
@@ -89,24 +112,25 @@ asCol <- function(x) {
 #' @details This is used internally by \code{\link{getParam}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
 makeParamInfo <- function(model, nodes, param) {
     ## updating to allow nodes to be a vector. getParam only works for a scalar but in a case like nodes[i] the param info is set up for the entire vector.
-    distInfo <- getDistributionList(model$getNodeDistribution(nodes))
+    distNames <- model$getDistribution(nodes)
 
     ## if(length(nodes) != 1) stop(paste0("Problem with nodes argument while setting up getParam.  Should be length 1 but was: ", paste0(nodes, collapse = ",")))
-    ## distInfo <- getDistributionList(model$getNodeDistribution(nodes))[[1]]
+    ## distInfo <- getDistributionList(model$getDistribution(nodes))[[1]]
     ## ## If nodes is invalid, an error from the above line will be trapped in parseEvalNumericMany
     if(length(param) != 1) stop(paste0(paste0('Problem with param(s) ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
                  '\nOnly one parameter is allowed.')))
     ## paramID <- distInfo$paramIDs[param]
     ## if(length(paramID)!=1 | any(is.na(paramID))) stop(paste0('Problem with param ', paste0(param, collapse = ','), ' while setting up getParam for node ', nodes,
     ##                                    '\nThe parameter name is not valid.'))
-    paramIDvec <- unlist(lapply(distInfo, function(x) x$paramIDs[param]))
-    typeVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$type))
-    nDimVec <- unlist(lapply(distInfo, function(x) x$types[[param]]$nDim))
-    if(length(unique(typeVec)) != 1 | length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
-    ans <- c(list(paramID = paramIDvec), distInfo[[1]]$types[[param]])
+    paramIDvec <- sapply(distNames, getParamID, param)
+    typeVec <- sapply(distNames, getType, param)
+    nDimVec <- sapply(distNames, getDimension, param)
+    if(length(unique(typeVec)) != 1 || length(unique(nDimVec)) != 1) stop('cannot have an indexed vector of nodes used in getParam if they have different types or dimensions for the same parameter.') 
+    ans <- c(list(paramID = paramIDvec), type = typeVec[1], nDim = nDimVec[1])
     class(ans) <- 'getParam_info'
     ans
 }
+
 
 #' Get value of a parameter of a stochastic node in a model
 #'
@@ -124,7 +148,7 @@ makeParamInfo <- function(model, nodes, param) {
 #' @details For example, suppose node 'x[1:5]' follows a multivariate
 #' normal distribution (dmnorm) in a model declared by BUGS code.
 #' getParam(model, 'x[1:5]', 'mean') would return the current value of
-#' the mean parameter (which may be determined from other nodse).  The
+#' the mean parameter (which may be determined from other nodes).  The
 #' parameter requested does not have to be part of the
 #' parameterization used to declare the node.  Rather, it can be any
 #' parameter known to the distribution.  For example, one can request
@@ -161,6 +185,79 @@ getParam <- function(model, node, param, nodeFunctionIndex) {
         ans <- eval(substitute(nodeFunction$FUNNAME(paramID, unrolledIndicesMatrixRow), list(FUNNAME = as.name(funName))))
     return(ans)
 }
+
+#' Make an object of information about a model-bound pairing for getBound.  Used internally
+#'
+#' Creates a simple getBound_info object, which has a list with a boundID and a type.
+#' Unlike \code{makeParamInfo} this is more bare-bones, but keeping it for parallelism
+#' with \code{getParam}.
+#'
+#' @param model A model such as returned by \code{\link{nimbleModel}}.
+#'
+#' @param nodes A character string naming a stochastic nodes, such as \code{'mu'}.
+#'
+#' @param bound A character string naming a bound of the distribution, either \code{'lower'} or \code{'upper'}.
+#'
+#' @export
+#' @details This is used internally by \code{\link{getBound}}.  It is not intended for direct use by a user or even a nimbleFunction programmer.
+makeBoundInfo <- function(model, nodes, bound) {
+    # note: would be good to work through this and makeParamInfo to ensure that both give good error messages and handle situation where user tries to pass in multiple nodes or multiple params/bounds
+    # note: also, it should be fine to combine symbolTable and sizeProcessing stuff for param and bound to avoid repetitive code
+    if(length(nodes) > 1) stop("'getBound' only set up to work with a single node'") # I think this is consistent with current getParam behavior
+    distInfo <- getDistributionList(model$getDistribution(nodes))
+    boundIDvec <- c('lower'=1,'upper'=2)[bound]
+    typeVec <- unlist(lapply(distInfo, function(x) x$types[['value']]$type)) # should always be 'double'
+    
+    # at moment have bound be scalar regardless of dimension of parameter, as assumed to be same value for all elements of a multivariate distribution; we are not fully handling truncation/bounds for multivariate nodes anyway:
+    nDimVec <- 0  # unlist(lapply(distInfo, function(x) x$types[['value']]$nDim))
+    ans <- c(list(boundID = boundIDvec, type = typeVec, nDim = nDimVec))
+    class(ans) <- 'getBound_info'
+    ans
+}
+
+#' Get value of bound of a stochastic node in a model
+#'
+#' Part of the NIMBLE language
+#'
+#' @param model A NIMBLE model object
+#'
+#' @param node  The name of a stochastic node in the model
+#'
+#' @param bound Either \code{'lower'} or \code{'upper'} indicating the desired bound for the node
+#'
+#' @param nodeFunctionIndex For internal NIMBLE use only
+#'
+#' @export
+#' @details For nodes that do not involve truncation of the distribution
+#' this will return the lower or upper bound of the distribution, which
+#' may be a constant or for a limited number of distributions a parameter
+#' or functional of a parameter (at the moment in NIMBLE, the only case
+#' where a bound is a parameter is for the uniform distribution. For nodes
+#' that are truncated, this will return the desired bound, which may be
+#' a functional of other quantities in the model or may be a constant. 
+getBound <- function(model, node, bound, nodeFunctionIndex) {
+    if(!bound %in% c('lower', 'upper'))
+        stop("getBound: 'bound' must be either 'lower' or 'upper'")
+    nfv <- nodeFunctionVector(model, node)
+    indexingInfo <- nfv$indexingInfo
+    declID <- indexingInfo$declIDs[1] ## should only be one
+    nodeFunction <- model$nodeFunctions[[ declID ]] 
+    boundInfo <- makeBoundInfo(model, node, bound)
+    boundID <- boundInfo$boundID
+    nDim <- boundInfo$nDim
+    type <- boundInfo$type
+    unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ indexingInfo$unrolledIndicesMatrixRows[1], ]
+    funName <- paste0('getBound_',nDim,'D_',type)
+
+    useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
+
+    if(useCompiledNonNestedInterface) {
+        ans <- model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], funName, boundID, unrolledIndicesMatrixRow)
+    } else 
+        ans <- eval(substitute(nodeFunction$FUNNAME(boundID, unrolledIndicesMatrixRow), list(FUNNAME = as.name(funName))))
+    return(ans)
+}
+
 
 ## getParam <- function(model, node, param) {
 ##     if(missing(param)) { ## already converted by keyword conversion
@@ -697,8 +794,6 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
 #'        
 #' nf2 <- nfGen2()
 #' nf2$run()
-#' Cnf2 <- compileNimble(nf2)
-#' Cnf2$run()
 nfVar <- function(nf, varName) {
     refClassObj <- nf_getRefClassObject(nf)
     v <- refClassObj[[varName]]
@@ -896,9 +991,22 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 #' @aliases matrix
 #' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{array}}
 #' @export
-nimMatrix <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {
+nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'double') {
+    ## the -1's are used because nimble does not allow both missingness and default value
+    ## but R's matrix function relies on both possibilities
     fillValue <- makeFillValue(value, type, init)
-    base::matrix(fillValue, nrow, ncol)
+    mnrow <- missing(nrow) || is.na(nrow)
+    mncol <- missing(ncol) || is.na(ncol)
+    if(mnrow)
+        if(mncol)
+            base::matrix(fillValue)
+        else
+            base::matrix(fillValue, ncol = ncol)
+    else
+        if(mncol)
+            base::matrix(fillValue, nrow = nrow)
+        else
+            base::matrix(fillValue, nrow = nrow, ncol = ncol)
 }
 
 

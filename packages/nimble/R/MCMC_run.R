@@ -1,5 +1,3 @@
-
-
 #' Run one or more chains of an MCMC algorithm and extract samples
 #'
 #' Takes as input an MCMC algorithm (ideally a compiled one for speed)

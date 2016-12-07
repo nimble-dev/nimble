@@ -1,5 +1,6 @@
 # environment that holds user-provided information
-nimbleUserNamespace <- as.environment(list()) 
+
+nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL)) 
 # new.env() here fails with: Error in as.environment(pos) : using 'as.environment(NULL)' is defunct when testing package loading during INSTALL
 
 # options used for NIMBLE package
@@ -12,6 +13,7 @@ nimbleUserNamespace <- as.environment(list())
         debugRCfunProcessing = FALSE,
         debugCppLineByLine = FALSE,
         debugNFProcessing = FALSE,
+        debugSizeProcessing = FALSE,
         compileAltParamFunctions = TRUE,
         includeCPPdists = TRUE,    ## includes dists.cpp and nimDists.cpp in the compilation.  Momentarily we have a problem on Windows.
         processBackwardsModelIndexRanges = FALSE,    ## if FALSE (default), for(i in 9:7) in model code becomes for(i in 7).  if TRUE, becomes for(i in c(9, 8, 7))
@@ -21,6 +23,7 @@ nimbleUserNamespace <- as.environment(list())
         buildInterfacesForCompiledNestedNimbleFunctions = FALSE,   ## provides interfaces, i.e. named access in R, to all variables in nested compiled nimbleFunctions
         clearNimbleFunctionsAfterCompiling = FALSE,
         checkModel = FALSE,
+        checkNimbleFunction = TRUE,
         verbose = TRUE,
 
         ## verifies the correct posterior is created for any conjugate samplers, at run-time.

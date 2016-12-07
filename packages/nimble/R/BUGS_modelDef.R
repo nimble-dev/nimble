@@ -77,12 +77,11 @@ modelDefClass <- setRefClass('modelDefClass',
                                  processBUGScode                = function() {},
                                  splitConstantsAndData          = function() {},
                                  addMissingIndexing             = function() {},
-                                 removeTruncationWrapping       = function() {},
+                                 processBoundsAndTruncation     = function() {},
                                  expandDistributions            = function() {},
                                  checkMultivarExpr              = function() {},
                                  processLinks                   = function() {},
                                  reparameterizeDists            = function() {},
-                                 insertDistributionBounds       = function() {},
                                  replaceAllConstants            = function() {},
                                  liftExpressionArgs             = function() {},
                                  addRemainingDotParams          = function() {},
@@ -90,6 +89,7 @@ modelDefClass <- setRefClass('modelDefClass',
                                  genSymbolicParentNodes         = function() {},
                                  genReplacementsAndCodeReplaced = function() {},
                                  genAltParamsModifyCodeReplaced = function() {},
+                                 genBounds                      = function() {},
                                  genReplacedTargetValueAndParentInfo = function() {},
                                  removeEmptyBUGSdeclarations    = function() {},
                                  genIsDataVarInfo               = function() {},
@@ -139,21 +139,20 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, debug =
     ##addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     splitConstantsAndData()           ## deals with case when data is passed in as constants
     addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
-    removeTruncationWrapping()        ## transforms T(ddist(),lower,upper) to put bounds into declInfo
+    processBoundsAndTruncation()      ## puts bound expressions into declInfo, including transforming T(ddist(),lower,upper); need to do this before expandDistributions(), which is not set up to handle T() wrapping; need to save bound info for later use in reparameterizeDists() -- hence temporarily stored in boundExprs (can't put in code because it would be stripped out in expandDistributions, though alternative is to modify expandDistributions to add lower,upper back into code)
     expandDistributions()             ## overwrites declInfo for stochastic nodes: calls match.call() on RHS      (uses distributions$matchCallEnv)
     checkMultivarExpr()               ## checks that multivariate params are not expressions
     processLinks()                    ## overwrites declInfo (*and adds*) for nodes with link functions           (uses linkInverses)
-    reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName
-    insertDistributionBounds()        ## put lower and upper into code expression
+    reparameterizeDists()             ## overwrites declInfo when distribution reparameterization is needed       (uses distributions), keeps track of orig parameter in .paramName; also processes bound info to evaluate in context of model
     replaceAllConstants()
-    liftExpressionArgs()              ## overwrites declInfo (*and adds*), lifts expressions in distribution arguments to new nodes.  does NOT lift '.param' names
+    liftExpressionArgs()              ## overwrites declInfo (*and adds*), lifts expressions in distribution arguments to new nodes.  does NOT lift '.param' names or 'lower' or 'upper'
     addRemainingDotParams()           ## overwrites declInfo, adds any additional .paramNames which aren't there  (uses distributions)
     replaceAllConstants()             ## overwrites declInfo with constants replaced; only replaces scalar constants
     addIndexVarsToDeclInfo()          ## sets field declInfo[[i]]$indexVariableExprs from contexts.  must be after overwrites of declInfo
     genSymbolicParentNodes()          ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
     genReplacementsAndCodeReplaced()  ## sets fields: declInfo[[i]]$replacements, $codeReplaced, $replacementNameExprs, $logProbNodeExpr
     genAltParamsModifyCodeReplaced()  ## sets field declInfo[[i]]$altParams, and modifies $codeReplaced to not include .param arguments (if stochastic)
-
+    genBounds()                       ## sets field declInfo[[i]]$boundExprs, and (if not truncated) modifies $codeReplaced to omit lower and upper arguments (if stochastic)
     ## From here down is the new "version 3" processing
     if(debug) browser()
     genReplacedTargetValueAndParentInfo() ## In each declInfo[[i]], symbolicParentNodesReplaced, rhsVars, targetIndexNamePieces, and parentIndexNamePieces set
@@ -265,8 +264,10 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
         if(code[[i]][[1]] == '~' || code[[i]][[1]] == '<-') {  ## a BUGS declaration
             iAns <- length(declInfo) + 1
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
-            if(code[[i]][[1]] == '~') 
+            if(code[[i]][[1]] == '~') {
                 code[[i]] <- replaceDistributionAliases(code[[i]])
+                checkUserDefinedDistribution(code[[i]])
+            }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
 
@@ -305,6 +306,19 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
     }
     lineNumber
 })
+
+# check if distribution is defined and if not, attempt to register it
+checkUserDefinedDistribution <- function(code) {
+    dist <- as.character(code[[3]][[1]])
+    if(dist %in% c("T", "I")) 
+        dist <- as.character(code[[3]][[2]][[1]])
+    if(!dist %in% distributions$namesVector)
+        if(!exists('distributions', nimbleUserNamespace) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
+            registerDistributions(dist)
+            cat("NIMBLE has registered ", dist, " as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.\n", sep = "") 
+        }
+}
+        
 
 replaceDistributionAliases <- function(code) {
     dist <- as.character(code[[3]][[1]])
@@ -416,53 +430,48 @@ example_getMissingDimensions <- function(code) {
     return(cCall)
 }
 
-modelDefClass$methods(removeTruncationWrapping = function() {
-    ## pulls bounds out of T() syntax and puts in lower and upper fields
+modelDefClass$methods(processBoundsAndTruncation = function() {
+    ## for non-truncated declarations, extracts range info from distribution; for truncated declarations, pulls bounds out of T() syntax
     for(i in seq_along(declInfo)) {
         
         BUGSdecl <- declInfo[[i]]
-        if(BUGSdecl$type != 'stoch' || !(BUGSdecl$valueExpr[[1]] == "T" || BUGSdecl$valueExpr[[1]] == "I")) next
-        BUGSdecl$truncated <- TRUE
 
-
-        if(BUGSdecl$valueExpr[[1]] == "I")
-            warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
+        if(BUGSdecl$type != 'stoch') next
+        callName <- deparse(BUGSdecl$valueExpr[[1]])
+        if(!(callName %in% c("T", "I"))) {
+            truncated <- FALSE
+            boundExprs <- getDistributionInfo(callName)$range
+        } else {
+            truncated <- TRUE
+            if(callName == "I")
+                warning(paste0("Interpreting I(,) as truncation (equivalent to T(,)) in ", deparse(BUGSdecl$code), "; this is only valid when ", deparse(BUGSdecl$targetExpr), " has no unobserved (stochastic) parents."))
                 
-        newCode <- BUGSdecl$code
-        newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
+            newCode <- BUGSdecl$code
+            newCode[[3]] <- BUGSdecl$valueExpr[[2]]  # insert the core density function call
 
-        tmp <- as.character(newCode[[3]][[1]])
-        distRange <- getDistribution(tmp)$range
+            distName <- as.character(newCode[[3]][[1]])
+            if(!getAllDistributionsInfo('pqAvail')[distName]) 
+                stop("Cannot implement truncation for ", distName, "; 'p' and 'q' functions not available.")
 
-        if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") {
-            BUGSdecl$range$lower <- BUGSdecl$valueExpr[[3]]
-        } else   BUGSdecl$range$lower <- distRange[1]
-        if(length(BUGSdecl$valueExpr) >= 4 && BUGSdecl$valueExpr[[4]] != "") {
-            BUGSdecl$range$upper <- BUGSdecl$valueExpr[[4]]
-        } else   BUGSdecl$range$upper <- distRange[2]
-        if(length(BUGSdecl$valueExpr) != 4)
-            warning(paste0("Lower and upper bounds not supplied for T(); proceeding with bounds: (",
-                           paste(BUGSdecl$range, collapse = ','), ")."))
-     
+            distRange <- getDistributionInfo(distName)$range
+            boundExprs <- distRange
+
         
-        if(BUGSdecl$range$lower == distRange[1] && BUGSdecl$range$upper == distRange[2])  # user specified bounds that are the same as the range
-            BUGSdecl$truncated <- FALSE
+            if(length(BUGSdecl$valueExpr) >= 3 && BUGSdecl$valueExpr[[3]] != "") 
+                boundExprs$lower <- BUGSdecl$valueExpr[[3]]
+            if(length(BUGSdecl$valueExpr) >= 4 && BUGSdecl$valueExpr[[4]] != "") 
+                boundExprs$upper <- BUGSdecl$valueExpr[[4]]
+            if(length(BUGSdecl$valueExpr) != 4)
+                warning(paste0("Lower and upper bounds not supplied for T(); proceeding with bounds: (",
+                               paste(boundExprs, collapse = ','), ")."))
         
+            BUGSdecl$code <- newCode
+        }
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
-
-        dist <- as.character(BUGSdeclClassObject$valueExpr[[1]])
-        if(!getDistributionsInfo('pqAvail')[dist]) 
-            stop("Cannot implement truncation for ", dist, "; 'p' and 'q' functions not available.")
-
+        BUGSdeclClassObject$setup(BUGSdecl$code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, truncated, boundExprs)
         declInfo[[i]] <<- BUGSdeclClassObject
-
-           
-
     }
 })
-
-
 
 
 modelDefClass$methods(expandDistributions = function() {
@@ -476,7 +485,7 @@ modelDefClass$methods(expandDistributions = function() {
         newCode[[3]] <- evalInDistsMatchCallEnv(BUGSdecl$valueExpr)
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -528,11 +537,11 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = BUGSdecl$targetNodeExpr, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
+            BUGSdeclClassObject$setup(code, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
             newDeclInfo[[nextNewDeclInfoIndex]]     <- BUGSdeclClassObject
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
             newDeclInfo[[nextNewDeclInfoIndex + 1]] <- BUGSdeclClassObject
             
         } else {    # deterministic node
@@ -542,12 +551,13 @@ modelDefClass$methods(processLinks = function() {
             newCode <- substitute(A <- B, list(A = newLHS, B = newRHS))
             
             BUGSdeclClassObject <- BUGSdeclClass$new()
-            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
+            BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
             newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
         }
     }  # close loop over declInfo
     declInfo <<- newDeclInfo
 })
+
 modelDefClass$methods(reparameterizeDists = function() {
     for(i in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[i]]     ## grab this current BUGS declation info object
@@ -555,8 +565,8 @@ modelDefClass$methods(reparameterizeDists = function() {
         code <- BUGSdecl$code   ## grab the original code
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         distName <- as.character(valueExpr[[1]])
-        if(!(distName %in% getDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
-        distRule <- getDistribution(distName)
+        if(!(distName %in% getAllDistributionsInfo('namesVector')))    stop('unknown distribution name: ', distName)      ## error if the distribution isn't something we recognize
+        distRule <- getDistributionInfo(distName)
         numArgs <- length(distRule$reqdArgs)
         if(numArgs==0) next; ## a user-defined distribution might have 0 arguments
         newValueExpr <- quote(dist())       ## set up a parse tree for the new value expression
@@ -600,27 +610,46 @@ modelDefClass$methods(reparameterizeDists = function() {
             }
             newValueExpr[[iArg + 1]] <- transformedParameterPT
         }
+
+        # evaluate boundExprs in context of model
+        boundExprs <- BUGSdecl$boundExprs
+        reqdParams <- as.list(newValueExpr[-1])
+        for(iBound in 1:2) {
+            if(!is.numeric(boundExprs[[iBound]])) {
+                                        # only expecting boundExprs to be functions of reqdArgs
+                if(length(intersect(nonReqdArgs, all.vars(boundExprs[[iBound]]))))
+                    stop("Expecting expressions for distribution range for ", distName, " to be functions only of required arguments, namely the parameters used in the 'Rdist' element.")
+                namesToSubstitute <- intersect(c(distRule$reqdArgs), all.vars(boundExprs[[iBound]]))
+                for(nm in namesToSubstitute) {
+                    if(is.null(params[[nm]])) stop('this shouldn\'t happen -- something wrong with my understanding of parameter transformations')
+                    boundExprs[[iBound]] <- parseTreeSubstitute(pt = boundExprs[[iBound]], pattern = as.name(nm), replacement = params[[nm]])
+                }
+            }
+        }
         
         ## hold onto the expressions for non-required args
         nonReqdArgExprs <- params[nonReqdArgs]    ## grab the non-required args from the original params list
         names(nonReqdArgExprs) <- if(length(nonReqdArgExprs) > 0) paste0('.', names(nonReqdArgExprs)) else character(0)  ## append '.' to the front of all the old (reparameterized away) param names
-        newValueExpr <- as.call(c(as.list(newValueExpr), nonReqdArgExprs))
-        
+
+        # insert altParams and bounds into code
+        newValueExpr <- as.call(c(as.list(newValueExpr), nonReqdArgExprs, boundExprs))
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
+        # note at this point boundExprs set back to NULL as all info in lower,upper in valueExpr
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, NULL)
         declInfo[[i]] <<- BUGSdeclClassObject
     }  # close loop over declInfo
 })
-modelDefClass$methods(addRemainingDotParams = function() {
+
+    modelDefClass$methods(addRemainingDotParams = function() {
     for(iDecl in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDecl]]     ## grab this current BUGS declation info object
         if(BUGSdecl$type == 'determ')  next  ## skip deterministic nodes
         valueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
         newValueExpr <- valueExpr
-        defaultParamExprs <- getDistribution(as.character(newValueExpr[[1]]))$altParams
+        defaultParamExprs <- getDistributionInfo(as.character(newValueExpr[[1]]))$altParams
         if(length(defaultParamExprs) == 0)   next   ## skip if there are no altParams defined in distributions
         
         defaultParamNames <- names(defaultParamExprs)
@@ -636,36 +665,10 @@ modelDefClass$methods(addRemainingDotParams = function() {
         newCode <- BUGSdecl$code
         newCode[[3]] <- newValueExpr
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
         declInfo[[iDecl]] <<- BUGSdeclClassObject
     }
 })
-
-modelDefClass$methods(insertDistributionBounds = function() {
-    ## pulls bounds out of T() syntax and puts in lower and upper fields
-    for(i in seq_along(declInfo)) {
-        BUGSdecl <- declInfo[[i]]
-        if(BUGSdecl$type != 'stoch' || !BUGSdecl$truncated) next
-        
-        newValueExpr <- BUGSdecl$valueExpr   ## grab the RHS (distribution)
-
-        nParams <- length(newValueExpr) 
-        newValueExpr[[nParams + 1]] <- BUGSdecl$range$lower
-        newValueExpr[[nParams + 2]] <- BUGSdecl$range$upper
-        names(newValueExpr)[(nParams + 1):(nParams + 2)] <- c('lower', 'upper')
-
-        newCode <- BUGSdecl$code
-        newCode[[3]] <- newValueExpr
-
-        BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
-
-        declInfo[[i]] <<- BUGSdeclClassObject
-    }
-})
-
-
-
 
 modelDefClass$methods(replaceAllConstants = function() {
     ## overwrites declInfo with constants replaced; only replaces scalar constants
@@ -674,7 +677,7 @@ modelDefClass$methods(replaceAllConstants = function() {
         newCode <- replaceConstantsRecurse(declInfo[[i]]$code, constantsEnv, constantsNamesList)$code
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, declInfo[[i]]$truncated, declInfo[[i]]$range)
+        BUGSdeclClassObject$setup(newCode, declInfo[[i]]$contextID, declInfo[[i]]$sourceLineNumber, declInfo[[i]]$truncated, declInfo[[i]]$boundExprs)
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
@@ -741,7 +744,7 @@ replaceConstantsRecurse <- function(code, constEnv, constNames, do.eval = TRUE) 
             allReplaceable <- TRUE
         }
         if(allReplaceable) {
-            if(!any(code[[1]] == getDistributionsInfo('namesVector'))) {
+            if(!any(code[[1]] == getAllDistributionsInfo('namesVector'))) {
                 callChar <- as.character(code[[1]])
                 if(exists(callChar, constEnv)) {
                     # if(callChar != ':') {
@@ -774,7 +777,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
             params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
             
             for(iParam in seq_along(params)) {
-                if(grepl('^\\.', names(params)[iParam]))   next        ## skips '.param' names; we do NOT lift these
+                if(grepl('^\\.', names(params)[iParam]) || names(params)[iParam] %in% c('lower', 'upper'))   next        ## skips '.param' names, 'lower', and 'upper'; we do NOT lift these
                 paramExpr <- params[[iParam]]
                 if(!isExprLiftable(paramExpr))    next     ## if this param isn't an expression, go ahead to next parameter
                 newNodeNameExpr <- as.name(paste0('lifted_', Rname2CppName(paramExpr, colonsOK = TRUE)))   ## create the name of the new node ##nameMashup
@@ -786,7 +789,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
                 if(!checkForDuplicateNodeDeclaration(newNodeCode, newNodeNameExprIndexed, newDeclInfo)) {
                     
                     BUGSdeclClassObject <- BUGSdeclClass$new()
-                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)   ## keep new declaration in the same context, regardless of presence/absence of indexing
+                    BUGSdeclClassObject$setup(newNodeCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, FALSE, NULL)   ## keep new declaration in the same context, regardless of presence/absence of indexing
                     newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject
                     
                     nextNewDeclInfoIndex <- nextNewDeclInfoIndex + 1     ## update for lifting other nodes, and re-adding BUGSdecl at the end
@@ -798,7 +801,7 @@ modelDefClass$methods(liftExpressionArgs = function() {
         newCode[[3]] <- newValueExpr
         
         BUGSdeclClassObject <- BUGSdeclClass$new()
-        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$range)
+        BUGSdeclClassObject$setup(newCode, BUGSdecl$contextID, BUGSdecl$sourceLineNumber, BUGSdecl$truncated, BUGSdecl$boundExprs)
         newDeclInfo[[nextNewDeclInfoIndex]] <- BUGSdeclClassObject    ## regardless of anything, add BUGSdecl itself in
     }    # closes loop over declInfo
     declInfo <<- newDeclInfo
@@ -857,7 +860,7 @@ modelDefClass$methods(addIndexVarsToDeclInfo = function() {
 modelDefClass$methods(genSymbolicParentNodes = function() {
     ## sets field declInfo[[i]]$symbolicParentNodes. must be after overwrites of declInfo
     
-    nimFunNames <- getDistributionsInfo('namesExprList')
+    nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)){
         declInfo[[i]]$genSymbolicParentNodes(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
@@ -867,7 +870,7 @@ modelDefClass$methods(genSymbolicParentNodes = function() {
 modelDefClass$methods(genReplacementsAndCodeReplaced = function() {
     ## sets fields declInfo[[i]]$replacements, $codeReplaced, and $replacementNameExprs
     
-    nimFunNames <- getDistributionsInfo('namesExprList')
+    nimFunNames <- getAllDistributionsInfo('namesExprList')
     
     for(i in seq_along(declInfo)) {
         declInfo[[i]]$genReplacementsAndCodeReplaced(constantsNamesList, contexts[[declInfo[[i]]$contextID]], nimFunNames)
@@ -885,9 +888,16 @@ modelDefClass$methods(genReplacedTargetValueAndParentInfo = function() {
 })
 
 modelDefClass$methods(genAltParamsModifyCodeReplaced = function() {
-    ## setsfield declInfo[[i]]$altParams, and modifies $codeReplaced to not include .param arguments (if stochastic)
+    ## sets field declInfo[[i]]$altParams, and modifies $codeReplaced to not include .param arguments (if stochastic)
     for(i in seq_along(declInfo)) {
         declInfo[[i]]$genAltParamsModifyCodeReplaced()
+    }
+})
+
+modelDefClass$methods(genBounds = function() {
+    ## sets field declInfo[[i]]$boundExprs and if not truncated modifies $codeReplaced to remove lower,upper
+    for(i in seq_along(declInfo)) {
+        declInfo[[i]]$genBounds()
     }
 })
 
@@ -2181,21 +2191,18 @@ modelDefClass$methods(graphIDs2indexedNodeInfo = function(graphIDs) {
     list(declIDs = declIDs, unrolledIndicesMatrixRows = rowIndices)
 })
 
-modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE){
+modelDefClass$methods(nodeName2GraphIDs = function(nodeName, nodeFunctionID = TRUE, unique = TRUE){
     if(length(nodeName) == 0)
         return(NULL)
+    ## If unique is FALSE, we still use unique for each element of nodeName
+    ## but we allow non-uniqueness across elements in the result
     if(nodeFunctionID) {
-        ##		output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions, USE.NAMES = FALSE)))
-        ## old system had IDs for RHSonly things here.  This puts that back in for now.
-        ##output <- unique(unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_functions_and_RHSonly, USE.NAMES = FALSE)))
-        output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
-        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
+        if(unique)
+            output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2GraphID_functions_and_RHSonly))
+        else
+            output2 <- unlist(lapply(parseEvalNumericManyList(nodeName, env = maps$vars2GraphID_functions_and_RHSonly), unique))
     } else {
-        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2GraphID_values, USE.NAMES = FALSE))	
-        ## old system here would always return *scalar* IDs. Those are now element IDs, and they are not in the graph.  Only uses should be transient, e.g. to get back to names
-        ##output <- unlist(sapply(nodeName, parseEvalNumeric, env = maps$vars2ID_elements, USE.NAMES = FALSE))	
         output2 <- unique(parseEvalNumericMany(nodeName, env = maps$vars2ID_elements))
-        ##if(!identical(as.numeric(output), as.numeric(output2))) browser()
     }
     output <- output2
     return(output[!is.na(output)])
@@ -2282,6 +2289,19 @@ parseEvalNumericMany <- function(x, env) {
        ,
         error = function(cond) {
            parseEvalNumericManyHandleError(cond, x, env)
+        }
+    )
+}
+
+parseEvalNumericManyList <- function(x, env) {
+    withCallingHandlers(
+        if(length(x) > 1) {
+            eval(parse(text = paste0('list(', paste0("as.numeric(",x,")", collapse=','),')'), keep.source = FALSE)[[1]], envir = env)
+        } else 
+            eval(parse(text = paste0('list(as.numeric(',x,'))'), keep.source = FALSE)[[1]], envir = env)
+       ,
+        error = function(cond) {
+            parseEvalNumericManyHandleError(cond, x, env)
         }
     )
 }
