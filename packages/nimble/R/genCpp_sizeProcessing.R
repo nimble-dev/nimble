@@ -812,7 +812,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## We used to update typeEnv sizeExprs, but in some cases it is not safe to do so
     ## Hence they are created generically above if the LHS$name is new
     ## typeEnv[[LHS$name]]$sizeExprs <- RHSsizeExprs
-
+  browser()
     if(LHS$toEigenize == 'yes') message('Warning from sizeAssign: not expecting LHS to have toEigenize == yes')
     code$toEigenize <-if(inherits(RHS, 'exprClass')) {
         if(RHS$toEigenize == 'no') 'no' else {

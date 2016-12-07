@@ -62,6 +62,9 @@ nimbleList <- function(types,
         initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, ...){
           nimbleListDef <<- NLDEFCLASSOBJECT
           nestedListGenList <<- NESTEDGENLIST
+          for(i in seq_along(NESTEDGENLIST)){
+            .self[[names(NESTEDGENLIST)[i]]] <- NESTEDGENLIST[[i]]$new()
+          }
           callSuper(...)
         }
       ),
@@ -130,12 +133,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                   if(!inherits(symTab, "uninitializedField")) return(warning("Symbol Table for nimbleList already built."))
                                   if(length(nimbleListObj$types$types) != length(nimbleListObj$types$vars))
                                     stop("Number of nimbleList vars provided is not equal to number of nimbleList types provided")
-                                  # if(is.null(nimbleListObj$types$sizes)){  ## if sizes haven't been provided, construct them from types
-                                  #   nimbleListObj$types$sizes <<- list()
-                                  varDims <- as.numeric(strsplit(gsub("[^0-9]", "", nimbleListObj$types$types), ""))
                                   symTab <<- symbolTable()
                                   for(i in seq_along(nimbleListObj$types$vars)){
-                                          ## ensure that types are of form "double", not "double(1)"
                                     if(nimbleListObj$types$vars[i] %in% names(nestedListGens)){
                                       nlList <- nestedListGens[[nimbleListObj$types$vars[i]]]$new()
                                       nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
@@ -146,10 +145,9 @@ nlProcessing <- setRefClass('nlProcessing',
                                       symTab$addSymbol(newSym)
                                     }
                                     else{
-                                      # nimbleListObj$types$types[i] <<- strsplit(nimbleListObj$types$types[i], "\\(")[[1]][1]
-                                      nimbleListObjType <- strsplit(nimbleListObj$types$types[i], "\\(")[[1]][1]
-                                      
-                                     symTab$addSymbol(argType2symbol(call(nimbleListObjType, varDims[i]),
+                                     nimbleListObjType <- strsplit(nimbleListObj$types$types[i], "\\(")[[1]][1]
+                                     nimbleListObjDim <-  as.numeric(strsplit(strsplit(nimbleListObj$types$types[i], "\\(")[[1]][2], "\\)")[[1]][1])
+                                     symTab$addSymbol(argType2symbol(call(nimbleListObjType, nimbleListObjDim),
                                                                      neededTypes, nimbleListObj$types$vars[i]))
                                     }
                                   }

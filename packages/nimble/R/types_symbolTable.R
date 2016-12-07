@@ -161,7 +161,9 @@ symbolSEXP <- setRefClass(
   methods = list(
     show = function() writeLines(paste('symbolSEXP', name)),
     genCppVar = function(...) {
-        cppVar(name = name, baseType = "SEXP")
+        cppVar(name = name,
+               ptr = 0,
+               baseType = "SEXP")
     })
 )
 

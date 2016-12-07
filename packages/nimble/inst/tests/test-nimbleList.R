@@ -307,8 +307,6 @@ testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
 testListDef8 <- nimble:::nimbleList(testTypes)
 testList8 <- testListDef8$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
 
-trace(nimble:::cppNewNimbleList, browser)
-
 testInst <- nlTestFunc8()
 RnimbleList <- testInst$run(testList8)
 ctestInst <- compileNimble(testInst, control = list(debug =  F))
@@ -336,14 +334,12 @@ nlTestFunc9 <- nimbleFunction(
   setup = function(){
   },
   run = function(argList9a = testListDef9(), argList9b = testListDef9()){
-    argList9a$nlMatrix <- 5
+    argList9a$nlMatrix[1,1] <- argList9a$nlMatrix[1,1] + 5
     argList9a <- argList9b
     returnType(testListDef9())
     return(argList9a)
   }
 )
-
-
 
 testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
 testListDef9 <- nimble:::nimbleList(testTypes)
@@ -356,11 +352,14 @@ ctestInst <- compileNimble(testInst, control = list(debug =  F))
 CnimbleList <- ctestInst$run(testList9a, testList9b)
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlMatrix, matrix(c(16,16,16,16),nrow =  2))
+expect_identical(RnimbleList$nlMatrix, matrix(c(2,2,2,2),nrow =  2))
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlMatrix, CnimbleList$nlMatrix)
-## test for identical values of testList7a and CnimbleList
-expect_identical(testList7a$nlMatrix, CnimbleList$nlMatrix)
+## test for identical values of testList9b and CnimbleList
+expect_identical(testList9b$nlMatrix, CnimbleList$nlMatrix)
+## test that  testList9a matrix was updated 
+expect_identical(testList9a$nlMatrix, matrix(c(11, 1, 1, 1), nrow = 2))
+
 test_that("return objects are nimbleLists", 
           {
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)
@@ -368,7 +367,117 @@ test_that("return objects are nimbleLists",
           })
 
 
-testFunc <- function(lista, listb){
-  lista$nlMatrix = listb$nlMatrix
-}
-testFunc(testList9a, testList9b)
+########
+## Test of nested nimbleLists.  Both nimbleList generators are defined in setup code. Top level nimbleList is returned.
+########
+
+nlTestFunc10 <- nimbleFunction(
+  setup = function(){
+    testTypes1 <- list(vars = c('nlDouble'), types = c('double(0)'))
+    testListDef10a <- nimble:::nimbleList(testTypes1)
+    testTypes2 <- list(vars = c('nestedNL'), types = c('testListDef10a()'))
+    testListDef10b <- nimble:::nimbleList(testTypes2)
+  },
+  run = function(){
+    newList10 <- testListDef10b$new()
+    newList10$nestedNL$nlDouble <- 3.14
+    returnType(testListDef10b())
+    return(newList10)
+  }
+)
+
+testInst <- nlTestFunc10()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nestedNL$nlDouble, 3.14)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+########
+## Test of nested nimbleLists.  Here, top level nimbleList generator is defined in setup code.
+## Lower level nimbleList generator is defined in global environment.  Top level nimbleList is returned.
+########
+
+nlTestFunc11 <- nimbleFunction(
+  setup = function(){
+    testTypes2 <- list(vars = c('nestedNL'), types = c('testListDef11a()'))
+    testListDef11b <- nimble:::nimbleList(testTypes2)
+  },
+  run = function(){
+    newList11 <- testListDef11b$new()
+    newList11$nestedNL$nlDouble <- 3.14
+    returnType(testListDef11b())
+    return(newList11)
+  }
+)
+testTypes1 <- list(vars = c('nlDouble'), types = c('double(0)'))
+testListDef11a <- nimble:::nimbleList(testTypes1)
+
+testInst <- nlTestFunc11()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nestedNL$nlDouble, 3.14)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+########
+## Test of nested nimbleLists.  Here, top level nimbleList generator is defined in setup code.
+## Lower level nimbleList generator is defined in global environment.  Top level nimbleList is returned.
+########
+
+nlTestFunc12 <- nimbleFunction(
+  setup = function(){
+  },
+  run = function(argList12a = testListDef12b(), argList12b = testListDef12b()){
+    argList12a$nestedNL <- argList12b$nestedNL
+    returnType(testListDef12b())
+    return(argList12a)
+  }
+)
+
+testTypes1 <- list(vars = c('nlDouble'), types = c('double(0)'))
+testListDef12a <- nimble:::nimbleList(testTypes1)
+testTypes2 <- list(vars = c('nestedNL'), types = c('testListDef12a()'))
+testListDef12b <- nimble:::nimbleList(testTypes2)
+
+argList12a <- testListDef12b$new()
+argList12a$nestedNL$nlDouble <- 0
+argList12b <- testListDef12b$new()
+argList12b$nestedNL$nlDouble <- 100
+
+testInst <- nlTestFunc12()
+RnimbleList <- testInst$run(argList12a, argList12b)
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run(argList12a, argList12b)
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nestedNL$nlDouble, 3.14)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+

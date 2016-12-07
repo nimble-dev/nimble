@@ -194,17 +194,21 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                        buildConstructorFunctionDef = function() {
                                          newNestedListLines <- list()
                                          flagLine <- list()
+                                         pointerLine <- list()
                                          if(!(is.null(nimCompProc[['nimbleListObj']]))){
-                                           flagText <- paste0('RCopiedFlag = false;')
+                                           flagText <- paste0('RCopiedFlag = false')
                                            flagLine[[1]] <- substitute(FLAGTEXT, 
                                                             list(FLAGTEXT = as.name(flagText)))
+                                           pointerText <- paste0('RObjectPointer = NULL')
+                                           pointerLine[[1]] <- substitute(POINTERTEXT,
+                                                                          list(POINTERTEXT = as.name(pointerText)))
                                            for(i in seq_along(nimCompProc$neededTypes)){
-                                             newListText <- paste0(nimCompProc$neededTypes[[i]]$name, " = new ", as.name(names(nimCompProc$neededTypes)[i]), ";")
+                                             newListText <- paste0(nimCompProc$neededTypes[[i]]$name, " = new ", as.name(names(nimCompProc$neededTypes)[i]))
                                              newNestedListLines[[i]] <- substitute(NEWLISTTEXT,
                                                                                    list(NEWLISTTEXT = as.name(newListText)))
                                            }
                                          }
-                                         code <- putCodeLinesInBrackets(c(flagLine, newNestedListLines,
+                                         code <- putCodeLinesInBrackets(c(flagLine, pointerLine, newNestedListLines,
                                                                           list(namedObjectsConstructorCodeBlock())))
                                          conFunDef <- cppFunctionDef(name = name,
                                                                      returnType = emptyTypeInfo(),
