@@ -333,44 +333,73 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 }
 
 
+recurseExtractNimListArg <- function(code, symTab){
+  if(length(code$args) == 0){  ## reached top level list
+    listSym <- symTab$getSymbolObject(code$name, inherits = TRUE)
+  }
+  else{ ## progress though lower lists, passing appropriate symbol down each time
+    listSym <- recurseExtractNimListArg(code$args[[1]], symTab)
+    nestedObjInd <- which(sapply(listSym$nlProc$neededTypes, function(x){return(x$name == code$args[[2]])}) == TRUE)
+    if(length(nestedObjInd) == 0)
+      listSym <- listSym$nlProc$symTab$getSymbolObject(code$args[[2]])
+    else
+      listSym <- listSym$nlProc$neededTypes[[nestedObjInd]]
+  }
+    return(listSym)
+}
+
 sizeNFvar <- function(code, symTab, typeEnv) {
+    topLevel <- code$caller$name != 'nfVar'
     nfName <- code$args[[1]]$name
-    nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
-    isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
-    isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
-    if(!(isSymFunc || isSymList))
-      stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or nimbleList.'), call. = FALSE)
-    if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface
-    if(isSymList) nfProc <- nfSym$nlProc
-    if(is.null(nfProc)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbols in this nimbleFunction generation function not set up.'), call. = FALSE)
-    objName <- code$args[[2]]
-    if(!is.character(objName)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Second argument must be a character string.'), call. = FALSE)
-    objSym <- nfProc$getSymbolTable()$getSymbolObject(objName)  ##nfProc$setupSymTab$getSymbolObject(objName)
-    if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
-    code$nDim <- objSym$nDim
-    code$type <- objSym$type
-    asserts <- list()
-    if(isSymList){
-      if(code$args[[1]]$isCall){
+    code$toEigenize <- 'maybe'
+    if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
+      isSymList <- TRUE
+      if(topLevel){
+        objSym <- recurseExtractNimListArg(code, symTab)
+        if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
         recurseSetSizes(code, symTab, typeEnv)
-        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
       }
-      else asserts <- NULL
+      else{
+        objSym <- NULL ## if accessing element of nested NL, don't need to waste time getting info for intermediate/top NLs
+        code$type <- 'nimbleList' 
+      }
+    }
+    else{
+      nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
+      isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
+      isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
+      if(!(isSymFunc || isSymList))
+        stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or nimbleList.'), call. = FALSE)
+      if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface
+      if(isSymList) nfProc <- nfSym$nlProc
+      if(is.null(nfProc)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbols in this nimbleFunction generation function not set up.'), call. = FALSE)
+      objName <- code$args[[2]]
+      if(!is.character(objName)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Second argument must be a character string.'), call. = FALSE)
+      objSym <- nfProc$getSymbolTable()$getSymbolObject(objName)  ##nfProc$setupSymTab$getSymbolObject(objName)
+      if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
+      if(inherits(objSym, 'symbolNimbleList')) code$toEigenize <- 'no'
+    }
+    if(!is.null(objSym))code$type <- objSym$type
+    if(code$type != 'nimbleList') code$nDim <- objSym$nDim
+    asserts <- NULL
+    if(isSymList){
       a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
       a1$type <- a1$args[[1]]$type
       a1$nDim <- a1$args[[1]]$nDim
       a1$sizeExprs <- a1$args[[1]]$sizeExprs
       code$args[[1]] <- a1
     }
-    if(code$nDim > 0) {
+    else{
+      code$nDim <- objSym$nDim
+      code$type <- objSym$type
+    }
+    if((code$type != 'nimbleList') && code$nDim > 0) {
       code$sizeExprs <- makeSizeExpressions(objSym$size,
                                               parse(text = nimDeparse(code))[[1]])
-    } else {
+    } 
+    else 
       code$sizeExprs <- list()
-    }
-    code$toEigenize <- 'maybe'
-    
-    if(length(asserts)==0) NULL else asserts
+    return(asserts)
 }
 
 sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have only nimFunList[[i]](a), nfMethod(nf, 'foo')(a), or nfMethod(nf[[i]], 'foo')(a)
@@ -783,7 +812,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## We used to update typeEnv sizeExprs, but in some cases it is not safe to do so
     ## Hence they are created generically above if the LHS$name is new
     ## typeEnv[[LHS$name]]$sizeExprs <- RHSsizeExprs
-
     if(LHS$toEigenize == 'yes') message('Warning from sizeAssign: not expecting LHS to have toEigenize == yes')
     code$toEigenize <-if(inherits(RHS, 'exprClass')) {
         if(RHS$toEigenize == 'no') 'no' else {

@@ -364,9 +364,7 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 				 	NimArr<1, double> par, optimfn objFxn,
 				 	int numOtherArgs, ...);
 					
-SEXP getClassElement(SEXP Sobject, const char *name);
-void setClassElement(SEXP Sobject, const char *name, SEXP setObject);
-SEXP makeNewNimbleList();
+SEXP makeNewNimbleList(SEXP S_listName);
 
 #endif
 

@@ -160,7 +160,6 @@ eigen_keywordInfo <- keywordInfoClass(
 svd_keywordInfo <- keywordInfoClass(
   keyword = "svd",
   processor = function(code, nfProc){
-    print(code)
     nuArg <- code$nu
     nvArg <- code$nv
     if((nuArg == 0) && (nvArg > 0)){
@@ -650,23 +649,23 @@ dollarSign_keywordInfo <- keywordInfoClass(
 			newRunCode <- code[[2]]
 			return(newRunCode)
 		}
-				
 		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
-
 		callerCode <- code[[2]]
 		#	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
 		
-		
-		if((length(callerCode) > 1) && as.character(callerCode[[1]]) != 'eigen')
-		    callerCode <- callerCode[[2]]
+		if(length(callerCode) > 1){
+		  if(callerCode[[1]] == '$'){ ## nested NL case
+		    callerCode <- processKeyword(callerCode, nfProc)
+		  }
+		  else 	callerCode <- callerCode[[2]]
+		}
 		#	This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
 		#	May be a better way to do this
 		
 		class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
 		if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
-		  nl_charName <- callerCode
 		  nl_fieldName <-as.character(code[[3]])
-		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = nl_charName, VARNAME = nl_fieldName))
+		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
 		  return(newRunCode)				
 		}
 		if(class == 'symbolNimPtrList'){

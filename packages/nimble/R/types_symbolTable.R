@@ -155,6 +155,19 @@ symbolPtr <- setRefClass(
         })
     )
 
+symbolSEXP <- setRefClass(
+  Class = "symbolSEXP",
+  contains = "symbolBasic", ## inheriting from symbolBasic instead of symbolBase make initSizes work smoothly
+  methods = list(
+    show = function() writeLines(paste('symbolSEXP', name)),
+    genCppVar = function(...) {
+        cppVar(name = name,
+               ptr = 0,
+               baseType = "SEXP")
+    })
+)
+
+
 symbolString <- setRefClass(
     Class = "symbolString",
     contains = "symbolBasic", ## inheriting from symbolBasic instead of symbolBase make initSizes work smoothly

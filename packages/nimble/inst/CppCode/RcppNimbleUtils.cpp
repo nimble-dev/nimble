@@ -1104,34 +1104,12 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 	//Could return ans if we decided to build it on the fly here instead of providing it as argument
 }	
 
-SEXP getClassElement(SEXP Sobject, const char *name) {
-  SEXP call;
-  PROTECT(call = allocVector(LANGSXP, 3));
-  SETCAR(call, install("$"));
-  SETCADR(call, Sobject);
-  SETCADDR(call, install(name));
-  UNPROTECT(1);
-  return(EVAL(call));
-}
 
-void setClassElement(SEXP Sobject, const char *name, SEXP setObject) {
-  SEXP call, Sname;
-  PROTECT(Sname = allocVector(STRSXP, 1));
-  SET_STRING_ELT(Sname, 0, mkChar(name));
-  PROTECT(call = allocList(4));
-  SET_TYPEOF(call, LANGSXP);
-  SETCAR(call, install("setListElement"));
-  SETCADR(call, Sobject);
-  SETCADDR(call, Sname);
-  SETCADDDR(call, setObject);
-  EVAL(call); 
-  UNPROTECT(2); 
-}
-
-SEXP makeNewNimbleList() {
+SEXP makeNewNimbleList(SEXP S_listName) {
   SEXP call;
-  PROTECT(call = allocVector(LANGSXP, 1));
+  PROTECT(call = allocVector(LANGSXP, 2));
   SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
+  SETCADR(call, S_listName);
   UNPROTECT(1);
   return(EVAL(call));
 }

@@ -95,6 +95,7 @@ nimbleFunction <- function(setup         = NULL,
     declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
     rm(setupOutputsDeclaration)
     ## create the reference class definition
+    
     nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
     nfRefClass    <- eval(nfRefClassDef)
     ## record which setupOutputs are used in method argument or returns
@@ -107,8 +108,16 @@ nimbleFunction <- function(setup         = NULL,
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
     ## create a list to hold all specializations (instances) of this nimble function.  The following objects are accessed in environment(generatorFunction) in the future
     ## create the generator function, which is returned from nimbleFunction()
-
     generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
+    # if(is.character(generatorFunction())){
+    #   declaredSetupOutputNames <- c(declaredSetupOutputNames, generatorFunction())
+    #   nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
+    #   nfRefClass    <- eval(nfRefClassDef)
+    #   .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
+    #   .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
+    #   .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
+    #   generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
+    # }
     force(contains) ## eval the contains so it is in this environment
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
 
@@ -181,12 +190,14 @@ nf_createSetupOutputNames <- function(setup, methodList, declaredSetupOutputName
     return(setupOutputNames)
 }
 
-## returns the names of any variables appearing on the LHS of an `<-` assignment statement, in code
+
+
+
 nf_assignmentLHSvars <- function(code) {
-    if(!is.call(code))     return(character(0))
-    isAssign <- code[[1]] == '<-' | code[[1]] == '='
-    if(!isAssign)  return(unique(unlist(lapply(as.list(code), nf_assignmentLHSvars))))
-    if(isAssign)  return(c(nf_getVarFromAssignmentLHScode(code[[2]]), nf_assignmentLHSvars(code[[3]])))
+  if(!is.call(code))     return(character(0))
+  isAssign <- code[[1]] == '<-' | code[[1]] == '='
+  if(!isAssign)  return(unique(unlist(lapply(as.list(code), nf_assignmentLHSvars))))
+  if(isAssign)  return(c(nf_getVarFromAssignmentLHScode(code[[2]]), nf_assignmentLHSvars(code[[3]])))
 }
 
 ## determines the name of the target variable, from the LHS code of an `<-` assignment statement
@@ -195,6 +206,8 @@ nf_getVarFromAssignmentLHScode <- function(code) {
     ##if(!any(code[[1]] == c('[', '[[', '$')))  stop(paste0('invalid assignment target expression in setup: ', deparse(code)))
     return(nf_getVarFromAssignmentLHScode(code[[2]]))
 }
+
+
 
 ## creates a list of all the names of all variables and functions in the code of methodList functions
 nf_createAllNamesFromMethodList <- function(methodList, onlyArgsAndReturn = F) {
@@ -224,20 +237,27 @@ nf_preProcessMemberDataObject <- function(obj) {
 
 ## definition for the nimble function generator (specializer)
 nf_createGeneratorFunctionDef <- function(setup) {
-    generatorFunctionDef <- substitute(
-        function() {
-            SETUPCODE                    # execute setupCode
-            nfRefClassObject <- nfRefClass()   # create an object of the reference class
-            nfRefClassObject$.generatorFunction <- generatorFunction   # link upwards to get the generating function of this nf
-            ## assign setupOutputs into reference class object
-            if(!nimbleOptions()$compileOnly)
-                for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) }
-            for(.var_unique_name_1415927 in .namesToCopyFromSetup)    { nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) }
-            return(nfRefClassObject)
-        },
-        list(SETUPCODE = nf_processSetupFunctionBody(setup, returnCode = TRUE)))
-    generatorFunctionDef[[4]] <- NULL
-    return(generatorFunctionDef)
+  generatorFunctionDef <- substitute(
+    function() {
+      SETUPCODE                    # execute setupCode
+      nfRefClassObject <- nfRefClass()   # create an object of the reference class
+      nfRefClassObject$.generatorFunction <- generatorFunction   # link upwards to get the generating function of this nf
+      ## assign setupOutputs into reference class object
+      if(!nimbleOptions()$compileOnly)
+        for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
+
+          nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
+        }
+      for(.var_unique_name_1415927 in .namesToCopyFromSetup)    {
+        if(is.nlGenerator(nf_preProcessMemberDataObject(get(.var_unique_name_1415927)))){
+        }
+        nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
+      }
+      return(nfRefClassObject)
+    },
+    list(SETUPCODE = nf_processSetupFunctionBody(setup, returnCode = TRUE)))
+  generatorFunctionDef[[4]] <- NULL
+  return(generatorFunctionDef)
 }
 
 nf_processSetupFunctionBody <- function(setup, returnCode = FALSE, returnSetupOutputDeclaration = FALSE) {

@@ -73,7 +73,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {
-                                   browser()
                                      returnVoid <- returnType$baseType == 'void'
                                      asMember <- !is.null(className)
                                      argsCode = RCfunProc$RCfun$arguments
@@ -121,13 +120,33 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                       listCode <-  substitute({eval(makeNewNimListFromC <- function(){
-                                                                returnListDef <- nimbleList(TYPES, NAME);
-                                                                returnList <- returnListDef$new();
-                                                                return(returnList);}, envir = globalenv());
+                                       returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
+                                       returnListDefs <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nimbleListDef
+                                       returnListNestedLists <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nestedListGenList
+                                       returnListNew <- new(returnListObj$.refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
+                                                            NESTEDGENLIST = returnListNestedLists)
+                                      returnNimListGen <- list(new = function(){return(returnListNew)})
+                                      
+                                       getGenList <- function(nimListGen, genList = list()){
+                                         nimList <- nimListGen$new()
+
+                                         if(is.null(genList[[nimList$nimbleListDef$className]]))
+                                           genList[[nimList$nimbleListDef$className]] <- nimListGen
+                                         nestedNimLists <- nimList$nestedListGenList
+                                         for(i in seq_along(nestedNimLists)){
+                                           tempGenList <- nestedNimLists[[i]]
+                                           genList <- getGenList(tempGenList, genList)
+                                         }
+                                         return(genList)
+                                       }
+                                       genList <- getGenList(returnNimListGen)
+
+                                       listCode <-  substitute({eval(makeNewNimListFromC <- function(name){
+                                         genList <- GENLIST
+                                         returnList <- genList[[name]]$new();
+                                         return(returnList)}, envir = globalenv());
                                          assign("makeNewNimListSEXPRESSIONFromC", makeNewNimListFromC, envir = globalenv())},
-                                                               list(TYPES = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$types,
-                                                                    NAME = RCfunProc$compileInfo$returnSymbol$nlProc$nimbleListObj$className))
+                                                               list(GENLIST = genList))
                                      }
                                      else{
                                        listCode <- NULL
@@ -139,6 +158,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          bodyCode <- substitute({
                                            if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
                                            if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
+
                                            LISTCODE; ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
                                                                                              DOTSELFNAME = includeDotSelf, LISTCODE = listCode))
                                          
@@ -176,14 +196,13 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      argNames <- RCfunProc$compileInfo$origLocalSymTab$getSymbolNames()
                                      Snames <- character(length(argNames))
                                      copyLines <- list()
-                                     nimListPtrCheckLines <- list()
-                                     closeElseLine <- list()
+                                     conditionalLineList <- list()
                                      interfaceArgs <- symbolTable()
                                      objects$setParentST(interfaceArgs)
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      copyLineCounter <- 1
-                                     browser()
+
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -198,14 +217,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                            CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                            numNimbleList <- numNimbleList + 1
                                          }
-                                         if(is.list(tempLines)){
-                                           copyLines <- c(copyLines, tempLines)
-                                           copyLineCounter <- copyLineCounter + length(tempLines)
-                                         }
-                                         else{
-                                           copyLines[[copyLineCounter]] <- tempLines 
-                                           copyLineCounter <- copyLineCounter + 1
-                                         }
+                                          copyLines <- c(copyLines, tempLines)
                                      }
 
                                      RHScall <- as.call(c(list(as.name(name)),
@@ -218,7 +230,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              template(static_cast, cppPtrType(CN))(R_ExternalPtrAddr(SextPtrToObject)), RHS),
                                                                list(CN = as.name(className), RHS = RHScall))
                                      }
-                                     
                                      if(returnVoid) {
                                          fullCall <- RHScall
                                      } else {
@@ -252,22 +263,23 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                                  checkLineCounter <- 1
                                                    ## if so, we point the return nimbleList to the argument nimbleList
                                                      conditionalLineList <- generateConditionalLines(RCfunProc$compileInfo$returnSymbol,
-                                                                                                'S_returnValue_1234', RCfunProc$compileInfo$origLocalSymTab,
-                                                                                                argNames, objects, TRUE)
+                                                                                                     objects$getSymbolObject('S_returnValue_1234'))   
                                                       for(i in seq_along(argNames)){
-                                                        conditionalLineList <- c(conditionalLineList, generateConditionalLines(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
-                                                                                                         paste0('S_', argNames[i]), RCfunProc$compileInfo$origLocalSymTab,
-                                                                                                         argNames, objects, FALSE))
+                                                        conditionalLineList <- c(conditionalLineList, 
+                                                                                 generateConditionalLines(RCfunProc$compileInfo$origLocalSymTab$getSymbolObject(argNames[i]),
+                                                                                                                               interfaceArgs$getSymbolObject(Snames[i])))
+                                                                                                      
                                                       }
                                                  returnListLines[[numArgs+1]] <- substitute(SET_VECTOR_ELT(S_returnValue_LIST_1234, I, THISSEXP),
                                                                                             list(I = numArgs, THISSEXP = as.name('S_returnValue_1234')))
                                              }
                                              returnLine <- quote(return(S_returnValue_LIST_1234))
                                              #update below so that nimbleList symbols do not add to unprotectLine
-                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs - numNimbleList + 1 + !returnVoid))
+                                             unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
                                                                               conditionalLineList, 
-                                                                              returnListLines, list(unprotectLine), list(returnLine)))
+                                                                              returnListLines,
+                                                                              list(unprotectLine), list(returnLine)))
                                   
                                          } else { ## No input or return objects
                                              returnLine <- quote(return(R_NilValue))
@@ -277,6 +289,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      } else {
                                          writeLines("Haven't written the single return case yet")        
                                      }
+                                     
                                      SEXPinterfaceCname <<- paste0('CALL_',Rname2CppName(paste0(if(!is.null(className)) paste0(className,'_') else NULL, name))) ##Rname2CppName needed for operator()
                                      SEXPinterfaceFun <<- cppFunctionDef(name = SEXPinterfaceCname,
                                                                          args = interfaceArgs,
@@ -340,10 +353,10 @@ buildCopyLineFromSEXP <- function(fromSym, toSym) {
     stop(paste("Error, don't know how to make a SEXP copy line for something of class", class(toSym)))
 }
 
-buildCopyLineToSEXP <- function(fromSym, toSym, returnCall = FALSE, conditionalText = "") {
+buildCopyLineToSEXP <- function(fromSym, toSym, writeCall = FALSE, conditionalText = "") {
     if(inherits(fromSym, c('symbolNimbleList', 'symbolNimbleListGenerator'))){
-      if(returnCall == TRUE)  ansText  <- paste0(conditionalText, "PROTECT(", toSym$name, " = ",fromSym$name, "->writeToSEXP());")
-      else ansText  <- paste0(conditionalText, fromSym$name, "->copyToSEXP(", toSym$name, ");")
+      if(writeCall == TRUE)  ansText  <- paste0(conditionalText, fromSym$name, "->createNewSEXP();")
+      else ansText  <- paste0(conditionalText,  'PROTECT(', toSym$name, ' = ', fromSym$name, "->copyToSEXP());")
       ans <- substitute(cppLiteral(answerText), list(answerText = ansText))
       return(ans)
     }
@@ -432,33 +445,39 @@ compileRCfunction <- function(fun, name, fileName, dirName, writeFiles = TRUE, c
 }
 
 
-generateConditionalLines <- function(LHSSymTab, LHSSName,
-                                     RHSNameSymTab, argNames,
-                                     objects,  returnCall){
-  checkLineCounter <- 1
+generateConditionalLines <- function(LHSSymTab, 
+                                     RHSSymTab){
   conditionalLines <- list()
-  isArg <- if(length(which(LHSSymTab$name == argNames) == 1)) TRUE else FALSE
   isList <- inherits(LHSSymTab, 'symbolNimbleList')
-  if(isList && returnCall){
-    for(i in seq_along(argNames)){
-      argSymTab <- RHSNameSymTab$getSymbolObject(argNames[i])
-      if(inherits(argSymTab, 'symbolNimbleList') &&
-         (argSymTab$nlProc$nimbleListObj$className == LHSSymTab$nlProc$nimbleListObj$className  &&
-          paste0('S_', argNames[i]) != LHSSName)){
-        conditionalText <- if(checkLineCounter == 1) "if(" else "else if("
-        copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) PROTECT(", LHSSName, " = ",
-                            paste0('S_', argNames[i]), ")", ";")
-        # copyText <- paste0(conditionalText,LHSSymTab$name, ".equalsPtr(", argNames[i], '))     printf("A pointer is %p ", ARG1_argList9a_.realPtr);')
-        conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
-                                                           list(COPYTEXT = copyText))
-        checkLineCounter <- checkLineCounter+1
-      }
-    }
+  if(isList){
+    conditionalText <- paste0('if (!(*',  LHSSymTab$name, ').RObjectPointer) ')
+    conditionalLines <-  c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
+                                            writeCall = TRUE, conditionalText = conditionalText))
   }
-  conditionalText <- if(checkLineCounter > 1) "else " else ""
-  RHSSymTab <- if(isArg) objects$getSymbolObject(LHSSName, inherits = TRUE) else objects$getSymbolObject(LHSSName)
-  conditionalLines <- c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
-                                                              returnCall = returnCall, conditionalText = conditionalText))
+  conditionalLines <-  c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
+                                                writeCall = FALSE))
+  # 
+  # 
+  # isArg <- if(length(which(LHSSymTab$name == argNames) == 1)) TRUE else FALSE
+  # if(isList && returnCall){
+  #   for(i in seq_along(argNames)){
+  #     argSymTab <- RHSNameSymTab$getSymbolObject(argNames[i])
+  #     if(inherits(argSymTab, 'symbolNimbleList') &&
+  #        (argSymTab$nlProc$nimbleListObj$className == LHSSymTab$nlProc$nimbleListObj$className  &&
+  #         paste0('S_', argNames[i]) != LHSSName)){
+  #       conditionalText <- if(checkLineCounter == 1) "if(" else "else if("
+  #       copyText  <- paste0(conditionalText, LHSSymTab$name, ".equalsPtr(", argNames[i], ")) PROTECT(", LHSSName, " = ",
+  #                           paste0('S_', argNames[i]), ")", ";")
+  #       # copyText <- paste0(conditionalText,LHSSymTab$name, ".equalsPtr(", argNames[i], '))     printf("A pointer is %p ", ARG1_argList9a_.realPtr);')
+  #       conditionalLines[[checkLineCounter]] <- substitute(cppLiteral(COPYTEXT),
+  #                                                          list(COPYTEXT = copyText))
+  #       checkLineCounter <- checkLineCounter+1
+  #     }
+  #   }
+  # }
+  # conditionalText <- if(checkLineCounter > 1) "else " else ""
+  # conditionalLines <- c(conditionalLines, buildCopyLineToSEXP(LHSSymTab, RHSSymTab,
+  #                                                             returnCall = returnCall, conditionalText = conditionalText))
   # copyText <- paste0(conditionalText, '  printf("B value is %p ", ARG2_argList9b_.realPtr);')
   # 
   # conditionalLines <- c(conditionalLines, substitute(cppLiteral(COPYTEXT),

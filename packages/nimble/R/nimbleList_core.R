@@ -31,20 +31,40 @@ nimbleList <- function(types,
     ## one that has the nimbleListDefClass object
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
-
+    basicTypes <- c("double", "integer", "character", "logical")
+    nestedListGens <- list()
+    elementTypes <- strsplit(types$types, '\\(')
+    for(i in seq_along(types$types)){
+      if(!(elementTypes[[i]][1] %in% basicTypes)){
+        for(searchEnvironment in c(parent.frame(), globalenv())){
+          if(is.nlGenerator(get(elementTypes[[i]][1], envir = searchEnvironment))){
+            # nestedListDefs[[types$vars[i]]] <- get(elementTypes[[i]][1], envir = searchEnvironment)$new()$nimbleListDef
+            nestedListGens[[types$vars[i]]] <- get(elementTypes[[i]][1], envir = searchEnvironment)
+            break
+          }
+        }
+      }
+    }
+    
     classFields <- as.list(rep('ANY', length(types$vars)))
     names(classFields) <- types$vars
     classFields[[length(classFields)+1]] <- "ANY"
     names(classFields)[length(classFields)] <- "nimbleListDef"
+    classFields[[length(classFields)+1]] <- "ANY"
+    names(classFields)[length(classFields)] <- "nestedListGenList"
 
-    
+
     nlRefClassObject <- setRefClass(
       Class = name,
       fields = classFields,
       contains = 'nimbleListBase',
       methods = list(
-        initialize = function(NLDEFCLASSOBJECT, ...){
+        initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, ...){
           nimbleListDef <<- NLDEFCLASSOBJECT
+          nestedListGenList <<- NESTEDGENLIST
+          for(i in seq_along(NESTEDGENLIST)){
+            .self[[names(NESTEDGENLIST)[i]]] <- NESTEDGENLIST[[i]]$new()
+          }
           callSuper(...)
         }
       ),
@@ -53,8 +73,9 @@ nimbleList <- function(types,
 
     nlGeneratorFunction <-   eval(  substitute(
       function(...){
-      return(nlRefClassObject(NLDEFCLASSOBJECT, ...))},
-      list(NLDEFCLASSOBJECT = nlDefClassObject)))
+      return(nlRefClassObject(NLDEFCLASSOBJECT, NESTEDGENLIST, ...))},
+      list(NLDEFCLASSOBJECT = nlDefClassObject,
+           NESTEDGENLIST = nestedListGens)))
     return(list(new = nlGeneratorFunction))
 }
 
@@ -69,6 +90,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                 nimbleProject = 'ANY',
                                 name = 'ANY',
                                 instances = 'ANY',
+                                nestedListGens = 'ANY',
                                 neededObjectNames =  'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
                             ),
                             methods = list(
@@ -89,6 +111,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                       name <<- className
                                     }
                                     instances <<- if(inherits(nimLists, 'list')) nimLists else list(nimLists)
+                                    
+                                    nestedListGens <<- if(inherits(nimLists, 'list')) nimLists[[1]]$nestedListGenList else nimLists$nestedListGenList
                                   }
                                 },
                                 setupTypesForUsingFunction= function() buildSymbolTable(), ## required name
@@ -109,23 +133,24 @@ nlProcessing <- setRefClass('nlProcessing',
                                   if(!inherits(symTab, "uninitializedField")) return(warning("Symbol Table for nimbleList already built."))
                                   if(length(nimbleListObj$types$types) != length(nimbleListObj$types$vars))
                                     stop("Number of nimbleList vars provided is not equal to number of nimbleList types provided")
-                                  # if(is.null(nimbleListObj$types$sizes)){  ## if sizes haven't been provided, construct them from types
-                                  #   nimbleListObj$types$sizes <<- list()
-                                    varDims <- as.numeric(strsplit(gsub("[^0-9]", "", nimbleListObj$types$types), ""))
-                                    # for(i in seq_along(nimbleListObj$types$vars)){
-                                    #   nimbleListObj$types$sizes[[i]] <<- rep(NA, varDims[i])
-                                    # }
-                                  # }
                                   symTab <<- symbolTable()
                                   for(i in seq_along(nimbleListObj$types$vars)){
-                                          ## ensure that types are of form "double", not "double(1)"
-                                    nimbleListObj$types$types[i] <<- strsplit(nimbleListObj$types$types[i], "\\(")[[1]][1]
-                                    symTab$addSymbol(argType2symbol(call(nimbleListObj$types$types[i], varDims[i]),
-                                                                    neededTypes, nimbleListObj$types$vars[i]))
+                                    if(nimbleListObj$types$vars[i] %in% names(nestedListGens)){
+                                      nlList <- nestedListGens[[nimbleListObj$types$vars[i]]]$new()
+                                      nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+                                      className <- nlList$nimbleListDef$className
+                                      newSym <- symbolNimbleList(name = nimbleListObj$types$vars[i], type = 'nimbleList', nlProc = nlp)
+                                      # if(!(className %in% names(neededTypes))) 
+                                      neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
+                                      symTab$addSymbol(newSym)
+                                    }
+                                    else{
+                                     nimbleListObjType <- strsplit(nimbleListObj$types$types[i], "\\(")[[1]][1]
+                                     nimbleListObjDim <-  as.numeric(strsplit(strsplit(nimbleListObj$types$types[i], "\\(")[[1]][2], "\\)")[[1]][1])
+                                     symTab$addSymbol(argType2symbol(call(nimbleListObjType, nimbleListObjDim),
+                                                                     neededTypes, nimbleListObj$types$vars[i]))
+                                    }
                                   }
-            
-                                  # symTab <<- nimble:::buildSymbolTable(nimbleListObj$types$vars, nimbleListObj$types$types,
-                                  #                                      nimbleListObj$types$sizes)
                                 },
                                 getSymbolTable = function() symTab
                             ))

@@ -59,9 +59,9 @@ makeNFBindingFields <- function(symTab, cppNames) {
             next
         }
         if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
-          nfName <- paste0(".",vn,"_CnimbleList")
-          fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
-          fieldList[[vn]] <- eval(substitute(
+           nfName <- paste0(".",vn,"_CnimbleList")
+           fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
+           fieldList[[vn]] <-  eval(substitute(
             function(x) {
               if(missing(x))
                 NFNAME
@@ -482,7 +482,7 @@ clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
 }
 
 buildNeededObjects <- function(Robj, compiledNodeFun, neededObjects, dll, nimbleProject) {
-    for(iName in compiledNodeFun$nfProc$neededObjectNames) {
+    for(iName in compiledNodeFun$nimCompProc$neededObjectNames) {
         thisObj <- Robj[[iName]]
         if(inherits(thisObj, 'modelValuesBaseClass')) {
             if(inherits(thisObj$CobjectInterface, 'uninitializedField') || is.null(thisObj$CobjectInterface)) {
@@ -811,7 +811,8 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
 
     methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
     # substitute on parsed text string to avoid CRAN issues with .Call registration
-    fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL,  ...){		#cModel removed from here
+    fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, isListObj = FALSE, ...){		#cModel removed from here
+      browser()
         if(!isListObj) defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
         callSuper(dll = dll, project = project, test = FALSE, ...)
         basePtrCall <- if(is.character(defaults$basePtrCall)) {
