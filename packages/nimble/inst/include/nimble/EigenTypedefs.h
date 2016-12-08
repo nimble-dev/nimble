@@ -47,8 +47,11 @@ class EIGEN_EIGENCLASS : public NamedObjects, public pointedToBase {
 public:
   NimArr<1, double> values;
   NimArr<2, double> vectors;
-void  copyToSEXP ( SEXP S_nimList_ );
-SEXP  writeToSEXP (  );
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  
+SEXP  copyToSEXP (   );
+void  createNewSEXP (  );
  EIGEN_EIGENCLASS (  );
 };
 
@@ -73,7 +76,7 @@ nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
 	return(returnClass);
 };
 
-class EIGEN_SVDCLASS : public NamedObjects, public pointedToBase {
+/* class EIGEN_SVDCLASS : public NamedObjects, public pointedToBase {
 public:
   NimArr<1, double> d;
   NimArr<2, double> u;
@@ -107,19 +110,7 @@ nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(NimArr<2, T> &x, bool valuesOnly) {
 	}
 	return(returnClass);
 };
-/* template<class derived1>
-MatrixXd EIGEN_EIGENVECS(const MatrixBase<derived1> &x) {
-  MatrixXd xcopy = x;	
-  MatrixXd ans = EigenSolver<MatrixXd>(xcopy, true).eigenvectors().real();
-  return(ans); 
-}
-
-template<class derived1>
-VectorXd EIGEN_EIGENVALS(const MatrixBase<derived1> &x) {
-  MatrixXd xcopy = x;	
-  VectorXd ans = EigenSolver<MatrixXd>(xcopy, false).eigenvalues().real();
-  return(ans); 
-} */
+ */
 
 template<class derived1>
 VectorXd EIGEN_SVDD(const MatrixBase<derived1> &x) {
