@@ -20,6 +20,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                       },
                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
+                                        browser()
+                                        
                                           sym <- if(!is.null(dll))
                                                      getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                  else

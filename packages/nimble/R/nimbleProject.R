@@ -733,6 +733,9 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  instantiateNimbleList = function(nl, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
                                    ## to instantiate neededObjects
+                                   for(nestedNL in names(nl$nestedListGenList)){
+                                     instantiateNimbleList(nl[[nestedNL]], dll)
+                                   }
                                    if(!is.nl(nl)) stop("Can't instantiateNimbleList, nl is not a nimbleList")
                                    className <- nl$nimbleListDef$className
                                    

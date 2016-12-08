@@ -202,10 +202,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnVoid <- returnType$baseType == 'void'
                                      numNimbleList <- 0 ## keep track of nimbleList arguments, as these arguments don't need to be unprotected
                                      copyLineCounter <- 1
-                                     
-                                     print1 <- list(quote(cppLiteral('printf("print_1");')))
-                                     print2 <- list(quote(cppLiteral('printf("print_2");')))
-                                     
+
                                      for(i in seq_along(argNames)) {
                                          Snames[i] <- Rname2CppName(paste0('S_', argNames[i]))
                                          ## For each argument to the RCfunction we need a corresponding SEXP argument to the interface function
@@ -280,7 +277,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              #update below so that nimbleList symbols do not add to unprotectLine
                                              unprotectLine <- substitute(UNPROTECT(N), list(N = numArgs + 1 + !returnVoid))
                                              allCode <- embedListInRbracket(c(copyLines, list(fullCall), list(allocVectorLine),
-                                                                              print1,conditionalLineList,  print2, 
+                                                                              conditionalLineList, 
                                                                               returnListLines,
                                                                               list(unprotectLine), list(returnLine)))
                                   

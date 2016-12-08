@@ -200,22 +200,6 @@ nf_assignmentLHSvars <- function(code) {
   if(isAssign)  return(c(nf_getVarFromAssignmentLHScode(code[[2]]), nf_assignmentLHSvars(code[[3]])))
 }
 
-# 
-# nf_assignmentLHSvars <- function(code) {
-#   if(!is.call(code))     return(character(0))
-#   isAssign <- code[[1]] == '<-' | code[[1]] == '='
-#   if(!isAssign)  return(unique(unlist(lapply(as.list(code), nf_assignmentLHSvars))))
-#   if(isAssign){
-#     if(length(code) > 2 && is.call(code[[3]]))
-#     browser()
-#      if(length(code[[3]]) > 1 && code[[3]][[1]] =='nimble:::nimbleList')
-#        return(c(paste0("setupPossiblyNestedNL_", nf_getVarFromAssignmentLHScode(code[[2]])), nf_assignmentLHSvars(code[[3]])))
-#     else
-#      return(c(nf_getVarFromAssignmentLHScode(code[[2]]), nf_assignmentLHSvars(code[[3]])))
-#   }
-# }
-
-
 ## determines the name of the target variable, from the LHS code of an `<-` assignment statement
 nf_getVarFromAssignmentLHScode <- function(code) {
     if(is.name(code)) return(deparse(code))
@@ -251,25 +235,6 @@ nf_preProcessMemberDataObject <- function(obj) {
     return(obj)
 }
 
-
-nf_nestedNimbleListExtraction <- function(obj){
-  nf_nimList <- obj$new()
-  basicTypes <- c("double", "integer", "character", "logical")
-  elementTypes <- strsplit(nf_nimList$nimbleListDef$types$types, '\\(')
-  nestedListNames <- c()
-  for(i in seq_along(nf_nimList$nimbleListDef$types$types)){
-    if(!(elementTypes[[i]][1] %in% basicTypes)){
-      if(is.nlGenerator(get(elementTypes[[i]][1], envir = parent.frame()))){
-        nestedListNames <- c(nestedListNames, elementTypes[[i]][1],
-                             nf_nestedNimbleListExtraction(get(elementTypes[[i]][1], envir = parent.frame())))
-      }
-    }
-  }
-  return(nestedListNames)
-}
-            
-            
-
 ## definition for the nimble function generator (specializer)
 nf_createGeneratorFunctionDef <- function(setup) {
   generatorFunctionDef <- substitute(
@@ -277,22 +242,17 @@ nf_createGeneratorFunctionDef <- function(setup) {
       SETUPCODE                    # execute setupCode
       nfRefClassObject <- nfRefClass()   # create an object of the reference class
       nfRefClassObject$.generatorFunction <- generatorFunction   # link upwards to get the generating function of this nf
-      nestedListNames <- c()
       ## assign setupOutputs into reference class object
       if(!nimbleOptions()$compileOnly)
         for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
-          if(is.nlGenerator(nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)))){
-            # nestedListNames <- c(nestedListNames, nf_nestedNimbleListExtraction(get(.var_unique_name_1415927, envir = .globalSetupEnv)))
-          }
+
           nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
         }
       for(.var_unique_name_1415927 in .namesToCopyFromSetup)    {
         if(is.nlGenerator(nf_preProcessMemberDataObject(get(.var_unique_name_1415927)))){
-          # nestedListNames <- c(nestedListNames, nf_nestedNimbleListExtraction(get(.var_unique_name_1415927)))
         }
         nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
       }
-      if(length(nestedListNames) > 0 ){return(nestedListNames)}
       return(nfRefClassObject)
     },
     list(SETUPCODE = nf_processSetupFunctionBody(setup, returnCode = TRUE)))

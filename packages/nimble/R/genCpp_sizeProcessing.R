@@ -352,6 +352,7 @@ recurseExtractNimListArg <- function(code, symTab){
 sizeNFvar <- function(code, symTab, typeEnv) {
     topLevel <- code$caller$name != 'nfVar'
     nfName <- code$args[[1]]$name
+    code$toEigenize <- 'maybe'
     if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
       isSymList <- TRUE
       if(topLevel){
@@ -377,6 +378,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
       if(!is.character(objName)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Second argument must be a character string.'), call. = FALSE)
       objSym <- nfProc$getSymbolTable()$getSymbolObject(objName)  ##nfProc$setupSymTab$getSymbolObject(objName)
       if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
+      if(inherits(objSym, 'symbolNimbleList')) code$toEigenize <- 'no'
     }
     if(!is.null(objSym))code$type <- objSym$type
     if(code$type != 'nimbleList') code$nDim <- objSym$nDim
@@ -398,7 +400,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     } 
     else 
       code$sizeExprs <- list()
-    code$toEigenize <- 'maybe'
     
     return(asserts)
 }
@@ -812,7 +813,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## We used to update typeEnv sizeExprs, but in some cases it is not safe to do so
     ## Hence they are created generically above if the LHS$name is new
     ## typeEnv[[LHS$name]]$sizeExprs <- RHSsizeExprs
-  browser()
     if(LHS$toEigenize == 'yes') message('Warning from sizeAssign: not expecting LHS to have toEigenize == yes')
     code$toEigenize <-if(inherits(RHS, 'exprClass')) {
         if(RHS$toEigenize == 'no') 'no' else {
