@@ -71,27 +71,38 @@ callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternal
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
     makeCallList(c('abs','square','sqrt','('), 'eigenize_cWiseUnaryEither'),
     makeCallList('pow', 'eigenize_cWiseByScalarArray'),
-                   makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
-                      ## component-wise unarys valid only for only Eigen array
-                   makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
-                   
-                   ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
-                   ## Check on which if any of these can extend to a scalar on one side
-                   makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
-
-                   ## component-wise multiplication or division
-                   makeCallList(c('*','/'), 'eigenize_cWiseMultDiv'),
-                   
-                   ## component-wise addition or subtraction
-                   makeCallList(c('+','-'), 'eigenize_cWiseAddSub'),
-
-                   makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), ##'eigenize_cWiseUnaryEither'),
-                   makeCallList(reductionUnaryOperatorsArray, 'eigenize_reductionArray'),
-                   makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
-                   makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
-                      ## matrix ops
+    makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
+    ## component-wise unarys valid only for only Eigen array
+    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
+    
+    ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
+    ## Check on which if any of these can extend to a scalar on one side
+    makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
+    makeCallList(binaryMidLogicalOperators, 'eigenize_cWiseBinaryArray'),
+    
+    ## component-wise multiplication or division
+    makeCallList(c('*','/'), 'eigenize_cWiseMultDiv'),
+    
+    ## component-wise addition or subtraction
+    makeCallList(c('+','-'), 'eigenize_cWiseAddSub'),
+    
+    makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), ##'eigenize_cWiseUnaryEither'),
+    makeCallList(reductionUnaryOperatorsArray, 'eigenize_reductionArray'),
+    makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
+    makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
+    ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
+    makeCallList(scalar_distribution_dFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(scalar_distribution_pFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(scalar_distribution_rFuns, 'eigenize_recyclingRuleFunction'),
+    makeCallList(c(paste0(c('d','r','q','p'), 't'), paste0(c('d','r','q','p'), 'exp')) , 'eigenize_recyclingRuleFunction'),
+    makeCallList(coreRnonSeqBlockCalls, 'eigenize_nonSeq'),
+    makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
+    makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
     list('t' = 'eigenize_cWiseUnaryEither',
+         eigenBlock = 'eigenize_eigenBlock',
+         diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps',
          'eigenvecs' = 'eigenize_matrixOps',
@@ -99,27 +110,36 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
          'svdu' = 'eigenize_matrixOps',
          'svdd' = 'eigenize_matrixOps',
          'svdv' = 'eigenize_matrixOps'
+         RRtest_add = 'eigenize_recyclingRuleFunction'
          )
 )
 
-eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam/getBound always triggers an intermediate so it should never need handling here
-    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound','getNodeFunctionIndexedInfo'), 'eigenize_doNotRecurse'),
-    list(nfVar = 'eigenize_nfVar',
+eigenizeCallsBeforeRecursing <- c( ## These cannot be calls that trigger aliasRisk. ## getParam always triggers an intermediate so it should never need handling here
+    makeCallList(c('size','nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_ddirch','calculate','calculateDiff','getLogProb', 'getParam', 'getBound', 'getNodeFunctionIndexedInfo', 'concatenateTemp', 'MAKE_FIXED_VECTOR', 'hardCodedVectorInitializer'), 'eigenize_doNotRecurse'),
+    list(coeffSetter = 'eigenize_coeffSetter',
+         nfVar = 'eigenize_nfVar',
          chainedCall = 'eigenize_chainedCall',
          '<-' = 'eigenize_assign_before_recurse',
-         mvAccessRow = 'eigenize_nfVar') )
+         mvAccessRow = 'eigenize_nfVar') )##,
+         ##setWhich = 'eigenize_setWhich') )
+
+eigenizeUseArgs <- c(
+    list(
+        setWhich = c(FALSE, TRUE),
+        setRepVectorTimes = c(FALSE, TRUE, TRUE)
+        ))
 
 ## This is a list of translations for the C++ code generation system.
 ## e.g. if abs(X) gets eigenized, it is turned into cwiseAbs(X)
 ## which in nimGenerateCpp is generated as X.cwiseAbs()
 eigenizeTranslate <- list(abs = 'cwiseAbs',
-                       square = 'cwiseAbs2',
-                       sqrt = 'cwiseSqrt',
+                          square = 'cwiseAbs2',
+                          sqrt = 'cwiseSqrt',
                           inprod = 'eiginprod',
                           
-                       asRow = 'eigBlank',
-                       asCol = 'eigBlank',
-                       
+                          asRow = 'eigBlank',
+                          asCol = 'eigBlank',
+                          
                           exp = 'eigExp',
                           log = 'eigLog',
                           pow = 'eigPow',
@@ -131,24 +151,26 @@ eigenizeTranslate <- list(abs = 'cwiseAbs',
                           asin = 'eigAsin',
                           acos = 'eigAcos',
                           inverse = 'eigInverse',
-
-                       pmin = 'eigpmin',
-                       pmax = 'eigpmax',
-
-                       '*' = 'cwiseProduct', ## detailed handling in eigenize_cWiseMultDiv
-                       '/' = 'cwiseQuotient',
-                       
-                       '+' = '+',
-                       '-' = '-',
-
-                       ## matrix operations
-                       '%*%' = '*',
-                       't' = 'eigTranspose',
+                          
+                          pmin = 'eigpmin',
+                          pmax = 'eigpmax',
+                          diagonal = 'eigDiagonal',
+                          
+                          '*' = 'cwiseProduct', ## detailed handling in eigenize_cWiseMultDiv
+                          '/' = 'cwiseQuotient',
+                          
+                          '+' = '+',
+                          '-' = '-',
+                          
+                          ## matrix operations
+                          '%*%' = '*',
+                          't' = 'eigTranspose',
                           'det' = 'eigDeterminant',
-                       
-                       '<-' = '<-',
-                       '(' = '('
-                       )
+                          
+                          '<-' = '<-',
+                          '(' = '(',
+                          eigenBlock = 'eigenBlock' ## always inserted by sizeIndexingBracket as 'eigenBlock'
+                          )
 
 ETentriesFromExternalUnaries <- as.list(names(eigProxyTranslateExternalUnary))
 names(ETentriesFromExternalUnaries) <- callsFromExternalUnaries
@@ -156,6 +178,7 @@ eigenizeTranslate <- c(eigenizeTranslate, ETentriesFromExternalUnaries)
 
 for(rop in reductionUnaryOperators) eigenizeTranslate[[rop]] <- paste0('eig', rop)
 for(rop in matrixSquareReductionOperators) eigenizeTranslate[[rop]] <- paste0('eig', rop)
+for(rop in binaryMidLogicalOperators) eigenizeTranslate[[rop]] <- rop
 
 ## scalar*matrix, matrix*scalar and matrix/scalar allowed
 ## ditter with matrix *= scalar and matrix /= scalar
@@ -192,7 +215,8 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
     setupExprs <- list()
     if(code$isName) {
         ## Generate EigenMap and "new" assignment
-        setupExprs <- c(setupExprs, eigenizeName(code, symTab, typeEnv, workEnv))
+##        if(code$name != "") ## can happen in a blank index, e.g. x[,i] ## actually we'll fill in blanks in sizeIndexingBracket
+            setupExprs <- c(setupExprs, eigenizeName(code, symTab, typeEnv, workEnv))
     }
     if(code$isCall) {
         if(code$name == '{') {
@@ -230,7 +254,7 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
             setupExprs <- c(setupExprs, eigenizeNameStrided(code, symTab, typeEnv, workEnv))
             return(setupExprs)
         }
-        if(code$name == '[') { ## If there is still A[i] in the code, it is because it ces to a scalar and does not need eigenization
+        if(code$name == '[') { ## If there is still A[i] in the code, it is because it is equivalent to a scalar and does not need eigenization
             if(code$nDim == 0) {
 ##                writeLines(paste0('Not eigenizing ', nimDeparse(code)))
                 return(NULL)
@@ -247,8 +271,13 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
 
         IsetAliasRisk <- FALSE
         if(code$name %in% c('t', 'asRow')) {IsetAliasRisk <- workEnv[['aliasRisk']] <- TRUE}
+
+
+        iArgs <- seq_along(code$args)
+        useArgs <- eigenizeUseArgs[[code$name]]
+        if(!is.null(useArgs)) iArgs <- iArgs[-which(!useArgs)] ## this allows iArgs to be longer than useArgs.  if equal length, iArgs[useArgs] would work 
         
-        for(i in seq_along(code$args)) {
+        for(i in iArgs) {
             if(inherits(code$args[[i]], 'exprClass'))
                 setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[i]], symTab, typeEnv, workEnv))
         }
@@ -267,6 +296,10 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
 eigenize_doNotRecurse <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
+
+## eigenize_setWhich <- function(code, symTab, typeEnv, workEnv) {## first arg should be left as NimArr
+##     exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv)
+## }
 
 ## eigenizeHandlers
 eigenize_asRowOrCol <- function(code, symTab, typeEnv, workEnv) {
@@ -296,6 +329,16 @@ eigenize_reductionBinaryEither <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
 
+eigenize_recyclingRuleFunction <- function(code, symTab, typeEnv, workEnv) {
+    if(code$nDim == 0) return(NULL)
+##    newName <- eigenizeTranslate[[code$name]]
+##    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+##    code$name <- newName
+    code$eigMatrix <- TRUE
+    code$name <- paste0(code$name, '_RR_impl<MatrixXd>::', code$name,'_RecyclingRule')
+    invisible(NULL)
+}
+
 eigenize_reductionEither <- function(code, symTab, typeEnv, workEnv) {
     newName <- eigenizeTranslate[[code$name]]
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
@@ -314,6 +357,52 @@ eigenize_reductionArray <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
 
+eigenize_nimbleNullaryClass <- function(code, symTab, typeEnv, workEnv) {
+    if(code$nDim == 0) return(NULL)
+    ##newName <- eigenizeTranslate[[code$name]]
+    ##if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+    ##code$name <- newName
+    code$eigMatrix <- TRUE
+    invisible(NULL)
+}
+
+eigenize_alwaysMatrix <- function(code, symTab, typeenv, workEnv) {
+    code$eigMatrix <- TRUE
+    invisible(NULL)
+}
+
+eigenize_nonSeq <- function(code, symTab, typeEnv, workEnv) {
+    dropBool <- TRUE
+    if(!is.null(names(code$args)))
+        if('drop' %in% names(code$args)) {
+            iDropArg <- which(names(code$args)=='drop')
+            code$args[[iDropArg]] <- NULL
+        }
+    eigenize_nimbleNullaryClass(code, symTab, typeEnv, workEnv)
+}
+
+eigenize_eigenBlock <- function(code, symTab, typeEnv, workEnv) {
+    ## re-arrange from i:j to i,j
+    ## we do this here rather than in size processing so that eigenBlock and nimNonSeqX can maintain same argument format during size processing
+    dropBool <- TRUE
+    if(!is.null(names(code$args)))
+        if('drop' %in% names(code$args)) {
+            iDropArg <- which(names(code$args)=='drop')
+            dropBool <- code$args[[iDropArg]]
+            code$args[[iDropArg]] <- NULL
+        }
+            
+    newExpr <- makeEigenBlockExprFromBrackets(code, drop = dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
+    newExpr$sizeExprs <- code$sizeExprs
+    newExpr$type <- code$type
+    newExpr$nDim <- code$nDim
+    newExpr$toEigenize <- 'yes'
+    newExpr$eigMatrix <- code$args[[1]]$eigMatrix
+    setArg(code$caller, code$callerArgID, newExpr)
+    ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
+    invisible(NULL)
+}
+
 eigenize_cWiseUnaryEither <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
     newName <- eigenizeTranslate[[code$name]]
@@ -323,19 +412,45 @@ eigenize_cWiseUnaryEither <- function(code, symTab, typeEnv, workEnv) {
     invisible(NULL)
 }
 
+eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
+    ## a peculiar case: we expect it to be on LHS but must take control of workEnv$OnLHSnow, which would have been set by eigenize_assign_before_recursing
+    dropBool <- TRUE
+    if(!is.null(names(code$args)))
+        if('drop' %in% names(code$args)) {
+            iDropArg <- which(names(code$args)=='drop')
+            code$args[[iDropArg]] <- NULL
+        }
+    setupExprs <- list()
+    workEnv$OnLHSnow <- TRUE
+    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
+    workEnv$OnLHSnow <- NULL
+    if(inherits(code$args[[2]], 'exprClass')) setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
+    if(inherits(code$args[[3]], 'exprClass')) setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[3]], symTab, typeEnv, workEnv))
+    workEnv$OnLHSnow <- TRUE
+    setupExprs
+}
+
 eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs <- list()
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'There is an assignment without 2 arguments.'), call. = FALSE)
     workEnv$OnLHSnow <- TRUE
     setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[1]], symTab, typeEnv, workEnv))
     workEnv$OnLHSnow <- NULL ## allows workEnv[['OnLHSnow']] to be NULL if is does not exist or if set to NULL
-    setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
-
+    changeToFill <- FALSE
+    if(inherits(code$args[[2]], 'exprClass')) {
+        setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[2]], symTab, typeEnv, workEnv))
+        if(code$args[[2]]$nDim == 0) if(code$args[[1]]$nDim > 0) changeToFill <- TRUE
+    } else {
+        changeToFill <- TRUE
+    }
     if(!is.null(workEnv[['mustAddEigenEval']])) insertExprClassLayer(code, 2, 'eigEval')
-    
-    newName <- eigenizeTranslate[[code$name]]
-    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
-    code$name <- newName
+
+    if(changeToFill) code$name <- 'fill'
+    else {
+        newName <- eigenizeTranslate[[code$name]]
+        if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+        code$name <- newName
+    }
     code$eigMatrix <- code$args[[1]]$eigMatrix
     setupExprs
 }
@@ -408,8 +523,8 @@ eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
     code$eigMatrix <- TRUE
-    if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
-    if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
+    if(inherits(code$args[[1]], 'exprClass')) if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
     invisible(NULL)
 }
 
@@ -524,7 +639,7 @@ EigenNewExpr <- function(EigenName, targetName, offsetExpr = NULL, MatrixType, n
 makeEigenName <- function(name) paste0('Eig_',name)
 
 makeEigenTypeLabel <- function(Matrix = TRUE, baseType = 'double') {
-    paste0(if(Matrix) 'MatrixX' else 'ArrayXX', if(baseType == 'double') 'd' else 'i')
+    paste0(if(Matrix) 'MatrixX' else 'ArrayXX', if(baseType == 'double') 'd' else if(baseType =='integer') 'i' else 'b')
 }
 
 eigenize_chainedCall <- function(code, symTab, typeEnv, workEnv) {
@@ -560,7 +675,10 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     targetVarProxy <- EigenName ## don't have a more direct targetVar - a little redundant but keeps the code similar to eigenizeName and eigenizeNameStrided
     thisMapAlreadySet <- FALSE
     if(!is.null(workEnv[['OnLHSnow']])) { ## this is the var on the LHS
-        if(!is.null(workEnv[['LHSeigenName']])) stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
+        if(!is.null(workEnv[['LHSeigenName']])) {
+            browser()
+            stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
+        }
         workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = targetVarProxy)
         workEnv[[EigenName]] <- TRUE
     } else { ## This is on the RHS
@@ -595,8 +713,13 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     code$eigMatrix <- TRUE
 
     deparsedCode <- parse(text = nimDeparse(code), keep.source = FALSE)[[1]]
-    setArg(code$caller, code$callerArgID, RparseTree2ExprClasses(as.name(EigenName)))
-
+    newExpr <- RparseTree2ExprClasses(as.name(EigenName))
+    newExpr$type <- code$type
+    newExpr$sizeExprs <- code$sizeExprs
+    newExpr$nDim <- code$nDim
+    newExpr$eigMatrix <- code$eigMatrix
+    setArg(code$caller, code$callerArgID, newExpr)
+    
     if(!thisMapAlreadySet) {
         return(RparseTree2ExprClasses(
             EigenNewExpr(EigenName, deparsedCode, NULL, makeEigenTypeLabel(TRUE, code$type),
@@ -657,7 +780,10 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
 
     thisMapAlreadySet <- FALSE
     if(!is.null(workEnv[['OnLHSnow']])) { ## this is the var on the LHS
-        if(!is.null(workEnv[['LHSeigenName']])) stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE) 
+        if(!is.null(workEnv[['LHSeigenName']])) {
+            browser()
+            stop(exprClassProcessingErrorMsg(code, 'LHSeigenName already exists.'), call. = FALSE)
+        }
         workEnv$LHSeigenName <- list(EigenName = EigenName, targetVar = code$name)
         workEnv[[EigenName]] <- TRUE
     } else { ## This is on the RHS

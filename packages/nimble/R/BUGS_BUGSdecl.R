@@ -116,9 +116,11 @@ BUGSdeclClass <- setRefClass('BUGSdeclClass',
                                      return(c(edgesIn, edgesOut))
                                  },
                                  getDistributionName = function() {
-                                     if(type != 'stoch')  stop('getting distribution of non-stochastic node')
-                                     return(distributionName)
+                                     return(distributionName) 
                                      ##return(as.character(valueExprReplaced[[1]]))
+                                 },
+                                 isTruncated = function() {
+                                     return(truncated) 
                                  }
                              )
 )
@@ -142,11 +144,11 @@ BUGSdeclClass$methods(setup = function(code, contextID, sourceLineNum, truncated
     if(code[[1]] == '~') {
         type <<- 'stoch'
 
-        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == getDistributionsInfo('namesVector')) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
+        if(!is.call(code[[3]]) || (!any(code[[3]][[1]] == getAllDistributionsInfo('namesVector')) && code[[3]][[1]] != "T" && code[[3]][[1]] != "I"))
             stop(paste0('Improper syntax for stochastic declaration: ', deparse(code)))
     } else if(code[[1]] == '<-') {
         type <<- 'determ'
-        # if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getDistributionsInfo('namesVector')))
+        # if( is.call(code[[3]]) &&  any(code[[3]][[1]] == getAllDistributionsInfo('namesVector')))
         #    stop(paste0('Improper syntax for determistic declaration: ', deparse(code)))
         # commented out by CJP 7/30/15 as preventing use of "<- dDIST()", which we now allow
     } else {
@@ -253,7 +255,7 @@ BUGSdeclClass$methods(genReplacementsAndCodeReplaced = function(constantsNamesLi
 ## only affects stochastic nodes
 ## removes any params in codeReplaced which begin with '.'
 ## generates the altParamExprs list, which contains the expression for each alternate parameter,
-## which is taken from the .param expression (no longer taken from getDistribution(distName)$altParams, ever)
+## which is taken from the .param expression (no longer taken from getDistributionInfo(distName)$altParams, ever)
 BUGSdeclClass$methods(genAltParamsModifyCodeReplaced = function() {
     
     altParamExprs <<- list()
@@ -285,7 +287,7 @@ BUGSdeclClass$methods(genBounds = function() {
             boundExprs <<- as.list(RHSreplaced[boundNames])
             if(truncated) {  # check for user-provided constant bounds inconsistent with distribution range
                 distName <- as.character(RHSreplaced[[1]])
-                distRange <- getDistribution(distName)$range
+                distRange <- getDistributionInfo(distName)$range
                 if(is.numeric(boundExprs$lower) && is.numeric(distRange$lower) &&
                    is.numeric(boundExprs$upper) && is.numeric(distRange$upper) &&
                    boundExprs$lower <= distRange$lower && boundExprs$upper >= distRange$upper)  # user specified bounds irrelevant
@@ -317,7 +319,7 @@ getSymbolicParentNodes <- function(code, constNames = list(), indexNames = list(
     ## replaceConstants looks to see if name of a function exists in R
     ## getSymbolicVariables requires a list of nimbleFunctionNames.
     ## The latter could take the former approach
-    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, getDistributionsInfo('namesExprList'))
+    if(addDistNames) nimbleFunctionNames <- c(nimbleFunctionNames, getAllDistributionsInfo('namesExprList'))
     ans <- getSymbolicParentNodesRecurse(code, constNames, indexNames, nimbleFunctionNames)
     return(ans$code)
 }

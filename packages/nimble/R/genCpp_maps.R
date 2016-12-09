@@ -61,31 +61,12 @@ makeOffsetRexpr <- function(firstIndexRexprs, sourceStrideRexprs) {
     allSums
 }
 
-## this is used by sizeIndexingBracket when it hits a need for a map
-makeMapExprFromBrackets <- function(code, drop = TRUE) {
-    ## code nDim, type and sizeExprs have already been set, and toEigenize will be set to 'maybe'
-    if(code$args[[1]]$name == 'map') {
-        sourceVarName <- code$args[[1]]$args[[1]]
-        sourceVarExpr <- as.name(sourceVarName)
-        sourceOffsetRexpr <- code$args[[1]]$args[[3]]
-        sourceSizeExprs <- code$args[[1]]$args[[4]]
-        sourceNdim <- length(sourceSizeExprs)
-        sourceStrideRexprs <- code$args[[1]]$args[[5]]
-    } else {
-        sourceVarName <- code$args[[1]]$name
-        if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
-        sourceVarExpr <- as.name(sourceVarName)
-        sourceOffsetRexpr <- quote(0)
-        sourceSizeExprs <- code$args[[1]]$sizeExprs
-        sourceNdim <- length(sourceSizeExprs)
-        sourceStrideRexprs <- makeStrideRexprs(sourceVarExpr, sourceNdim)
-        ##   sourceMapName <- sourceVarName
-    }
 
+blockIndexInfo <- function(code) {
     ## targetIndexExprs begin at mapExpr arg 2
     nArgs <- length(code$args)
     nDim <- nArgs-1
-
+    
     ## iterate and set up
     blockBool <- rep(FALSE, nDim)
     firstIndexRexprs <- vector('list', nDim)
@@ -115,6 +96,136 @@ makeMapExprFromBrackets <- function(code, drop = TRUE) {
             firstIndexRexprs[[im1]] <- code$args[[i]]
         }
     }
+    list(firstIndexRexprs = firstIndexRexprs, blockBool = blockBool)
+}
+
+makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
+    thisBlockIndexInfo <- blockIndexInfo(code)
+    blockBool <- thisBlockIndexInfo$blockBool
+    firstIndexRexprs <- thisBlockIndexInfo$firstIndexRexprs
+
+    nArgs <- length(code$args)
+    nDim <- nArgs-1
+    for(i in 1:nDim) {
+        if(is.numeric(firstIndexRexprs[[i]])) firstIndexRexprs[[i]] <- firstIndexRexprs[[i]]-1
+        else firstIndexRexprs[[i]] <- substitute(fIR - 1, list(fIR = firstIndexRexprs[[i]]))
+    }
+
+    needTranspose <- FALSE
+    if(length(blockBool)==1) {
+        blockBool <- c(blockBool, FALSE)
+        firstIndexRexprs[[2]] <- 0
+    }
+    if(identical(blockBool, c(TRUE, TRUE))) {
+        P <- code$sizeExprs[[1]]
+        Q <- code$sizeExprs[[2]]
+    } else 
+        if(identical(blockBool, c(TRUE, FALSE))) {
+            P <- code$sizeExprs[[1]]
+            Q <- 1
+        } else
+            if(identical(blockBool, c(FALSE, TRUE))) {
+                P <- 1
+                Q <- code$sizeExprs[[1]]
+                if(drop) needTranspose <- TRUE ## This is a case like A[3, 2:4] where we need to make Eigen handle it like a 3x1 matrix implementing a nimble vector internally, not 1x3
+            } else
+                if(identical(blockBool, c(FALSE, FALSE))) {
+                    P <- 1
+                    Q <- 1
+                    if(drop) warning("Possible error handling a 1x1 block with drop = TRUE")
+                }
+
+
+    ## this will make the I J P Q come out as properly arranged exprClasses
+    newExpr <- RparseTree2ExprClasses( substitute(eigenBlock(1, I, J, P, Q), list(I = firstIndexRexprs[[1]], J = firstIndexRexprs[[2]], P = P, Q = Q)))
+    ## but the target variable already is an exprClass and so needs to be inserted properly separately:
+    setArg(newExpr, 1, code$args[[1]])
+    for(i in 2:5) {
+        if(inherits(newExpr$args[[i]], 'exprClass')) {
+            newExpr$args[[i]]$nDim <- 0
+            newExpr$args[[i]]$type <- 'integer'
+            newExpr$args[[i]]$sizeExprs <- list(1)
+            newExpr$args[[i]]$toEigenize <- 'maybe'
+        }
+    }
+    if(needTranspose) { 
+        newExpr$nDim <- code$nDim
+        newExpr$type <- code$type
+        newExpr$sizeExprs <- code$sizeExprs
+        newExpr$toEigenize <- 'yes' ## not really needed since will be called from eigenization
+
+        ## This used to be called from size processing, but now it is called from eigenization
+        ## so we need to annotate it 
+        newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
+        newExpr2$sizeExprs <- c(newExpr$sizeExprs[2], newExpr$sizeExprs[1])
+        newExpr2$toEigenize <- 'yes' ## ditto
+        newExpr2$nDim <-  newExpr$nDim
+        newExpr2$type <- newExpr$type
+               
+        setArg(newExpr2, 1, newExpr)
+        ## newExpr2 gets annotated in the calling function, sizeIndexingBracket
+        newExpr <- newExpr2
+    }
+    newExpr
+}
+
+## this is used by sizeIndexingBracket when it hits a need for a map
+makeMapExprFromBrackets <- function(code, drop = TRUE) {
+    ## code nDim, type and sizeExprs have already been set, and toEigenize will be set to 'maybe'
+    if(code$args[[1]]$name == 'map') {
+        sourceVarName <- code$args[[1]]$args[[1]]
+        sourceVarExpr <- as.name(sourceVarName)
+        sourceOffsetRexpr <- code$args[[1]]$args[[3]]
+        sourceSizeExprs <- code$args[[1]]$args[[4]]
+        sourceNdim <- length(sourceSizeExprs)
+        sourceStrideRexprs <- code$args[[1]]$args[[5]]
+    } else {
+        sourceVarName <- code$args[[1]]$name
+        if(!code$args[[1]]$isName) writeLines(paste0('Watch out, in makeMapExprFromBrackets for ', nimDeparse(code), ', there is an expression instead of a name.'))
+        sourceVarExpr <- as.name(sourceVarName)
+        sourceOffsetRexpr <- quote(0)
+        sourceSizeExprs <- code$args[[1]]$sizeExprs
+        sourceNdim <- length(sourceSizeExprs)
+        sourceStrideRexprs <- makeStrideRexprs(sourceVarExpr, sourceNdim)
+        ##   sourceMapName <- sourceVarName
+    }
+
+    thisBlockIndexInfo <- blockIndexInfo(code)
+    blockBool <- thisBlockIndexInfo$blockBool
+    firstIndexRexprs <- thisBlockIndexInfo$firstIndexRexprs
+    ## targetIndexExprs begin at mapExpr arg 2
+    ## nArgs <- length(code$args)
+    ## nDim <- nArgs-1
+
+    ## ## iterate and set up
+    ## blockBool <- rep(FALSE, nDim)
+    ## firstIndexRexprs <- vector('list', nDim)
+    ## for(i in 2:nArgs) { ## 1 is the var
+    ##     im1 <- i-1
+    ##     if(inherits(code$args[[i]], 'exprClass')) {
+    ##         if(code$args[[i]]$name != ':') {
+    ##             if(code$args[[i]]$name != "") {
+    ##                 firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]), keep.source = FALSE)[[1]]
+    ##                 ##stop('Error in makeMapExprFromBrackets, only indexing blocks using : or blanks are recognized')
+    ##             } else {
+    ##                 ## It is a blank
+    ##                 blockBool[im1] <- TRUE
+    ##                 firstIndexRexprs[[im1]] <- 1
+    ##             }
+    ##         } else {
+    ##             ## It is a ":"
+    ##             blockBool[im1] <- TRUE
+    ##             if(!is.null(code$args[[i]]$sizeExprs))
+    ##                 if(length(code$args[[i]]$sizeExprs[[1]])==1)
+    ##                     if(is.numeric(code$args[[i]]$sizeExprs[[1]]))
+    ##                         if(code$args[[i]]$sizeExprs[[1]]==1)
+    ##                             blockBool[im1] <- FALSE
+    ##             firstIndexRexprs[[im1]] <- parse(text = nimDeparse(code$args[[i]]$args[[1]]), keep.source = FALSE)[[1]]
+    ##         }
+    ##     } else {
+    ##         firstIndexRexprs[[im1]] <- code$args[[i]]
+    ##     }
+    ## }
 
  ##   targetVarExpr <- sourceVarExpr
     if(identical(sourceOffsetRexpr, 0)) {

@@ -52,9 +52,9 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 d_gamma_keywordInfo <- keywordInfoClass(
 	keyword = 'dgamma',
 	processor = function(code, nfProc){
-		logArg <- code$log
-		if(logArg == TRUE)	code$log <- 1
-			else code$log <- 0
+		##logArg <- code$log
+		##if(logArg == TRUE)	code$log <- 1
+		##	else code$log <- 0
 		code <- handleScaleAndRateForGamma(code)
 	return(code)
 	}) 
@@ -62,13 +62,13 @@ d_gamma_keywordInfo <- keywordInfoClass(
 pq_gamma_keywordInfo <- keywordInfoClass(
 	keyword = 'pq_gamma',
 	processor = function(code, nfProc){
-		lower.tailArg <- code$lower.tail
-		if(lower.tailArg == TRUE) code$lower.tail <- 1
-			else code$lower.tail <- 0
+		##lower.tailArg <- code$lower.tail
+		##if(lower.tailArg == TRUE) code$lower.tail <- 1
+		##	else code$lower.tail <- 0
 			
-		logArg <- code$log.p
-		if(logArg == TRUE)	code$log.p <- 1
-			else code$log.p <- 0
+		##logArg <- code$log.p
+		##if(logArg == TRUE)	code$log.p <- 1
+		##	else code$log.p <- 0
 		code <- handleScaleAndRateForGamma(code)
 	return(code)
 })
@@ -84,9 +84,9 @@ rgamma_keywordInfo <- keywordInfoClass(
 d_exp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'dexp_nimble',
 	processor = function(code, nfProc){
-		logArg <- code$log
-		if(logArg == TRUE)	code$log <- 1
-			else code$log <- 0
+		##logArg <- code$log
+		##if(logArg == TRUE)	code$log <- 1
+		##	else code$log <- 0
 		code <- handleScaleAndRateForExpNimble(code)
 	return(code)
 	}) 
@@ -94,13 +94,13 @@ d_exp_nimble_keywordInfo <- keywordInfoClass(
 pq_exp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'pq_exp_nimble',
 	processor = function(code, nfProc){
-		lower.tailArg <- code$lower.tail
-		if(lower.tailArg == TRUE) code$lower.tail <- 1
-			else code$lower.tail <- 0
+		##lower.tailArg <- code$lower.tail
+		##if(lower.tailArg == TRUE) code$lower.tail <- 1
+		##	else code$lower.tail <- 0
 			
-		logArg <- code$log.p
-		if(logArg == TRUE)	code$log.p <- 1
-			else code$log.p <- 0
+		##logArg <- code$log.p
+		##if(logArg == TRUE)	code$log.p <- 1
+		##	else code$log.p <- 0
 		code <- handleScaleAndRateForExpNimble(code)
 	return(code)
 })
@@ -114,30 +114,29 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 )
 
 
-d_dist_keywordInfo <- keywordInfoClass(
-	keyword = 'd',
-	processor = function(code, nfProc){
-		logArg <- code$log
-		if(logArg == TRUE)	code$log <- 1
-			else code$log <- 0
-			
-		return(code)
-	}
-)
+## These are no longer needed
+## d_dist_keywordInfo <- keywordInfoClass(
+## 	keyword = 'd',
+## 	processor = function(code, nfProc){
+## 		logArg <- code$log
+##             if(logArg == TRUE)	code$log <- 1
+##             else code$log <- 0			
+## 		return(code)
+## 	}
+## )
 
-qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
-	keyword = 'p',
-	processor = function(code, nfProc){
-		lower.tailArg	<- code$lower.tail
-		if(lower.tailArg == TRUE) code$lower.tail <- 1
-			else code$lower.tail <- 0
-			
-		logArg <- code$log.p
-		if(logArg == TRUE)	code$log.p <- 1
-			else code$log.p <- 0
-		return(code)		
-	}
-	)
+## qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
+## 	keyword = 'p',
+## 	processor = function(code, nfProc){
+## 		lower.tailArg	<- code$lower.tail
+## 		if(lower.tailArg == TRUE) code$lower.tail <- 1
+## 			else code$lower.tail <- 0
+## 		logArg <- code$log.p
+## 		if(logArg == TRUE)	code$log.p <- 1
+## 			else code$log.p <- 0
+## 		return(code)		
+## 	}
+## 	)
 
 eigen_keywordInfo <- keywordInfoClass(
   keyword = "eigen",
@@ -223,6 +222,23 @@ nimOptim_keywordInfo <- keywordInfoClass(
 	}
 )
 
+nimSeq_keywordInfo <- keywordInfoClass(
+    keyword = 'nimSeq',
+    processor = function(code, nfProc) {
+        useBy <- !isCodeArgBlank(code, 'by')
+        useLen <- !isCodeArgBlank(code, 'length.out')
+        if(useBy && useLen)
+            stop("Cannot provide both 'by' and 'length.out' arguments to seq")
+        if(useLen) {
+            newRunCode <- substitute(nimSeqLen(FROM, TO, 0, LEN), list(FROM = code$from, TO = code$to, LEN = code$length.out))
+        } else {
+            byVal <- if(useBy) code$by else 1
+            newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = code$by))
+        }
+        return(newRunCode)
+    }
+)
+    
 
 values_keywordInfo <- keywordInfoClass(
     keyword = 'values',
@@ -778,6 +794,7 @@ length_char_keywordInfo <- keywordInfoClass(
 
 #	KeywordList
 keywordList <- new.env()
+keywordList[['nimSeq']] <- nimSeq_keywordInfo
 keywordList[['getParam']] <- getParam_keywordInfo
 keywordList[['getBound']] <- getBound_keywordInfo
 keywordList[['values']] <- values_keywordInfo
@@ -836,9 +853,12 @@ keywordListModelMemberFuns[['getBound']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
+matchFunctions[['nimC']] <- nimC
+matchFunctions[['nimRep']] <- function(x, times = 1, length.out, each = 1) {}
+matchFunctions[['nimSeq']] <- nimSeq
 matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
 matchFunctions[['nimInteger']] <- function(length = 0, value = 0, init = TRUE) {}
-matchFunctions[['nimMatrix']] <- function(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double') {}
+matchFunctions[['nimMatrix']] <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'double') {}
 matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
 matchFunctions[['getParam']] <- getParam
@@ -898,7 +918,7 @@ for(distfun in paste0(c('d','p','q','r'), 'nbinom'))
 # the following are standard in terms of both matchFunctions and keywordList
 matchDistList <- list('binom', 'cat', 'dirch', 'interval', 'lnorm', 'logis', 'multi', 'mnorm_chol', 'norm', 'pois', 't_nonstandard', 'unif', 'weibull', 'wish_chol')
 # these are standard for keywordList and handled specially above for matchFunctions
-keywordOnlyMatchDistList <- list('t', 'beta', 'chisq', 'nbinom')
+##keywordOnlyMatchDistList <- list('t', 'beta', 'chisq', 'nbinom')
 
 addDistList2matchFunctions <- function(distList, matchFunEnv){
 	for(thisDist in distList){
@@ -916,21 +936,21 @@ addDistList2matchFunctions <- function(distList, matchFunEnv){
 	}
 }
 
-addDistKeywordProcessors <- function(distList, keywordEnv){
-		for(thisDist in distList) {
-                    pFun <- paste0('p', thisDist)
-                    qFun <- paste0('q', thisDist)
-                    dFun <- paste0('d', thisDist)
+## addDistKeywordProcessors <- function(distList, keywordEnv){
+## 		for(thisDist in distList) {
+##                     pFun <- paste0('p', thisDist)
+##                     qFun <- paste0('q', thisDist)
+##                     dFun <- paste0('d', thisDist)
                     
-                    keywordEnv[[dFun]] <- d_dist_keywordInfo
-                    keywordEnv[[pFun]] <- qp_dist_keywordInfo
-                    keywordEnv[[qFun]] <- qp_dist_keywordInfo
-		}
-            }
+##                     keywordEnv[[dFun]] <- d_dist_keywordInfo
+##                     keywordEnv[[pFun]] <- qp_dist_keywordInfo
+##                     keywordEnv[[qFun]] <- qp_dist_keywordInfo
+## 		}
+##             }
           
 
 addDistList2matchFunctions(matchDistList, matchFunctions)
-addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
+##addDistKeywordProcessors(c(matchDistList, keywordOnlyMatchDistList), keywordList)
 
 #	processKeyword function to be called by nfProc
 processKeyword <- function(code, nfProc){
@@ -1342,7 +1362,10 @@ matchAndFill.call <- function(def, call){
   ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
   ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
   ## tacked on even without a '...' in the def
+  if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
+
   indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+
   for(thisIndex in indexAdditionalArgs) {
       thisName <- names(matchedCall)[thisIndex+1]
       if(thisName=="")

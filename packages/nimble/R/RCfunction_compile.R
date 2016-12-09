@@ -84,7 +84,8 @@ RCfunction <- function(f, name = NA, returnCallable = TRUE, check) {
     if(returnCallable) nfm$generateFunctionObject(keep.nfMethodRC = TRUE) else nfm
 }
 
-is.rcf <- function(x) {
+is.rcf <- function(x, inputIsName = FALSE) {
+    if(inputIsName) x <- get(x)
     if(inherits(x, 'nfMethodRC')) return(TRUE)
     if(is.function(x)) {
         if(is.null(environment(x))) return(FALSE)
@@ -205,7 +206,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
 
                                        compileInfo$typeEnv[['neededRCfuns']] <<- list()
                                        compileInfo$typeEnv[['.AllowUnknowns']] <<- TRUE ## will be FALSE for RHS recursion in setSizes
-
+                                       compileInfo$typeEnv[['.ensureNimbleBlocks']] <<- FALSE ## will be TRUE for LHS recursion after RHS sees rmnorm and other vector dist "r" calls.
                                        passedArgNames <- as.list(compileInfo$origLocalSymTab$getSymbolNames()) 
                                        names(passedArgNames) <- compileInfo$origLocalSymTab$getSymbolNames() 
                                        compileInfo$typeEnv[['passedArgumentNames']] <<- passedArgNames ## only the names are used.  

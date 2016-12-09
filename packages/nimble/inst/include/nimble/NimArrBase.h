@@ -28,7 +28,7 @@
 
 using std::vector;
 
-enum nimType {INT = 1, DOUBLE = 2, UNDEFINED = -1};
+enum nimType {INT = 1, DOUBLE = 2, BOOL = 3, UNDEFINED = -1};
 
  class NimArrType{
 	public:
@@ -79,8 +79,8 @@ class NimArrBase: public NimArrType {
   int size() const {return(NAlength);}
   virtual int numDims() const = 0;
   virtual int dimSize(int i) const = 0;
-  T &operator[](int i) const {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
-  //  T &operator[](int i) {return((*vPtr)[offset + i * stride1]);} // could be misused for nDim > 1
+  T &operator[](int i) const {return((*vPtr)[offset + i * stride1]);} // generic for nDim > 1, overloaded for other dimensions
+  T &valueNoMap(int i) const {return(*(v + i));} // only to be used if not a map 
   virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
   virtual void setSize(vector<int> sizeVec)=0;
@@ -114,6 +114,9 @@ class NimArrBase: public NimArrType {
       myType = INT;
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
+    if(typeid(T) == typeid(bool) )
+      myType = BOOL;
+
   }
   virtual ~NimArrBase(){
     //delete[] NAdims;
@@ -160,6 +163,9 @@ class VecNimArrBase : public NimVecType {
       myType = INT;
     if(typeid(T) == typeid(double) )
       myType = DOUBLE;
+    if(typeid(T) == typeid(bool) )
+      myType = BOOL;
+
   }
 
   ~VecNimArrBase(){};

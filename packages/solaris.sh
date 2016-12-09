@@ -1,3 +1,6 @@
+need to remember where I got the Solaris VirtualBox VM - see Solaris website. 
+I believe it was sol-11_3-vbox
+
 login as paciorek with s1x2 as password
 scp paciorek@smeagol.berkeley.edu:~/research/perry/solaris/pkg.oracle.com.key.pem /tmp/.
 scp paciorek@smeagol.berkeley.edu:~/research/perry/solaris/pkg.oracle.com.certificate.pem /tmp/.

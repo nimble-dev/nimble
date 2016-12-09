@@ -16,6 +16,8 @@ nfGetDefVar <- function(f, var) {
 #'
 #' @param f object to be tested
 #'
+#' @param inputIsName logical indicating whether the function is provided as the character name of the function or the function object itself
+#'
 #' @seealso \link{nimbleFunction} for how to create a nimbleFunction
 #' @export
 is.nf <- function(f, inputIsName = FALSE) {
@@ -31,11 +33,6 @@ is.Cnf <- function(f, inputIsName = FALSE) {
     return(FALSE)
 }
 
-is.rcf <- function(f, inputIsName = FALSE) {
-    if(inputIsName) f <- get(f)
-    return(is.function(f) && !is.null(environment(f)) &&
-           existsFunctionEnvVar(f, 'nfMethodRCobject') ) 	
-} 
 
 is.nfGenerator <- function(f, inputIsName = FALSE) {
     if(inputIsName) f <- get(f)

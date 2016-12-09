@@ -1,5 +1,7 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+nimbleOptions(showCompilerOutput = TRUE)
+
 context("Testing of compareMCMCs")
 iCase <- 1
 

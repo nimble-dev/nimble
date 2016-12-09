@@ -3,9 +3,16 @@
 
 #include <Eigen/Dense>
 using namespace Eigen;
+#include "nimbleEigen.h"
+
+typedef Matrix<bool, Dynamic, Dynamic> MatrixXb;
+typedef Array<bool, Dynamic, Dynamic> ArrayXXb;
 
 typedef Stride<Dynamic, Dynamic> EigStrDyn;
-typedef Map<MatrixXd, Unaligned, EigStrDyn > EigenMapStr;
+typedef Map<MatrixXd, Unaligned, EigStrDyn > EigenMapStrd;
+typedef Map<MatrixXi, Unaligned, EigStrDyn > EigenMapStri;
+typedef Map<MatrixXb, Unaligned, EigStrDyn > EigenMapStrb;
+
 
 //#define EIGEN_FS(x,y)       (x).triangularView<Eigen::Lower>().solve(y)
 //#define EIGEN_BS(x,y)       (x).triangularView<Eigen::Upper>().solve(y)
@@ -16,6 +23,9 @@ typedef Map<MatrixXd, Unaligned, EigStrDyn > EigenMapStr;
 /*   MatrixXd ans = x.triangularView<Eigen::Lower>().solve(ycopy); */
 /*   return(ans); */
 /* } */
+
+// Diagonal: Tried using Eigen::DiagonalMatrix<> but one can't do much with this.  It doesn't have same flexibility and member functions as a regular Eigen::MatrixXd
+// So we'll use a NullaryExpr approach instead
 
 template<class derived1, class derived2>
 MatrixXd EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
