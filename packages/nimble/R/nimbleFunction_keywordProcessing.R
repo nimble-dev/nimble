@@ -143,6 +143,7 @@ qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
 eigen_keywordInfo <- keywordInfoClass(
   keyword = "eigen",
   processor = function(code, nfProc){
+    browser()
     thisProj <- nfProc$nimbleProject
     eigenNimbleListDef <- nimbleList(list(vars = c("values", "vectors"), types = c("double(1)", "double(2)")),
                                      name = "EIGEN_EIGENCLASS")
@@ -652,17 +653,18 @@ dollarSign_keywordInfo <- keywordInfoClass(
 		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
 		callerCode <- code[[2]]
 		#	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
-		
+
 		if(length(callerCode) > 1){
 		  if(callerCode[[1]] == '$'){ ## nested NL case
 		    callerCode <- processKeyword(callerCode, nfProc)
 		  }
-		  else 	callerCode <- callerCode[[2]]
+		  else if (as.character(callerCode[[1]]) != 'eigen') callerCode <- callerCode[[2]]
 		}
-		#	This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
-		#	May be a better way to do this
+		#       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
+		#       May be a better way to do this
 		
 		class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
+		
 		if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
 		  nl_fieldName <-as.character(code[[3]])
 		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
@@ -927,7 +929,7 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
     ## model$calculate(nodes)
     dollarSignPart <- code[[1]]
     objectPart <- dollarSignPart[[2]]
-
+    
     isModel <- FALSE
     if(length(objectPart) != 1) isModel <- FALSE ## a case like a[[i]]$b(), which can only be a nimbleFunction list
     else {

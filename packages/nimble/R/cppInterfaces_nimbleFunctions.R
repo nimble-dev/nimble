@@ -63,6 +63,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
            fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
            fieldList[[vn]] <-  eval(substitute(
             function(x) {
+              browser()
               if(missing(x))
                 NFNAME
               else {
@@ -812,7 +813,6 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
     # substitute on parsed text string to avoid CRAN issues with .Call registration
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, isListObj = FALSE, ...){		#cModel removed from here
-      browser()
         if(!isListObj) defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
         callSuper(dll = dll, project = project, test = FALSE, ...)
         basePtrCall <- if(is.character(defaults$basePtrCall)) {

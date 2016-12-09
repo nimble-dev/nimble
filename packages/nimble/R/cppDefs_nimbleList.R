@@ -20,14 +20,11 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                       },
                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
-                                        browser()
-                                        
                                           sym <- if(!is.null(dll))
                                                      getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                  else
                                                      SEXPgeneratorFun$name
                                            Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
-                                          # message('Rgenerator for nimbleList does not exist')
                                       },
                                       buildAll = function(where = where) {
                                         buildCopyFromSexp()

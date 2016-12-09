@@ -533,3 +533,49 @@ test_that("return objects are nimbleLists",
           })
 
 
+
+
+########
+## Test #1 for eigen() function.  
+########
+
+
+
+
+# trace(nimble:::sizeNFvar , browser)
+nlTestFunc14 <- nimbleFunction(
+  setup = function(){
+    testTypes <- list(vars = 'test_matrix', types = c('double(2)'))
+    testListDef14 <- nimbleList(testTypes)
+    testList14 <- testListDef14$new(test_matrix = diag(4))
+  },
+  run = function(){
+    eigenMat <- eigen(testList14$test_matrix)$vectors
+    returnType(double(2))
+    return(eigenMat)
+  }
+)
+
+
+testInst <- nlTestFunc14()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for correct values of nimbleLists
+expect_identical(RnimbleList$nestedNL$nlDouble, 100)
+expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
+expect_identical(RnimbleList$nestedNL$nlDouble, argList13a$nestedNL$nlDouble)
+
+expect_identical(RnimbleList$nlVector, c(1,2))
+expect_identical(RnimbleList$nlVector, CnimbleList$nlVector)
+expect_identical(RnimbleList$nlVector, argList13a$nlVector)
+
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
