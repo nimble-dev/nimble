@@ -351,6 +351,8 @@ recurseExtractNimListArg <- function(code, symTab){
 sizeNFvar <- function(code, symTab, typeEnv) {
     topLevel <- code$caller$name != 'nfVar'
     nfName <- code$args[[1]]$name
+    asserts <- NULL
+    
     code$toEigenize <- 'maybe'
     if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
       isSymList <- TRUE
@@ -368,6 +370,10 @@ sizeNFvar <- function(code, symTab, typeEnv) {
       nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
       isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
       isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
+      if(nfName == 'EIGEN_EIGEN'){
+        recurseSetSizes(code, symTab, typeEnv)
+        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+      }
       if(!(isSymFunc || isSymList))
         stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or nimbleList.'), call. = FALSE)
       if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface
@@ -381,7 +387,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     }
     if(!is.null(objSym))code$type <- objSym$type
     if(code$type != 'nimbleList') code$nDim <- objSym$nDim
-    asserts <- NULL
     if(isSymList){
       a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
       a1$type <- a1$args[[1]]$type
@@ -1343,10 +1348,11 @@ sizeMatrixEigenList <- function(code, symTab, typeEnv){
   code$sizeExprs <- listST
   code$toEigenize <- "no"
   code$nDim <- 0
+  # asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
   
-  if(!(code$caller$name %in% c('{','<-','<<-','='))) {
-    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-  }
+  # if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+  #   asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  # }
   
   return(NULL)
 }

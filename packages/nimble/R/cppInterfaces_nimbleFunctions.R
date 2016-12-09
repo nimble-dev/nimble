@@ -63,7 +63,6 @@ makeNFBindingFields <- function(symTab, cppNames) {
            fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
            fieldList[[vn]] <-  eval(substitute(
             function(x) {
-              browser()
               if(missing(x))
                 NFNAME
               else {

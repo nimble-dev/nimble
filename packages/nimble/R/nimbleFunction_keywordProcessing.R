@@ -143,7 +143,6 @@ qp_dist_keywordInfo <- keywordInfoClass(	##q and p functions treated the same
 eigen_keywordInfo <- keywordInfoClass(
   keyword = "eigen",
   processor = function(code, nfProc){
-    browser()
     thisProj <- nfProc$nimbleProject
     eigenNimbleListDef <- nimbleList(list(vars = c("values", "vectors"), types = c("double(1)", "double(2)")),
                                      name = "EIGEN_EIGENCLASS")

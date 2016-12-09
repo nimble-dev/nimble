@@ -536,23 +536,19 @@ test_that("return objects are nimbleLists",
 
 
 ########
-## Test #1 for eigen() function.  
+## Test #1 for eigen() function.  Return an eigenList.  
 ########
 
-
-
-
-# trace(nimble:::sizeNFvar , browser)
 nlTestFunc14 <- nimbleFunction(
   setup = function(){
     testTypes <- list(vars = 'test_matrix', types = c('double(2)'))
     testListDef14 <- nimbleList(testTypes)
-    testList14 <- testListDef14$new(test_matrix = diag(4))
+    testList14 <- testListDef14$new(test_matrix = diag(4) + 1)
   },
   run = function(){
-    eigenMat <- eigen(testList14$test_matrix)$vectors
-    returnType(double(2))
-    return(eigenMat)
+    eigenOut <- eigen(testList14$test_matrix)
+    returnType(eigen())
+    return(eigenOut)
   }
 )
 
@@ -562,19 +558,13 @@ RnimbleList <- testInst$run()
 ctestInst <- compileNimble(testInst)
 CnimbleList <- ctestInst$run()
 
-## test for correct values of nimbleLists
-expect_identical(RnimbleList$nestedNL$nlDouble, 100)
-expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
-expect_identical(RnimbleList$nestedNL$nlDouble, argList13a$nestedNL$nlDouble)
+## test for eigenValues and eigenVectors
+expect_equal(diag(4)+1, RnimbleList$vectors%*%diag(RnimbleList$values)%*%solve(RnimbleList$vectors))
+expect_equal(diag(4)+1, CnimbleList$vectors%*%diag(CnimbleList$values)%*%solve(CnimbleList$vectors))
+expect_equal(sum(abs(RnimbleList$values)), sum(abs(CnimbleList$values)))
 
-expect_identical(RnimbleList$nlVector, c(1,2))
-expect_identical(RnimbleList$nlVector, CnimbleList$nlVector)
-expect_identical(RnimbleList$nlVector, argList13a$nlVector)
-
-
-test_that("return objects are nimbleLists", 
+test_that("return object (from c++) is nimbleList.  The return object from the R function is an R list.", 
           {
-            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
             expect_identical(is.nl(CnimbleList), TRUE)
           })
 

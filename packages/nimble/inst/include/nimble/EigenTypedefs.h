@@ -63,7 +63,7 @@ nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
 	new (&Eig_eigVals) Map< VectorXd >((*returnClass).values.getPtr(),x.dim()[0]);
 	Map<MatrixXd> Eig_x(x.getPtr(),x.dim()[0],x.dim()[1]);
 	if(x.dim()[0] != x.dim()[1]) {
-	 _nimble_global_output <<"Run-time size error: expected diamat to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
+	 _nimble_global_output <<"Run-time size error: expected matrix argument to eigen() to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
 	}	
 	EigenSolver<MatrixXd> solver(Eig_x, !valuesOnly);
 	Eig_eigVals = solver.eigenvalues().real();
