@@ -29,6 +29,8 @@ argType2symbol <- function(AT, neededTypes, name = character()) {
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
     if(type == "eigen") type <- "EIGEN_EIGENCLASS"
+    if(type == "svd") type <- "EIGEN_SVDCLASS"
+    
     if(type == "internalType") {
       return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }

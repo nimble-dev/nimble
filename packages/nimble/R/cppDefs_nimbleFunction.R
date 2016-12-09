@@ -107,7 +107,7 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                if(inherits(neededType, 'symbolNimbleList')) {
                                                  CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                                  generatorName <- neededType$nlProc$name
-                                                 if(generatorName %in% c("EIGEN_EIGENCLASS"))
+                                                 if(generatorName %in% c("EIGEN_EIGENCLASS", "EIGEN_SVDCLASS"))
                                                    next
                                                  thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = generatorName)
                                                  if(is.null(thisCppDef)) {

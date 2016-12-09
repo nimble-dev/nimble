@@ -563,9 +563,45 @@ expect_equal(diag(4)+1, RnimbleList$vectors%*%diag(RnimbleList$values)%*%solve(R
 expect_equal(diag(4)+1, CnimbleList$vectors%*%diag(CnimbleList$values)%*%solve(CnimbleList$vectors))
 expect_equal(sum(abs(RnimbleList$values)), sum(abs(CnimbleList$values)))
 
-test_that("return object (from c++) is nimbleList.  The return object from the R function is an R list.", 
+test_that("return object (from c++) is nimbleList.", 
           {
             expect_identical(is.nl(CnimbleList), TRUE)
           })
+
+
+
+########
+## Test #1 for svd() function.  Return an svdList.  
+########
+
+nlTestFunc14 <- nimbleFunction(
+  setup = function(){
+    testTypes <- list(vars = 'test_matrix', types = c('double(2)'))
+    testListDef14 <- nimbleList(testTypes)
+    testList14 <- testListDef14$new(test_matrix = diag(4) + 1)
+  },
+  run = function(){
+    eigenOut <- svd(testList14$test_matrix)
+    returnType(svd())
+    return(eigenOut)
+  }
+)
+
+
+testInst <- nlTestFunc14()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for eigenValues and eigenVectors
+expect_equal(diag(4)+1, RnimbleList$vectors%*%diag(RnimbleList$values)%*%solve(RnimbleList$vectors))
+expect_equal(diag(4)+1, CnimbleList$vectors%*%diag(CnimbleList$values)%*%solve(CnimbleList$vectors))
+expect_equal(sum(abs(RnimbleList$values)), sum(abs(CnimbleList$values)))
+
+test_that("return object (from c++) is nimbleList.", 
+          {
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
 
 

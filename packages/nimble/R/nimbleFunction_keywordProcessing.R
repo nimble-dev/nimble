@@ -160,24 +160,20 @@ eigen_keywordInfo <- keywordInfoClass(
 svd_keywordInfo <- keywordInfoClass(
   keyword = "svd",
   processor = function(code, nfProc){
-    nuArg <- code$nu
-    nvArg <- code$nv
-    if((nuArg == 0) && (nvArg > 0)){
-      code[[1]] <- parse(text = 'svdv')[[1]]
-      code[[3]] <- NULL #remove nu argument
-    }
-    else if(nuArg > 0){
-      code[[1]] <- parse(text = 'svdu')[[1]]
-      code[[4]] <- NULL #remove nv argument
-    }
-    else{
-      code[[1]] <- parse(text = 'svdd')[[1]]
-      code[[3]] <- NULL #remove nu argument
-      code[[3]] <- NULL #remove nv argument
-    }
+    thisProj <- nfProc$nimbleProject
+    svdNimbleListDef <- nimbleList(list(vars = c("d", "u", "v"), types = c("double(1)", "double(2)", "double(2)")),
+                                     name = "EIGEN_SVDCLASS")
+    svdNimbleList <- svdNimbleListDef$new() 
+    nlp <- thisProj$compileNimbleList(svdNimbleList, initialTypeInferenceOnly = TRUE)
+    svdSym <- symbolNimbleList(name = "EIGEN_SVDCLASS", type = 'nimbleList', nlProc = nlp)
+    nfProc$neededTypes[[ "EIGEN_SVDCLASS"]] <- svdSym 
+    # returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
+    nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = "EIGEN_SVD", type = 'nimbleListGenerator', nlProc = nlp))
+    code[[1]] <- parse(text = 'EIGEN_SVD')[[1]]
     return(code)
   }
 )
+
 
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
@@ -657,7 +653,9 @@ dollarSign_keywordInfo <- keywordInfoClass(
 		  if(callerCode[[1]] == '$'){ ## nested NL case
 		    callerCode <- processKeyword(callerCode, nfProc)
 		  }
-		  else if (as.character(callerCode[[1]]) != 'eigen') callerCode <- callerCode[[2]]
+		  else if (! (as.character(callerCode[[1]]) %in% c('eigen', 'svd'))) {
+		              callerCode <- callerCode[[2]]
+		  }
 		}
 		#       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
 		#       May be a better way to do this
@@ -774,7 +772,6 @@ keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['eigen']] <- eigen_keywordInfo
-
 keywordList[['svd']] <- svd_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
@@ -835,7 +832,7 @@ matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['eigen']] <- function(squareMat, only.values = FALSE){}
-matchFunctions[['svd']] <- function(mat, nu = 0, nv = 0){}
+matchFunctions[['svd']] <- function(mat){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}

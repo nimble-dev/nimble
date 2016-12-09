@@ -76,48 +76,46 @@ nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
 	return(returnClass);
 };
 
-/* class EIGEN_SVDCLASS : public NamedObjects, public pointedToBase {
+class EIGEN_SVDCLASS : public NamedObjects, public pointedToBase {
 public:
   NimArr<1, double> d;
   NimArr<2, double> u;
   NimArr<2, double> v;
-
-void  copyToSEXP ( SEXP S_nimList_ );
-SEXP  writeToSEXP (  );
- EIGEN_EIGENCLASS (  );
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+  
+SEXP  copyToSEXP (   );
+void  createNewSEXP (  );
+EIGEN_SVDCLASS (  );
 };
 
 template<class T>
-nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(NimArr<2, T> &x, bool valuesOnly) {
+nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(NimArr<2, T> &x) {
     nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS;
-	(*returnClass).d.initialize(0, 0, x.dim()[0]);
-	(*returnClass).v.initialize(0, 0, x.dim()[0]);
-	(*returnClass).u.initialize(0, 0, x.dim()[0]);
+	int nu = min(x.dim()[0], x.dim()[1]);
+	(*returnClass).d.initialize(0, 0, nu);
+	(*returnClass).u.initialize(0, 0, x.dim()[0], nu);
+	(*returnClass).v.initialize(0, 0, x.dim()[1], nu);
 
-	Map<VectorXd> Eig_eigVals(0,0);
-	new (&Eig_eigVals) Map< VectorXd >((*returnClass).values.getPtr(),x.dim()[0]);
-	Map<MatrixXd> Eig_x(x.getPtr(),x.dim()[0],x.dim()[1]);
-	if(x.dim()[0] != x.dim()[1]) {
-	 _nimble_global_output <<"Run-time size error: expected diamat to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
-	}	
-	EigenSolver<MatrixXd> solver(Eig_x, !valuesOnly);
-	Eig_eigVals = solver.eigenvalues().real();
-	if(!valuesOnly){
-	    (*returnClass).vectors.initialize(0, 0, x.dim()[0], x.dim()[0]);
-		Map<MatrixXd> Eig_eigVecs(0,0,0);
-		new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
-		Eig_eigVecs = solver.eigenvectors().real();	
-	}
+	Map<VectorXd> Svd_d(0,0);
+	new (&Svd_d) Map< VectorXd >((*returnClass).d.getPtr(), nu);
+	Map<MatrixXd> Svd_u(0,0,0);
+	new (&Svd_u) Map< VectorXd >((*returnClass).u.getPtr(), x.dim()[0], nu);
+	Map<MatrixXd> Svd_v(0,0,0);
+	new (&Svd_v) Map< VectorXd >((*returnClass).v.getPtr(), x.dim()[1], nu);
+	
+	Map<MatrixXd> Svd_x(x.getPtr(),x.dim()[0],x.dim()[1]);
+	/* if(nu < 16){   */
+		JacobiSVD<MatrixXd> svd(Svd_x, ComputeThinU | ComputeThinV);
+	/* } */
+	/* else{ // if minimum dimension length > 16, use bidiagonialization, as recommended on eigen website
+		Eigen::BDCSVD<MatrixXd> svd(Svd_x, ComputeThinU | ComputeThinV);
+	} */
+	Svd_d = svd.singularValues();
+	Svd_u = svd.matrixU();
+	Svd_v = svd.matrixV();
 	return(returnClass);
 };
- */
-
-template<class derived1>
-VectorXd EIGEN_SVDD(const MatrixBase<derived1> &x) {
-  MatrixXd xcopy = x;	  
-  VectorXd ans = JacobiSVD<MatrixXd>(xcopy).singularValues();
-  return(ans); 
-}
 
 template <typename Derived1, typename Derived2>
 double eigenInprod(const ArrayBase<Derived1>& v1, const ArrayBase<Derived2>& v2) { 
