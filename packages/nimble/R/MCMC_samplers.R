@@ -274,6 +274,105 @@ sampler_RW_block <- nimbleFunction(
 )
 
 
+###########################################################################################
+### block RW sampler with univariate normal proposal distribution in rotated coordinates###
+###########################################################################################
+
+#' @rdname samplers
+#' @export
+sampler_RW_rotated_block <- nimbleFunction(
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    ## control list extraction
+    factorAdaptInterval  <- control$factorAdaptInterval
+    coordinateProportion <- control$coordinateProportion
+    origScaleVector <- control$scaleVector
+    scaleAdaptInterval <- control$scaleAdaptInterval
+    factorBurnInIters <- control$factorBurnIn
+    ## node list generation
+    targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+    calcNodes <- model$getDependencies(target)
+    ## numeric value generation
+    timesRan      <- 0
+    d <- length(targetAsScalar)
+    if((length(origScaleVector) == 1) && (origScaleVector == 'oneVec')){
+      origScaleVector <- rep(1,d)
+    }
+    scaleVector <- origScaleVector
+    factorMat <- diag(d)
+    timesAdapted <- 0
+    timesAccepted <- rep(0, d)
+    optimalAR <- .24
+    outerTimesRan <- 0
+    innerTimesRan <- 0
+    currentCoordinates <- d
+    numCoordinates <- ceiling(coordinateProportion*d)
+    ##scaleHistory   <- c(0, 0)                       ## scaleHistory
+    ##propCovHistory <- array(0, dim = c(2, d, d))    ## scaleHistory
+    empirSamp <- matrix(0, nrow=factorAdaptInterval, ncol=d)
+    ## nested function and function list definitions
+    my_setAndCalculateDiff <- setAndCalculateDiff(model, target)
+    my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+  },
+  run = function() {
+    jump <- integer(d)
+    for(coordinate in 1:currentCoordinates){
+      currentValueVector <- values(model,target)
+      propMove <- rnorm(1, mean = 0,  sd = scaleVector[coordinate])
+      propValueVector <- currentValueVector + factorMat[,coordinate]*propMove
+      lpMHR <- my_setAndCalculateDiff$run(propValueVector)
+      jumpLogical <- my_decideAndJump$run(lpMHR, 0, 0, 0) ## will use lpMHR - 0
+      if(jumpLogical == TRUE){
+        jump[coordinate] <- 1
+        nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+      }
+      else{
+        jump[coordinate] <- 0
+        nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+      }
+    }
+    outerTimesRan <<- outerTimesRan+1
+    scaleAdaptiveProcedure(jump)
+    if(timesRan < factorBurnInIters)  factorAdaptiveProcedure()
+  },
+  methods = list(
+    scaleAdaptiveProcedure = function(jump = integer(1)) {
+      for(coordinate in 1:currentCoordinates){
+        if(jump[coordinate] == 1)     timesAccepted[coordinate] <<- timesAccepted[coordinate] + 1
+      }
+      if(outerTimesRan %% scaleAdaptInterval == 0) {
+        timesAdapted <<- timesAdapted + 1
+        gamma1 <- 1/((timesAdapted + 3)^0.8)
+        gamma2 <- 10 * gamma1
+        for(coordinate in 1:currentCoordinates){
+          acceptanceRate <- timesAccepted[coordinate] / outerTimesRan
+          adaptFactor <- exp(gamma2 * (acceptanceRate - optimalAR))
+          scaleVector[coordinate] <<- scaleVector[coordinate] * adaptFactor
+          timesAccepted <<- numeric(currentCoordinates)
+        }
+      }
+    },
+    factorAdaptiveProcedure = function() {
+      empirSamp[outerTimesRan, 1:d] <<- values(model, target)
+      if(outerTimesRan == factorAdaptInterval){  # time to adapt factors
+        for(i in 1:numCoordinates)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+        empirCov <- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
+        factorMat <<-  eigen(empirCov, only.values = FALSE)  # replace old factors with new factors
+        outerTimesRan  <<- 0
+        innerTimesRan <<- 0
+        timesAdapted <<- 0
+        timesAccepted <<- numeric(currentCoordinates)
+        scaleVector <<- origScaleVector
+        currentCoordinates <<- numCoordinates ## after adaptation has been performed once, only use 1:numCoordinate factors
+      }
+    },
+    reset = function() {
+      timesRan      <<- 0
+      my_calcAdaptationFactor$reset()
+    }
+  )
+)
+
 
 #############################################################################
 ### RW_llFunction, does a RW, but using a generic log-likelihood function ###
@@ -469,8 +568,8 @@ sampler_AF_slice <- nimbleFunction(
     ## control list extraction
     width         <- control$sliceWidths
     maxSteps      <- control$sliceMaxSteps
-    factorBurnInIters   <- control$sliceFactorBurnIn     # number of iterations to use for factor adaptation
-    factorAdaptInterval <- control$sliceFactorAdaptInterval   # interval to use for factor adaptation
+    factorBurnInIters   <- control$factorBurnIn     # number of iterations to use for factor adaptation
+    factorAdaptInterval <- control$factorAdaptInterval   # interval to use for factor adaptation
     sliceAdaptIters     <- control$sliceSliceBurnIn       # number of iterations to use for slice adaptation (note this gets reset every time factor adaptation is performed)
     
     ## node list generation
@@ -1330,19 +1429,32 @@ sampler_RW_multinomial <- nimbleFunction(
 #'
 #' The ess sampler accepts no control list arguments.
 #' 
-#' @secetion AF_slice sampler:
+#' @section AF_slice sampler:
 #' 
 #' The automated factor slice sampler conducts a slice sampling algorithm on one or more model nodes.  The sampler uses the eigenvectors of the posterior covariance between these nodes as an orthogonal basis on which to perform its 'stepping Out' procedure.  The sampler is adaptive in updating both the width of the slices and the values of the eigenvectors.  The sampler can be applied to ay be applied to any set of continuous or discrete-valued model nodes, to any single continuous or discrete-valued multivariate model node, or to any combination thereof. 
 #
 #' The automated factor slice sampler accepts the following control list elements:
 #' \itemize{
 #' \item widths.  A numeric vector of initial slice widths.  The length of the vector must be equal to the sum of the lengths of all nodes being used by the automated factor slice sampler.  Defaults to a vector of 1's.
-#' \item sliceFactorBurnIn. The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation.  (default =  5000)
-#' \item sliceFactorAdaptInterval.  The interval on which to perform factor adaptation. (default = 1000)
+#' \item factorBurnIn. The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation.  (default =  5000)
+#' \item factorAdaptInterval.  The interval on which to perform factor adaptation. (default = 1000)
 #' \item sliceSliceBurnIn.  The maximum number of iterations for which to adapt the slice widths for a given set of factors.  (default = 512)
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
 #' }
 #'
+#' @section RW_rotated_block sampler:
+#' 
+#' This sampler performs univariate random walk sampling in a rotated coordinate space.  The coordinates are defined as the eigenvectors of the posterior covariance matrix.  The sampler adapts both the scale of the individual random walk samplers, and the directions that those samplers are performed in.  
+#' 
+#' The RW_rotated_block sampler accepts the following control list elements:
+#' \itemize{
+#' \item coordinateProportion.  The proportion of different coordinate directions to perform random walk samplers in.  The first coordinateProportion proportion of eigenvectors, sorted by descending eigenvalues, will be sampled in.  Must be between 0 and 1.  Defaults to $.9$.
+#' \item scaleVector.   A vector with initial scale values for each of univariate random walk samplers.  Must be of length $d$.  Defaults to a vector of 1's.
+#' \item scaleAdaptInterval. The interval on which to adapt the individual scale parameters.  (default = 200)
+#' \item factorAdaptInterval.  The interval on which to perform factor adaptation. (default = 1000)
+#' \item factorBurnIn.  The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation.  (default =  50,000)
+#' }
+#' 
 #' @section crossLevel sampler:
 #'
 #' This sampler is constructed to perform simultaneous updates across two levels of stochastic dependence in the model structure.  This is possible when all stochastic descendents of node(s) at one level have conjugate relationships with their own stochastic descendents.  In this situation, a Metropolis-Hastings algorithm may be used, in which a multivariate normal proposal distribution is used for the higher-level nodes, and the corresponding proposals for the lower-level nodes undergo Gibbs (conjugate) sampling.  The joint proposal is either accepted or rejected for all nodes involved based upon the Metropolis-Hastings ratio.

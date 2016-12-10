@@ -109,7 +109,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
          'eigenvals' = 'eigenize_matrixOps',
          'svdu' = 'eigenize_matrixOps',
          'svdd' = 'eigenize_matrixOps',
-         'svdv' = 'eigenize_matrixOps'
+         'svdv' = 'eigenize_matrixOps',
          RRtest_add = 'eigenize_recyclingRuleFunction'
          )
 )
