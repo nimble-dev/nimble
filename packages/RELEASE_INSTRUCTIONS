@@ -41,6 +41,12 @@ rebuild manual as further test of package
 
 put new version of manual in inst/doc
 
+before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
+and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
+and change to requireNamespace('rstan') from require('rstan')
+
+test cross-machine on Macs and on Windows
+
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
@@ -85,9 +91,6 @@ git push --tags    ## this is how you push *tags* to the remote
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
 git push --tags    ## this is how you push *tags* to the remote
 
-before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
-and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
-and change to requireNamespace('rstan') from require('rstan')
 
 ### building binaries
 
