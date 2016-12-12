@@ -441,6 +441,35 @@ prepareDistributionInput <- function(dist) {
 #' # or simply use in BUGS code without registration
 #' deregisterDistributions('dmyexp')
 #' m <- nimbleModel(code, inits = list(r = 1), data = list(y = 2))
+#'
+#' # example of Dirichlet-multinomial registration to illustrate
+#' # use of 'types' (note that registration is not actually needed
+#' # in this case)
+#' ddirchmulti <- nimbleFunction(
+#'     run = function(x = double(1), alpha = double(1), size = double(0), 
+#'                    log = integer(0, default = 0)) {
+#'         returnType(double(0))
+#'         logProb <- lgamma(size) - sum(lgamma(x)) + lgamma(sum(alpha)) - 
+#'             sum(lgamma(alpha)) + sum(lgamma(alpha + x)) - lgamma(sum(alpha) + 
+#'                                                                  size)
+#'         if(log) return(logProb)
+#'         else return(exp(logProb))
+#'     })
+#'
+#' rdirchmulti <- nimbleFunction(
+#'     run = function(n = integer(0), alpha = double(1), size = double(0)) {
+#'         returnType(double(1))
+#'         if(n != 1) print("rdirchmulti only allows n = 1; using n = 1.")
+#'         p <- rdirch(1, alpha)
+#'         return(rmulti(1, size = size, prob = p))
+#'     })
+#'
+#' registerDistributions(list(
+#'     ddirchmulti = list(
+#'         BUGSdist = "ddirchmulti(alpha, size)",
+#'         types = c('value = double(1)', 'alpha = double(1)')
+#'         )
+#'     ))
 registerDistributions <- function(distributionsInput) {
     if(missing(distributionsInput)) {
         cat("No distribution information supplied.\n")
