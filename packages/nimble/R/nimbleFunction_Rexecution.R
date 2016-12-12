@@ -837,7 +837,7 @@ nfMethod <- function(nf, methodName) {
 #' table(sampInts)
 #' #sampInts
 #' #   1    2    3 
-#' #2429 2498 5073 
+#' #2434 2492 5074 
 #'
 #' #Used in a nimbleFunction
 #' sampGen <- nimbleFunction(setup = function(){
@@ -849,9 +849,8 @@ nfMethod <- function(nf, methodName) {
 #' 	return(x)
 #' })
 #' rSamp <- sampGen()
-#' cSamp <- compileNimble(rSamp)
-#' cSamp$run(1:4, 5)
-#' #[1] 1 1 4 4 4
+#' rSamp$run(1:4, 5)
+#' #[1] 3 3 4 4 4
 rankSample <- function(weights, size, output, silent = FALSE) {
     ##cat('in R version rankSample\n')
     if(!is.loaded('rankSample'))
