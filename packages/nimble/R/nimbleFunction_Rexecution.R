@@ -832,7 +832,7 @@ nfMethod <- function(nf, methodName) {
 #' sampInts = NA	#sampled integers will be placed in sampInts
 #' rankSample(weights = c(1, 1, 2), size = 10, sampInts)
 #' sampInts
-#'# [1] 1 1 2 2 2 3 3 3 3 3
+#'# [1] 1 1 2 2 2 2 2 3 3 3
 #' rankSample(weights = c(1, 1, 2), size = 10000, sampInts)
 #' table(sampInts)
 #' #sampInts
