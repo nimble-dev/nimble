@@ -33,6 +33,8 @@ argType2symbol <- function(AT, name = character()) {
         return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }
     nDim <- if(length(AT)==1) 0 else AT[[2]]
+    if(!is.numeric(nDim) || nDim %% 1 != 0)
+        stop("argType2symbol: unexpected dimension, '", AT[[2]], "', found in argument '", deparse(AT), "'. Dimension should be integer-valued.")
     size <- if(nDim == 0) 1 else {
         if(length(AT) < 3)
             as.numeric(rep(NA, nDim))
