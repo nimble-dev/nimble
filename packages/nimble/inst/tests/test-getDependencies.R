@@ -1,3 +1,5 @@
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+
 context("Testing of getDependencies")
 
 ## note this testing is not intended to blur into general model processing testing.

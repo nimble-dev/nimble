@@ -59,6 +59,7 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
         
         ## populate args with recursive calls
         if(length(code) > 1) {
+            if(!is.null(names(code))) names(ans$args) <- names(code)[-1] ## entries like "" on the RHS leave no name on LHS --> good.
             for(i in 2:length(code)) ## Note for NULL this removes the list entry.  Not very general, but handles return(invisible(NULL))
                 if(is.logical(code[[i]])) {
                     if(name == '[' & i == length(code))

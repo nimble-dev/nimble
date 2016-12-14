@@ -3,6 +3,19 @@
 #define NIMERROR error
 #define RBREAK(msg) {PRINTF(msg); return(R_NilValue);}
 
+
+int rFunLength(int Arg) {
+  return Arg;
+}
+
+int rFunLength(double Arg) {
+  return Arg;
+}
+
+int rFunLength(bool Arg) {
+  return Arg;
+}
+
 bool decide(double lMHr) { // simple function accept or reject based on log Metropolis-Hastings ratio
   if(ISNAN(lMHr)) return(false);
   if(lMHr > 0) return(true);

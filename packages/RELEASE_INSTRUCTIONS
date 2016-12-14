@@ -32,11 +32,22 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="compareMCMCs copy declare distributions dsl_dists filtering getParam getDependencies math mcem mcmc models setData size trunc user"
+types="compareMCMCs copy declare distributions dsl_dists filtering getBound getDistributionInfo getParam getDependencies math mcem mcmc models setData size trunc user"
 for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
 
+rebuild manual as further test of package
+
+put new version of manual in inst/doc
+
+before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
+and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
+and change to requireNamespace('rstan') from require('rstan')
+
+test cross-machine on Macs and on Windows
+
+submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
 login to nature.berkeley.edu: ssh to your_calnet_id@nature.berkeley.edu and use CalNet password
 cd /web/R-nimble/wordpress/src/contrib
@@ -56,16 +67,13 @@ and change symlink to point to newest pdf
 
 make a posting about the release on the webpage: click New Post (or maybe Posts —> New Post) then the post title should automatically go in the news roll on the right of the main page (include R as a tag if you want it picked up by R-bloggers)
 
-(make sure post is set up as a blog entry) (CJP not sure what this means...)
-
 add info on new release to release notes page
 
 update NEWS info on webpage as high-level summary of NEWS in package
 
 update version numbering on license and citation page and 'What is Nimble' page
 
-rebuild and post manual and put new version of manual in inst/doc
-git tag the manual repository
+update documentation page with link to updated manual
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
 
@@ -83,8 +91,6 @@ git push --tags    ## this is how you push *tags* to the remote
 git tag -a v$VERSION -m "NIMBLE version $VERSION release, April 6, 2016"
 git push --tags    ## this is how you push *tags* to the remote
 
-before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
-and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
 
 ### building binaries
 

@@ -11,6 +11,10 @@ using std::string;
 
 //using namespace std;
 
+int rFunLength(int Arg);
+int rFunLength(double Arg);
+int rFunLength(bool Arg);
+
 class nimbleTimerClass_ {
  public:
   clock_t t_start;

@@ -121,6 +121,8 @@ populateNodeFxnVecNew <- function(fxnPtr, Robject, fxnVecName, dll){
     indexingInfo <- Robject[[fxnVecName]]$indexingInfo
     declIDs <- indexingInfo$declIDs
     rowIndices <- indexingInfo$unrolledIndicesMatrixRows
+    if(is.null(Robject[[fxnVecName]]$model$CobjectInterface) || inherits(Robject[[fxnVecName]]$model$CobjectInterface, 'uninitializedField'))
+        stop("populateNodeFxnVecNew: error in accessing compiled model; perhaps you did not compile the model used by your nimbleFunction along with or before this compilation of the nimbleFunction?")
     numberedPtrs <- Robject[[fxnVecName]]$model$CobjectInterface$.nodeFxnPointers_byDeclID$.ptr
     
     ## This is not really the most efficient way to do things; eventually 
