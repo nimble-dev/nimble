@@ -2,7 +2,7 @@
 
 USER LEVEL CHANGES
 
--- Minor bug fixes: sd() and var() were not working in BUGS code
+-- Minor bug fixes: sd() and var() were not working in BUGS code, fix to MCEM code
 
 DEVELOPER LEVEL CHANGES
 
