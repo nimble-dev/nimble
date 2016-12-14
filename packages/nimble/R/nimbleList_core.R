@@ -49,23 +49,31 @@ nimbleList <- function(types,
     classFields <- as.list(rep('ANY', length(types$vars)))
     names(classFields) <- types$vars
     classFields[[length(classFields)+1]] <- "ANY"
-    names(classFields)[length(classFields)] <- "nimbleListDef"
+    names(classFields)[length(classFields)] <- "nimbleListDef" ## initial nl definition stored here
     classFields[[length(classFields)+1]] <- "ANY"
-    names(classFields)[length(classFields)] <- "nestedListGenList"
-
+    names(classFields)[length(classFields)] <- "nestedListGenList" ## nl generators for any nested lists stored here
 
     nlRefClassObject <- setRefClass(
       Class = name,
       fields = classFields,
       contains = 'nimbleListBase',
       methods = list(
-        initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, ...){
+        initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, NLPRINTFIELDS, ...){
           nimbleListDef <<- NLDEFCLASSOBJECT
           nestedListGenList <<- NESTEDGENLIST
           for(i in seq_along(NESTEDGENLIST)){
             .self[[names(NESTEDGENLIST)[i]]] <- NESTEDGENLIST[[i]]$new()
           }
           callSuper(...)
+        },
+        show = function(){
+          cat("nimbleList object of type ", .self$nimbleListDef$className, 
+              "\n", sep = "")
+          nimListPrintFields <- nimbleListDef$types$vars
+          for(fieldName in nimListPrintFields){
+            cat("Field \"", fieldName, "\":\n", sep = "")
+            cat(methods::show(field(fieldName)))
+          }
         }
       ),
       where = where
