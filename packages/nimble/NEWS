@@ -1,3 +1,16 @@
+                           CHANGES IN VERSION 0.6-3 (December 2016)
+
+USER LEVEL CHANGES
+
+-- Minor bug fixes: sd() and var() were not working in BUGS code, fix to MCEM code
+
+DEVELOPER LEVEL CHANGES
+
+-- Removed use of compileNimble in rankSample to avoid Solaris issues
+   
+
+
+
                            CHANGES IN VERSION 0.6-2 (November 2016)
 
 USER LEVEL CHANGES
@@ -39,7 +52,6 @@ DEVELOPER LEVEL CHANGES
 USER LEVEL CHANGES
 
 -- Added getBound() functionality that provides dynamic access to lower and upper bounds on a node (from R or in the DSL), based on the underlying distribution and any user-defined truncation. Functionality is analogous to getParam(). Now used in the reflection sampler.
->>>>>>> get_param_range
 
                            CHANGES IN VERSION 0.6 (August 2016)
 
