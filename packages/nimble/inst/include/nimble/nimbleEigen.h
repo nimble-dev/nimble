@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include<Rmath.h>
 #include<vector>
+#include<cstdlib>
 #include "dists.h"
 
 // put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
