@@ -1,3 +1,14 @@
+
+
+
+
+USER LEVEL CHANGES
+
+-- Updates to MCMC configuration API.  Member methods conf$addMonitors() and conf$addMonitors2() now accept argument ..., allowing multiple monitors to be added using the syntax conf$addMonitors('x', 'y', 'z').  Introduced a new member method, conf$printMonitors(), which nicely prints the current MCMC monitors.  This takes the place of the former method conf$getMonitors().  Now, conf$getMonitors() returns a character vector of the MCMC monitors, and the new method conf$getMonitors2() returns a character vector of the MCMC monitors2 field.
+
+
+
+
                            CHANGES IN VERSION 0.6-3 (December 2016)
 
 USER LEVEL CHANGES
