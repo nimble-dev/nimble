@@ -3,6 +3,7 @@
 
 #include "NimArrBase.h"
 #include "Utils.h"
+#include <cstdlib>
 
 template<int ndim, class T>
   class NimArr;
@@ -221,7 +222,7 @@ public:
   T &operator()(int i, int j) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j)]);} // could add asserts here
   
   T &operator[](int i) const {
-    std::div_t divRes = div(i, size1);
+    std::div_t divRes = std::div(i, size1);
     return((*NimArrBase<T>::vPtr)[calculateIndex(divRes.rem, floor(divRes.quot))]);
   }
     
@@ -455,8 +456,8 @@ class NimArr<3, T> : public NimArrBase<T> {
   T &operator()(int i, int j, int k) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k)]);} // could add asserts here
 
   T &operator[](int i) const {
-    std::div_t divRes1 = div(i, size1);
-    std::div_t divRes2 = div(floor(divRes1.quot), size2);
+    std::div_t divRes1 = std::div(i, size1);
+    std::div_t divRes2 = std::div(floor(divRes1.quot), size2);
     return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, floor(divRes2.quot))]);
   }
 
@@ -725,9 +726,9 @@ class NimArr<4, T> : public NimArrBase<T> {
   T &operator()(int i, int j, int k, int l) const {return((*NimArrBase<T>::vPtr)[calculateIndex(i, j, k, l)]);} // could add asserts here
 
   T &operator[](int i) const {
-    std::div_t divRes1 = div(i, size1);
-    std::div_t divRes2 = div(floor(divRes1.quot), size2);
-    std::div_t divRes3 = div(floor(divRes2.quot), size3);
+    std::div_t divRes1 = std::div(i, size1);
+    std::div_t divRes2 = std::div(floor(divRes1.quot), size2);
+    std::div_t divRes3 = std::div(floor(divRes2.quot), size3);
     return((*NimArrBase<T>::vPtr)[calculateIndex(divRes1.rem, divRes2.rem, divRes3.rem, floor(divRes3.quot))]);
   }
   

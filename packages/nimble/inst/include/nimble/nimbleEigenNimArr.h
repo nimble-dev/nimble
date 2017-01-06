@@ -51,8 +51,8 @@ template<typename NimArrOutput, typename DerivedX, typename DerivedTimes>
   unsigned int i, j, thisTimes;
   Scalar thisVal;
   for(i = 0; i < EigenX.size(); i++ ) {
-    thisTimes = nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedTimes>::LinearAccessBit, typename Eigen::internal::traits<DerivedTimes>::Scalar, DerivedTimes, unsigned int >::getCoeff(EigenTimes, i);
-    thisVal = nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedX>::LinearAccessBit, Scalar, DerivedX, unsigned int >::getCoeff(EigenX, i);
+    thisTimes = nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedTimes>::nimbleUseLinearAccess, typename Eigen::internal::traits<DerivedTimes>::Scalar, DerivedTimes, unsigned int >::getCoeff(EigenTimes, i);
+    thisVal = nimble_eigen_coeff_impl< nimble_eigen_traits<DerivedX>::nimbleUseLinearAccess, Scalar, DerivedX, unsigned int >::getCoeff(EigenX, i);
     for(j = 0; j < thisTimes; j++) 
       ans.push_back(thisVal);
   }

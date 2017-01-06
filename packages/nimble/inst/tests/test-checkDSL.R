@@ -2,6 +2,8 @@ source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
 # need a test_dslCheck function???
 
+nimbleOptions(showCompilerOutput = TRUE)
+
 test_that("Test of DSL check of valid RCfunction", expect_silent(
 test1 <- nimbleFunction(
     run = function(x = double(0)) {
