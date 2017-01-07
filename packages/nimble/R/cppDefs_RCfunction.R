@@ -59,7 +59,8 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          }
                                      }
                                  },
-                                 buildFunction = function(RCfun, parentST = NULL) {
+                                     buildFunction = function(RCfun, parentST = NULL) {
+                                         browser()
                                      RCfunProc <<- RCfun
                                      name <<- RCfunProc$name
                                      const <<- RCfunProc$const
@@ -70,6 +71,9 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      code <<- cppCodeBlock(code = RCfunProc$compileInfo$nimExpr,
                                                            objectDefs = localArgs)
                                      returnType <<- RCfunProc$compileInfo$returnSymbol$genCppVar()
+                                     ## For external calls:
+                                     CPPincludes <<- c(CPPincludes, RCfunProc$RCfun$externalCPPincludes)
+                                     Hincludes <<- c(Hincludes, RCfunProc$RCfun$externalHincludes)
                                      invisible(NULL)
                                  },
                                  buildRwrapperFunCode = function(className = NULL, eval = FALSE, includeLHS = TRUE, returnArgsAsList = TRUE, includeDotSelf = '.self', env = globalenv(), dll = NULL, includeDotSelfAsArg = FALSE) {

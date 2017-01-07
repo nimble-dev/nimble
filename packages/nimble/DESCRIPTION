@@ -42,6 +42,7 @@ Collate:
     BUGS_getDependencies.R
     BUGS_utils.R
     BUGS_mathCompatibility.R
+    externalCalls.R
     genCpp_exprClass.R
     genCpp_operatorLists.R
     genCpp_RparseTree2exprClasses.R

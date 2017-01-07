@@ -57,7 +57,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr',
                     run.time = 'sizeRunTime',
-                    nimbleConvert = 'sizeNimbleConvert'),
+                    nimbleConvert = 'sizeNimbleConvert',
+                    nimbleUnconvert = 'sizeNimbleUnconvert'),
                makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
@@ -1282,11 +1283,9 @@ sizeNimbleConvert <- function(code, symTab, typeEnv) {
     ##    symTab$addSymbol(symbolBasic(name = copyName, nDim = nDim, type = type))
 
     subList <- list(var = targetExpr, copy = as.name(copyName))
-    newCode <- substitute( nimArrCopyIfNeeded(var, copy),
+    newCode <- substitute( nimArrPtr_copyIfNeeded(var, copy),
                              subList )
     ## only necessary if the result is needed
-    codeAfter <- substitute( after( if(isMap(var)) { mapCopy(var, copy) } ),  ## after() tags the assertion to go after the code line
-                            subList )
 
     if(!symTab$symbolExists( copyName )) {
         symTab$addSymbol(  symbolBasic(name = copyName, type = type, nDim = nDim) )
@@ -1294,11 +1293,36 @@ sizeNimbleConvert <- function(code, symTab, typeEnv) {
     }
     newCode <- RparseTree2ExprClasses(newCode)
     newCode$type <- "custom"
-    newCode$sizeExprs <- symbolPtr(type = type) ## trick to put a symbol object here
-    codeAfter <- RparseTree2ExprClasses(codeAfter)
+    newCode$sizeExprs <- symbolPtr(type = type) ## trick to put a symbol object into sizeExprs for later use
     setArg(code$caller, code$callerArgID, newCode)
     
-    c(asserts, codeAfter)
+    asserts
+}
+
+sizeNimbleUnconvert <- function(code, symTab, typeEnv) {
+    ptrString <- nimDeparse(code$args[[1]])
+    ptrName <- Rname2CppName(ptrString)
+    ptrExpr <- parse(text = ptrString, keep.source = FALSE)[[1]]
+
+    targetString <- nimDeparse(code$args[[2]])
+    targetName <- Rname2CppName(targetString)
+    targetExpr <- parse(text = targetString, keep.source = FALSE)[[1]]
+
+    copyName <- paste0(targetName, '_nimbleContigCopy')
+##    assign(copyName, exprTypeInfoClass$new(nDim = nDim, type = type), envir = typeEnv)
+    ##    symTab$addSymbol(symbolBasic(name = copyName, nDim = nDim, type = type))
+
+    subList <- list(ptr = ptrExpr, var = targetExpr, copy = as.name(copyName))
+    newCode <- substitute( nimArrPtr_copyBackIfNeeded(ptr, var, copy),
+                             subList )
+
+    newCode <- RparseTree2ExprClasses(newCode)
+    setArg(code$caller, code$callerArgID, newCode)
+    NULL
+}
+
+sizeExternalNimbleCall <- function(code, symTab, typeEnv) {
+    ## may not be needed
 }
 
 ## This is an old prototype that was never used

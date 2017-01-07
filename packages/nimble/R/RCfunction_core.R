@@ -26,7 +26,9 @@ nfMethodRC <-
                     code       = 'ANY',
                     returnType = 'ANY',
                     uniqueName = 'character',
-                    neededRCfuns = 'ANY'		#list
+                    neededRCfuns = 'ANY',		#list
+                    externalHincludes = 'ANY',
+                    externalCPPincludes = 'ANY'
                 ),
                 methods = list(
                     initialize = function(method, name, check = FALSE) {
@@ -41,6 +43,8 @@ nfMethodRC <-
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
+                        ## New system for external calls:
+                        externalHincludes <<- externalCPPincludes <<- list() ## to be populated by nimbleExternalCall
                     },
                     generateArgs = function() {
                         argsList <- nf_createAList(names(argInfo))
