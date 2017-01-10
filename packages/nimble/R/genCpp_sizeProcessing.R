@@ -1,5 +1,5 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr')
-setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
+setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes', 'UNPROTECT')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
@@ -57,6 +57,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr',
                     run.time = 'sizeRunTime',
+                    PROTECT = 'sizePROTECT',
                     nimbleConvert = 'sizeNimbleConvert',
                     nimbleUnconvert = 'sizeNimbleUnconvert'),
                makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
@@ -1128,10 +1129,14 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     }
                     ## a path for arbitrary symbols
-                    else if(RHStype == "custom") {
-                        ConlySym <- RHS$sizeExprs ## trick to put a symbol object here
+                    else if(RHStype == "custom") {                        
+                        ConlySym <- RHS$sizeExprs$copy() ## trick to put a symbol object here. use a copy in case this expr is from simple assignment, not creation
                         ConlySym$name <- LHS$name
                         symTab$addSymbol(ConlySym)
+
+                        code$type <- "custom"
+                        code$sizeExprs <- ConlySym ## in case there is chained assignment
+
                         return(invisible(NULL))
                     }
                     else
@@ -1267,6 +1272,13 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         setArg(code, 1, LHS)
     }
     return(assert)
+}
+
+sizePROTECT <- function(code, symTab, typeEnv) {
+    ## Do not recurse.
+    code$type <- "custom"
+    code$sizeExprs <- symbolSEXP(type = 'custom') ## trick to put a symbol object into sizeExprs for later use
+    return(invisible(NULL))
 }
 
 sizeNimbleConvert <- function(code, symTab, typeEnv) {

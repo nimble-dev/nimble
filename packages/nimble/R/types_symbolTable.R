@@ -125,6 +125,17 @@ symbolBasic <-
                         })
     )
 
+symbolSEXP <- setRefClass(
+    Class = "symbolSEXP",
+    contains = "symbolBase",
+    methods = list(
+        show = function() writeLines(paste('symbolSEXP', name)),
+         genCppVar = function(...) {
+             cppVar(name = name,
+                    baseType = "SEXP")
+        })
+    )
+
 symbolPtr <- setRefClass(
     Class = "symbolPtr",
     contains = "symbolBase",

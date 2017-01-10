@@ -9,6 +9,12 @@
 #include<algorithm>
 
 
+void SEXP_2_NimArr(SEXP Sn, double &x) {x = SEXP_2_double(Sn);}
+void SEXP_2_NimArr(SEXP Sn, int &x) {x = SEXP_2_int(Sn);}
+void SEXP_2_NimArr(SEXP Sn, bool &x) {x = SEXP_2_bool(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::string &x) {x = STRSEXP_2_string(Sn);}
+void SEXP_2_NimArr(SEXP Sn, std::vector<std::string> &x) {STRSEXP_2_vectorString(Sn, x);}
+
 // This is used when we have a NimArr<>* in a model and a NimArr<>** that needs to point to it.
 // We assume we have an extptr to each
 SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {

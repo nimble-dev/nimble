@@ -134,6 +134,13 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
+/* Try overloading these for all needed copy operations */ 
+void SEXP_2_NimArr(SEXP Sn, double &x);
+void SEXP_2_NimArr(SEXP Sn, int &x);
+void SEXP_2_NimArr(SEXP Sn, bool &x);
+void SEXP_2_NimArr(SEXP Sn, std::string &x);
+void SEXP_2_NimArr(SEXP Sn, std::vector<std::string> &x);
+
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
 template<int ndim>
