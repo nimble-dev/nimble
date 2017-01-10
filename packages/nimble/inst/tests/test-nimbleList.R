@@ -1,17 +1,18 @@
 ## Tests for building, compiling, and using nimbleList objects
-## There are three distinct ways that a nimbleList can be created for use in a nimbleFunction:
+## There are five distinct ways that a nimbleList can be created for use in a nimbleFunction:
 ## 1) nimbleListDef is created outside of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in setup code
 ## 2) nimbleListDef is created outside of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in run code
 ## 3) nimbleListDef is created in setup code of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in setup code
 ## 4) nimbleListDef is created in setup code of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in run code
-
+## 5) nimbleListDef is created outside of the nimbleFunction, nimbleListDef$new() used to create new nimbleList outside of the nimbleFunction,
+##    nimbleList passed as argument to nimbleFunction
 context('nimbleList() tests')
 
 
 library(nimble)
 library(testthat)
-nimbleOptions(showCompilerOutput = TRUE)
- nimbleOptions(debugCppLineByLine = FALSE)
+# nimbleOptions(showCompilerOutput = TRUE)
+# nimbleOptions(debugCppLineByLine = FALSE)
 # nimbleOptions(debugSizeProcessing = TRUE)
 # debug(nimble:::sizeAssignAfterRecursing)
 options( warn = 1 )
