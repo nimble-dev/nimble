@@ -1,5 +1,5 @@
 assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr')
-setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes', 'UNPROTECT')
+setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes', 'SEXP_2_NimArr', 'nimVerbatim')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
 sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
@@ -57,7 +57,9 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr',
                     run.time = 'sizeRunTime',
-                    PROTECT = 'sizePROTECT',
+                   PROTECT = 'sizePROTECT',
+                   NimArr_2_SEXP = 'sizePROTECT', ## same need
+                   Reval = 'sizeReval',
                     nimbleConvert = 'sizeNimbleConvert',
                     nimbleUnconvert = 'sizeNimbleUnconvert'),
                makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
@@ -1279,6 +1281,11 @@ sizePROTECT <- function(code, symTab, typeEnv) {
     code$type <- "custom"
     code$sizeExprs <- symbolSEXP(type = 'custom') ## trick to put a symbol object into sizeExprs for later use
     return(invisible(NULL))
+}
+
+sizeReval <- function(code, symTab, typeEnv) {
+    code$name <- 'Rf_eval'
+    return(sizePROTECT(code, symTab, typeEnv))
 }
 
 sizeNimbleConvert <- function(code, symTab, typeEnv) {

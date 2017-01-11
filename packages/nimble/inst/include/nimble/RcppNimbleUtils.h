@@ -141,6 +141,12 @@ void SEXP_2_NimArr(SEXP Sn, bool &x);
 void SEXP_2_NimArr(SEXP Sn, std::string &x);
 void SEXP_2_NimArr(SEXP Sn, std::vector<std::string> &x);
 
+SEXP NimArr_2_SEXP(double x);
+SEXP NimArr_2_SEXP(int x);
+SEXP NimArr_2_SEXP(bool x);
+SEXP NimArr_2_SEXP(std::string &x);
+SEXP NimArr_2_SEXP(const std::vector<std::string> &x);
+
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
 template<int ndim>

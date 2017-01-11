@@ -59,8 +59,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          }
                                      }
                                  },
-                                     buildFunction = function(RCfun, parentST = NULL) {
-                                         browser()
+                                 buildFunction = function(RCfun, parentST = NULL) {
                                      RCfunProc <<- RCfun
                                      name <<- RCfunProc$name
                                      const <<- RCfunProc$const

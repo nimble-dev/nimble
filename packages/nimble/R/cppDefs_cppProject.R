@@ -132,7 +132,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        cppDefs[[name]] <<- classDef
                                    },
                                    writeFiles = function(filename, con = filename) {
-                                       browser()
                                        filename <- Rname2CppName(filename)
 
                                        whichDefs <- which(unlist(lapply(cppDefs, `[[`, 'filename')) == filename)
