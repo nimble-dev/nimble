@@ -278,6 +278,7 @@ nfProcessing$methods(doSetupTypeInference = function(setupOrig, setupNew) {
         return(NULL)
     } 
     outputNames <- character()
+    browser()
     if(setupOrig) {
     	setupSymTab <<- symbolTable(parentST = NULL)
     	outputNames <- c(outputNames, nf_getSetupOutputNames(nfGenerator),  nf_getArgOutputNames(nfGenerator))
@@ -379,6 +380,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
     return(returnSym)
   }
+  browser()
   if(is.nl(instances[[1]][[name]])) {
     ## This case mimics the nimbleFunction case below (see is.nf)
     

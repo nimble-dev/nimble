@@ -68,11 +68,11 @@ makeNFBindingFields <- function(symTab, cppNames) {
               else {
                 if(is.list(x)) { ## can be a list with first element a CmultiNimbleFunction object and second element an index
                   basePtr <- x[[1]]$basePtrList[[ x[[2]] ]]
-                  nimbleInternalFunctions$setDoublePtrFromSinglePtr(VPTR, basePtr) ## check field name
+                  nimbleInternalFunctions$setSmartPtrFromSinglePtr(VPTR, basePtr) ## check field name
                 } else {
                   if(!inherits(x, 'CnimbleFunctionBase')) stop(paste('Nimble compilation error initializing nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
                   if(!inherits(x$.basePtr, 'externalptr')) stop(paste('Nimble compilation error initializing pointer for nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
-                  nimbleInternalFunctions$setDoublePtrFromSinglePtr(VPTR, x$.basePtr) ## check field name
+                  nimbleInternalFunctions$setSmartPtrFromSinglePtr(VPTR, x$.basePtr) ## check field name
                 }
                 assign(NLNAMECHAR, x, inherits = TRUE) ## avoids <<- warnings
               }
@@ -855,7 +855,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
                neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
              }
              nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self, dll)
-            }
+           }
         }
     }, list(isListObj = isListObj))
       # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization

@@ -4,6 +4,7 @@
 #include "nimble/dllFinalizer.h"
 //#include "nimble/RcppUtils.h"
 #include "nimble/Utils.h"
+#include "nimble/smartPtrs.h"
 #include<iostream>
 #include<sstream>
 #include<algorithm>
@@ -17,6 +18,14 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
   *doublePtr = singlePtr;
   return(R_NilValue);
 }
+
+SEXP setSmartPtrFromSinglePtr(SEXP StoPtr, SEXP SfromPtr) {
+  void *fromPtr = R_ExternalPtrAddr(SfromPtr); 
+  nimSmartPtrBase *toSmartPtr = static_cast<nimSmartPtrBase*>(R_ExternalPtrAddr(StoPtr));  
+  toSmartPtr->setPtrFromVoidPtr(fromPtr);
+  return(R_NilValue);
+}
+
 
 SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize) {
   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 

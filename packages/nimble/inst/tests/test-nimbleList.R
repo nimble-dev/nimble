@@ -95,7 +95,6 @@ test_that("return objects are nimbleLists",
 ## Test of creating new nimbleList in setup code and specifying initial values for that list.
 ## Here, the nlDef is created in setup code
 ########
-
 nlTestFunc3 <- nimbleFunction(
   setup = function(){
     testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
@@ -117,10 +116,13 @@ CnimbleList <- ctestInst$run()
 expect_identical(RnimbleList$nlCharacter, "hello world")
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nlCharacter, CnimbleList$nlCharacter)
+expect_identical(CnimbleList$nlCharacter, ctestInst$setupList3$nlCharacter)
+
 test_that("return objects are nimbleLists", 
           {
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)
             expect_identical(is.nl(CnimbleList), TRUE)
+            expect_identical(is.nl(ctestInst$setupList3), TRUE)
           })
 
 
@@ -396,7 +398,6 @@ CnimbleList <- ctestInst$run()
 expect_identical(RnimbleList$nestedNL$nlDouble, 3.14)
 ## test for identical values of R and C nimbleLists
 expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
-
 test_that("return objects are nimbleLists", 
           {
             expect_identical(nimble:::is.nl(RnimbleList), TRUE)

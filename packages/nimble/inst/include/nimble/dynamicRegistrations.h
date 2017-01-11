@@ -66,6 +66,7 @@ R_CallMethodDef CallEntries[] = {
 
   //RcppNimbleUtils
   FUN(setDoublePtrFromSinglePtr, 2),
+  FUN(setSmartPtrFromSinglePtr, 2),
   FUN(addBlankModelValueRows, 2),
   FUN(getNRow, 1),
   FUN(copyModelValuesElements, 4),

@@ -101,7 +101,7 @@ scalarOutputTypes <- list(decide = 'logical', size = 'integer', isnan = 'logical
 
 exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprClass
     ## name:
-  if(code$isName) {
+   if(code$isName) {
         ## If it doesn't exist and must exist, stop
         if(code$name != "") { ## e.g. In A[i,], second index gives name==""
             if(!exists(code$name, envir = typeEnv, inherits = FALSE)) {
@@ -944,7 +944,7 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
 
 recurseSetSizes <- function(code, symTab, typeEnv, useArgs = rep(TRUE, length(code$args))) {
     ## won't be here unless code is a call.  It will not be a {
-
+    
     asserts <- list()
     for(i in seq_along(code$args)) {
         if(useArgs[i]) {
@@ -1191,7 +1191,10 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
+                  browser()
                     if(RHStype == "symbolNimbleList") {
+                      # LHSnlProc <- symTab$getSymbolObject(RHS$name, T)$nlProc$neededTypes
+                      
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- symTab$getSymbolObject(RHS$name, inherits = TRUE)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
@@ -2602,7 +2605,7 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
             }
         }
     }
-
+    browser()
     returnTypeLabel <- as.character(returnType[[1]])
     if(returnTypeLabel == 'void') {
         code$type <- returnTypeLabel
@@ -2611,7 +2614,6 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
     }
     returnNDim <- if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
     returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
-
     
     code$type <- returnTypeLabel
     code$nDim <- returnNDim

@@ -38,6 +38,7 @@ vector<int> getSEXPdims(SEXP Sx);
 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
+  SEXP setSmartPtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
 
   //  SEXP setVec(SEXP Sextptr, SEXP Svalue);
   //  SEXP getVec(SEXP Sextptr);

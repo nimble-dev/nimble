@@ -3,8 +3,13 @@
 
 #include "Utils.h"
 
+class nimSmartPtrBase {
+	public:
+	virtual void setPtrFromVoidPtr(void* inputPtr)=0;
+};
+
 template<typename T>
-class nimSmartPtr {
+class nimSmartPtr : public nimSmartPtrBase {
  public:
   T* realPtr;
   T& operator*() {return *realPtr;}
@@ -19,7 +24,9 @@ class nimSmartPtr {
     realPtr = inputPtr;
     realPtr->newWatcher();
   };
-  
+  void setPtrFromVoidPtr(void* inputPtr) {
+	  setPtr( static_cast<T*>(inputPtr) );  
+  };
   bool equalsPtr(const nimSmartPtr & otherPtr) {
 	  return(realPtr == otherPtr.realPtr);
   }
