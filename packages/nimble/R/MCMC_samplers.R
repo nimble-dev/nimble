@@ -294,7 +294,7 @@ sampler_RW_llFunction <- nimbleFunction(
         calcNodes <- model$getDependencies(target)
         ## nested function and function list definitions
         mvInternal <- modelValues(model)
-        RWControl <- list(adaptive = adaptive, adaptInterval = adaptInterval, scale = scale)
+        RWControl <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale, log=FALSE, reflective=FALSE)
         targetRWSamplerFunction <- sampler_RW(model, mvInternal, target, RWControl)
         my_setAndCalculateOne <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
