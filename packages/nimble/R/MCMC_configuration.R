@@ -193,10 +193,10 @@ print: A logical argument, specifying whether to print the ordered list of defau
                             addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                     }
                     if(nodeDist == 'dmulti')   { addSampler(target = node, type = 'RW_multinomial');     next }
+                    if(nodeDist == 'ddirch')   { addSampler(target = node, type = 'RW_dirichlet');       next }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
                             addSampler(target = scalarNode, type = 'RW') };     next }
-                    if(nodeDist == 'ddirch')   warning(paste0('RW_block sampler was applied to Dirichlet node \'', node, '\', which will not result in proper sampling behaviour. Try reparameterizing this node in terms of constituent gamma distributions.'))
                     addSampler(target = node, type = 'RW_block');     next }
 
                 ## node is scalar, non-end node

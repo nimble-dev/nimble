@@ -1006,4 +1006,98 @@ test_that('RW_multinomial sampler results within tolerance', expect_true(all(abs
 
 
 
+## testing RW_dirichlet sampler
+## consistent with conjugate multinomial sampler
+n <- 100
+alpha <- c(10, 30, 15)
+K <- length(alpha)
+p <- c(.12, .24, .09)
+y <- c(23, 67, 10)
+code <- quote({
+    p[1:K]  ~ ddirch(alpha[1:K])
+    p2[1:K] ~ ddirch(alpha[1:K])
+    y[1:K]  ~ dmulti(p[1:K], n)
+    y2[1:K] ~ dmulti(p2[1:K], n)
+})
+inits <- list(p = rep(1/K, K), alpha = alpha, p2 = rep(1/K,K))
+constants <- list(n=n, K=K)
+data <- list(y = y, y2 = y)
+Rmodel <- nimbleModel(code, constants, data, inits)
+Cmodel <- compileNimble(Rmodel)
+conf <- configureMCMC(Rmodel, nodes=NULL)
+conf$addSampler('p[1:3]',  'RW_dirichlet')
+conf$addSampler('p2[1:3]', 'conjugate')
+Rmcmc <- buildMCMC(conf)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+niter <- 30
+set.seed(0)
+Rmcmc$run(niter)
+Rsamples <- as.matrix(Rmcmc$mvSamples)
+set.seed(0)
+Cmcmc$run(niter)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+
+nodes <- c('p[1]','p[2]','p[3]')
+ans <- c(0.12812261, 0.6728109, 0.19906652)
+tol <- 1e-6
+test_that('correct R RW_dirichlet samples', expect_equal(as.numeric(Rsamples[30, nodes]), ans, tolerance=tol))
+test_that('correct C RW_dirichlet samples', expect_equal(as.numeric(Csamples[30, nodes]), ans, tolerance=tol))
+
+Cmcmc$run(100000)
+Csamples <- as.matrix(Cmcmc$mvSamples)
+means <- apply(Csamples, 2, mean)
+
+test_that('agreement between RW_dirichlet and conjugate dirichlet sampling', expect_true(all(abs(means[c('p[1]','p[2]','p[3]')] - means[c('p2[1]','p2[2]','p2[3]')]) < 0.001)))
+
+
+## testing RW_dirichlet sampler
+## more complicated -- intermediate deterministic nodes, and non-conjugate
+## test agreement between RW_dirichlet sampler, and writing model with component gammas
+
+code <- nimbleCode({
+    alpha[1] <- 4
+    alpha[2] ~ dgamma(1,1)
+    alpha[3] ~ dgamma(0.1, 0.1)
+    alpha[4] <- alpha[2] + alpha[3]
+    p1[1:4] ~ ddirch(alpha[1:4])
+    q1[1] <- p1[1]
+    q1[2] <- p1[2]
+    q1[3] <- p1[3]/2
+    q1[4] <- p1[3]/2
+    q1[5] <- p1[4]
+    y1[1:5] ~ dmulti(q1[1:5], n)
+    for(i in 1:4) {
+        theta[i] ~ dgamma(alpha[i], 1)
+        p2[i] <- theta[i] / V
+    }
+    V <- sum(theta[1:4])
+    q2[1] <- p2[1]
+    q2[2] <- p2[2]
+    q2[3] <- p2[3]/2
+    q2[4] <- p2[3]/2
+    q2[5] <- p2[4]
+    y2[1:5] ~ dmulti(q2[1:5], n)
+})
+y <- c(50, 10, 5, 5, 30)
+constants <- list(n=100)
+data <- list(y1=y, y2=y)
+inits <- list(alpha=c(4,1,1,2), p1=rep(0.25,4), p2=rep(0.25,4), theta=rep(1,4))
+Rmodel <- nimbleModel(code, constants, data, inits)
+conf <- configureMCMC(Rmodel)
+conf$printSamplers()
+conf$addMonitors('p1','p2')
+Rmcmc <- buildMCMC(conf)
+Cmodel <- compileNimble(Rmodel)
+Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
+
+Cmcmc$run(100000)
+samples <- as.matrix(Cmcmc$mvSamples)
+means <- apply(samples, 2, mean)
+sds <- apply(samples, 2, sd)
+
+test_that('non-conjugate agreement between RW_dirichlet and component gamma sampling: mean', expect_true(all(abs(means[c('p1[1]','p1[2]','p1[3]','p1[4]')] - means[c('p2[1]','p2[2]','p2[3]','p2[4]')]) < 0.01)))
+test_that('non-conjugate agreement between RW_dirichlet and component gamma sampling: sd', expect_true(all(abs(sds[c('p1[1]','p1[2]','p1[3]','p1[4]')] - sds[c('p2[1]','p2[2]','p2[3]','p2[4]')]) < 0.01)))
+
+
 
