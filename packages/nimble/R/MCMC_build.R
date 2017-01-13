@@ -21,7 +21,7 @@
 #'
 #' \code{time}: Boolean specifying whether to record runtimes of the individual internal MCMC samplers.  When \code{time=TRUE}, a vector of runtimes (measured in seconds) can be extracted from the MCMC using the method \code{mcmc$getTimes()} (default = FALSE).
 #'
-#' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).
+#' \code{progressBar}: Boolean specifying whether to display a progress bar during MCMC execution (default = TRUE).  The progress bar can be permanently disabled by setting the system option \code{nimbleOptions(MCMCprogressBar = FALSE)}.
 #'
 #' Samples corresponding to the \code{monitors} and \code{monitors2} from the MCMCconf are stored into the interval variables \code{mvSamples} and \code{mvSamples2}, respectively.
 #' These may be accessed and converted into R matrix objects via:
@@ -72,6 +72,7 @@ buildMCMC <- nimbleFunction(
         mvSamples2 <- modelValues(mvSamples2Conf)
         samplerTimes <- c(0,0) ## establish as a vector
         progressBarLength <- 52  ## multiples of 4 only
+        progressBarDefaultSetting <- getNimbleOption('MCMCprogressBar')
     },
 
     run = function(niter = integer(), reset = logical(default=TRUE), simulateAll = logical(default=FALSE), time = logical(default=FALSE), progressBar = logical(default=TRUE)) {
@@ -94,7 +95,7 @@ buildMCMC <- nimbleFunction(
             if(dim(samplerTimes)[1] != length(samplerFunctions) + 1)
                 samplerTimes <<- numeric(length(samplerFunctions) + 1)   ## first run: default inititialization to zero
         }
-        if(niter < progressBarLength+3) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
+        if(niter < progressBarLength+3 | !progressBarDefaultSetting) progressBar <- progressBar & 0  ## cheap way to avoid compiler warning
         if(progressBar) { for(iPB1 in 1:4) { cat('|'); for(iPB2 in 1:(progressBarLength/4)) cat('-') }; print('|'); cat('|') }
         progressBarIncrement <- niter/(progressBarLength+3)
         progressBarNext <- progressBarIncrement
