@@ -126,6 +126,54 @@ test_that("return objects are nimbleLists",
           })
 
 
+
+
+########
+## Test of creating new nimbleList in a function that is internal to another function.
+## The list is passed from the internal function to the outer function, and then to the user.
+## This test does *not* use nimble's active binding system.
+########
+innerNlTestFunc3a <- nimbleFunction(
+  setup = function(){
+    setupList3 <- testListDef3$new(nlCharacter = "hello world")
+  },
+  run = function(){
+    returnType(testListDef3())
+    return(setupList3)
+  }
+)
+
+nlTestFunc3a <- nimbleFunction(
+  setup = function(){
+    innerFunc3a <- innerNlTestFunc3a()
+  },
+  run = function(){
+    outList <- innerFunc3a$run()
+    returnType(testListDef3())
+    return(outList)
+  }
+)
+
+testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+testListDef3 <- nimbleList(testTypes)
+
+testInst <- nlTestFunc3a()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlCharacter, "hello world")
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlCharacter, CnimbleList$nlCharacter)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
 ########
 ## Test of using a nimbleList as a run function argument 
 ########

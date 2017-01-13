@@ -65,15 +65,10 @@ makeNFBindingFields <- function(symTab, cppNames) {
             function(x) {
               if(missing(x))
                 NLNAME
-              else {
-                if(is.list(x)) { ## can be a list with first element a CmultiNimbleFunction object and second element an index
-                  basePtr <- x[[1]]$basePtrList[[ x[[2]] ]]
-                  nimbleInternalFunctions$setSmartPtrFromSinglePtr(VPTR, basePtr) ## check field name
-                } else {
-                  if(!inherits(x, 'CnimbleFunctionBase')) stop(paste('Nimble compilation error initializing nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
-                  if(!inherits(x$.basePtr, 'externalptr')) stop(paste('Nimble compilation error initializing pointer for nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
-                  nimbleInternalFunctions$setSmartPtrFromSinglePtr(VPTR, x$.basePtr) ## check field name
-                }
+              else{
+                if(!inherits(x, 'CnimbleFunctionBase')) stop(paste('Nimble compilation error initializing nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
+                if(!inherits(x$.basePtr, 'externalptr')) stop(paste('Nimble compilation error initializing pointer for nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
+                nimbleInternalFunctions$setSmartPtrFromSinglePtr(VPTR, x$.basePtr) ## check field name
                 assign(NLNAMECHAR, x, inherits = TRUE) ## avoids <<- warnings
               }
             }, list(VPTR = as.name(ptrName), NLNAME = as.name(nlName), NLNAMECHAR = nlName) ) )
@@ -246,16 +241,13 @@ getSetNimbleFunction <- function(name, value, basePtr, dll) {
     }
 }
 
-
 getSetNimbleList <- function(name, value, basePtr, dll) {
   if(missing(value)) {
     warning('getSetNimbleList does not work for getting but was called without value.', call. = FALSE)
     return(NULL)
   } else {
-    browser()
     vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
-    ##message('setting from getSetNimbleFunction')
-    nimbleInternalFunctions$setSmartPtrFromSinglePtr(vptr, basePtr, dll = dll) ## check field name
+    nimbleInternalFunctions$setSmartPtrFromSinglePtr(vptr, value, dll = dll) ## check field name
   }
 }
 
@@ -568,12 +560,13 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
             .self[[v]] <- Cnf
             next
         }
-      else if(cppCopyTypes[[v]] == 'nimbleList') {
-        modelVar <- Robj[[v]]
-        Cnl <- modelVar$.CobjectInterface 
-        .self[[v]] <- Cnl
-        next
-      }
+        else if(cppCopyTypes[[v]] == 'nimbleList') {
+          browser()
+          modelVar <- Robj[[v]]
+          Cnl <- modelVar$.CobjectInterface 
+          .self[[v]] <- Cnl
+          next
+        }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
             if(is.null(Robj[[v]]$contentsList)) {
                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
@@ -688,18 +681,13 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             ## .self[[v]] <- Cnf
             next
         }
-      else if(cppCopyTypes[[v]] == 'nimbleList') {
-        modelVar <- Robj[[v]]
-        Cnl <- modelVar$.CobjectInterface ##environment(modelVar)$.CobjectInterface
-        if(is.list(Cnl)) {
-          valueBasePtr <- Cnl[[1]]$basePtrList[[ Cnl[[2]] ]]
-        } else {
+        else if(cppCopyTypes[[v]] == 'nimbleList') {
+          modelVar <- Robj[[v]]
+          Cnl <- modelVar$.CobjectInterface
           valueBasePtr <- Cnl$.basePtr
+          getSetNimbleList(v, valueBasePtr, basePtr, dll = dll)
+          next
         }
-        getSetNimbleList(v, valueBasePtr, basePtr)
-        ## .self[[v]] <- Cnf
-        next
-      }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
             if(is.null(Robj[[v]]$contentsList)) {
                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
@@ -871,7 +859,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
               oldCobjectInterface[[1]]$clearInstance( oldCobjectInterface[[2]] )
            } 
            else {
-             if(isListObj){
+            if(isListObj){
                neededObjects <<- list()
              }
              else{
@@ -975,7 +963,6 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                      dll <<- dll       ## should only occur first time addInstance is called
                                                  }
                                                  if(is.nf(nfObject)) compiledNodeFun$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
-                                                 
                                                  # avoid R CMD check problem with registration:
                                                  newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
                                                  regLabel <- try(get('name', envir = nfObject), silent = TRUE)
@@ -1022,6 +1009,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                                    getSetModelVarPtr(name, value, basePtr, dll = dll)}, ## only makes sense internally
                                                                nimbleFunction ={##message('switch nimbleFunction');
                                                                    getSetNimbleFunction(name, value, basePtr, dll = dll)}, ## ditto
+                                                               nimbleList ={##message('switch nimbleList');
+                                                                 getSetNimbleList(name, value, basePtr, dll = dll)}, ## ditto
                                                                nimPtrList = {##message('switch nimPtrList');
                                                                    getSetNimPtrList(name, value, basePtr, dll = dll)}, ## ditto
                                                                modelValues = {##message('switch modelValues');

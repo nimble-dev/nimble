@@ -22,14 +22,11 @@ class nimSmartPtr : public nimSmartPtrBase {
   void setPtrFromT(T* & inputPtr) {
     if(realPtr) realPtr->removeWatcher();
     realPtr = inputPtr;
-	PRINTF("STEP 4a \n");
     realPtr->newWatcher();
   };
   void setPtrFromVoidPtr(void* & inputPtr) {
-	    PRINTF("STEP 1");
 		T* tempPtr = static_cast<T*>(inputPtr);
 	    setPtrFromT( tempPtr ); 
-  PRINTF("STEP 2");
   };
   bool equalsPtr(const nimSmartPtr & otherPtr) {
 	  return(realPtr == otherPtr.realPtr);
@@ -72,7 +69,6 @@ class pointedToBase {
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
   void newWatcher() {
-	  printf("%d \n", watcherCount);
 	  PRINTF("Watcher ++ \n");
 watcherCount++;
 	  PRINTF("watcherCount is %d \n", watcherCount);
@@ -84,6 +80,7 @@ watcherCount++;
 	PRINTF("watcherCount is %d \n", watcherCount);
 
     if(watcherCount <= 0) {
+		PRINTF("Destructing Now!");
       if(watcherCount < 0) {
 	PRINTF("Error, a watcherCount went below 0. \n");
       }
