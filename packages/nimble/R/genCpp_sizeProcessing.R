@@ -1191,7 +1191,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
-                  browser()
                     if(RHStype == "symbolNimbleList") {
                       # LHSnlProc <- symTab$getSymbolObject(RHS$name, T)$nlProc$neededTypes
                       
@@ -1199,6 +1198,10 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                       if(is.null(LHSnlProc)) LHSnlProc <- symTab$getSymbolObject(RHS$name, inherits = TRUE)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = LHSnlProc))
+                    }
+                    if(symTab$symbolExists(RHStype, TRUE)){
+                      LHSnlProc <- symTab$getSymbolObject(RHStype, TRUE)$nlProc
+                      symTab$addSymbol(symbolNimbleList(name = LHS$name, type = 'symbolNimbleList', nlProc = LHSnlProc))
                     }
                     else
                         stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: LHS is not in typeEnv or symTab and cannot be added now.')), call. = FALSE)
@@ -2605,7 +2608,6 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
             }
         }
     }
-    browser()
     returnTypeLabel <- as.character(returnType[[1]])
     if(returnTypeLabel == 'void') {
         code$type <- returnTypeLabel

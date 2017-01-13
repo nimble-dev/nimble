@@ -246,6 +246,19 @@ getSetNimbleFunction <- function(name, value, basePtr, dll) {
     }
 }
 
+
+getSetNimbleList <- function(name, value, basePtr, dll) {
+  if(missing(value)) {
+    warning('getSetNimbleList does not work for getting but was called without value.', call. = FALSE)
+    return(NULL)
+  } else {
+    browser()
+    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+    ##message('setting from getSetNimbleFunction')
+    nimbleInternalFunctions$setSmartPtrFromSinglePtr(vptr, basePtr, dll = dll) ## check field name
+  }
+}
+
 getSetModelValues <- function(name, value, basePtr, dll) {
       if(missing(value)) {
         warning('getSetModelValues does not work for getting but was called without value.', call. = FALSE)
@@ -462,6 +475,17 @@ clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
             }
             next
         }
+        if(is.nl(thisObj)) {
+          RCO <- nf_getRefClassObject(thisObj)
+          if(!(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface))) {
+            if(is.list(RCO$.CobjectInterface))
+              RCO$.CobjectInterface[[1]]$finalizeInstance(RCO$.CobjectInterface[[2]])
+            else
+              RCO$.CobjectInterface$finalize()
+            neededObjects[[iName]] <- NULL
+          }
+          next
+        }
         if(inherits(thisObj, 'nimbleFunctionList')) {
             for(i in seq_along(thisObj$contentsList)) {
                 RCO <- nf_getRefClassObject(thisObj[[i]])
@@ -546,9 +570,8 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
         }
       else if(cppCopyTypes[[v]] == 'nimbleList') {
         modelVar <- Robj[[v]]
-        Cnf <- modelVar$.CobjectInterface ##environment(modelVar)$.CobjectInterface
-        ## Cnf coule be old format (CnimbleFunction) or a list(CmultiNimbleFunction, index)
-        .self[[v]] <- Cnf
+        Cnl <- modelVar$.CobjectInterface 
+        .self[[v]] <- Cnl
         next
       }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
@@ -667,13 +690,13 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
         }
       else if(cppCopyTypes[[v]] == 'nimbleList') {
         modelVar <- Robj[[v]]
-        Cnf <- modelVar$.CobjectInterface ##environment(modelVar)$.CobjectInterface
-        if(is.list(Cnf)) {
-          valueBasePtr <- Cnf[[1]]$basePtrList[[ Cnf[[2]] ]]
+        Cnl <- modelVar$.CobjectInterface ##environment(modelVar)$.CobjectInterface
+        if(is.list(Cnl)) {
+          valueBasePtr <- Cnl[[1]]$basePtrList[[ Cnl[[2]] ]]
         } else {
-          valueBasePtr <- Cnf$.basePtr
+          valueBasePtr <- Cnl$.basePtr
         }
-        getSetNimbleFunction(v, valueBasePtr, basePtr)
+        getSetNimbleList(v, valueBasePtr, basePtr)
         ## .self[[v]] <- Cnf
         next
       }

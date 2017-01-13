@@ -5,7 +5,7 @@
 
 class nimSmartPtrBase {
 	public:
-	virtual void setPtrFromVoidPtr(void* inputPtr)=0;
+	virtual void setPtrFromVoidPtr(void* & inputPtr)=0;
 };
 
 template<typename T>
@@ -19,34 +19,33 @@ class nimSmartPtr : public nimSmartPtrBase {
     realPtr = input.realPtr;
     realPtr->newWatcher();
   };
-  void setPtr(const T* & inputPtr) {
+  void setPtrFromT(T* & inputPtr) {
     if(realPtr) realPtr->removeWatcher();
     realPtr = inputPtr;
+	PRINTF("STEP 4a \n");
     realPtr->newWatcher();
   };
-  void setPtrFromVoidPtr(void* inputPtr) {
-	  setPtr( static_cast<T*>(inputPtr) );  
+  void setPtrFromVoidPtr(void* & inputPtr) {
+	    PRINTF("STEP 1");
+		T* tempPtr = static_cast<T*>(inputPtr);
+	    setPtrFromT( tempPtr ); 
+  PRINTF("STEP 2");
   };
   bool equalsPtr(const nimSmartPtr & otherPtr) {
 	  return(realPtr == otherPtr.realPtr);
   }
 
   nimSmartPtr & operator=(const nimSmartPtr & rhs) {
-/* 	  printf("RHS ptr %p", rhs.realPtr);
-	  printf("This ptr %p", realPtr); */
-	  
-
     if(this == &rhs)
       return *this;
     setPtr(rhs);
-	/* printf("This ptr later %p", realPtr); */
-
     return *this;
   }
+  
   nimSmartPtr & operator=(const T* & rhs) {
     if(realPtr == rhs)
       return *this;
-    setPtr(rhs);
+    setPtrFromT(rhs);
     return *this;
   }
 
@@ -73,6 +72,7 @@ class pointedToBase {
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
   void newWatcher() {
+	  printf("%d \n", watcherCount);
 	  PRINTF("Watcher ++ \n");
 watcherCount++;
 	  PRINTF("watcherCount is %d \n", watcherCount);

@@ -98,6 +98,16 @@ nf_getArgOutputNames <- function(f, hidden = FALSE) {
   return(methodArgListCode)
 }
 
+nf_getReturnTypeOutputNames <- function(f, hidden = FALSE) {
+  nfEnv <- environment(f)
+  methodList <- nfEnv$methodList
+  methodReturnTypes <- lapply(methodList, function(x){ RT <- as.character(x$returnType)
+                                                       if(!RT %in%  c('double', 'integer', 'character', 'logical', 'internalType'))
+                                                         return(RT)
+                                                       else return(NULL)})
+  return(unlist(methodReturnTypes))
+}
+
 #'
 #' Get nimbleFunction definition
 #'
