@@ -584,7 +584,6 @@ sampler_RW_llFunction_block <- nimbleFunction(
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
-        storeLP0 <- -Inf
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
@@ -592,14 +591,14 @@ sampler_RW_llFunction_block <- nimbleFunction(
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
     run = function() {
-        modelLP0 <- storeLP0
+        modelLP0 <- llFunction$run()
         if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
-        modelLP1 <- llFunction$run()+ getLogProb(model, target)
+        modelLP1 <- llFunction$run()
+        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive)     adaptiveProcedure(jump)
-        if(jump) storeLP0 <<- modelLP1
     },
     methods = list(
         generateProposalVector = function() {
