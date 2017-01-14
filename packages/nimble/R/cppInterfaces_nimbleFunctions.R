@@ -561,7 +561,6 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
             next
         }
         else if(cppCopyTypes[[v]] == 'nimbleList') {
-          browser()
           modelVar <- Robj[[v]]
           Cnl <- modelVar$.CobjectInterface 
           .self[[v]] <- Cnl

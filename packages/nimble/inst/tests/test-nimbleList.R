@@ -173,6 +173,50 @@ test_that("return objects are nimbleLists",
             expect_identical(is.nl(CnimbleList), TRUE)
           })
 
+########
+## Test of creating two nimble lists in two different functions from the same def'n
+########
+innerNlTestFunc3b <- nimbleFunction(
+  setup = function(listDef){
+    innerSetupList3 <- listDef$new(nlCharacter = "hello world")
+  },
+  run = function(){
+    returnType(testListDef3())
+    return(setupList3)
+  }
+)
+
+nlTestFunc3b <- nimbleFunction(
+  setup = function(listDef){
+    innerFunc3b <- innerNlTestFunc3b(listDef)
+    outerSetupList3 <- listDef$new(nlCharacter = "goodbye!")
+  },
+  run = function(){
+    outList <- innerFunc3b$run()
+    outList <- outerSetupList3
+    returnType(testListDef3())
+    return(outList)
+  }
+)
+
+testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+testListDef3 <- nimbleList(testTypes)
+
+testInst <- nlTestFunc3b(testListDef3)
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlCharacter, "goodbye")
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlCharacter, CnimbleList$nlCharacter)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
 
 ########
 ## Test of using a nimbleList as a run function argument 
