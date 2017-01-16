@@ -662,6 +662,7 @@ test_size <- function(input, verbose = TRUE) {
                       expect_equal(!is(result, "try-error"), input$expectPass,
                                   info = errorMsg)))
     }
+    
     if(verbose) cat("### Testing", input$name, "with RHS constant ###\n")
     if(!is.null(input$expectPassWithConst)) input$expectPass <- input$expectPassWithConst
     result <- try(
@@ -679,6 +680,19 @@ test_size <- function(input, verbose = TRUE) {
     }
     invisible(NULL)
 }
+
+# could redo test_size to always expect specific error, but not taking time to do that now
+test_size_specific_error <- function(input, verbose = TRUE) {
+    errorMsg <- paste0(ifelse(input$knownProblem, "KNOWN ISSUE: ", ""), "Result does not match ", input$expectPass)
+    if(verbose) cat("### Testing", input$name, "###\n")
+    try(test_that(paste0("Test 1 of size/dimension check: ", input$name),
+                  expect_error(
+                      m <- nimbleModel(code = input$expr, data = input$data, inits = input$inits),
+                      regexp = input$correctErrorMsg,
+                      info = errorMsg)))    
+    invisible(NULL)
+}
+
 
 test_getBound <- function(model, cmodel, test, node, bnd, truth, info) {
     rtest <- test(model, node, bnd)

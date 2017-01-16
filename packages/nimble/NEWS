@@ -8,6 +8,7 @@ USER LEVEL CHANGES
 
 -- Fixed bug preventing use of round() in DSL and BUGS code.
 
+-- Added checking at time of model definition to catch errors where implied dimensions of a variable are different in different BUGS declarations.
 
 
                            CHANGES IN VERSION 0.6-3 (December 2016)
@@ -20,8 +21,6 @@ DEVELOPER LEVEL CHANGES
 
 -- Removed use of compileNimble in rankSample to avoid Solaris issues
    
-
-
 
                            CHANGES IN VERSION 0.6-2 (November 2016)
 
