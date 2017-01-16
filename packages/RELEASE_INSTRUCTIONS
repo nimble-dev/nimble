@@ -100,6 +100,8 @@ R CMD build nimble  # to build tar.gz
 R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
 (--merge-multiarch only applies to a single tarball, so need this as two steps)
 
+#### Older/auxiliary material below here
+
 ### Building of Windows version (instructions from DT (old; use DTL instructions above))
 
 put this in build.bat:
