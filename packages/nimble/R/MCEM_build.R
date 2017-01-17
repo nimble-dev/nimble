@@ -278,12 +278,13 @@ buildMCEM <- function(model, latentNodes, burnIn = 500 , mcmcControl = list(adap
       thetaPrev <- theta  #store previous theta value
       itNum <- itNum + 1
       while(acceptCrit == 0){
-        if(optimMethod == "L-BFGS-B")
+        if(optimMethod == "L-BFGS-B") {
          optimOutput = try(optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
                               diff = 0, control = list(fnscale = -1), method = 'L-BFGS-B', 
                               lower = low_limits, upper = hi_limits), silent = TRUE)
         if(inherits(optimOutput, "try-error")) optimMethod = "BFGS"  ## if constraints prevent optim from running, remove constraints. 
                                                                      ## this can happen if bounds are a function of other parameters in the model,
+        }
         if(optimMethod == "BFGS")
           optimOutput = optim(par = theta, fn = cCalc_E_llk$run, oldParamValues = thetaPrev,
                               diff = 0, control = list(fnscale = -1), method = 'BFGS')

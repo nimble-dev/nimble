@@ -37,6 +37,8 @@ nimbleUserNamespace <- as.environment(list(sessionSpecificDll = NULL))
         ## rather than the older 'static' system.
         ## update May 2016: old (non-dynamic) system is no longer supported -DT
         ##useDynamicConjugacy = TRUE,
+
+        MCMCprogressBar = TRUE,
         
         ## default settings for MCMC samplers
         MCMCcontrolDefaultList = list(

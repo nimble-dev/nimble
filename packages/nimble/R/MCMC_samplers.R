@@ -294,7 +294,7 @@ sampler_RW_llFunction <- nimbleFunction(
         calcNodes <- model$getDependencies(target)
         ## nested function and function list definitions
         mvInternal <- modelValues(model)
-        RWControl <- list(adaptive = adaptive, adaptInterval = adaptInterval, scale = scale)
+        RWControl <- list(adaptive=adaptive, adaptInterval=adaptInterval, scale=scale, log=FALSE, reflective=FALSE)
         targetRWSamplerFunction <- sampler_RW(model, mvInternal, target, RWControl)
         my_setAndCalculateOne <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
@@ -584,7 +584,6 @@ sampler_RW_llFunction_block <- nimbleFunction(
         my_setAndCalculate <- setAndCalculate(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         my_calcAdaptationFactor <- calcAdaptationFactor(d)
-        storeLP0 <- -Inf
         ## checks
         if(class(propCov) != 'matrix')        stop('propCov must be a matrix\n')
         if(class(propCov[1,1]) != 'numeric')  stop('propCov matrix must be numeric\n')
@@ -592,14 +591,14 @@ sampler_RW_llFunction_block <- nimbleFunction(
         if(!isSymmetric(propCov))             stop('propCov matrix must be symmetric')
     },
     run = function() {
-        modelLP0 <- storeLP0
+        modelLP0 <- llFunction$run()
         if(!includesTarget)     modelLP0 <- modelLP0 + getLogProb(model, target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
-        modelLP1 <- llFunction$run()+ getLogProb(model, target)
+        modelLP1 <- llFunction$run()
+        if(!includesTarget)     modelLP1 <- modelLP1 + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(adaptive)     adaptiveProcedure(jump)
-        if(jump) storeLP0 <<- modelLP1
     },
     methods = list(
         generateProposalVector = function() {
@@ -1089,6 +1088,81 @@ sampler_RW_multinomial <- nimbleFunction(
 
 
 
+#####################################################################################
+### RW_dirichlet sampler for multinomial distributions ##############################
+#####################################################################################
+
+#' @rdname samplers
+#' @export
+sampler_RW_dirichlet <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        ## control list extraction
+        adaptive      <- control$adaptive
+        adaptInterval <- control$adaptInterval
+        scaleOriginal <- control$scale
+        ## node list generation
+        calcNodes <- model$getDependencies(target)
+        depNodes  <- model$getDependencies(target, self = FALSE)
+        targetScalarNodes <- model$expandNodeNames(target, returnScalarComponents = TRUE)
+        ## numeric value generation
+        d <- length(targetScalarNodes)
+        thetaVec         <- rep(0, d)
+        scaleVec         <- rep(scaleOriginal, d)
+        timesRan         <- 0
+        timesAcceptedVec <- rep(0, d)
+        timesAdapted     <- 0
+        gamma1           <- 0
+        ## checks
+        if(length(model$expandNodeNames(target)) > 1)    stop('RW_dirichlet sampler only applies to one target node')
+        if(model$getDistribution(target) != 'ddirch')    stop('can only use RW_dirichlet sampler for dirichlet distributions')
+    },
+    run = function() {
+        if(thetaVec[1] == 0)   thetaVec <<- values(model, target)   ## initialization
+        alphaVec <- model$getParam(target, 'alpha')
+        for(i in 1:d) {
+            currentValue <- thetaVec[i]
+            propLogScale <- rnorm(1, mean = 0, sd = scaleVec[i])
+            propValue <- currentValue * exp(propLogScale)
+            thetaVecProp <- thetaVec
+            thetaVecProp[i] <- propValue
+            values(model, target) <<- thetaVecProp / sum(thetaVecProp)
+            logMHR <- alphaVec[i]*propLogScale + currentValue - propValue + calculateDiff(model, depNodes)
+            jump <- decide(logMHR)
+            if(adaptive & jump)   timesAcceptedVec[i] <<- timesAcceptedVec[i] + 1
+            if(jump) { thetaVec <<- thetaVecProp
+                       nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+            } else   { nimCopy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE) }
+            model$calculate(target)                                                         ## update target logProb
+            nimCopy(from = model, to = mvSaved, row = 1, nodes = target, logProb = TRUE)    ##
+        }
+        if(adaptive) {
+            timesRan <<- timesRan + 1
+            if(timesRan %% adaptInterval == 0) {
+                acceptanceRateVec <- timesAcceptedVec / timesRan
+                timesAdapted <<- timesAdapted + 1
+                gamma1 <<- 1/((timesAdapted + 3)^0.8)
+                adaptFactorVec <- exp(10 * gamma1 * (acceptanceRateVec - 0.44))   ## optimalAR = 0.44
+                scaleVec <<- scaleVec * adaptFactorVec
+                timesRan <<- 0
+                timesAcceptedVec <<- numeric(d, 0)
+            }
+        }
+    },
+    methods = list(
+        reset = function() {
+            thetaVec         <<- numeric(d, 0)
+            scaleVec         <<- numeric(d, scaleOriginal)
+            timesRan         <<- 0
+            timesAcceptedVec <<- numeric(d, 0)
+            timesAdapted     <<- 0
+            gamma1           <<- 0
+        }
+    ), where = getLoadingNamespace()
+)
+
+
+
 #' MCMC Sampling Algorithms
 #'
 #' Details of the MCMC sampling algorithms provided with the NIMBLE MCMC engine
@@ -1243,6 +1317,17 @@ sampler_RW_multinomial <- nimbleFunction(
 #' \itemize{
 #' \item adaptive.  A logical argument, specifying whether the sampler should adapt the binomial proposal probabilities throughout the course of MCMC execution. (default = TRUE)
 #' \item adaptInterval.  The interval on which to perform adaptation.  A minimum value of 100 is required. (default = 200)
+#' }
+#'
+#' @section RW_dirichlet sampler:
+#'
+#' This sampler is designed for sampling non-conjugate Dirichlet distributions.  The sampler performs a series of Metropolis-Hastings updates (on the log scale) to each component of a gamma-reparameterization of the target Dirichlet distribution.  The acceptance or rejection of these proposals follows a standard Metropolis-Hastings procedure.
+#'
+#' The \code{RW_dirichlet} sampler accepts the following control list elements:
+#' \itemize{
+#' \item adaptive. A logical argument, specifying whether the sampler should independently adapt the scale (proposal standard deviation, on the log scale) for each componentwise Metropolis-Hasting update, to achieve a theoretically desirable acceptance rate for each. (default = TRUE)
+#' \item adaptInterval. The interval on which to perform adaptation.  Every adaptInterval MCMC iterations (prior to thinning), the sampler will perform its adaptation procedure.  (default = 200)
+#' \item scale. The initial value of the proposal standard deviation (on the log scale) for each component of the reparameterized Dirichlet distribution.  If adaptive = FALSE, the proposal standard deviations will never change. (default = 1)
 #' }
 #'
 #' @section posterior_predictive sampler:

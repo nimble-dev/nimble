@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include<Rmath.h>
 #include<vector>
+#include<cstdlib>
 #include "dists.h"
 
 // put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
@@ -176,6 +177,32 @@ struct diagonal_impl {
 
 
 //concatenation c()
+template<typename Index, typename Derived1>
+class concatenate1Class {
+  /* We need this for something like c(2) or c(2,2).  It also converts from scalar to vector nicely. */
+ public:
+  const Derived1 &Arg1;
+  int size1, totalLength;
+  typedef double result_type;
+ concatenate1Class(const Derived1 &A1) : Arg1(A1) {
+    size1 = nimble_size_impl<Derived1>::getSize(Arg1);
+    totalLength = size1;
+  };
+  
+  result_type operator()(Index i) const //Eigen::DenseIndex //Assume Index1 type and Index2 type will always be the same, or cast-able.
+  {
+    //    std::cout<<"IN 1\n";
+    return nimble_eigen_coeff_impl< nimble_eigen_traits<Derived1>::nimbleUseLinearAccess, result_type, Derived1, Index >::getCoeff(Arg1, i);
+  }
+
+  result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
+  {
+    //std::cout<<"IN 2\n";
+    return operator()(i);
+  }
+};
+
+
 template<typename Index, typename Derived1, typename Derived2>
 class concatenateClass {
  public:
@@ -301,6 +328,11 @@ namespace Eigen{
 	};
       };
 
+    template<typename Index, typename Derived1>
+      struct functor_has_linear_access<concatenate1Class<Index, Derived1> > { enum { ret = 1}; }; 
+    template<typename Index, typename Derived1>
+      struct functor_traits<concatenate1Class<Index, Derived1> > { enum { Cost = 10, PacketAccess = false, IsRepeatable = true }; };
+
     template<typename Index, typename Derived1, typename Derived2, typename Derived3>
       struct functor_has_linear_access<concatenate3Class<Index, Derived1, Derived2, Derived3> > { enum { ret = 1}; }; 
     template<typename Index, typename Derived1, typename Derived2, typename Derived3>
@@ -321,6 +353,11 @@ struct concatenate_impl {
     static CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2) {
     concatenateClass<Index, Derived1, Derived2> c(A1, A2);
     return(CwiseNullaryOp<concatenateClass<Index, Derived1, Derived2>, returnDerived >(c.totalLength, 1, c));
+  }
+  template<typename Derived1>
+    static CwiseNullaryOp<concatenate1Class<Index, Derived1>, returnDerived > concatenate(const Derived1 &A1) {
+    concatenate1Class<Index, Derived1> c(A1);
+    return(CwiseNullaryOp<concatenate1Class<Index, Derived1>, returnDerived >(c.totalLength, 1, c));
   }
   template<typename Derived1, typename Derived2, typename Derived3>
     static CwiseNullaryOp<concatenate3Class<Index, Derived1, Derived2, Derived3>, returnDerived > concatenate(const Derived1 &A1, const Derived2 &A2, const Derived3 &A3) {

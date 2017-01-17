@@ -13,17 +13,6 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 
 ./prep_pkg # this creates man pages and updates NAMESPACE; note various warnings of things that can go wrong in prep_pkg and make sure these don't happen
 
-(this seems to be obviated by new prep_pkg... as of v0.6)
-warning about extra space in Rd files occurs (perhaps because of new Roxygen?) in argument lists where \item{} is separated from teh following {} by a newline and some spaces due to indentation appear. A 'fix' is to manually remove the spaces from the Rd files.
-This also should work:
-for file in `ls nimble/man`; do
-    if [ -e /tmp/tmp.Rd ]; then
-       rm -rf /tmp/tmp.Rd
-    fi
-     /bin/cp -i nimble/man/$file /tmp/tmp.Rd 
-     sed ':begin;$!N;s/\(\item{.*}\)\n\s*/\1/;tbegin;P;D' /tmp/tmp.Rd > nimble/man/$file
-done
-
 
 R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
@@ -39,13 +28,19 @@ done
 
 rebuild manual as further test of package
 
-put new version of manual in inst/doc
+put new version of manual in inst/doc (perhaps - not sure if we want to add that much to the size of the tarball/package install)
 
 before release to CRAN put "$FLIBS" at end of last line in src/Makevars.in (it will pass R CMD check with "# $(FLIBS)" presumably because they are doing some sort of grep, but that is not kosher of course)
 and comment out rstan usage as in packages/MCMC_suite_rstan_monkeying_for_cran.R
 and change to requireNamespace('rstan') from require('rstan')
 
 test cross-machine on Macs and on Windows
+
+can test using rhub:
+
+library(rhub)
+check()
+check_with_sanitizers()
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
@@ -59,6 +54,9 @@ chmod go+w nimble_${VERSION}.tar.gz
 ./writePackages
 
 go to website: R-nimble.org/login and login 
+
+note that to make a new blog post or modify pages, need to 
+deactivate Google analyticator on Plugins -> Installed Plugins page
 
 change Downloads page on R-nimble.org to reflect new version; creating link for newly-deprecated version at bottom
 
@@ -76,6 +74,12 @@ update version numbering on license and citation page and 'What is Nimble' page
 update documentation page with link to updated manual
 
 send notice to nimble-announce, nimble-users as christopher.paciorek@gmail.com (i.e., from the email of your admin status)
+
+*****************
+** IMPORTANT ****
+*****************
+reactivate Google Analyticator by clicking on 'activate' on Plugins -> Installed Plugins 
+*****************
 
 make sure to merge devel into master branch and create a branch for the new version
 git checkout master
@@ -104,6 +108,8 @@ For Windows (should one use the -l flag here too to avoid mucking up source repo
 R CMD build nimble  # to build tar.gz
 R CMD INSTALL --build --merge-multiarch nimble_0.6.tar.gz # to build zip file
 (--merge-multiarch only applies to a single tarball, so need this as two steps)
+
+#### Older/auxiliary material below here
 
 ### Building of Windows version (instructions from DT (old; use DTL instructions above))
 

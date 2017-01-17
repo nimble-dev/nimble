@@ -55,7 +55,7 @@ samplerConf <- setRefClass(
 ## NOTE: the empty lines are important in the final formatting, so please don't remove any of them in your own help info
 
 #' Class \code{MCMCconf}
-#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors setThin setThin2
+#' @aliases MCMCconf addSampler removeSamplers setSamplers printSamplers getSamplers addMonitors addMonitors2 resetMonitors getMonitors getMonitors2 printMonitors setThin setThin2
 #' @export
 #' @description
 #' Objects of this class configure an MCMC algorithm, specific to a particular model.  Objects are normally created by calling \link{configureMCMC}.
@@ -76,7 +76,7 @@ samplerConf <- setRefClass(
 #' conf$addMonitors2('x')
 #' conf$setThin(5)
 #' conf$setThin2(10)
-#' conf$getMonitors()
+#' conf$printMonitors()
 #' conf$printSamplers()
 MCMCconf <- setRefClass(
     
@@ -193,6 +193,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                             addConjugateSampler(conjugacyResult = conjugacyResult);     next }
                     }
                     if(nodeDist == 'dmulti')   { addSampler(target = node, type = 'RW_multinomial');     next }
+                    if(nodeDist == 'ddirch')   { addSampler(target = node, type = 'RW_dirichlet');       next }
                     if(multivariateNodesAsScalars) {
                         for(scalarNode in nodeScalarComponents) {
                             addSampler(target = scalarNode, type = 'RW') };     next }
@@ -407,13 +408,13 @@ Returns a list object, containing the setup function, run function, and addition
             return(def)
         },
         
-        addMonitors = function(vars, ind = 1, print = TRUE) {
+        addMonitors = function(..., ind = 1, print = TRUE) {
             '
 Adds variables to the list of monitors.
 
 Arguments:
 
-vars: A character vector of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors list.
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors list.
 
 print: A logical argument, specifying whether to print all current monitors.
 
@@ -427,31 +428,34 @@ Details: See the initialize() function
             	if(ind == 2)
                     mvSamples2Conf <<- NULL
             }
-            
-            
-            
-            if(is.null(vars))  vars <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
+
+            vars <- list(...)
+            if(length(vars) == 1 && is.null(vars[[1]])) {
+                vars <- model$getNodeNames(topOnly = TRUE, stochOnly = TRUE)
+            } else {
+                vars <- unlist(vars)
+            }
             vars <- unique(removeIndexing(vars))
             nl_checkVarNamesInModel(model, vars)
             if(ind == 1)     monitors  <<- unique(c(monitors,  vars))
             if(ind == 2)     monitors2 <<- unique(c(monitors2, vars))
-            if(print) getMonitors()
+            if(print) printMonitors()
             return(invisible(NULL))
         },
 
-        addMonitors2 = function(vars, print = TRUE) {
+        addMonitors2 = function(..., print = TRUE) {
             '
 Adds variables to the list of monitors2.
 
 Arguments:
 
-vars: A character vector of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors2 list.
+...: One or more character vectors of indexed nodes, or variables, which are to be monitored.  These are added onto the current monitors2 list.
 
 print: A logical argument, specifying whether to print all current monitors.
 
 Details: See the initialize() function
             '
-            addMonitors(vars, ind = 2, print = print)
+            addMonitors(..., ind = 2, print = print)
         },
         
         resetMonitors = function() {
@@ -473,7 +477,7 @@ Details: See the initialize() function
             return(invisible(NULL))
         },
         
-        getMonitors = function() {
+        printMonitors = function() {
             '
 Prints all current monitors and monitors2
 
@@ -482,7 +486,25 @@ Details: See the initialize() function
             if(length(monitors)  > 0)   cat(paste0('thin = ', thin,  ': ', paste0(monitors,  collapse = ', '), '\n'))
             if(length(monitors2) > 0)   cat(paste0('thin2 = ', thin2, ': ', paste0(monitors2, collapse = ', '), '\n'))
         },
-        
+
+        getMonitors = function() {
+            '
+Returns a character vector of the current monitors
+
+Details: See the initialize() function
+            '
+            return(monitors)
+        },
+
+        getMonitors2 = function() {
+            '
+Returns a character vector of the current monitors2
+
+Details: See the initialize() function
+            '
+            return(monitors2)
+        },
+
         setThin  = function(thin, print = TRUE) {
             '
 Sets the value of thin.
@@ -496,7 +518,7 @@ print: A logical argument, specifying whether to print all current monitors.
 Details: See the initialize() function
             '
             thin  <<- thin
-            if(print) getMonitors()
+            if(print) printMonitors()
             return(invisible(NULL))
         },
         setThin2 = function(thin2, print = TRUE) {
@@ -512,7 +534,7 @@ print: A logical argument, specifying whether to print all current monitors.
 Details: See the initialize() function
             '
             thin2 <<- thin2
-            if(print) getMonitors()
+            if(print) printMonitors()
             return(invisible(NULL))
         },
         
