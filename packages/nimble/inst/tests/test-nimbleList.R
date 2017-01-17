@@ -182,7 +182,7 @@ innerNlTestFunc3b <- nimbleFunction(
   },
   run = function(){
     returnType(testListDef3())
-    return(setupList3)
+    return(innerSetupList3)
   }
 )
 
