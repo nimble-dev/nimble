@@ -1175,7 +1175,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '",RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     })
     if(inherits(test, 'try-error')) browser()
-    
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
             ## If LHS unknown, create it in typeEnv
@@ -1191,7 +1190,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
-                    if(RHStype == "symbolNimbleList") {
+                    else if(RHStype == "symbolNimbleList") {
                       # LHSnlProc <- symTab$getSymbolObject(RHS$name, T)$nlProc$neededTypes
                       
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
@@ -1199,7 +1198,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = LHSnlProc))
                     }
-                    if(symTab$symbolExists(RHStype, TRUE)){
+                    else if(symTab$symbolExists(RHStype, TRUE)){
                       LHSnlProc <- symTab$getSymbolObject(RHStype, TRUE)$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = 'symbolNimbleList', nlProc = LHSnlProc))
                     }

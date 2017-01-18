@@ -110,9 +110,9 @@ nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(NimArr<2, T> &x) {
 	Map<VectorXd> Svd_d(0,0);
 	new (&Svd_d) Map< VectorXd >((*returnClass).d.getPtr(), nu);
 	Map<MatrixXd> Svd_u(0,0,0);
-	new (&Svd_u) Map< VectorXd >((*returnClass).u.getPtr(), x.dim()[0], nu);
+	new (&Svd_u) Map< MatrixXd >((*returnClass).u.getPtr(), x.dim()[0], nu);
 	Map<MatrixXd> Svd_v(0,0,0);
-	new (&Svd_v) Map< VectorXd >((*returnClass).v.getPtr(), x.dim()[1], nu);
+	new (&Svd_v) Map< MatrixXd >((*returnClass).v.getPtr(), x.dim()[1], nu);
 	
 	Map<MatrixXd> Svd_x(x.getPtr(),x.dim()[0],x.dim()[1]);
 	/* if(nu < 16){   */
