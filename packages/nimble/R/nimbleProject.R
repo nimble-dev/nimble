@@ -821,7 +821,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  compileNimbleFunction = function(fun, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
                                      reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE, showCompilerOutput = nimbleOptions('showCompilerOutput')) {
-                                     if(is.character(fun)) {
+                                   if(is.character(fun)) {
                                          tmp <- nimbleFunctions[[fun]]
                                          if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)
                                          if(reset) {

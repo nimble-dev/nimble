@@ -90,19 +90,22 @@ nf_getSetupOutputNames <- function(f, hidden = FALSE) {
 nf_getArgOutputNames <- function(f, hidden = FALSE) {
   nfEnv <- environment(f)
   methodList <- nfEnv$methodList
-  methodArgListCode <- lapply(methodList, function(x) as.character(x$argInfo[[1]][[1]]))
-  for(i in 1:length(methodArgListCode)){
-    methodArgListCode[[i]] <- methodArgListCode[[i]][!(methodArgListCode[[i]] %in%   c('double', 'integer', 'character', 'logical', 'internalType'))]
-    if(length(methodArgListCode[[i]]) == 0)        methodArgListCode[[i]] <- NULL
-  }
-  return(methodArgListCode)
+  methodArgListCode <- lapply(methodList, function(x){
+    outputType <-  as.character(x$argInfo[[1]][[1]])
+    if((length(outputType) == 0) ||
+       outputType %in% c('double', 'integer', 'character', 'logical', 'internalType'))
+      return(NULL)
+    else
+      return(outputType)
+  })
+  return(unlist(methodArgListCode))
 }
 
 nf_getReturnTypeOutputNames <- function(f, hidden = FALSE) {
   nfEnv <- environment(f)
   methodList <- nfEnv$methodList
-  methodReturnTypes <- lapply(methodList, function(x){ RT <- as.character(x$returnType)
-                                                       if(!RT %in%  c('double', 'integer', 'character', 'logical', 'internalType'))
+  methodReturnTypes <- lapply(methodList, function(x){ RT <- as.character(x$returnType)[1]
+                                                       if(!RT %in%  c('double', 'integer', 'character', 'logical', 'internalType', 'void'))
                                                          return(RT)
                                                        else return(NULL)})
   return(unlist(methodReturnTypes))
