@@ -455,16 +455,11 @@ eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
     if(length(code$args) == 2)
         if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
     code$eigMatrix <- TRUE
-    browser()
     code$name <- switch(code$name,
                         chol = 'EIGEN_CHOL',
                         solve = 'EIGEN_SOLVE',
                         forwardsolve = 'EIGEN_FS',
                         backsolve = 'EIGEN_BS',
-                        # eigen = 'EIGEN_EIGEN',
-                        svdu = 'EIGEN_SVDU',
-                        svdd = 'EIGEN_SVDD',
-                        svdv = 'EIGEN_SVDV',
                         stop('should never get here')
                         )
     invisible(NULL)
