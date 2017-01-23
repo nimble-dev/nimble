@@ -30,14 +30,14 @@ argType2symbol <- function(AT, neededTypes, name = character()) {
     type <- as.character(AT[[1]])
     if(type == "eigen") type <- "EIGEN_EIGENCLASS"
     if(type == "svd") type <- "EIGEN_SVDCLASS"
-    
     if(type == "internalType") {
       return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }
+    browser()
     if(is.list(neededTypes)){
       isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
       if(any(isANeededType == 1)){
-          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy()
+          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
           listST$name <- name
           return(listST)
       }
@@ -47,7 +47,7 @@ argType2symbol <- function(AT, neededTypes, name = character()) {
         nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
         isANeededType <- (nlList$nimbleListDef$className == names(neededTypes))
         if(any(isANeededType == 1)){
-          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy()
+          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
           listST$name <- name
           return(listST)
         }

@@ -107,8 +107,10 @@ nf_getReturnTypeOutputNames <- function(f, hidden = FALSE) {
   methodReturnTypes <- lapply(methodList, function(x){ RT <- as.character(x$returnType)[1]
                                                        ## vector of types below should contain all basic types, as well as nlDefs that we
                                                        ## do keyword replacement on (eigen, svd, ...)
-                                                       if(!RT %in%  c('double', 'integer', 'character', 'logical', 'internalType', 'void',
-                                                                      'eigen', 'svd'))
+                                                       # if(!RT %in%  c('double', 'integer', 'character', 'logical', 'internalType', 'void',
+                                                       #                'eigen', 'svd'))
+                                                        if(!RT %in%  c('double', 'integer', 'character', 'logical', 'void',
+                                                                       'eigen', 'svd'))
                                                          return(RT)
                                                        else return(NULL)})
   return(unlist(methodReturnTypes))

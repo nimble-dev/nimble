@@ -45,6 +45,7 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
                                           setupSymbolTables = function(parentST = NULL, neededTypes = NULL) {
+                                            browser()
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
                                               if(numArgs > 0) {
@@ -66,6 +67,9 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
                                               compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return")
+                                              # if(compileInfo$returnSymbol$type == 'symbolNimbleList'){
+                                              #   compileInfo$newLocalSymTab$addSymbol(compileInfo$returnSymbol)
+                                              # }
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {

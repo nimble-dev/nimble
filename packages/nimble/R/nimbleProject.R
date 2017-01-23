@@ -971,7 +971,6 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
 ## 1. Extract compilation items
     reset <- FALSE
     ## This pulls out ... arguments, makes names from their expressions if names weren't provided, and combines them with any ... arguments that are lists.
-
     controlDefaults = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE, returnAsList = FALSE)
     
     dotsDeparses <- unlist(lapply( substitute(list(...))[-1], deparse ))

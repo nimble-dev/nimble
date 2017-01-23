@@ -927,6 +927,10 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
     if(inherits(sym, 'symbolNimbleFunction')) {
         nfMethodRCobj <- sym$nfProc$getMethodInterfaces()$run ##environment(sym$nfProc$nfGenerator)$methodList$run
         returnType <- nfMethodRCobj$returnType
+        if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
+                               'eigen', 'svd'))){
+          returnType[[1]] <- as.name('symbolNimbleList')
+        }
         argInfo <- nfMethodRCobj$argInfo
         ok <- TRUE
     }
@@ -1175,6 +1179,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '",RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     })
     if(inherits(test, 'try-error')) browser()
+    browser()
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
             ## If LHS unknown, create it in typeEnv
@@ -1194,8 +1199,8 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                       # LHSnlProc <- symTab$getSymbolObject(RHS$name, T)$nlProc$neededTypes
                       
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
-                      if(is.null(LHSnlProc)) LHSnlProc <- symTab$getSymbolObject(RHS$name, inherits = TRUE)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
+                      if(is.null(LHSnlProc)) LHSnlProc <- symTab$getSymbolObject(RHS$name, inherits = TRUE)$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = LHSnlProc))
                     }
                     else if(symTab$symbolExists(RHStype, TRUE)){
@@ -2614,8 +2619,7 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
         return(asserts)
     }
     returnNDim <- if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
-    returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
-    
+    returnSizeExprs <- if(returnTypeLabel == 'symbolNimbleList') symTab$getSymbolObject('return') else vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
     code$type <- returnTypeLabel
     code$nDim <- returnNDim
     code$sizeExprs <- returnSizeExprs
