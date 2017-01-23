@@ -33,7 +33,6 @@ argType2symbol <- function(AT, neededTypes, name = character()) {
     if(type == "internalType") {
       return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }
-    browser()
     if(is.list(neededTypes)){
       isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
       if(any(isANeededType == 1)){

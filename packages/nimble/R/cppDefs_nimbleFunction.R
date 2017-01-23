@@ -180,7 +180,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                            return(cppInterfaceObject)
                                        },
                                        buildAll = function(where = where) {
-                                         browser()
                                            makeCppNames()
                                            buildConstructorFunctionDef()
                                            buildSEXPgenerator(finalizer = "namedObjects_Finalizer")

@@ -928,14 +928,42 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
         nfMethodRCobj <- sym$nfProc$getMethodInterfaces()$run ##environment(sym$nfProc$nfGenerator)$methodList$run
         returnType <- nfMethodRCobj$returnType
         if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
-                               'eigen', 'svd'))){
-          returnType[[1]] <- as.name('symbolNimbleList')
+                               'EIGEN_EIGENCLASS', 'EIGEN_SVDCLASS'))){  
+          ## if we have a nl return type, find class name and match with nlGenerator in symTab
+          outClassName <- get('return', envir = typeEnv)$sizeExprs$name
+          parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
+            symType <- x$type
+            if(symType == 'Ronly'){
+              symClassName <- x[['nlProc']][['name']]
+              if(!is.null(symClassName) && symClassName == outClassName){
+                return(x$name)
+              }
+            }
+            return(NULL)
+          })
+          returnType[[1]] <- as.name(unlist(parentNLGenName))
         }
         argInfo <- nfMethodRCobj$argInfo
         ok <- TRUE
     }
     if(inherits(sym, 'symbolMemberFunction')) {
         returnType <- sym$nfMethodRCobj$returnType ## now nfMethodRCobj could be an interface
+        if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
+                                                'EIGEN_EIGENCLASS', 'EIGEN_SVDCLASS'))){  
+          ## if we have a nl return type, find class name and match with nlGenerator in symTab
+          outClassName <- get('return', envir = typeEnv)$sizeExprs$name
+          parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
+            symType <- x$type
+            if(symType == 'Ronly'){
+              symClassName <- x[['nlProc']][['name']]
+              if(!is.null(symClassName) && symClassName == outClassName){
+                return(x$name)
+              }
+            }
+            return(NULL)
+          })
+          returnType[[1]] <- as.name(unlist(parentNLGenName))
+        }
         argInfo <- sym$nfMethodRCobj$argInfo
         ok <- TRUE
     }
@@ -1160,6 +1188,7 @@ sizeAssign <- function(code, symTab, typeEnv) {
 sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
     LHS <- code$args[[1]]
     RHS <- code$args[[2]]
+    browser()
     if(inherits(RHS, 'exprClass')) {
         RHSname <- RHS$name
         RHSnDim <- RHS$nDim
@@ -1171,7 +1200,14 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
             RHSnDim <- 0
             RHStype <- storage.mode(RHS)
             RHSsizeExprs <- list() 
-        } else {
+        }
+        else if(is.character(RHS)){
+          RHSname = ''
+          RHSnDim <- 0
+          RHStype <- 'character'
+          RHSsizeExprs <- list() 
+        }
+        else {
             stop(exprClassProcessingErrorMsg(code, "In sizeAssignAfterRecursing: don't know what to do with a provided expression."), call. = FALSE)
         }
     }
@@ -1179,7 +1215,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '",RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     })
     if(inherits(test, 'try-error')) browser()
-    browser()
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
             ## If LHS unknown, create it in typeEnv
@@ -2619,7 +2654,8 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
         return(asserts)
     }
     returnNDim <- if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
-    returnSizeExprs <- if(returnTypeLabel == 'symbolNimbleList') symTab$getSymbolObject('return') else vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
+    # returnSizeExprs <- if(returnTypeLabel == 'symbolNimbleList') symTab$getSymbolObject('return') else vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
+    returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
     code$type <- returnTypeLabel
     code$nDim <- returnNDim
     code$sizeExprs <- returnSizeExprs

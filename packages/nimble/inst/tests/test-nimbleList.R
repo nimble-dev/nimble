@@ -219,6 +219,94 @@ test_that("return objects are nimbleLists",
           })
 
 ########
+## Test of creating an nlDef in an outer function, passing the def to the inner function,
+## and returning the created list from the inner function through the outer function
+########
+
+
+innerNlTestFunc3a <- nimbleFunction(
+  setup = function(nimListDef){
+    setupList3 <- nimListDef$new(nlCharacter = "hello world")
+  },
+  run = function(){
+    returnType(nimListDef())
+    return(setupList3)
+  }
+)
+
+nlTestFunc3a <- nimbleFunction(
+  setup = function(){
+    testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+    testListDef3 <- nimbleList(testTypes)
+    
+    innerFunc3a <- innerNlTestFunc3a(testListDef3)
+  },
+  run = function(){
+    outList <- innerFunc3a$run()
+    returnType(testListDef3())
+    return(outList)
+  }
+)
+
+testInst <- nlTestFunc3a()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlCharacter, "hello world")
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlCharacter, CnimbleList$nlCharacter)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+######
+## test of a nimbleFunction method returning a nimbleList
+######
+
+nlTestFunc3a <- nimbleFunction(
+  setup = function(){
+    testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+    testListDef3 <- nimbleList(testTypes)
+    
+  },
+  run = function(){
+    outList <- method1()
+    returnType(testListDef3())
+    return(outList)
+  },
+  methods = list(
+    method1 = function(){
+      outList <- testListDef3$new(nlCharacter = 'hello world')
+      returnType(testListDef3())
+      return(outList)
+    }
+  )
+)
+
+testInst <- nlTestFunc3a()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+## test for correct values of R nimbleList
+expect_identical(RnimbleList$nlCharacter, "hello world")
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlCharacter, CnimbleList$nlCharacter)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+
+########
 ## Test of using a nimbleList as a run function argument 
 ########
 
