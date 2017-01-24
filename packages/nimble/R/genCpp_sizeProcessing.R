@@ -1188,7 +1188,6 @@ sizeAssign <- function(code, symTab, typeEnv) {
 sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALSE) {
     LHS <- code$args[[1]]
     RHS <- code$args[[2]]
-    browser()
     if(inherits(RHS, 'exprClass')) {
         RHSname <- RHS$name
         RHSnDim <- RHS$nDim
