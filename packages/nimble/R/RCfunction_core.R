@@ -1,5 +1,6 @@
 # for use in DSL code check:
-otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample", "new")
+otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample", "new",
+                   "eigen", "svd")
 
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
@@ -99,7 +100,7 @@ nfMethodRC <-
 
 
 
-nf_checkDSLcode <- function(code) {  
+nf_checkDSLcode <- function(code) { 
     dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords)
     calls <- setdiff(all.names(code), all.vars(code))
     # find cases of x$y() and x[]$y and x[[]]$y (this also unnecessarily finds x$y)

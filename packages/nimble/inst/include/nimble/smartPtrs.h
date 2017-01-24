@@ -69,18 +69,11 @@ class pointedToBase {
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
   void newWatcher() {
-	  PRINTF("Watcher ++ \n");
 watcherCount++;
-	  PRINTF("watcherCount is %d \n", watcherCount);
 }
   void removeWatcher() {
-	  	PRINTF("Watcher -- \n");
-
     watcherCount--;
-	PRINTF("watcherCount is %d \n", watcherCount);
-
     if(watcherCount <= 0) {
-		PRINTF("Destructing Now!");
       if(watcherCount < 0) {
 	PRINTF("Error, a watcherCount went below 0. \n");
       }

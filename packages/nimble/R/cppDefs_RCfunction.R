@@ -121,15 +121,14 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
                                        returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
-                                       returnListDefs <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nimbleListDef
-                                       returnListNestedLists <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]$nestedListGenList
+                                       returnListDefs <- returnListObj$nimbleListDef
+                                       returnListNestedLists <- returnListObj$nestedListGenList
                                        returnListNew <- new(returnListObj$.refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
                                                             NESTEDGENLIST = returnListNestedLists)
-                                      returnNimListGen <- list(new = function(){return(returnListNew)})
+                                       returnNimListGen <- list(new = function(){return(returnListNew)})
                                       
                                        getGenList <- function(nimListGen, genList = list()){
                                          nimList <- nimListGen$new()
-
                                          if(is.null(genList[[nimList$nimbleListDef$className]]))
                                            genList[[nimList$nimbleListDef$className]] <- nimListGen
                                          nestedNimLists <- nimList$nestedListGenList
@@ -139,6 +138,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          }
                                          return(genList)
                                        }
+                                       
                                        genList <- getGenList(returnNimListGen)
 
                                        listCode <-  substitute({eval(makeNewNimListFromC <- function(name){
@@ -242,7 +242,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      returnAllArgs <- TRUE
                                      ## Pack up all inputs and the return value in a list.
                                      if(returnAllArgs) {
-                                       
                                          numArgs <- length(argNames)
                                          if(numArgs + !returnVoid > 0) {
                                              objects$addSymbol(cppSEXP(name = 'S_returnValue_LIST_1234'))
@@ -264,7 +263,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                              if(!returnVoid) {
                                                  rsName <- RCfunProc$compileInfo$returnSymbol$name
                                                  RCfunProc$compileInfo$returnSymbol$name <<- LHSvar$name
-                                                 
                                                  conditionalLineList <- c(generateConditionalLines(RCfunProc$compileInfo$returnSymbol,
                                                                                                   objects$getSymbolObject('S_returnValue_1234')), conditionalLineList)   
                                                  returnListLines[[numArgs+1]] <- substitute(SET_VECTOR_ELT(S_returnValue_LIST_1234, I, THISSEXP),

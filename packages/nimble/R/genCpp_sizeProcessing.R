@@ -760,7 +760,7 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 
 
 recurseExtractNimListArg <- function(code, symTab){
-  if(length(code$args) == 0){  ## reached top level list
+  if(length(code$args) == 0){  ## reached end level list
     listSym <- symTab$getSymbolObject(code$name, inherits = TRUE)
   }
   else{ ## progress though lower lists, passing appropriate symbol down each time
@@ -788,7 +788,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
         recurseSetSizes(code, symTab, typeEnv)
       }
       else{
-        objSym <- NULL ## if accessing element of nested NL, don't need to waste time getting info for intermediate/top NLs
+        objSym <- NULL ## if accessing element of nested NL, don't need to waste time getting info for other intermediate NLs
         code$type <- 'nimbleList' 
       }
     }
@@ -1230,14 +1230,14 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
                     else if(RHStype == "symbolNimbleList") {
-                      # LHSnlProc <- symTab$getSymbolObject(RHS$name, T)$nlProc$neededTypes
-                      
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- symTab$getSymbolObject(RHS$name, inherits = TRUE)$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = LHSnlProc))
                     }
-                    else if(symTab$symbolExists(RHStype, TRUE)){
+                    else if(symTab$symbolExists(RHStype, TRUE)){  ## this is TRUE if a nested nimbleFunction returns a nimbleList - the type of
+                                                                  ## the returned nimbleList will be (by necessity) symbolNimbleListGenerator that exists
+                                                                  ## in the parent ST.
                       LHSnlProc <- symTab$getSymbolObject(RHStype, TRUE)$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = 'symbolNimbleList', nlProc = LHSnlProc))
                     }
