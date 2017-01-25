@@ -56,6 +56,17 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               }
                                               argInfoWithMangledNames <- RCfun$argInfo
                                               numArgs <- length(argInfoWithMangledNames)
+                                              browser()
+                                              lapply(argInfoWithMangledNames, function(x){
+                                                name <- as.character(x[[1]])
+                                                if(exists(name, envir = globalenv()) && is.nlGenerator(eval(parse(text = name, keep.source = FALSE)))){
+                                                  nlList <- eval(parse(text = paste0(name, "$new"), keep.source = FALSE))()
+                                                  nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+                                                  className <- nlList$nimbleListDef$className
+                                                  newSym <- symbolNimbleList(name = name, type = 'symbolNimbleList', nlProc = nlp)
+                                                  neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
+                                                })
+                                              
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)

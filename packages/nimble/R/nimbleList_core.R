@@ -20,6 +20,29 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
                                   ))
 
 
+#' create a nimbleList
+#'
+#' create a nimbleList from a nimbleList definition 
+#'
+#' @param types A list of strings that defines the names and types of the nimbleList elements
+#' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
+#' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
+#'
+#' @author NIMBLE development team
+#'
+#' @export
+#'
+#' @details
+#' This function creates a definition for a nimbleList.  The \code{types} argument defines both the names and types of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g. integer, double) or other nimbleList definitions.   
+#' 
+#' \code{nimbleList} returns a definition, which can be used to create instances of this type of nimbleList via the \code{new()} member function. 
+#' 
+#' Definitions can be created in \code{R}'s general environment or in \cd{nimbleFunction} setup code.  Instances can be created using the \code{new()} function in \code{R}'s global environment, in \code{nimbleFunction} setup code, or in \code{nimbleFunction} run code.  
+#' 
+#' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.  
+#'
+#' See the NIMBLE User Manual for examples.
+#'
 
 nimbleList <- function(types,
                        name = NA,
@@ -29,6 +52,13 @@ nimbleList <- function(types,
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
+    listVars <- sapply(types, function(x){
+      return(trimws(strsplit(x, '=', TRUE)[[1]][1]))
+    })
+    listTypes <- sapply(types, function(x){
+      return(trimws(strsplit(x, '=', TRUE)[[1]][2]))
+    })
+    types <- list(vars = listVars, types = listTypes)
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
     basicTypes <- c("double", "integer", "character", "logical")
@@ -58,7 +88,7 @@ nimbleList <- function(types,
       fields = classFields,
       contains = 'nimbleListBase',
       methods = list(
-        initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, NLPRINTFIELDS, ...){
+        initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, ...){
           nimbleListDef <<- NLDEFCLASSOBJECT
           nestedListGenList <<- NESTEDGENLIST
           for(i in seq_along(NESTEDGENLIST)){
