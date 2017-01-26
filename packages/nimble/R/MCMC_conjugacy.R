@@ -132,54 +132,62 @@ conjugacyRelationshipsClass <- setRefClass(
                 #    conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
                 #    if(not conj) next
 
+                numPaths <- sapply(nodeIDsFromOneDecl, model$getDependencyPathCountOneNode)
+                numDeps <- sapply(nodeIDsFromOneDecl, function(x) length(model$getDependencies(x)))
+                browser()
+                if(max(numPaths) > sum(numDeps)) {
+                    # max(numPaths) is reasonable guess at number of unique paths; if we have to evaluate conjugacy for more paths than we would by simply looking at all pairs of target-dependent nodes, then just use node pairs
 
-                # check #deppathsbynode
+                } else {
+
+                # set length of ansList for efficiency
                 
-                depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
-                depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, function(x) is.null(x) || (length(x)==0)))]
-                depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
-                    unlist(lapply(z,
-                                  function(x)
-                                      paste(maps$graphID_2_declID[x[,1]], x[,2], collapse = '\r', sep='\r'))))
-
-                depPathsByNodeUnlisted <- unlist(depPathsByNode, recursive = FALSE)
-                depPathsByNodeLabelsUnlisted <- unlist(depPathsByNodeLabels)
-              ##  uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
-                uniquePathsUnlistedIndices <- split(seq_along(depPathsByNodeLabelsUnlisted), depPathsByNodeLabelsUnlisted)
-
-                conjDepTypes <- character(length(uniquePathsUnlistedIndices))
-                for(j in seq_along(uniquePathsUnlistedIndices)) {
-                    firstDepPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
-                    targetNode <- maps$graphID_2_nodeName[firstDepPath[1,1]]
-                    depNode <- maps$graphID_2_nodeName[firstDepPath[nrow(firstDepPath), 1]]
-                    oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
-                    conjDepTypes[j] <- if(is.null(oneDepType)) "" else oneDepType
-                }
-
-                conjBool <- conjDepTypes != ""
-                names(conjDepTypes) <- names(conjBool) <- names(uniquePathsUnlistedIndices)
-                if(any(conjBool)) {
-                    targetNodes <- unlist(lapply(depPathsByNode, function(x) if(is.null(x)) '_NO_DEPS_' else maps$graphID_2_nodeName[x[[1]][1,1]]))
-                    ansList[[length(ansList)+1]] <- mapply(
-                        function(targetNode, depPathsOneNode, depPathsLabelsOneNode) {
-                            if(targetNode == '_NO_DEPS_') return(NULL) ## these should have already been weeded out
-                            if(all(conjBool[depPathsLabelsOneNode])) {
-                                depTypes <- conjDepTypes[depPathsLabelsOneNode]
-                                depEnds <- maps$graphID_2_nodeName[ unlist(lapply(depPathsOneNode, function(x) x[nrow(x)])) ]
-                                uniqueDepTypes <- unique(depTypes)
-                                control <- lapply(uniqueDepTypes,
-                                                  function(oneType) {
-                                                      boolMatch <- depTypes == oneType
-                                                      ## prevent multiple instances of same dependent node name
-                                                      ## (via different graph dependency paths   -DT Oct 2016
-                                                      ##depEnds[boolMatch]
-                                                      unique(depEnds[boolMatch])
-                                                  })
-                                names(control) <- uniqueDepTypes
-                                list(prior = conjugacyObj$prior, type = conjugacyObj$samplerType, target = targetNode, control = control)
-                            }
-                        },
-                        targetNodes, depPathsByNode, depPathsByNodeLabels, USE.NAMES = TRUE, SIMPLIFY = FALSE)
+                    depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
+                    depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, function(x) is.null(x) || (length(x)==0)))]
+                    depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
+                        unlist(lapply(z,
+                                      function(x)
+                                          paste(maps$graphID_2_declID[x[,1]], x[,2], collapse = '\r', sep='\r'))))
+                    
+                    depPathsByNodeUnlisted <- unlist(depPathsByNode, recursive = FALSE)
+                    depPathsByNodeLabelsUnlisted <- unlist(depPathsByNodeLabels)
+                    ##  uniquePaths <- unique(depPathsByNodeLabelsUnlisted)
+                    uniquePathsUnlistedIndices <- split(seq_along(depPathsByNodeLabelsUnlisted), depPathsByNodeLabelsUnlisted)
+                    
+                    conjDepTypes <- character(length(uniquePathsUnlistedIndices))
+                    for(j in seq_along(uniquePathsUnlistedIndices)) {
+                        firstDepPath <- depPathsByNodeUnlisted[[ uniquePathsUnlistedIndices[[j]][1] ]]
+                        targetNode <- maps$graphID_2_nodeName[firstDepPath[1,1]]
+                        depNode <- maps$graphID_2_nodeName[firstDepPath[nrow(firstDepPath), 1]]
+                        oneDepType <- conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
+                        conjDepTypes[j] <- if(is.null(oneDepType)) "" else oneDepType
+                    }
+                    
+                    conjBool <- conjDepTypes != ""
+                    names(conjDepTypes) <- names(conjBool) <- names(uniquePathsUnlistedIndices)
+                    if(any(conjBool)) {
+                        targetNodes <- unlist(lapply(depPathsByNode, function(x) if(is.null(x)) '_NO_DEPS_' else maps$graphID_2_nodeName[x[[1]][1,1]]))
+                        ansList[[length(ansList)+1]] <- mapply(
+                            function(targetNode, depPathsOneNode, depPathsLabelsOneNode) {
+                                if(targetNode == '_NO_DEPS_') return(NULL) ## these should have already been weeded out
+                                if(all(conjBool[depPathsLabelsOneNode])) {
+                                    depTypes <- conjDepTypes[depPathsLabelsOneNode]
+                                    depEnds <- maps$graphID_2_nodeName[ unlist(lapply(depPathsOneNode, function(x) x[nrow(x)])) ]
+                                    uniqueDepTypes <- unique(depTypes)
+                                    control <- lapply(uniqueDepTypes,
+                                                      function(oneType) {
+                                                          boolMatch <- depTypes == oneType
+                                                          ## prevent multiple instances of same dependent node name
+                                                          ## (via different graph dependency paths   -DT Oct 2016
+                                                          ##depEnds[boolMatch]
+                                                          unique(depEnds[boolMatch])
+                                                      })
+                                    names(control) <- uniqueDepTypes
+                                    list(prior = conjugacyObj$prior, type = conjugacyObj$samplerType, target = targetNode, control = control)
+                                }
+                            },
+                            targetNodes, depPathsByNode, depPathsByNodeLabels, USE.NAMES = TRUE, SIMPLIFY = FALSE)
+                    }
                 }
             }
             if(length(ansList) > 0) do.call('c', ansList) else ansList
