@@ -89,6 +89,11 @@ nimbleList <- function(types,
       contains = 'nimbleListBase',
       methods = list(
         initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, ...){
+          browser()
+          nimListFields <- nimbleListDef$types$vars
+          initializeFields <- list(...)
+          nonInitializeFields <- which(!(nimListFields %in% names(initializeFields)))
+                
           nimbleListDef <<- NLDEFCLASSOBJECT
           nestedListGenList <<- NESTEDGENLIST
           for(i in seq_along(NESTEDGENLIST)){

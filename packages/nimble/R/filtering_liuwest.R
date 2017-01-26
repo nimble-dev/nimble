@@ -23,6 +23,7 @@ LWSetMeanVirtual <- nimbleFunctionVirtual(
 paramMean <- nimbleFunction(
   contains = LWSetMeanVirtual,
   setup = function(model, node){
+    ## check that node has a normal distribution!
   },
     run = function() {
         model[[node]] <<- model$getParam(node, 'mean')
