@@ -6,6 +6,7 @@ graphNode::graphNode(int inputCgraphID, NODETYPE inputType, const string &inputN
   CgraphID(inputCgraphID),
   name(inputName),
   touched(false),
+  numPaths(-1),
   numChildren(0) {
   RgraphID = CgraphID + 1;
 }
@@ -110,7 +111,7 @@ SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstrea
 
 SEXP getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
-  int node = SEXP_2_int(Snode);
+  int node = SEXP_2_int(Snode, 0, -1); // subtract 1 index for C
   int result = graphPtr->getDependencyPathCountOneNode(node);
   return(int_2_SEXP(result)); 
 }
@@ -252,25 +253,35 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int Cgra
   return(false);
 }
 
-//#define _DEBUG_GETDEPS
+//#define _DEBUG_GETPATHS
 
 int nimbleGraph::getDependencyPathCountOneNode(const int Cnode) {
-  int result;
-  graphNode *thisGraphNode;
-  thisGraphNode = graphNodeVec[ Cnode ];
-  result = 0;
-  int numChildren = thisGraphNode->numChildren;
+  int result(0);
   int i(0);
-  for(; i < numChildren; i++) {
-    thisChildNode = thisGraphNode->children[i];
-    thisChildCgraphID = thisChildNode->CgraphID;
-    if(thisChildNode->type == STOCH) {
-      result++;
-    } else {
-      if(thisChildNode->numPaths > -1) {
-        result += thisChildNode->numPaths;
+  graphNode *thisGraphNode;
+  graphNode *thisChildNode;
+
+  thisGraphNode = graphNodeVec[ Cnode ];
+  if(thisGraphNode->numPaths >= 0)  // already calculated
+    return(thisGraphNode->numPaths);
+
+  int numChildren = thisGraphNode->numChildren;
+#ifdef _DEBUG_GETPATHS
+  PRINTF("debugging output for getDependencyPathCountOneNode with node %i, which has %i children\n", Cnode, numChildren);
+#endif
+
+  if(numChildren == 0) {
+    result = 0;
+  } else {
+    for(; i < numChildren; i++) {
+      thisChildNode = thisGraphNode->children[i];
+#ifdef _DEBUG_GETPATHS
+      PRINTF("node %i has child %i\n", Cnode, thisChildNode->CgraphID);
+#endif
+      if(thisChildNode->type == STOCH) {
+        result++;
       } else {
-      result += getDependencyPathCountOneNode(thisChildCgraphID); 
+        result += getDependencyPathCountOneNode(thisChildNode->CgraphID); 
       }
     }
   }
@@ -279,6 +290,7 @@ int nimbleGraph::getDependencyPathCountOneNode(const int Cnode) {
 }
 
 
+//#define _DEBUG_GETDEPS
 
 vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream) {
   // assume on entry that touched = false on all nodes
