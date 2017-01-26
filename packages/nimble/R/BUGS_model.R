@@ -573,7 +573,11 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                           return(ans)
                                       }
                                   },
-                                  
+
+                                  getDependencyPathCountOneNode = function(node) {
+                                      modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node)
+                                  },
+
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,

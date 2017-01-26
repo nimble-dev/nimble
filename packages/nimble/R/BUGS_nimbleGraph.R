@@ -34,4 +34,9 @@ nimbleGraphClass <- setRefClass(
 
             .Call("getDependencies", graphExtPtr, nodes, omit, downstream)
         }
+        getDependencyPathCountOneNode = function(node)
+            if(length(node) > 1)
+                stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
+            .Call("getDependencyPathCountOneNode", graphExtPtr, nodes)
+        }
     ))

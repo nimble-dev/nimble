@@ -108,6 +108,13 @@ SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstrea
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
 }
 
+SEXP getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
+  int node = SEXP_2_int(Snode);
+  int result = graphPtr->getDependencyPathCountOneNode(node);
+  return(int_2_SEXP(result)); 
+}
+
 SEXP anyStochParents(SEXP SgraphExtPtr) {
   nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
   vector<int> ans(graphPtr->anyStochParents());
@@ -247,6 +254,32 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int Cgra
 
 //#define _DEBUG_GETDEPS
 
+int nimbleGraph::getDependencyPathCountOneNode(const int Cnode) {
+  int result;
+  graphNode *thisGraphNode;
+  thisGraphNode = graphNodeVec[ Cnode ];
+  result = 0;
+  int numChildren = thisGraphNode->numChildren;
+  int i(0);
+  for(; i < numChildren; i++) {
+    thisChildNode = thisGraphNode->children[i];
+    thisChildCgraphID = thisChildNode->CgraphID;
+    if(thisChildNode->type == STOCH) {
+      result++;
+    } else {
+      if(thisChildNode->numPaths > -1) {
+        result += thisChildNode->numPaths;
+      } else {
+      result += getDependencyPathCountOneNode(thisChildCgraphID); 
+      }
+    }
+  }
+  thisGraphNode->numPaths = result; 
+  return(result);
+}
+
+
+
 vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream) {
   // assume on entry that touched = false on all nodes
   // Cnodes and Comit are C-indices (meaning they start at 0)
@@ -309,6 +342,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   std::sort(ans.begin(), ans.end());
   return(ans);
 }
+
 
 void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth) {
   if(recursionDepth > graphNodeVec.size()) {

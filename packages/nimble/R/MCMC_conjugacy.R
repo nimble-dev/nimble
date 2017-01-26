@@ -125,7 +125,16 @@ conjugacyRelationshipsClass <- setRefClass(
 
                 conjugacyObj <- conjugacys[[dist]]
                 if(is.null(conjugacyObj)) next
+                
+                # NO: insert logic here to check a single dependency and do next if can't be conjugate
+                #model$getDependencies('mu[1]',self=F,stochOnly=T)
+                #for( loop through deps )
+                #    conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
+                #    if(not conj) next
 
+
+                # check #deppathsbynode
+                
                 depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
                 depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, function(x) is.null(x) || (length(x)==0)))]
                 depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
