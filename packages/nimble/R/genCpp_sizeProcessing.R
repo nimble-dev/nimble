@@ -778,7 +778,6 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     topLevel <- code$caller$name != 'nfVar'
     nfName <- code$args[[1]]$name
     asserts <- NULL
-    
     code$toEigenize <- 'maybe'
     if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
       isSymList <- TRUE
@@ -814,6 +813,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     if(!is.null(objSym))code$type <- objSym$type
     if(code$type != 'nimbleList') code$nDim <- objSym$nDim
     if(isSymList){
+      bottomLevelList <- (code$type == 'nimbleList' && length(code$args[[1]]$args) == 0)
       a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
       a1$type <- a1$args[[1]]$type
       a1$nDim <- a1$args[[1]]$nDim
@@ -828,6 +828,10 @@ sizeNFvar <- function(code, symTab, typeEnv) {
       code$sizeExprs <- makeSizeExpressions(objSym$size,
                                               parse(text = nimDeparse(code))[[1]])
     } 
+    else if(bottomLevelList){
+      code$type <- 'symbolNimbleList'
+      code$sizeExprs$nlProc <-objSym$nlProc
+    }
     else 
       code$sizeExprs <- list()
     return(asserts)
@@ -1213,7 +1217,6 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     test <- try(if(inherits(RHStype, 'uninitializedField') | length(RHStype)==0) {
         stop(exprClassProcessingErrorMsg(code, paste0("In sizeAssignAfterRecursing: '",RHSname, "' is not available or its output type is unknown.")), call. = FALSE)
     })
-    browser()
     if(inherits(test, 'try-error')) browser()
     if(LHS$isName) {
         if(!exists(LHS$name, envir = typeEnv, inherits = FALSE)) { ## not in typeEnv
