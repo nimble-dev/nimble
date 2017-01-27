@@ -193,12 +193,14 @@ nimSeq_keywordInfo <- keywordInfoClass(
         useBy <- !isCodeArgBlank(code, 'by')
         useLen <- !isCodeArgBlank(code, 'length.out')
         if(useBy && useLen)
-            stop("Cannot provide both 'by' and 'length.out' arguments to seq")
-        if(useLen) {
-            newRunCode <- substitute(nimSeqLen(FROM, TO, 0, LEN), list(FROM = code$from, TO = code$to, LEN = code$length.out))
-        } else {
-            byVal <- if(useBy) code$by else 1
-            newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = code$by))
+            newRunCode <- substitute(nimSeqByLen(FROM, 0, BY, LEN), list(FROM = code$from, BY = code$by, LEN = code$length.out))
+        else {
+            if(useLen) {
+                newRunCode <- substitute(nimSeqLen(FROM, TO, 0, LEN), list(FROM = code$from, TO = code$to, LEN = code$length.out))
+            } else {
+                byVal <- if(useBy) code$by else 1 ## default by = 1
+                newRunCode <- substitute(nimSeqBy(FROM, TO, BY, 0), list(FROM = code$from, TO = code$to, BY = code$by))
+            }
         }
         return(newRunCode)
     }
