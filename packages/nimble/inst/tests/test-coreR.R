@@ -481,6 +481,8 @@ seqTests <- list(
          setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11)", expr = quote(out <- seq(.1, 10, length.out = 11)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1))),
+    list(name = "seq(.1, by = 10, length.out = 11)", expr = quote(out <- seq(.1, by = 10, length.out = 11)), args = list(),
+         setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11) in expression", expr = quote(out <- log(seq(.1, 10, length.out = 11)) + 2 + rep(1, 11)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1)))
 

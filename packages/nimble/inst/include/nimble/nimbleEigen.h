@@ -481,7 +481,7 @@ struct rep_impl {
 // sequences, seq(from, to, by, length.out)  not implementing along.with for now
 // not implementing this for `:` because we already have special treatment `:` in for-loop context, so want to tread carefully there
 
-typedef enum{useBy, useLength} byOrLength;
+typedef enum{useBy, useLength, useByAndLength} byOrLength;
 
 // to-do: make native integer handling where appropriate
 // right now from and to are doubles
@@ -558,6 +558,34 @@ public:
 };
 
 
+template<typename DerivedOut, typename scalarFrom, typename scalarBy>
+  class seqClass<DerivedOut, scalarFrom, int, scalarBy, useByAndLength> {
+public:
+  scalarFrom from;
+  scalarBy by;
+  unsigned int length_out;
+  
+  typedef double result_type; // need to pull this from DerivedOut
+ seqClass(scalarFrom fromIn, scalarBy byIn, unsigned int length_outIn) :
+  from(fromIn),
+    by(byIn),
+    length_out(length_outIn)
+    {};
+
+  
+  typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
+  result_type operator()(Index i) const //Eigen::DenseIndex
+  {
+    return( from + static_cast<int>(i) * by );
+  }
+  result_type operator()(Index i, Index j) const
+  {
+    if(j != 0) printf("Problem calling seq in C++ with two indices\n");
+    return( from + static_cast<int>(i) * by);
+  }
+};
+
+
 namespace Eigen{
   namespace internal{
     template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
@@ -585,6 +613,21 @@ namespace Eigen{
 	  IsRepeatable = true // default was false. 
 	};
       };    
+
+  template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
+    struct functor_has_linear_access<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useByAndLength> > { enum { ret = 1}; }; 
+  template<typename DerivedOut, typename scalarFrom, typename scalarTo, typename scalarBy>
+    struct functor_traits<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useByAndLength> >
+      {
+	enum
+	{
+	  Cost = 10, // there are templated costs available to pick up for this
+	  PacketAccess = false, // happy to keep this false for now
+	  IsRepeatable = true // default was false. 
+	};
+      };    
+
+
   }
 }
 
@@ -601,12 +644,21 @@ struct seq_impl {
     seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useLength> seqObj(from, to, len);
     return(CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useLength> , DerivedOut >(seqObj.length_out, 1, seqObj));
   }
+  template<typename scalarFrom, typename scalarTo, typename scalarBy>
+    static CwiseNullaryOp<seqClass<DerivedOut, scalarFrom,  scalarTo, scalarBy, useByAndLength>, DerivedOut > seqByLen(scalarFrom from, scalarTo to, scalarBy by, unsigned int len) {
+    seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useByAndLength> seqObj(from, by, len);
+    return(CwiseNullaryOp<seqClass<DerivedOut, scalarFrom, scalarTo, scalarBy, useByAndLength> , DerivedOut >(seqObj.length_out, 1, seqObj));
+  }
+
 };
 
 #define nimSeqByD seq_impl<MatrixXd>::seqBy
 #define nimSeqLenD seq_impl<MatrixXd>::seqLen
+#define nimSeqByLenD seq_impl<MatrixXd>::seqByLen
+
 #define nimSeqByI seq_impl<MatrixXi>::seqBy
 #define nimSeqLenI seq_impl<MatrixXi>::seqLen
+#define nimSeqByLenI seq_impl<MatrixXi>::seqByLen
 
 // coeffSetter, for cases like X[indices] <- Y
 template<typename IndexType, typename DerivedTarget, typename DerivedIndex1, typename DerivedIndex2>

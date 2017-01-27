@@ -24,7 +24,8 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimRep = 'sizeRep',
                     nimSeqBy = 'sizeSeq',
                     nimSeqLen = 'sizeSeq',
-                   'return' = 'sizeReturn',
+                    nimSeqByLen = 'sizeSeq',
+                    'return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
                     getParam = 'sizeGetParam',
@@ -1688,18 +1689,13 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
     message('still need to handle -1L sequences')
     message('check that arguments are scalars')
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
-    byProvided <- code$name == 'nimSeqBy' ##identical(code$args[[3]], -1L) ## need a better way to indicate missingness when we fill in arguments
-    lengthProvided <- code$name == 'nimSeqLen' ##identical(code$args[[4]], -1L)
-    ##typeFrom <- if(inherits(code$args[[1]], 'exprClass')) code$args[[1]]$type else storage.mode(code$args[[1]])
+    byProvided <- code$name == 'nimSeqBy' | code$name == 'nimSeqByLen'
+    lengthProvided <- code$name == 'nimSeqLen' | code$name == 'nimSeqByLen'
     integerFrom <- isIntegerEquivalent(code$args[[1]])
-    ##if(byProvided && lengthProvided) stop(exprClassProcessingErrorMsg(code, 'Cannot provide both by and length arguments to seq.'), call.=FALSE)
-    ##typeTo <- if(inherits(code$args[[2]], 'exprClass')) code$args[[2]]$type else storage.mode(code$args[[2]])
     integerTo <- isIntegerEquivalent(code$args[[2]])
-    ##typeBy <- if(inherits(code$args[[3]], 'exprClass')) code$args[[3]]$type else storage.mode(code$args[[3]])
     liftExprRanges <- TRUE
-    ##if(typeFrom == 'integer' && typeTo == 'integer') { ## convert +1 integer sequences to `:`
     if(integerFrom && integerTo) {
-        if((!byProvided && !lengthProvided) || (byProvided && is.numeric(code$args[[3]]) && code$args[[3]] == 1)) {
+        if((!byProvided && !lengthProvided) || (byProvided && !lengthProvided && is.numeric(code$args[[3]]) && code$args[[3]] == 1)) {
             code$name = ':'
             asserts <- c(asserts, sizeColonOperator(code, symTab, typeEnv, recurse = FALSE))
             return(if(length(asserts)==0) NULL else asserts)
@@ -1719,11 +1715,15 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
                     }
                 }
             }
-            thisSizeExpr <- substitute(1 + floor((TO_ - FROM_) / BY_),
-                                       list(FROM_ = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]],
-                                            TO_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
-                                            BY_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]]))
-            
+            if(lengthProvided) {
+                code$name <- 'nimSeqByLenD'
+                thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
+            } else {
+                thisSizeExpr <- substitute(1 + floor((TO_ - FROM_) / BY_),
+                                           list(FROM_ = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]],
+                                                TO_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
+                                                BY_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]]))
+            }
         } else { ## must be lengthProvided
             code$name <- 'nimSeqLenD'
             thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
