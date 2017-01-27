@@ -39,8 +39,8 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' 
 #' Definitions can be created in \code{R}'s general environment or in \cd{nimbleFunction} setup code.  Instances can be created using the \code{new()} function in \code{R}'s global environment, in \code{nimbleFunction} setup code, or in \code{nimbleFunction} run code.  
 #' 
-#' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.  
-#'
+#' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.
+#' 
 #' See the NIMBLE User Manual for examples.
 #'
 
