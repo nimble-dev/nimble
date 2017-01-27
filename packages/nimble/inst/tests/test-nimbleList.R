@@ -36,7 +36,7 @@ nlTestFunc1 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('nlScalar', 'nlVector', 'nlMatrix'), types = c('double(0)', "double(1)", "double(2)"))
+testTypes <- c('nlScalar = double(0)', 'nlVector = double(1)', 'nlMatrix = double(2)')
 testListDef1 <- nimbleList(testTypes)
 testInst <- nlTestFunc1()
 RnimbleList <- testInst$run()
@@ -64,7 +64,7 @@ test_that("return objects are nimbleLists",
 
 nlTestFunc2 <- nimbleFunction(
   setup = function(){
-    testTypes <- list(vars = c('nlScalar'), types = c('double(0)'))
+    testTypes <- c('nlScalar = double(0)')
     testListDef2 <- nimbleList(testTypes)
     doubleMatrix <- diag(1)
   },
@@ -97,7 +97,7 @@ test_that("return objects are nimbleLists",
 ########
 nlTestFunc3 <- nimbleFunction(
   setup = function(){
-    testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+    testTypes <- c('nlCharacter = character(0)')
     testListDef3 <- nimbleList(testTypes)
     setupList3 <- testListDef3$new(nlCharacter = "hello world")
   },
@@ -154,7 +154,7 @@ nlTestFunc4 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+testTypes <- c('nlCharacter = character(0)')
 testListDef4 <- nimbleList(testTypes)
 
 testInst <- nlTestFunc4()
@@ -199,7 +199,7 @@ nlTestFunc5 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+testTypes <- c('nlCharacter = character(0)')
 testListDef5 <- nimbleList(testTypes)
 
 testInst <- nlTestFunc5(testListDef5)
@@ -236,7 +236,7 @@ innerNlTestFunc6 <- nimbleFunction(
 
 nlTestFunc6 <- nimbleFunction(
   setup = function(){
-    testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+    testTypes <- c('nlCharacter = character(0)')
     testListDef6 <- nimbleList(testTypes)
     innerFunc6 <- innerNlTestFunc6(testListDef6)
   },
@@ -269,7 +269,7 @@ test_that("return objects are nimbleLists",
 
 nlTestFunc7 <- nimbleFunction(
   setup = function(){
-    testTypes <- list(vars = c('nlCharacter'), types = c('character(0)'))
+    testTypes <- c('nlCharacter = character(0)')
     testListDef7 <- nimbleList(testTypes)
     
   },
@@ -320,7 +320,7 @@ nlTestFunc8 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
+testTypes <- c('nlMatrix = double(2)')
 testListDef8 <- nimble:::nimbleList(testTypes)
 testList8 <- testListDef4$new(nlMatrix = diag(2))
 
@@ -368,7 +368,7 @@ nlTestFunc9 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('a'), types = c('double(0)'))
+testTypes <-  c('a = double(0)')
 testListDef5 <- nimble:::nimbleList(testTypes)
 testList9 <- testListDef5$new(a = 0)
 
@@ -405,7 +405,7 @@ nlTestFunc10 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
+testTypes <- c('nlMatrix = double(2)')
 testListDef10 <- nimble:::nimbleList(testTypes)
 testList10 <- testListDef10$new(nlMatrix = diag(2))
 
@@ -446,7 +446,7 @@ nlTestFunc11 <- nimbleFunction(
   }
 )
 
-testTypes <- list(vars = c('nlMatrix'), types = c('double(2)'))
+testTypes <- c('nlMatrix = double(2)')
 testListDef11 <- nimble:::nimbleList(testTypes)
 testList11a <- testListDef11$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
 testList11b <- testListDef11$new(nlMatrix = matrix(2, nrow = 2, ncol = 2))

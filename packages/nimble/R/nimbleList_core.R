@@ -52,12 +52,12 @@ nimbleList <- function(types,
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
-    listVars <- sapply(types, function(x){
+    listVars <- unname(sapply(types, function(x){
       return(trimws(strsplit(x, '=', TRUE)[[1]][1]))
-    })
-    listTypes <- sapply(types, function(x){
+    }))
+    listTypes <- unname(sapply(types, function(x){
       return(trimws(strsplit(x, '=', TRUE)[[1]][2]))
-    })
+    }))
     types <- list(vars = listVars, types = listTypes)
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
@@ -89,16 +89,36 @@ nimbleList <- function(types,
       contains = 'nimbleListBase',
       methods = list(
         initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, ...){
-          browser()
-          nimListFields <- nimbleListDef$types$vars
-          initializeFields <- list(...)
-          nonInitializeFields <- which(!(nimListFields %in% names(initializeFields)))
-                
           nimbleListDef <<- NLDEFCLASSOBJECT
           nestedListGenList <<- NESTEDGENLIST
-          for(i in seq_along(NESTEDGENLIST)){
-            .self[[names(NESTEDGENLIST)[i]]] <- NESTEDGENLIST[[i]]$new()
+          for(i in seq_along(nestedListGenList)){
+            .self[[names(nestedListGenList)[i]]] <- nestedListGenList[[i]]$new()
           }
+          nimListFields <- nimbleListDef$types$vars
+          initializeFields <- list(...)
+          nonInitializeFields <- which(!(nimListFields %in% c(names(nestedListGenList), names(initializeFields))))
+          ## initialize uninitialized fields
+          for(i in nonInitializeFields){
+            removeLeftParen <- strsplit(nimbleListDef$types$types[i], split = '(', fixed = TRUE)[[1]]
+            thisType <- removeLeftParen[1]
+            thisDim <- strsplit(removeLeftParen[2], split = ')', fixed = TRUE)[[1]]
+            if(thisType == 'character'){
+              .self[[nimListFields[i]]] <- ""
+            }
+            else if(thisType %in% c('integer', 'double')){
+              if(thisDim == 0)
+                .self[[nimListFields[i]]] <- 0
+              if(thisDim == 1)
+                .self[[nimListFields[i]]] <- integer(0)
+              if(thisDim == 2)
+                .self[[nimListFields[i]]] <- matrix(0, 0, 0)
+              if(thisDim > 2)
+                .self[[nimListFields[i]]] <- array(0, dim = rep(0, thisDim))
+            }
+            else if(thisType == 'logical'){
+              .self[[nimListFields[i]]] <- FALSE
+            }
+          }     
           callSuper(...)
         },
         show = function(){
