@@ -171,6 +171,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      funCode[[4]] <- NULL
                                      if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
                                      if(eval) {
+                                       browser()
                                          fun = eval(funCode)
                                          newenv <- eval(quote(new.env()), envir = env)
                                          environment(fun) = newenv #??? may want this to be environment() or the default value for env to be environment()
