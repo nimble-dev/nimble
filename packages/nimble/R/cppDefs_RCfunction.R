@@ -171,7 +171,6 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      funCode[[4]] <- NULL
                                      if(includeLHS) funCode <- substitute(FUNNAME <- FUNCODE, list(FUNNAME = as.name(paste0('R',name)), FUNCODE = funCode))
                                      if(eval) {
-                                       browser()
                                          fun = eval(funCode)
                                          newenv <- eval(quote(new.env()), envir = env)
                                          environment(fun) = newenv #??? may want this to be environment() or the default value for env to be environment()
@@ -179,7 +178,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          if(!is.null(dll))   {
                                         # replace the name of the symbol in the .Call() with the resolved symbol.
 					                              ##body(fun)[[2]][[3]][[2]] = getNativeSymbolInfo(SEXPinterfaceCname, dll)
-                                             body(fun)[[3]][[3]][[2]] = quote(CnativeSymbolInfo_)
+                                             body(fun)[[4]][[3]][[2]] = quote(CnativeSymbolInfo_)
                                              assign('CnativeSymbolInfo_', getNativeSymbolInfo(SEXPinterfaceCname, dll), envir = newenv)
 					 } else {
                                              body(fun)[[2]] <- NULL ## remove the check for valid CnativeSymbolInfo_
