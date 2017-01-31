@@ -116,7 +116,7 @@ conjugacyRelationshipsClass <- setRefClass(
             maps <- model$modelDef$maps
             nodeDeclIDs <- maps$graphID_2_declID[nodeIDs] ## declaration IDs of the nodeIDs
             declID2nodeIDs <- split(nodeIDs, nodeDeclIDs) ## nodeIDs grouped by declarationID
-            ansList <- list()
+            ansList <- ansList2 <- list()
             for(i in seq_along(declID2nodeIDs)) {         ## For each group of nodeIDs from the same declarationID
                 nodeIDsFromOneDecl <- declID2nodeIDs[[i]]
                 firstNodeName <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[1]]
@@ -132,16 +132,35 @@ conjugacyRelationshipsClass <- setRefClass(
                 #    conjugacyObj$checkConjugacyOneDep(model, targetNode, depNode)
                 #    if(not conj) next
 
+                # now try to guess if finding paths will be more intensive than simply looking at target-dependent pairs, to avoid path finding when there is nested structure such as stick-breaking
                 numPaths <- sapply(nodeIDsFromOneDecl, model$getDependencyPathCountOneNode)
-                numDeps <- sapply(nodeIDsFromOneDecl, function(x) length(model$getDependencies(x)))
-                browser()
+                deps <- lapply(nodeIDsFromOneDecl, function(x) model$getDependencies(x, stochOnly = TRUE, self = FALSE))
+                numDeps <- sapply(deps, length)
+
                 if(max(numPaths) > sum(numDeps)) {
-                    # max(numPaths) is reasonable guess at number of unique paths; if we have to evaluate conjugacy for more paths than we would by simply looking at all pairs of target-dependent nodes, then just use node pairs
-
+                    # max(numPaths) is reasonable guess at number of unique (by node) paths (though it overestimates number of unique (by declaration ID) paths; if we have to evaluate conjugacy for more paths than we would by simply looking at all pairs of target-dependent nodes, then just use node pairs
+                    # note that it's not clear what criterion to use here since computational time is combination of time for finding all paths and then for evaluating conjugacy for unique (by declaration ID) paths, but the hope is to make a crude cut here that avoids path calculations when there would be a lot of them
+                    ansList[[length(ansList)+1]] <- lapply(seq_along(nodeIDsFromOneDecl),
+                        function(index) {
+                            targetNode <- maps$graphID_2_nodeName[nodeIDsFromOneDecl[index]]
+                            depEnds <- deps[[index]]
+                            depTypes <- sapply(depEnds, function(x) conjugacyObj$checkConjugacyOneDep(model, targetNode, x))
+                            if(!length(depTypes)) return(NULL)
+                            if(!any(sapply(depTypes, is.null))) {
+                                uniqueDepTypes <- unique(depTypes)
+                                control <- lapply(uniqueDepTypes,
+                                                  function(oneType) {
+                                                      boolMatch <- depTypes == oneType
+                                                      depEnds[boolMatch]
+                                                  })
+                                names(control) <- uniqueDepTypes
+                                return(list(prior = conjugacyObj$prior, type = conjugacyObj$samplerType, target = targetNode, control = control))
+                            } else return(NULL)
+                        })
+                    names(ansList[[length(ansList)]]) <- maps$graphID_2_nodeName[nodeIDsFromOneDecl]
+                    
                 } else {
-
-                # set length of ansList for efficiency
-                
+                # determine conjugacy based on unique (by declaration ID) paths
                     depPathsByNode <- lapply(nodeIDsFromOneDecl, getDependencyPaths, maps = maps)  ## make list (by nodeID) of lists of paths through graph
                     depPathsByNode <- depPathsByNode[!unlist(lapply(depPathsByNode, function(x) is.null(x) || (length(x)==0)))]
                     depPathsByNodeLabels <- lapply(depPathsByNode, function(z)                     ## make character labels that match for same path through graph
@@ -190,7 +209,9 @@ conjugacyRelationshipsClass <- setRefClass(
                     }
                 }
             }
-            if(length(ansList) > 0) do.call('c', ansList) else ansList
+            if(length(ansList) > 0) ansList <- do.call('c', ansList)
+            ansList <- ansList[!sapply(ansList, is.null)]  # strips out any NULL values
+            if(!length(ansList)) return(list()) else return(ansList)  # replaces empty named list with empty list
         },
         ## older version of checkConjugacy(), which checks nodes one at a time (much slower)
         ## deprecated
