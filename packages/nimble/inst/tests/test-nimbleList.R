@@ -487,7 +487,7 @@ nlTestFunc12 <- nimbleFunction(
 
 testTypes <-  c('nlMatrix = double(2)')
 testListDef12 <- nimble:::nimbleList(testTypes)
-testList12 <- testListDef8$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
+testList12 <- testListDef12$new(nlMatrix = matrix(1, nrow = 2, ncol = 2))
 
 testInst <- nlTestFunc12()
 RnimbleList <- testInst$run(testList12)

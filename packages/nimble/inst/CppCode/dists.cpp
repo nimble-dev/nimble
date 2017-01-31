@@ -9,6 +9,7 @@
 #include "nimble/dists.h"
 #include <R_ext/Lapack.h>
 
+
 bool R_IsNA(double* P, int s) {
   for(int i = 0; i < s; ++i) if(R_IsNA(P[i])) return(true);
   return(false);

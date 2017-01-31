@@ -43,6 +43,17 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     matrix(.Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param)), nrow = sqrt(length(cholesky)))
 }
 
+
+
+
+nimEigen <- function(x, only.values = FALSE) {
+  eigenList <- list(values = c(0), vectors = matrix(0, 1, 1))
+  .Call('C_nimEigen', as.double(x), as.logical(only.values), eigenList)
+}
+
+
+
+
 #' The Dirichlet Distribution
 #'
 #' Density and random generation for the Dirichlet distribution

@@ -10,6 +10,7 @@
 using namespace Eigen;
 #include "nimbleEigen.h"
 
+
 typedef Matrix<bool, Dynamic, Dynamic> MatrixXb;
 typedef Array<bool, Dynamic, Dynamic> ArrayXXb;
 
@@ -31,6 +32,11 @@ typedef Map<MatrixXb, Unaligned, EigStrDyn > EigenMapStrb;
 
 // Diagonal: Tried using Eigen::DiagonalMatrix<> but one can't do much with this.  It doesn't have same flexibility and member functions as a regular Eigen::MatrixXd
 // So we'll use a NullaryExpr approach instead
+
+
+extern "C" {
+  SEXP C_nimEigen(SEXP, SEXP, SEXP); 
+}
 
 template<class derived1, class derived2>
 MatrixXd EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
