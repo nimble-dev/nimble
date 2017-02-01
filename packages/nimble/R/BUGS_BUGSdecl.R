@@ -351,6 +351,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     if(is.call(code)) {
         indexingBracket <- code[[1]] == '['
         if(indexingBracket) {
+          browser()
             if(is.call(code[[2]])) indexingBracket <- FALSE ## treat like any other function
         }
         if(indexingBracket) { ##if(code[[1]] == '[') {
@@ -399,10 +400,24 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 contentsHasIndex <- FALSE
                 allContentsReplaceable <- TRUE
             }
+            maybeListElement <- code[[1]] == '$' && (deparse(code[[2]][[1]]) %in% c('eigen', 'svd'))
+            isListElement <- FALSE
+            if(maybeListElement){
+              if(deparse(code[[2]][[1]] == 'eigen')){
+                if(deparse(code[[3]]) %in% c('values', 'vectors')){
+                  isListElement <- TRUE
+                }
+              }
+              else if(deparse(code[[2]][[1]] == 'svd')){
+                if(deparse(code[[3]]) %in% c('d', 'v', 'u')){
+                  isListElement <- TRUE
+                }
+              }
+            }
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
-                !checkNimbleOrRfunctionNames(funName)
+                (!checkNimbleOrRfunctionNames(funName) & !isListElement)
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")
@@ -475,6 +490,7 @@ genReplacementsAndCodeRecurse <- function(code, constAndIndexNames, nimbleFuncti
         if(assignment)         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
         isRfunction <- !any(code[[1]] == nimbleFunctionNames)
         isRonly <- isRfunction & !checkNimbleOrRfunctionNames(deparse(code[[1]]))
+        if(deparse(code[[1]]) == '$') isRonly <- FALSE
         if(isRonly & !allContentsReplaceable) stop(paste0('Error, R function \"', deparse(code[[1]]),'\" has non-replaceable node values as arguments.  Must be a nimble function.'))
         if(isRfunction & allContentsReplaceable)   return(replaceAllCodeSuccessfully(code))
         return(replaceWhatWeCan(code, contentsCodeReplaced, contentsReplacements, contentsReplaceable, startingAt=2))
