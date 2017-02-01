@@ -44,7 +44,7 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' See the NIMBLE User Manual for examples.
 #'
 
-nimbleList <- function(types,
+nimbleList <- function(...,
                        name = NA,
                        where =  getNimbleFunctionEnvironment()) {
     ## This has a role like nimbleFunction but a much simpler implementation
@@ -52,12 +52,23 @@ nimbleList <- function(types,
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
-    listVars <- unname(sapply(types, function(x){
-      return(trimws(strsplit(x, '=', TRUE)[[1]][1]))
-    }))
-    listTypes <- unname(sapply(types, function(x){
-      return(trimws(strsplit(x, '=', TRUE)[[1]][2]))
-    }))
+    listArgs <- list(...)
+    if(is.character(listArgs[[1]])){
+      listVars <- unname(sapply(listArgs[[1]], function(x){
+        return(trimws(strsplit(x, '=', TRUE)[[1]][1]))
+      }))
+      listTypes <- unname(sapply(listArgs[[1]], function(x){
+        return(trimws(strsplit(x, '=', TRUE)[[1]][2]))
+      }))
+    }
+    else{
+      if(is.list(listArgs[[1]])){
+        listArgs <- listArgs[[1]]
+      }
+      listVars <- names(listArgs)
+      listTypes <- unname(sapply(listArgs, deparse))
+    }
+    
     types <- list(vars = listVars, types = listTypes)
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
