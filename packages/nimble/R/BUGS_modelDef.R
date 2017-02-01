@@ -128,6 +128,7 @@ modelDefClass <- setRefClass('modelDefClass',
 ## set v3 = FALSE to use old processing
 modelDefClass$methods(setupModel = function(code, constants, dimensions, debug = FALSE) {
     if(debug) browser()
+  browser()
     code <- codeProcessIfThenElse(code, parent.frame()) ## evaluate definition-time if-then-else
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
@@ -378,6 +379,7 @@ modelDefClass$methods(addMissingIndexing = function() {
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
+
 addMissingIndexingRecurse <- function(code, dimensionsList) {
     if(!is.call(code)) return(code)   # returns names, numbers
     if(code[[1]] != '[') {

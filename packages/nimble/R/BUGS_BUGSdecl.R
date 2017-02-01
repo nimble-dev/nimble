@@ -351,8 +351,14 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     if(is.call(code)) {
         indexingBracket <- code[[1]] == '['
         if(indexingBracket) {
-          browser()
-            if(is.call(code[[2]])) indexingBracket <- FALSE ## treat like any other function
+            if(is.call(code[[2]])){
+              # if(length(code[[2]]) > 1 && (code[[2]][[1]] == '$' && deparse(code[[2]][[2]][[1]]) %in% c('eigen', 'svd'))){
+              #  indexingBracket <- TRUE
+              # }
+              # else{indexingBracket <- FALSE ## treat like any other function
+              # }
+              indexingBracket <- FALSE
+            } 
         }
         if(indexingBracket) { ##if(code[[1]] == '[') {
             contents <- lapply(code[-c(1,2)], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
@@ -387,6 +393,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             }
         } else {
             if(cLength > 1) {
+              browser()
                 contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
                 contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
                 contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
