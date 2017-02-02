@@ -10,7 +10,7 @@ nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','
                             'mean','sum','sd','var','max','min','prod',
                             'asRow', 'asCol',
                             'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve', 'eigen', 'svd',  ## removed these from BUGS functions, pending problems with Eigen
-                            '>', '<', '>=', '<=', '==', '!=', '&', '|',
+                            '>', '<', '>=', '<=', '==', '!=', '&', '|', '$',
                             distributionFuns,
                             # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
                             paste0(c('d','r','q','p'), 't'),
@@ -352,11 +352,6 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
         indexingBracket <- code[[1]] == '['
         if(indexingBracket) {
             if(is.call(code[[2]])){
-              # if(length(code[[2]]) > 1 && (code[[2]][[1]] == '$' && deparse(code[[2]][[2]][[1]]) %in% c('eigen', 'svd'))){
-              #  indexingBracket <- TRUE
-              # }
-              # else{indexingBracket <- FALSE ## treat like any other function
-              # }
               indexingBracket <- FALSE
             } 
         }
@@ -393,8 +388,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             }
         } else {
             if(cLength > 1) {
-              browser()
-                contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                if(code[[1]] == '$')
+                  contents <- lapply(code[2],  function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
+                else
+                  contents <- lapply(code[-1], function(x) getSymbolicParentNodesRecurse(x, constNames, indexNames, nimbleFunctionNames))
                 contentsCode <- unlist(lapply(contents, function(x) x$code), recursive = FALSE)
                 contentsHasIndex <- unlist(lapply(contents, function(x) x$hasIndex))
                 ## if(code[[1]] == ':') return(list(code = contentsCode, ## need a new part of the list for hasIndexingBlock, or can I set hasIndex = TRUE
@@ -407,24 +404,10 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 contentsHasIndex <- FALSE
                 allContentsReplaceable <- TRUE
             }
-            maybeListElement <- code[[1]] == '$' && (deparse(code[[2]][[1]]) %in% c('eigen', 'svd'))
-            isListElement <- FALSE
-            if(maybeListElement){
-              if(deparse(code[[2]][[1]] == 'eigen')){
-                if(deparse(code[[3]]) %in% c('values', 'vectors')){
-                  isListElement <- TRUE
-                }
-              }
-              else if(deparse(code[[2]][[1]] == 'svd')){
-                if(deparse(code[[3]]) %in% c('d', 'v', 'u')){
-                  isListElement <- TRUE
-                }
-              }
-            }
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
-                (!checkNimbleOrRfunctionNames(funName) & !isListElement)
+                (!checkNimbleOrRfunctionNames(funName))# & !isListElement)
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")

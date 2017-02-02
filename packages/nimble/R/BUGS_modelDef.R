@@ -128,7 +128,6 @@ modelDefClass <- setRefClass('modelDefClass',
 ## set v3 = FALSE to use old processing
 modelDefClass$methods(setupModel = function(code, constants, dimensions, debug = FALSE) {
     if(debug) browser()
-  browser()
     code <- codeProcessIfThenElse(code, parent.frame()) ## evaluate definition-time if-then-else
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
@@ -1952,7 +1951,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
 modelDefClass$methods(genVarInfo3 = function() {
     ## First set up varInfo's for all LHS variables and collect anyStoch.
     ## That allows determination of when logProb information needs to be collected
-  browser()
     for(iDI in seq_along(declInfo)) {
         BUGSdecl <- declInfo[[iDI]]
         if(BUGSdecl$numUnrolledNodes == 0) next
