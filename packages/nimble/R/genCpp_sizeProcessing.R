@@ -1538,7 +1538,6 @@ sizemvAccessBracket <- function(code, symTab, typeEnv) {
 
 sizeIndexingBracket <- function(code, symTab, typeEnv) {
     asserts <- recurseSetSizes(code, symTab, typeEnv)
-
     if(code$args[[1]]$type == 'symbolVecNimArrPtr') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
 
@@ -1792,7 +1791,6 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 ## newExpr$nDim <- code$nDim
                 ## newExpr$toEigenize <- 'yes'
                 ## ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
-              browser()
                 code$name <- 'eigenBlock'
                 code$toEigenize <- 'yes'
             }
@@ -2099,10 +2097,8 @@ sizeMatrixEigenList <- function(code, symTab, typeEnv){
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   a1 <- code$args[[1]]
   if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not an expression.'), call. = FALSE)
-  if(a1$toEigenize == 'no') {
-    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-    a1 <- code$args[[1]]
-  }
+  asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+  a1 <- code$args[[1]]
   if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not a matrix.'), call. = FALSE)
   
   code$type <- 'symbolNimbleList'
