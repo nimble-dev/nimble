@@ -69,7 +69,7 @@ exprClasses_labelForEigenization <- function(code) {
 callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternalUnary, `[`, 1)))
 
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
-    makeCallList(c('abs','square','sqrt','('), 'eigenize_cWiseUnaryEither'),
+    makeCallList(c('abs','square','sqrt','(','t'), 'eigenize_cWiseUnaryEither'),
     makeCallList('pow', 'eigenize_cWiseByScalarArray'),
     makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
     ## component-wise unarys valid only for only Eigen array
@@ -78,7 +78,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
     ## Check on which if any of these can extend to a scalar on one side
     makeCallList(c('pmin','pmax'), 'eigenize_cWiseBinaryArray'),
-    makeCallList(binaryMidLogicalOperators, 'eigenize_cWiseBinaryArray'),
+    makeCallList(binaryMidLogicalOperators, 'eigenize_cWiseBinaryArrayLogical'),
     
     ## component-wise multiplication or division
     makeCallList(c('*','/'), 'eigenize_cWiseMultDiv'),
@@ -86,7 +86,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     ## component-wise addition or subtraction
     makeCallList(c('+','-'), 'eigenize_cWiseAddSub'),
     
-    makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), ##'eigenize_cWiseUnaryEither'),
+    makeCallList(reductionUnaryOperatorsEither, 'eigenize_reductionEither'), 
     makeCallList(reductionUnaryOperatorsArray, 'eigenize_reductionArray'),
     makeCallList(reductionBinaryOperatorsEither, 'eigenize_reductionBinaryEither'),
     makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
@@ -100,7 +100,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(coreRnonSeqBlockCalls, 'eigenize_nonSeq'),
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
-    list('t' = 'eigenize_cWiseUnaryEither',
+    list(##'t' = 'eigenize_cWiseUnaryEither',
          eigenBlock = 'eigenize_eigenBlock',
          diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
@@ -404,6 +404,7 @@ eigenize_cWiseUnaryEither <- function(code, symTab, typeEnv, workEnv) {
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
     code$eigMatrix <- code$args[[1]]$eigMatrix
+    promoteTypes(code)
     invisible(NULL)
 }
 
@@ -425,19 +426,20 @@ eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
     setupExprs
 }
 
-## promoteTypes <- function(code) {
-##     if(!(inherits(code$args[[1]], 'exprClass') & inherits(code$args[[2]], 'exprClass'))) return(NULL)
-##     a1type <- code$args[[1]]$type
-##     a2type <- code$args[[2]]$type
-##     if(a1type == a2type) return(NULL)
-##     if(code$name == '<-') return(eigenCast(code, 2, a1type))
-##     if(a2type == 'double') return(eigenCast(code, 1, 'double'))
-##     if(a1type == 'double') return(eigenCast(code, 2, 'double'))
-##     if(a2type == 'integer') return(eigenCast(code, 1, 'int'))
-##     if(a1type == 'integer') return(eigenCast(code, 2, 'int'))
-##     if(a2type == 'logical') return(eigenCast(code, 1, 'bool'))
-##     if(a1type == 'logical') return(eigenCast(code, 2, 'bool'))
-## }
+promoteArgTypes <- function(code) {
+    if(!(inherits(code$args[[1]], 'exprClass') & inherits(code$args[[2]], 'exprClass'))) return(NULL)
+    a1type <- code$args[[1]]$type
+    a2type <- code$args[[2]]$type
+    if(a1type == a2type) return(NULL)
+    if(code$name == '<-') return(eigenCast(code, 2, a1type))
+    if(a2type == 'double') return(eigenCast(code, 1, 'double'))
+    if(a1type == 'double') return(eigenCast(code, 2, 'double'))
+    if(a2type == 'integer') return(eigenCast(code, 1, 'integer'))
+    if(a1type == 'integer') return(eigenCast(code, 2, 'integer'))
+    ## Should never get past here, but for completeness:
+    if(a2type == 'logical') return(eigenCast(code, 1, 'logical'))
+    if(a1type == 'logical') return(eigenCast(code, 2, 'logical'))
+}
 
 promoteTypes <- function(code) {
     resultType <- code$type
@@ -545,6 +547,19 @@ eigenize_cWiseBinaryEitherMatch <- function(code, symTab, typeEnv, workEnv) {
 }
 
 
+eigenize_cWiseBinaryArrayLogical <- function(code, symTab, typeEnv, workEnv) {
+    if(code$nDim == 0) return(NULL)
+    newName <- eigenizeTranslate[[code$name]]
+    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
+    code$name <- newName
+    code$eigMatrix <- TRUE
+    if(inherits(code$args[[1]], 'exprClass')) if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
+    promoteArgTypes(code) ## key difference for logical case: promote args to match each other, not logical return type
+    invisible(NULL)
+}
+
+
 eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
     newName <- eigenizeTranslate[[code$name]]
@@ -553,6 +568,7 @@ eigenize_cWiseBinaryArray <- function(code, symTab, typeEnv, workEnv) {
     code$eigMatrix <- TRUE
     if(inherits(code$args[[1]], 'exprClass')) if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
     if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
+    promoteTypes(code)
     invisible(NULL)
 }
 

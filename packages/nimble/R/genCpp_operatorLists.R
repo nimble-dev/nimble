@@ -10,7 +10,9 @@ makeCallList <- function(opList, call) {
 ifOrWhile <- c('if','while')
 
 ## Following are a set of operators organized into categories that various processing steps use
-binaryMidLogicalOperators <- c('==','!=','<=','>=','<','>','&','|')
+binaryMidLogicalOperatorsLogical <- c('&','|')
+binaryMidLogicalOperatorsComparison <- c('==','!=','<=','>=','<','>')
+binaryMidLogicalOperators <- c(binaryMidLogicalOperatorsLogical, binaryMidLogicalOperatorsComparison)
 binaryMidOperators <- c('/','*','%%','^')
 
 binaryLeftDoubleOperators <- c('pow','nimMod')
@@ -21,11 +23,15 @@ binaryLeftOperators <- c(binaryLeftDoubleOperators, binaryLeftPromoteOperators, 
 binaryOperators <- c(binaryMidOperators, binaryLeftOperators)
 
 binaryOrUnaryOperators <- c('+','-')
-unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
+unaryPromoteNoLogicalOperators <- 'abs'
+unaryIntegerOperators <- 'nimStep'
+unaryDoubleOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
                     'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
-                    'lgamma1p', 'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
-                    'abs','nimRound','ftrunc','ceil','floor','nimStep', 
+                    ## 'lgamma1p',
+                    'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
+                    'nimRound','ftrunc','ceil','floor', 
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
+unaryOperators <- c(unaryPromoteNoLogicalOperators, unaryIntegerOperators, unaryDoubleOperators)
 unaryOrNonaryOperators <- list() 
 assignmentOperators <- c('<-','<<-','=')
 
@@ -69,7 +75,9 @@ returnTypeHandling <- with(returnTypeCodes,
                                makeCallList(binaryLeftPromoteOperators, promoteNoLogical),
                                makeCallList(binaryLeftLogicalOperators, logical),
                                makeCallList(binaryOrUnaryOperators, promoteNoLogical),
-                               makeCallList(unaryOperators, double),
+                               makeCallList(unaryPromoteNoLogicalOperators, promoteNoLogical),
+                               makeCallList(unaryIntegerOperators, integer),
+                               makeCallList(unaryDoubleOperators, double),
                                makeCallList(reductionUnaryDoubleOperatorsEither, double),
                                makeCallList(reductionUnaryPromoteOperatorsEither, promoteNoLogical),
                                makeCallList(reductionUnaryLogicalOperatorsEither, logical),
@@ -77,6 +85,9 @@ returnTypeHandling <- with(returnTypeCodes,
                                makeCallList(matrixSquareReductionOperators, double),
                                makeCallList(reductionBinaryOperatorsEither, promoteNoLogical),
                                makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators, matrixEigenOperators), double)))
+## deliberately omitted (so they just return same type as input):
+## matrixFlipOperators ('t')
+
 
 midOperators <- as.list(paste0(' ',c(binaryMidOperators,  binaryMidLogicalOperators, binaryOrUnaryOperators, assignmentOperators),' '))
 names(midOperators) <- c(binaryMidOperators, binaryMidLogicalOperators, binaryOrUnaryOperators, assignmentOperators)
@@ -157,7 +168,7 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
                                        eigIprobit = c('iprobit', 'double', 'double'),
                                        eigGammafn = c('gammafn', 'double', 'double'),
                                        eigLgammafn = c('lgammafn', 'double', 'double'),
-                                       eigLgamma1p = c('lgamma1p', 'double', 'double'),
+                                       ##eigLgamma1p = c('lgamma1p', 'double', 'double'),
                                        eigLog1p = c('log1p', 'double', 'double'),
                                        eigLfactorial = c('lfactorial', 'double', 'double'),
                                        eigFactorial = c('factorial', 'double', 'double'),
