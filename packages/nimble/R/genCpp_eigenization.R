@@ -425,6 +425,43 @@ eigenize_coeffSetter <- function(code, symTab, typeEnv, workEnv) {
     setupExprs
 }
 
+## promoteTypes <- function(code) {
+##     if(!(inherits(code$args[[1]], 'exprClass') & inherits(code$args[[2]], 'exprClass'))) return(NULL)
+##     a1type <- code$args[[1]]$type
+##     a2type <- code$args[[2]]$type
+##     if(a1type == a2type) return(NULL)
+##     if(code$name == '<-') return(eigenCast(code, 2, a1type))
+##     if(a2type == 'double') return(eigenCast(code, 1, 'double'))
+##     if(a1type == 'double') return(eigenCast(code, 2, 'double'))
+##     if(a2type == 'integer') return(eigenCast(code, 1, 'int'))
+##     if(a1type == 'integer') return(eigenCast(code, 2, 'int'))
+##     if(a2type == 'logical') return(eigenCast(code, 1, 'bool'))
+##     if(a1type == 'logical') return(eigenCast(code, 2, 'bool'))
+## }
+
+promoteTypes <- function(code) {
+    resultType <- code$type
+    for(i in seq_along(code$args)) {
+        if(inherits(code$args[[i]], 'exprClass')) {
+            if(code$args[[i]]$type != resultType) {
+                eigenCast(code, i, resultType)
+            }
+        }
+    }
+    NULL
+}
+
+eigenCast <- function(expr, argIndex, newType) {
+    castExpr <- insertExprClassLayer(expr, argIndex, 'eigenCast',
+                                     sizeExprs = expr$args[[argIndex]]$sizeExprs,
+                                     nDim = expr$args[[argIndex]]$nDim,
+                                     eigMatrix = expr$args[[argIndex]]$eigMatrix)
+    castExpr$args[[2]] <- switch(newType, double = 'double', integer = 'int', logical = 'bool')
+    castExpr$type <- newType
+
+    castExpr
+}
+
 eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
     setupExprs <- list()
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'There is an assignment without 2 arguments.'), call. = FALSE)
@@ -473,6 +510,7 @@ eigenize_cWiseUnaryArray <- function(code, symTab, typeEnv, workEnv) {
     code$eigMatrix <- FALSE
     if(length(code$args[[1]]$eigMatrix) == 0) stop(exprClassProcessingErrorMsg(code, 'Information for eigenizing was not complete,'), call. = FALSE)
     if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    promoteTypes(code)
     invisible(NULL)
 }
 

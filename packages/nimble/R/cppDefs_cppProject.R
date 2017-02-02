@@ -273,6 +273,8 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                            SHLIBcmd <- paste(SHLIBcmd, ">", logFile)
                                            ## Rstudio will fail to run a system() command with show.output.on.console=FALSE if any output is actually directed to the console. Redirecting it to a file seems to cure this.
                                        }
+
+                                       if(nimbleOptions('pauseAfterWritingFiles')) browser()
                                        
                                        if(isWindows)
                                            status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)

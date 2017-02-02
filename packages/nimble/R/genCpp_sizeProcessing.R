@@ -1822,6 +1822,25 @@ sizeTranspose <- function(code, symTab, typeEnv) {
     return(ans)
 }
 
+getArgumentType <- function(expr) {
+    if(inherits(expr, 'exprClass')) {
+        expr$type
+    } else
+        storage.mode(expr)
+}
+
+setReturnType <- function(keyword, argType) {
+    handling <- returnTypeHandling[[keyword]]
+    if(is.null(handling)) return('double')
+    switch(handling,
+           'double', ##1
+           'integer', ##2
+           'logical', ##3
+           argType, ##4
+           if(argType == 'logical') 'integer' else argType ##5
+           )
+}
+
 ## Handler for unary functions that operate component-wise
 sizeUnaryCwise <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1){
@@ -1838,12 +1857,13 @@ sizeUnaryCwise <- function(code, symTab, typeEnv) {
         }
         code$nDim <- a1$nDim
         code$sizeExprs <- a1$sizeExprs
-        code$type <- a1$type
+  ##      code$type <- a1$type
     } else {
         code$nDim <- 0
         code$sizeExprs <- list()
-        code$type <- 'double'
+##        code$type <- 'double'
     }
+    code$type <- setReturnType(code$name, getArgumentType(a1))
     if(length(code$nDim) != 1) stop(exprClassProcessingErrorMsg(code, 'In sizeUnaryCwise: nDim is not set.'), call. = FALSE)
     code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
     return(asserts)

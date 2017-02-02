@@ -1,10 +1,25 @@
+## This takes a character vector as the first argument and length-1 character vector as the second argument.
+## It returns a list with the first vector as names and the second argument as the value of each element.
+## E.g. makeCallList(c('A','B'), 'foo') is equivalent to list(A = 'foo', B = 'foo')
+makeCallList <- function(opList, call) {
+    ans <- rep(list(call), length(opList))
+    names(ans) <- opList
+    ans
+}
+
 ifOrWhile <- c('if','while')
 
 ## Following are a set of operators organized into categories that various processing steps use
 binaryMidLogicalOperators <- c('==','!=','<=','>=','<','>','&','|')
 binaryMidOperators <- c('/','*','%%','^')
-binaryLeftOperators <- c('pow','pmin','pmax', 'nimMod', 'nimEquals','pairmin','pairmax')
+
+binaryLeftDoubleOperators <- c('pow','nimMod')
+binaryLeftPromoteOperators <- c('pmin','pmax','pairmin','pairmax')
+binaryLeftLogicalOperators <- c( 'nimEquals')
+binaryLeftOperators <- c(binaryLeftDoubleOperators, binaryLeftPromoteOperators, binaryLeftLogicalOperators)
+
 binaryOperators <- c(binaryMidOperators, binaryLeftOperators)
+
 binaryOrUnaryOperators <- c('+','-')
 unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
                     'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
@@ -13,7 +28,13 @@ unaryOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 's
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
 unaryOrNonaryOperators <- list() 
 assignmentOperators <- c('<-','<<-','=')
-reductionUnaryOperatorsEither <- c('min','max','sum','mean','any','all','prod','squaredNorm')  # removed norm as not consistent between R and C
+
+reductionUnaryDoubleOperatorsEither <- c('mean', 'prod','squaredNorm')
+reductionUnaryPromoteOperatorsEither <-  c('min','max', 'sum')
+reductionUnaryLogicalOperatorsEither <- c('any','all')
+
+reductionUnaryOperatorsEither <- c(reductionUnaryDoubleOperatorsEither, reductionUnaryPromoteOperatorsEither, reductionUnaryLogicalOperatorsEither)  # removed norm as not consistent between R and C
+
 reductionUnaryOperatorsArray <- c('sd','var')
 reductionUnaryOperators <- c(reductionUnaryOperatorsEither, reductionUnaryOperatorsArray)
 matrixSquareReductionOperators <- c('det','logdet','trace')
@@ -33,6 +54,30 @@ matrixEigenOperators <- c('eigen')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')
 
+returnTypeCodes <- list(
+    double = 1L,
+    integer = 2L,
+    logical = 3L,
+    promote = 4L,
+    promoteNoLogical = 5L)
+
+returnTypeHandling <- with(returnTypeCodes,
+                           c(
+                               makeCallList(binaryMidLogicalOperators, logical),
+                               makeCallList(binaryMidOperators, double),
+                               makeCallList(binaryLeftDoubleOperators, double),
+                               makeCallList(binaryLeftPromoteOperators, promoteNoLogical),
+                               makeCallList(binaryLeftLogicalOperators, logical),
+                               makeCallList(binaryOrUnaryOperators, promoteNoLogical),
+                               makeCallList(unaryOperators, double),
+                               makeCallList(reductionUnaryDoubleOperatorsEither, double),
+                               makeCallList(reductionUnaryPromoteOperatorsEither, promoteNoLogical),
+                               makeCallList(reductionUnaryLogicalOperatorsEither, logical),
+                               makeCallList(reductionUnaryOperatorsArray, double),
+                               makeCallList(matrixSquareReductionOperators, double),
+                               makeCallList(reductionBinaryOperatorsEither, promoteNoLogical),
+                               makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators, matrixEigenOperators), double)))
+
 midOperators <- as.list(paste0(' ',c(binaryMidOperators,  binaryMidLogicalOperators, binaryOrUnaryOperators, assignmentOperators),' '))
 names(midOperators) <- c(binaryMidOperators, binaryMidLogicalOperators, binaryOrUnaryOperators, assignmentOperators)
 midOperators <- c(midOperators, list('$' = '$', '%*%' = ' %*% ', ':' = ':', '%o%' = '%o%'))
@@ -43,14 +88,6 @@ brackOperators <- list('[' = c('[',']'), '[[' = c('[[',']]'))
 
 callToSkipInEigenization <- c('copy','setValues', 'getValues', 'setSize', 'resize', 'getsize', 'size', 'resizeNoPtr','assert', 'return', 'blank', 'rankSample', 'nimArr_dmnorm_chol', 'nimArr_dmvt_chol', 'nimArr_dwish_chol', 'nimArr_dmulti', 'nimArr_dcat', 'nimArr_dinterval', 'nimArr_ddirch', 'nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rcat', 'nimArr_rinterval', 'nimArr_rdirch', 'calculate', 'calculateDiff', 'simulate', 'getLogProb', 'nimEquals', 'startNimbleTimer', 'endNimbleTimer')
 
-## This takes a character vector as the first argument and length-1 character vector as the second argument.
-## It returns a list with the first vector as names and the second argument as the value of each element.
-## E.g. makeCallList(c('A','B'), 'foo') is equivalent to list(A = 'foo', B = 'foo')
-makeCallList <- function(opList, call) {
-    ans <- rep(list(call), length(opList))
-    names(ans) <- opList
-    ans
-}
 
 ## used for nimDeparse &/or cppOutputs
 
