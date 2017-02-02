@@ -55,7 +55,7 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     }
     if(is.call(expr)) {
         if(expr[[1]] == '$'){
-          if(length(expr[[2]] > 0 && deparse(expr[[2]][[1]]) %in% c('svd', 'eigen'))){
+          if(length(expr[[2]] > 0)){
             expr[2] <- lapply(expr[2], function(listElement) addModelDollarSign(listElement, exceptionNames))
             return(expr)
           } 

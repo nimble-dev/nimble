@@ -387,10 +387,6 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
     }
     if(code[[1]] != '[')   stop('something went wrong: expecting a [')
     ## code must be an indexing call, e.g. x[.....]
-    if(length(code[[2]] > 1)){
-      for(i in seq_along(code))     code[[i]] <- addMissingIndexingRecurse(code[[i]], dimensionsList)
-      return(code)
-    }
     if(!any(code[[2]] == names(dimensionsList))) {
         ## dimension information was NOT provided for this variable
         ## let's check to make sure all indexes are present

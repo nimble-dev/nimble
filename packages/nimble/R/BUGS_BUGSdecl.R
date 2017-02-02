@@ -407,7 +407,7 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
             isRfunction <- !any(code[[1]] == nimbleFunctionNames)
             funName <- deparse(code[[1]])
             isRonly <- isRfunction &
-                (!checkNimbleOrRfunctionNames(funName))# & !isListElement)
+                (!checkNimbleOrRfunctionNames(funName))
             if(isRonly & !allContentsReplaceable) {
                 if(!exists(funName))
                     stop("R function '", funName,"' does not exist.")

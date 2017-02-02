@@ -1792,6 +1792,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 ## newExpr$nDim <- code$nDim
                 ## newExpr$toEigenize <- 'yes'
                 ## ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
+              browser()
                 code$name <- 'eigenBlock'
                 code$toEigenize <- 'yes'
             }
