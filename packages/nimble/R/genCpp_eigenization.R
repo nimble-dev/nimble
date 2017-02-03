@@ -543,7 +543,8 @@ eigenize_cWiseBinaryEitherMatch <- function(code, symTab, typeEnv, workEnv) {
     code$name <- newName
     makeEigenArgsMatch(code)
     code$eigMatrix <- code$args[[1]]$eigMatrix
-	invisible(NULL)
+    promoteTypes(code)
+    invisible(NULL)
 }
 
 
@@ -581,6 +582,7 @@ eigenize_cWiseByScalarArray <- function(code, symTab, typeEnv, workEnv) {
     code$name <- newName
     code$eigMatrix <- FALSE
     if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    promoteTypes(code)
     invisible(NULL)
 }
 

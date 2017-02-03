@@ -13,7 +13,10 @@ ifOrWhile <- c('if','while')
 binaryMidLogicalOperatorsLogical <- c('&','|')
 binaryMidLogicalOperatorsComparison <- c('==','!=','<=','>=','<','>')
 binaryMidLogicalOperators <- c(binaryMidLogicalOperatorsLogical, binaryMidLogicalOperatorsComparison)
-binaryMidOperators <- c('/','*','%%','^')
+
+binaryMidDoubleOperators <- c('/', '^')
+binaryMidPromoteNoLogicalOperators <- c('*','%%')
+binaryMidOperators <- c(binaryMidDoubleOperators, binaryMidPromoteNoLogicalOperators)
 
 binaryLeftDoubleOperators <- c('pow','nimMod')
 binaryLeftPromoteOperators <- c('pmin','pmax','pairmin','pairmax')
@@ -70,7 +73,8 @@ returnTypeCodes <- list(
 returnTypeHandling <- with(returnTypeCodes,
                            c(
                                makeCallList(binaryMidLogicalOperators, logical),
-                               makeCallList(binaryMidOperators, double),
+                               makeCallList(binaryMidDoubleOperators, double),
+                               makeCallList(binaryMidPromoteNoLogicalOperators, promoteNoLogical),
                                makeCallList(binaryLeftDoubleOperators, double),
                                makeCallList(binaryLeftPromoteOperators, promoteNoLogical),
                                makeCallList(binaryLeftLogicalOperators, logical),

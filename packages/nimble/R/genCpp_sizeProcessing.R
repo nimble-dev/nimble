@@ -1989,7 +1989,7 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
 
     code$nDim <- 0
     code$sizeExprs <- list()
-    code$type <- code$args[[1]]$type
+    code$type <- setReturnType(code$name, code$args[[1]]$type)
     code$toEigenize <- 'yes'
 
     if(!(code$caller$name %in% c('{','<-','<<-','='))) {
@@ -2212,7 +2212,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a1DropNdim <- 0
         a1nDim <- 0
         a1sizeExprs <- list()
-        a1type <- 'double'
+        a1type <- storage.mode(a1)
     }
     if(inherits(a2, 'exprClass')) {
         if(a2$toEigenize == 'no') {
@@ -2228,13 +2228,13 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a2DropNdim <- 0
         a2nDim <- 0
         a2sizeExprs <- list()
-        a2type <- 'double'
+        a2type <- storage.mode(a2)
     }
     
     ## Choose the output type by type promotion
     if(length(a1type) == 0) {warning('Problem with type of arg1 in sizeBinaryCwise', call. = FALSE); browser()}
     if(length(a2type) == 0) {warning('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE); browser()}
-    code$type <- arithmeticOutputType(a1type, a2type)
+    code$type <- setReturnType(code$name, arithmeticOutputType(a1type, a2type))
 
     code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0) 'maybe' else 'yes'
     
