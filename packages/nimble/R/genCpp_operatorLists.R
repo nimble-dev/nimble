@@ -30,8 +30,6 @@ matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
 matrixEigenListOperators <- c('EIGEN_EIGEN', 'EIGEN_SVD')
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
-matrixVectorOperators <- c('svdd')
-matrixMatrixOperators <- c('svdu', 'svdv')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')
 
