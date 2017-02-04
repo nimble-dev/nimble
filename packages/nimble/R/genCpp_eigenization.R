@@ -320,7 +320,7 @@ eigenize_reductionBinaryEither <- function(code, symTab, typeEnv, workEnv) {
 ##    makeEigenArgsMatch(code)
 ##    for(i in 1:2) 
 ##        if(code$args[[i]]$eigMatrix) eigenizeArrayize(code$args[[i]])
-
+    promoteTypes(code)
     invisible(NULL)
 }
 
@@ -339,6 +339,7 @@ eigenize_reductionEither <- function(code, symTab, typeEnv, workEnv) {
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
 ##    code$eigMatrix <- code$args[[1]]$eigMatrix
+    promoteTypes(code)
     invisible(NULL)
 }
 
@@ -349,6 +350,7 @@ eigenize_reductionArray <- function(code, symTab, typeEnv, workEnv) {
 ##    code$eigMatrix <- code$args[[1]]$eigMatrix
     if(length(code$args[[1]]$eigMatrix) == 0) stop(paste0("Trying it eigenize ", nimDeparse(code), " but information from the argument is not complete."), call. = FALSE)
     if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    promoteTypes(code)
     invisible(NULL)
 }
 
