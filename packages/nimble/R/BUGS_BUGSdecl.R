@@ -337,6 +337,9 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
     cLength <- length(code)
     if(cLength == 1) {
         if(is.name(code)) {
+            if(code == ''){
+              return(list(code = NULL, replaceable = TRUE, hasIndex = FALSE))
+            }
             if(any(code == indexNames)) {
                 return(list(code = NULL, replaceable = TRUE, hasIndex = TRUE))
             }
@@ -414,7 +417,6 @@ getSymbolicParentNodesRecurse <- function(code, constNames = list(), indexNames 
                 unreplaceable <- sapply(contents[!contentsReplaceable], function(x) as.character(x$code))
                 stop("R function '", funName,"' has arguments that cannot be evaluated; either the function must be a nimbleFunction or values for the following inputs must be specified as constants in the model: ", paste(unreplaceable, collapse = ","), ".")
             }
-
             return(list(code = contentsCode,
                         replaceable = allContentsReplaceable & isRfunction,
                         hasIndex = any(contentsHasIndex)))

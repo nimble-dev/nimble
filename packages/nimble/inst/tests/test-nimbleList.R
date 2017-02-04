@@ -807,7 +807,7 @@ RnimbleList <- testInst$run()
 ctestInst <- compileNimble(testInst)
 CnimbleList <- ctestInst$run()
 
-## test for eigenValues and eigenVectors
+## test for singluar values
 expect_equal(diag(4)+1, RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
 expect_equal(diag(4)+1,  RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
 expect_equal(sum(abs(RnimbleList$d)), sum(abs(CnimbleList$d)))
@@ -818,4 +818,23 @@ test_that("return object (from c++) is nimbleList.",
           })
 
 
+########
+## Testing for use of eigen() in BUGS models  
+########
 
+modelCode <- nimbleCode({
+  meanVec[1:5] <- eigen(constMat[,])$values[1:5]
+  covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]
+  y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
+})
+
+data <- list(y = rnorm(5, 0, 1))
+constants <- list(constMat = diag(5))
+dims <- list(y = c(5), meanVec = c(5), constMat = c(5,5))
+
+Rmodel <- nimbleModel(modelCode, data = data, dimensions = dims, constants = constants)
+
+Cmodel <- compileNimble(Rmodel)
+
+Cmodel$simulate()
+Cmodel$calculate()

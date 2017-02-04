@@ -775,6 +775,14 @@ recurseExtractNimListArg <- function(code, symTab){
 sizeNFvar <- function(code, symTab, typeEnv) {
     topLevel <- code$caller$name != 'nfVar'
     nfName <- code$args[[1]]$name
+    if(nfName == 'cppPointerDereference'){
+      tmpArg <- code$args[[1]]$args[[1]]
+      nfName <- tmpArg$name
+      while(nfName == 'cppPointerDereference'){
+        tmpArg <- tmpArg$args[[1]]
+        nfName <- tmpArg$name
+      }
+    }
     asserts <- NULL
     code$toEigenize <- 'maybe'
     if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
@@ -811,12 +819,14 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     if(!is.null(objSym))code$type <- objSym$type
     if(code$type != 'nimbleList') code$nDim <- objSym$nDim
     if(isSymList){
-      bottomLevelList <- (code$type == 'nimbleList' && length(code$args[[1]]$args) == 0)
-      a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
-      a1$type <- a1$args[[1]]$type
-      a1$nDim <- a1$args[[1]]$nDim
-      a1$sizeExprs <- a1$args[[1]]$sizeExprs
-      code$args[[1]] <- a1
+      # bottomLevelList <- (code$type == 'nimbleList' && length(code$args[[1]]$args) == 0)
+      if(code$args[[1]]$name != 'cppPointerDereference'){
+        a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
+        a1$type <- a1$args[[1]]$type
+        a1$nDim <- a1$args[[1]]$nDim
+        a1$sizeExprs <- a1$args[[1]]$sizeExprs
+        code$args[[1]] <- a1
+      }
     }
     else{
       code$nDim <- objSym$nDim
@@ -826,12 +836,10 @@ sizeNFvar <- function(code, symTab, typeEnv) {
       code$sizeExprs <- makeSizeExpressions(objSym$size,
                                               parse(text = nimDeparse(code))[[1]])
     } 
-    else if(bottomLevelList){
+    else{
       code$type <- 'symbolNimbleList'
       code$sizeExprs$nlProc <-objSym$nlProc
     }
-    else 
-      code$sizeExprs <- list()
     return(asserts)
 }
 
@@ -978,7 +986,6 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
 
 recurseSetSizes <- function(code, symTab, typeEnv, useArgs = rep(TRUE, length(code$args))) {
     ## won't be here unless code is a call.  It will not be a {
-    
     asserts <- list()
     for(i in seq_along(code$args)) {
         if(useArgs[i]) {
@@ -1482,7 +1489,6 @@ sizeSimulate <- function(code, symTab, typeEnv) {
 sizeScalarRecurse <- function(code, symTab, typeEnv, recurse = TRUE) {
     ## use something different for distributionFuns
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
-
     ## This just forces any argument expression to be lifted.  Can we lift only things to be eigenized?
     for(i in seq_along(code$args)) {
         if(inherits(code$args[[i]], 'exprClass')) {

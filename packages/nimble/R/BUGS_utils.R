@@ -48,21 +48,16 @@ addModelDollarSign <- function(expr, exceptionNames = character(0)) {
     if(is.numeric(expr)) return(expr)
     if(is(expr, 'srcref')) return(expr)
     if(is.name(expr)) {
-        if(as.character(expr) %in% exceptionNames)    return(expr)
+        if((as.character(expr) %in% exceptionNames) || (as.character(expr) == ''))    return(expr)
         proto <- quote(model$a)
         proto[[3]] <- expr
         return(proto)
     }
     if(is.call(expr)) {
         if(expr[[1]] == '$'){
-          if(length(expr[[2]] > 0)){
             expr[2] <- lapply(expr[2], function(listElement) addModelDollarSign(listElement, exceptionNames))
             return(expr)
-          } 
-          else{
-            return(expr)
-          }
-        }
+        } 
         if(expr[[1]] == 'returnType')
             return(expr)
         if(length(expr) > 1) {
