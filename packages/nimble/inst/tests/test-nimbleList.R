@@ -822,7 +822,7 @@ test_that("return object (from c++) is nimbleList.",
 ## Testing for use of eigen() in BUGS models  
 ########
 
-modelCode <- nimbleCode({
+modelCode1 <- nimbleCode({
   meanVec[1:5] <- eigen(constMat[,])$values[1:5]
   covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]
   y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
@@ -830,11 +830,34 @@ modelCode <- nimbleCode({
 
 data <- list(y = rnorm(5, 0, 1))
 constants <- list(constMat = diag(5))
-dims <- list(y = c(5), meanVec = c(5), constMat = c(5,5))
+dims <- list(y = c(5), meanVec = c(5))
 
-Rmodel <- nimbleModel(modelCode, data = data, dimensions = dims, constants = constants)
+Rmodel1 <- nimbleModel(modelCode1, data = data, dimensions = dims, constants = constants)
 
-Cmodel <- compileNimble(Rmodel)
+Cmodel1 <- compileNimble(Rmodel1)
 
-Cmodel$simulate()
-Cmodel$calculate()
+Cmodel1$simulate()
+Cmodel1$calculate()
+
+
+
+########
+## Testing for use of svd() in BUGS models  
+########
+
+modelCode2 <- nimbleCode({
+  meanVec[1:5] <- svd(constMat[,]%*%constMat[,])$d[1:5]
+  covMat[1:5,1:5] <- svd(constMat[1:5,])$u[1:5,1:5]
+  y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
+})
+
+data <- list(y = rnorm(5, 0, 1))
+constants <- list(constMat = diag(5))
+dims <- list(y = c(5), meanVec = c(5))
+
+Rmodel2 <- nimbleModel(modelCode2, data = data, dimensions = dims, constants = constants)
+
+Cmodel2 <- compileNimble(Rmodel2)
+
+Cmodel2$simulate()
+Cmodel2$calculate()
