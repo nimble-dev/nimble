@@ -611,6 +611,7 @@ setValues <- function(input, model, nodes){
 #' @param model       a NIMBLE model object, either compiled or uncompiled
 #' @param nodes       a vector of node names, allowing index blocks that will be expanded
 #' @param value       value to set the node(s) to
+#' @param accessorIndex For internal NIMBLE use only
 #' 
 #' @author NIMBLE development team
 #' @export
@@ -628,7 +629,7 @@ setValues <- function(input, model, nodes){
 #' These functions work in R and in NIMBLE run-time code that can be compiled.
 #'
 #' @return A vector of values concatenated from the provided nodes in the model
-values <- function(model, nodes){
+values <- function(model, nodes, accessorIndex){
 	ans <- NA
 	getValues(ans, model, nodes, parent.frame())
 	ans
@@ -638,7 +639,7 @@ values <- function(model, nodes){
 
 #' @rdname values 
 #' @export
-`values<-` <- function(model, nodes, value){
+`values<-` <- function(model, nodes, value, accessorIndex){
 	setValues(value, model, nodes)
 	return(model)
 }

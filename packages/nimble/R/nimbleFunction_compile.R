@@ -13,6 +13,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
                                        initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE) {
+                                           print('here3')
+                                           if(exists('STOP')) browser()
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
                                        		
@@ -78,6 +80,8 @@ nfProcessing <- setRefClass('nfProcessing',
                                   writeLines(paste0('nfProcessing object ', name))
                               },
                               initialize = function(f = NULL, className, fromModel = FALSE, project, isNode = FALSE) {
+                                  print('here2')
+                                  if(exists('STOP')) browser()
                               	neededTypes <<- list()
                               	neededObjectNames <<- character()
                               	newSetupCode <<- list()
@@ -170,9 +174,11 @@ nfProcessing <- setRefClass('nfProcessing',
                                   ##NEW PROCESSING TOOLS.   
                                   matchKeywords_all()
                                   processKeywords_all()
+
+                                  print('here10')
+                                  if(exists('STOP2')) browser()
                                   
                                   if(debug) browser()
-
                                   makeNewSetupLinesOneExpr()
                                   
                                   evalNewSetupLines()

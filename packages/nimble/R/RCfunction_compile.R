@@ -132,7 +132,8 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                    ),
                                methods = list(
                                    process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE) {
-                                       
+                                       print('here4')
+                                       if(exists('STOP')) browser()
                                        if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
                                            if(nimbleOptions()$debugRCfunProcessing) {
                                                debug <- TRUE

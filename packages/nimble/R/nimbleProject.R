@@ -518,6 +518,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ## check of make new nfCompInfos item
                                      ## ensure it is build up to the cppNimbleFunctionClass
                                      if(!is.null(funList)) {
+                                         print('here1')
+                                         if(exists('STOP')) browser()
                                          generatorName <- nfGetDefVar(funList[[1]], 'name')
                                          name <- nf_getRefClassObject(funList[[1]])$name
                                          Cname <- nf_getRefClassObject(funList[[1]])$Cname
@@ -539,6 +541,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$nfProc$process(control = control)
                                          nfCompInfos[[generatorName]]$Rcompiled <<- TRUE
                                      }
+                                     print('here8')
+                                     browser()
                                      if(inherits(nfCompInfos[[generatorName]]$cppDef, 'uninitializedField')) {
                                          newCppClass <- cppNimbleFunctionClass(name = generatorName,
                                                                                nfProc = nfCompInfos[[generatorName]]$nfProc,
@@ -671,7 +675,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
 
-
+                                     print('here9')
+                                     browser()
                                      ## At this point we are ready to write, compile, load and instantiate.
                                      ## However the system for tracking these steps is not perfect.
                                      ## Specifically, if another nimbleFunction containing an object of the current nimbleFunction

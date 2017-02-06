@@ -798,6 +798,7 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
                 oldCobjectInterface[[1]]$clearInstance( oldCobjectInterface[[2]] )
             } else {
                 neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
+                if(exists('STOP2')) browser()
                 nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self, dll)
             }
             ##copyFromRobject()

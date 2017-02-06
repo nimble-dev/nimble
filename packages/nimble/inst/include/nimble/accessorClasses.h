@@ -609,6 +609,8 @@ template<int D, class T>
 void SingleModelAccess_2_nimArr(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin);
 template<int D, class T>
 void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr);
+template<int D, class T>
+void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr, int i);
 
 /* void setValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA); */
 /* void setValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA); */
@@ -618,6 +620,8 @@ void setValues(NimArrBase<int> &nimArr, ManyVariablesAccessor &MVA);
 
 void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA);
 void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA);
+void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA, int i);
+void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA, int i);
 
 
 //double calculate(NodeVectorClass &nodes);
