@@ -2079,7 +2079,6 @@ sizeMatrixVectorReduction <- function(code, symTab, typeEnv) {
   code$sizeExprs <- list(newSize)
   code$type <- a1$type
   code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
-  print(newSize)
   invisible(asserts)
 }
 

@@ -108,7 +108,6 @@ pq_exp_nimble_keywordInfo <- keywordInfoClass(
 rexp_nimble_keywordInfo <- keywordInfoClass(
 	keyword = 'rexp_nimble',
 	processor = function(code, nfProc){
-	  print(summary(code[[1]]))
 		code <- handleScaleAndRateForExpNimble(code)
 		return(code)
 	}
