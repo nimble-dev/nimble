@@ -498,6 +498,8 @@ sampler_AF_slice <- nimbleFunction(
     if(length(width) != d)          stop('sliceWidths must have length ', d, '\n')
     if(length(targetAsScalar) < 2)  stop('automated factor slice sampler must be used on at least two target nodes')
     
+    testMat <- matrix(0, nrow = 2, ncol = 2)
+    
   },
   run = function() {
     # for(i in 1:d){
@@ -557,26 +559,29 @@ sampler_AF_slice <- nimbleFunction(
     #   return(lp)
     # },
     factorAdapt = function() {
+      print(factorAdaptInterval)
+      print(factorCounter)
+      # test <- eigen(testMat)$vectors
       # factorBurnInIters <<- factorBurnInIters - 1
-      factorCounter     <<- factorCounter + 1
-      empirSamp[factorCounter, 1:d] <<- values(model, target)
-      if(factorCounter == factorAdaptInterval){  # time to adapt factors
-        for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
-        empirCov <- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
-        print(empirCov)
-        print(gammaMat)
-        test <- eigen(empirCov) # replace old factors with new factors
-        
-        # gammaMat <<- eigen(empirCov)$vectors  # replace old factors with new factors
+       factorCounter     <<- factorCounter + 1
+       # empirSamp[factorCounter, 1:d] <<- values(model, target)
+       
+        if(factorCounter == factorAdaptInterval){  # time to adapt factors
+         # test <- eigen(testMat)$vectors # replace old factors with new factors
+         
+         # for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+         # empirCov <- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
       #   
-      #   sliceAdaptIndicator <<- integer(d, 1)  # reset all slice adaptive variables
-      #   nExpansions         <<- integer(d, 0)
-      #   nContracts          <<- integer(d, 0)
-      #   sliceAdaptInterval  <<- 1
-      #   sliceAdaptIters     <<- sliceAdaptItersOriginal
-      #   sliceCounter        <<- 0
-         factorCounter       <<- 0
-      }
+        # gammaMat <<- eigen(empirCov)$vectors  # replace old factors with new factors
+      #
+        # sliceAdaptIndicator <<- integer(d, 1)  # reset all slice adaptive variables
+        # nExpansions         <<- integer(d, 0)
+        # nContracts          <<- integer(d, 0)
+        # sliceAdaptInterval  <<- 1
+        # sliceAdaptIters     <<- sliceAdaptItersOriginal
+        # sliceCounter        <<- 0
+        # factorCounter       <<- 0
+        }
     },
     # widthAdapt = function() {
     #   # sliceCounter    <<- sliceCounter + 1

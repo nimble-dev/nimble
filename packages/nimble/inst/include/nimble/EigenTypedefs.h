@@ -67,6 +67,8 @@ void  createNewSEXP (  );
 
 template<class T>
 nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
+    _nimble_global_output <<"EIGEN_EIGEN running."<<"\n"; nimble_print_to_R(_nimble_global_output);
+
     nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
 	(*returnClass).values.initialize(0, 0, x.dim()[0]);
 	Map<VectorXd> Eig_eigVals(0,0);
