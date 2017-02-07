@@ -92,6 +92,29 @@ test_mcmc(model = code, name = "slice sampler example", resampleData = FALSE, re
 
 
 
+
+### AF_slice sampler example, default control options.
+
+
+code <- nimbleCode({
+  mu[1] <- 10
+  mu[2] <- 20
+  mu[3] <- 30
+  x[1:3] ~ dmnorm(mu[1:3], prec = Q[1:3,1:3])
+})
+
+Q = matrix(c(1.0,0.2,-1.0,0.2,4.04,1.6,-1.0,1.6,10.81), nrow=3)
+data = list(Q = Q)
+inits = list(x = c(10, 20, 30))
+
+test_mcmc(model = code, name = 'block sampler on multivariate node', data = data, seed = 0, numItsC = 10000,
+          results = list(mean = list(x = c(10,20,30)),
+                         var = list(x = diag(solve(Q)))),
+          resultsTolerance = list(mean = list(x = rep(1,3)),
+                                  var = list(x = c(.1, .03, .01))),
+          samplers = list(list(type = 'AF_slice', target = c('x[1:3]'))))
+
+
 ### elliptical slice sampler 'ess'
 
 set.seed(0)
