@@ -503,6 +503,7 @@ eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
                         backsolve = 'EIGEN_BS',
                         stop('should never get here')
                         )
+    promoteTypes(code)
     invisible(NULL)
 }
 
@@ -525,6 +526,7 @@ eigenize_cWiseUnaryMatrix <- function(code, symTab, typeEnv, workEnv) {
     code$name <- newName
     code$eigMatrix <- TRUE
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
+    promoteTypes(code)
     invisible(NULL)
 }
 
@@ -596,6 +598,7 @@ eigenize_cWiseBinaryMatrix <- function(code, symTab, typeEnv, workEnv) {
     code$eigMatrix <- TRUE
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
     if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
+    promoteTypes(code)
     invisible(NULL)
 }
 

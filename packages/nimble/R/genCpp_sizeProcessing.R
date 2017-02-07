@@ -1959,7 +1959,7 @@ sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
     }
     code$nDim <- 2
     code$sizeExprs <- list(newSize, newSize)
-    code$type <- a1$type
+    code$type <- setReturnType(code$name, a1$type)
     code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
     invisible(asserts)
 }
@@ -2083,7 +2083,7 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
     }
     code$nDim <- 2
     code$sizeExprs <- list(a1$sizeExprs[[1]], a2$sizeExprs[[2]])
-    code$type <- arithmeticOutputType(a1$type, a2$type)
+    code$type <- setReturnType(code$name, arithmeticOutputType(a1$type, a2$type))
     code$toEigenize <- 'yes'
     assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[2]]), " == ", deparse(a2$sizeExprs[[1]]))
     newAssert <- identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)
@@ -2102,7 +2102,7 @@ sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or f
     if(!(inherits(a1, 'exprClass') & inherits(a2, 'exprClass'))) stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: expecting both arguments to be exprClasses.'), call. = FALSE)
     if(a1$nDim != 2)  stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: first argument to a matrix solver must be a matrix.'), call. = FALSE)
     if(!any(a2$nDim == 1:2)) stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: second argument to a matrix solver must be a vector or matrix.'), call. = FALSE)
-    code$type <- 'double'
+    code$type <- setReturnType(code$name, 'double')
     code$nDim <- a2$nDim  ## keep the same dimension as the 2nd argument
     if(code$nDim == 1) { code$sizeExprs <- c(a1$sizeExprs[[1]])
                      } else { code$sizeExprs <- c(a1$sizeExprs[[1]], a2$sizeExprs[[2]]) }
