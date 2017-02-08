@@ -775,66 +775,73 @@ recurseExtractNimListArg <- function(code, symTab){
 }
 
 sizeNFvar <- function(code, symTab, typeEnv) {
-    topLevel <- code$caller$name != 'nfVar'
-    nfName <- code$args[[1]]$name
-    asserts <- NULL
-    code$toEigenize <- 'maybe'
-    if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
-      isSymList <- TRUE
-      if(topLevel){
-        objSym <- recurseExtractNimListArg(code, symTab)
-        if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
-        recurseSetSizes(code, symTab, typeEnv)
-      }
-      else{
-        objSym <- NULL ## if accessing element of nested NL, don't need to waste time getting info for other intermediate NLs
-        code$type <- 'nimbleList' 
-      }
+  topLevel <- code$caller$name != 'nfVar'
+  nfName <- code$args[[1]]$name
+  if(nfName == 'cppPointerDereference'){
+    tmpArg <- code$args[[1]]$args[[1]]
+    nfName <- tmpArg$name
+    while(nfName == 'cppPointerDereference'){
+      tmpArg <- tmpArg$args[[1]]
+      nfName <- tmpArg$name
+    }
+  }
+  asserts <- NULL
+  code$toEigenize <- 'maybe'
+  if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
+    isSymList <- TRUE
+    if(topLevel){
+      objSym <- recurseExtractNimListArg(code, symTab)
+      if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
+      asserts <- recurseSetSizes(code, symTab, typeEnv)
     }
     else{
-      nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
-      isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
-      isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
-      if(nfName %in% c('EIGEN_EIGEN', 'EIGEN_SVD')){
-        recurseSetSizes(code, symTab, typeEnv)
-        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-      }
-      if(!(isSymFunc || isSymList))
-        stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or nimbleList.'), call. = FALSE)
-      if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface
-      if(isSymList) nfProc <- nfSym$nlProc
-      if(is.null(nfProc)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbols in this nimbleFunction generation function not set up.'), call. = FALSE)
-      objName <- code$args[[2]]
-      if(!is.character(objName)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Second argument must be a character string.'), call. = FALSE)
-      objSym <- nfProc$getSymbolTable()$getSymbolObject(objName)  ##nfProc$setupSymTab$getSymbolObject(objName)
-      if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
-      if(inherits(objSym, 'symbolNimbleList')) code$toEigenize <- 'no'
+      objSym <- NULL ## if accessing element of nested NL, don't need to waste time getting info for other intermediate NLs
+      code$type <- 'symbolNimbleList' 
     }
-    if(!is.null(objSym))code$type <- objSym$type
-    if(code$type != 'nimbleList') code$nDim <- objSym$nDim
-    if(isSymList){
-      bottomLevelList <- (code$type == 'nimbleList' && length(code$args[[1]]$args) == 0)
+  }
+  else{
+    nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
+    isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
+    isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
+    if(nfName %in% c('EIGEN_EIGEN', 'EIGEN_SVD')){
+      asserts <- recurseSetSizes(code, symTab, typeEnv)
+      asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+    }
+    if(!(isSymFunc || isSymList))
+      stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or '), call. = FALSE)
+    if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface
+    if(isSymList) nfProc <- nfSym$nlProc
+    if(is.null(nfProc)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbols in this nimbleFunction generation function not set up.'), call. = FALSE)
+    objName <- code$args[[2]]
+    if(!is.character(objName)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Second argument must be a character string.'), call. = FALSE)
+    objSym <- nfProc$getSymbolTable()$getSymbolObject(objName)  ##nfProc$setupSymTab$getSymbolObject(objName)
+    if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
+    if(inherits(objSym, 'symbolNimbleList')) code$toEigenize <- 'no'
+  }
+  if(!is.null(objSym)) code$type <- objSym$type
+  if(code$type != 'symbolNimbleList') code$nDim <- objSym$nDim
+  if(isSymList){
+    if(code$args[[1]]$name != 'cppPointerDereference'){
       a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
       a1$type <- a1$args[[1]]$type
       a1$nDim <- a1$args[[1]]$nDim
       a1$sizeExprs <- a1$args[[1]]$sizeExprs
       code$args[[1]] <- a1
     }
-    else{
-      code$nDim <- objSym$nDim
-      code$type <- objSym$type
-    }
-    if((code$type != 'nimbleList') && code$nDim > 0) {
-      code$sizeExprs <- makeSizeExpressions(objSym$size,
-                                              parse(text = nimDeparse(code))[[1]])
-    } 
-    else if(bottomLevelList){
-      code$type <- 'symbolNimbleList'
-      code$sizeExprs$nlProc <-objSym$nlProc
-    }
-    else 
-      code$sizeExprs <- list()
-    return(asserts)
+  }
+  else{
+    code$nDim <- objSym$nDim
+    code$type <- objSym$type
+  }
+  if((code$type != 'symbolNimbleList') && code$nDim > 0) {
+    code$sizeExprs <- makeSizeExpressions(objSym$size,
+                                          parse(text = nimDeparse(code))[[1]])
+  } 
+  else{
+    code$type <- 'symbolNimbleList'
+    code$sizeExprs$nlProc <-objSym$nlProc
+  }
+  return(asserts)
 }
 
 sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have only nimFunList[[i]](a), nfMethod(nf, 'foo')(a), or nfMethod(nf[[i]], 'foo')(a)
@@ -2097,10 +2104,12 @@ sizeMatrixEigenList <- function(code, symTab, typeEnv){
   asserts <- recurseSetSizes(code, symTab, typeEnv)
   a1 <- code$args[[1]]
   if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not an expression.'), call. = FALSE)
-  if(a1$toEigenize == 'no') {
-    asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-    a1 <- code$args[[1]]
-  }
+  
+  ## below, we want to insert intermediate regardless of if args[[1]] has toEigenize or not.  Otherwise, if toEigenize = TRUE,
+  ## the arg will never go through eigenization functions
+  asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+  a1 <- code$args[[1]]
+  
   if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not a matrix.'), call. = FALSE)
   
   code$type <- 'symbolNimbleList'
@@ -2108,13 +2117,11 @@ sizeMatrixEigenList <- function(code, symTab, typeEnv){
   code$sizeExprs <- listST
   code$toEigenize <- "no"
   code$nDim <- 0
-  # asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-  
   # if(!(code$caller$name %in% c('{','<-','<<-','='))) {
   #   asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   # }
   
-  invisible(NULL)
+  if(length(asserts) == 0) NULL else asserts
 }
 
 

@@ -567,7 +567,7 @@ sampler_AF_slice <- nimbleFunction(
        # empirSamp[factorCounter, 1:d] <<- values(model, target)
        
         if(factorCounter == factorAdaptInterval){  # time to adapt factors
-         # test <- eigen(testMat)$vectors # replace old factors with new factors
+          test <- eigen(testMat)$vectors # replace old factors with new factors
          
          # for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
          # empirCov <- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
