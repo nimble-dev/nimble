@@ -40,5 +40,6 @@ if(!exists('.NimbleUseRegistration') || !.NimbleUseRegistration) {
    makeNumericList = 'makeNumericList'
    newModelValues = 'newModelValues'
    testRows = 'testRows'
+   C_nimEigen = 'C_nimEigen'
    }
 

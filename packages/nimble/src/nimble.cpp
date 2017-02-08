@@ -1,7 +1,11 @@
+#include <Eigen/Dense>
+#include <iostream> // must go before other things because R defines a "length" macro
 #include <nimble/RcppUtils.h>
+#include "nimble/RcppNimbleUtils.h"
 //#include <nimble/ModelClassUtils.h>
 //#include <nimble/accessorClasses.h>
 #include <nimble/nimbleGraph.h>
+#include <nimble/eigenTypedefs.h>
 #include <nimble/dists.h>
 
 #include <R_ext/Rdynload.h>
@@ -39,6 +43,9 @@ R_CallMethodDef CallEntries[] = {
  FUN(C_rmnorm_chol, 3),
  FUN(C_dinterval, 4),
  FUN(C_rinterval, 3),
+ 
+ // eigen C functions below
+ // FUN(C_nimEigen, 3),
  // FUN(makeNumericList, 3),
 //   The following 4 conflict with names of R functions. So we prefix them with a R_
  //CFUN(setPtrVectorOfPtrs, 3),

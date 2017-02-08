@@ -162,5 +162,6 @@ else
   cp inst/CppCode/dists.cpp src
   cp inst/CppCode/RcppUtils.cpp src
   cp inst/CppCode/nimbleGraph.cpp src
+
   (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi
