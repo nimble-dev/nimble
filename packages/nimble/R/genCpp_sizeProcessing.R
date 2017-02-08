@@ -2108,15 +2108,15 @@ sizeMatrixEigenList <- function(code, symTab, typeEnv){
   
   ## below, we want to insert intermediate regardless of if args[[1]] has toEigenize or not.  Otherwise, if toEigenize = TRUE,
   ## the arg will never go through eigenization functions
-  asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-  a1 <- code$args[[1]]
+##  asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+##  a1 <- code$args[[1]]
   
   if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not a matrix.'), call. = FALSE)
   
   code$type <- 'symbolNimbleList'
   listST <- symTab$getParentST()$getSymbolObject(paste0(code$name, 'CLASS'))
   code$sizeExprs <- listST
-  code$toEigenize <- "no"
+  code$toEigenize <- "yes"
   code$nDim <- 0
   # if(!(code$caller$name %in% c('{','<-','<<-','='))) {
   #   asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))

@@ -34,9 +34,9 @@ typedef Map<MatrixXb, Unaligned, EigStrDyn > EigenMapStrb;
 // So we'll use a NullaryExpr approach instead
 
 
-extern "C" {
-  SEXP C_nimEigen(SEXP, SEXP, SEXP); 
-}
+/* extern "C" { */
+/*   SEXP C_nimEigen(SEXP, SEXP, SEXP); */
+/* } */
 
 template<class derived1, class derived2>
 MatrixXd EIGEN_FS(const MatrixBase<derived1> &x, const MatrixBase<derived2> &y) {
@@ -71,26 +71,48 @@ void  createNewSEXP (  );
  EIGEN_EIGENCLASS (  );
 };
 
-template<class T>
-nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) {
+/* template<class T> */
+/* nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(NimArr<2, T> &x, bool valuesOnly) { */
+/*   nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS; */
+/* 	(*returnClass).values.initialize(0, 0, x.dim()[0]); */
+/* 	Map<VectorXd> Eig_eigVals(0,0); */
+/* 	new (&Eig_eigVals) Map< VectorXd >((*returnClass).values.getPtr(),x.dim()[0]); */
+/* 	Map<MatrixXd> Eig_x(x.getPtr(),x.dim()[0],x.dim()[1]); */
+/* 	if(x.dim()[0] != x.dim()[1]) { */
+/* 	 _nimble_global_output <<"Run-time size error: expected matrix argument to eigen() to be square."<<"\n"; nimble_print_to_R(_nimble_global_output); */
+/* 	} */
+/* 	EigenSolver<MatrixXd> solver(Eig_x, !valuesOnly); */
+/* 	Eig_eigVals = solver.eigenvalues().real(); */
+/* 	if(!valuesOnly){ */
+/* 	    (*returnClass).vectors.initialize(0, 0, x.dim()[0], x.dim()[0]); */
+/* 		Map<MatrixXd> Eig_eigVecs(0,0,0); */
+/* 		new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]); */
+/* 		Eig_eigVecs = solver.eigenvectors().real(); */
+/* 	} */
+/* 	return(returnClass); */
+/* }; */
+
+
+template<class Derived>
+nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const Eigen::MatrixBase<Derived> &x, bool valuesOnly) {
     nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
-	(*returnClass).values.initialize(0, 0, x.dim()[0]);
-	Map<VectorXd> Eig_eigVals(0,0);
-	new (&Eig_eigVals) Map< VectorXd >((*returnClass).values.getPtr(),x.dim()[0]);
-	Map<MatrixXd> Eig_x(x.getPtr(),x.dim()[0],x.dim()[1]);
-	if(x.dim()[0] != x.dim()[1]) {
+	(*returnClass).values.initialize(0, 0, x.rows());
+	Map<VectorXd> Eig_eigVals((*returnClass).values.getPtr(),x.rows());
+	//	Map<MatrixXd> Eig_x(x.getPtr(),x.rows(),x.cols());
+	if(x.rows() != x.cols()) {
 	 _nimble_global_output <<"Run-time size error: expected matrix argument to eigen() to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
-	}	
-	EigenSolver<MatrixXd> solver(Eig_x, !valuesOnly);
+	}
+	EigenSolver<MatrixXd > solver(x, !valuesOnly); // The MatrixXd here doesn't seem generic, but I couldn't get it to work otherwise and it would be odd to do an Eigen decomposition on anything else. -Perry
 	Eig_eigVals = solver.eigenvalues().real();
 	if(!valuesOnly){
-	    (*returnClass).vectors.initialize(0, 0, x.dim()[0], x.dim()[0]);
-		Map<MatrixXd> Eig_eigVecs(0,0,0);
-		new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
-		Eig_eigVecs = solver.eigenvectors().real();	
+	  (*returnClass).vectors.initialize(0, 0, x.rows(), x.cols());
+	  Map<MatrixXd> Eig_eigVecs((*returnClass).vectors.getPtr(),x.rows(),x.cols());
+	  //	  new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
+	  Eig_eigVecs = solver.eigenvectors().real();	
 	}
 	return(returnClass);
 };
+
 
 class EIGEN_SVDCLASS : public NamedObjects, public pointedToBase {
 public:

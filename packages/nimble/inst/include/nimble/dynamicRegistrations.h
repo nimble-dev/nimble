@@ -3,6 +3,7 @@
 #ifndef __DYNAMIC_REGISTRATIONS
 #define __DYNAMIC_REGISTRATIONS
 
+#include <nimble/sessionSpecificEigen.h>
 #include <nimble/RcppUtils.h>
 #include <nimble/RcppNimbleUtils.h>
 #include <nimble/ModelClassUtils.h>
@@ -106,6 +107,7 @@ R_CallMethodDef CallEntries[] = {
   FUN(RNimble_Ptr_ManualFinalizer, 1),
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
   FUN(CountDllObjects, 1),
+  FUN(C_nimEigen, 3),
   {NULL, NULL, 0}
 };
 

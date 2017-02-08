@@ -105,6 +105,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
          diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps',
+         EIGEN_EIGEN = 'eigenize_matrixOps',
          RRtest_add = 'eigenize_recyclingRuleFunction'
          )
 )
@@ -453,13 +454,15 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
 eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
     if(length(code$args) == 2)
-        if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
+        if(inherits(code$args[[2]], 'exprClass'))
+            if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
     code$eigMatrix <- TRUE
     code$name <- switch(code$name,
                         chol = 'EIGEN_CHOL',
                         solve = 'EIGEN_SOLVE',
                         forwardsolve = 'EIGEN_FS',
                         backsolve = 'EIGEN_BS',
+                        EIGEN_EIGEN = 'EIGEN_EIGEN',
                         stop('should never get here')
                         )
     invisible(NULL)
@@ -725,6 +728,7 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
 
 eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     targetSym <- symTab$getSymbolObject(code$name, TRUE)
+    if(inherits(targetSym, 'symbolNimbleList')) return(NULL)
     if(!exists('nDim', envir = targetSym, inherits = FALSE)) {
        ## contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
         ## stop(paste0('in eigenizeName for ', nimDeparse(code), '. Symbol does not have an nDim.\n This occured within call\n', contextCode, collapse = ''), call. = FALSE)
