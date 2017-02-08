@@ -209,7 +209,11 @@ public:
   }
 };
 
-
+template<class T>
+void dimNimArr(NimArr<1, T> &output, NimArrBase<T> &input) {
+  output.setSize(input.numDims(), false, false);
+  std::copy(input.dim(), input.dim() + input.numDims(), output.getPtr()); 
+}
 
 // Here is the specialization for 2 dimensions.
 

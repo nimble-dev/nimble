@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr')
 setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
@@ -18,6 +18,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
+##                    dim = 'sizeDim',
                     RRtest_add = 'sizeRecyclingRule',
                     which = 'sizeWhich',
                     nimC = 'sizeConcatenate',
@@ -213,6 +214,22 @@ multiMaxSizeExprs <- function(code, useArgs = rep(TRUE, length(code$args))) {
 
 addDIB <- function(name, type) {
     paste0(name, switch(type, double = 'D', integer = 'I', logical = 'B'))
+}
+
+sizeDim <- function(code, symTab, typeEnv) {
+    if(code$caller$name == '[') return(NULL) ## This gets specially handled in sizeIndexingBracket
+    if(!inherits(code$args[[1]], 'exprClass')) {
+        stop(exprClassProcessingErrorMsg(code, paste0('Argument of dim is not valid')), call. = FALSE)
+    }
+    if(!code$args[[1]]$nDim == 0) {
+        stop(exprClassProcessingErrorMsg(code, paste0('dim() cannot take a scalar as its argument.')), call. = FALSE)
+    }
+    code$name <- 'dimNimArr'
+    code$nDim <- 1
+    code$type <- 'integer'
+    code$toEigenize <- 'no'
+    code$sizeExprs <- list( code$args[[1]]$nDim )
+    return(NULL)
 }
 
 sizeDiagonal <- function(code, symTab, typeEnv) {
@@ -1788,17 +1805,17 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     invisible(asserts)
 }
 
-sizeDimOperator <- function(code, symTab, typeEnv) {
-    ## a special case since the resulte is stored as a vector<int>
-    ## recurse and set Intermediate is if it not a name or map
-    ## we'll want a NimArr<1, int> constructor vector<int> 
-    recurseSetSizes(code, symTab, typeEnv)
-    code$type <- 'integer'
-    code$nDim <- 1
-    code$sizeExprs <- list( code$args[[1]]$nDim )
-    code$toEigenize <- 'no'
-    invisible(NULL)
-}
+## sizeDimOperator <- function(code, symTab, typeEnv) {
+##     ## a special case since the resulte is stored as a vector<int>
+##     ## recurse and set Intermediate is if it not a name or map
+##     ## we'll want a NimArr<1, int> constructor vector<int> 
+##     recurseSetSizes(code, symTab, typeEnv)
+##     code$type <- 'integer'
+##     code$nDim <- 1
+##     code$sizeExprs <- list( code$args[[1]]$nDim )
+##     code$toEigenize <- 'no'
+##     invisible(NULL)
+## }
 
 sizeTranspose <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1) warning(paste0('More than one argument to transpose in ', nimDeparse(code), '.'), call. = FALSE)
