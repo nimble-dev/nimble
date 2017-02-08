@@ -21,6 +21,7 @@
 ## 2. nimbleFunctions that return non-scalar-equivalent and are used within a larger expression
 
 exprClasses_labelForEigenization <- function(code) {
+
     if(code$isCall) {
         if(code$name == '{') {
             for(i in seq_along(code$args)) {
@@ -278,6 +279,7 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
                 setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[i]], symTab, typeEnv, workEnv))
         }
         ## finally, call any special handlers
+        
         eCall <- eigenizeCalls[[code$name]]
                 
         if(!is.null(eCall)) {
@@ -598,6 +600,7 @@ eigenizeArrayize <- function(code) {
 }
 
 eigenizeMatricize <- function(code) {
+  browser()
     newExpr <- exprClass(name = 'eigMatrix', args = list(code), eigMatrix = TRUE,
                          isName = FALSE, isCall = TRUE, isAssign = FALSE,
                          nDim = code$nDim, sizeExprs = code$sizeExprs, type = code$type,
