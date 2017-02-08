@@ -18,7 +18,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
-##                    dim = 'sizeDim',
+                    dim = 'sizeDim',
                     RRtest_add = 'sizeRecyclingRule',
                     which = 'sizeWhich',
                     nimC = 'sizeConcatenate',
@@ -39,7 +39,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nfVar = 'sizeNFvar',
                     map = 'sizemap', 
                     ':' = 'sizeColonOperator',
-                    dim = 'sizeDimOperator',
+                    ##dim = 'sizeDimOperator',
                     'if' = 'recurseSetSizes', ##OK
                     'while' = 'recurseSetSizes',
                     callC = 'sizecallC', 
@@ -217,19 +217,20 @@ addDIB <- function(name, type) {
 }
 
 sizeDim <- function(code, symTab, typeEnv) {
-    if(code$caller$name == '[') return(NULL) ## This gets specially handled in sizeIndexingBracket
+ ##   if(code$caller$name != '[') return(list()) ## This gets specially handled in sizeIndexingBracket
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(!inherits(code$args[[1]], 'exprClass')) {
         stop(exprClassProcessingErrorMsg(code, paste0('Argument of dim is not valid')), call. = FALSE)
     }
-    if(!code$args[[1]]$nDim == 0) {
+    if(code$args[[1]]$nDim == 0) {
         stop(exprClassProcessingErrorMsg(code, paste0('dim() cannot take a scalar as its argument.')), call. = FALSE)
     }
-    code$name <- 'dimNimArr'
+    if(code$caller$name != '[') code$name <- 'dimNimArr'
     code$nDim <- 1
     code$type <- 'integer'
     code$toEigenize <- 'no'
     code$sizeExprs <- list( code$args[[1]]$nDim )
-    return(NULL)
+    return(if(is.null(asserts)) list() else asserts)
 }
 
 sizeDiagonal <- function(code, symTab, typeEnv) {
