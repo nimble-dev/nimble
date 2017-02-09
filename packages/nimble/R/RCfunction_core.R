@@ -1,6 +1,6 @@
 # for use in DSL code check:
 otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample", "new",
-                   "eigen", "svd")
+                   "nimEigen", "nimSvd")
 
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
@@ -16,7 +16,9 @@ nimKeyWords <- list(copy = 'nimCopy',
                     round = 'nimRound',
                     c = 'nimC',
                     rep = 'nimRep',
-                    seq = 'nimSeq')
+                    seq = 'nimSeq',
+                    eigen = 'nimEigen',
+                    svd = 'nimSvd')
 
 nfMethodRCinterface <- setRefClass(Class = 'nfMethodRCinterface',
                                    fields = list(

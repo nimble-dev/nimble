@@ -35,8 +35,8 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 #		rgamma_keywordInfo
 #		d_dist_keywordInfo
 #		qp_dist_keywordInfo
-#   eigen_keywordInfo
-#   svd_keywordInfo
+#   nimEigen_keywordInfo
+#   nimSvd_keywordInfo
 #		nimOptim_keywordInfo
 #		values_keywordInfo
 #		calculate_keywordInfo
@@ -138,8 +138,8 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 ## 	}
 ## 	)
 
-eigen_keywordInfo <- keywordInfoClass(
-  keyword = "eigen",
+nimEigen_keywordInfo <- keywordInfoClass(
+  keyword = "nimEigen",
   processor = function(code, nfProc){
     thisProj <- nfProc$nimbleProject
     eigenNimbleListDef <- nimbleList(c("values = double(1)",  "vectors = double(2)"),
@@ -155,8 +155,8 @@ eigen_keywordInfo <- keywordInfoClass(
   }
 )
 
-svd_keywordInfo <- keywordInfoClass(
-  keyword = "svd",
+nimSvd_keywordInfo <- keywordInfoClass(
+  keyword = "nimSvd",
   processor = function(code, nfProc){
     thisProj <- nfProc$nimbleProject
     svdNimbleListDef <- nimbleList(c("d = double(1)", "u = double(2)", "v = double(2)"), name = "EIGEN_SVDCLASS")
@@ -716,7 +716,7 @@ dollarSign_keywordInfo <- keywordInfoClass(
       if(callerCode[[1]] == '$'){ ## nested NL case
         callerCode <- processKeyword(callerCode, nfProc)
       }
-      else if (! (as.character(callerCode[[1]]) %in% c('eigen', 'svd'))) {
+      else if (! (as.character(callerCode[[1]]) %in% c('nimEigen', 'nimSvd'))) {
         callerCode <- callerCode[[2]]
       }
     }
@@ -836,8 +836,8 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
-keywordList[['eigen']] <- eigen_keywordInfo
-keywordList[['svd']] <- svd_keywordInfo
+keywordList[['nimEigen']] <- nimEigen_keywordInfo
+keywordList[['nimSvd']] <- nimSvd_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
@@ -901,8 +901,8 @@ matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, lo
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
-matchFunctions[['eigen']] <- function(squareMat, only.values = FALSE){}
-matchFunctions[['svd']] <- function(mat){}
+matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
+matchFunctions[['nimSvd']] <- function(mat){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}

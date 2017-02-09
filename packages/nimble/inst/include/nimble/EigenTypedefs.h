@@ -117,8 +117,8 @@ void  createNewSEXP (  );
  };
 };
 
-template<class T>
-nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(NimArr<2, T> &x) {
+template<class Derived>
+nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(const Eigen::MatrixBase<Derived> &x) {
     nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS;
 	int nu = min(x.dim()[0], x.dim()[1]);
 	(*returnClass).d.initialize(0, 0, nu);
@@ -132,8 +132,7 @@ nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(NimArr<2, T> &x) {
 	Map<MatrixXd> Svd_v(0,0,0);
 	new (&Svd_v) Map< MatrixXd >((*returnClass).v.getPtr(), x.dim()[1], nu);
 	
-	Map<MatrixXd> Svd_x(x.getPtr(),x.dim()[0],x.dim()[1]);
-	/* if(nu < 16){   */
+	/* if(nu < 16){    not currently available in nimble's version of EIGEN library, but may be available after upgrade */
 		JacobiSVD<MatrixXd> svd(Svd_x, ComputeThinU | ComputeThinV);
 	/* } */
 	/* else{ // if minimum dimension length > 16, use bidiagonialization, as recommended on eigen website

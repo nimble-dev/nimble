@@ -45,11 +45,22 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 
 
 
-
+#' @rdname Eigendecomposition
+#' @export
 nimEigen <- function(x, only.values = FALSE) {
+  ## placeholder list with correct names of elements, will be populated in C++
   eigenList <- list(values = c(0), vectors = matrix(0, 1, 1))
-  .Call('C_nimEigen', as.double(x), as.logical(only.values), eigenList)
+  .Call('C_nimEigen', apply(x, 1, as.double), as.logical(only.values), eigenList,
+        PACKAGE = nimbleUserNamespace$sessionSpecificDll[[1]])
 }
+
+nimSvd <- function(x, only.values = FALSE) {
+  ## placeholder list with correct names of elements, will be populated in C++
+  svdList <- list(d = c(0), v = matrix(0, 1, 1), u = matrix(0, 1, 1))
+  .Call('C_nimSvd', apply(x, 1, as.double),  svdList,
+        PACKAGE = nimbleUserNamespace$sessionSpecificDll[[1]])
+}
+
 
 
 
