@@ -775,9 +775,8 @@ CnimbleList <- ctestInst$run()
 
 ## test for eigenValues and eigenVectors
 expect_equal(diag(4)+1, RnimbleList$vectors%*%diag(RnimbleList$values)%*%solve(RnimbleList$vectors))
-expect_equal(diag(4)+1, CnimbleList$vectors%*%diag(CnimbleList$values)%*%solve(CnimbleList$vectors))
-expect_equal(sum(abs(RnimbleList$values)), sum(abs(CnimbleList$values)))
-
+expect_equal(CnimbleList$vectors, RnimbleList$vectors)
+expect_equal(CnimbleList$values, RnimbleList$values)
 test_that("return object (from c++) is nimbleList.", 
           {
             expect_identical(is.nl(CnimbleList), TRUE)
@@ -809,8 +808,9 @@ CnimbleList <- ctestInst$run()
 
 ## test for singluar values
 expect_equal(diag(4)+1, RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
-expect_equal(diag(4)+1,  RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
-expect_equal(sum(abs(RnimbleList$d)), sum(abs(CnimbleList$d)))
+expect_equal(RnimbleList$u, CnimbleList$u)
+expect_equal(RnimbleList$d, CnimbleList$d)
+expect_equal(RnimbleList$v, CnimbleList$v)
 
 test_that("return object (from c++) is nimbleList.", 
           {
@@ -824,12 +824,12 @@ test_that("return object (from c++) is nimbleList.",
 
 modelCode1 <- nimbleCode({
   meanVec[1:5] <- eigen(constMat[,])$values[1:5]
-  covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]
+  covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]%*%t(eigen(constMat[1:5,1:5])$vectors[,])
   y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
 })
 
 data <- list(y = rnorm(5, 0, 1))
-constants <- list(constMat = diag(5))
+constants <- list(constMat = diag(5) + 1)
 dims <- list(y = c(5), meanVec = c(5))
 
 Rmodel1 <- nimbleModel(modelCode1, data = data, dimensions = dims, constants = constants)

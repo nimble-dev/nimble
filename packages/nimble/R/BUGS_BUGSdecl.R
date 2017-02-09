@@ -9,7 +9,7 @@ nimbleOrRfunctionNames <- c('[','+','-','/','*','(','exp','log','pow','^','%%','
                             'ceiling', 'floor', 'round', 'nimRound', 'trunc',
                             'mean','sum','sd','var','max','min','prod',
                             'asRow', 'asCol',
-                            'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve', 'eigen', 'svd',  ## removed these from BUGS functions, pending problems with Eigen
+                            'chol', 'inverse', 'forwardsolve', 'backsolve', 'solve', 'nimEigen', 'nimSvd',  ## removed these from BUGS functions, pending problems with Eigen
                             '>', '<', '>=', '<=', '==', '!=', '&', '|', '$',
                             distributionFuns,
                             # these are allowed in DSL as special cases even though exp_nimble and t_nonstandard are the canonical NIMBLE distribution functions
