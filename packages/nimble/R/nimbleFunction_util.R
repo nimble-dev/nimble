@@ -110,7 +110,7 @@ nf_getReturnTypeOutputNames <- function(f, hidden = FALSE) {
                                                        # if(!RT %in%  c('double', 'integer', 'character', 'logical', 'internalType', 'void',
                                                        #                'eigen', 'svd'))
                                                         if(!RT %in%  c('double', 'integer', 'character', 'logical', 'void',
-                                                                       'eigen', 'svd'))
+                                                                       'nimEigen', 'nimSvd'))
                                                          return(RT)
                                                        else return(NULL)})
   return(unlist(methodReturnTypes))

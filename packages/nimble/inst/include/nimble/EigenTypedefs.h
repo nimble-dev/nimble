@@ -82,20 +82,20 @@ nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const Eigen::MatrixBase<Derived> &x,
     nimSmartPtr<EIGEN_EIGENCLASS> returnClass = new EIGEN_EIGENCLASS;
 	(*returnClass).values.initialize(0, 0, x.rows());
 	Map<VectorXd> Eig_eigVals((*returnClass).values.getPtr(),x.rows());
-	//	Map<MatrixXd> Eig_x(x.getPtr(),x.rows(),x.cols());
 	if(x.rows() != x.cols()) {
 	 _nimble_global_output <<"Run-time size error: expected matrix argument to eigen() to be square."<<"\n"; nimble_print_to_R(_nimble_global_output);
 	}
-	EigenSolver<MatrixXd > solver(x, !valuesOnly); // The MatrixXd here doesn't seem generic, but I couldn't get it to work otherwise and it would be odd to do an Eigen decomposition on anything else. -Perry
-	Eig_eigVals = solver.eigenvalues().real();
+    Eigen::DecompositionOptions eigOpts = valuesOnly ? EigenvaluesOnly : ComputeEigenvectors;
+	SelfAdjointEigenSolver<MatrixXd> solver(x, eigOpts); // The MatrixXd here doesn't seem generic, but I couldn't get it to work otherwise and it would be odd to do an Eigen decomposition on anything else. -Perry
+	Eig_eigVals = solver.eigenvalues().reverse();
 	if(!valuesOnly){
 	  (*returnClass).vectors.initialize(0, 0, x.rows(), x.cols());
 	  Map<MatrixXd> Eig_eigVecs((*returnClass).vectors.getPtr(),x.rows(),x.cols());
-	  //	  new (&Eig_eigVecs) Map< MatrixXd >((*returnClass).vectors.getPtr(),x.dim()[0],x.dim()[0]);
-	  Eig_eigVecs = solver.eigenvectors().real();	
+	  Eig_eigVecs = solver.eigenvectors().reverse();	
 	}
 	return(returnClass);
 };
+
 
 
 class EIGEN_SVDCLASS : public NamedObjects, public pointedToBase {
@@ -120,23 +120,20 @@ void  createNewSEXP (  );
 template<class Derived>
 nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(const Eigen::MatrixBase<Derived> &x) {
     nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS;
-	int nu = min(x.dim()[0], x.dim()[1]);
+	int nu = min(x.rows(), x.cols());
 	(*returnClass).d.initialize(0, 0, nu);
-	(*returnClass).u.initialize(0, 0, x.dim()[0], nu);
-	(*returnClass).v.initialize(0, 0, x.dim()[1], nu);
+	(*returnClass).u.initialize(0, 0, x.rows(), nu);
+	(*returnClass).v.initialize(0, 0, x.cols(), nu);
 
-	Map<VectorXd> Svd_d(0,0);
-	new (&Svd_d) Map< VectorXd >((*returnClass).d.getPtr(), nu);
-	Map<MatrixXd> Svd_u(0,0,0);
-	new (&Svd_u) Map< MatrixXd >((*returnClass).u.getPtr(), x.dim()[0], nu);
-	Map<MatrixXd> Svd_v(0,0,0);
-	new (&Svd_v) Map< MatrixXd >((*returnClass).v.getPtr(), x.dim()[1], nu);
-	
-	/* if(nu < 16){    not currently available in nimble's version of EIGEN library, but may be available after upgrade */
-		JacobiSVD<MatrixXd> svd(Svd_x, ComputeThinU | ComputeThinV);
+	Map<VectorXd> Svd_d((*returnClass).d.getPtr(), nu);
+	Map<MatrixXd> Svd_u((*returnClass).u.getPtr(), x.rows(), nu);
+	Map<MatrixXd> Svd_v((*returnClass).v.getPtr(), x.cols(), nu);
+
+	/* if(nu < 16){    not currently available in nimble's version of EIGEN library, but may be available after upgrade */		
+	JacobiSVD<MatrixXd> svd(x, ComputeThinU | ComputeThinV);
 	/* } */
 	/* else{ // if minimum dimension length > 16, use bidiagonialization, as recommended on eigen website
-		Eigen::BDCSVD<MatrixXd> svd(Svd_x, ComputeThinU | ComputeThinV);
+		Eigen::BDCSVD<MatrixXd> svd(x, ComputeThinU | ComputeThinV);
 	} */
 	Svd_d = svd.singularValues();
 	Svd_u = svd.matrixU();
