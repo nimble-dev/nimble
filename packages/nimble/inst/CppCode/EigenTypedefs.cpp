@@ -32,12 +32,7 @@ void  EIGEN_EIGENCLASS::createNewSEXP (  )  {
 	UNPROTECT(2);
 }
 
-EIGEN_EIGENCLASS::EIGEN_EIGENCLASS (  )  {
-	namedObjects["values"]=&values;
-	namedObjects["vectors"]=&vectors;
-	RCopiedFlag = false;
-	RObjectPointer = NULL;
-}
+
 
 // SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
 // 	NimArr<2, double> x;
@@ -91,14 +86,6 @@ void  EIGEN_SVDCLASS::createNewSEXP (  )  {
 	PROTECT(S_newNimList = makeNewNimbleList(S_listName));
 	RObjectPointer = S_newNimList;
 	UNPROTECT(2);
-}
-
-EIGEN_SVDCLASS::EIGEN_SVDCLASS (  )  {
-	namedObjects["d"]=&d;
-	namedObjects["u"]=&u;
-	namedObjects["v"]=&v;
-	RCopiedFlag = false;
-	RObjectPointer = NULL;
 }
 
 SEXP  new_EIGEN_SVDCLASS (  )  {

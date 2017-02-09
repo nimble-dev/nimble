@@ -68,7 +68,12 @@ public:
   
 SEXP  copyToSEXP (   );
 void  createNewSEXP (  );
- EIGEN_EIGENCLASS (  );
+ EIGEN_EIGENCLASS(){	
+    namedObjects["values"]=&values;
+	namedObjects["vectors"]=&vectors;
+	RCopiedFlag = false;
+	RObjectPointer = NULL;
+ };
 };
 
 
@@ -103,7 +108,13 @@ public:
   
 SEXP  copyToSEXP (   );
 void  createNewSEXP (  );
-EIGEN_SVDCLASS (  );
+ EIGEN_SVDCLASS (  ) {
+	namedObjects["d"]=&d;
+	namedObjects["u"]=&u;
+	namedObjects["v"]=&v;
+	RCopiedFlag = false;
+	RObjectPointer = NULL;
+ };
 };
 
 template<class T>

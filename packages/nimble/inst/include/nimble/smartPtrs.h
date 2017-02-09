@@ -50,6 +50,7 @@ class nimSmartPtr : public nimSmartPtrBase {
   nimSmartPtr(const nimSmartPtr &rhs) {
     realPtr = rhs.realPtr;
     realPtr->newWatcher();
+
   }
 
   nimSmartPtr(T* rhs) {
@@ -58,7 +59,8 @@ class nimSmartPtr : public nimSmartPtrBase {
   }
 
   ~nimSmartPtr() {
-    realPtr->removeWatcher();
+	  if(realPtr != 0)
+			realPtr->removeWatcher();
   };
 };
 

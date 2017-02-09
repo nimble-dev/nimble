@@ -470,7 +470,7 @@ sampler_AF_slice <- nimbleFunction(
     maxSteps      <- control$sliceMaxSteps
     factorBurnInIters   <- control$factorBurnIn     # number of iterations to use for factor adaptation
     factorAdaptInterval <- control$factorAdaptInterval   # interval to use for factor adaptation
-    sliceAdaptIters     <- control$sliceSliceBurnIn       # number of iterations to use for slice adaptation (note this gets reset every time factor adaptation is performed)
+    sliceAdaptIters     <- control$sliceBurnIn       # number of iterations to use for slice adaptation (note this gets reset every time factor adaptation is performed)
     ## node list generation
     targetAsScalar <- model$expandNodeNames(target, returnScalarComponents = TRUE)
     calcNodes      <- model$getDependencies(target)
@@ -502,111 +502,104 @@ sampler_AF_slice <- nimbleFunction(
     
   },
   run = function() {
-    # for(i in 1:d){
-    #   eigenVec  <- gammaMat[,i]
-    #   currWidth <- width[i]
-    #   u  <- getLogProb(model, calcNodes) - rexp(1, 1) # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
-    #   x0 <- values(model, target)                    # create random interval (L,R), of width 'width', around current value of target
-    #   Lbound <- -1.0 * runif(1, 0, 1) * currWidth
-    #   Rbound <- Lbound + currWidth
-    #   L <- x0 + Lbound*eigenVec
-    #   R <- x0 + Rbound*eigenVec
-    #   maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
-    #   maxStepsR <- maxSteps - 1 - maxStepsL
-    #   
-    #   lp <- setAndCalculateTarget(L)
-    #   while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
-    #     Lbound <- Lbound - currWidth
-    #     L      <- x0 + Lbound*eigenVec
-    #     lp     <- setAndCalculateTarget(L)
-    #     maxStepsL      <- maxStepsL - 1
-    #     nExpansions[i] <<- nExpansions[i] + 1
-    #   }
-    #   
-    #   lp <- setAndCalculateTarget(R)
-    #   while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
-    #     Rbound <- Rbound + currWidth
-    #     R      <- x0 + Rbound*eigenVec
-    #     lp     <- setAndCalculateTarget(R)
-    #     maxStepsR      <- maxStepsR - 1
-    #     nExpansions[i] <<- nExpansions[i] + 1
-    #   }
-    #   prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
-    #   x1   <- x0 + prop*eigenVec
-    #   lp   <- setAndCalculateTarget(x1)
-    #   while(is.nan(lp) | lp < u) {   # must be is.nan()
-    #     if(prop < 0) { Lbound <- prop}
-    #     else         { Rbound <- prop}
-    #     nContracts[i] <<- nContracts[i] + 1
-    #     prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)     
-    #     x1   <- x0 + prop*eigenVec
-    #     lp   <- setAndCalculateTarget(x1)
-    #   }
-    # }
-    # nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
-    # if(allSlicesAdapted == 0)  widthAdapt()
+    for(i in 1:d){
+      eigenVec  <- gammaMat[,i]
+      currWidth <- width[i]
+      u  <- getLogProb(model, calcNodes) - rexp(1, 1) # generate (log)-auxiliary variable: exp(u) ~ uniform(0, exp(lp))
+      x0 <- values(model, target)                    # create random interval (L,R), of width 'width', around current value of target
+      Lbound <- -1.0 * runif(1, 0, 1) * currWidth
+      Rbound <- Lbound + currWidth
+      L <- x0 + Lbound*eigenVec
+      R <- x0 + Rbound*eigenVec
+      maxStepsL <- floor(runif(1, 0, 1) * maxSteps)    # randomly allot (maxSteps-1) into maxStepsL and maxStepsR
+      maxStepsR <- maxSteps - 1 - maxStepsL
+
+      lp <- setAndCalculateTarget(L)
+      while(maxStepsL > 0 & !is.nan(lp) & lp >= u) {   # step L left until outside of slice (max maxStepsL steps)
+        Lbound <- Lbound - currWidth
+        L      <- x0 + Lbound*eigenVec
+        lp     <- setAndCalculateTarget(L)
+        maxStepsL      <- maxStepsL - 1
+        nExpansions[i] <<- nExpansions[i] + 1
+      }
+
+      lp <- setAndCalculateTarget(R)
+      while(maxStepsR > 0 & !is.nan(lp) & lp >= u) {   # step R right until outside of slice (max maxStepsR steps)
+        Rbound <- Rbound + currWidth
+        R      <- x0 + Rbound*eigenVec
+        lp     <- setAndCalculateTarget(R)
+        maxStepsR      <- maxStepsR - 1
+        nExpansions[i] <<- nExpansions[i] + 1
+      }
+      prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
+      x1   <- x0 + prop*eigenVec
+      lp   <- setAndCalculateTarget(x1)
+      while(is.nan(lp) | lp < u) {   # must be is.nan()
+        if(prop < 0) { Lbound <- prop}
+        else         { Rbound <- prop}
+        nContracts[i] <<- nContracts[i] + 1
+        prop <- Lbound + runif(1, 0, 1) * (Rbound - Lbound)
+        x1   <- x0 + prop*eigenVec
+        lp   <- setAndCalculateTarget(x1)
+      }
+    }
+    nimCopy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+    if(allSlicesAdapted == 0)  widthAdapt()
     if(factorBurnInIters > 0)  factorAdapt()
   },
   methods = list(
-    # setAndCalculateTarget = function(values = double(1)) {
-    #   if(anyDiscrete == 1){
-    #     for(i in 1:d)
-    #       if(discrete[i] == 1) values[i] <- floor(values[i])
-    #   }
-    #   values(model, target) <<- values
-    #   lp <- calculate(model, calcNodes)
-    #   returnType(double())
-    #   return(lp)
-    # },
+    setAndCalculateTarget = function(values = double(1)) {
+      if(anyDiscrete == 1){
+        for(i in 1:d)
+          if(discrete[i] == 1) values[i] <- floor(values[i])
+      }
+      values(model, target) <<- values
+      lp <- calculate(model, calcNodes)
+      returnType(double())
+      return(lp)
+    },
     factorAdapt = function() {
-      print(factorAdaptInterval)
-      print(factorCounter)
-      # test <- eigen(testMat)$vectors
-      # factorBurnInIters <<- factorBurnInIters - 1
-       factorCounter     <<- factorCounter + 1
-       # empirSamp[factorCounter, 1:d] <<- values(model, target)
-       
+      factorBurnInIters <<- factorBurnInIters - 1
+      factorCounter     <<- factorCounter + 1
+      empirSamp[factorCounter, 1:d] <<- values(model, target)
         if(factorCounter == factorAdaptInterval){  # time to adapt factors
-          test <- eigen(testMat)$vectors # replace old factors with new factors
-         
-         # for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
-         # empirCov <- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
-      #   
-        # gammaMat <<- eigen(empirCov)$vectors  # replace old factors with new factors
-      #
-        # sliceAdaptIndicator <<- integer(d, 1)  # reset all slice adaptive variables
-        # nExpansions         <<- integer(d, 0)
-        # nContracts          <<- integer(d, 0)
-        # sliceAdaptInterval  <<- 1
-        # sliceAdaptIters     <<- sliceAdaptItersOriginal
-        # sliceCounter        <<- 0
-        # factorCounter       <<- 0
+          for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
+          empirCov <- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
+          gammaMat <<- eigen(empirCov)$vectors  # replace old factors with new factors
+          
+          sliceAdaptIndicator <<- integer(d, 1)  # reset all slice adaptive variables
+          nExpansions         <<- integer(d, 0)
+          nContracts          <<- integer(d, 0)
+          sliceAdaptInterval  <<- 1
+          sliceAdaptIters     <<- sliceAdaptItersOriginal
+          sliceCounter        <<- 0
+          factorCounter       <<- 0
         }
     },
-    # widthAdapt = function() {
-    #   # sliceCounter    <<- sliceCounter + 1
-    #   # sliceAdaptIters <<- sliceAdaptIters - 1
-    #   # if(sliceCounter == sliceAdaptInterval){  # time to adapt slice widths 
-    #   #   for(i in 1:d){
-    #   #     if(sliceAdaptIndicator[i] == 1){   # find which widths are not finished adapting 
-    #   #       if(nExpansions[i] == 0)
-    #   #         nExpansions[i] <<- 1
-    #   #       
-    #   #       sliceAdaptRatio     <- nExpansions[i] / (nExpansions[i] + nContracts[i])
-    #   #       width[i]            <<- width[i] * 2 * sliceAdaptRatio 
-    #   #       sliceAdaptInterval  <<- 2 * sliceAdaptInterval  # increase adapt interval
-    #   #       nExpansions[i]      <<- 0  
-    #   #       nContracts[i]       <<- 0
-    #   #       if(sliceAdaptInterval > 16)  # once adapt interval is large enough, determine whether adaptation is finished
-    #   #         sliceAdaptIndicator[i] <<- (abs(sliceAdaptRatio - .5) > sliceAdaptTolerance)  # equals 1 if adaptation isn't finished
-    #   #     }
-    #   #   }
-    #   #   allSlicesAdapted <<- 1 -  ceiling(mean(sliceAdaptIndicator))  # equals 1 only if all slice adapt indicators are 0
-    #   #   sliceCounter     <<- 0
-    #   # }
-    #   # if(sliceAdaptIters <= 0)  # alternatively, if max iters have been reached, stop adapting
-    #   #   allSlicesAdapted <<- 1
-    # },
+    widthAdapt = function() {
+      sliceCounter    <<- sliceCounter + 1
+      sliceAdaptIters <<- sliceAdaptIters - 1
+      if(sliceCounter == sliceAdaptInterval){  # time to adapt slice widths
+        for(i in 1:d){
+          if(sliceAdaptIndicator[i] == 1){   # find which widths are not finished adapting
+            if(nExpansions[i] == 0)
+              nExpansions[i] <<- 1
+
+            sliceAdaptRatio     <- nExpansions[i] / (nExpansions[i] + nContracts[i])
+            width[i]            <<- width[i] * 2 * sliceAdaptRatio
+            sliceAdaptInterval  <<- 2 * sliceAdaptInterval  # increase adapt interval
+            nExpansions[i]      <<- 0
+            nContracts[i]       <<- 0
+            if(sliceAdaptInterval > 16)  # once adapt interval is large enough, determine whether adaptation is finished
+              sliceAdaptIndicator[i] <<- (abs(sliceAdaptRatio - .5) > sliceAdaptTolerance)  # equals 1 if adaptation isn't finished
+          }
+        }
+        allSlicesAdapted <<- 1 -  ceiling(mean(sliceAdaptIndicator))  # equals 1 only if all slice adapt indicators are 0
+        sliceCounter     <<- 0
+      }
+      if(sliceAdaptIters <= 0)  # alternatively, if max iters have been reached, stop adapting
+        allSlicesAdapted <<- 1
+    },
     reset = function() {
       width                <<- widthOriginal
       factorCounter        <<- 0
@@ -1420,7 +1413,7 @@ sampler_RW_dirichlet <- nimbleFunction(
 #' \item sliceWidths.  A numeric vector of initial slice widths.  The length of the vector must be equal to the sum of the lengths of all nodes being used by the automated factor slice sampler.  Defaults to a vector of 1's.
 #' \item factorBurnIn. The number of iterations for which the factors (eigenvectors) will continue to adapt to the posterior correlation.  (default =  15000)
 #' \item factorAdaptInterval.  The interval on which to perform factor adaptation. (default = 1000)
-#' \item sliceSliceBurnIn.  The maximum number of iterations for which to adapt the slice widths for a given set of factors.  (default = 512)
+#' \item sliceBurnIn.  The maximum number of iterations for which to adapt the slice widths for a given set of factors.  (default = 512)
 #' \item sliceMaxSteps.  The maximum number of expansions which may occur during the 'stepping out' procedure. (default = 100)
 #' }
 #'
