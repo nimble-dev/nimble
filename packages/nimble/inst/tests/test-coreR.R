@@ -260,8 +260,8 @@ diagTests <- list(
          setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(2))),
     list(name = "diag(vector expression)", expr = quote(out <- diag(arg1 + arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(10,20, 30))}), outputType = quote(double(2))),
-    list(name = "diag(vector) with epxression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(11:13)}), outputType = quote(double(2))),
+    list(name = "diag(vector) with expression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(2))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- matrix(as.numeric(11:19), nrow = 3)}), outputType = quote(double(2))), ## ISSUE HERE
 
     ## diag(matrix)
     list(name = "diag(square matrix)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(2))),
