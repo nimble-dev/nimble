@@ -835,9 +835,11 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     code$sizeExprs <- makeSizeExpressions(objSym$size,
                                           parse(text = nimDeparse(code))[[1]])
   } 
-  else{
-    code$type <- 'symbolNimbleList'
+  else if(code$type == 'symbolNimbleList'){
     code$sizeExprs$nlProc <-objSym$nlProc
+  }
+  else{
+    code$sizeExprs <- list()
   }
   return(asserts)
 }
@@ -1889,11 +1891,13 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     ##     asserts <- c(asserts, sizeSeq(code, symTab, typeEnv, recurse = FALSE))
     ##     return(if(length(asserts)==0) NULL else asserts)
     ## }
-    
     for(i in 1:2) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
+              if(! (code$args[[i]]$name == '[' && (code$args[[i]]$args[[1]]$name == 'dim' && code$args[[i]]$args[[1]]$args[[1]]$name == 'nfVar'))){
+              browser()
                 asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
+              }
             }
         }
     }

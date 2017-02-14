@@ -143,7 +143,7 @@ nimEigen_keywordInfo <- keywordInfoClass(
   processor = function(code, nfProc){
     if(!nfProc$setupSymTab$symbolExists('EIGEN_EIGEN')){
       thisProj <- nfProc$nimbleProject
-      eigenNimbleListDef <- nimbleList(c("values = double(1)",  "vectors = double(2)"),
+      eigenNimbleListDef <- nimbleList(values = double(1),  vectors = double(2),
                                        name = "EIGEN_EIGENCLASS")
       eigenNimbleList <- eigenNimbleListDef$new() 
       nlp <- thisProj$compileNimbleList(eigenNimbleList, initialTypeInferenceOnly = TRUE)
@@ -161,7 +161,7 @@ nimSvd_keywordInfo <- keywordInfoClass(
   processor = function(code, nfProc){
     if(!nfProc$setupSymTab$symbolExists('EIGEN_SVD')){
       thisProj <- nfProc$nimbleProject
-      svdNimbleListDef <- nimbleList(c("d = double(1)", "u = double(2)", "v = double(2)"), name = "EIGEN_SVDCLASS")
+      svdNimbleListDef <- nimbleList(d = double(1), u = double(2), v = double(2), name = "EIGEN_SVDCLASS")
       svdNimbleList <- svdNimbleListDef$new() 
       nlp <- thisProj$compileNimbleList(svdNimbleList, initialTypeInferenceOnly = TRUE)
       svdSym <- symbolNimbleList(name = "EIGEN_SVDCLASS", type = 'nimbleList', nlProc = nlp)

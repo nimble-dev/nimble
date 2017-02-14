@@ -19,12 +19,51 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
                                       callSuper(...)
                                   ))
 
+#' create a nimbleType object
+#'
+#' create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \link{nimbleList} 
+#'
+#' @param name The name of the object
+#' @param type The type of the object
+#' @param dim  The dimension of the object
+#'
+#' @author NIMBLE development team
+#'
+#' @export
+#'
+#' @details
+#' 
+#' This function creates \code{nimbleType} objects, which can be used to define the elements of a \link{nimbleList}.  
+#' 
+#' The \code{type} argument can be chosen from among \code{character}, \code{double}, \code{integer}, and \code{logical},
+#' or can be the name of a previously created \link{nimbleList} definition.
+#' 
+#' See the NIMBLE User Manual for examples.
+#'
+
+
+nimbleType <- setRefClass(
+  Class = 'nimbleType',
+  fields = c('name', 'type', 'dim'),
+  methods = list(
+    initialize = function(name, type, dim = NA){
+      name <<- name
+      type <<- type
+      dim <<- dim
+    },
+    show = function(){
+      cat("nimbleType object with name ", name, ", type ", type, ", dim ",
+          dim,"\n", sep = "")
+    }
+  )
+)
+
 
 #' create a nimbleList
 #'
 #' create a nimbleList from a nimbleList definition 
 #'
-#' @param types A list of strings that defines the names and types of the nimbleList elements
+#' @param types objects defining the names, types, and dimensions of the nimbleList elements.  
 #' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
 #' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
 #'
@@ -33,11 +72,12 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' @export
 #'
 #' @details
-#' This function creates a definition for a nimbleList.  The \code{types} argument defines both the names and types of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g. integer, double) or other nimbleList definitions.   
+#' This function creates a definition for a nimbleList.  The \code{types} argument defines the names, types, and dimensions of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g. integer, double) or other nimbleList definitions.   
+#' The \code{types} argument can be either a series of expressions of the form \code{name = type(dim)}, or a list of \link{nimbleType} objects.
 #' 
 #' \code{nimbleList} returns a definition, which can be used to create instances of this type of nimbleList via the \code{new()} member function. 
 #' 
-#' Definitions can be created in \code{R}'s general environment or in \cd{nimbleFunction} setup code.  Instances can be created using the \code{new()} function in \code{R}'s global environment, in \code{nimbleFunction} setup code, or in \code{nimbleFunction} run code.  
+#' Definitions can be created in \code{R}'s general environment or in \code{nimbleFunction} setup code.  Instances can be created using the \code{new()} function in \code{R}'s global environment, in \code{nimbleFunction} setup code, or in \code{nimbleFunction} run code.  
 #' 
 #' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.
 #' 
@@ -52,35 +92,51 @@ nimbleList <- function(...,
     ## attaches two attributes, one to mark it as a nimbleList (for efficienct checking
     ## compatible with checking of other objects that have a class) and
     ## one that has the nimbleListDefClass object
-    listArgs <- list(...)
-    if(is.character(listArgs[[1]])){
-      listVars <- unname(sapply(listArgs[[1]], function(x){
-        return(trimws(strsplit(x, '=', TRUE)[[1]][1]))
-      }))
-      listTypes <- unname(sapply(listArgs[[1]], function(x){
-        return(trimws(strsplit(x, '=', TRUE)[[1]][2]))
-      }))
+  
+  ## 3 possibilities: arguments as expressions, arguments as list created within call,
+  ## arguments as list created outside of call
+  
+    Call <-  match.call(expand.dots = TRUE)
+    if(any(names(Call) == 'name')){
+      Call <- Call[-which(names(Call) == 'name')]
     }
-    else{
-      if(is.list(listArgs[[1]])){
-        listArgs <- listArgs[[1]]
+    if(length(Call) < 2)
+      stop("No arguments specified for nimbleList")
+    argList <- list()
+    
+    ## left side of || statement catches list(...) arguments
+    ## right side captures name of a previously defined list
+    if((is.call(Call[[2]]) && deparse(Call[[2]][[1]]) == 'list') || 
+       (!is.call(Call[[2]]) && is.list(eval(Call[[2]], envir = parent.frame())))){ 
+      callList <- eval(Call[[2]], envir = parent.frame())
+      for(iArg in seq_along(callList)){
+        argList[[iArg]] <- list(name = callList[[iArg]]$name,
+                                        type = callList[[iArg]]$type,
+                                        dim = callList[[iArg]]$dim)
       }
-      listVars <- names(listArgs)
-      listTypes <- unname(sapply(listArgs, deparse))
+    }
+    else{  ## if arguments are expressions e.g. nimListDouble = double(2)
+      for(iArg in 2:length(Call)){
+        argList[[iArg-1]] <- list(name = names(Call)[iArg],
+                                            type = deparse(Call[[iArg]][[1]]))
+        argList[[iArg-1]]$dim  <- if(length(Call[[iArg]])>1) deparse(Call[[iArg]][[2]])
+                                            else 0
+      }
     }
     
-    types <- list(vars = listVars, types = listTypes)
+    types <- list(vars = sapply(argList, function(x){return(x$name)}),
+                  types =  sapply(argList, function(x){return(x$type)}),
+                  dims =  sapply(argList, function(x){return(x$dim)}))
+    
     if(is.na(name)) name <- nf_refClassLabelMaker()
     nlDefClassObject <- nimbleListDefClass(types = types, className = name) 
     basicTypes <- c("double", "integer", "character", "logical")
     nestedListGens <- list()
-    elementTypes <- strsplit(types$types, '\\(')
     for(i in seq_along(types$types)){
-      if(!(elementTypes[[i]][1] %in% basicTypes)){
+      if(!(types$types[i] %in% basicTypes)){
         for(searchEnvironment in c(parent.frame(), globalenv())){
-          if(is.nlGenerator(get(elementTypes[[i]][1], envir = searchEnvironment))){
-            # nestedListDefs[[types$vars[i]]] <- get(elementTypes[[i]][1], envir = searchEnvironment)$new()$nimbleListDef
-            nestedListGens[[types$vars[i]]] <- get(elementTypes[[i]][1], envir = searchEnvironment)
+          if(is.nlGenerator(get(types$types[i], envir = searchEnvironment))){
+            nestedListGens[[types$vars[i]]] <- get(types$types[i], envir = searchEnvironment)
             break
           }
         }
@@ -110,9 +166,8 @@ nimbleList <- function(...,
           nonInitializeFields <- which(!(nimListFields %in% c(names(nestedListGenList), names(initializeFields))))
           ## initialize uninitialized fields
           for(i in nonInitializeFields){
-            removeLeftParen <- strsplit(nimbleListDef$types$types[i], split = '(', fixed = TRUE)[[1]]
-            thisType <- removeLeftParen[1]
-            thisDim <- strsplit(removeLeftParen[2], split = ')', fixed = TRUE)[[1]]
+            thisType <- nimbleListDef$types$types[i]
+            thisDim <-  nimbleListDef$types$dims[i]
             if(thisType == 'character'){
               .self[[nimListFields[i]]] <- ""
             }
@@ -213,14 +268,14 @@ nlProcessing <- setRefClass('nlProcessing',
                                       nlList <- nestedListGens[[nimbleListObj$types$vars[i]]]$new()
                                       nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
                                       className <- nlList$nimbleListDef$className
-                                      newSym <- symbolNimbleList(name = nimbleListObj$types$vars[i], type = 'nimbleList', nlProc = nlp)
+                                      newSym <- symbolNimbleList(name = nimbleListObj$types$vars[i], type = 'symbolNimbleList', nlProc = nlp)
                                       # if(!(className %in% names(neededTypes))) 
                                       neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
                                       symTab$addSymbol(newSym)
                                     }
                                     else{
-                                     nimbleListObjType <- strsplit(nimbleListObj$types$types[i], "\\(")[[1]][1]
-                                     nimbleListObjDim <-  as.numeric(strsplit(strsplit(nimbleListObj$types$types[i], "\\(")[[1]][2], "\\)")[[1]][1])
+                                     nimbleListObjType <- nimbleListObj$types$types[i]
+                                     nimbleListObjDim <-  as.numeric(nimbleListObj$types$dims[i])
                                      symTab$addSymbol(argType2symbol(call(nimbleListObjType, nimbleListObjDim),
                                                                      neededTypes, nimbleListObj$types$vars[i]))
                                     }
