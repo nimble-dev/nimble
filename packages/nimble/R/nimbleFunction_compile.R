@@ -13,10 +13,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
                                        initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE) {
-                                           print('here3')
-                                           if(exists('STOP')) browser()
-                                       		compileInfos <<- list()
-                                       		RCfunProcs <<- list()
+                                           compileInfos <<- list()
+                                           RCfunProcs <<- list()
                                        		
                                            if(!is.null(f)) { ## This allows successful default instantiation by R when defining nfProcessing below -- crazy
                                                ## nfGenerator allowed if it is a nimbleFunctionVirtual
@@ -80,8 +78,6 @@ nfProcessing <- setRefClass('nfProcessing',
                                   writeLines(paste0('nfProcessing object ', name))
                               },
                               initialize = function(f = NULL, className, fromModel = FALSE, project, isNode = FALSE) {
-                                  print('here2')
-                                  if(exists('STOP')) browser()
                               	neededTypes <<- list()
                               	neededObjectNames <<- character()
                               	newSetupCode <<- list()
@@ -175,9 +171,6 @@ nfProcessing <- setRefClass('nfProcessing',
                                   matchKeywords_all()
                                   processKeywords_all()
 
-                                  print('here10')
-                                  if(exists('STOP2')) browser()
-                                  
                                   if(debug) browser()
                                   makeNewSetupLinesOneExpr()
                                   

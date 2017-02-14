@@ -233,7 +233,7 @@ values_keywordInfo <- keywordInfoClass(
           newRunCode <- substitute(values(accessor = ACCESS_NAME), 
                                list(ACCESS_NAME = as.name(accessName)))
         else
-            newRunCode <- substitute(values(accessor = NODEFUNVEC_NAME, accessorIndex = ACCESSVECINDEX),
+            newRunCode <- substitute(values(accessor = ACCESS_NAME, accessorIndex = ACCESSVECINDEX),
                                  list(ACCESS_NAME = as.name(accessName), ACCESSVECINDEX = nodesIndexExpr))
       return(newRunCode)
     })                                    
