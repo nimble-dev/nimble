@@ -25,7 +25,7 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #'
 #' @param name The name of the object
 #' @param type The type of the object
-#' @param dim  The dimension of the object
+#' @param dim  The dimension of the object.  This can be left blank if the object is a nimbleList.
 #'
 #' @author NIMBLE development team
 #'
@@ -134,6 +134,13 @@ nimbleList <- function(...,
     nestedListGens <- list()
     for(i in seq_along(types$types)){
       if(!(types$types[i] %in% basicTypes)){
+        if(types$types[i] %in% c('eigen', 'nimEigen')){  ## eigen() will not have been converted to nimEigen() yet, so
+                                                         ## need to check for both
+          nestedListGens[[types$vars[i]]] <- nlEigenReferenceList[['nimEigen']]$createListDef()
+        }
+        if(types$types[i] %in% c('svd', 'nimSvd')){
+          nestedListGens[[types$vars[i]]] <- nlEigenReferenceList[['nimSvd']]$createListDef()
+        }
         for(searchEnvironment in c(parent.frame(), globalenv())){
           if(is.nlGenerator(get(types$types[i], envir = searchEnvironment))){
             nestedListGens[[types$vars[i]]] <- get(types$types[i], envir = searchEnvironment)
@@ -283,3 +290,41 @@ nlProcessing <- setRefClass('nlProcessing',
                                 },
                                 getSymbolTable = function() symTab
                             ))
+
+
+nlEigenClass <- setRefClass('nlEigenClass',
+                            fields = list(
+                              className = 'ANY',
+                              funcName = 'ANY',
+                              nimFuncName = 'ANY',
+                              listElements = 'ANY'),
+                            methods = list(
+                              addEigenListInfo = function(nfProc){
+                                thisProj <- nfProc$nimbleProject
+                                eigenNimbleListDef <- createListDef()
+                                eigenNimbleList <- eigenNimbleListDef$new() 
+                                nlp <- thisProj$compileNimbleList(eigenNimbleList, initialTypeInferenceOnly = TRUE)
+                                eigenListSym <- symbolNimbleList(name = className, nlProc = nlp)
+                                nfProc$neededTypes[[className]] <- eigenListSym 
+                                nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = nimFuncName, nlProc = nlp))
+                              },
+                              createListDef = function(){
+                                eigenNimbleListDef <- nimbleList(listElements, name = className)
+                                return(eigenNimbleListDef)
+                              }
+                            ))
+
+nlEigenEigenInfo <- nlEigenClass(funcName = 'nimEigen',
+                                 className = 'EIGEN_EIGENCLASS',
+                                 nimFuncName = 'EIGEN_EIGEN',
+                                 listElements = list(nimbleType('values', 'double', 1),
+                                                     nimbleType('vectors', 'double', 2)))
+nlEigenSvdInfo    <- nlEigenClass(funcName = 'nimSvd',
+                                  className = 'EIGEN_SVDCLASS',
+                                  nimFuncName = 'EIGEN_SVD',
+                                  listElements = list(nimbleType('d', 'double', 1),
+                                                      nimbleType('u', 'double', 2),
+                                                      nimbleType('v', 'double', 2)))
+
+nlEigenReferenceList <- list(nimEigen = nlEigenEigenInfo,
+                             nimSvd = nlEigenSvdInfo)

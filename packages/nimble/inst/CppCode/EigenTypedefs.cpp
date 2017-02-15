@@ -32,29 +32,21 @@ void  EIGEN_EIGENCLASS::createNewSEXP (  )  {
 	UNPROTECT(2);
 }
 
-
-
-// SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
-// 	NimArr<2, double> x;
-// 	bool valuesOnly;
-// 	SEXP_2_NimArr<2>(S_x, x);
-// 	valuesOnly = SEXP_2_bool(S_valuesOnly);
-// 	nimSmartPtr<EIGEN_EIGENCLASS> C_eigenClass;
-// 	Map<MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
-// 	C_eigenClass = EIGEN_EIGEN(Eig_x, valuesOnly);
-// 	SET_VECTOR_ELT(returnList, 0, NimArr_2_SEXP<1>((*C_eigenClass).values));
-// 	SET_VECTOR_ELT(returnList, 1, NimArr_2_SEXP<2>((*C_eigenClass).vectors));
-//     return(returnList);
-// }
-
-SEXP  new_EIGEN_EIGENCLASS (  )  {
-	EIGEN_EIGENCLASS * newObj;
-	SEXP Sans;
-	newObj = new EIGEN_EIGENCLASS;
-	PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));
-	UNPROTECT(1);
-	return(Sans);
+void  EIGEN_EIGENCLASS::copyFromSEXP ( SEXP S_nimList_ ) {
+	SEXP S_pxData;
+	SEXP S_values;
+	SEXP S_vectors;
+	RObjectPointer =  S_nimList_;
+	PROTECT(S_pxData = allocVector(STRSXP, 1));
+	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
+	PROTECT(S_values = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("values")));
+	PROTECT(S_vectors = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("vectors")));
+	SEXP_2_NimArr<1>(S_values, values);
+	SEXP_2_NimArr<2>(S_vectors, vectors);
+	UNPROTECT(3);
 }
+
+
 
 /*EIGEN_SVD class functions below */
 SEXP  EIGEN_SVDCLASS::copyToSEXP (  )  {

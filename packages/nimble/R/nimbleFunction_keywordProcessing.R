@@ -141,17 +141,11 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 nimEigen_keywordInfo <- keywordInfoClass(
   keyword = "nimEigen",
   processor = function(code, nfProc){
-    if(!nfProc$setupSymTab$symbolExists('EIGEN_EIGEN')){
-      thisProj <- nfProc$nimbleProject
-      eigenNimbleListDef <- nimbleList(values = double(1),  vectors = double(2),
-                                       name = "EIGEN_EIGENCLASS")
-      eigenNimbleList <- eigenNimbleListDef$new() 
-      nlp <- thisProj$compileNimbleList(eigenNimbleList, initialTypeInferenceOnly = TRUE)
-      eigenSym <- symbolNimbleList(name = "EIGEN_EIGENCLASS", type = 'nimbleList', nlProc = nlp)
-      nfProc$neededTypes[[ "EIGEN_EIGENCLASS"]] <- eigenSym 
-      nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = "EIGEN_EIGEN", type = 'nimbleListGenerator', nlProc = nlp))
+    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
+    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
+      nlEigenRefClass$addEigenListInfo(nfProc)
     }
-    code[[1]] <- parse(text = 'EIGEN_EIGEN')[[1]]
+    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
     return(code)
   }
 )
@@ -159,16 +153,11 @@ nimEigen_keywordInfo <- keywordInfoClass(
 nimSvd_keywordInfo <- keywordInfoClass(
   keyword = "nimSvd",
   processor = function(code, nfProc){
-    if(!nfProc$setupSymTab$symbolExists('EIGEN_SVD')){
-      thisProj <- nfProc$nimbleProject
-      svdNimbleListDef <- nimbleList(d = double(1), u = double(2), v = double(2), name = "EIGEN_SVDCLASS")
-      svdNimbleList <- svdNimbleListDef$new() 
-      nlp <- thisProj$compileNimbleList(svdNimbleList, initialTypeInferenceOnly = TRUE)
-      svdSym <- symbolNimbleList(name = "EIGEN_SVDCLASS", type = 'nimbleList', nlProc = nlp)
-      nfProc$neededTypes[[ "EIGEN_SVDCLASS"]] <- svdSym 
-      nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = "EIGEN_SVD", type = 'nimbleListGenerator', nlProc = nlp))
+    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
+    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
+      nlEigenRefClass$addEigenListInfo(nfProc)
     }
-    code[[1]] <- parse(text = 'EIGEN_SVD')[[1]]
+    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
     return(code)
   }
 )

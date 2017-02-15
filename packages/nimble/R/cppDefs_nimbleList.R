@@ -32,6 +32,13 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         buildCreateNewSexp()
                                         callSuper(where)
                                       },
+                                      buildSomeForEigen = function(where = where){
+                                        browser()
+                                        makeCppNames()
+                                        buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
+                                        buildRgenerator(where = where)
+                                        buildCmultiInterface()
+                                      },
                                       buildCreateNewSexp = function(){
                                         interfaceArgs <- symbolTable()
                                         newListLine <- list()

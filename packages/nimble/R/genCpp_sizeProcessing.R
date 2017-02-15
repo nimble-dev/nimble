@@ -801,7 +801,8 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)
     isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
     isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
-    if(nfName %in% c('EIGEN_EIGEN', 'EIGEN_SVD')){
+    eigListFuncNames <- sapply(nlEigenReferenceList, function(x){return(x$nimFuncName)})
+    if(nfName %in% eigListFuncNames){
       asserts <- recurseSetSizes(code, symTab, typeEnv)
       asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
@@ -938,8 +939,9 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
     if(inherits(sym, 'symbolNimbleFunction')) {
         nfMethodRCobj <- sym$nfProc$getMethodInterfaces()$run ##environment(sym$nfProc$nfGenerator)$methodList$run
         returnType <- nfMethodRCobj$returnType
+        eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
         if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
-                               'EIGEN_EIGENCLASS', 'EIGEN_SVDCLASS'))){  
+                                                eigListClasses))){  
           ## if we have a nl return type, find class name and match with nlGenerator in symTab
           outClassName <- get('return', envir = typeEnv)$sizeExprs$name
           parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
@@ -958,9 +960,10 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
         ok <- TRUE
     }
     if(inherits(sym, 'symbolMemberFunction')) {
+        eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
         returnType <- sym$nfMethodRCobj$returnType ## now nfMethodRCobj could be an interface
         if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
-                                                'EIGEN_EIGENCLASS', 'EIGEN_SVDCLASS'))){  
+                                                eigListClasses))){  
           ## if we have a nl return type, find class name and match with nlGenerator in symTab
           outClassName <- get('return', envir = typeEnv)$sizeExprs$name
           parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
@@ -1245,7 +1248,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = RHStype, nlProc = LHSnlProc))
                     }
                     else if(symTab$symbolExists(RHStype, TRUE)){  ## this is TRUE if a nested nimbleFunction returns a nimbleList - the type of
-                                                                  ## the returned nimbleList will be (by necessity) symbolNimbleListGenerator that exists
+                                                                  ## the returned nimbleList will be a symbolNimbleListGenerator that exists
                                                                   ## in the parent ST.
                       LHSnlProc <- symTab$getSymbolObject(RHStype, TRUE)$nlProc
                       symTab$addSymbol(symbolNimbleList(name = LHS$name, type = 'symbolNimbleList', nlProc = LHSnlProc))

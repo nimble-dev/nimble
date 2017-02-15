@@ -865,15 +865,15 @@ RnimbleList <- testInst$run()
 ctestInst <- compileNimble(testInst)
 CnimbleList <- ctestInst$run()
 
-## test for singluar values
-expect_equal(diag(4)+1, RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
-expect_equal(RnimbleList$u, CnimbleList$u)
-expect_equal(RnimbleList$d, CnimbleList$d)
-expect_equal(RnimbleList$v, CnimbleList$v)
-
-test_that("return object (from c++) is nimbleList.", 
-          {
-            expect_identical(is.nl(CnimbleList), TRUE)
-          })
-
-
+# ## test for singluar values
+# expect_equal(diag(4)+1, RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
+# expect_equal(RnimbleList$u, CnimbleList$u)
+# expect_equal(RnimbleList$d, CnimbleList$d)
+# expect_equal(RnimbleList$v, CnimbleList$v)
+# 
+# test_that("return object (from c++) is nimbleList.", 
+#           {
+#             expect_identical(is.nl(CnimbleList), TRUE)
+#           })
+# 
+# 

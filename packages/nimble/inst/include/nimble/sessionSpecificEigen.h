@@ -27,5 +27,14 @@ SEXP C_nimSvd(SEXP S_x, SEXP returnList) {
 	SET_VECTOR_ELT(returnList, 2, NimArr_2_SEXP<2>((*C_svdClass).u));
     return(returnList);
 }
+
+SEXP  new_EIGEN_EIGENCLASS (  )  {
+	EIGEN_EIGENCLASS * newObj;
+	SEXP Sans;
+	newObj = new EIGEN_EIGENCLASS;
+	PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));
+	UNPROTECT(1);
+	return(Sans);
+} 
 }
 #endif

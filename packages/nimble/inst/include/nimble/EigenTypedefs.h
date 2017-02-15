@@ -68,6 +68,7 @@ public:
   
 SEXP  copyToSEXP (   );
 void  createNewSEXP (  );
+void  copyFromSEXP ( SEXP S_nimList_ );
  EIGEN_EIGENCLASS(){	
     namedObjects["values"]=&values;
 	namedObjects["vectors"]=&vectors;
