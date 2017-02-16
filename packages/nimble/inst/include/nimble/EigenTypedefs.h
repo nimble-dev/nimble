@@ -120,26 +120,36 @@ void  copyFromSEXP ( SEXP S_nimList_ );
 };
 
 template<class Derived>
-nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(const Eigen::MatrixBase<Derived> &x) {
+nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(const Eigen::MatrixBase<Derived> &x, int vectors) {
     nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS;
 	int nu = min(x.rows(), x.cols());
 	(*returnClass).d.initialize(0, 0, nu);
-	(*returnClass).u.initialize(0, 0, x.rows(), nu);
-	(*returnClass).v.initialize(0, 0, x.cols(), nu);
-
 	Map<VectorXd> Svd_d((*returnClass).d.getPtr(), nu);
-	Map<MatrixXd> Svd_u((*returnClass).u.getPtr(), x.rows(), nu);
-	Map<MatrixXd> Svd_v((*returnClass).v.getPtr(), x.cols(), nu);
+	JacobiSVD<MatrixXd> svd;
 
-	/* if(nu < 16){    not currently available in nimble's version of EIGEN library, but may be available after upgrade */		
-	JacobiSVD<MatrixXd> svd(x, ComputeThinU | ComputeThinV);
-	/* } */
-	/* else{ // if minimum dimension length > 16, use bidiagonialization, as recommended on eigen website
-		Eigen::BDCSVD<MatrixXd> svd(x, ComputeThinU | ComputeThinV);
-	} */
+	/* note: if nu > 16, bidiagonialization algo. is recommended on eigen website.  not currently available w/ nimble's version of eigen, but may be in future. */
+	if(vectors == 0){
+		svd.compute(x);
+	}
+	else{
+		int leftSVs = nu;
+		int rightSVs = nu;
+		if(vectors == 1){
+			svd.compute(x, ComputeThinU | ComputeThinV);
+		}
+		if(vectors == 2){
+			leftSVs = x.rows();
+			rightSVs = x.cols();
+			svd.compute(x, ComputeFullU | ComputeFullV);
+		}
+		(*returnClass).u.initialize(0, 0, x.rows(), leftSVs);
+		(*returnClass).v.initialize(0, 0, x.cols(), rightSVs);
+		Map<MatrixXd> Svd_u((*returnClass).u.getPtr(), x.rows(), leftSVs);
+		Map<MatrixXd> Svd_v((*returnClass).v.getPtr(), x.cols(), rightSVs);
+		Svd_u = svd.matrixU();
+		Svd_v = svd.matrixV();
+	}
 	Svd_d = svd.singularValues();
-	Svd_u = svd.matrixU();
-	Svd_v = svd.matrixV();
 	return(returnClass);
 };
 

@@ -17,11 +17,12 @@ SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
     return(returnList);
 }
 
-SEXP C_nimSvd(SEXP S_x, SEXP returnList) {
+SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList) {
 	NimArr<2, double> x;
-	SEXP_2_NimArr<2>(S_x, x);
+	int vectors;
+	vectors = SEXP_2_int(S_vectors, 0, 0);
 	Map<MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
-	nimSmartPtr<EIGEN_SVDCLASS> C_svdClass = EIGEN_SVD(Eig_x);
+	nimSmartPtr<EIGEN_SVDCLASS> C_svdClass = EIGEN_SVD(Eig_x, vectors);
 	(*C_svdClass).RObjectPointer = returnList;
 	(*C_svdClass).copyToSEXP();
     return(returnList);

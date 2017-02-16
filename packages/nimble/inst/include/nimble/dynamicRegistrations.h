@@ -108,7 +108,7 @@ R_CallMethodDef CallEntries[] = {
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
   FUN(CountDllObjects, 1),
   FUN(C_nimEigen, 3),
-  FUN(C_nimSvd, 2),
+  FUN(C_nimSvd, 3),
   {NULL, NULL, 0}
 };
 

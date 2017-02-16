@@ -158,6 +158,11 @@ nimSvd_keywordInfo <- keywordInfoClass(
       nlEigenRefClass$addEigenListInfo(nfProc)
     }
     code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
+    code[[3]] <- switch(tolower(code[[3]]),
+                        none = 0,
+                        thin = 1,
+                        full = 2)
+    if(is.null(code[[3]])) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
     return(code)
   }
 )
@@ -893,7 +898,7 @@ matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
-matchFunctions[['nimSvd']] <- function(mat){}
+matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}

@@ -2051,8 +2051,8 @@ sizeMatrixEigenList <- function(code, symTab, typeEnv){
     }
   }
   if(code$name == 'EIGEN_SVD'){
-    if(length(code$args) != 1){
-      stop(exprClassProcessingErrorMsg(code, 'svd() called with argument length != 1.'), call. = FALSE)
+    if(length(code$args) != 2){
+      stop(exprClassProcessingErrorMsg(code, 'svd() called with inappropriate argument length.'), call. = FALSE)
     }
   }
   asserts <- recurseSetSizes(code, symTab, typeEnv)

@@ -775,7 +775,7 @@ nlTestFunc20 <- nimbleFunction(
     testList20 <- testListDef20$new(test_matrix = diag(4) + 1)
   },
   run = function(){
-    svdOut <- svd(testList20$test_matrix)
+    svdOut <- svd(testList20$test_matrix, 'thin')
     returnType(svd())
     return(svdOut)
   }
