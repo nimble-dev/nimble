@@ -33,8 +33,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         callSuper(where)
                                       },
                                       buildSomeForEigen = function(where = where){
-                                        browser()
-                                        makeCppNames()
                                         buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
                                         buildRgenerator(where = where)
                                         buildCmultiInterface()

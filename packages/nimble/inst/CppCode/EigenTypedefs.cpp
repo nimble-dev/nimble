@@ -80,11 +80,20 @@ void  EIGEN_SVDCLASS::createNewSEXP (  )  {
 	UNPROTECT(2);
 }
 
-SEXP  new_EIGEN_SVDCLASS (  )  {
-	EIGEN_SVDCLASS * newObj;
-	SEXP Sans;
-	newObj = new EIGEN_SVDCLASS;
-	PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));
-	UNPROTECT(1);
-	return(Sans);
+void  EIGEN_SVDCLASS::copyFromSEXP ( SEXP S_nimList_ ) {
+	SEXP S_pxData;
+	SEXP S_d;
+	SEXP S_v;
+	SEXP S_u;
+	RObjectPointer =  S_nimList_;
+	PROTECT(S_pxData = allocVector(STRSXP, 1));
+	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
+	PROTECT(S_d = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("d")));
+	PROTECT(S_v = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("v")));
+	PROTECT(S_u = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("u")));
+	SEXP_2_NimArr<1>(S_d, d);
+	SEXP_2_NimArr<2>(S_v, v);
+	SEXP_2_NimArr<2>(S_u, u);
+	UNPROTECT(4);
 }
+

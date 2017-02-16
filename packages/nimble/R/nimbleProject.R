@@ -739,14 +739,13 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                    ## to instantiate neededObjects
                                    eigenClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
                                    if(nl$nimbleListDef$className %in% eigenClassNames)
-                                     dll <- nimbleUserNamespace$sessionSpecificDll[[1]]
+                                     dll <- nimbleUserNamespace$sessionSpecificDll
                                    for(nestedNL in names(nl$nestedListGenList)){
                                      instantiateNimbleList(nl[[nestedNL]], dll, asTopLevel)
                                    }
                                    if(!is.nl(nl)) stop("Can't instantiateNimbleList, nl is not a nimbleList")
                                    className <- nl$nimbleListDef$className
                                    nlCppDef <- getNimbleListCppDef(generatorName = className)
-                                   
                                    ok <- TRUE
                                    if(asTopLevel) {
                                      if(is.null(nlCppDef$Rgenerator)) ok <- FALSE

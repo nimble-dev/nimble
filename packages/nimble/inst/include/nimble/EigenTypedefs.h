@@ -109,6 +109,7 @@ public:
   
 SEXP  copyToSEXP (   );
 void  createNewSEXP (  );
+void  copyFromSEXP ( SEXP S_nimList_ );
  EIGEN_SVDCLASS (  ) {
 	namedObjects["d"]=&d;
 	namedObjects["u"]=&u;

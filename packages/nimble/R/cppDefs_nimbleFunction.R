@@ -109,17 +109,11 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                  generatorName <- neededType$nlProc$name
                                                  thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = generatorName)
                                                  eigListClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
-                                                 
-                                                 # if(is.null(thisCppDef) && (generatorName %in% eigListClassNames)){
-                                                 #   browser()
-                                                 #   className <- names(nimCompProc$neededTypes)[i]
-                                                 #   thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel, eigenList = TRUE)
-                                                 #   neededTypeDefs[[ className ]] <<- thisCppDef
-                                                 #   # Hincludes <<- c(Hincludes, thisCppDef)
-                                                 #   # CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                 # }
-                                                 if(generatorName %in% eigListClassNames)
-                                                   next
+                                                ##EIGEN_EIGENCLASS and EIGEN_SVDCLASS only need partial cpp defs, as some is in permanent c++ code
+                                                if(is.null(thisCppDef) && (generatorName %in% eigListClassNames)){
+                                                    className <- names(nimCompProc$neededTypes)[i]
+                                                    nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel, eigenList = TRUE)
+                                                 }
                                                  else if(is.null(thisCppDef)) {
                                                    className <- names(nimCompProc$neededTypes)[i]
                                                    thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel)

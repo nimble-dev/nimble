@@ -797,6 +797,53 @@ test_that("return object (from c++) is nimbleList.",
             expect_identical(is.nl(CnimbleList), TRUE)
           })
 
+########
+## Test #2 for eigen() function.  Use eigen() to specify a nl element.  
+########
+
+nlTestFunc21 <- nimbleFunction(
+  setup = function(){
+    testListDef21 <- nimbleList(testEigen = eigen())
+    testList21 <- testListDef21$new()
+    testMat <- diag(2)
+  },
+  run = function(){
+    eigenOut <- eigen(testMat)
+    testList21$testEigen <<- eigenOut
+    returnType(testListDef21())
+    return(testList21)
+  }
+)
+
+testInst <- nlTestFunc21()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+
+CnimbleList <- ctestInst$run()
+
+########
+## Test #2 for svd() function.  Use nimSvd() to specify a nl element.  
+########
+
+nlTestFunc22 <- nimbleFunction(
+  setup = function(){
+    testListDef22 <- nimbleList(testSvd = nimSvd())
+    testList22 <- testListDef22$new()
+    testMat <- diag(2)
+  },
+  run = function(){
+    svdOut <- svd(testMat)
+    testList22$testSvd <<- svdOut
+    returnType(nimSvd())
+    return(testList22$testSvd)
+  }
+)
+
+testInst <- nlTestFunc22()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
 
 ########
 ## Testing for use of eigen() in BUGS models  
@@ -841,39 +888,3 @@ Cmodel2 <- compileNimble(Rmodel2)
 
 Cmodel2$simulate()
 Cmodel2$calculate()
-
-#### idea here:
-### check for eigenclass in nimble_list f'n, create new def'n if found,
-### should work perfectly after that, modulo the eigen/nimEigen issue potentially
-
-nlTestFunc20 <- nimbleFunction(
-  setup = function(){
-    testListDef20 <- nimbleList(testEigen = eigen())
-    testList20 <- testListDef20$new()
-    testMat <- diag(2)
-  },
-  run = function(){
-    eigenOut <- eigen(testMat)
-    testList20$testEigen <<- eigenOut
-    returnType(testListDef20())
-    return(testList20)
-  }
-)
-
-testInst <- nlTestFunc20()
-RnimbleList <- testInst$run()
-ctestInst <- compileNimble(testInst)
-CnimbleList <- ctestInst$run()
-
-# ## test for singluar values
-# expect_equal(diag(4)+1, RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
-# expect_equal(RnimbleList$u, CnimbleList$u)
-# expect_equal(RnimbleList$d, CnimbleList$d)
-# expect_equal(RnimbleList$v, CnimbleList$v)
-# 
-# test_that("return object (from c++) is nimbleList.", 
-#           {
-#             expect_identical(is.nl(CnimbleList), TRUE)
-#           })
-# 
-# 

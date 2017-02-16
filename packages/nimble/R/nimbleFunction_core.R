@@ -129,7 +129,6 @@ nimbleFunction <- function(setup         = NULL,
         if(!length(formals(globalSetup))==0) stop('globalSetup cannot take input arguments', call. = FALSE)
         eval(body(globalSetup), envir = .globalSetupEnv)
     }
-                      
     return(generatorFunction)
 }
 
@@ -247,12 +246,9 @@ nf_createGeneratorFunctionDef <- function(setup) {
       ## assign setupOutputs into reference class object
       if(!nimbleOptions()$compileOnly)
         for(.var_unique_name_1415927 in .namesToCopyFromGlobalSetup)    { 
-
           nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927, envir = .globalSetupEnv)) 
         }
       for(.var_unique_name_1415927 in .namesToCopyFromSetup)    {
-        if(is.nlGenerator(nf_preProcessMemberDataObject(get(.var_unique_name_1415927)))){
-        }
         nfRefClassObject[[.var_unique_name_1415927]] <- nf_preProcessMemberDataObject(get(.var_unique_name_1415927)) 
       }
       return(nfRefClassObject)
