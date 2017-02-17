@@ -1470,7 +1470,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     vars_2_vertexOrigID <- new.env()   ## IDs for node labels, e.g. x[1:4] might be: 1, 1, 1, 2
     vars2LogProbName <- new.env()      ## e.g. "x" might be "logProb_x" if it has any LHS
     ##vars2LogProbID <- new.env()        ## yiels LogProbIDs, which are not sorted in any way and we might move away from.
-
     ## 1b. set up variables in all the environments
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
@@ -1520,7 +1519,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             types <- c(types, rep(BUGSdecl$type, length(BUGSdecl$nodeFunctionNames) ) )       ## append vector of "stoch" or "determ" to types vector
             BUGSdecl$origIDs <- next_origID -1 + (1:length(BUGSdecl$nodeFunctionNames))       ## record the original IDs used here
             next_origID <- next_origID + length(BUGSdecl$nodeFunctionNames)
-
+            
             ## Fill in the vars_2_nodeOrigID elements
             if(is.environment(BUGSdecl$replacementsEnv)) { ## this means there was some replacement involved in this BUGS line
                 BUGSdecl$replacementsEnv[['origIDs']] <- BUGSdecl$origIDs

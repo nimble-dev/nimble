@@ -835,7 +835,6 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
             .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
             regLabel <- try(get('name', envir = nfObject), silent = TRUE)
             if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
-            browser()
             eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll[['handle']], regLabel))
         } else {
             .basePtr <<- existingBasePtr
