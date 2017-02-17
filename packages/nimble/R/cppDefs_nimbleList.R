@@ -1,11 +1,21 @@
 cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                   contains = 'cppNimbleClassClass',
                                   fields = list(
+                                    eigenList = 'ANY'
                                   ),
                                   methods = list(
                                       initialize = function(nimCompProc, debugCpp = FALSE, fromModel = FALSE, ...) {
-                                          callSuper(nimCompProc, debugCpp, fromModel, ...)
-                                          inheritance <<- c(inheritance, 'pointedToBase')
+                                        callSuper(nimCompProc, debugCpp, fromModel, ...)
+                                        inheritance <<- c(inheritance, 'pointedToBase')
+                                      },
+                                      getDefs = function() {
+                                        if(eigenList){
+                                          if(inherits(SEXPfinalizerFun, 'uninitializedField'))
+                                            list(SEXPgeneratorFun)
+                                          else
+                                            list(SEXPgeneratorFun, SEXPfinalizerFun)
+                                        }
+                                        else callSuper()
                                       },
                                       buildCmultiInterface = function(dll = NULL) {
                                           sym <- if(!is.null(dll))
@@ -27,15 +37,18 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                            Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                       },
                                       buildAll = function(where = where) {
-                                        buildCopyFromSexp()
-                                        buildCopyToSexp()
-                                        buildCreateNewSexp()
-                                        callSuper(where)
-                                      },
-                                      buildSomeForEigen = function(where = where){
-                                        buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
-                                        buildRgenerator(where = where)
-                                        buildCmultiInterface()
+                                        if(eigenList == TRUE){
+                                          makeCppNames()
+                                          buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
+                                          buildRgenerator(where = where)
+                                          buildCmultiInterface()
+                                        }
+                                        else{
+                                          buildCopyFromSexp()
+                                          buildCopyToSexp()
+                                          buildCreateNewSexp()
+                                          callSuper(where)
+                                        }
                                       },
                                       buildCreateNewSexp = function(){
                                         interfaceArgs <- symbolTable()

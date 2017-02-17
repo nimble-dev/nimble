@@ -721,14 +721,12 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                    }
                                    if(inherits(nlCompInfos[[className]]$cppDef, 'uninitializedField')) {
                                      newCppClass <- cppNimbleListClass(name = className,
-                                                                           nimCompProc = nlCompInfos[[className]]$nlProc,
-                                                                           debugCpp = control$debugCpp,
-                                                                           project = .self
+                                                                       nimCompProc = nlCompInfos[[className]]$nlProc,
+                                                                       debugCpp = control$debugCpp,
+                                                                       project = .self,
+                                                                       eigenList = eigenList
                                      )
-                                     if(eigenList)
-                                       newCppClass$buildSomeForEigen(where = where)
-                                     else
-                                       newCppClass$buildAll(where = where)
+                                     newCppClass$buildAll(where = where)
                                      nlCompInfos[[className]]$cppDef <<- newCppClass
                                      newCppClass ## possible return value
                                    } else {
@@ -737,9 +735,9 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  instantiateNimbleList = function(nl, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
                                    ## to instantiate neededObjects
-                                   eigenClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
-                                   if(nl$nimbleListDef$className %in% eigenClassNames)
-                                     dll <- nimbleUserNamespace$sessionSpecificDll
+                                   # eigenClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
+                                   # if(nl$nimbleListDef$className %in% eigenClassNames)
+                                   #   dll <- nimbleUserNamespace$sessionSpecificDll
                                    for(nestedNL in names(nl$nestedListGenList)){
                                      instantiateNimbleList(nl[[nestedNL]], dll, asTopLevel)
                                    }

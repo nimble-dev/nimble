@@ -105,28 +105,28 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 }
 
 SEXP register_numberedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
-  //  std::cout<< "In register_numberedObjects_Finalizer\n";
+  //std::cout<< "In register_numberedObjects_Finalizer\n";
   //  R_RegisterCFinalizerEx(Snp, &numberedObjects_Finalizer, TRUE);
   RegisterNimbleFinalizer(Snp, Dll, &numberedObjects_Finalizer, Slabel);
   return(Snp);
 }
 
 void numberedObjects_Finalizer(SEXP Snp){
-  //  std::cout<< "In numberedObjects_Finalizer\n";
+  //std::cout<< "In numberedObjects_Finalizer\n";
   NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);
 }
 
 SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
-  //  std::cout<< "In register_namedObjects_Finalizer\n";
+  //std::cout<< "In register_namedObjects_Finalizer\n";
   //R_RegisterCFinalizerEx(Snp, &namedObjects_Finalizer, TRUE);
   RegisterNimbleFinalizer(Snp, Dll, &namedObjects_Finalizer, Slabel);
   return(Snp);
 }
 
 void namedObjects_Finalizer(SEXP Snp){
-  //  std::cout<< "In namedObjects_Finalizer\n";
+  //std::cout<< "In namedObjects_Finalizer\n";
   NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);
