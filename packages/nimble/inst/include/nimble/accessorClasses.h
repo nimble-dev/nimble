@@ -263,10 +263,12 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA);
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA);
+void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index);
+void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA);
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA);
-void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int i);
-void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int i);
+void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index);
+void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 
 
 

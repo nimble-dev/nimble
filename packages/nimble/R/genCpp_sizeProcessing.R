@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'setValues')  # CJP added setValues
 setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
@@ -834,9 +834,7 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have on
 }
 
 sizeValues <- function(code, symTab, typeEnv) {
-    print('in sizeValues')
-    if(exists('STOP2')) browser()
-    
+    browser()
     code$nDim <- 1
     code$type <- 'double'
     code$toEigenize <- 'no'
@@ -852,7 +850,6 @@ sizeValues <- function(code, symTab, typeEnv) {
     }
     
     asserts <- list()
-   
     if(code$caller$name %in% assignmentOperators) {
         if(code$callerArgID == 2) { ## ans <- values(...)
             code$name <- 'getValues'
@@ -865,15 +862,19 @@ sizeValues <- function(code, symTab, typeEnv) {
                     if(is.numeric(code$args[[2]])) {
                         assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = code$args[[2]]))
                     } else assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name)))
-    }
+                }
 
                 # assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
                 asserts <- c(assertSS, asserts)
             } else
                 typeEnv$.ensureNimbleBlocks <- TRUE
-        } ## values(...) <- P, don't change it
+        } else code$name <- 'setValues'  ## values(...) <- P, don't change it
     } else { ## values(...) embedded in a RHS expression
-        code$name <- 'getValues'
+        # code$name <- 'getValues'
+        codeTmp <- code
+        while(!codeTmp$caller$name %in% assignmentOperators)
+            codeTmp <- codeTmp$caller
+        if(codeTmp$callerArgID == 2) code$name <- 'getValues' else code$name <- 'setValues' 
         code$toEigenize <- 'yes' ## This tricks sizeAssignAfterRecursing to generate the setSize in asserts
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
         code$toEigenize <- 'no'
@@ -1171,14 +1172,17 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     }
     ## update size info in typeEnv
     assert <- NULL
-    
-    if(LHS$name == 'values' && length(LHS$args) == 1) { ## It is values(model_values_accessor) <- STUFF
+
+    # CJP change 'values' to 'setValues'
+    if(LHS$name == 'setValues' && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
+        # triggered when we have simple assignment into values() without indexing of values()
         if(is.numeric(RHS)) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Cannot assign into values() from numeric.')), call. = FALSE)
-        code$name <- 'setValues'
+        code$name <- 'setValues'  # CJP change
         
-        code$args <- list(2)
+        code$args <- list(1 + length(LHS$args))
         setArg(code, 1, RHS)
         setArg(code, 2, LHS$args[[1]])
+        if(length(LHS$args) == 2) setArg(code, 3, LHS$args[[2]])  # for indexed of form values(model, nodes[i])
         if(!(RHS$isName)) assert <- c(assert, sizeInsertIntermediate(code, 1, symTab, typeEnv) )
         return( if(length(assert) == 0) NULL else assert )
     }
