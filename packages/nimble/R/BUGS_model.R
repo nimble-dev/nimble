@@ -573,7 +573,18 @@ Details: This provides a fairly raw representation of the graph (model) structur
                                           return(ans)
                                       }
                                   },
-                                  
+
+                                  getDependencyPathCountOneNode = function(node) {
+                                      if(length(node) > 1)
+                                          stop("getDependencyPathCountOneNode: argument 'node' should provide a single node.")
+                                      if(inherits(node, 'character')) {
+                                          node <- modelDef$nodeName2GraphIDs(node)
+                                      }
+                                      if(!inherits(node, 'numeric'))
+                                          stop("getDependencyPathCountOneNode: argument 'node' should be a character node name or a numeric node ID.")
+                                      modelDef$maps$nimbleGraph$getDependencyPathCountOneNode(node = node)
+                                  },
+
                                   getDependencies = function(nodes, omit = character(), self = TRUE,
                                       determOnly = FALSE, stochOnly = FALSE,
                                       includeData = TRUE, dataOnly = FALSE,
@@ -666,7 +677,7 @@ depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(i
                                           return(retVal)
                                       }
                                       if(!(returnType %in% c('ids', 'names')))
-                                          stop('instead getDependencies, imporper returnType chosen')
+                                          stop('instead getDependencies, improper returnType chosen')
                                   },
                                   
                                   getDownstream = function(...) {

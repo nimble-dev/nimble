@@ -121,6 +121,7 @@ nf_substituteExceptFunctionsAndDollarSigns <- function(code, subList) {
     }
     if(is.list(code)) { ## Keyword processing stage of compilation may have stuck lists into the argument list of a call (for maps)
         code <- lapply(code, nf_substituteExceptFunctionsAndDollarSigns, subList)
+        return(code)
     }
     stop(paste("Error doing replacement for code ", deparse(code)))
 }
