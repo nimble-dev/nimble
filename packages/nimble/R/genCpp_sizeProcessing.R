@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'setValues')  # CJP added setValues
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr')
 setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
@@ -868,13 +868,9 @@ sizeValues <- function(code, symTab, typeEnv) {
                 asserts <- c(assertSS, asserts)
             } else
                 typeEnv$.ensureNimbleBlocks <- TRUE
-        } else code$name <- 'setValues'  ## values(...) <- P, don't change it
+        }   ## values(...) <- P, don't change it
     } else { ## values(...) embedded in a RHS expression
-        # code$name <- 'getValues'
-        codeTmp <- code
-        while(!codeTmp$caller$name %in% assignmentOperators)
-            codeTmp <- codeTmp$caller
-        if(codeTmp$callerArgID == 2) code$name <- 'getValues' else code$name <- 'setValues' 
+        code$name <- 'getValues'
         code$toEigenize <- 'yes' ## This tricks sizeAssignAfterRecursing to generate the setSize in asserts
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
         code$toEigenize <- 'no'
@@ -1173,12 +1169,10 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## update size info in typeEnv
     assert <- NULL
 
-    # CJP change 'values' to 'setValues'
-    if(LHS$name == 'setValues' && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
+    if(LHS$name == 'values' && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
         # triggered when we have simple assignment into values() without indexing of values()
         if(is.numeric(RHS)) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Cannot assign into values() from numeric.')), call. = FALSE)
-        code$name <- 'setValues'  # CJP change
-        
+        code$name <- 'setValues'  
         code$args <- list(1 + length(LHS$args))
         setArg(code, 1, RHS)
         setArg(code, 2, LHS$args[[1]])
