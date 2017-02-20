@@ -6,8 +6,8 @@ graphNode::graphNode(int inputCgraphID, NODETYPE inputType, const string &inputN
   CgraphID(inputCgraphID),
   name(inputName),
   touched(false),
-  numPaths(-1),
-  numChildren(0) {
+  numChildren(0),
+  numPaths(-1) {
   RgraphID = CgraphID + 1;
 }
 
