@@ -834,7 +834,6 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have on
 }
 
 sizeValues <- function(code, symTab, typeEnv) {
-    browser()
     code$nDim <- 1
     code$type <- 'double'
     code$toEigenize <- 'no'
