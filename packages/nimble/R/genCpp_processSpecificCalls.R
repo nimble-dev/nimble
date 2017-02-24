@@ -38,12 +38,11 @@ specificCallHandlers = c(
          nfMethod = 'nfMethodErrorHandler',
          min = 'minMaxHandler',
          max = 'minMaxHandler',
-         makeNewNimbleListObject = 'newNimbleListHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     ##makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
     makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
-         )
+         ))
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rmvt_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rwish_chol']] <- 'rmFunHandler'
@@ -81,57 +80,6 @@ seqAlongHandler <- function(code, symTab) {
     NULL
 }
 
-newNimbleListHandler <- function(code, symTab){
-  ## code looks like: nimListDef$new(a = 10, b = 12)
-  ## want to change code$caller to :
-  ## { nimList <- nimListDef$new()
-  ## nimList$a <- 10
-  ## nimList$b < -12 }
-  ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
-  ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
-  
-  newExprs <- list()
-  nfVarExprs <- list()
-  exprCounter <- 1
-  originalCode <- code$copy()
-  listElements <- symTab$getParentST()$getSymbolObject(originalCode$args[[1]]$name)$nlProc$symTab$getSymbolObjects()
-  assignExpr <- exprClass(name = "<-", isCall = TRUE, isName = FALSE, isAssign = TRUE,
-                          args = c(originalCode$caller$args[[1]], originalCode$caller$args[[2]]), caller = code$caller,
-                          callerArgID = 1)
-  listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-  for(i in seq_along(listElements)) {
-    if(!(inherits(originalCode$args[[i+1]], 'exprClass')) || (originalCode$args[[i+1]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
-    nfVarExprs[[exprCounter]] <- exprClass(name = "nfVar", isCall = TRUE, isName = FALSE, 
-                             isAssign = FALSE, args = c(list(listNameExpr), list(listElements[[i]]$name)))
-    nfVarExprs[[exprCounter]]$args[[1]]$caller <- nfVarExprs[[exprCounter]]
-    nfVarExprs[[exprCounter]]$args[[1]]$callerArgID <- 1
-    newExprs[[exprCounter]] <- exprClass(name = '<-', isCall = TRUE, isName = FALSE,
-                               isAssign = TRUE, args = c(list(nfVarExprs[[exprCounter]]), list(originalCode$args[[i+1]])),
-                               caller = code$caller, callerArgID = exprCounter + 1)
-    for(j in seq_along(newExprs[[exprCounter]]$args)) {
-      if(inherits(newExprs[[exprCounter]]$args[[j]], 'exprClass')) {
-        newExprs[[exprCounter]]$args[[j]]$caller <- newExprs[[exprCounter]]
-        newExprs[[exprCounter]]$args[[j]]$callerArgID <- j
-      }
-    }
-    setArg(code$caller,  exprCounter+1, newExprs[[exprCounter]])
-    exprCounter <- exprCounter + 1
-    }
-  }
-  if(length(newExprs) == 0) return(NULL)  ## if no inital values were specified, leave code as is
-  else{  ## if initial values were specified, modfify code$caller
-    code$caller$name <- "{"
-    code$caller$isCall <- TRUE
-    code$caller$isName <- FALSE
-    code$caller$isAssign <- 
-    assignExpr$args[[1]]$caller <- assignExpr
-    assignExpr$args[[2]]$caller <- assignExpr
-    assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
-    assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
-    code <- assignExpr
-    setArg(code$caller, 1, code)
-  }
-}
 
 ## processes something like declare(Z, double(1, c(3, 4))) where the first argument to double is the number of dimensions and next (optional)
 ## give size expressions

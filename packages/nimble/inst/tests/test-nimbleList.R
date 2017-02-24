@@ -712,7 +712,7 @@ nlTestFunc18 <- nimbleFunction(
     newList18$nestedNL$nlDouble <- 3.14
     outList <- newList18$nestedNL
     returnType(testListDef18b())
-    return(newList18)
+    return(outList)
   }
 )
 testListDef18a <- nimbleList(nlDouble = double(0))
@@ -726,6 +726,104 @@ expect_identical(RnimbleList$nestedNL$nlDouble, 3.14)
 expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
 
 test_that("return objects are nimbleLists", 
+          {
+            expect_identical(is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+
+########
+## Test of nested nimbleLists. List is created in setup code and nested list is returned from run code.
+########
+
+nlTestFunc19 <- nimbleFunction(
+  setup = function(){
+    testListDef19a <- nimbleList(nlDouble = double(0))
+    testListDef19b <- nimbleList(nestedNL = testListDef19a())
+    testList19 <- testListDef19b$new()
+  },
+  run = function(){
+    testList19$nestedNL$nlDouble <<- 3.14
+    returnType(testListDef19a())
+    return(testList19$nestedNL)
+  }
+)
+
+testInst <- nlTestFunc19()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+expect_identical(RnimbleList$nlDouble, 3.14)
+expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+########
+## Test of double-nested nimbleLists. List is created in setup code and nested list is returned from run code.
+########
+
+nlTestFunc20 <- nimbleFunction(
+  setup = function(){
+    testListDef20a <- nimbleList(nlDouble = double(0))
+    testListDef20b <- nimbleList(nestedNL = testListDef20a())
+    testListDef20c <- nimbleList(nestedNL = testListDef20b())
+    testList20 <- testListDef20c$new()
+  },
+  run = function(){
+    testList20$nestedNL$nestedNL$nlDouble <<- 3.14
+    returnType(testListDef20a())
+    return(testList20$nestedNL$nestedNL)
+  }
+)
+
+testInst <- nlTestFunc20()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+expect_identical(RnimbleList$nlDouble, 3.14)
+expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+########
+## Test of double-nested nimbleLists. List is created in run code and nested list is returned from run code.
+########
+
+nlTestFunc20 <- nimbleFunction(
+  setup = function(){
+    testListDef20a <- nimbleList(nlDouble = double(0))
+    testListDef20b <- nimbleList(nestedNL = testListDef20a())
+    testListDef20c <- nimbleList(nestedNL = testListDef20b())
+  },
+  run = function(){
+    testList20 <- testListDef20c$new(nestedNL = testListDef20b$new(nestedNL = testListDef20a$new(nlDouble = 3.14)))
+    returnType(testListDef20a())
+    return(testList20$nestedNL$nestedNL)
+  }
+)
+
+testInst <- nlTestFunc20()
+RnimbleList <- testInst$run()
+ctestInst <- compileNimble(testInst)
+CnimbleList <- ctestInst$run()
+
+expect_identical(RnimbleList$nlDouble, 3.14)
+expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
+
+test_that("return objects are nimbleLists",
           {
             expect_identical(is.nl(RnimbleList), TRUE)
             expect_identical(is.nl(CnimbleList), TRUE)

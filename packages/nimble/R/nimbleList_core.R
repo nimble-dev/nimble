@@ -273,10 +273,9 @@ nlProcessing <- setRefClass('nlProcessing',
                                   for(i in seq_along(nimbleListObj$types$vars)){
                                     if(nimbleListObj$types$vars[i] %in% names(nestedListGens)){
                                       nlList <- nestedListGens[[nimbleListObj$types$vars[i]]]$new()
-                                      nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
                                       className <- nlList$nimbleListDef$className
+                                      nlp <- nimbleProject$nlCompInfos[[className]]$nlProc
                                       newSym <- symbolNimbleList(name = nimbleListObj$types$vars[i], type = 'symbolNimbleList', nlProc = nlp)
-                                      # if(!(className %in% names(neededTypes))) 
                                       neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
                                       symTab$addSymbol(newSym)
                                     }

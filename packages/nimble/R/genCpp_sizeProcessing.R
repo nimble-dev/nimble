@@ -17,7 +17,6 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
                makeCallList(matrixEigenListOperators, 'sizeMatrixEigenList'),
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
-                    'makeNewNimbleListObject' = 'sizeNewNimbleList',
                     diag = 'sizeDiagonal',
                     RRtest_add = 'sizeRecyclingRule',
                     which = 'sizeWhich',
@@ -28,6 +27,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                    'return' = 'sizeReturn',
                     'asRow' = 'sizeAsRowOrCol',
                     'asCol' = 'sizeAsRowOrCol',
+                    makeNewNimbleListObject = 'sizeNewNimbleList',
                     getParam = 'sizeGetParam',
                     getBound = 'sizeGetBound',
                     nimSwitch = 'sizeSwitch',
@@ -521,18 +521,77 @@ sizeRep <- function(code, symTab, typeEnv) {
 }
 
 sizeNewNimbleList <- function(code, symTab, typeEnv){
+  ## code looks like: nimListDef$new(a = 10, b = 12)
+  ## want to change code$caller to :
+  ## { nimList <- nimListDef$new()
+  ## nimList$a <- 10
+  ## nimList$b < -12 }
+  ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
+  ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
   listDefName <- code$args[[1]]$name
-  asserts <- list()
   if(symTab$parentST$symbolExists(listDefName)){
     nlSym <- symTab$getSymbolObject(listDefName, inherits = TRUE)
     code$type <- "symbolNimbleList"
     listST <- symTab$getParentST()$getSymbolObject(listDefName)
     code$sizeExprs <- listST
-    code$toEigenize <- "no"
+    code$toEigenize <- "maybe"
     code$nDim <- 0
-    return(NULL)
   }
   else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
+  
+  asserts <- list()
+  if(code$caller$name == "makeNewNimbleListObject"){ 
+    callerArgNum <- code$callerArgID
+    asserts <- c(asserts, sizeNewNimbleList(code$caller, symTab))
+  }
+  if(code$caller$args[[1]]$isCall){
+    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  }
+  if(length(code$args)>1){
+    newExprs <- list()
+    nfVarExprs <- list()
+    exprCounter <- 1
+    originalCode <- code$copy()
+    listElements <- symTab$getParentST()$getSymbolObject(listDefName)$nlProc$symTab$getSymbolObjects()
+    assignExpr <- exprClass(name = "<-", isCall = TRUE, isName = FALSE, isAssign = TRUE,
+                            args = c(originalCode$caller$args[[1]], originalCode$caller$args[[2]]), caller = code$caller,
+                            callerArgID = 1)
+    listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
+    for(i in seq_along(listElements)) {
+      if(!inherits(originalCode$args[[i+1]], 'exprClass') ||  (originalCode$args[[i+1]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
+        nfVarExprs[[exprCounter]] <- exprClass(name = "nfVar", isCall = TRUE, isName = FALSE, 
+                                               isAssign = FALSE, args = c(list(listNameExpr), list(listElements[[i]]$name)))
+        nfVarExprs[[exprCounter]]$args[[1]]$caller <- nfVarExprs[[exprCounter]]
+        nfVarExprs[[exprCounter]]$args[[1]]$callerArgID <- 1
+        newExprs[[exprCounter]] <- exprClass(name = '<-', isCall = TRUE, isName = FALSE,
+                                             isAssign = TRUE, args = c(list(nfVarExprs[[exprCounter]]), list(originalCode$args[[i+1]])),
+                                             caller = code$caller, callerArgID = exprCounter + 1)
+        for(j in seq_along(newExprs[[exprCounter]]$args)) {
+          if(inherits(newExprs[[exprCounter]]$args[[j]], 'exprClass')) {
+            newExprs[[exprCounter]]$args[[j]]$caller <- newExprs[[exprCounter]]
+            newExprs[[exprCounter]]$args[[j]]$callerArgID <- j
+          }
+        }
+        setArg(code$caller,  exprCounter+1, newExprs[[exprCounter]])
+        exprCounter <- exprCounter + 1
+      }
+    }
+    if(length(newExprs) != 0){
+      ## if initial values were specified, modfify code$caller
+      code$caller$name <- "{"
+      code$caller$isCall <- TRUE
+      code$caller$isName <- FALSE
+      code$caller$isAssign <- TRUE
+      assignExpr$args[[1]]$caller <- assignExpr
+      assignExpr$args[[2]]$caller <- assignExpr
+      assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
+      assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
+      code <- assignExpr
+      setArg(code$caller, 1, code)
+      asserts <- c(asserts, recurseSetSizes(code$caller, symTab, typeEnv))
+    }
+  }
+  return(asserts)  
 }
 
 
@@ -787,15 +846,9 @@ sizeNFvar <- function(code, symTab, typeEnv) {
   code$toEigenize <- 'maybe'
   if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
     isSymList <- TRUE
-    if(topLevel){
-      objSym <- recurseExtractNimListArg(code, symTab)
-      if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
-      asserts <- recurseSetSizes(code, symTab, typeEnv)
-    }
-    else{
-      objSym <- NULL ## if accessing element of nested NL, don't need to waste time getting info for other intermediate NLs
-      code$type <- 'symbolNimbleList' 
-    }
+    objSym <- recurseExtractNimListArg(code, symTab)
+    if(is.null(objSym)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbol not found in the nimbleFunction.'), call. = FALSE)
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
   }
   else{
     nfSym <- symTab$getSymbolObject(nfName, inherits = TRUE)

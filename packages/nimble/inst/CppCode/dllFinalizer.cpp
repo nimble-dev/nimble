@@ -67,7 +67,7 @@ void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer, SEXP Sl
   } else {
     newDLLAndFinalizer.Label = string("");
   }
-  //  PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
+  PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
   RnimblePtrs[ptr] = newDLLAndFinalizer;
   R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
 }

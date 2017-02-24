@@ -339,7 +339,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      assign('nimbleProject', .self, envir = nf_getRefClassObject(fun))
                                      ## could check for duplicate Cnames here, but if the names are unique the Cnames should be too.
                                  },
-                                 addNimbleList = function(nl, fromModel = FALSE) {
+                                 addNimbleList = function(nl, fromModel = FALSE, nestedList = FALSE) {
                                    if(!is.nl(nl)) stop('nimbleList provided to project is not a nimbleList.', call. = FALSE)
                                    inProjectAlready <- nl[['nimbleProject']]
                                    if(!is.null(inProjectAlready)) {
@@ -353,6 +353,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                                                                          RinitTypesProcessed = FALSE, loaded = FALSE)
                                      nlCompInfos[[className]]$labelMaker <<- labelFunctionCreator(paste0(className,'_'))
                                    }
+                                  
                                    if(!exists('name', envir = nl, inherits = FALSE)) {
                                      assign('name', nlCompInfos[[className]]$labelMaker(), envir = nl)
                                    } else {
@@ -360,7 +361,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                        stop('nimbleList provided to project has same name as another one in the same project', call. = FALSE)
                                      }
                                    }
-                                   nimbleLists[[ nl$name ]] <<- nl
+                                   if(!nestedList)   nimbleLists[[ nl$name ]] <<- nl
                                    # nlCompInfos[[generatorName]]$addRinstance(nl)
                                    
                                    if(!exists('Cname', envir = nl, inherits = FALSE)) {
@@ -515,10 +516,18 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ## creating the model populates model$CobjectInterface
                                  },
                                  ## nimbleList functions
+                                 addNestedNls = function(nl){
+                                   for(iNl in names(nl$nestedListGenList)){
+                                     addNimbleList(nl[[iNl]], nestedList = TRUE)
+                                     if(length(nl[[iNl]]$nestedListGenList) > 0){
+                                       addNestedNls(nl[[iNl]])
+                                     }
+                                   }
+                                 },
                                  compileNimbleList = function(nl, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
                                      reset = FALSE, returnCppClass = FALSE, className = NULL, alreadyAdded = FALSE) { ## className? alreadyAdded?
-                                     ## nl could be a list or a singleton
+                                    ## nl could be a list or a singleton
                                     if(is.list(nl)) {
                                          if(is.null(className)) className <- unique(unlist(lapply(nl, function(x) x$nimbleListDef$className)))
                                          if(length(className) != 1) stop(paste0('Not all elements in the nimbleList list for compileNimbleList are from the same nimbleFunctionDef.  The class names include:', paste(className, collapse = ' ')), call. = FALSE)
@@ -545,12 +554,24 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                              }
                                            }
                                          }
-                                         if(addNL)
+                                         if(addNL){
                                            addNimbleList(nlList[[i]])
+                                           ## if any nested lists, add them too (recursively)
+                                           if(length(nlList[[i]]$nestedListGenList) > 0){
+                                             addNestedNls(nlList[[i]])
+                                           }
+                                         }
                                        }
                                      }
+                                     
+                                     for(iNestedNl in seq_along(nlList[[1]]$nestedListGenList)){
+                                       ## create cppInfo for any nested list classes 
+                                       compileNimbleList(nlList[[1]][[names(nlList[[1]]$nestedListGenList)[iNestedNl]]], initialTypeInferenceOnly = TRUE, alreadyAdded = TRUE)
+                                     }
+                                     cppClass <- buildNimbleListCompilationInfo(nlList, initialTypeInferenceOnly = initialTypeInferenceOnly)
+                                     
 
-                                     cppClass = buildNimbleListCompilationInfo(nlList, initialTypeInferenceOnly = initialTypeInferenceOnly)
+                                     
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass)
                                      message('Remaining compileNimbleList is not yet adapted')
                                      if(!nlCompInfos[[className]]$written && control$writeFiles) {
@@ -695,8 +716,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                  },
                                  buildNimbleListCompilationInfo = function(listList = NULL, className, initialTypeInferenceOnly = FALSE, eigenList = FALSE,
-                                                                             control = list(debug = FALSE, debugCpp = FALSE), where = globalenv(), fromModel = FALSE) {
-                                   
+                                                                             control = list(debug = FALSE, debugCpp = FALSE), where = globalenv(), fromModel = FALSE
+                                                                           ) {
                                    if(!is.null(listList)) {
                                      className <- listList[[1]]$nimbleListDef$className
                                      name <- listList[[1]]$name
@@ -735,12 +756,10 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  instantiateNimbleList = function(nl, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
                                    ## to instantiate neededObjects
-                                   # eigenClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
-                                   # if(nl$nimbleListDef$className %in% eigenClassNames)
-                                   #   dll <- nimbleUserNamespace$sessionSpecificDll
                                    for(nestedNL in names(nl$nestedListGenList)){
-                                     instantiateNimbleList(nl[[nestedNL]], dll, asTopLevel)
+                                     nestedAns <- instantiateNimbleList(nl[[nestedNL]], dll, asTopLevel)
                                    }
+
                                    if(!is.nl(nl)) stop("Can't instantiateNimbleList, nl is not a nimbleList")
                                    className <- nl$nimbleListDef$className
                                    nlCppDef <- getNimbleListCppDef(generatorName = className)
@@ -753,7 +772,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dll)
                                    }
                                    if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
-                                   
                                    ans
                                  },
                                  instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions

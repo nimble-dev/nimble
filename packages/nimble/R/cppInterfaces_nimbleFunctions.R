@@ -66,8 +66,8 @@ makeNFBindingFields <- function(symTab, cppNames) {
               if(missing(x))
                 NLNAME
               else{
-                if(!inherits(x, 'CnimbleFunctionBase')) stop(paste('Nimble compilation error initializing nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
-                if(!inherits(x$.basePtr, 'externalptr')) stop(paste('Nimble compilation error initializing pointer for nimbleFunction ', NFNAMECHAR, '.'), call. = FALSE)
+                if(!inherits(x, 'CnimbleFunctionBase')) stop(paste('Nimble compilation error initializing nimbleList ', NLNAMECHAR, '.'), call. = FALSE)
+                if(!inherits(x$.basePtr, 'externalptr')) stop(paste('Nimble compilation error initializing pointer for nimbleList ', NLNAMECHAR, '.'), call. = FALSE)
                 nimbleInternalFunctions$setSmartPtrFromSinglePtr(VPTR, x$.basePtr) ## check field name
                 assign(NLNAMECHAR, x, inherits = TRUE) ## avoids <<- warnings
               }
@@ -540,6 +540,8 @@ buildNeededObjects <- function(Robj, compiledNodeFun, neededObjects, dll, nimble
 }
 
 copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self, dll) {
+  if(is.nl(Robj)) isNL <- TRUE
+  else isNL <- FALSE
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(is.null(Robj[[v]])) {
@@ -566,6 +568,11 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
           .self[[v]] <- Cnl
           next
         }
+        # else if(cppCopyTypes[[v]] == 'nimbleList' && isNL){
+        #   Cnl <- Robj$.CobjectInterface 
+        #   .self[[v]] <- Cnl
+        #   next
+        # }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
             if(is.null(Robj[[v]]$contentsList)) {
                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
@@ -822,7 +829,6 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
     # substitute on parsed text string to avoid CRAN issues with .Call registration
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, isListObj = FALSE, existingBasePtr = NULL, ...){		#cModel removed from here
-        
       if(!isListObj) defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
       callSuper(dll = dll, project = project, test = FALSE, ...)
     
@@ -845,7 +851,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
         compiledNodeFun <<- defaults$cnf
         vPtrNames <- 	paste0(".", cppNames, "_Ptr")
         for(vn in seq_along(cppNames) ){
-            .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn], dll = dll)
+          .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn], dll = dll)
         }
         if(!missing(nfObject)) { ## I don't know when nfObject could be missing in a correct usage
             if(!is.null(existingBasePtr)) {

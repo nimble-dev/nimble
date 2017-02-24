@@ -153,6 +153,7 @@ nimEigen_keywordInfo <- keywordInfoClass(
 nimSvd_keywordInfo <- keywordInfoClass(
   keyword = "nimSvd",
   processor = function(code, nfProc){
+
     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
       nlEigenRefClass$addEigenListInfo(nfProc)
@@ -699,7 +700,6 @@ dollarSign_keywordInfo <- keywordInfoClass(
     #   replace myNimbleFunction$run() -> myNimbleFunction() or
     #	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
     #   Probably a better way to handle this
-    
     if(code[[3]] == 'run'){
       newRunCode <- code[[2]]
       return(newRunCode)
@@ -990,6 +990,7 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
     ## this includes nf$method()
     ## nfList[[i]]$method
     ## model$calculate(nodes)
+  browser()
     dollarSignPart <- code[[1]]
     objectPart <- dollarSignPart[[2]]
     
@@ -1471,11 +1472,14 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
         } 
         else if(inherits(symObj, 'symbolNimbleListGenerator')){
           if(memFunName == "new"){
+            browser()
             listElements <- symObj$nlProc$symTab$getSymbolObjects()
+            if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
             elementName <- deparse(code[[listElements[[1]]$name]])
             if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
             argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
             for(i in seq_along(listElements)[-1]){  ## skip the first element
+              if(!is.null(code[[listElements[[i]]$name]])) code[[listElements[[i]]$name]] <- matchKeywords_recurse(code[[listElements[[i]]$name]], nfProc)
               elementName <- deparse(code[[listElements[[i]]$name]])
               if(elementName == "NULL") elementName <- ""
               argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)

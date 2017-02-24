@@ -382,7 +382,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
   }
   if(is.nl(instances[[1]][[name]])) {
     ## This case mimics the nimbleFunction case below (see is.nf)
-    
+
     ## We need all instances created in setup code from all instances
     nlList <- lapply(instances, `[[`, name)
     ## trigger initial procesing to set up an nlProc object
@@ -391,7 +391,6 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
     ## get the unique name that we use to generate a unique C++ definition
     className <- nlList[[1]]$nimbleListDef$className
-    
     ## add the setupOutput name to objects that we need to instantiate and point to
     neededObjectNames <<- c(neededObjectNames, name)
     
