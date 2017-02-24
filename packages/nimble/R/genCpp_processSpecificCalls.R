@@ -37,12 +37,12 @@ specificCallHandlers = c(
          declare = 'declareHandler',
          nfMethod = 'nfMethodErrorHandler',
          min = 'minMaxHandler',
-         max = 'minMaxHandler',
+         max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
     makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     ##makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
     makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
-         ))
+         )
 specificCallHandlers[['rmnorm_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rmvt_chol']] <- 'rmFunHandler'
 specificCallHandlers[['rwish_chol']] <- 'rmFunHandler'
@@ -79,7 +79,6 @@ seqAlongHandler <- function(code, symTab) {
     setArg(code, 2, oldArg)
     NULL
 }
-
 
 ## processes something like declare(Z, double(1, c(3, 4))) where the first argument to double is the number of dimensions and next (optional)
 ## give size expressions

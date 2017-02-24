@@ -538,7 +538,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          className <- nl$nimbleListDef$className
                                      }
                                      if(reset) nlCompInfos[[className]] <<- NULL
-                                     
                                      if(!alreadyAdded) {
                                        for(i in seq_along(nlList)) {
                                          addNL <- TRUE

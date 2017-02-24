@@ -138,7 +138,6 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
             return(invisible(NULL))
         }
         sizeCall <- sizeCalls[[code$name]]
-
         if(!is.null(sizeCall)) {
             if(.nimbleOptions$debugSizeProcessing) {
                 browser()
@@ -529,6 +528,7 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
   ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
   listDefName <- code$args[[1]]$name
+  codeCallerCall <- FALSE
   if(symTab$parentST$symbolExists(listDefName)){
     nlSym <- symTab$getSymbolObject(listDefName, inherits = TRUE)
     code$type <- "symbolNimbleList"
@@ -540,11 +540,8 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
   
   asserts <- list()
-  if(code$caller$name == "makeNewNimbleListObject"){ 
-    callerArgNum <- code$callerArgID
-    asserts <- c(asserts, sizeNewNimbleList(code$caller, symTab))
-  }
   if(code$caller$args[[1]]$isCall){
+    codeCallerCall <- TRUE
     asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   }
   if(length(code$args)>1){
@@ -560,16 +557,14 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
     for(i in seq_along(listElements)) {
       if(!inherits(originalCode$args[[i+1]], 'exprClass') ||  (originalCode$args[[i+1]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
         nfVarExprs[[exprCounter]] <- exprClass(name = "nfVar", isCall = TRUE, isName = FALSE, 
-                                               isAssign = FALSE, args = c(list(listNameExpr), list(listElements[[i]]$name)))
-        nfVarExprs[[exprCounter]]$args[[1]]$caller <- nfVarExprs[[exprCounter]]
-        nfVarExprs[[exprCounter]]$args[[1]]$callerArgID <- 1
+                                               isAssign = FALSE, args = c(list(listNameExpr$copy()), list(listElements[[i]]$name)))
+        setCaller(nfVarExprs[[exprCounter]]$args[[1]], nfVarExprs[[exprCounter]], 1)
         newExprs[[exprCounter]] <- exprClass(name = '<-', isCall = TRUE, isName = FALSE,
                                              isAssign = TRUE, args = c(list(nfVarExprs[[exprCounter]]), list(originalCode$args[[i+1]])),
                                              caller = code$caller, callerArgID = exprCounter + 1)
         for(j in seq_along(newExprs[[exprCounter]]$args)) {
           if(inherits(newExprs[[exprCounter]]$args[[j]], 'exprClass')) {
-            newExprs[[exprCounter]]$args[[j]]$caller <- newExprs[[exprCounter]]
-            newExprs[[exprCounter]]$args[[j]]$callerArgID <- j
+            setCaller(newExprs[[exprCounter]]$args[[j]], newExprs[[exprCounter]], j)
           }
         }
         setArg(code$caller,  exprCounter+1, newExprs[[exprCounter]])
@@ -588,10 +583,14 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
       assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
       code <- assignExpr
       setArg(code$caller, 1, code)
-      asserts <- c(asserts, recurseSetSizes(code$caller, symTab, typeEnv))
+      asserts <- c(asserts, exprClasses_setSizes(code$caller, symTab, typeEnv))
+    }
+    if(!codeCallerCall){
+      browser()
+      asserts <- rev(asserts) ## should work to make sure that innermost list element asserts are inserted into c++ code first
     }
   }
-  return(asserts)  
+  return(asserts)
 }
 
 
@@ -1044,6 +1043,7 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
 recurseSetSizes <- function(code, symTab, typeEnv, useArgs = rep(TRUE, length(code$args))) {
     ## won't be here unless code is a call.  It will not be a {
     asserts <- list()
+    if(length(useArgs) < length(code$args)) browser()
     for(i in seq_along(code$args)) {
         if(useArgs[i]) {
             if(inherits(code$args[[i]], 'exprClass')) {
@@ -1241,9 +1241,14 @@ sizeAssign <- function(code, symTab, typeEnv) {
     typeEnv$.AllowUnknowns <- FALSE
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, TRUE))
     typeEnv$.AllowUnknowns <- TRUE
-    asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, FALSE)))
-    typeEnv[['.ensureNimbleBlocks']] <- FALSE ## may have been true from RHS of rmnorm etc.
-    asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
+    if(length(code$args) > 2){
+      asserts <- c(asserts, exprClasses_setSizes(code, symTab, typeEnv))
+    }
+    else{
+      asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, FALSE)))
+      typeEnv[['.ensureNimbleBlocks']] <- FALSE ## may have been true from RHS of rmnorm etc.
+      asserts <- c(asserts, sizeAssignAfterRecursing(code, symTab, typeEnv))
+    }
     if(length(asserts) == 0) NULL else asserts
 }
 

@@ -990,7 +990,6 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
     ## this includes nf$method()
     ## nfList[[i]]$method
     ## model$calculate(nodes)
-  browser()
     dollarSignPart <- code[[1]]
     objectPart <- dollarSignPart[[2]]
     
@@ -1472,7 +1471,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
         } 
         else if(inherits(symObj, 'symbolNimbleListGenerator')){
           if(memFunName == "new"){
-            browser()
             listElements <- symObj$nlProc$symTab$getSymbolObjects()
             if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
             elementName <- deparse(code[[listElements[[1]]$name]])

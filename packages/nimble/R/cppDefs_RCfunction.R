@@ -159,13 +159,13 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                            if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
                                            if(is.null(DOTSELFNAME)) stop('Object for calling this function is NULL (may have been cleared)');
 
-                                           LISTCODE; ans <- DOTCALL; print("donezo"); NAMESASSIGN; print("donezo2"); ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
+                                           LISTCODE; ans <- DOTCALL; NAMESASSIGN; ans}, list(DOTCALL = dotCall, NAMESASSIGN = namesAssign,
                                                                                              DOTSELFNAME = includeDotSelf, LISTCODE = listCode))
                                          
                                       else
                                          bodyCode <- substitute({
                                              if(is.null(CnativeSymbolInfo_)) {warning("Trying to call compiled nimbleFunction that does not exist (may have been cleared)."); return(NULL)};
-                                              LISTCODE; ans <- DOTCALL; print("donezo"); NAMESASSIGN; print("donezo2"); ans}, 
+                                              LISTCODE; ans <- DOTCALL; NAMESASSIGN; ans}, 
                                              list(LISTCODE = listCode, DOTCALL = dotCall,  NAMESASSIGN = namesAssign))
                                      funCode[[3]] <- bodyCode
                                      funCode[[4]] <- NULL

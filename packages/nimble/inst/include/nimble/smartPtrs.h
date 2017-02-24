@@ -80,8 +80,6 @@ watcherCount++;
 	PRINTF("Error, a watcherCount went below 0. \n");
       }
       delete this;
-	  PRINTF("no more watcher. \n");
-
     }
   }
   virtual ~pointedToBase() {};
