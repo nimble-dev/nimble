@@ -223,9 +223,8 @@ values_keywordInfo <- keywordInfoClass(
             if(length(accessArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
             nodesIndexExpr <- accessArgList$nodes[[3]]
             accessArgList$nodes <- accessArgList$nodes[[2]]
-            # accessArgList$sortUnique <- FALSE   # CJP: do we need this?
-            warning('CJP: do we need this?')
-        }
+            accessArgList$sortUnique <- FALSE   
+      }
 
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)

@@ -267,7 +267,7 @@ sizeWhich <- function(code, symTab, typeEnv) {
     code$name <- 'setWhich'
 
     if(!(code$caller$name %in% assignmentOperators)) {
-        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+        asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$caller$callerArgID, symTab, typeEnv))
     }
     if(length(asserts) == 0) NULL else asserts
 }
@@ -849,7 +849,9 @@ sizeValues <- function(code, symTab, typeEnv) {
     }
     
     asserts <- list()
-    if(code$caller$name %in% assignmentOperators) {
+    if(code$caller$name == "[" & code$caller$callerArgID == 1) # values(...)[.] <- 
+	stop(exprClassProcessingErrorMsg(code, 'In sizeValues: indexing of values() on left-hand size of an assignment is not allowed.'), call. = FALSE)
+     if(code$caller$name %in% assignmentOperators) {
         if(code$callerArgID == 2) { ## ans <- values(...)
             code$name <- 'getValues'
             LHS <- code$caller$args[[1]]
@@ -867,7 +869,7 @@ sizeValues <- function(code, symTab, typeEnv) {
                 asserts <- c(assertSS, asserts)
             } else
                 typeEnv$.ensureNimbleBlocks <- TRUE
-        }   ## values(...) <- P, don't change it
+        }   # values(...) <- P, don't change it
     } else { ## values(...) embedded in a RHS expression
         code$name <- 'getValues'
         code$toEigenize <- 'yes' ## This tricks sizeAssignAfterRecursing to generate the setSize in asserts
