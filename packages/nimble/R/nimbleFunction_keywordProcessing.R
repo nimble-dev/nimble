@@ -712,7 +712,7 @@ dollarSign_keywordInfo <- keywordInfoClass(
       if(callerCode[[1]] == '$'){ ## nested NL case
         callerCode <- processKeyword(callerCode, nfProc)
       }
-      else if (! (as.character(callerCode[[1]]) %in% c('nimEigen', 'nimSvd'))) {
+      else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) {
         callerCode <- callerCode[[2]]
       }
     }
@@ -1455,7 +1455,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
       addSym <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
       nfProc$setupSymTab$addSymbol(addSym)
     }
-    
     if(nfProc$setupSymTab$symbolExists(nfName)) { ## first look in symbolTable
         symObj <- nfProc$setupSymTab$getSymbolObject(nfName)
         if(symObj$type == 'nimbleFunction') {

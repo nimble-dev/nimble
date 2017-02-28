@@ -12,7 +12,6 @@
 ## Since '{' is a call, with each line an argument, this is all just one call and so can replace the oringal A<-B call
 ## During C++ generation, such extra brackets are omitted 
 exprClasses_insertAssertions <- function(code) {
-  browser()
     if(code$name != '{') return(invisible(NULL))
     for(i in seq_along(code$args)) {
         if(code$args[[i]]$isCall) {

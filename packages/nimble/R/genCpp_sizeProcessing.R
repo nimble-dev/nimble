@@ -143,7 +143,12 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                 browser()
                 eval(substitute(debugonce(XYZ), list(XYZ = as.name(sizeCall))))
             }
-            return(eval(call(sizeCall, code, symTab, typeEnv)))
+          test0 <- eval(call(sizeCall, code, symTab, typeEnv))
+            # if(sizeCall == 'sizeAssign'){
+            #   print(test0)
+            #   if(length(test0)>0) browser()
+            # }
+            return(test0)
         }
         if(symTab$symbolExists(code$name, TRUE)) { ## could be a nimbleFunction object
             return(sizeNimbleFunction(code, symTab, typeEnv) )
@@ -520,19 +525,18 @@ sizeRep <- function(code, symTab, typeEnv) {
 }
 
 sizeNewNimbleList <- function(code, symTab, typeEnv){
-  ## code looks like: nimListDef$new(a = 10, b = 12)
+  ## code looks like: nimListDef$new(a = '', b = 12)
   ## want to change code$caller to :
   ## { nimList <- nimListDef$new()
   ## nimList$a <- 10
-  ## nimList$b < -12 }
+  ## nimList$b <- 12 }
   ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
   ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
   listDefName <- code$args[[1]]$name
   codeCallerCall <- FALSE
   if(symTab$parentST$symbolExists(listDefName)){
-    nlSym <- symTab$getSymbolObject(listDefName, inherits = TRUE)
+    listST <- symTab$getSymbolObject(listDefName, inherits = TRUE)
     code$type <- "symbolNimbleList"
-    listST <- symTab$getParentST()$getSymbolObject(listDefName)
     code$sizeExprs <- listST
     code$toEigenize <- "maybe"
     code$nDim <- 0
@@ -540,16 +544,17 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
   
   asserts <- list()
-  if(code$caller$args[[1]]$isCall){
+  if(!(code$caller$name%in% assignmentOperators)){
     codeCallerCall <- TRUE
     asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   }
   if(length(code$args)>1){
+    asserts <- c(recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1))), asserts)
     newExprs <- list()
     nfVarExprs <- list()
     exprCounter <- 1
     originalCode <- code$copy()
-    listElements <- symTab$getParentST()$getSymbolObject(listDefName)$nlProc$symTab$getSymbolObjects()
+    listElements <- listST$nlProc$symTab$getSymbolObjects()
     assignExpr <- exprClass(name = "<-", isCall = TRUE, isName = FALSE, isAssign = TRUE,
                             args = c(originalCode$caller$args[[1]], originalCode$caller$args[[2]]), caller = code$caller,
                             callerArgID = 1)
@@ -584,10 +589,6 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
       code <- assignExpr
       setArg(code$caller, 1, code)
       asserts <- c(asserts, exprClasses_setSizes(code$caller, symTab, typeEnv))
-    }
-    if(!codeCallerCall){
-      browser()
-      asserts <- rev(asserts) ## should work to make sure that innermost list element asserts are inserted into c++ code first
     }
   }
   return(asserts)
@@ -841,6 +842,9 @@ sizeNFvar <- function(code, symTab, typeEnv) {
       nfName <- tmpArg$name
     }
   }
+  else if(nfName == 'makeNewNimbleListObject'){
+    nfName <- code$args[[1]]$args[[1]]$name
+  }
   asserts <- NULL
   code$toEigenize <- 'maybe'
   if(nfName == 'nfVar'){ ## accessing nested nimbleList or nested nimbleList element
@@ -854,12 +858,12 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     isSymFunc <- inherits(nfSym, 'symbolNimbleFunction')
     isSymList <- (inherits(nfSym, 'symbolNimbleList') || inherits(nfSym, 'symbolNimbleListGenerator'))
     eigListFuncNames <- sapply(nlEigenReferenceList, function(x){return(x$nimFuncName)})
-    if(nfName %in% eigListFuncNames){
+    if(nfName %in% eigListFuncNames || code$args[[1]]$name == 'makeNewNimbleListObject'){
       asserts <- recurseSetSizes(code, symTab, typeEnv)
       asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
     if(!(isSymFunc || isSymList))
-      stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or '), call. = FALSE)
+      stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or a nimbleList'), call. = FALSE)
     if(isSymFunc) nfProc <- nfSym$nfProc ## Now more generally this should be an interface
     if(isSymList) nfProc <- nfSym$nlProc
     if(is.null(nfProc)) stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: Symbols in this nimbleFunction generation function not set up.'), call. = FALSE)
@@ -1043,7 +1047,6 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
 recurseSetSizes <- function(code, symTab, typeEnv, useArgs = rep(TRUE, length(code$args))) {
     ## won't be here unless code is a call.  It will not be a {
     asserts <- list()
-    if(length(useArgs) < length(code$args)) browser()
     for(i in seq_along(code$args)) {
         if(useArgs[i]) {
             if(inherits(code$args[[i]], 'exprClass')) {
