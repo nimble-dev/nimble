@@ -868,24 +868,57 @@ test_that("return objects are nimbleLists",
           })
 
 
+
+
+########
+## Test of using nlDef$new()$nlVar in an expression 
+########
+
+nlTestFunc23 <- nimbleFunction(
+  setup = function(){},
+  run = function(){
+    piDigits <- testListDef23$new(nlDouble = 2.14)$nlDouble + 1
+    returnType(double())
+    return(piDigits)
+  }
+)
+
+testListDef23 <- nimbleList(nlDouble = double(0))
+testInst <- nlTestFunc23()
+RnimbleList <- testInst$run()
+CtestInst <- compileNimble(testInst, control = list(debug = F))
+CnimbleList <- CtestInst$run()
+
+expect_identical(RnimbleList$nlDouble, 3.14)
+expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
+
+test_that("return objects are nimbleLists",
+          {
+            expect_identical(is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+
+
 ########
 ## Test #1 for eigen() function.  Return an eigenList.  
 ########
 
-nlTestFunc23 <- nimbleFunction(
+nlTestFunc24 <- nimbleFunction(
   setup = function(){
-    testListDef23 <- nimbleList(test_matrix = double(2))
-    testList23 <- testListDef23$new(test_matrix = diag(4) + 1)
+    testListDef24 <- nimbleList(test_matrix = double(2))
+    testList24 <- testListDef24$new(test_matrix = diag(4) + 1)
   },
   run = function(){
-    eigenOut <- eigen(testList23$test_matrix)
+    eigenOut <- eigen(testList24$test_matrix)
     returnType(eigen())
     return(eigenOut)
   }
 )
 
 
-testInst <- nlTestFunc23()
+testInst <- nlTestFunc24()
 RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst)
 CnimbleList <- CtestInst$run()
@@ -905,19 +938,19 @@ test_that("return object (from c++) is nimbleList.",
 ## Test #1 for svd() function.  Return an svdList.  
 ########
 
-nlTestFunc24 <- nimbleFunction(
+nlTestFunc25 <- nimbleFunction(
   setup = function(){
-    testListDef24 <- nimbleList(test_matrix = double(2))
-    testList24 <- testListDef24$new(test_matrix = diag(4) + 1)
+    testListDef25 <- nimbleList(test_matrix = double(2))
+    testList25 <- testListDef25$new(test_matrix = diag(4) + 1)
   },
   run = function(){
-    svdOut <- svd(testList24$test_matrix, 'thin')
+    svdOut <- svd(testList25$test_matrix, 'thin')
     returnType(svd())
     return(svdOut)
   }
 )
 
-testInst <- nlTestFunc24()
+testInst <- nlTestFunc25()
 RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst)
 CnimbleList <- CtestInst$run()
@@ -937,21 +970,21 @@ test_that("return object (from c++) is nimbleList.",
 ## Test #2 for eigen() function.  Use eigen() to specify a nl element.  
 ########
 
-nlTestFunc25 <- nimbleFunction(
+nlTestFunc26 <- nimbleFunction(
   setup = function(){
-    testListDef25 <- nimbleList(testEigen = eigen())
-    testList25 <- testListDef25$new()
+    testListDef26 <- nimbleList(testEigen = eigen())
+    testList26 <- testListDef26$new()
     testMat <- diag(2)
   },
   run = function(){
     eigenOut <- eigen(testMat)
-    testList25$testEigen <<- eigenOut
-    returnType(testListDef25())
-    return(testList25)
+    testList26$testEigen <<- eigenOut
+    returnType(testListDef26())
+    return(testList26)
   }
 )
 
-testInst <- nlTestFunc25()
+testInst <- nlTestFunc26()
 RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst)
 
@@ -961,21 +994,21 @@ CnimbleList <- CtestInst$run()
 ## Test #2 for svd() function.  Use nimSvd() to specify a nl element.  
 ########
 
-nlTestFunc26 <- nimbleFunction(
+nlTestFunc27 <- nimbleFunction(
   setup = function(){
-    testListDef26 <- nimbleList(testSvd = nimSvd())
-    testList26 <- testListDef26$new()
+    testListDef27 <- nimbleList(testSvd = nimSvd())
+    testList27 <- testListDef27$new()
     testMat <- diag(2)
   },
   run = function(){
     svdOut <- svd(testMat)
-    testList26$testSvd <<- svdOut
+    testList27$testSvd <<- svdOut
     returnType(nimSvd())
-    return(testList26$testSvd)
+    return(testList27$testSvd)
   }
 )
 
-testInst <- nlTestFunc26()
+testInst <- nlTestFunc27()
 RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst)
 CnimbleList <- CtestInst$run()
