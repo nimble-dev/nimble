@@ -6,16 +6,9 @@
 ## 4) nimbleListDef is created in setup code of the nimbleFunction, nimbleListDef$new() used to create new nimbleList in run code
 ## 5) nimbleListDef is created outside of the nimbleFunction, nimbleListDef$new() used to create new nimbleList outside of the nimbleFunction,
 ##    nimbleList passed as argument to nimbleFunction
-# context('nimbleList() tests')
 
-
-library(nimble)
-library(testthat)
-# nimbleOptions(showCompilerOutput = TRUE)
-# nimbleOptions(debugCppLineByLine = FALSE)
-# nimbleOptions(debugSizeProcessing = TRUE)
-# debug(nimble:::sizeAssignAfterRecursing)
-options( warn = 1 )
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
+context('nimbleList() tests')
 
 ########
 ## Test of creating new nimbleList in run code and specifying initial values for that list
