@@ -718,14 +718,13 @@ nlTestFunc18 <- nimbleFunction(
   }
 )
 testListDef18a <- nimbleList(nlDouble = double(0))
-
 testInst <- nlTestFunc18(testListDef18a)
 RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst)
 CnimbleList <- CtestInst$run()
 
-expect_identical(RnimbleList$nestedNL$nlDouble, 3.14)
-expect_identical(RnimbleList$nestedNL$nlDouble, CnimbleList$nestedNL$nlDouble)
+expect_identical(RnimbleList$nlDouble, 3.14)
+expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
 
 test_that("return objects are nimbleLists", 
           {
@@ -885,21 +884,12 @@ nlTestFunc23 <- nimbleFunction(
 
 testListDef23 <- nimbleList(nlDouble = double(0))
 testInst <- nlTestFunc23()
-RnimbleList <- testInst$run()
+RpiDigits <- testInst$run()
 CtestInst <- compileNimble(testInst, control = list(debug = F))
-CnimbleList <- CtestInst$run()
+CpiDigits <- CtestInst$run()
 
-expect_identical(RnimbleList$nlDouble, 3.14)
-expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
-
-test_that("return objects are nimbleLists",
-          {
-            expect_identical(is.nl(RnimbleList), TRUE)
-            expect_identical(is.nl(CnimbleList), TRUE)
-          })
-
-
-
+expect_identical(RpiDigits, 3.14)
+expect_identical(RpiDigits, CpiDigits)
 
 ########
 ## Test #1 for eigen() function.  Return an eigenList.  

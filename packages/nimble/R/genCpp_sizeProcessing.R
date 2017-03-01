@@ -533,7 +533,6 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
   ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
   listDefName <- code$args[[1]]$name
-  codeCallerCall <- FALSE
   if(symTab$parentST$symbolExists(listDefName)){
     listST <- symTab$getSymbolObject(listDefName, inherits = TRUE)
     code$type <- "symbolNimbleList"
@@ -545,7 +544,6 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   
   asserts <- list()
   if(!(code$caller$name%in% assignmentOperators)){
-    codeCallerCall <- TRUE
     asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   }
   if(length(code$args)>1){
