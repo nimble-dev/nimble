@@ -835,24 +835,23 @@ sampler_RW_PF <- nimbleFunction(
         latentDep <- model$getDependencies(latents)
         topParams <- model$getNodeNames(stochOnly=TRUE, includeData=FALSE, topOnly=TRUE)
         ## numeric value generation
-        scaleOriginal <- scale
-        timesRan      <- 0
-        timesAccepted <- 0
-        timesAdapted  <- 0
-        prevLL        <- 0
-        nVarEsts      <- 0
-        itCount       <- 0
-        optimalAR     <- 0.44
-        gamma1        <- 0
-        storeLP0      <- -Inf
-        storeLLVar    <- 0
-        nVarReps      <- 7    # number of LL estimates to compute to get each LL variance estimate for m optimization
-        mBurnIn       <- 15   # number of LL variance estimates to compute before deciding optimal m
-        d             <- length(targetAsScalar)
-        if(optimizeM)    m <- 3000
+        scaleOriginal   <- scale
+        timesRan        <- 0
+        timesAccepted   <- 0
+        timesAdapted    <- 0
+        prevLL          <- 0
+        nVarEsts        <- 0
+        itCount         <- 0
+        optimalAR       <- 0.44
+        gamma1          <- 0
+        storeParticleLP <- -Inf
+        storeLLVar      <- 0
+        nVarReps        <- 7    # number of LL estimates to compute to get each LL variance estimate for m optimization
+        mBurnIn         <- 15   # number of LL variance estimates to compute before deciding optimal m
+        d               <- length(targetAsScalar)
+        if(optimizeM) m <- 3000
         ## nested function and function list definitions
         my_setAndCalculate <- setAndCalculate(model, target)
-        my_calcAdaptationFactor <- calcAdaptationFactor(d)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         if(filterType == 'auxiliary') {
             my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE, lookahead = lookahead))
@@ -871,11 +870,11 @@ sampler_RW_PF <- nimbleFunction(
             modelLP0 <- my_particleFilter$run(m)
             modelLP0 <- modelLP0 + getLogProb(model, target)
         }
-        else   modelLP0 <- storeLP0
+        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValue <- rnorm(1, mean = model[[target]], sd = scale)
-        model[[target]] <<- propValue
-        modelLP1 <- my_particleFilter$run(m)
-        modelLP1 <- modelLP1 + getLogProb(model, target)
+        my_setAndCalculate$run(propValue)
+        particleLP <- my_particleFilter$run(m)
+        modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(jump & latentSamp){
             ## if we jump, randomly sample latent nodes from pf output and put into model so that they can be monitored
@@ -888,7 +887,7 @@ sampler_RW_PF <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeLP0 <<- modelLP1
+        if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },
@@ -993,7 +992,7 @@ sampler_RW_PF_block <- nimbleFunction(
         chol_propCov <- chol(propCov)
         chol_propCov_scale <- scale * chol_propCov
         empirSamp <- matrix(0, nrow=adaptInterval, ncol=d)
-        storeLP0    <- -Inf
+        storeParticleLP <- -Inf
         storeLLVar  <- 0
         nVarReps <- 7    # number of LL estimates to compute to get each LL variance estimate for m optimization
         mBurnIn  <- 15   # number of LL variance estimates to compute before deciding optimal m
@@ -1029,11 +1028,11 @@ sampler_RW_PF_block <- nimbleFunction(
             modelLP0 <- my_particleFilter$run(m)
             modelLP0 <- modelLP0 + getLogProb(model, target)
         }
-        else   modelLP0 <- storeLP0
+        else   modelLP0 <- storeParticleLP + getLogProb(model, target)
         propValueVector <- generateProposalVector()
         my_setAndCalculate$run(propValueVector)
-        modelLP1 <- my_particleFilter$run(m)
-        modelLP1 <- modelLP1 + getLogProb(model, target)
+        particleLP <- my_particleFilter$run(m)
+        modelLP1 <- particleLP + getLogProb(model, target)
         jump <- my_decideAndJump$run(modelLP1, modelLP0, 0, 0)
         if(jump & latentSamp) {
             ## if we jump, randomly sample latent nodes from pf output and put
@@ -1047,7 +1046,7 @@ sampler_RW_PF_block <- nimbleFunction(
             ## if we don't jump, replace model latent nodes with saved latent nodes
             copy(from = mvSaved, to = model, nodes = latentDep, row = 1, logProb = TRUE)
         }
-        if(jump & !resample)  storeLP0 <<- modelLP1
+        if(jump & !resample)  storeParticleLP <<- particleLP
         if(jump & optimizeM) optimM()
         if(adaptive)     adaptiveProcedure(jump)
     },
