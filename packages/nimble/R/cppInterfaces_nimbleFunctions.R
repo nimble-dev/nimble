@@ -312,7 +312,7 @@ getSetNumericVector <- function(name, value, basePtr, dll) {
 }
 
 getSetDoubleScalar <- function(name, value, basePtr, dll) {
-      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+     vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
          nimbleInternalFunctions$getDoubleValue(vptr, dll = dll)
      else
@@ -444,7 +444,9 @@ makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelf
 
 
 clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
-    for(iName in compiledNodeFun$nfProc$neededObjectNames) {
+    if(inherits(compiledNodeFun$nimCompProc$neededObjectNames, 'uninitializedField'))
+      return(NULL)
+    for(iName in compiledNodeFun$nimCompProc$neededObjectNames) {
         thisObj <- Robj[[iName]]
 
         if(inherits(thisObj, 'modelValuesBaseClass')) {
@@ -468,7 +470,7 @@ clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
             next
         }
         if(is.nl(thisObj)) {
-          RCO <- nf_getRefClassObject(thisObj)
+          RCO <- thisObj
           if(!(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface))) {
             if(is.list(RCO$.CobjectInterface))
               RCO$.CobjectInterface[[1]]$finalizeInstance(RCO$.CobjectInterface[[2]])

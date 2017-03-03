@@ -16,17 +16,13 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                             list(SEXPgeneratorFun, SEXPfinalizerFun)
                                         }
                                         else callSuper()
+                                        # callSuper()
                                       },
                                       buildCmultiInterface = function(dll = NULL) {
                                           sym <- if(!is.null(dll))
                                                       getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                   else
                                                       SEXPgeneratorFun$name
-                                          RPointerSymbol <- symbolSEXP(name = 'RObjectPointer')
-                                          objectDefs$addSymbol(RPointerSymbol$genCppVar())
-                                          RCopiedSymbol <- symbolBasic(name = 'RCopiedFlag', type = 'logical',
-                                                                       nDim = 0)
-                                          objectDefs$addSymbol(RCopiedSymbol$genCppVar())
                                           CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                       },
                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
@@ -36,12 +32,22 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                      SEXPgeneratorFun$name
                                            Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                       },
+                                      addListSymbols = function(){
+                                        RPointerSymbol <- symbolSEXP(name = 'RObjectPointer')
+                                        objectDefs$addSymbol(RPointerSymbol$genCppVar())
+                                        RCopiedSymbol <- symbolBasic(name = 'RCopiedFlag', type = 'logical',
+                                                                     nDim = 0)
+                                        objectDefs$addSymbol(RCopiedSymbol$genCppVar())
+                                      },
                                       buildAll = function(where = where) {
+                                        addListSymbols()
                                         if(eigenList == TRUE){
-                                          makeCppNames()
-                                          buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
-                                          buildRgenerator(where = where)
-                                          buildCmultiInterface()
+                                          # makeCppNames()
+                                          # buildConstructorFunctionDef()
+                                          # buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
+                                          # buildRgenerator(where = where)
+                                          # buildCmultiInterface()
+                                          callSuper(where)
                                         }
                                         else{
                                           buildCopyFromSexp()

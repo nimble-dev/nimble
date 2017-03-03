@@ -109,15 +109,15 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                  generatorName <- neededType$nlProc$name
                                                  thisCppDef <- nimbleProject$getNimbleListCppDef(generatorName = generatorName)
                                                  eigListClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
-                                                ##EIGEN_EIGENCLASS and EIGEN_SVDCLASS only need partial cpp defs, as some is in permanent c++ code 
+                                                 ##EIGEN_EIGENCLASS and EIGEN_SVDCLASS only need partial cpp defs, as some is in permanent c++ code
                                                  eigenList <- generatorName %in% eigListClassNames
-                                                  if(is.null(thisCppDef)){
+                                                 if(is.null(thisCppDef)){
                                                       className <- names(nimCompProc$neededTypes)[i]
                                                       thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel, eigenList = eigenList)
                                                       neededTypeDefs[[ className ]] <<- thisCppDef
                                                       Hincludes <<- c(Hincludes, thisCppDef)
                                                       CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                  }
+                                                 }
                                                  next
                                                }
                                                if(inherits(neededType, 'symbolOptimReadyFunction')){

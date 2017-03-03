@@ -11,9 +11,9 @@ SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
 	SEXP_2_NimArr<2>(S_x, x);
 	valuesOnly = SEXP_2_bool(S_valuesOnly);
 	Map<MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
-	nimSmartPtr<EIGEN_EIGENCLASS> C_eigenClass = EIGEN_EIGEN(Eig_x, valuesOnly);
-	(*C_eigenClass).RObjectPointer = returnList;
-	(*C_eigenClass).copyToSEXP();
+    EIGEN_EIGENCLASS C_eigenClass = *EIGEN_EIGEN(Eig_x, valuesOnly);
+	C_eigenClass.RObjectPointer = returnList;
+	C_eigenClass.copyToSEXP();
     return(returnList);
 }
 
@@ -28,7 +28,7 @@ SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList) {
     return(C_svdClass.RObjectPointer);
 }
 
-SEXP  new_EIGEN_EIGENCLASS (  )  {
+/* SEXP  new_EIGEN_EIGENCLASS (  )  {
 	EIGEN_EIGENCLASS * newObj;
 	SEXP Sans;
 	newObj = new EIGEN_EIGENCLASS;
@@ -44,6 +44,6 @@ SEXP  new_EIGEN_SVDCLASS (  )  {
 	PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));
 	UNPROTECT(1);
 	return(Sans);
-} 
+}  */
 }
 #endif

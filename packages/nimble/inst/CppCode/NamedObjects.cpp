@@ -5,7 +5,7 @@
 #include "R.h"
 
 void* NamedObjects::getObjectPtr( string &name ) {
-  //  cout<<name<<"\n";
+  //cout<<name<<"\n";
   map<string, void *>::iterator iMO;
   iMO= namedObjects.find(name);		
   if(iMO == namedObjects.end()) {

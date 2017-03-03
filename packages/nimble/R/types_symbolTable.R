@@ -28,50 +28,76 @@ argTypeList2symbolTable <- function(ATL, neededTypes) {
 argType2symbol <- function(AT, neededTypes, name = character()) {
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
-    if(type %in% names(nlEigenReferenceList)){
-      type <- nlEigenReferenceList[[type]]$className
-    }
     if(type == "internalType") {
       return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
+    }
+    if(type %in% c('double', 'integer', 'character', 'logical')){
+      nDim <- if(length(AT)==1) 0 else AT[[2]]
+      if(!is.numeric(nDim) || nDim %% 1 != 0)
+          stop("argType2symbol: unexpected dimension, '", AT[[2]], "', found in argument '", deparse(AT), "'. Dimension should be integer-valued.")
+      size <- if(nDim == 0) 1 else {
+          if(length(AT) < 3)
+              as.numeric(rep(NA, nDim))
+          else
+              eval(AT[[3]])
+      }
+      if(type == "character") {
+          if(nDim > 1) {
+              warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
+              nDim <- 1
+              size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
+          }
+          return(symbolString(name = name, type = "character", nDim = nDim, size = size))
+      }  else {
+          return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
+      }
     }
     if(is.list(neededTypes)){
       isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
       if(any(isANeededType == 1)){
-          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
-          listST$name <- name
-          return(listST)
+        listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
+        listST$name <- name
+        return(listST)
       }
     }
-    if(name == "return" && exists(as.character(AT), envir = globalenv())){
-      if(is.nlGenerator(eval(parse(text = as.character(AT), keep.source = FALSE)))){
+    if(name == "return"){
+      if(exists(as.character(AT), envir = globalenv()) &&
+         is.nlGenerator(eval(parse(text = as.character(AT), keep.source = FALSE)))){
         nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
-        isANeededType <- (nlList$nimbleListDef$className == names(neededTypes))
+      }
+      else if(type %in% names(nlEigenReferenceList)){
+        nlList <- nlEigenReferenceList[[type]]$createListDef()$new() 
+      }
+      if(exists('nlList')){
+        className <- nlList$nimbleListDef$className
+        isANeededType <- (className == names(neededTypes))
         if(any(isANeededType == 1)){
           listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
-          listST$name <- name
-          return(listST)
         }
+        else{
+          listST <- recurseGetListST(className, neededTypes)
+        }
+        listST$name <- name
+        return(listST)
+      }
+    }   
+}
+
+recurseGetListST <- function(className, neededTypes){
+  listST <- NULL
+  for(NT in neededTypes){
+    if(NT$type %in% c('symbolNimbleList', 'symbolNimbleListGenerator')){
+      if(!inherits(NT$nlProc$neededTypes, 'uninitializedField')){
+         if(className %in% names(NT$nlProc$neededTypes)){
+          isANeededType <- (className == names(NT$nlProc$neededTypes))
+          listST <- NT$nlProc$neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
+          return(listST)
+         }
+        else listST <- recurseGetListST(className, NT$nlProc$neededTypes)
       }
     }
-    nDim <- if(length(AT)==1) 0 else AT[[2]]
-    if(!is.numeric(nDim) || nDim %% 1 != 0)
-        stop("argType2symbol: unexpected dimension, '", AT[[2]], "', found in argument '", deparse(AT), "'. Dimension should be integer-valued.")
-    size <- if(nDim == 0) 1 else {
-        if(length(AT) < 3)
-            as.numeric(rep(NA, nDim))
-        else
-            eval(AT[[3]])
-    }
-    if(type == "character") {
-        if(nDim > 1) {
-            warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
-            nDim <- 1
-            size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
-        }
-        symbolString(name = name, type = "character", nDim = nDim, size = size) 
-    }  else {
-        symbolBasic(name = name, type = type, nDim = nDim, size = size)
-    }
+  }
+  return(listST)
 }
 
 symbolTable2cppVars <- function(symTab, arguments = character(), include, parentST = NULL) {

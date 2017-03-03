@@ -46,8 +46,6 @@ void  EIGEN_EIGENCLASS::copyFromSEXP ( SEXP S_nimList_ ) {
 	UNPROTECT(3);
 }
 
-
-
 /*EIGEN_SVD class functions below */
 SEXP  EIGEN_SVDCLASS::copyToSEXP (  )  {
 	SEXP S_pxData;
