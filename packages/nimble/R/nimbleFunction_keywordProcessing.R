@@ -823,6 +823,7 @@ matchFunctions[['nimRep']] <- function(x, times = 1, length.out, each = 1) {}
 matchFunctions[['nimSeq']] <- nimSeq
 matchFunctions[['nimNumeric']] <- function(length = 0, value = 0, init = TRUE) {}
 matchFunctions[['nimInteger']] <- function(length = 0, value = 0, init = TRUE) {}
+matchFunctions[['nimLogical']] <- function(length = 0, value = 0, init = TRUE) {}
 matchFunctions[['nimMatrix']] <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'double') {}
 matchFunctions[['nimArray']] <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {}
 matchFunctions[['values']] <- function(model, nodes, accessor){}
