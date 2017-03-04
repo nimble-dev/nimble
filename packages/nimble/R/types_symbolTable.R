@@ -133,6 +133,7 @@ symbolPtr <- setRefClass(
         genCppVar = function(...) {
             if(type == 'integer') cType <- 'int'
             if(type == 'double') cType <- 'double'
+            if(type == 'logical') cType <- 'bool'
             cppVar(name = name,
                    ptr = 1,
                    baseType = cType)

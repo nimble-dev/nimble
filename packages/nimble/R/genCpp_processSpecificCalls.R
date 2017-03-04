@@ -194,7 +194,7 @@ nimArrayGeneralHandler <- function(code, symTab) {
                newArgs <- list('integer', 1, sizeExprs, code$args[[2]], code$args[[3]])
            },
            ##nimLogical(length = 0, value = 0, init = TRUE)
-           nimInteger = {
+           nimLogical = {
 ##               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
                sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
                newArgs <- list('logical', 1, sizeExprs, code$args[[2]], code$args[[3]])
@@ -237,7 +237,7 @@ nimArrayGeneralHandler <- function(code, symTab) {
             code$args[[3]]$args[[i]]$caller <- code$args[[3]]
         }
     }
-    if(!(code$args[[1]] %in% c('double', 'integer'))) stop('unknown type in nimArrayGeneral')
+    if(!(code$args[[1]] %in% c('double', 'integer', 'logical'))) stop('unknown type in nimArrayGeneral')
     if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
 }
 
