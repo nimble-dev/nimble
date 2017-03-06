@@ -884,159 +884,159 @@ CpiDigits <- CtestInst$run()
 expect_identical(RpiDigits, 3.14)
 expect_identical(RpiDigits, CpiDigits)
 
-########
-## Test #1 for eigen() function.  Return an eigenList.  
-########
-
-nlTestFunc24 <- nimbleFunction(
-  setup = function(){
-    testListDef24 <- nimbleList(test_matrix = double(2))
-    testList24 <- testListDef24$new(test_matrix = diag(4) + 1)
-  },
-  run = function(){
-    eigenOut <- eigen(testList24$test_matrix)
-    returnType(eigen())
-    return(eigenOut)
-  }
-)
-
-
-testInst <- nlTestFunc24()
-RnimbleList <- testInst$run()
-CtestInst <- compileNimble(testInst)
-CnimbleList <- CtestInst$run()
-
-## test for eigenValues and eigenVectors
-expect_equal(diag(4)+1, RnimbleList$vectors%*%diag(RnimbleList$values)%*%solve(RnimbleList$vectors))
-expect_equal(CnimbleList$vectors, RnimbleList$vectors)
-expect_equal(CnimbleList$values, RnimbleList$values)
-test_that("return object (from c++) is nimbleList.", 
-          {
-            expect_identical(is.nl(CnimbleList), TRUE)
-          })
-
-
-
-########
-## Test #1 for svd() function.  Return an svdList.  
-########
-
-nlTestFunc25 <- nimbleFunction(
-  setup = function(){
-    testListDef25 <- nimbleList(test_matrix = double(2))
-    testList25 <- testListDef25$new(test_matrix = diag(4) + 1)
-  },
-  run = function(){
-    svdOut <- svd(testList25$test_matrix, 'thin')
-    returnType(svd())
-    return(svdOut)
-  }
-)
-
-testInst <- nlTestFunc25()
-RnimbleList <- testInst$run()
-CtestInst <- compileNimble(testInst)
-CnimbleList <- CtestInst$run()
-
-## test for singluar values
-expect_equal(diag(4)+1, RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
-expect_equal(RnimbleList$u, CnimbleList$u)
-expect_equal(RnimbleList$d, CnimbleList$d)
-expect_equal(RnimbleList$v, CnimbleList$v)
-
-test_that("return object (from c++) is nimbleList.", 
-          {
-            expect_identical(is.nl(CnimbleList), TRUE)
-          })
-
-########
-## Test #2 for eigen() function.  Use eigen() to specify a nl element.  
-########
-
-nlTestFunc26 <- nimbleFunction(
-  setup = function(){
-    testListDef26 <- nimbleList(testEigen = eigen())
-    testList26 <- testListDef26$new()
-    testMat <- diag(2)
-  },
-  run = function(){
-    eigenOut <- eigen(testMat)
-    testList26$testEigen <<- eigenOut
-    returnType(testListDef26())
-    return(testList26)
-  }
-)
-
-testInst <- nlTestFunc26()
-RnimbleList <- testInst$run()
-CtestInst <- compileNimble(testInst)
-
-CnimbleList <- CtestInst$run()
-
-########
-## Test #2 for svd() function.  Use nimSvd() to specify a nl element.  
-########
-
-nlTestFunc27 <- nimbleFunction(
-  setup = function(){
-    testListDef27 <- nimbleList(testSvd = nimSvd())
-    testList27 <- testListDef27$new()
-    testMat <- diag(2)
-  },
-  run = function(){
-    svdOut <- svd(testMat)
-    testList27$testSvd <<- svdOut
-    returnType(nimSvd())
-    return(testList27$testSvd)
-  }
-)
-
-testInst <- nlTestFunc27()
-RnimbleList <- testInst$run()
-CtestInst <- compileNimble(testInst)
-CnimbleList <- CtestInst$run()
-
-
-########
-## Testing for use of eigen() in BUGS models  
-########
-
-modelCode1 <- nimbleCode({
-  meanVec[1:5] <- eigen(constMat[,])$values[1:5]
-  covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]%*%t(eigen(constMat[1:5,1:5])$vectors[,])
-  y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
-})
-
-data <- list(y = rnorm(5, 0, 1))
-constants <- list(constMat = diag(5) + 1)
-dims <- list(y = c(5), meanVec = c(5))
-
-Rmodel1 <- nimbleModel(modelCode1, data = data, dimensions = dims, constants = constants)
-
-Cmodel1 <- compileNimble(Rmodel1)
-
-Cmodel1$simulate()
-Cmodel1$calculate()
-
-
-
-########
-## Testing for use of svd() in BUGS models  
-########
-
-modelCode2 <- nimbleCode({
-  meanVec[1:5] <- svd(constMat[,]%*%constMat[,])$d[1:5]
-  covMat[1:5,1:5] <- svd(constMat[1:5,])$u[1:5,1:5]
-  y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
-})
-
-data <- list(y = rnorm(5, 0, 1))
-constants <- list(constMat = diag(5))
-dims <- list(y = c(5), meanVec = c(5))
-
-Rmodel2 <- nimbleModel(modelCode2, data = data, dimensions = dims, constants = constants)
-
-Cmodel2 <- compileNimble(Rmodel2)
-
-Cmodel2$simulate()
-Cmodel2$calculate()
+# ########
+# ## Test #1 for eigen() function.  Return an eigenList.  
+# ########
+# 
+# nlTestFunc24 <- nimbleFunction(
+#   setup = function(){
+#     testListDef24 <- nimbleList(test_matrix = double(2))
+#     testList24 <- testListDef24$new(test_matrix = diag(4) + 1)
+#   },
+#   run = function(){
+#     eigenOut <- eigen(testList24$test_matrix)
+#     returnType(eigen())
+#     return(eigenOut)
+#   }
+# )
+# 
+# 
+# testInst <- nlTestFunc24()
+# RnimbleList <- testInst$run()
+# CtestInst <- compileNimble(testInst)
+# CnimbleList <- CtestInst$run()
+# 
+# ## test for eigenValues and eigenVectors
+# expect_equal(diag(4)+1, RnimbleList$vectors%*%diag(RnimbleList$values)%*%solve(RnimbleList$vectors))
+# expect_equal(CnimbleList$vectors, RnimbleList$vectors)
+# expect_equal(CnimbleList$values, RnimbleList$values)
+# test_that("return object (from c++) is nimbleList.", 
+#           {
+#             expect_identical(is.nl(CnimbleList), TRUE)
+#           })
+# 
+# 
+# 
+# ########
+# ## Test #1 for svd() function.  Return an svdList.  
+# ########
+# 
+# nlTestFunc25 <- nimbleFunction(
+#   setup = function(){
+#     testListDef25 <- nimbleList(test_matrix = double(2))
+#     testList25 <- testListDef25$new(test_matrix = diag(4) + 1)
+#   },
+#   run = function(){
+#     svdOut <- svd(testList25$test_matrix, 'thin')
+#     returnType(svd())
+#     return(svdOut)
+#   }
+# )
+# 
+# testInst <- nlTestFunc25()
+# RnimbleList <- testInst$run()
+# CtestInst <- compileNimble(testInst)
+# CnimbleList <- CtestInst$run()
+# 
+# ## test for singluar values
+# expect_equal(diag(4)+1, RnimbleList$u%*%diag(RnimbleList$d)%*%solve(RnimbleList$v))
+# expect_equal(RnimbleList$u, CnimbleList$u)
+# expect_equal(RnimbleList$d, CnimbleList$d)
+# expect_equal(RnimbleList$v, CnimbleList$v)
+# 
+# test_that("return object (from c++) is nimbleList.", 
+#           {
+#             expect_identical(is.nl(CnimbleList), TRUE)
+#           })
+# 
+# ########
+# ## Test #2 for eigen() function.  Use eigen() to specify a nl element.  
+# ########
+# 
+# nlTestFunc26 <- nimbleFunction(
+#   setup = function(){
+#     testListDef26 <- nimbleList(testEigen = eigen())
+#     testList26 <- testListDef26$new()
+#     testMat <- diag(2)
+#   },
+#   run = function(){
+#     eigenOut <- eigen(testMat)
+#     testList26$testEigen <<- eigenOut
+#     returnType(testListDef26())
+#     return(testList26)
+#   }
+# )
+# 
+# testInst <- nlTestFunc26()
+# RnimbleList <- testInst$run()
+# CtestInst <- compileNimble(testInst)
+# 
+# CnimbleList <- CtestInst$run()
+# 
+# ########
+# ## Test #2 for svd() function.  Use nimSvd() to specify a nl element.  
+# ########
+# 
+# nlTestFunc27 <- nimbleFunction(
+#   setup = function(){
+#     testListDef27 <- nimbleList(testSvd = nimSvd())
+#     testList27 <- testListDef27$new()
+#     testMat <- diag(2)
+#   },
+#   run = function(){
+#     svdOut <- svd(testMat)
+#     testList27$testSvd <<- svdOut
+#     returnType(nimSvd())
+#     return(testList27$testSvd)
+#   }
+# )
+# 
+# testInst <- nlTestFunc27()
+# RnimbleList <- testInst$run()
+# CtestInst <- compileNimble(testInst)
+# CnimbleList <- CtestInst$run()
+# 
+# 
+# ########
+# ## Testing for use of eigen() in BUGS models  
+# ########
+# 
+# modelCode1 <- nimbleCode({
+#   meanVec[1:5] <- eigen(constMat[,])$values[1:5]
+#   covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]%*%t(eigen(constMat[1:5,1:5])$vectors[,])
+#   y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
+# })
+# 
+# data <- list(y = rnorm(5, 0, 1))
+# constants <- list(constMat = diag(5) + 1)
+# dims <- list(y = c(5), meanVec = c(5))
+# 
+# Rmodel1 <- nimbleModel(modelCode1, data = data, dimensions = dims, constants = constants)
+# 
+# Cmodel1 <- compileNimble(Rmodel1)
+# 
+# Cmodel1$simulate()
+# Cmodel1$calculate()
+# 
+# 
+# 
+# ########
+# ## Testing for use of svd() in BUGS models  
+# ########
+# 
+# modelCode2 <- nimbleCode({
+#   meanVec[1:5] <- svd(constMat[,]%*%constMat[,])$d[1:5]
+#   covMat[1:5,1:5] <- svd(constMat[1:5,])$u[1:5,1:5]
+#   y[] ~ dmnorm(meanVec[], cov = covMat[1:5,1:5])
+# })
+# 
+# data <- list(y = rnorm(5, 0, 1))
+# constants <- list(constMat = diag(5))
+# dims <- list(y = c(5), meanVec = c(5))
+# 
+# Rmodel2 <- nimbleModel(modelCode2, data = data, dimensions = dims, constants = constants)
+# 
+# Cmodel2 <- compileNimble(Rmodel2)
+# 
+# Cmodel2$simulate()
+# Cmodel2$calculate()
