@@ -247,6 +247,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   nimCompProc <<- nfProc
                                               },
                                               buildFunctionDefs = function() {
+                                                browser()
                                                   for(i in seq_along(nfProc$RCfunProcs)) {
                                                       RCname <- names(nfProc$RCfunProcs)[i]
                                                       functionDefs[[RCname]] <<- RCfunctionDef$new() ## all nodeFunction members are const f

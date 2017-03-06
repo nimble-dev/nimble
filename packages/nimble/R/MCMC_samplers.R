@@ -484,6 +484,7 @@ sampler_AF_slice <- nimbleFunction(
     widthOriginal <- width
     gammaMat      <- diag(length(targetAsScalar))                # matrix of orthogonal bases
     empirSamp     <- matrix(0, nrow=factorAdaptInterval, ncol=d) # matrix of posterior samples
+    empirCov      <- empirSamp
     sliceAdaptInterval   <- 1         # starts at one, doubles every time slice width adaptation is performed
     sliceAdaptIndicator  <- rep(1, d) # all slice widths start off as needing to be adapted
     nExpansions          <- rep(0, d) # keep track of number of expansions
@@ -564,7 +565,7 @@ sampler_AF_slice <- nimbleFunction(
       empirSamp[factorCounter, 1:d] <<- values(model, target)
         if(factorCounter == factorAdaptInterval){  # time to adapt factors
           for(i in 1:d)     empirSamp[, i] <<- empirSamp[, i] - mean(empirSamp[, i])
-          empirCov <- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
+          empirCov <<- (t(empirSamp) %*% empirSamp) / (factorAdaptInterval-1)
           gammaMat <<- eigen(empirCov)$vectors  # replace old factors with new factors
           
           sliceAdaptIndicator <<- integer(d, 1)  # reset all slice adaptive variables
@@ -912,8 +913,7 @@ sampler_RW_PF <- nimbleFunction(
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
                 if(!resample) {  #reset LL with new m value after burn-in period
-                    modelLP0 <- my_particleFilter$run(m)
-                    storeLP0 <<- modelLP0 + getLogProb(model, target)
+                  storeParticleLP <<- my_particleFilter$run(m)
                 }
                 optimizeM <<- 0
             }
@@ -937,7 +937,7 @@ sampler_RW_PF <- nimbleFunction(
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
-            storeLP0 <<- -Inf
+            storeParticleLP <<- -Inf
             gamma1 <<- 0
         }
     ), where = getLoadingNamespace()
@@ -1071,8 +1071,7 @@ sampler_RW_PF_block <- nimbleFunction(
                 m <<- m*storeLLVar/(0.92^2)
                 m <<- ceiling(m)
                 if(!resample){  #reset LL with new m value after burn-in period
-                    modelLP0 <- my_particleFilter$run(m)
-                    storeLP0 <<- modelLP0 + getLogProb(model, target)
+                  storeParticleLP <<- my_particleFilter$run(m)
                 }
                 optimizeM <<- 0
             }
@@ -1108,7 +1107,7 @@ sampler_RW_PF_block <- nimbleFunction(
             scale   <<- scaleOriginal
             propCov <<- propCovOriginal
             chol_propCov <<- chol(propCov)
-            storeLP0 <<- -Inf
+            storeParticleLP <<- -Inf
             timesRan      <<- 0
             timesAccepted <<- 0
             timesAdapted  <<- 0
