@@ -93,7 +93,6 @@ nimGenerateCpp <- function(code, symTab = NULL, indent = '', showBracket = TRUE,
         newInd <- if(showBracket) paste0(indent, ' ') else indent
         for(i in seq_along(code$args)) {
             oneEntry <- nimGenerateCpp(code$args[[i]], symTab, newInd, FALSE)
-            # print(oneEntry)
             if(code$args[[i]]$isCall) if(!(code$args[[i]]$name %in% nimCppKeywordsThatFillSemicolon)) oneEntry <- pasteSemicolon(oneEntry)
             ans[[i + iOffset]] <- if(showBracket) addIndentToList(oneEntry, newInd) else oneEntry
         }

@@ -106,7 +106,6 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
          diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
          'chol' = 'eigenize_matrixOps',
-         EIGEN_EIGEN = 'eigenize_matrixOps',
          RRtest_add = 'eigenize_recyclingRuleFunction'
          )
 )
@@ -456,15 +455,13 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
 eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
     if(length(code$args) == 2)
-        if(inherits(code$args[[2]], 'exprClass'))
-            if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
+      if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])	
     code$eigMatrix <- TRUE
     code$name <- switch(code$name,
                         chol = 'EIGEN_CHOL',
                         solve = 'EIGEN_SOLVE',
                         forwardsolve = 'EIGEN_FS',
                         backsolve = 'EIGEN_BS',
-                        EIGEN_EIGEN = 'EIGEN_EIGEN',
                         stop('should never get here')
                         )
     invisible(NULL)
@@ -600,7 +597,6 @@ eigenizeArrayize <- function(code) {
 }
 
 eigenizeMatricize <- function(code) {
-  browser()
     newExpr <- exprClass(name = 'eigMatrix', args = list(code), eigMatrix = TRUE,
                          isName = FALSE, isCall = TRUE, isAssign = FALSE,
                          nDim = code$nDim, sizeExprs = code$sizeExprs, type = code$type,
@@ -708,11 +704,7 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     }
     code$eigMatrix <- TRUE
 
-    deparsedCode <- parse(text = nimDeparse(code), keep.source = FALSE)[[1]]
-#     argSet <-  RparseTree2ExprClasses(as.name(EigenName))
-#     argSet$eigMatrix <- TRUE    ##  these two lines added so that the value provided to setArg has an eigMatrix entry
-#     setArg(code$caller, code$callerArgID, argSet)
-# 
+    deparsedCode <- parse(text = nimDeparse(code), keep.source = FALSE)[[1]] 
     newExpr <- RparseTree2ExprClasses(as.name(EigenName))
     newExpr$type <- code$type
     newExpr$sizeExprs <- code$sizeExprs

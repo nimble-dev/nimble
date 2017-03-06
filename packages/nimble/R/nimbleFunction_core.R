@@ -100,26 +100,12 @@ nimbleFunction <- function(setup         = NULL,
     
     nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
     nfRefClass    <- eval(nfRefClassDef)
-    ## record which setupOutputs are used in method argument or returns
-    # argReturnOutputs <- intersect(nf_createAllNamesFromMethodList(methodList, onlyArgsAndReturn = TRUE), names(nfRefClassDef$fields))
-    # argReturnNames  <- lapply(methodList, function(x){
-    #   return(names(x$argInfo[which(as.character(x$argInfo$argList[[1]]) == argReturnOutputs)]))})
-    #                             
     .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
     .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
     .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
     ## create a list to hold all specializations (instances) of this nimble function.  The following objects are accessed in environment(generatorFunction) in the future
     ## create the generator function, which is returned from nimbleFunction()
     generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
-    # if(is.character(generatorFunction())){
-    #   declaredSetupOutputNames <- c(declaredSetupOutputNames, generatorFunction())
-    #   nfRefClassDef <- nf_createRefClassDef(setup, methodList, className, globalSetup, declaredSetupOutputNames)
-    #   nfRefClass    <- eval(nfRefClassDef)
-    #   .namesToCopy <- nf_namesNotHidden(names(nfRefClass$fields()))
-    #   .namesToCopyFromGlobalSetup <- intersect(.namesToCopy, if(!is.null(globalSetup)) nf_assignmentLHSvars(body(globalSetup)) else character(0))
-    #   .namesToCopyFromSetup <- setdiff(.namesToCopy, .namesToCopyFromGlobalSetup)
-    #   generatorFunction <- eval(nf_createGeneratorFunctionDef(setup))
-    # }
     force(contains) ## eval the contains so it is in this environment
     formals(generatorFunction) <- nf_createGeneratorFunctionArgs(setup, parent.frame())
 

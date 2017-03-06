@@ -22,8 +22,6 @@ using namespace std;
 #define Inf R_PosInf
 #define NA 0
 
-/* void setClassElement(SEXP SClassObject, SEXP SReplaceObject, const char *name); */
-
 void nimble_print_to_R(std::ostringstream &input);
 
 
