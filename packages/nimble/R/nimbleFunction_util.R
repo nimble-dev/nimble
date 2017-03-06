@@ -131,10 +131,3 @@ getDefinition <- function(nf) {
     defList <- c(list(setup=nfEnv$setup, run=nfEnv$run), nfEnv$methods)
     defList
 }
-
-setListElement <- function(nimList, elementName, elementValue){
-  eval(substitute(nimList$ELEMENTNAME <- ELEMENTVALUE, list(ELEMENTNAME = elementName,
-                                                            ELEMENTVALUE = elementValue)))
-}
-
-
