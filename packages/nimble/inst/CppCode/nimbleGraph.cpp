@@ -6,7 +6,8 @@ graphNode::graphNode(int inputCgraphID, NODETYPE inputType, const string &inputN
   CgraphID(inputCgraphID),
   name(inputName),
   touched(false),
-  numChildren(0) {
+  numChildren(0),
+  numPaths(-1) {
   RgraphID = CgraphID + 1;
 }
 
@@ -106,6 +107,13 @@ SEXP getDependencies(SEXP SgraphExtPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstrea
   bool downstream = SEXP_2_bool(Sdownstream);
   vector<int> ans = graphPtr->getDependencies(nodes, omit, downstream);
   return(vectorInt_2_SEXP(ans, 1)); // add 1 index for R
+}
+
+SEXP getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode) {
+  nimbleGraph *graphPtr = static_cast<nimbleGraph *>(R_ExternalPtrAddr(SgraphExtPtr));
+  int node = SEXP_2_int(Snode, 0, -1); // subtract 1 index for C
+  int result = graphPtr->getDependencyPathCountOneNode(node);
+  return(int_2_SEXP(result)); 
 }
 
 SEXP anyStochParents(SEXP SgraphExtPtr) {
@@ -245,6 +253,43 @@ bool nimbleGraph::anyStochParentsOneNode(vector<int> &anyStochParents,  int Cgra
   return(false);
 }
 
+//#define _DEBUG_GETPATHS
+
+int nimbleGraph::getDependencyPathCountOneNode(const int Cnode) {
+  int result(0);
+  int i(0);
+  graphNode *thisGraphNode;
+  graphNode *thisChildNode;
+
+  thisGraphNode = graphNodeVec[ Cnode ];
+  if(thisGraphNode->numPaths >= 0)  // already calculated
+    return(thisGraphNode->numPaths);
+
+  int numChildren = thisGraphNode->numChildren;
+#ifdef _DEBUG_GETPATHS
+  PRINTF("debugging output for getDependencyPathCountOneNode with node %i, which has %i children\n", Cnode, numChildren);
+#endif
+
+  if(numChildren == 0) {
+    result = 0;
+  } else {
+    for(; i < numChildren; i++) {
+      thisChildNode = thisGraphNode->children[i];
+#ifdef _DEBUG_GETPATHS
+      PRINTF("node %i has child %i\n", Cnode, thisChildNode->CgraphID);
+#endif
+      if(thisChildNode->type == STOCH) {
+        result++;
+      } else {
+        result += getDependencyPathCountOneNode(thisChildNode->CgraphID); 
+      }
+    }
+  }
+  thisGraphNode->numPaths = result; 
+  return(result);
+}
+
+
 //#define _DEBUG_GETDEPS
 
 vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream) {
@@ -309,6 +354,7 @@ vector<int> nimbleGraph::getDependencies(const vector<int> &Cnodes, const vector
   std::sort(ans.begin(), ans.end());
   return(ans);
 }
+
 
 void nimbleGraph::getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth) {
   if(recursionDepth > graphNodeVec.size()) {

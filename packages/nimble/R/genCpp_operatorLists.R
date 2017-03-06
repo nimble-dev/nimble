@@ -22,7 +22,7 @@ reductionBinaryOperators <- reductionBinaryOperatorsEither
 
 coreRnonSeqBlockCalls <- c('nimNonseqIndexedd','nimNonseqIndexedi', 'nimNonseqIndexedb')
 coreRmanipulationCalls <- c('nimC','nimRepd','nimRepi','nimRepb',
-                            'nimSeqByD','nimSeqLenD','nimSeqByI','nimSeqLenI', 'nimDiagonalD','nimDiagonalI','nimDiagonalB', 'nimNewMatrixD','nimNewMatrixI','nimNewMatrixB')
+                            'nimSeqByD','nimSeqLenD','nimSeqByLenD','nimSeqByI','nimSeqLenI', 'nimSeqByLenI', 'nimDiagonalD','nimDiagonalI','nimDiagonalB', 'nimNewMatrixD','nimNewMatrixI','nimNewMatrixB')
 nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls, coreRnonSeqBlockCalls)
 
 matrixMultOperators <- c('%*%')

@@ -171,15 +171,23 @@ codeProcessIfThenElse <- function(code, envir = parent.frame()) {
     if(code[[1]] == '{') {
         if(codeLength > 1) for(i in 2:codeLength) code[[i]] <- codeProcessIfThenElse(code[[i]], envir)
         return(code)
-    } else {
-        if(codeLength > 1) if(code[[1]] == 'if') {
-            evaluatedCondition <- eval(code[[2]], envir = envir)
-            if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]])) else {
-                if(length(code) == 4) return(codeProcessIfThenElse(code[[4]]))
+    } 
+    if(code[[1]] == 'for') {
+        code[[4]] <- codeProcessIfThenElse(code[[4]], envir)
+        return(code)
+    }
+    if(codeLength > 1)
+        if(code[[1]] == 'if') {
+            evaluatedCondition <- eval(code[[2]], envir)
+            if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], envir))
+            else {
+                if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], envir))
                 else return(NULL)
             }
-        } else return(code) else return(code)
-    }
+        } else
+            return(code)
+    else
+        return(code)
 }
 
 modelDefClass$methods(setModelValuesClassName = function() {

@@ -26,6 +26,7 @@ struct graphNode {
   vector<graphNode*> children; /* pointers to child nodes */
   vector<int> childrenParentExpressionIDs; /* integer labels of how this node is used by child nodes. */
   vector<graphNode*> parents; /* pointers to parent nodes*/
+  int numPaths;  /* for use in path counting -- number of paths starting at the node and terminating at stochastic nodes */
   graphNode(int inputCgraphID, NODETYPE inputType, const string &inputName);
   void addChild(graphNode *toNode, int childParentExpressionID);
   void addParent(graphNode *fromNode);
@@ -46,6 +47,7 @@ public:
   bool anyStochParentsOneNode(vector<int> &anyStochParents, int CgraphID);
   vector<int> getDependencies(const vector<int> &Cnodes, const vector<int> &Comit, bool downstream);
   void getDependenciesOneNode(vector<int> &deps, int CgraphID, bool downstream, unsigned int recursionDepth);
+  int getDependencyPathCountOneNode(const int Cnode);
   ~nimbleGraph();
 };
 
@@ -56,6 +58,7 @@ extern "C" {
   SEXP anyStochDependencies(SEXP SextPtr);
   SEXP anyStochParents(SEXP SextPtr);
   SEXP getDependencies(SEXP SextPtr, SEXP Snodes, SEXP Somit, SEXP Sdownstream);
+  SEXP getDependencyPathCountOneNode(SEXP SgraphExtPtr, SEXP Snode);
 }
 
 #endif
