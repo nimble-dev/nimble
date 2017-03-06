@@ -852,7 +852,7 @@ sampler_RW_PF <- nimbleFunction(
         d               <- length(targetAsScalar)
         if(optimizeM) m <- 3000
         ## nested function and function list definitions
-        my_setAndCalculate <- setAndCalculate(model, target)
+        my_setAndCalculate <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
         if(filterType == 'auxiliary') {
             my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE, lookahead = lookahead))
