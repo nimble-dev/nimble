@@ -1957,7 +1957,6 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
               if(! (code$args[[i]]$name == '[' && (code$args[[i]]$args[[1]]$name == 'dim' && code$args[[i]]$args[[1]]$args[[1]]$name == 'nfVar'))){
-              browser()
                 asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv) )
               }
             }
