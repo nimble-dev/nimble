@@ -37,7 +37,7 @@ double probit(double x) {return(qnorm(x, 0., 1., 1, 0));}
 double cloglog(double x) {return(log(-log(1.-x)));}
 int nimEquals(double x1, double x2) {return(x1 == x2 ? 1 : 0);}
 double nimbleIfElse(bool condition, double x1, double x2) {return(condition ? x1 : x2);}
-double lfactorial(double x) {return(lgamma1p(x));}
+double lfactorial(double x) {return(lgamma(x + 1));} //{return(lgamma1p(x));} not numerically equivalent to lgamma(x+1), which is what is done from R. lgamma seems to clean up numerical zeros
 double factorial(double x) {return(gammafn(1+x));}
 //double loggam(double x) {return(lgammafn(x));}
 double logit(double x) {return(log(x / (1.-x)));}
