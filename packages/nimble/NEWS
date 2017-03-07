@@ -14,7 +14,9 @@ USER LEVEL CHANGES
 
 -- nimEigen() and nimSvd() now work to conduct eigendecompositions and singular value decompositions on matrices in nimble.  If called from R, nimEigen() and nimSvd() will execute precompiled c++ code that conducts these decompositions using the eigen c++ library.  Both decompositions return nimbleList objects.  nimEigen() and nimSvd() can also be used in BUGS code.
 
--- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework, specifying "AF_slice" as the sampler type.   
+-- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework, specifying "AF_slice" as the sampler type.  
+
+-- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
 
 BUG FIXES
 
