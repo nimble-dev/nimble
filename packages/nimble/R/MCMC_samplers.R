@@ -854,11 +854,18 @@ sampler_RW_PF <- nimbleFunction(
         ## nested function and function list definitions
         my_setAndCalculate <- setAndCalculateOne(model, target)
         my_decideAndJump <- decideAndJump(model, mvSaved, calcNodes)
+        if(latentSamp == TRUE) { 
+          saveAllVal <- TRUE
+          smoothingVal <- TRUE
+        } else {
+          saveAllVal <- FALSE
+          smoothingVal <- FALSE
+        }
         if(filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE, lookahead = lookahead))
+            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead, initModel = FALSE))
         }
         else if(filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = TRUE, smoothing = TRUE))
+            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, initModel = FALSE))
         }
         else   stop('filter type must be either bootstrap or auxiliary')
         particleMV <- my_particleFilter$mvEWSamples
@@ -1008,10 +1015,10 @@ sampler_RW_PF_block <- nimbleFunction(
                                  smoothingVal <- FALSE
                              }
         if(filterType == 'auxiliary') {
-            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead))
+            my_particleFilter <- buildAuxiliaryFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, lookahead = lookahead, initModel = FALSE))
         }
         else if(filterType == 'bootstrap') {
-            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal))
+            my_particleFilter <- buildBootstrapFilter(model, latents, control = list(saveAll = saveAllVal, smoothing = smoothingVal, initModel = FALSE))
         }
         else   stop('filter type must be either bootstrap or auxiliary')
         particleMV <- my_particleFilter$mvEWSamples

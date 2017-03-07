@@ -332,8 +332,9 @@ LWparFunc <- nimbleFunction(
 #'  \item{d}{A discount factor for the Liu-West filter.  Should be close to,
 #'  but not above, 1.}
 #'  \item{saveAll}{Indicates whether to save state samples for all time points (TRUE), or only for the most recent time point (FALSE)}
-#' \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
+#'  \item{timeIndex}{An integer used to manually specify which dimension of the latent state variable indexes time.  
 #'  Only needs to be set if the number of time points is less than or equal to the size of the latent state at each time point.}
+#'  \item{initModel}{A logical value indicating whether to initialize the model before running the filtering algorithm.  Defaults to TRUE.}
 #' }
 #' 
 #'  The Liu and West filter samples from the posterior 
@@ -377,10 +378,11 @@ buildLiuWestFilter <- nimbleFunction(
     silent <- control[['silent']]
     d <- control[['d']]
     timeIndex <- control[['timeIndex']]
+    initModel <- control[['initModel']]
     if(is.null(silent)) silent <- FALSE
     if(is.null(saveAll)) saveAll <- FALSE
     if(is.null(d)) d <- .99
-    
+    if(is.null(initModel)) initModel <- TRUE
     #get latent state info
     varName <- sapply(nodes, function(x){return(model$getVarNames(nodes = x))})
     if(length(unique(varName))>1){
@@ -485,7 +487,7 @@ buildLiuWestFilter <- nimbleFunction(
     
   },
   run = function(m = integer(default = 10000)) {
-    my_initializeModel$run()
+    if(initModel == TRUE) my_initializeModel$run()
     resize(mvWSamples, m)
     resize(mvEWSamples, m)
     
