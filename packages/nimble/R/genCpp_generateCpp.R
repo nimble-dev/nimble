@@ -113,7 +113,7 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
 }
 
 cppOutputEigenCast <- function(code, symTab) {
-    paste0( nimGenerateCpp(code$args[[1]], symTab), '.cast<', code$args[[2]], '>()')
+    paste0( '(',nimGenerateCpp(code$args[[1]], symTab), ').cast<', code$args[[2]], '>()')
 }
 
 cppOutputMakeFixedVector <- function(code, symTab) {
