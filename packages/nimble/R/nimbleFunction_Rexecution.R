@@ -361,7 +361,7 @@ rCalcDiffNodes <- function(model, nfv){
 #' 
 #' Simulation is defined for a stochastic node as drawing a random value from its distribution, and for deterministic node as equivalent to calculate.
 #'
-#' getLogProb simply collects the sum of the log probabilities of nodes if they are known to have already been calculated.
+#' getLogProb collects and returns the sum of the log probabilities of nodes, using the log probability values currently stored in the model (as generated from the most recent call to calculate on each node)
 #'
 #' These functions can be used from R or in NIMBLE run-time functions that will be compiled.  When executed in R (including when an uncompiled nimbleFunction is executed), they can be slow because the nodes are expanded each time.  When compiled in NIMBLE, the nodes are expanded only once during compilation, so execution will be much faster.
 #'
