@@ -126,7 +126,7 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
         } else
             if(identical(blockBool, c(FALSE, TRUE))) {
                 P <- 1
-                Q <- code$sizeExprs[[1]]
+                Q <- code$sizeExprs[[ if(drop) 1 else 2 ]]
                 if(drop) needTranspose <- TRUE ## This is a case like A[3, 2:4] where we need to make Eigen handle it like a 3x1 matrix implementing a nimble vector internally, not 1x3
             } else
                 if(identical(blockBool, c(FALSE, FALSE))) {

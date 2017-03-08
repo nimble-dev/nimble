@@ -1,101 +1,8 @@
-##source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
+source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 context("Testing of core R functions in NIMBLE code")
 
 ## fix result_type in nimbleEigen.h
-
-gen_runFunCore <- function(input) {
-    runFun <- function() {}
-    formalsList <- input$args
-    if(is.null(names(formalsList)))
-        if(length(formalsList) > 0)
-            names(formalsList) <- paste0('arg', seq_along(input$args))
-    formals(runFun) <- formalsList
-    tmp <- quote({})
-    tmp[[2]] <- input$expr
-    tmp[[3]] <- quote(return(out))
-    tmp[[4]] <- substitute(returnType(OUT), list(OUT = input$outputType))
-    body(runFun) <- tmp
-    return(runFun)
-}
-
-test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot like test_math but a bit more flexible
-  if(verbose) cat("### Testing", input$name, "###\n")
-  runFun <- gen_runFunCore(input)
-  nfR <- nimbleFunction(run = runFun)
-  nfC <- compileNimble(nfR, dirName = dirName)
-  nArgs <- length(input$args)
-  evalEnv <- new.env()
-  eval(input$setArgVals, envir = evalEnv)
-  savedArgs <- as.list(evalEnv)
-  seedToUse <- if(is.null(input[['seed']])) 31415927 else input[['seed']]
-  set.seed(seedToUse)
-  eval(input$expr, envir = evalEnv)
-  savedOutputs <- as.list(evalEnv)
-  list2env(savedArgs, envir = evalEnv)
-  if(nArgs == 5) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4, evalEnv$arg5)
-  }  
-  if(nArgs == 4) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3, evalEnv$arg4)
-  }  
-
-  if(nArgs == 3) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2, evalEnv$arg3)
-  }  
-  if(nArgs == 2) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1, evalEnv$arg2)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1, evalEnv$arg2)
-  }
-  if(nArgs == 1) {
-      set.seed(seedToUse)
-      out_nfR = nfR(evalEnv$arg1)
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC(evalEnv$arg1)
-  }
-  if(nArgs == 0) {
-      set.seed(seedToUse)
-      out_nfR = nfR()
-      list2env(savedArgs, envir = evalEnv)
-      set.seed(seedToUse)
-      out_nfC = nfC()
-  }
-  out <- savedOutputs$out
-  attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
-  checkEqual <- input[['checkEqual']]
-  if(is.null(checkEqual)) checkEqual <- FALSE
-  if(!checkEqual) {
-      try(test_that(paste0("Identical test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                    expect_identical(out, out_nfR)))
-      try(test_that(paste0("Identical test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                    expect_identical(out, out_nfC)))
-  } else {
-      try(test_that(paste0("Equal test of coreRfeature (direct R vs. R nimbleFunction): ", input$name),
-                    expect_equal(out, out_nfR)))
-      try(test_that(paste0("Equal test of math (direct R vs. C++ nimbleFunction): ", input$name),
-                    expect_equal(out, out_nfC)))
-  }
-  # unload DLL as R doesn't like to have too many loaded
-  if(.Platform$OS.type != 'windows') nimble:::clearCompiled(nfR) ##dyn.unload(project$cppProjects[[1]]$getSOName())
-  invisible(NULL)
-
-}
 
 cTests <- list(
     list(name = "c(double, double)", expr = quote(out <- c(arg1, arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
@@ -353,8 +260,8 @@ diagTests <- list(
          setArgVals = quote({arg1 <- as.numeric(1:3)}), outputType = quote(double(2))),
     list(name = "diag(vector expression)", expr = quote(out <- diag(arg1 + arg2)), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
          setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(c(10,20, 30))}), outputType = quote(double(2))),
-    list(name = "diag(vector) with epxression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(1))),
-         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- as.numeric(11:13)}), outputType = quote(double(2))),
+    list(name = "diag(vector) with expression", expr = quote(out <- exp(diag(arg1)) + arg2), args = list(arg1 = quote(double(1)), arg2 = quote(double(2))),
+         setArgVals = quote({arg1 <- as.numeric(1:3); arg2 <- matrix(as.numeric(11:19), nrow = 3)}), outputType = quote(double(2))), ## ISSUE HERE
 
     ## diag(matrix)
     list(name = "diag(square matrix)", expr = quote(out <- diag(arg1)), args = list(arg1 = quote(double(2))),
