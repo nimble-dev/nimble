@@ -5,6 +5,24 @@
 #include <vector>
 #include <cstdlib>
 #include<Rmath.h>
+#include "nimble/accessorClasses.h"
+
+template<typename Derived>
+double calculate(NodeVectorClassNew &nodes, const Derived &indices) {
+  double ans(0);
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  int len = indices.size();
+  //  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
+  //  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
+  int thisIndex;
+  for(int i = 0; i < len; ++i) {
+    thisIndex = indices(i)-1; // indices is R-based
+    ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateBlock(useInfoVec[ thisIndex ].useInfo );
+  }
+    //    ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
+  return(ans);
+}
+
 
 template<typename NimArrOutput, typename VectorInput>
 void assignVectorToNimArr(NimArrOutput &output, const VectorInput &input) {

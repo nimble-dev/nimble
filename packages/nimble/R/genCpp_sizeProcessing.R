@@ -1333,12 +1333,19 @@ sizeScalar <- function(code, symTab, typeEnv) {
 }
 
 sizeScalarModelOp <- function(code, symTab, typeEnv) {
+    toEigenize <- 'maybe'
     if(length(code$args) > 1) {
         asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
+        ## This used to error-trap attempts at index expressions.
+        ## Now they are allowed
         for(i in 2:length(code$args)) {
             if(inherits(code$args[[i]], 'exprClass')) {
-                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeScalarModelOp: There is an expression beyond the first argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+##                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeScalarModelOp: There is an expression beyond the first argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+                ## Now instead we see if there is any eigenization
+                if(code$args[[i]]$toEigenize=='yes')
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))##toEigenize <- 'yes'
             }
+        
         }
     } else {
         asserts <- list()
@@ -1351,8 +1358,8 @@ sizeScalarModelOp <- function(code, symTab, typeEnv) {
     if(is.null(outputType)) code$type <- 'double'
     else code$type <- outputType
     code$sizeExprs <- list()
-    code$toEigenize <- 'maybe' ## a scalar can be eigenized or not
-    invisible(NULL)
+    code$toEigenize <- toEigenize ## 'maybe' ## a scalar can be eigenized or not
+    asserts
 }
 
 sizeSimulate <- function(code, symTab, typeEnv) {
