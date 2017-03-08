@@ -1998,6 +1998,12 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1) stop(exprClassProcessingErrorMsg(code, 'sizeUnaryReduction called with argument length != 1.'), call. = FALSE)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
+        ## Kludgy catch of var case here.  Can't do var(matrix) because in R that is interpreted as cov(data.frame)
+        if(code$args[[1]]$nDim >= 2) {
+            if(code$name == 'var') {
+                stop(exprClassProcessingErrorMsg(code, 'NIMBLE compiler does not support var with a matrix (or higher dimensional) argument.'), call. = FALSE) 
+            }
+        }
         if(!code$args[[1]]$isName) {
             if(code$args[[1]]$toEigenize == 'no') {
                 asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))

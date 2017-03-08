@@ -103,7 +103,7 @@ binaryCwiseTypeTestsLogicals <- unlist(recursive = FALSE,
 
 binaryCwiseTypeTestsLogicals <- indexNames(binaryCwiseTypeTestsLogicals)
 
-makeReductionTypeTest <- function(name, funName, type, nDim) {
+makeReductionTypeTest <- function(name, funName, type, nDim, checkEqual = FALSE) {
     outputHandling <- nimble:::returnTypeHandling[[funName]]
     
     if(is.null(outputHandling)) outputType <- type
@@ -119,17 +119,18 @@ makeReductionTypeTest <- function(name, funName, type, nDim) {
          args = list(arg1 = substitute(TYPE(NDIM), list(TYPE = as.name(type), NDIM = nDim))),
          setArgVals = substitute( {arg1 <- as(seq(from = SEQFROM, by = SEQBY, length.out = LENOUT), TYPE);
                                    if(NDIM == 2) arg1 <- matrix(arg1, nrow = 2)}, list(NDIM = nDim, TYPE = type, SEQFROM = seqFrom, SEQBY = seqBy, LENOUT = lenOut)),
-         outputType = substitute(OUTPUTTYPE(0), list(OUTPUTTYPE = as.name(outputType))))
+         outputType = substitute(OUTPUTTYPE(0), list(OUTPUTTYPE = as.name(outputType))),
+         checkEqual = checkEqual)
 }
 
 reductionTypeTests <- unlist(recursive = FALSE,
                               x= lapply(nimble:::reductionUnaryOperators[ !(nimble:::reductionUnaryOperators %in% c('any','all', 'squaredNorm')) ],
                                         function(x) {
                                             mapply(makeReductionTypeTest,
-                                                   type = rep(c('double','integer','logical'), 2),
-                                                   nDim = rep(1:2, each = 3),
-                                                   MoreArgs = list(name = x, funName = x),
-                                                   SIMPLIFY = FALSE) 
+                                                   type = rep(c('double','integer','logical'), if(x == 'var') 1 else 2),
+                                                   nDim = if(x == 'var') 1 else rep(1:2, each = 3), ## We error-trap var(matrix) because we don't have cov() yet, which is what it should do to match R
+                                                   MoreArgs = list(name = x, funName = x, checkEqual = grepl('prod',x)), ## prod does not produce numerically identical results between R and Eigen
+                                                   SIMPLIFY = FALSE)
                                         }
                                         )
                               )
