@@ -15,6 +15,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     list(
+                        eigenCast = 'cppOutputEigenCast',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
                         MAKE_FIXED_VECTOR = 'cppOutputMakeFixedVector',
                         concatenateTemp = 'cppOutputEigBlank',
@@ -112,6 +113,10 @@ exprName2Cpp <- function(code, symTab, asArg = FALSE) {
     } else {
         return(code$name)
     }
+}
+
+cppOutputEigenCast <- function(code, symTab) {
+    paste0( nimGenerateCpp(code$args[[1]], symTab), '.cast<', code$args[[2]], '>()')
 }
 
 cppOutputMakeFixedVector <- function(code, symTab) {

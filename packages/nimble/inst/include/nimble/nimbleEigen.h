@@ -40,8 +40,8 @@ struct nimble_size_impl {
   static unsigned int getSize(const T &arg) {return arg.size();}
   static unsigned int getRows(const T &arg) {return arg.rows();}
   static unsigned int getCols(const T &arg) {return arg.cols();}
-  static unsigned int getDiagRows(const T &arg) {return arg.rows();}
-  static unsigned int getDiagCols(const T &arg) {return arg.cols();}
+  static unsigned int getDiagRows(const T &arg) {return arg.size();}
+  static unsigned int getDiagCols(const T &arg) {return arg.size();}
 };
 
 template<>
@@ -172,8 +172,8 @@ struct diagonal_impl {
 };
 
 #define nimDiagonalD diagonal_impl<MatrixXd>::diagonal
-#define nimDiagonalI diagonal_impl<MatrixXd>::diagonal  // We will always return a MatrixXd from diag(), so really these could be one case
-#define nimDiagonalB diagonal_imple<MatrixXd>::diagonal
+#define nimDiagonalI diagonal_impl<MatrixXi>::diagonal  // We will always return a MatrixXd from diag(), so really these could be one case
+#define nimDiagonalB diagonal_impl<MatrixXb>::diagonal
 
 
 //concatenation c()
