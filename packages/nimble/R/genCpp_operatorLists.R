@@ -88,7 +88,7 @@ returnTypeHandling <- with(returnTypeCodes,
                                makeCallList(reductionUnaryOperatorsArray, double),
                                makeCallList(matrixSquareReductionOperators, double),
                                makeCallList(reductionBinaryOperatorsEither, promoteNoLogical),
-                               makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators, matrixEigenOperators), double)))
+                               makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators), double)))
 ## deliberately omitted (so they just return same type as input):
 ## matrixFlipOperators ('t')
 
