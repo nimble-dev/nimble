@@ -1333,24 +1333,30 @@ sizeScalar <- function(code, symTab, typeEnv) {
 }
 
 sizeScalarModelOp <- function(code, symTab, typeEnv) {
-    toEigenize <- 'maybe'
     if(length(code$args) > 1) {
         asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
         ## This used to error-trap attempts at index expressions.
         ## Now they are allowed
+        ## I think length(code$args) should only ever be 1 or 2 but will write more generally
         for(i in 2:length(code$args)) {
             if(inherits(code$args[[i]], 'exprClass')) {
 ##                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeScalarModelOp: There is an expression beyond the first argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
-                ## Now instead we see if there is any eigenization
+                ## Now instead we see if there is any eigenization we will lift it
+                ## The C++ code is now flexible enough that we shouldn't have to lift eigen expressions
+                ## The limitation at this moment is our eigenization processing, which isn't set up to eigenize just part of a line.
                 if(code$args[[i]]$toEigenize=='yes')
-                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))##toEigenize <- 'yes'
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))
             }
-        
+        }
+        if(inherits(code$args[[2]], 'exprClass')) { ## There is an index expression that may be non-scalar
+            if(code$args[[2]]$nDim > 0) { ## It is non-scalar so we need to set a logical argument about whether is it a logical or numeric vector
+                code$args[[ length(code$args)+1 ]] <- as.integer(code$args[[2]]$type == 'logical')
+            }
         }
     } else {
         asserts <- list()
     }
-    if(code$args[[1]]$toEigenize == 'yes') {
+    if(code$args[[1]]$toEigenize == 'yes') { ## not sure when this would be TRUE
         asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
     code$nDim <- 0
@@ -1358,7 +1364,7 @@ sizeScalarModelOp <- function(code, symTab, typeEnv) {
     if(is.null(outputType)) code$type <- 'double'
     else code$type <- outputType
     code$sizeExprs <- list()
-    code$toEigenize <- toEigenize ## 'maybe' ## a scalar can be eigenized or not
+    code$toEigenize <- 'maybe'
     asserts
 }
 
@@ -1367,7 +1373,16 @@ sizeSimulate <- function(code, symTab, typeEnv) {
         asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1)))
         for(i in 2:length(code$args)) {
             if(inherits(code$args[[i]], 'exprClass')) {
-                if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeSimulate: There is an expression beyond the first argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+                ## changes similar to sizeScalarModelOp to allow general vectorized indexing
+                ##       if(code$args[[i]]$toEigenize=='yes') stop(exprClassProcessingErrorMsg(code, 'In sizeSimulate: There is an expression beyond the first argument that cannot be handled.  If it involve vectorized math, you need to do it separately, not in this expression.'), call. = FALSE)
+                if(code$args[[i]]$toEigenize=='yes')
+                    asserts <- c(asserts, sizeInsertIntermediate(code, i, symTab, typeEnv))##toEigenize <- 'yes'
+
+            }
+        }
+        if(inherits(code$args[[2]], 'exprClass')) { ## There is an index expression that may be non-scalar
+            if(code$args[[2]]$nDim > 0) { ## It is non-scalar so we need to set a logical argument about whether is it a logical or numeric vector
+                code$args[[ length(code$args)+1 ]] <- as.integer(code$args[[2]]$type == 'logical')
             }
         }
     } else {

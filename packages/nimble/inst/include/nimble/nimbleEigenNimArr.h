@@ -8,21 +8,90 @@
 #include "nimble/accessorClasses.h"
 
 template<typename Derived>
-double calculate(NodeVectorClassNew &nodes, const Derived &indices) {
+double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
   double ans(0);
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
   int len = indices.size();
-  //  vector<oneNodeUseInfo>::const_iterator iNode(useInfoVec.begin());
-  //  vector<oneNodeUseInfo>::const_iterator iNodeEnd(useInfoVec.end());
-  int thisIndex;
-  for(int i = 0; i < len; ++i) {
-    thisIndex = indices(i)-1; // indices is R-based
-    ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateBlock(useInfoVec[ thisIndex ].useInfo );
+  if(!logical) {
+    int thisIndex;
+    for(int i = 0; i < len; ++i) {
+      thisIndex = indices(i)-1; // indices is R-based
+      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateBlock(useInfoVec[ thisIndex ].useInfo );
+    }
+    return(ans);
   }
-    //    ans += iNode->nodeFunPtr->calculateBlock(iNode->useInfo);
+  // logical = true. treat indices as a logical vector
+  for(int i = 0; i < len; ++i) {
+    if(indices(i)) {
+      ans += useInfoVec[ i ].nodeFunPtr->calculateBlock(useInfoVec[ i ].useInfo );
+    }
+  }
+  return(ans);
+}
+  
+template<typename Derived>  
+  double calculateDiff(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double ans(0);
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  int len = indices.size();
+  if(!logical) {
+    int thisIndex;
+    for(int i = 0; i < len; ++i) {
+      thisIndex = indices(i)-1; // indices is R-based
+      ans += useInfoVec[ thisIndex ].nodeFunPtr->calculateDiffBlock(useInfoVec[ thisIndex ].useInfo );
+    }
+    return(ans);
+  }
+  // logical = true. treat indices as a logical vector
+  for(int i = 0; i < len; ++i) {
+    if(indices(i)) {
+      ans += useInfoVec[ i ].nodeFunPtr->calculateDiffBlock(useInfoVec[ i ].useInfo );
+    }
+  }
   return(ans);
 }
 
+template<typename Derived>  
+  double getLogProb(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  double ans(0);
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  int len = indices.size();
+  if(!logical) {
+    int thisIndex;
+    for(int i = 0; i < len; ++i) {
+      thisIndex = indices(i)-1; // indices is R-based
+      ans += useInfoVec[ thisIndex ].nodeFunPtr->getLogProbBlock(useInfoVec[ thisIndex ].useInfo );
+    }
+    return(ans);
+  }
+  // logical = true. treat indices as a logical vector
+  for(int i = 0; i < len; ++i) {
+    if(indices(i)) {
+      ans += useInfoVec[ i ].nodeFunPtr->getLogProbBlock(useInfoVec[ i ].useInfo );
+    }
+  }
+  return(ans);
+}
+
+template<typename Derived>  
+  void simulate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
+  const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
+  int len = indices.size();
+  if(!logical) {
+   int thisIndex;
+   for(int i = 0; i < len; ++i) {
+    thisIndex = indices(i)-1; // indices is R-based
+    useInfoVec[ thisIndex ].nodeFunPtr->simulateBlock(useInfoVec[ thisIndex ].useInfo );
+   }
+  } else {
+  // logical = true. treat indices as a logical vector
+   for(int i = 0; i < len; ++i) {
+    if(indices(i)) {
+      useInfoVec[ i ].nodeFunPtr->simulateBlock(useInfoVec[ i ].useInfo );
+    }
+   }
+  }
+}
 
 template<typename NimArrOutput, typename VectorInput>
 void assignVectorToNimArr(NimArrOutput &output, const VectorInput &input) {
