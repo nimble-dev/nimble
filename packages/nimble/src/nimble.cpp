@@ -5,7 +5,7 @@
 //#include <nimble/ModelClassUtils.h>
 //#include <nimble/accessorClasses.h>
 #include <nimble/nimbleGraph.h>
-#include <nimble/eigenTypedefs.h>
+//#include <nimble/EigenTypedefs.h>
 #include <nimble/dists.h>
 
 #include <R_ext/Rdynload.h>
