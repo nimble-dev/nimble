@@ -284,7 +284,7 @@ Details: The return value is a numeric vector with an element for each parameter
                                       return(dim)
                                   },
 
-                                  getVarNames = function(includeLogProb = FALSE, nodes, includeData = TRUE) {                                  
+                                  getVarNames = function(includeLogProb = FALSE, nodes) {
                                       '
 Returns the names of all variables in a model, optionally including the logProb variables
 
@@ -302,10 +302,13 @@ nodes: An optional character vector supplying a subset of nodes for which to ext
                                           if(!all(ans %in% modelDef$varNames))
                                               stop(c('invalid node names provided to model$getVarNames') )
                                       }
-                                      if(!includeData) {
-                                          allData <- unlist(lapply(mget(ans, envir = tm$isDataEnv, inherits = FALSE, ifnotfound = TRUE), all))
-                                          ans <- ans[!allData]
-                                      }
+                                      ## "includeData" argument to getVarNames (with default = TRUE) 
+                                      ## was removed by consensus, March 2017.
+                                      ## no uses of it anywhere in codebase, plus it errors out.
+                                      ##if(!includeData) {
+                                      ##    allData <- unlist(lapply(mget(ans, envir = tm$isDataEnv, inherits = FALSE, ifnotfound = TRUE), all))
+                                      ##    ans <- ans[!allData]
+                                      ##}
     	                              return(ans)
                                   },
 
