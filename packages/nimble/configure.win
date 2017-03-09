@@ -4,6 +4,8 @@
 cp inst/CppCode/dists.cpp src
 cp inst/CppCode/RcppUtils.cpp src
 cp inst/CppCode/nimbleGraph.cpp src
+cp inst/CppCode/EigenTypedefs.cpp src
+
 
 
 if test -r src/Makevars.win ; then

@@ -1,9 +1,9 @@
 #ifndef __RCPPNIMBLEUTILS
 #define __RCPPNIMBLEUTILS
+#include "nimble/EigenTypedefs.h"
 
-#include "NimArrBase.h"
-#include "NimArr.h"
-#include "RcppUtils.h"
+//#include "RcppUtils.h"
+
 
 // all of this is in RcppUtils.h
 /* #include "R.h" */
@@ -33,8 +33,6 @@ void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP 
  
 //bool checkString(SEXP Ss, int len);
 //bool checkNumeric(SEXP Sval, int len);
-
-vector<int> getSEXPdims(SEXP Sx);
 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
@@ -135,146 +133,8 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
-template<int ndim>
-void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
-template<int ndim>
-void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans );
 
-template<int ndim>
-SEXP NimArr_2_SEXP(const NimArr<ndim, double> &val);
-template<int ndim>
-SEXP NimArr_2_SEXP(const NimArr<ndim, int> &val);
-
-template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans); 
-template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans); 
-
-template<int ndim>
-void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<ndim> called for SEXP that is not a numeric or logica!\n");
-  vector<int> inputDims(getSEXPdims(Sn));
-  if(inputDims.size() != ndim) PRINTF("Error: Wrong number of input dimensions in SEXP_2_NimArr<ndim, double> called for SEXP that is not a numeric!\n");
-  // if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
-  ans.setSize(inputDims);
-  int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
-    std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
-  } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
-    } else {
-      PRINTF("Error: could not handle input type to SEXP_2_NimArr\n");
-    }
-  }
-}
-
-// ACTUALLY THIS IS IDENTICAL CODE TO ABOVE, SO THEY COULD BE COMBINED WITHOUT TEMPLATE SPECIALIZATION
-template<int ndim>
-void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, int> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<ndim> called for SEXP that is not a numeric or logica!\n");
-  vector<int> inputDims(getSEXPdims(Sn));
-  if(inputDims.size() != ndim) PRINTF("Error: Wrong number of input dimensions in SEXP_2_NimArr<ndim, double> called for SEXP that is not a numeric!\n");
-  // if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
-  ans.setSize(inputDims);
-  int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
-    std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
-  } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
-    } else {
-      PRINTF("Error: could not handle input type to SEXP_2_NimArr\n");
-    }
-  }
-}
-
-template<int ndim>
-void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, bool> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<ndim> called for SEXP that is not a numeric or logica!\n");
-  vector<int> inputDims(getSEXPdims(Sn));
-  if(inputDims.size() != ndim) PRINTF("Error: Wrong number of input dimensions in SEXP_2_NimArr<ndim, double> called for SEXP that is not a numeric!\n");
-  // if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
-  ans.setSize(inputDims);
-  int nn = LENGTH(Sn);
-  if(isReal(Sn)) {
-    std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr() );
-  } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      std::copy(iSn, iSn + nn, ans.getPtr()); //v);
-    } else {
-      PRINTF("Error: could not handle input type to SEXP_2_NimArr\n");
-    }
-  }
-}
-
-
-template<int ndim>
-SEXP NimArr_2_SEXP(NimArr<ndim, double> &val) {
-  SEXP Sans;
-  int outputLength = val.size();
-  PROTECT(Sans = allocVector(REALSXP, outputLength));
-  double *ans = REAL(Sans);
-
-  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
-  if(val.numDims() > 1) {
-    SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, val.numDims() ) );
-    for(int idim = 0; idim < val.numDims(); ++idim) INTEGER(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
-    UNPROTECT(2);
-  } else {
-    UNPROTECT(1);
-  }
-  return(Sans);
-}
-
-template<int ndim>
-SEXP NimArr_2_SEXP(NimArr<ndim, int> &val) {
-  SEXP Sans;
-  int outputLength = val.size();
-  PROTECT(Sans = allocVector(INTSXP, outputLength));
-  int *ans = INTEGER(Sans);
-
-  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
-  if(val.numDims() > 1) {
-    SEXP Sdim;
-    PROTECT(Sdim = allocVector(INTSXP, val.numDims() ) );
-    for(int idim = 0; idim < val.numDims(); ++idim) INTEGER(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
-    UNPROTECT(2);
-  } else {
-    UNPROTECT(1);
-  }
-  return(Sans);
-}
-
-template<int ndim>
-SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
-  SEXP Sans;
-  int outputLength = val.size();
-  PROTECT(Sans = allocVector(LGLSXP, outputLength));
-  int *ans = LOGICAL(Sans);
-
-  std::copy(val.getPtr(), val.getPtr() + outputLength, ans);
-  if(val.numDims() > 1) {
-    SEXP Sdim;
-    PROTECT(Sdim = allocVector(LGLSXP, val.numDims() ) );
-    for(int idim = 0; idim < val.numDims(); ++idim) LOGICAL(Sdim)[idim] = val.dimSize(idim);
-    setAttrib(Sans, R_DimSymbol, Sdim);
-    UNPROTECT(2);
-  } else {
-    UNPROTECT(1);
-  }
-  return(Sans);
-}
-
-
-
-void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
+ void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
 void row2NimArr(SEXP &matrix, NimArrBase<int> &nimPtr, int startPoint, int len, int nRows);
 
 template <class T>
@@ -365,8 +225,5 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 				 	NimArr<1, double> par, optimfn objFxn,
 				 	int numOtherArgs, ...);
 					
-SEXP makeNewNimbleList(SEXP S_listName);
 
 #endif
-
-
