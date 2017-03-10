@@ -24,6 +24,16 @@ void multivarTestCall(double *x, int n) {
   nimble_print_to_R(_nimble_global_output);
 }
 
+vector<int> getSEXPdims(SEXP Sx) {
+  if(!isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
+  if(!isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
+  if(!isArray(Sx) & !isMatrix(Sx)) {
+    vector<int> ans; 
+    ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
+  }
+  return(SEXP_2_vectorInt(getAttrib(Sx, R_DimSymbol), 0));
+}
+
 string STRSEXP_2_string(SEXP Ss, int i) {
   if(!isString(Ss)) {
     PRINTF("Error: STRSEXP_2_string called for SEXP that is not a string!\n"); 

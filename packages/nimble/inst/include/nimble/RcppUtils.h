@@ -27,6 +27,8 @@ void nimble_print_to_R(std::ostringstream &input);
 
 void multivarTestCall(double *x, int n);
 
+vector<int> getSEXPdims(SEXP Sx);
+
 string STRSEXP_2_string(SEXP Ss, int i = 0);
 SEXP   string_2_STRSEXP(string v);
 void   STRSEXP_2_vectorString(SEXP Ss, vector<string> &ans);

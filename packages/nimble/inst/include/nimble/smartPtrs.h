@@ -12,6 +12,7 @@ template<typename T>
 class nimSmartPtr : public nimSmartPtrBase {
  public:
   T* realPtr;
+  T* getRealPtr() {return(realPtr);}
   T& operator*() {return *realPtr;}
   T* operator->() {return realPtr;}
   void setPtr(const nimSmartPtr & input) {

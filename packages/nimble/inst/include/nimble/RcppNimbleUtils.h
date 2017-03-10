@@ -37,8 +37,6 @@ void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP 
 //bool checkNumeric(SEXP Sval, int len);
 
 
-vector<int> getSEXPdims(SEXP Sx);
-
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
