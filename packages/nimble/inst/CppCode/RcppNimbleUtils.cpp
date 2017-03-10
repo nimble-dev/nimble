@@ -1,5 +1,5 @@
-//#include "nimble/NimArrBase.h"
-//#include "nimble/NamedObjects.h"
+#include "nimble/NimArrBase.h"
+#include "nimble/NamedObjects.h"
 #include "nimble/RcppNimbleUtils.h"
 #include "nimble/dllFinalizer.h"
 //#include "nimble/RcppUtils.h"
@@ -73,6 +73,58 @@ int t(int x) {return(x);}
 double t(double x) {return(x);}
 int prod(int x) {return(x);}
 double prod(double x) {return(x);}
+
+
+vector<int> getSEXPdims(SEXP Sx) {
+  if(!isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
+  if(!isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
+  if(!isArray(Sx) & !isMatrix(Sx)) {
+    vector<int> ans; 
+    ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
+  }
+  return(SEXP_2_vectorInt(getAttrib(Sx, R_DimSymbol), 0));
+}
+
+template<>
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
+  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  int nn = LENGTH(Sn);
+  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  ans.setSize(nn);
+  if(isReal(Sn)) {
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+  } else {
+    if(isInteger(Sn) || isLogical(Sn)) {
+      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+      for(int i = 0; i < nn; ++i) {
+	ans(i) = static_cast<double>(iSn[i]);
+      }
+    } else {
+      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    }
+  }
+}
+
+// Actually this is identical to above so could be done without specialization
+template<>
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
+  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  int nn = LENGTH(Sn);
+  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  ans.setSize(nn);
+  if(isReal(Sn)) {
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+  } else {
+    if(isInteger(Sn) || isLogical(Sn)) {
+      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+      for(int i = 0; i < nn; ++i) {
+	ans(i) = static_cast<double>(iSn[i]);
+      }
+    } else {
+      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    }
+  }
+} 
 
 /* Cliff's new function for adding blank rows to C model values */
 SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
@@ -1122,3 +1174,12 @@ void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans
 	//Could return ans if we decided to build it on the fly here instead of providing it as argument
 }	
 
+
+SEXP makeNewNimbleList(SEXP S_listName) {
+  SEXP call;
+  PROTECT(call = allocVector(LANGSXP, 2));
+  SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
+  SETCADR(call, S_listName);
+  UNPROTECT(1);
+  return(EVAL(call));
+}

@@ -162,7 +162,7 @@ else
   cp inst/CppCode/dists.cpp src
   cp inst/CppCode/RcppUtils.cpp src
   cp inst/CppCode/nimbleGraph.cpp src
-  cp inst/CppCode/EigenTypedefs.cpp src
+  cp inst/CppCode/eigenUsingClasses.cpp src
 
   (cd inst/CppCode ; ${MAKE} libnimble.a)
 fi
