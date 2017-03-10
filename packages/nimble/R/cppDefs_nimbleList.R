@@ -9,14 +9,13 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       getDefs = function() {
-                                        if(eigenList){
+                                        if(eigenList){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
                                           if(inherits(SEXPfinalizerFun, 'uninitializedField'))
                                             list(SEXPgeneratorFun)
                                           else
                                             list(SEXPgeneratorFun, SEXPfinalizerFun)
                                         }
                                         else callSuper()
-                                        # callSuper()
                                       },
                                       buildCmultiInterface = function(dll = NULL) {
                                           sym <- if(!is.null(dll))
