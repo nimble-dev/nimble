@@ -319,7 +319,6 @@ void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
   int nimEnd = nimArr.size();
   int nimArrStride = nimArr.strides()[0];
   int nimCurrentOffset = nimArr.getOffset();
-  int k = SMVA_Vec.size();
   int nextNumVals;
   SingleVariableMapAccessBase* curSingleAccess;
   curSingleAccess = SMVA_Vec[index];
