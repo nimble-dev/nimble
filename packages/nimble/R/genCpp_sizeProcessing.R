@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr')
 setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
@@ -18,6 +18,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'), 
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
+                    dim = 'sizeDim',
                     RRtest_add = 'sizeRecyclingRule',
                     which = 'sizeWhich',
                     nimC = 'sizeConcatenate',
@@ -38,7 +39,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nfVar = 'sizeNFvar',
                     map = 'sizemap', 
                     ':' = 'sizeColonOperator',
-                    dim = 'sizeDimOperator',
+                    ##dim = 'sizeDimOperator',
                     'if' = 'recurseSetSizes', ##OK
                     'while' = 'recurseSetSizes',
                     callC = 'sizecallC', 
@@ -213,6 +214,23 @@ multiMaxSizeExprs <- function(code, useArgs = rep(TRUE, length(code$args))) {
 
 addDIB <- function(name, type) {
     paste0(name, switch(type, double = 'D', integer = 'I', logical = 'B'))
+}
+
+sizeDim <- function(code, symTab, typeEnv) {
+ ##   if(code$caller$name != '[') return(list()) ## This gets specially handled in sizeIndexingBracket
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    if(!inherits(code$args[[1]], 'exprClass')) {
+        stop(exprClassProcessingErrorMsg(code, paste0('Argument of dim is not valid')), call. = FALSE)
+    }
+    if(code$args[[1]]$nDim == 0) {
+        stop(exprClassProcessingErrorMsg(code, paste0('dim() cannot take a scalar as its argument.')), call. = FALSE)
+    }
+    if(code$caller$name != '[') code$name <- 'dimNimArr'
+    code$nDim <- 1
+    code$type <- 'integer'
+    code$toEigenize <- 'no'
+    code$sizeExprs <- list( code$args[[1]]$nDim )
+    return(if(is.null(asserts)) list() else asserts)
 }
 
 sizeDiagonal <- function(code, symTab, typeEnv) {
@@ -1805,17 +1823,17 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     invisible(asserts)
 }
 
-sizeDimOperator <- function(code, symTab, typeEnv) {
-    ## a special case since the resulte is stored as a vector<int>
-    ## recurse and set Intermediate is if it not a name or map
-    ## we'll want a NimArr<1, int> constructor vector<int> 
-    recurseSetSizes(code, symTab, typeEnv)
-    code$type <- 'integer'
-    code$nDim <- 1
-    code$sizeExprs <- list( code$args[[1]]$nDim )
-    code$toEigenize <- 'no'
-    invisible(NULL)
-}
+## sizeDimOperator <- function(code, symTab, typeEnv) {
+##     ## a special case since the resulte is stored as a vector<int>
+##     ## recurse and set Intermediate is if it not a name or map
+##     ## we'll want a NimArr<1, int> constructor vector<int> 
+##     recurseSetSizes(code, symTab, typeEnv)
+##     code$type <- 'integer'
+##     code$nDim <- 1
+##     code$sizeExprs <- list( code$args[[1]]$nDim )
+##     code$toEigenize <- 'no'
+##     invisible(NULL)
+## }
 
 sizeTranspose <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1) warning(paste0('More than one argument to transpose in ', nimDeparse(code), '.'), call. = FALSE)
@@ -1839,6 +1857,25 @@ sizeTranspose <- function(code, symTab, typeEnv) {
     return(ans)
 }
 
+getArgumentType <- function(expr) {
+    if(inherits(expr, 'exprClass')) {
+        expr$type
+    } else
+        storage.mode(expr)
+}
+
+setReturnType <- function(keyword, argType) {
+    handling <- returnTypeHandling[[keyword]]
+    if(is.null(handling)) return('double')
+    switch(handling,
+           'double', ##1
+           'integer', ##2
+           'logical', ##3
+           argType, ##4
+           if(argType == 'logical') 'integer' else argType ##5
+           )
+}
+
 ## Handler for unary functions that operate component-wise
 sizeUnaryCwise <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1){
@@ -1855,12 +1892,13 @@ sizeUnaryCwise <- function(code, symTab, typeEnv) {
         }
         code$nDim <- a1$nDim
         code$sizeExprs <- a1$sizeExprs
-        code$type <- a1$type
+  ##      code$type <- a1$type
     } else {
         code$nDim <- 0
         code$sizeExprs <- list()
-        code$type <- 'double'
+##        code$type <- 'double'
     }
+    code$type <- setReturnType(code$name, getArgumentType(a1))
     if(length(code$nDim) != 1) stop(exprClassProcessingErrorMsg(code, 'In sizeUnaryCwise: nDim is not set.'), call. = FALSE)
     code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
     return(asserts)
@@ -1956,7 +1994,7 @@ sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
     }
     code$nDim <- 2
     code$sizeExprs <- list(newSize, newSize)
-    code$type <- a1$type
+    code$type <- setReturnType(code$name, a1$type)
     code$toEigenize <- if(code$nDim > 0) 'yes' else 'maybe'
     invisible(asserts)
 }
@@ -1977,6 +2015,12 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1) stop(exprClassProcessingErrorMsg(code, 'sizeUnaryReduction called with argument length != 1.'), call. = FALSE)
     asserts <- recurseSetSizes(code, symTab, typeEnv)
     if(inherits(code$args[[1]], 'exprClass')) {
+        ## Kludgy catch of var case here.  Can't do var(matrix) because in R that is interpreted as cov(data.frame)
+        if(code$args[[1]]$nDim >= 2) {
+            if(code$name == 'var') {
+                stop(exprClassProcessingErrorMsg(code, 'NIMBLE compiler does not support var with a matrix (or higher dimensional) argument.'), call. = FALSE) 
+            }
+        }
         if(!code$args[[1]]$isName) {
             if(code$args[[1]]$toEigenize == 'no') {
                 asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
@@ -1986,7 +2030,7 @@ sizeUnaryReduction <- function(code, symTab, typeEnv) {
 
     code$nDim <- 0
     code$sizeExprs <- list()
-    code$type <- code$args[[1]]$type
+    code$type <- setReturnType(code$name, code$args[[1]]$type)
     code$toEigenize <- 'yes'
 
     if(!(code$caller$name %in% c('{','<-','<<-','='))) {
@@ -2080,7 +2124,7 @@ sizeMatrixMult <- function(code, symTab, typeEnv) {
     }
     code$nDim <- 2
     code$sizeExprs <- list(a1$sizeExprs[[1]], a2$sizeExprs[[2]])
-    code$type <- arithmeticOutputType(a1$type, a2$type)
+    code$type <- setReturnType(code$name, arithmeticOutputType(a1$type, a2$type))
     code$toEigenize <- 'yes'
     assertMessage <- paste0("Run-time size error: expected ", deparse(a1$sizeExprs[[2]]), " == ", deparse(a2$sizeExprs[[1]]))
     newAssert <- identityAssert(a1$sizeExprs[[2]], a2$sizeExprs[[1]], assertMessage)
@@ -2099,7 +2143,7 @@ sizeSolveOp <- function(code, symTab, typeEnv) { ## this is for solve(A, b) or f
     if(!(inherits(a1, 'exprClass') & inherits(a2, 'exprClass'))) stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: expecting both arguments to be exprClasses.'), call. = FALSE)
     if(a1$nDim != 2)  stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: first argument to a matrix solver must be a matrix.'), call. = FALSE)
     if(!any(a2$nDim == 1:2)) stop(exprClassProcessingErrorMsg(code, 'In sizeSolveOp: second argument to a matrix solver must be a vector or matrix.'), call. = FALSE)
-    code$type <- 'double'
+    code$type <- setReturnType(code$name, 'double')
     code$nDim <- a2$nDim  ## keep the same dimension as the 2nd argument
     if(code$nDim == 1) { code$sizeExprs <- c(a1$sizeExprs[[1]])
                      } else { code$sizeExprs <- c(a1$sizeExprs[[1]], a2$sizeExprs[[2]]) }
@@ -2209,7 +2253,7 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a1DropNdim <- 0
         a1nDim <- 0
         a1sizeExprs <- list()
-        a1type <- 'double'
+        a1type <- storage.mode(a1)
     }
     if(inherits(a2, 'exprClass')) {
         if(a2$toEigenize == 'no') {
@@ -2225,13 +2269,13 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
         a2DropNdim <- 0
         a2nDim <- 0
         a2sizeExprs <- list()
-        a2type <- 'double'
+        a2type <- storage.mode(a2)
     }
     
     ## Choose the output type by type promotion
     if(length(a1type) == 0) {warning('Problem with type of arg1 in sizeBinaryCwise', call. = FALSE); browser()}
     if(length(a2type) == 0) {warning('Problem with type of arg2 in sizeBinaryCwise', call. = FALSE); browser()}
-    code$type <- arithmeticOutputType(a1type, a2type)
+    code$type <- setReturnType(code$name, arithmeticOutputType(a1type, a2type))
 
     code$toEigenize <- if(a1DropNdim == 0 & a2DropNdim == 0) 'maybe' else 'yes'
     
