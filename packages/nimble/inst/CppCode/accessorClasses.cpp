@@ -312,6 +312,25 @@ void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &
     PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
+template<class T>
+void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, int index){
+  vector<SingleVariableMapAccessBase*> SMVA_Vec = MMVAPtr.getMapAccessVector();
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  curSingleAccess = SMVA_Vec[index];
+  nextNumVals = (*curSingleAccess).getLength();
+  if(nextNumVals + nimCurrent > nimEnd)
+    PRINTF("Warning: in nimArr_2_ManyModelAccessIndex, accessor larger than NimArr!\n");
+  nimArr_2_SingleModelAccess<T>(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+  nimCurrent += nextNumVals;
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing nimArr_2_ManyModelAccessIndex, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
+  
 ///////////////
 // [accessors]_2_nimArr
 // nimArr is "to". SMVAPtr is "from"
@@ -376,6 +395,24 @@ void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &
     PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
+template<class T>
+void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, int index) {
+  vector<SingleVariableMapAccessBase*> SMVA_Vec = MMVAPtr.getMapAccessVector();
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  curSingleAccess = SMVA_Vec[index];
+  nextNumVals = (*curSingleAccess).getLength();
+  if(nextNumVals + nimCurrent > nimEnd)
+    PRINTF("Warning: in ManyModelAccessIndex_2_nimArr, accessor larger than NimArr!\n");
+  SingleModelAccess_2_nimArr<T>(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+  //SingleModelAccess_2_nimArr<T>(curSingleAccess, nimArr, 0, 0 ); 
+}
+
+
 //////////
 //
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA){
@@ -386,11 +423,27 @@ void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA){
 	nimArr_2_ManyModelAccess<int>(MVA, nimArr);
 }
 
+void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  nimArr_2_ManyModelAccessIndex<double>(MVA, nimArr, index-1);
+}
+
+void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  nimArr_2_ManyModelAccessIndex<int>(MVA, nimArr, index-1);
+}
+
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA){
 	ManyModelAccess_2_nimArr<double>(MVA, nimArr);
 }
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA){
 	ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+}
+
+void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  ManyModelAccessIndex_2_nimArr<double>(MVA, nimArr, index-1);
+  } 
+
+void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  ManyModelAccessIndex_2_nimArr<int>(MVA, nimArr, index-1);
 }
 
 ////////////////////////
@@ -481,16 +534,15 @@ void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T> &nimA
     curSingleAccess = SMVA_Vec[i];
     nextNumVals = (*curSingleAccess).getLength();
     if(nextNumVals + nimCurrent > nimEnd){
-      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      PRINTF("Warning: in ManyModelAccess_2_nimArr, accessor larger than NimArr!\n");
       break;
     }
     SingleModelAccess_2_nimArr<D, T>(curSingleAccess, nimArr, nimCurrent);
     nimCurrent = nimCurrent + nextNumVals;
   }
   if(nimCurrent != nimEnd)
-    PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+    PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
-
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesAccessor &MVA){
 	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
@@ -505,6 +557,7 @@ void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA){
 void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
 	ManyModelAccess_2_nimArr<1, int>(MVA, nimArr);
 }
+
 
 // new copierClass versions
 // remember to look at calculate() too to avoid copies every time.

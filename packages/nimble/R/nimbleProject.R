@@ -671,7 +671,6 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      cppClass <- buildNimbleFunctionCompilationInfo(funList, isNode = isNode, initialTypeInferenceOnly = initialTypeInferenceOnly, control = control, where = where, fromModel = fromModel)
                                      if(initialTypeInferenceOnly || returnCppClass) return(cppClass) ## cppClass is an nfProc in this case
 
-
                                      ## At this point we are ready to write, compile, load and instantiate.
                                      ## However the system for tracking these steps is not perfect.
                                      ## Specifically, if another nimbleFunction containing an object of the current nimbleFunction

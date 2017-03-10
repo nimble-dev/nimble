@@ -216,11 +216,24 @@ values_keywordInfo <- keywordInfoClass(
       	stop('model argument missing from values call, with no accessor argument supplied')
       
       accessArgList <- list(model = code$model, nodes = code$nodes, logProb = FALSE)
+
+      useAccessorVectorByIndex <- FALSE
+      if(hasBracket(accessArgList$nodes)) { 
+            useAccessorVectorByIndex <- TRUE
+            if(length(accessArgList$nodes) != 3) stop(paste0('Problem with ', deparse(code),'. If you need to index on the nodes argument there should be only one index.'))
+            nodesIndexExpr <- accessArgList$nodes[[3]]
+            accessArgList$nodes <- accessArgList$nodes[[2]]
+            accessArgList$sortUnique <- FALSE   
+      }
+
       accessName <- modelVariableAccessorVector_setupCodeTemplate$makeName(accessArgList)
       addNecessarySetupCode(accessName, accessArgList, modelVariableAccessorVector_setupCodeTemplate, nfProc)
-      
-      newRunCode <- substitute(values(accessor = ACCESS_NAME), 
+      if(!useAccessorVectorByIndex)
+          newRunCode <- substitute(values(accessor = ACCESS_NAME), 
                                list(ACCESS_NAME = as.name(accessName)))
+        else
+            newRunCode <- substitute(values(accessor = ACCESS_NAME, accessorIndex = ACCESSVECINDEX),
+                                 list(ACCESS_NAME = as.name(accessName), ACCESSVECINDEX = nodesIndexExpr))
       return(newRunCode)
     })                                    
 

@@ -207,6 +207,7 @@ class ManyVariablesMapAccessor : public ManyVariablesMapAccessorBase {
  public:
   vector<SingleVariableMapAccessBase *> varAccessors;
   virtual vector<SingleVariableMapAccessBase *> &getMapAccessVector() {return(varAccessors);}
+  int &getNodeLength(int index) {return(varAccessors[index-1]->getLength());}
   ~ManyVariablesMapAccessor();
   void setRow(int i){PRINTF("Bug detected in code: attempting to setRow for model. Can only setRow for modelValues\n");}
   void resize(int n){
@@ -262,8 +263,12 @@ void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &t
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA);
 void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA);
+void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index);
+void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA);
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA);
+void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index);
+void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index);
 
 
 
@@ -609,6 +614,10 @@ template<int D, class T>
 void SingleModelAccess_2_nimArr(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin);
 template<int D, class T>
 void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr);
+/*
+template<int D, class T>
+void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr, int i);
+*/
 
 /* void setValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA); */
 /* void setValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA); */
@@ -618,6 +627,8 @@ void setValues(NimArrBase<int> &nimArr, ManyVariablesAccessor &MVA);
 
 void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA);
 void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA);
+//void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA, int i);
+//void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA, int i);
 
 
 //double calculate(NodeVectorClass &nodes);

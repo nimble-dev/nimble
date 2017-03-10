@@ -13,8 +13,8 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
                                        initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE) {
-                                       		compileInfos <<- list()
-                                       		RCfunProcs <<- list()
+                                           compileInfos <<- list()
+                                           RCfunProcs <<- list()
                                        		
                                            if(!is.null(f)) { ## This allows successful default instantiation by R when defining nfProcessing below -- crazy
                                                ## nfGenerator allowed if it is a nimbleFunctionVirtual
@@ -170,9 +170,8 @@ nfProcessing <- setRefClass('nfProcessing',
                                   ##NEW PROCESSING TOOLS.   
                                   matchKeywords_all()
                                   processKeywords_all()
-                                  
-                                  if(debug) browser()
 
+                                  if(debug) browser()
                                   makeNewSetupLinesOneExpr()
                                   
                                   evalNewSetupLines()

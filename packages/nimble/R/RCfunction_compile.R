@@ -133,7 +133,6 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                    ),
                                methods = list(
                                    process = function(debug = FALSE, debugCpp = FALSE, debugCppLabel = character(), doKeywords = TRUE) {
-                                       
                                        if(!is.null(nimbleOptions()$debugRCfunProcessing)) {
                                            if(nimbleOptions()$debugRCfunProcessing) {
                                                debug <- TRUE
@@ -224,7 +223,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            writeLines('***** READY FOR insertAssertions *****')
                                            browser()
                                        }
-                                       
+
                                        tryResult <- try(exprClasses_insertAssertions(compileInfo$nimExpr))
                                        if(inherits(tryResult, 'try-error')) {
                                            stop(paste('There is some problem at the insertAdditions processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
