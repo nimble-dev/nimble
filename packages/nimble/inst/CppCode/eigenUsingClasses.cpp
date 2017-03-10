@@ -1,6 +1,7 @@
-#include "nimble/eigenUsingCpp.h"
-#include "nimble/dists.h"
-#include "nimble/nimDists.h"
+#include <nimble/EigenTypedefs.h>
+#include "nimble/eigenUsingClasses.h"
+//#include "nimble/dists.h"
+//#include "nimble/nimDists.h"
 
 /*EIGEN_EIGEN class functions below */
 SEXP  EIGEN_EIGENCLASS::copyToSEXP (  )  {
@@ -99,7 +100,7 @@ SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
 	bool valuesOnly;
 	SEXP_2_NimArr<2>(S_x, x);
 	valuesOnly = SEXP_2_bool(S_valuesOnly);
-	Map<MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
+	Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
     EIGEN_EIGENCLASS C_eigenClass = *EIGEN_EIGEN(Eig_x, valuesOnly);
 	C_eigenClass.RObjectPointer = returnList;
 	C_eigenClass.copyToSEXP();

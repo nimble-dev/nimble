@@ -705,3 +705,12 @@ SEXP parseVar(SEXP Sinput) {
   parseVar(input, output);
   return(vectorString_2_STRSEXP(output));
 }
+
+SEXP makeNewNimbleList(SEXP S_listName) {
+  SEXP call;
+  PROTECT(call = allocVector(LANGSXP, 2));
+  SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
+  SETCADR(call, S_listName);
+  UNPROTECT(1);
+  return(EVAL(call));
+}
