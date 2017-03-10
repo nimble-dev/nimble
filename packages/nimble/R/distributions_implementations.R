@@ -76,8 +76,9 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 nimEigen <- function(x, only.values = FALSE) {
   ## placeholder list with correct names of elements, will be populated in C++
   eigenList <- nlEigenEigenInfo$createListDef()$new()
-  .Call('C_nimEigen', apply(x, 1, as.double), as.logical(only.values), eigenList,
-        PACKAGE = nimbleUserNamespace$sessionSpecificDll[[1]])
+    .Call('C_nimEigen', apply(x, 1, as.double), as.logical(only.values), eigenList,
+          package = 'nimble')
+##        PACKAGE = nimbleUserNamespace$sessionSpecificDll[[1]])
 }
 
 
