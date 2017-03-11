@@ -41,19 +41,8 @@ typedef Map<MatrixXb, Unaligned, EigStrDyn > EigenMapStrb;
 class EIGEN_EIGENCLASS : public EIGEN_EIGENCLASS_R, public NamedObjects {
 public:
   bool RCopiedFlag;
-  SEXP  copyToSEXP (  )  {
-    if(!RCopiedFlag) {
-      EIGEN_EIGENCLASS_R::copyToSEXP();
-      RCopiedFlag = true;
-    }
-    return(RObjectPointer);
-  }
-
-  EIGEN_EIGENCLASS(){	
-    namedObjects["values"]=&values;
-    namedObjects["vectors"]=&vectors;
-    RCopiedFlag = false;
-  };
+  SEXP  copyToSEXP();
+  EIGEN_EIGENCLASS();
 };
 
 template<class Derived>

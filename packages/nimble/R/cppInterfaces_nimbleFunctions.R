@@ -831,6 +831,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
     # substitute on parsed text string to avoid CRAN issues with .Call registration
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, isListObj = FALSE, existingBasePtr = NULL, ...){		#cModel removed from here
+        browser()
       if(!isListObj) defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
       callSuper(dll = dll, project = project, test = FALSE, ...)
     
