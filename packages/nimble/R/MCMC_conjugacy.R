@@ -617,7 +617,7 @@ conjugacyClass <- setRefClass(
                        },
                        `1` = {
                            functionBody$addCode({
-                               model[[target]] <<- model[[target]] * 0
+                               model[[target]] <<- rep(0, d)
                                model$calculate(calcNodesDeterm)
                            })
 
@@ -637,11 +637,13 @@ conjugacyClass <- setRefClass(
                                                          PARAM_NAME     = dependents[[distName]]$param))
                            }
 
+                           functionBody$addCode(unitVector <- rep(0, d))
+
                            forLoopBody <- codeBlockClass()
                            forLoopBody$addCode({
-                               unitVector <- model[[target]] * 0
                                unitVector[sizeIndex] <- 1
                                model[[target]] <<- unitVector
+                               unitVector[sizeIndex] <- 0
                                calculate(model, calcNodesDeterm)
                            })
 
