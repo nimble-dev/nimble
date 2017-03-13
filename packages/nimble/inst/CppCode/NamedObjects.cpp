@@ -57,16 +57,16 @@ SEXP getAvailableNames(SEXP Sextptr) {
   
   SEXP Sans;
   int numNames = m->namedObjects.size();
-  _nimble_global_output << "numNames = "<<numNames<<"\n"; nimble_print_to_R( _nimble_global_output);
+  //  _nimble_global_output << "numNames = "<<numNames<<"\n"; nimble_print_to_R( _nimble_global_output);
   PROTECT(Sans = allocVector(STRSXP, numNames));
-  m->hw();
+  //  m->hw();
   map<string, void *>::iterator iNO = m->getNamedObjects().begin();
   for(int i = 0; i < numNames; ++i, ++iNO) {
-    _nimble_global_output << "starting "<<i<<"\n"; nimble_print_to_R( _nimble_global_output);
-    _nimble_global_output << iNO->first.c_str() <<" \n";
-    nimble_print_to_R( _nimble_global_output);
+    // _nimble_global_output << "starting "<<i<<"\n"; nimble_print_to_R( _nimble_global_output);
+    //_nimble_global_output << iNO->first.c_str() <<" \n";
+    //nimble_print_to_R( _nimble_global_output);
     SET_STRING_ELT(Sans, i, mkChar(iNO->first.c_str()));
-    _nimble_global_output << "done with "<<i<<" "<<iNO->first<<" \n"; nimble_print_to_R( _nimble_global_output);
+    //_nimble_global_output << "done with "<<i<<" "<<iNO->first<<" \n"; nimble_print_to_R( _nimble_global_output);
   }
   UNPROTECT(1);
   return(Sans);
@@ -131,14 +131,14 @@ void numberedObjects_Finalizer(SEXP Snp){
 }
 
 SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
-  //std::cout<< "In register_namedObjects_Finalizer\n";
+  std::cout<< "In register_namedObjects_Finalizer\n";
   //R_RegisterCFinalizerEx(Snp, &namedObjects_Finalizer, TRUE);
   RegisterNimbleFinalizer(Snp, Dll, &namedObjects_Finalizer, Slabel);
   return(Snp);
 }
 
 void namedObjects_Finalizer(SEXP Snp){
-  //std::cout<< "In namedObjects_Finalizer\n";
+  std::cout<< "In namedObjects_Finalizer\n";
   NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);

@@ -9,10 +9,8 @@ SEXP  EIGEN_EIGENCLASS::copyToSEXP (  )  {
 }
 
 EIGEN_EIGENCLASS::EIGEN_EIGENCLASS(){
-  std::cout<<"Constructing EIGEN_EIGENCLASS\n";
+  //std::cout<<"Constructing EIGEN_EIGENCLASS\n";
   namedObjects["values"]=&values;
   namedObjects["vectors"]=&vectors;
-  std::cout<<"Gonna say hw now:\n";
-  hw();
   RCopiedFlag = false;
 }
