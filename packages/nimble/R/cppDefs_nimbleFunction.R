@@ -274,9 +274,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## see comment in nimbleProjectClass::compileNimbleFunction
                                                   oldCobjectInterface <- nf_getRefClassObject(R_NimbleFxn)$.CobjectInterface
                                                   if(!is.list(oldCobjectInterface)) return(oldCobjectInterface)
-                                                  existingBasePtr <- oldCobjectInterface[[1]]$getBasePtr(oldCobjectInterface[[2]])
+                                                  existingExtPtrs <- oldCobjectInterface[[1]]$getExtPtrs(oldCobjectInterface[[2]])
                                                   thisDll <- oldCobjectInterface[[1]]$dll
-                                                  newCobjectInterface <- Rgenerator(R_NimbleFxn, thisDll, project = nimbleProject, existingBasePtr = existingBasePtr)
+                                                  newCobjectInterface <- Rgenerator(R_NimbleFxn, thisDll, project = nimbleProject, existingExtPtrs = existingExtPtrs)
                                                   newCobjectInterface
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){

@@ -48,8 +48,13 @@ SEXP getAvailableNames(SEXP Sextptr) {
     PRINTF("Error: Sextptr is not a a valid external pointer\n");
     return(R_NilValue);
   }
-  NamedObjects *m = static_cast< NamedObjects *>(R_ExternalPtrAddr(Sextptr));
-
+  NamedObjects *m;
+  if((m = static_cast< NamedObjects *>(R_ExternalPtrAddr(Sextptr)))) {
+    _nimble_global_output << "cast ok\n"; nimble_print_to_R( _nimble_global_output);
+  } else {
+    _nimble_global_output << "cast not ok\n"; nimble_print_to_R( _nimble_global_output);
+  }
+  
   SEXP Sans;
   int numNames = m->namedObjects.size();
   _nimble_global_output << "numNames = "<<numNames<<"\n"; nimble_print_to_R( _nimble_global_output);
@@ -58,7 +63,8 @@ SEXP getAvailableNames(SEXP Sextptr) {
   map<string, void *>::iterator iNO = m->getNamedObjects().begin();
   for(int i = 0; i < numNames; ++i, ++iNO) {
     _nimble_global_output << "starting "<<i<<"\n"; nimble_print_to_R( _nimble_global_output);
-    _nimble_global_output << iNO->first<<" \n"; nimble_print_to_R( _nimble_global_output);
+    _nimble_global_output << iNO->first.c_str() <<" \n";
+    nimble_print_to_R( _nimble_global_output);
     SET_STRING_ELT(Sans, i, mkChar(iNO->first.c_str()));
     _nimble_global_output << "done with "<<i<<" "<<iNO->first<<" \n"; nimble_print_to_R( _nimble_global_output);
   }

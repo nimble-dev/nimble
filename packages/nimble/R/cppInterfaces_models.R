@@ -38,7 +38,8 @@ getMVName <- function(modelValuePtr, dll)
 CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                contains = 'modelBaseClass',
                                fields = list(
-                                   .basePtr = 'ANY',
+                                   .basePtr = 'ANY', ## pointer to derived model C++ class (backwards terminology due to history, unfortunately)
+                                   .namedObjectsPtr = 'ANY', ## pointer to base NamedObjects C++ base blass
                                    dll = 'ANY',
                                    Rmodel = 'ANY',
                                    cppNames = 'ANY',
@@ -62,6 +63,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        }
                                        finalize()
                                        .basePtr <<- NULL
+                                       .namedObjectsPtr <<- NULL
                                        .nodeFxnPointers_byDeclID <<- NULL
                                        nimbleProject <<- NULL
                                    },
@@ -76,8 +78,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        }
                                        if(!is.null(.nodeFxnPointers_byDeclID))
                                            .nodeFxnPointers_byDeclID$finalize()
-                                       if(!is.null(.basePtr))
-                                           nimbleInternalFunctions$nimbleFinalize(.basePtr)
+                                       if(!is.null(.namedObjectsPtr)) ## .basePtr
+                                           nimbleInternalFunctions$nimbleFinalize(.namedObjectsPtr) ##.basePtr
                                    },
                                    setModel = function(model) {
                                        ## This is creating a circular reference, so be careful with show(), and with Rstudio
@@ -218,8 +220,12 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
 
                                         # avoid R CMD check problem with registration
                                                 ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
-                                                .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
-                                                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll[['handle']], model$name))
+                                                newPtrPair <<- eval(parse(text = ".Call(basePtrCall)"))
+                                                .basePtr <<- newPtrPair[[1]]
+                                                .namedObjectsPtr <<- newPtrPair[[2]]
+                                                eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
+                                                          .namedObjectsPtr, ##.basePtr,
+                                                          dll[['handle']], model$name))
                                                 # .basePtr <<- .Call(BPTRCALL)
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll = dll)
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )
