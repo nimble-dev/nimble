@@ -573,6 +573,7 @@ sampler_AF_slice <- nimbleFunction(
           nContracts          <<- integer(d, 0)
           sliceAdaptInterval  <<- 1
           sliceAdaptIters     <<- sliceAdaptItersOriginal
+          allSlicesAdapted    <<- 0
           sliceCounter        <<- 0
           factorCounter       <<- 0
         }
