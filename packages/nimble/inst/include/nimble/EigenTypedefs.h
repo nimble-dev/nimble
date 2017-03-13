@@ -80,11 +80,11 @@ void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x, bool valuesOnly, 
 	}
     Eigen::DecompositionOptions eigOpts = valuesOnly ? EigenvaluesOnly : ComputeEigenvectors;
 	SelfAdjointEigenSolver<MatrixXd> solver(x, eigOpts); // The MatrixXd here doesn't seem generic, but I couldn't get it to work otherwise and it would be odd to do an Eigen decomposition on anything else. -Perry
-	Eig_eigVals = solver.eigenvalues().reverse();
+	Eig_eigVals = solver.eigenvalues();
 	if(!valuesOnly){
 	  returnClass->getVectors().initialize(0, 0, x.rows(), x.cols());
 	  Map<MatrixXd> Eig_eigVecs(returnClass->getVectors().getPtr(),x.rows(),x.cols());
-	  Eig_eigVecs = solver.eigenvectors().reverse();	
+	  Eig_eigVecs = solver.eigenvectors().rowwise().reverse();	
 	}
 	//	return(returnClass);
 };
