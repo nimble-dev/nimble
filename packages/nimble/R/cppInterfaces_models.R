@@ -40,6 +40,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                fields = list(
                                    .basePtr = 'ANY', ## pointer to derived model C++ class (backwards terminology due to history, unfortunately)
                                    .namedObjectsPtr = 'ANY', ## pointer to base NamedObjects C++ base blass
+                                   .ModelBasePtr = 'ANY',
                                    dll = 'ANY',
                                    Rmodel = 'ANY',
                                    cppNames = 'ANY',
@@ -64,6 +65,7 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        finalize()
                                        .basePtr <<- NULL
                                        .namedObjectsPtr <<- NULL
+                                       .ModelBasePtr <<- NULL
                                        .nodeFxnPointers_byDeclID <<- NULL
                                        nimbleProject <<- NULL
                                    },
@@ -200,6 +202,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
     }
     defaults$cppCT <- makeModelCppCopyTypes(symTab)
     defaults$project <- project
+    defaults$extPtrTypeIndex <- compiledModel$getExtPtrTypeIndex()
     
     # resolve basePtrCall rather than looking it up later.
   if(!is.null(dll) && is.character(basePtrCall))
@@ -220,15 +223,18 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
 
                                         # avoid R CMD check problem with registration
                                                 ## notice that the following line appears a few lines up:basePtrCall = getNativeSymbolInfo(basePtrCall, dll)
-                                                newPtrPair <<- eval(parse(text = ".Call(basePtrCall)"))
+                                                newPtrPair <- eval(parse(text = ".Call(basePtrCall)"))
                                                 .basePtr <<- newPtrPair[[1]]
-                                                .namedObjectsPtr <<- newPtrPair[[2]]
+                                                .ModelBasePtr <<- newPtrPair[[ defaults$extPtrTypeIndex['ModelBase'] ]]
+                                                .namedObjectsPtr <<- newPtrPair[[ defaults$extPtrTypeIndex['NamedObjects'] ]]
                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
                                                           .namedObjectsPtr, ##.basePtr,
                                                           dll[['handle']], model$name))
                                                 # .basePtr <<- .Call(BPTRCALL)
-                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.basePtr, dll = dll)
-                                                defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr, buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll), initialized = TRUE, dll = dll )
+                                                .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.ModelBasePtr, dll = dll) ## this is a Values*
+                                                defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr,
+                                                                                                                buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll),
+                                                                                                                initialized = TRUE, dll = dll )
                                                 modelDef <<- model$modelDef
                                                 graph <<- model$graph
                                                 vars <<- model$vars
@@ -236,13 +242,13 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 nimbleProject <<- defaults$project
                                                 for(v in ls(model$isDataEnv)) isDataEnv[[v]] <<- model$isDataEnv[[v]]
                                                 setData(modelDef$constantsList, warnAboutMissingNames = FALSE)
-                                                cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr)) ## or could get this from R objects
+                                                cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .namedObjectsPtr)) ## or could get this from R objects
                                                 cppCopyTypes <<- defaults$cppCT
                                                 compiledModel <<- defaults$cm
                                                 for(vn in cppNames)
                                                     {
                                                         vPtrName <- paste(".", vn, "_Ptr", sep = "")
-                                                     	.self[[vPtrName]] <<- nimbleInternalFunctions$newObjElementPtr(.basePtr, vn, dll = dll)
+                                                     	.self[[vPtrName]] <<- nimbleInternalFunctions$newObjElementPtr(.namedObjectsPtr, vn, dll = dll)
                                                     }      
                                                 if(!missing(model)) {
                                                     setModel(model)

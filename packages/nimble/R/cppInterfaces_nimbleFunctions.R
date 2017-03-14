@@ -828,11 +828,11 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     NFBF <-  makeNFBindingFields(symTab, cppNames)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
     defaults$basePtrCall <- basePtrCall
-
+    defaults$extPtrTypeIndex <- compiledNimbleObj$getExtPtrTypeIndex()
+    
     methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
     # substitute on parsed text string to avoid CRAN issues with .Call registration
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, isListObj = FALSE, existingExtPtrs = NULL, ...){		#cModel removed from here
-        browser()
       if(!isListObj) defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
       callSuper(dll = dll, project = project, test = FALSE, ...)
     
@@ -843,9 +843,9 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
             } else defaults$basePtrCall
                                         # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
            ## .basePtr
-            ptrPair <- eval(parse(text = ".Call(basePtrCall)"))
-            .basePtr <<- ptrPair[[1]] ## pointer to *derived* C++ class
-            .namedObjectsPtr <<- ptrPair[[2]]
+            newObjPtrs <- eval(parse(text = ".Call(basePtrCall)"))
+            .basePtr <<- newObjPtrs[[1]] ## pointer to *derived* C++ class
+            .namedObjectsPtr <<- newObjPtrs[[  defaults$extPtrTypeIndex['NamedObjects'] ]]
             regLabel <- try(get('name', envir = nfObject), silent = TRUE)
             if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
             eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
@@ -853,12 +853,11 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
                       dll[['handle']], regLabel))
         } else {
             .basePtr <<- existingExtPtrs[[1]]
-            .namedObjectsPtr <<- existingExtPtrs[[2]]
+            .namedObjectsPtr <<- existingExtPtrs[[  defaults$extPtrTypeIndex['NamedObjects'] ]]
         }
-        # .basePtr <<- .Call(basePtrCall)
-        cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .namedObjectsPtr))##.basePtr))
-        browser()
-        cppCopyTypes <<- defaults$cppCT
+                                        # .basePtr <<- .Call(basePtrCall)
+         cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .namedObjectsPtr))##.basePtr))
+         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
         vPtrNames <- 	paste0(".", cppNames, "_Ptr")
         for(vn in seq_along(cppNames) ){
@@ -932,7 +931,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              RobjectList = 'ANY',
                                              neededObjectsList = 'ANY',
                                              compiledNodeFun = 'ANY',    ## a cppNimbleFunctionClass
-                                             callEnv = 'ANY'
+                                             callEnv = 'ANY',
+                                             extPtrTypeIndex = 'ANY'
                                          ),
                                          methods = list(
                                              show = function() {
@@ -940,7 +940,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              },
                                              initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
                                                  # if(missing(project)) stop('Cannot create CmultiNimbleFunctionClass without a project', call. = FALSE)
-                                                 # if(is.null(project)) stop('Cannot create CmultiNimbleFunctionClass with a NULL project', call. = FALSE)
+                                        # if(is.null(project)) stop('Cannot create CmultiNimbleFunctionClass with a NULL project', call. = FALSE)
                                                  nimbleProject <<- project
                                                  neededObjectsList <<- list()
                                                  ##     nfObjectList <<- list()
@@ -949,6 +949,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  RobjectList <<- list()
                                                  dll <<- NULL
                                                  compiledNodeFun <<- compiledNodeFun
+                                                 extPtrTypeIndex <<- compiledNodeFun$getExtPtrTypeIndex()
                                                  ## basePtrCall is the result of getNativeSymbolInfo with the dll if possible from cppDefs_nimbleFunction.R
                                                  basePtrCall <<- basePtrCall
                                                  callSuper(...)
@@ -988,16 +989,17 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  ##newBasePtr
                                                  newObjPtrs <- eval(parse(text = ".Call(basePtrCall)", keep.source = FALSE))
                                                  newBasePtr <- newObjPtrs[[1]] ## terminology confusing because this is the derived C++ class
-                                                 newNamedObjectsPtr <- newObjPtrs[[2]] ## this is the base C++ class
+                                                 newNamedObjectsPtr <- newObjPtrs[[ extPtrTypeIndex['NamedObjects'] ]] ## this is the base C++ class
+                                                 if(is.null(newNamedObjectsPtr)) browser() ##stop('Problem: Cannot find right external pointer information')
                                                  regLabel <- try(get('name', envir = nfObject), silent = TRUE)
                                                  if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
-
+                                                 
+                                                 basePtrList[[length(basePtrList)+1]] <<- newBasePtr
+                                                 namedObjectsPtrList[[length(namedObjectsPtrList)+1]] <<- newNamedObjectsPtr
                                                  eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
                                                            newNamedObjectsPtr, ##newBasePtr,
                                                            dll[['handle']], regLabel))
                                                  
-                                                 basePtrList[[length(basePtrList)+1]] <<- newBasePtr
-                                                 namedObjectsPtrList[[length(namedObjectsPtrList)+1]] <<- newNamedObjectsPtr
                                                  if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)
                                                  else newRobject <- nfObject
                                                  newRobject$.CobjectInterface <- list(.self, length(basePtrList)) ## second element is its index

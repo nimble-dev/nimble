@@ -250,7 +250,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        on.exit(setwd(cur))
 
                                        if(is.null(nimbleUserNamespace$sessionSpecificDll)) {
-                                           browser()
                                            writeDynamicRegistrationsDotCpp(dynamicRegistrationsCppName, dynamicRegistrationsDllName)
                                            ssDllName <- file.path(dirName, paste0(dynamicRegistrationsDllName, .Platform$dynlib.ext))
                                            ssdSHLIBcmd <- paste(file.path(R.home('bin'), 'R'), 'CMD SHLIB', dynamicRegistrationsCppName, '-o', basename(ssDllName))
@@ -276,7 +275,6 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
 
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()
-                                       browser()
                                        if(isWindows)
                                            status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
                                        else

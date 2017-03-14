@@ -18,6 +18,7 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
                                                          else {
                                                              baseClassName <- environment(baseClassObj)$CclassName
                                                              addInheritance(baseClassName)
+                                                            ## addAncestors(c(baseClassObj$inheritance, baseClassObj$ancestors))
                                                          }
                                                      }
                                                  },
@@ -294,6 +295,12 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassName <- environment(baseClassObj)$name
                                                       addInheritance(baseClassName)
+                                                      ## These lines would be completely general...
+                                                      ##baseClassCppDef <- environment(baseClassObj)$cppDef
+                                                      ##if(is.null(baseClassCppDef)) warning('cppDef for a base class not available when needed')
+                                                      ##addAncestors(c(baseClassCppDef$inheritance, baseClassCppDef$ancestors))
+                                                      ## ... but I'm going with this for now because it is just what is needed 
+                                                      addAncestors('NamedObjects')
                                                   }
                                                   callSuper(where)
                                               }

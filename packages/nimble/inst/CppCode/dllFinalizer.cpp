@@ -55,19 +55,22 @@ string local_STRSEXP_2_string(SEXP Ss, int i) {
 void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer, SEXP Slabel) { // same as RegisterNimbleFinalizer
   RnimblePtrsIterator value = RnimblePtrs.find(ptr);
   // add check that ptr is an external pointer
+  string label;
+  if(Slabel != R_NilValue) {
+    label = local_STRSEXP_2_string(Slabel, 0);
+  } else {
+    label = string("");
+  }
+
   if(value != RnimblePtrs.end()) {
-    PRINTF("Error: trying to register a finalizer for an external pointer that has already has one\n");
+    PRINTF("Error: trying to register a finalizer for an external pointer (for %s) that has already has one\n", label.c_str());
     return;
   }
   DllAndFinalizer newDLLAndFinalizer;
   newDLLAndFinalizer.Dll = Dll;
   newDLLAndFinalizer.Finalizer = finalizer;
-  if(Slabel != R_NilValue) {
-    newDLLAndFinalizer.Label = local_STRSEXP_2_string(Slabel, 0);
-  } else {
-    newDLLAndFinalizer.Label = string("");
-  }
-  //PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
+  newDLLAndFinalizer.Label = label;
+  //  PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
   RnimblePtrs[ptr] = newDLLAndFinalizer;
   R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
 }
