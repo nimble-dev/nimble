@@ -4,6 +4,10 @@
 #include "nimble/dllFinalizer.h"
 #include "R.h"
 
+void NamedObjects::NO_hw(  ) {
+  PRINTF("hello world from NamedObjects\n");
+}
+
 void* NamedObjects::getObjectPtr( string &name ) {
   //cout<<name<<"\n";
   map<string, void *>::iterator iMO;

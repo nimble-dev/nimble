@@ -765,7 +765,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                    ok <- TRUE
                                    if(asTopLevel) {
                                      if(is.null(nlCppDef$Rgenerator)) ok <- FALSE
-                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll, project = .self)
+                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll) ##, project = .self)
                                    } else {
                                      if(is.null(nlCppDef$CmultiInterface)) ok <- FALSE
                                      else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dll)

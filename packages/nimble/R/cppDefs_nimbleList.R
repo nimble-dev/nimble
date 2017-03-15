@@ -26,7 +26,6 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           ## member function
                                           ##
                                           ## and also we'll return a ptr to a the realPtr (a double pointer to the object)
-                                          browser()
                                           
                                           extPtrTypes <<- c('ptrToSmartPtr','ptrToPtrToObject')
                                           CBobjectDefs <- list(cppVarFull(name = 'ptrToSmartPtr', baseType = 'nimSmartPtrBase', ptr = 1),
@@ -38,6 +37,8 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           newCodeLine <- cppLiteral(c(paste0('smartPtr = new ', name,';'),
                                                                       'ptrToSmartPtr = dynamic_cast<nimSmartPtrBase*>(&smartPtr);',
                                                                       'ptrToPtr = smartPtr.getVoidPtrToRealPtr();',
+                                                                      '(smartPtr)->NO_hw();',
+                                                                      paste0('reinterpret_cast<',name,'*>(*static_cast<void**>(ptrToPtr))->NO_hw();'),
                                                                       'PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));',
                                                                       'PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));'))
                                           allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = allocVector(VECSXP,', 2, '));'))
@@ -74,7 +75,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                      getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                  else
                                                      SEXPgeneratorFun$name
-                                           Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
+                                           Rgenerator <<- buildNimbleListInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                       },
                                       addListSymbols = function(){
                                         RPointerSymbol <- symbolSEXP(name = 'RObjectPointer')
@@ -102,15 +103,14 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           }
                                       },
                                       buildCastPtrToNamedObjectsPtrFun = function() {
-                                          browser()
                                           ## SEXP castPointer_XYZ(SEXP input) {
                                           ##   return( R_MakeExternalPtr(dynamic_cast<NamedObjects*>(static_cast<CLASSNAME*>(R_ExternalPtrAddr(input)))) );
                                           ##}
-                                          newName <- paste0(name, "_castPtrToNamedObjectsPtrSEXP")
+                                          newName <- paste0(name, "_castPtrPtrToNamedObjectsPtrSEXP")
                                           args = list(cppSEXP(name = 'input'))
-                                          allCodeList <- list(cppLiteral(paste0("return( R_MakeExternalPtr(dynamic_cast<NamedObjects*>(static_cast<",name,"*>(R_ExternalPtrAddr(input))), R_NilValue, R_NilValue));")))
+                                          allCodeList <- list(cppLiteral(paste0("return( R_MakeExternalPtr(dynamic_cast<NamedObjects*>(reinterpret_cast<",name,"*>(*static_cast<void**>(R_ExternalPtrAddr(input)))), R_NilValue, R_NilValue));")))
                                           allCode <- putCodeLinesInBrackets(allCodeList)
-                                          ptrCastFun <<- cppFunctionDef(name = paste0('castPtrToNamedObjectsPtrSEXP'),
+                                          ptrCastFun <<- cppFunctionDef(name = newName,
                                                                         args = args,
                                                                         code = cppCodeBlock(code = allCode, objectDefs = list(), skipBrackets = TRUE),
                                                                         returnType = cppSEXP(),
