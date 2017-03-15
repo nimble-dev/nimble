@@ -755,7 +755,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  },
                                  instantiateNimbleList = function(nl, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
                                    ## to instantiate neededObjects
-                                   for(nestedNL in names(nl$nestedListGenList)){
+                                   for(nestedNL in names(nl$nestedListGenList)) {
                                      nestedAns <- instantiateNimbleList(nl[[nestedNL]], dll, asTopLevel)
                                    }
 

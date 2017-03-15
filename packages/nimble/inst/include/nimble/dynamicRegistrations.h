@@ -10,6 +10,7 @@
 #include <nimble/dists.h>
 #include <nimble/NamedObjects.h>
 #include <nimble/dllFinalizer.h>
+#include <nimble/smartPtrs.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -102,6 +103,7 @@ R_CallMethodDef CallEntries[] = {
   FUN(register_namedObjects_Finalizer, 3),
   FUN(register_numberedObjects_Finalizer, 3),
   FUN(register_VecNimArr_Finalizer, 2),
+  FUN(register_pointedToBase_Finalizer, 3),
 
   FUN(RNimble_Ptr_ManualFinalizer, 1),
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),

@@ -4,8 +4,10 @@
 #include "Utils.h"
 
 class nimSmartPtrBase {
-	public:
-	virtual void setPtrFromVoidPtr(void* & inputPtr)=0;
+ public:
+  virtual void setPtrFromVoidPtr(void* & inputPtr)=0;
+  virtual ~nimSmartPtrBase() {};
+  virtual void* getVoidPtrToRealPtr()=0;
 };
 
 template<typename T>
@@ -29,6 +31,7 @@ class nimSmartPtr : public nimSmartPtrBase {
 		T* tempPtr = static_cast<T*>(inputPtr);
 	    setPtrFromT( tempPtr ); 
   };
+  void* getVoidPtrToRealPtr() {return(static_cast<void*>(&realPtr));}
   bool equalsPtr(const nimSmartPtr & otherPtr) {
 	  return(realPtr == otherPtr.realPtr);
   }
@@ -60,8 +63,8 @@ class nimSmartPtr : public nimSmartPtrBase {
   }
 
   ~nimSmartPtr() {
-	  if(realPtr != 0)
-			realPtr->removeWatcher();
+    if(realPtr != 0)
+      realPtr->removeWatcher();
   };
 };
 
@@ -72,8 +75,8 @@ class pointedToBase {
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
   void newWatcher() {
-watcherCount++;
-}
+    watcherCount++;
+  }
   void removeWatcher() {
     watcherCount--;
     if(watcherCount <= 0) {
@@ -85,6 +88,10 @@ watcherCount++;
   }
   virtual ~pointedToBase() {};
 };
+
+extern "C" {
+  SEXP register_pointedToBase_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel);
+}
 
 // example
 /* class pointedToDerived : public pointedToBase { */

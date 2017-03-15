@@ -1,7 +1,8 @@
 cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                   contains = 'cppNimbleClassClass',
                                   fields = list(
-                                    eigenList = 'ANY'
+                                      eigenList = 'ANY',
+                                      ptrCastFun = 'ANY'
                                   ),
                                   methods = list(
                                       initialize = function(nimCompProc, debugCpp = FALSE, fromModel = FALSE, ...) {
@@ -9,13 +10,57 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       getDefs = function() {
-                                        if(eigenList){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
+                                        ans <- if(eigenList){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
                                           if(inherits(SEXPfinalizerFun, 'uninitializedField'))
                                             list(SEXPgeneratorFun)
                                           else
                                             list(SEXPgeneratorFun, SEXPfinalizerFun)
                                         }
-                                        else callSuper()
+                                               else callSuper()
+                                        c(ans, ptrCastFun)
+                                      },
+                                      buildSEXPgenerator = function(finalizer = NULL) { ## build a function that will provide a new object and return an external pointer
+                                          ## This differs from general cppClassDef case
+                                          ## because we will return a pointer to a smartPtr to a nimbleList object
+                                          ## the pointer to the smartPtr will be case to base class nimSmartPtrBase, which has a virtual casting
+                                          ## member function
+                                          ##
+                                          ## and also we'll return a ptr to a the realPtr (a double pointer to the object)
+                                          browser()
+                                          
+                                          extPtrTypes <<- c('ptrToSmartPtr','ptrToPtrToObject')
+                                          CBobjectDefs <- list(cppVarFull(name = 'ptrToSmartPtr', baseType = 'nimSmartPtrBase', ptr = 1),
+                                                               cppVarFull(name = 'smartPtr', baseType = 'nimSmartPtr', templateArgs = name),
+                                                               cppVarFull(name = 'ptrToPtr', baseType = 'void', ptr = 1),
+                                                               SptrToSmartPtr = cppSEXP(name = 'SptrToSmartPtr'),
+                                                               SptrToPtr = cppSEXP(name = 'SptrToPtr'),
+                                                               Sans = cppSEXP(name = 'Sans'))
+                                          newCodeLine <- cppLiteral(c(paste0('smartPtr = new ', name,';'),
+                                                                      'ptrToSmartPtr = dynamic_cast<nimSmartPtrBase*>(&smartPtr);',
+                                                                      'ptrToPtr = smartPtr.getVoidPtrToRealPtr();',
+                                                                      'PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));',
+                                                                      'PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));'))
+                                          allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = allocVector(VECSXP,', 2, '));'))
+                                          
+                                          packListLines <- cppLiteral(c('SET_VECTOR_ELT(Sans,0,SptrToSmartPtr);',
+                                                                        'SET_VECTOR_ELT(Sans,1,SptrToPtr);'
+                                                                        ))
+                                          
+                                          notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
+                                                                  paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << newObj << \"\\n\";')
+                                                              else character(0)
+                                          codeLines <- substitute({
+                                              ## Finalizer registration now happens through nimble's finalizer mapping system.
+                                              UNPROTECT(3)
+                                              return(Sans)
+                                          }, list())
+                                          allCodeList <- list(newCodeLine, cppLiteral(notificationLine), allocVectorLine, packListLines, codeLines)
+                                          allCode <- putCodeLinesInBrackets(allCodeList)
+                                          SEXPgeneratorFun <<- cppFunctionDef(name = paste0('new_',name),
+                                                                              args = list(),
+                                                                              code = cppCodeBlock(code = allCode, objectDefs = CBobjectDefs, skipBrackets = TRUE),
+                                                                              returnType = cppSEXP(),
+                                                                              externC = TRUE)
                                       },
                                       buildCmultiInterface = function(dll = NULL) {
                                           sym <- if(!is.null(dll))
@@ -39,21 +84,37 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                         objectDefs$addSymbol(RCopiedSymbol$genCppVar())
                                       },
                                       buildAll = function(where = where) {
-                                        addListSymbols()
-                                        if(eigenList == TRUE){
-                                          # makeCppNames()
-                                          # buildConstructorFunctionDef()
-                                          # buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
-                                          # buildRgenerator(where = where)
-                                          # buildCmultiInterface()
-                                          callSuper(where)
-                                        }
-                                        else{
-                                          buildCopyFromSexp()
-                                          buildCopyToSexp()
-                                          buildCreateNewSexp()
-                                          callSuper(where)
-                                        }
+                                          addListSymbols()
+                                          buildCastPtrToNamedObjectsPtrFun()
+                                          if(eigenList){
+                                        # makeCppNames()
+                                        # buildConstructorFunctionDef()
+                                        # buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
+                                        # buildRgenerator(where = where)
+                                        # buildCmultiInterface()
+                                              callSuper(where)
+                                          }
+                                          else{
+                                              buildCopyFromSexp()
+                                              buildCopyToSexp()
+                                              buildCreateNewSexp()
+                                              callSuper(where)
+                                          }
+                                      },
+                                      buildCastPtrToNamedObjectsPtrFun = function() {
+                                          browser()
+                                          ## SEXP castPointer_XYZ(SEXP input) {
+                                          ##   return( R_MakeExternalPtr(dynamic_cast<NamedObjects*>(static_cast<CLASSNAME*>(R_ExternalPtrAddr(input)))) );
+                                          ##}
+                                          newName <- paste0(name, "_castPtrToNamedObjectsPtrSEXP")
+                                          args = list(cppSEXP(name = 'input'))
+                                          allCodeList <- list(cppLiteral(paste0("return( R_MakeExternalPtr(dynamic_cast<NamedObjects*>(static_cast<",name,"*>(R_ExternalPtrAddr(input))), R_NilValue, R_NilValue));")))
+                                          allCode <- putCodeLinesInBrackets(allCodeList)
+                                          ptrCastFun <<- cppFunctionDef(name = paste0('castPtrToNamedObjectsPtrSEXP'),
+                                                                        args = args,
+                                                                        code = cppCodeBlock(code = allCode, objectDefs = list(), skipBrackets = TRUE),
+                                                                        returnType = cppSEXP(),
+                                                                        externC = TRUE)
                                       },
                                       buildCreateNewSexp = function(){
                                         interfaceArgs <- symbolTable()

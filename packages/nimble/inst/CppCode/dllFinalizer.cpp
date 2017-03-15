@@ -70,7 +70,7 @@ void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer, SEXP Sl
   newDLLAndFinalizer.Dll = Dll;
   newDLLAndFinalizer.Finalizer = finalizer;
   newDLLAndFinalizer.Label = label;
-  //  PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
+  PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
   RnimblePtrs[ptr] = newDLLAndFinalizer;
   R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
 }
@@ -110,7 +110,7 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
       ) {
     if(RNPiter->second.Dll == Dll) {
       objectsFound++;
-      //PRINTF("Found label %s\n",  RNPiter->second.Label.c_str());
+      PRINTF("Found label %s\n",  RNPiter->second.Label.c_str());
 	
       objectsFoundLabels.push_back(RNPiter->second.Label);
       if(force) {

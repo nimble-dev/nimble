@@ -172,7 +172,8 @@ cppClassDef <- setRefClass('cppClassDef',
                                        UNPROTECT(NUMPROT)
                                        return(Sans)
                                    }, list(TYPE = as.name(name), FINALIZER = as.name(finalizer), NUMPROT = length(allinheritance) + 2))
-                                   allCode <- putCodeLinesInBrackets(list(newCodeLine, cppLiteral(notificationLine),  baseClassCastLines, allocVectorLine, packListLines, codeLines))
+                                   allCodeList <- list(newCodeLine, cppLiteral(notificationLine),  baseClassCastLines, allocVectorLine, packListLines, codeLines)
+                                   allCode <- putCodeLinesInBrackets(allCodeList)
                                    SEXPgeneratorFun <<- cppFunctionDef(name = paste0('new_',name),
                                                                        args = list(),
                                                                        code = cppCodeBlock(code = allCode, objectDefs = CBobjectDefs, skipBrackets = TRUE),

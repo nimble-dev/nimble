@@ -84,7 +84,6 @@ CmodelValues <- setRefClass(
 #                extptr <<- .Call(buildCall)
             }
             else{
-                browser()
                 extptr <<- existingPtr
             }
             dll <<- dll
