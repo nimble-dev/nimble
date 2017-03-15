@@ -19,6 +19,7 @@ SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr) {
   return(R_NilValue);
 }
 
+// probably deprecated
 SEXP setSmartPtrFromSinglePtr(SEXP StoPtr, SEXP SfromPtr) {
   void *fromPtr = R_ExternalPtrAddr(SfromPtr); 
   nimSmartPtrBase *toSmartPtr = static_cast<nimSmartPtrBase*>(R_ExternalPtrAddr(StoPtr));  
@@ -26,6 +27,12 @@ SEXP setSmartPtrFromSinglePtr(SEXP StoPtr, SEXP SfromPtr) {
   return(R_NilValue);
 }
 
+SEXP setSmartPtrFromDoublePtr(SEXP StoPtr, SEXP SfromPtr) {
+  void *fromPtr = *static_cast<void**>(R_ExternalPtrAddr(SfromPtr)); 
+  nimSmartPtrBase *toSmartPtr = static_cast<nimSmartPtrBase*>(R_ExternalPtrAddr(StoPtr));  
+  toSmartPtr->setPtrFromVoidPtr(fromPtr);
+  return(R_NilValue);
+}
 
 SEXP setPtrVectorOfPtrs(SEXP SaccessorPtr, SEXP ScontentsPtr, SEXP Ssize) {
   vectorOfPtrsAccessBase *accessorPtr = static_cast<vectorOfPtrsAccessBase *>(R_ExternalPtrAddr(SaccessorPtr)); 

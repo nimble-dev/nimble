@@ -6,7 +6,7 @@
 class nimSmartPtrBase {
  public:
   virtual void setPtrFromVoidPtr(void* & inputPtr)=0;
-  virtual ~nimSmartPtrBase() {};
+  virtual ~nimSmartPtrBase() {PRINTF("smartPtrBase destructing\n"); };
   virtual void* getVoidPtrToRealPtr()=0;
 };
 
@@ -50,19 +50,21 @@ class nimSmartPtr : public nimSmartPtrBase {
     return *this;
   }
 
-  nimSmartPtr() : realPtr(0) {};
+  nimSmartPtr() : realPtr(0) {PRINTF("smartPtr constructing %p\n", &realPtr); };
   nimSmartPtr(const nimSmartPtr &rhs) {
     realPtr = rhs.realPtr;
     realPtr->newWatcher();
-
+    PRINTF("smartPtr constructing %p\n", &realPtr); 
   }
 
   nimSmartPtr(T* rhs) {
     realPtr = rhs;
     realPtr->newWatcher();
+    PRINTF("smartPtr constructing %p\n", &realPtr); 
   }
 
   ~nimSmartPtr() {
+    PRINTF("smartPtr destructing %p\n", &realPtr); 
     if(realPtr != 0)
       realPtr->removeWatcher();
   };
@@ -75,14 +77,17 @@ class pointedToBase {
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
   void newWatcher() {
+    PRINTF("Adding watcher\n");
     watcherCount++;
   }
   void removeWatcher() {
     watcherCount--;
+    PRINTF("Removing watcher\n");
     if(watcherCount <= 0) {
       if(watcherCount < 0) {
 	PRINTF("Error, a watcherCount went below 0. \n");
       }
+      PRINTF("pointedToBase self-destructing\n");
       delete this;
     }
   }
@@ -91,6 +96,7 @@ class pointedToBase {
 
 extern "C" {
   SEXP register_pointedToBase_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel);
+  SEXP register_smartPtrBase_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel);
 }
 
 // example

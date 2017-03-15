@@ -527,7 +527,8 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  compileNimbleList = function(nl, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
                                      reset = FALSE, returnCppClass = FALSE, className = NULL, alreadyAdded = FALSE) { ## className? alreadyAdded?
-                                    ## nl could be a list or a singleton
+                                     ## nl could be a list or a singleton
+                                     message("I think we should be able to compiled a nimbleList from its nimbleListDef alone.  This is a fundamental difference from nimbleFunctions with setup outputs.")
                                     if(is.list(nl)) {
                                          if(is.null(className)) className <- unique(unlist(lapply(nl, function(x) x$nimbleListDef$className)))
                                          if(length(className) != 1) stop(paste0('Not all elements in the nimbleList list for compileNimbleList are from the same nimbleFunctionDef.  The class names include:', paste(className, collapse = ' ')), call. = FALSE)
@@ -765,7 +766,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                    ok <- TRUE
                                    if(asTopLevel) {
                                      if(is.null(nlCppDef$Rgenerator)) ok <- FALSE
-                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll) ##, project = .self)
+                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll, project = .self)
                                    } else {
                                      if(is.null(nlCppDef$CmultiInterface)) ok <- FALSE
                                      else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dll)
