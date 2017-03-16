@@ -15,10 +15,11 @@
 ###						Once the new class is built, a new object is create via refname$new()
 ###						Access to the elements is provided through nimbleFxnObject$Varname
 
-makeNFBindingFields <- function(symTab, cppNames) {
+makeNFBindingFields <- function(symTab, cppNames, compiledNimbleObj) {
     fieldList = list(.DUMMY = "ANY")  # We use this .DUMMY field to trick R into not mistakenly printing
                                         # error. See initialization function inside buildNimbleFxnInterface
     vNames <- if(missing(cppNames)) names(symTab$symbols) else cppNames
+    message('GET INFO FROM THE SYMBOL OBJECT')
     for(vn in vNames) {
         thisSymbol <- symTab$getSymbolObject(vn)
         if(is.null(thisSymbol)) next
@@ -59,12 +60,17 @@ makeNFBindingFields <- function(symTab, cppNames) {
             next
         }
         if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
+            thisListGen <- compiledNimbleObj$nimCompProc$nestedListGens[[ vn ]] ## should have interface info for nimbleList type of vn
+            className <- environment(thisListGen$new)$nlRefClassObject$className
            nlName <- paste0(".",vn,"_CnimbleList")
            fieldList[[nlName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
            fieldList[[vn]] <-  eval(substitute(
-            function(x) {
+               function(x) {
+                   message('here')
+                   browser()
               if(missing(x)) {
                   NLNAME
+                  ## this shows class uninitializedField
               } else {
                   if(is.list(x)) { ## can be a list with first element a CmultiNimbleFunction object and second element an index
                       ## Still need to support this in case an extant nimbleList object was part of compilation using multi-interface
@@ -78,12 +84,14 @@ makeNFBindingFields <- function(symTab, cppNames) {
                       ##if(!inherits(x$.basePtr, 'externalptr')) stop(paste('Nimble compilation error initializing pointer for nimbleList ', NLNAMECHAR, '.'), call. = FALSE)
                       nimbleInternalFunctions$setSmartPtrFromDoublePtr(VPTR, x$.ptrToPtr, dll = dll) ## check field name
                   }
-                  if(inherits(NLNAME, "uninitializedField"))
-                      assign(NLNAMECHAR, x$getRefClass()$new( dll = x$dll, existingExtPtrs = list(x$.ptrToSmartPtr, x$.ptrToPtr) ) , inherits = TRUE) ## avoids <<- warnings
+                  if(inherits(NLNAME, "uninitializedField")) {
+                      nestedRgenerator <- nimbleProject$nlCompInfos[[CLASSNAME]]$cppDef$Rgenerator
+                      assign(NLNAMECHAR, nestedRgenerator( dll = x$dll, existingExtPtrs = list(x$.ptrToSmartPtr, x$.ptrToPtr) ) , inherits = TRUE) ## avoids <<- warnings
+                  }
                   NLNAME$resetExtPtrs(VPTR)
                   x
               }
-            }, list(VPTR = as.name(ptrName), NLNAME = as.name(nlName), NLNAMECHAR = nlName) ) )
+            }, list(VPTR = as.name(ptrName), CLASSNAME = className, NLNAME = as.name(nlName), NLNAMECHAR = nlName) ) )
           next
         }
         if(inherits(thisSymbol, 'symbolNimbleFunction')) { ## copy type 'nimbleFunction'
@@ -226,7 +234,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
     return(fieldList)
 }
 
-makeNimbleListBindingFields <- function(symTab, cppNames, castFunName, nestedListGens = NULL) {
+makeNimbleListBindingFields <- function(symTab, cppNames, castFunName, compiledNimbleObj) {
     fieldList = list(.DUMMY = "ANY")
     vNames <- if(missing(cppNames)) names(symTab$symbols) else cppNames
     for(vn in vNames) {
@@ -240,27 +248,33 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName, nestedLis
         ## NOT NEEDEDif(inherits(thisSymbol, 'symbolNimPtrList')) {
         if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
             browser()
-            thisListGen <- nestedListGens[[ vn ]] ## should have interface info for nimbleList type of vn
+            thisListGen <- compiledNimbleObj$nimCompProc$nestedListGens[[ vn ]] ## should have interface info for nimbleList type of vn
             if(is.null(thisListGen)) stop(paste("Can't find nimbleList definition for nested object", vn))
             className <- environment(thisListGen$new)$nlRefClassObject$className
+            castToPtrPairName <- compiledNimbleObj$nimbleProject$nlCompInfos[[className]]$cppDef$ptrCastToPtrPairFun$name
             ## dll[[name]] does not work.  must be dll$name
             eval(substitute( fieldList$VARNAME <- function(x) {
                 browser()
                 thisCppDef <- nimbleProject$nlCompInfos[[CLASSNAME]]$cppDef
                 nestedRgenerator <- thisCppDef$Rgenerator
-                castToPtrPairName <- thisCppDef$ptrCastToPtrPairFun$name
+                ##castToPtrPairName <- thisCppDef$ptrCastToPtrPairFun$name
 
                 namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
                 extPtrNL <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, VARNAME, dll = dll)
                 if(missing(x)) {
-                    existingExtPtrs <- .Call(dll[[castToPtrPairName]], extPtrNL)
+                    existingExtPtrs <- .Call(dll$CASTTOPTRPAIRNAME, extPtrNL)
                     nestedRgenerator( dll = dll, existingExtPtrs = existingExtPtrs )
+                   
                 } else {
                     if(is.list(x)) stop("Can't handle multi-interface assigning a list to a list yet")
                     nimbleInternalFunctions$setSmartPtrFromDoublePtr(extPtrNL, x$.ptrToPtr, dll = dll)
+##                    Removing watcher
+##pointedToBase self-destructing
+##Adding watcher
+
                     x
                 }
-            }, list(VARNAME = vn, CASTFUN = castFunName, CLASSNAME = className) ) )
+            }, list(VARNAME = vn, CASTFUN = castFunName, CLASSNAME = className, CASTTOPTRPAIRNAME = castToPtrPairName) ) )
             next
         }
         if(thisSymbol$type == "character") { ## cpp copy type 'character'  : 2 sub-cases (vector and scalar)
@@ -974,16 +988,17 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
     if(!isListObj) stop('compiledNimbleObj must be a nimbleList')
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
     cppNames <- compiledNimbleObj$objectDefs$getSymbolNames()
-    NLBF <-  makeNimbleListBindingFields(symTab, cppNames, castFunName, compiledNimbleObj$nimCompProc$nestedListGens)
+    NLBF <-  makeNimbleListBindingFields(symTab, cppNames, castFunName, compiledNimbleObj)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
     defaults$basePtrCall <- basePtrCall
     defaults$extPtrTypeIndex <- compiledNimbleObj$getExtPtrTypeIndex()
     defaults$cppNames <- cppNames
+    defaults$nimbleProject <- compiledNimbleObj$nimbleProject
     methodsList <- quote(list())
     fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, existingExtPtrs = NULL, ...) {
         browser()
-        callSuper(dll = dll, nimbleProject = project, ...)
-        
+        callSuper(dll = dll, ...)
+        nimbleProject <<- defaults$nimbleProject
         if(is.null(existingExtPtrs)) {
             basePtrCall <- if(is.character(defaults$basePtrCall)) {
                 if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
@@ -1059,7 +1074,7 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
                     list(FIELDS = NLBF, ML = methodsList ) ) )
 
     ans <- function(nfObject, dll = NULL, project, existingExtPtrs = NULL) {
-    	newClass$new(nfObject, defaults, dll = dll, project = project, existingExtPtrs = existingExtPtrs) 
+    	newClass$new(nfObject, defaults, dll = dll, existingExtPtrs = existingExtPtrs) ##get project from defaults now
     }
     return(ans)
 }
@@ -1077,7 +1092,7 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     }
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
     cppNames <- compiledNimbleObj$objectDefs$getSymbolNames()
-    NFBF <-  makeNFBindingFields(symTab, cppNames)
+    NFBF <-  makeNFBindingFields(symTab, cppNames, compiledNimbleObj)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
     defaults$basePtrCall <- basePtrCall
     defaults$extPtrTypeIndex <- compiledNimbleObj$getExtPtrTypeIndex()
