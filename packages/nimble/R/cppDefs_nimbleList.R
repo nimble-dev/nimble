@@ -141,10 +141,10 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                       },
                                       buildCmultiInterface = function(dll = NULL) {
                                           sym <- if(!is.null(dll))
-                                                      getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
-                                                  else
-                                                      SEXPgeneratorFun$name
-                                          CmultiInterface <<- CmultiNimbleFunctionClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
+                                                     getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
+                                                 else
+                                                     SEXPgeneratorFun$name
+                                          CmultiInterface <<- CmultiNimbleListClass(compiledNodeFun = .self, basePtrCall = sym, project = nimbleProject)
                                       },
                                       buildRgenerator = function(where = globalenv(), dll = NULL) {
                                           sym <- if(!is.null(dll))
