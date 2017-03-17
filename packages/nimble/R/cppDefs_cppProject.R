@@ -275,7 +275,7 @@ cppProjectClass <- setRefClass('cppProjectClass',
                                        }
 
                                        if(nimbleOptions('pauseAfterWritingFiles')) browser()
-                                       browser()
+
                                        if(isWindows)
                                            status = system(SHLIBcmd, ignore.stdout = !showCompilerOutput, ignore.stderr = !showCompilerOutput, show.output.on.console = showCompilerOutput)
                                        else
