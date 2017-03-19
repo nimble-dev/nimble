@@ -21,6 +21,7 @@ void* NamedObjects::getObjectPtr( string &name ) {
     _nimble_global_output << "Available Name 1 = " << iMO->first << "\n"; nimble_print_to_R( _nimble_global_output);
     return(0);
   }
+  PRINTF("Getting pointer to %s: %p\n", name.c_str(), iMO->second);
   return(	(iMO->second) ) ;
 }
 

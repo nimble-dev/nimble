@@ -18,20 +18,26 @@ class nimSmartPtr : public nimSmartPtrBase {
   T& operator*() {return *realPtr;}
   T* operator->() {return realPtr;}
   void setPtr(const nimSmartPtr & input) {
+    if(realPtr == input.realPtr) return;
     if(realPtr) realPtr->removeWatcher();
     realPtr = input.realPtr;
     realPtr->newWatcher();
   };
   void setPtrFromT(T* & inputPtr) {
+    if(realPtr == inputPtr) return;
     if(realPtr) realPtr->removeWatcher();
     realPtr = inputPtr;
     realPtr->newWatcher();
   };
   void setPtrFromVoidPtr(void* & inputPtr) {
-		T* tempPtr = static_cast<T*>(inputPtr);
-	    setPtrFromT( tempPtr ); 
+    T* tempPtr = static_cast<T*>(inputPtr);
+    PRINTF("setting pointer at %p to realPtr = %p (cast to T* from void* %p)\n", &realPtr, tempPtr, inputPtr);
+    setPtrFromT( tempPtr ); 
   };
-  void* getVoidPtrToRealPtr() {return(static_cast<void*>(&realPtr));}
+  void* getVoidPtrToRealPtr() {
+    PRINTF("getting void pointer %p to realPtr = %p\n", static_cast<void*>(&realPtr), realPtr);
+    return(static_cast<void*>(&realPtr));
+  }
   bool equalsPtr(const nimSmartPtr & otherPtr) {
 	  return(realPtr == otherPtr.realPtr);
   }
@@ -54,17 +60,17 @@ class nimSmartPtr : public nimSmartPtrBase {
   nimSmartPtr(const nimSmartPtr &rhs) {
     realPtr = rhs.realPtr;
     realPtr->newWatcher();
-    PRINTF("smartPtr constructing %p\n", &realPtr); 
+    PRINTF("smartPtr constructing (from another smartPtr) with ptrToPtr = %p, and realPtr = %p\n", &realPtr, realPtr); 
   }
 
   nimSmartPtr(T* rhs) {
     realPtr = rhs;
     realPtr->newWatcher();
-    PRINTF("smartPtr constructing %p\n", &realPtr); 
+    PRINTF("smartPtr constructing (from a T*) with ptrToPtr = %p, and realPtr = %p\n", &realPtr, realPtr); 
   }
 
   ~nimSmartPtr() {
-    PRINTF("smartPtr destructing %p\n", &realPtr); 
+    PRINTF("smartPtr destructing with ptrToPtr = %p, and realPtr = %p\n", &realPtr, realPtr);
     if(realPtr != 0)
       realPtr->removeWatcher();
   };
@@ -77,15 +83,15 @@ class pointedToBase {
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
   void newWatcher() {
-    PRINTF("Adding watcher\n");
     watcherCount++;
+    PRINTF("Adding watcher to %p (now has %i watchers).\n", this, watcherCount);
   }
   void removeWatcher() {
     watcherCount--;
-    PRINTF("Removing watcher\n");
+    PRINTF("Removing watcher to %p (now has %i watchers).\n", this, watcherCount);
     if(watcherCount <= 0) {
       if(watcherCount < 0) {
-	PRINTF("Error, a watcherCount went below 0. \n");
+	PRINTF("Error, watcherCount went below 0.\n");
       }
       PRINTF("pointedToBase self-destructing\n");
       delete this;

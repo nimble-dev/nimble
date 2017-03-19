@@ -79,8 +79,17 @@ makeNFBindingFields <- function(symTab, cppNames) {
                        ## Even if assigned from a multiInterface, we generate a full interface for correct behavior
                        if(inherits(NLNAME, "uninitializedField")) {
                            nestedRgenerator <- nimbleProject$nlCompInfos[[CLASSNAME]]$cppDef$Rgenerator
-                           assign(NLNAMECHAR, nestedRgenerator( dll = if(is.list(x)) x[[1]]$dll else x$dll, existingExtPtrs = list(x$.ptrToSmartPtr, x$.ptrToPtr) ) , inherits = TRUE) ## avoids <<- warnings
+                           if(is.list(x)) {
+                               newNLinterface <- nestedRgenerator( dll = x[[1]]$dll,
+                                                                  existingExtPtrs = list(x[[1]]$ptrToSmartPtrList[[ x[[2]] ]],
+                                                                                         x[[1]]$ptrToPtrList[[ x[[2]] ]]) )
+                           } else {
+                               newNLinterface <- nestedRgenerator( dll = x$dll,
+                                                                   existingExtPtrs = list(x$.ptrToSmartPtr, x$.ptrToPtr) )
+                           }
+                           assign(NLNAMECHAR, newNLinterface, inherits = TRUE) ## avoids <<- warnings
                        }
+                       
                        NLNAME$resetExtPtrs(VPTR)
                        x
                    }
@@ -318,7 +327,6 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
 getSetNimbleList <- function(vptr, name, value, cppDef, dll) {
     ## When missing value, we need the cppDef from the symTab of the assignment target
     ## from this we can get the castFun and the catToPtrPairFun
-
     ## When receiving value, we don't need anything more 
     if(missing(value)) {
         existingExtPtrs <- .Call(getNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll), vptr)
@@ -522,11 +530,12 @@ CnimbleListBase <- setRefClass('CnimbleListBase',
                                    methods = list(
                                        finalizeInternal = function() {
                                            finalize()
-                                           .basePtr <<- NULL
+                                           .ptrToPtr <<- NULL
+                                           .ptrToSmartPtr <<- NULL
                                            .finalizationPtr <<- NULL
                                        },
                                        finalize = function() {
-                                           nimbleInternalFunctions$nimbleFinalize(.finalizationPtr)
+                                           if(!is.null(.finalizationPtr)) nimbleInternalFunctions$nimbleFinalize(.finalizationPtr)
                                        },
                                        lookupSymbol = function(symname) {
                                            if(is.null(dll))
@@ -965,7 +974,6 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
     ## But if the element of a nimbleList is another nimbleList, we have to return that interface dynamically, since it may be ephemeral.
     ## It's tempting to fill in interface objects with their pointers still to be filled, but there would be a danger of infinite recursion
     ## 
-    
     defaults <- list()
     if(inherits(compiledNimbleObj, 'symbolTable')) {
         symTab <- compiledNimbleObj
@@ -1016,7 +1024,7 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
             .ptrToSmartPtr <<- existingExtPtrs[[1]]
             .ptrToPtr <<- existingExtPtrs[[2]]  
            ## .namedObjectsPtr <<- existingExtPtrs[[  defaults$extPtrTypeIndex['NamedObjects'] ]]
-            .finalizationPtr <<- .ptrToSmartPtr
+            .finalizationPtr <<- NULL##.ptrToSmartPtr
         }
 
         if(!missing(nfObject)) { ## for a nimbleList, nfObject could be validly missing
@@ -1387,7 +1395,7 @@ CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
                                                  newFinalizationPtr <- newPtrToSmartPtr
                                                  if(is.null(newFinalizationPtr)) stop('Problem: Cannot find right external pointer information')
                                                  finalizationPtrList[[length(finalizationPtrList)+1]] <<- newFinalizationPtr
-                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_pointedToBase_Finalizer,
+                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_smartPtrBase_Finalizer,
                                                            newFinalizationPtr, ##.basePtr,
                                                            dll[['handle']], regLabel))
                                                  newRobject <- nfObject
