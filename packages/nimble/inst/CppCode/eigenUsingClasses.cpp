@@ -87,54 +87,53 @@ void  EIGEN_EIGENCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
 	UNPROTECT(3);
 }
 
+
 /*EIGEN_SVD class functions below */
-// SEXP  EIGEN_SVDCLASS::copyToSEXP (  )  {
-// 	SEXP S_pxData;
-// 	SEXP S_d;
-// 	SEXP S_u;
-// 	SEXP S_v;
+ SEXP  EIGEN_SVDCLASS_R::copyToSEXP (  )  {
+ 	SEXP S_pxData;
+ 	SEXP S_d;
+ 	SEXP S_u;
+ 	SEXP S_v;
 
-// 	if (!RCopiedFlag){
-// 		PROTECT(S_pxData = allocVector(STRSXP, 1));
-// 		SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
-// 		PROTECT(S_d = NimArr_2_SEXP<1>(d));
-// 		PROTECT(S_u = NimArr_2_SEXP<2>(u));
-// 		PROTECT(S_v = NimArr_2_SEXP<2>(v));
-// 		defineVar(install("d"), S_d, GET_SLOT(RObjectPointer, S_pxData));
-// 		defineVar(install("u"), S_u, GET_SLOT(RObjectPointer, S_pxData));
-// 		defineVar(install("v"), S_v, GET_SLOT(RObjectPointer, S_pxData));
-// 		RCopiedFlag = true;
-// 		UNPROTECT(4);
-// 	}
-// 	return(RObjectPointer);
-// }
+ 	PROTECT(S_pxData = allocVector(STRSXP, 1));
+ 	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
+ 	PROTECT(S_d = NimArr_2_SEXP<1>(d));
+ 	PROTECT(S_u = NimArr_2_SEXP<2>(u));
+ 	PROTECT(S_v = NimArr_2_SEXP<2>(v));
+ 	defineVar(install("d"), S_d, GET_SLOT(RObjectPointer, S_pxData));
+ 	defineVar(install("u"), S_u, GET_SLOT(RObjectPointer, S_pxData));
+ 	defineVar(install("v"), S_v, GET_SLOT(RObjectPointer, S_pxData));
+ 	UNPROTECT(4);
+		
+ 	return(RObjectPointer);
+ }
 
-// void  EIGEN_SVDCLASS::createNewSEXP (  )  {
-// 	SEXP S_newNimList;
-// 	SEXP S_listName;
-// 	PROTECT(S_listName = allocVector(STRSXP, 1));
-// 	SET_STRING_ELT(S_listName, 0, mkChar("EIGEN_SVDCLASS"));
-// 	PROTECT(S_newNimList = makeNewNimbleList(S_listName));
-// 	RObjectPointer = S_newNimList;
-// 	UNPROTECT(2);
-// }
+ void  EIGEN_SVDCLASS_R::createNewSEXP (  )  {
+ 	SEXP S_newNimList;
+ 	SEXP S_listName;
+ 	PROTECT(S_listName = allocVector(STRSXP, 1));
+ 	SET_STRING_ELT(S_listName, 0, mkChar("EIGEN_SVDCLASS"));
+ 	PROTECT(S_newNimList = makeNewNimbleList(S_listName));
+ 	RObjectPointer = S_newNimList;
+ 	UNPROTECT(2);
+ }
 
-// void  EIGEN_SVDCLASS::copyFromSEXP ( SEXP S_nimList_ ) {
-// 	SEXP S_pxData;
-// 	SEXP S_d;
-// 	SEXP S_v;
-// 	SEXP S_u;
-// 	RObjectPointer =  S_nimList_;
-// 	PROTECT(S_pxData = allocVector(STRSXP, 1));
-// 	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
-// 	PROTECT(S_d = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("d")));
-// 	PROTECT(S_v = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("v")));
-// 	PROTECT(S_u = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("u")));
-// 	SEXP_2_NimArr<1>(S_d, d);
-// 	SEXP_2_NimArr<2>(S_v, v);
-// 	SEXP_2_NimArr<2>(S_u, u);
-// 	UNPROTECT(4);
-// }
+ void  EIGEN_SVDCLASS_R::copyFromSEXP ( SEXP S_nimList_ ) {
+ 	SEXP S_pxData;
+ 	SEXP S_d;
+ 	SEXP S_v;
+ 	SEXP S_u;
+ 	RObjectPointer =  S_nimList_;
+ 	PROTECT(S_pxData = allocVector(STRSXP, 1));
+ 	SET_STRING_ELT(S_pxData, 0, mkChar(".xData"));
+ 	PROTECT(S_d = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("d")));
+ 	PROTECT(S_v = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("v")));
+ 	PROTECT(S_u = findVarInFrame(GET_SLOT(S_nimList_, S_pxData), install("u")));
+ 	SEXP_2_NimArr<1>(S_d, d);
+ 	SEXP_2_NimArr<2>(S_v, v);
+ 	SEXP_2_NimArr<2>(S_u, u);
+ 	UNPROTECT(4);
+ }
 
 SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
 	NimArr<2, double> x;
@@ -148,13 +147,13 @@ SEXP C_nimEigen(SEXP S_x, SEXP S_valuesOnly, SEXP returnList) {
     return(returnList);
 }
 
-// SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList) {
-// 	NimArr<2, double> x;
-// 	int vectors = SEXP_2_int(S_vectors, 0, 0);
-// 	SEXP_2_NimArr<2>(S_x, x);
-// 	Map<MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
-// 	EIGEN_SVDCLASS C_svdClass = *EIGEN_SVD(Eig_x, vectors);
-// 	C_svdClass.RObjectPointer = returnList;
-// 	C_svdClass.copyToSEXP();
-//     return(C_svdClass.RObjectPointer);
-// }
+ SEXP C_nimSvd(SEXP S_x, SEXP S_vectors, SEXP returnList) {
+ 	NimArr<2, double> x;
+ 	int vectors = SEXP_2_int(S_vectors, 0, 0);
+ 	SEXP_2_NimArr<2>(S_x, x);
+ 	Eigen::Map<Eigen::MatrixXd> Eig_x(x.getPtr(), x.dim()[0], x.dim()[1]); 
+ 	EIGEN_SVDCLASS_R C_svdClass = *EIGEN_SVD_R(Eig_x, vectors);
+ 	C_svdClass.RObjectPointer = returnList;
+ 	C_svdClass.copyToSEXP();
+     return(C_svdClass.RObjectPointer);
+}

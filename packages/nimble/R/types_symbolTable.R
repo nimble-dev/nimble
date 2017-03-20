@@ -66,7 +66,7 @@ argType2symbol <- function(AT, neededTypes, name = character()) {
         nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
       }
       else if(type %in% names(nlEigenReferenceList)){
-        nlList <- nlEigenReferenceList[[type]]$createListDef()$new() 
+        nlList <- nlEigenReferenceList[[type]]$eigenNimbleListDef$new() 
       }
       if(exists('nlList')){
         className <- nlList$nimbleListDef$className

@@ -42,7 +42,16 @@ class EIGEN_EIGENCLASS : public EIGEN_EIGENCLASS_R, public NamedObjects {
 public:
   bool RCopiedFlag;
   SEXP  copyToSEXP();
+  void  resetFlags();
   EIGEN_EIGENCLASS();
+};
+
+class EIGEN_SVDCLASS : public EIGEN_SVDCLASS_R, public NamedObjects {
+public:
+  bool RCopiedFlag;
+  SEXP copyToSEXP();
+  void  resetFlags();
+  EIGEN_SVDCLASS();
 };
 
 template<class Derived>
@@ -53,9 +62,24 @@ nimSmartPtr<EIGEN_EIGENCLASS>   EIGEN_EIGEN(const Eigen::MatrixBase<Derived> &x,
 }
 
 template<class Derived>
+nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(const Eigen::MatrixBase<Derived> &x, int vectors) {
+    nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS;
+    EIGEN_SVD_INTERNAL(x, vectors, returnClass.getRealPtr());
+    return(returnClass);
+}
+
+
+template<class Derived>
 nimSmartPtr<EIGEN_EIGENCLASS_R>   EIGEN_EIGEN_R(const Eigen::MatrixBase<Derived> &x, bool valuesOnly) {
     nimSmartPtr<EIGEN_EIGENCLASS_R> returnClass = new EIGEN_EIGENCLASS_R;
     EIGEN_EIGEN_INTERNAL(x, valuesOnly, returnClass.getRealPtr());
+    return(returnClass);
+}
+
+template<class Derived>
+nimSmartPtr<EIGEN_SVDCLASS_R>   EIGEN_SVD_R(const Eigen::MatrixBase<Derived> &x, int vectors) {
+    nimSmartPtr<EIGEN_SVDCLASS_R> returnClass = new EIGEN_SVDCLASS_R;
+    EIGEN_SVD_INTERNAL(x, vectors, returnClass.getRealPtr());
     return(returnClass);
 }
 
@@ -69,7 +93,7 @@ void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x, bool valuesOnly, 
 	}
     Eigen::DecompositionOptions eigOpts = valuesOnly ? EigenvaluesOnly : ComputeEigenvectors;
 	SelfAdjointEigenSolver<MatrixXd> solver(x, eigOpts); // The MatrixXd here doesn't seem generic, but I couldn't get it to work otherwise and it would be odd to do an Eigen decomposition on anything else. -Perry
-	Eig_eigVals = solver.eigenvalues();
+	Eig_eigVals = solver.eigenvalues().reverse();
 	if(!valuesOnly){
 	  returnClass->getVectors().initialize(0, 0, x.rows(), x.cols());
 	  Map<MatrixXd> Eig_eigVecs(returnClass->getVectors().getPtr(),x.rows(),x.cols());
@@ -78,39 +102,38 @@ void EIGEN_EIGEN_INTERNAL(const Eigen::MatrixBase<Derived> &x, bool valuesOnly, 
 	//	return(returnClass);
 };
 
-/* template<class Derived> */
-/* nimSmartPtr<EIGEN_SVDCLASS>   EIGEN_SVD(const Eigen::MatrixBase<Derived> &x, int vectors) { */
-/*     nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS; */
-/* 	int nu = min(x.rows(), x.cols()); */
-/* 	(*returnClass).d.initialize(0, 0, nu); */
-/* 	Map<VectorXd> Svd_d((*returnClass).d.getPtr(), nu); */
-/* 	JacobiSVD<MatrixXd> svd; */
-
-/* 	/\* note: if nu > 16, bidiagonialization algo. is recommended on eigen website.  not currently available w/ nimble's version of eigen, but may be in future. *\/ */
-/* 	if(vectors == 0){ */
-/* 	  svd.compute(x); */
-/* 	} */
-/* 	else{ */
-/* 	  int leftSVs = nu; */
-/* 	  int rightSVs = nu; */
-/* 	  if(vectors == 1){ */
-/* 	  	svd.compute(x, ComputeThinU | ComputeThinV); */
-/* 	  } */
-/* 	  if(vectors == 2){ */
-/* 	    leftSVs = x.rows(); */
-/* 		rightSVs = x.cols(); */
-/* 		svd.compute(x, ComputeFullU | ComputeFullV); */
-/* 	  } */
-/* 	  (*returnClass).u.initialize(0, 0, x.rows(), leftSVs); */
-/* 	  (*returnClass).v.initialize(0, 0, x.cols(), rightSVs); */
-/* 	  Map<MatrixXd> Svd_u((*returnClass).u.getPtr(), x.rows(), leftSVs); */
-/* 	  Map<MatrixXd> Svd_v((*returnClass).v.getPtr(), x.cols(), rightSVs); */
-/* 	  Svd_u = svd.matrixU(); */
-/* 	  Svd_v = svd.matrixV(); */
-/* 	} */
-/* 	Svd_d = svd.singularValues();  */
-/* 	return(returnClass); */
-/* }; */
+ template<class Derived> 
+void EIGEN_SVD_INTERNAL(const Eigen::MatrixBase<Derived> &x, int vectors, EIGEN_SVDCLASS_R *returnClass) { 
+    // nimSmartPtr<EIGEN_SVDCLASS> returnClass = new EIGEN_SVDCLASS; 
+ 	int nu = min(x.rows(), x.cols()); 
+ 	(*returnClass).d.initialize(0, 0, nu); 
+ 	Map<VectorXd> Svd_d((*returnClass).d.getPtr(), nu); 
+ 	JacobiSVD<MatrixXd> svd; 
+ 	/* note: if nu > 16, bidiagonialization algo. is recommended on eigen website.  not currently available w/ nimble's version of eigen, but may be in future. */
+ 	if(vectors == 0){ 
+	  svd.compute(x); 
+ 	} 
+ 	else{ 
+ 	  int leftSVs = nu; 
+ 	  int rightSVs = nu; 
+ 	  if(vectors == 1){ 
+ 	  	svd.compute(x, ComputeThinU | ComputeThinV); 
+ 	  } 
+ 	  if(vectors == 2){ 
+ 	    leftSVs = x.rows(); 
+ 		rightSVs = x.cols(); 
+ 		svd.compute(x, ComputeFullU | ComputeFullV); 
+ 	  } 
+ 	  (*returnClass).u.initialize(0, 0, x.rows(), leftSVs); 
+ 	  (*returnClass).v.initialize(0, 0, x.cols(), rightSVs); 
+ 	  Map<MatrixXd> Svd_u((*returnClass).u.getPtr(), x.rows(), leftSVs); 
+ 	  Map<MatrixXd> Svd_v((*returnClass).v.getPtr(), x.cols(), rightSVs); 
+ 	  Svd_u = svd.matrixU(); 
+ 	  Svd_v = svd.matrixV(); 
+ 	} 
+	Svd_d = svd.singularValues();  
+ 	//return(returnClass); 
+ }; 
 
 
 template<class derived1, class derived2>

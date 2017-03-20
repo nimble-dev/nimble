@@ -157,7 +157,7 @@ nimbleList <- function(...,
     classFields[[length(classFields)+1]] <- "ANY"
     names(classFields)[length(classFields)] <- "nestedListGenList" ## nl generators for any nested lists stored here
 
-    nlRefClassObject <- setRefClass(
+    nlRefClass <- setRefClass(
       Class = name,
       fields = classFields,
       contains = 'nimbleListBase',
@@ -209,7 +209,7 @@ nimbleList <- function(...,
 
     nlGeneratorFunction <-   eval(  substitute(
       function(...){
-      return(nlRefClassObject(NLDEFCLASSOBJECT, NESTEDGENLIST, ...))},
+      return(nlRefClass(NLDEFCLASSOBJECT, NESTEDGENLIST, ...))},
       list(NLDEFCLASSOBJECT = nlDefClassObject,
            NESTEDGENLIST = nestedListGens)))
     return(list(new = nlGeneratorFunction))
@@ -296,11 +296,15 @@ nlEigenClass <- setRefClass('nlEigenClass',
                               className = 'ANY',
                               funcName = 'ANY',
                               nimFuncName = 'ANY',
-                              listElements = 'ANY'),
+                              listElements = 'ANY',
+                              eigenNimbleListDef = 'ANY'),
                             methods = list(
+                              initialize = function(...){
+                                callSuper(...)
+                                createListDef()
+                              },
                               addEigenListInfo = function(nfProc){
                                 thisProj <- nfProc$nimbleProject
-                                eigenNimbleListDef <- createListDef()
                                 eigenNimbleList <- eigenNimbleListDef$new() 
                                 nlp <- thisProj$compileNimbleList(eigenNimbleList, initialTypeInferenceOnly = TRUE)
                                 eigenListSym <- symbolNimbleList(name = className, nlProc = nlp)
@@ -308,8 +312,7 @@ nlEigenClass <- setRefClass('nlEigenClass',
                                 nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = nimFuncName, nlProc = nlp))
                               },
                               createListDef = function(){
-                                eigenNimbleListDef <- nimbleList(listElements, name = className)
-                                return(eigenNimbleListDef)
+                                eigenNimbleListDef <<- nimbleList(listElements, name = className)
                               }
                             ))
 

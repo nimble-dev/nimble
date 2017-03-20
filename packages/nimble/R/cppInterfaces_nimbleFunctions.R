@@ -410,7 +410,7 @@ getSetCharacterVector <- function(vptr, name, value, dll) { ##basePtr, dll) {
          nimbleInternalFunctions$setCharacterVectorValue(vptr, value, dll = dll)
 }
 
-getSetCharacter <- function(name, value, basePtr, dll) {
+getSetCharacterScalar <- function(name, value, basePtr, dll) {
     vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
          nimbleInternalFunctions$getCharacterValue(vptr, dll = dll)
@@ -934,7 +934,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             next
         }
         else if(cppCopyTypes[[v]] == 'characterScalar') {
-            getSetCharacter(v, Robj[[v]], basePtr, dll = dll)
+            getSetCharacterScalar(v, Robj[[v]], basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'numericVector') {
@@ -1054,7 +1054,7 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
     names(methodsList)[length(methodsList)] <- 'initialize'
     className <- compiledNimbleObj$name
     methodsList[[length(methodsList) + 1]] <- substitute(function() {
-        writeLines(paste0("Derived CnimbleFunctionBase object created by buildNimbleListInterface for nimbleList with class ", 
+        writeLines(paste0("Derived CnimbleListBase object (compiled nimbleList) created by buildNimbleListInterface for nimbleList with class ", 
                           CLASSNAME))
     }, list(CLASSNAME = className))
     names(methodsList)[length(methodsList)] <- 'show'
@@ -1170,9 +1170,9 @@ buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, wh
     names(methodsList)[length(methodsList)] <- 'initialize'
     showTxt <-  "Function"
     methodsList[[length(methodsList) + 1]] <- substitute(function() {
-        writeLines(paste0("Derived CnimbleListBase object (compiled nimbleList) for nimbleList with class ", 
+        writeLines(paste0("Derived CnimbleFunctionBase object (compiled nimbleFunction) for nimbleFunction with class ", 
                            CLASSNAME))
-    }, list(CLASSNAME <- nlClassName)) ## former subs removed, left substitute call for future modifications
+    }, list(CLASSNAME = nlClassName)) ## former subs removed, left substitute call for future modifications
     names(methodsList)[length(methodsList)] <- 'show'
     eval(substitute( newClass <-  setRefClass(refName,
                                               fields = FIELDS,

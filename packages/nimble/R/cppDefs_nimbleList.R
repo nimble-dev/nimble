@@ -165,17 +165,13 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           buildCastPtrToNamedObjectsPtrFun()
                                           buildCastPtrToPtrPairFun()
                                           if(eigenList){
-                                        # makeCppNames()
-                                        # buildConstructorFunctionDef()
-                                        # buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
-                                        # buildRgenerator(where = where)
-                                        # buildCmultiInterface()
-                                              callSuper(where)
+                                            callSuper(where)
                                           }
                                           else{
                                               buildCopyFromSexp()
                                               buildCopyToSexp()
                                               buildCreateNewSexp()
+                                              buildResetFlags()
                                               callSuper(where)
                                           }
                                       },
@@ -293,6 +289,35 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                                                                 externC = FALSE,
                                                                                 CPPincludes = list(nimbleIncludeFile("RcppUtils.h"),
                                                                                                    nimbleIncludeFile("smartPtrs.h")))
+                                      },
+                                      buildResetFlags = function(){
+                                        interfaceArgs <- symbolTable()
+                                        elementNames <- nimCompProc$symTab$getSymbolNames()
+                                        resetNestedFlagLines <- list()
+                                        listElementTable <- symbolTable()
+                                        
+                                        resetFlagLine <- list(substitute(RCopiedFlag <- false,
+                                                                         list()))
+
+                                        for(i in seq_along(elementNames)){
+                                          elementSymTab <- nimCompProc$symTab$getSymbolObject(elementNames[i])
+                                          isList <- inherits(elementSymTab, 'symbolNimbleList')
+                                          if(isList){
+                                            resetRCopiedFlag  <- paste0(elementSymTab$name,"->resetFlags();")
+                                            resetRCopiedFlagLine <- substitute(cppLiteral(resetText), list(resetText = resetRCopiedFlag))
+                                            resetNestedFlagLines <- c(resetNestedFlagLines,
+                                                                 resetRCopiedFlagLine)
+                                          }
+                                        }
+                                        allCode <- embedListInRbracket(c(resetFlagLine, resetNestedFlagLines))
+                                        functionDefs[[paste0(name, "_resetFlags")]] <<- cppFunctionDef(name = "resetFlags",
+                                                                                                   args = interfaceArgs,
+                                                                                                   code = cppCodeBlock(code = RparseTree2ExprClasses(allCode), objectDefs = listElementTable),
+                                                                                                   returnType = cppVoid(),
+                                                                                                   externC = FALSE,
+                                                                                                   CPPincludes = list(nimbleIncludeFile("RcppUtils.h"),
+                                                                                                                      nimbleIncludeFile("smartPtrs.h")))
                                       }
+
                                       )
                                   )

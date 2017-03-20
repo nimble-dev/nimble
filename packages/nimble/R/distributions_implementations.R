@@ -133,7 +133,7 @@ nimSvd <- function(x, vectors = 'full') {
                     full = 2)
   if(is.null(vectors)) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
   .Call('C_nimSvd', apply(x, 1, as.double), vectors, svdList, 
-        PACKAGE = nimbleUserNamespace$sessionSpecificDll[[1]])
+        PACKAGE = 'nimble')
 }
 
 
