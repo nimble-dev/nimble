@@ -68,7 +68,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           newCodeLine <- cppLiteral(c(paste0('ptrToSmartPtr = static_cast<nimSmartPtr<',name,'>* >(R_ExternalPtrAddr(input));'),
                                                                       'ptrToSmartPtrBase = dynamic_cast<nimSmartPtrBase*>(ptrToSmartPtr);',
                                                                       'ptrToPtr = ptrToSmartPtr->getVoidPtrToRealPtr();',
-                                                                      paste0('reinterpret_cast<',name,'*>(*static_cast<void**>(ptrToPtr))->NO_hw();'),
+                                                                 ##     paste0('reinterpret_cast<',name,'*>(*static_cast<void**>(ptrToPtr))->NO_hw();'),
                                                                       'PROTECT(SptrToSmartPtrBase = R_MakeExternalPtr(ptrToSmartPtrBase, R_NilValue, R_NilValue));',
                                                                       'PROTECT(SptrToPtr = R_MakeExternalPtr(ptrToPtr, R_NilValue, R_NilValue));'))
                                           allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = allocVector(VECSXP,', 2, '));'))
@@ -123,7 +123,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           newCodeLine <- cppLiteral(c(paste('newObj = new ',name,';'),
                                                                       paste0('ptrToSmartPtr = new nimSmartPtr<',name,'>;'),
                                                                       'ptrToSmartPtr->setPtrFromT(newObj);',
-                                                                      '(*ptrToSmartPtr)->NO_hw();',
+                                                                ##      '(*ptrToSmartPtr)->NO_hw();',
                                                                       'PROTECT(SptrToSmartPtr = R_MakeExternalPtr(ptrToSmartPtr, R_NilValue, R_NilValue));'))
                                                                       
                                           codeLines <- substitute({

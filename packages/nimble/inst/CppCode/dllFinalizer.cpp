@@ -5,7 +5,7 @@
 //#include "nimble/RcppUtils.h"
 #include "nimble/dllFinalizer.h"
 
-
+//#define _DEBUG_DLLFINALIZER
 //typedef std::pair<SEXP, R_CFinalizer_t> DllAndFinalizer;
 
 struct DllAndFinalizer {
@@ -70,9 +70,11 @@ void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer, SEXP Sl
   newDLLAndFinalizer.Dll = Dll;
   newDLLAndFinalizer.Finalizer = finalizer;
   newDLLAndFinalizer.Label = label;
-  PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
-  RnimblePtrs[ptr] = newDLLAndFinalizer;
-  R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
+#ifdef _DEBUG_DLLFINALIZER
+   PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
+#endif
+   RnimblePtrs[ptr] = newDLLAndFinalizer;
+   R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
 }
 
 SEXP CountDllObjects() {
@@ -110,8 +112,9 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
       ) {
     if(RNPiter->second.Dll == Dll) {
       objectsFound++;
+#ifdef _DEBUG_DLLFINALIZER
       PRINTF("Found label %s\n",  RNPiter->second.Label.c_str());
-	
+#endif	
       objectsFoundLabels.push_back(RNPiter->second.Label);
       if(force) {
 	finalizeOneObject(RNPiter++);// pass by copy a current iterator value and increment, since finalizerOneObject will use .erase()

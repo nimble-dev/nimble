@@ -4,6 +4,8 @@
 #include "nimble/dllFinalizer.h"
 #include "R.h"
 
+//#define _DEBUG_NAMEDOBJECTS
+
 void NamedObjects::NO_hw(  ) {
   PRINTF("hello world from NamedObjects\n");
 }
@@ -21,7 +23,9 @@ void* NamedObjects::getObjectPtr( string &name ) {
     _nimble_global_output << "Available Name 1 = " << iMO->first << "\n"; nimble_print_to_R( _nimble_global_output);
     return(0);
   }
+#ifdef _DEBUG_NAMEDOBJECTS
   PRINTF("Getting pointer to %s: %p\n", name.c_str(), iMO->second);
+#endif
   return(	(iMO->second) ) ;
 }
 
