@@ -45,27 +45,27 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               writeCode(nimGenerateCpp(compileInfo$nimExpr, compileInfo$newLocalSymTab))
                                           },
                                           setupSymbolTables = function(parentST = NULL, neededTypes = NULL) {
-                                            argInfoWithMangledNames <- RCfun$argInfo
-                                            numArgs <- length(argInfoWithMangledNames)
-                                            if(numArgs > 0) {
-                                              argIsBlank <- unlist(lapply(RCfun$argInfo, identical, formals(function(a) {})[[1]]))
-                                              ## it seems to be impossible to store the value of a blank argument, formals(function(a) {})[[1]], in a variable
-                                              if(any(argIsBlank)) {
-                                                stop(paste0("Type declaration missing for argument(s) ", paste(names(RCfun$argInfo)[argIsBlank], collapse = ", ")), call. = FALSE)
+                                              argInfoWithMangledNames <- RCfun$argInfo
+                                              numArgs <- length(argInfoWithMangledNames)
+                                              if(numArgs > 0) {
+                                                  argIsBlank <- unlist(lapply(RCfun$argInfo, identical, formals(function(a) {})[[1]]))
+                                                  ## it seems to be impossible to store the value of a blank argument, formals(function(a) {})[[1]], in a variable
+                                                  if(any(argIsBlank)) {
+                                                      stop(paste0("Type declaration missing for argument(s) ", paste(names(RCfun$argInfo)[argIsBlank], collapse = ", ")), call. = FALSE)
+                                                  }
                                               }
-                                            }
-                                            argInfoWithMangledNames <- RCfun$argInfo
-                                            numArgs <- length(argInfoWithMangledNames)
-                                            if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
-                                            nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
-                                            names(nameSubList) <<- names(RCfun$argInfo)
-                                            compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes) ## will be used for function args.  must be a better way.
-                                            compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes)
-                                            if(!is.null(parentST)) {
-                                              compileInfo$origLocalSymTab$setParentST(parentST)
-                                              compileInfo$newLocalSymTab$setParentST(parentST)
-                                            }
-                                            compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return")
+                                              argInfoWithMangledNames <- RCfun$argInfo
+                                              numArgs <- length(argInfoWithMangledNames)
+                                              if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
+                                              nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
+                                              names(nameSubList) <<- names(RCfun$argInfo)
+                                              compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo)) ## will be used for function args.  must be a better way.
+                                              compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, neededTypes, names(RCfun$argInfo))
+                                              if(!is.null(parentST)) {
+                                                  compileInfo$origLocalSymTab$setParentST(parentST)
+                                                  compileInfo$newLocalSymTab$setParentST(parentST)
+                                              }
+                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, neededTypes, "return", "returnType")
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {
@@ -221,7 +221,7 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            writeLines('***** READY FOR insertAssertions *****')
                                            browser()
                                        }
-                                       
+
                                        tryResult <- try(exprClasses_insertAssertions(compileInfo$nimExpr))
                                        if(inherits(tryResult, 'try-error')) {
                                            stop(paste('There is some problem at the insertAdditions processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)

@@ -34,7 +34,13 @@ exprClasses_insertAssertions <- function(code) {
             if(length(code$args[[i]]$assertions) > 0) {
                 toInsert <- lapply(code$args[[i]]$assertions, function(x) if(inherits(x, 'exprClass')) x else RparseTree2ExprClasses(x))
                 before <- unlist(lapply(toInsert, function(x) {if(x$name == 'after') FALSE else TRUE}))
-                newExpr <- newBracketExpr(args = c(toInsert[before], code$args[i], lapply(toInsert[!before], function(x) x$args[[1]])) )
+                
+                newExpr <- newBracketExpr(args = c(lapply(toInsert[before],
+                                                          function(z) {exprClasses_insertAssertions(z); z}),
+                                                   code$args[i],
+                                                   lapply(toInsert[!before],
+                                                          function(x) lapply(x$args[[1]],
+                                                                             function(z) {exprClasses_insertAssertions(z); z}))))
                 setArg(code, i, newExpr)
             }
         }

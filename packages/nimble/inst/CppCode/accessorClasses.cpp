@@ -289,16 +289,16 @@ void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
 
 template<class T>
 void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
-  vector<SingleVariableMapAccessBase*> SMVA_Vec = MMVAPtr.getMapAccessVector();
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
   int nimCurrent = 0;
   int nimEnd = nimArr.size();
   int nimArrStride = nimArr.strides()[0];
   int nimCurrentOffset = nimArr.getOffset();
-  int k = SMVA_Vec.size();
+  int k = SMVA_Vec->size();
   int nextNumVals;
   SingleVariableMapAccessBase* curSingleAccess;
   for(int i = 0; i < k ; i++){
-    curSingleAccess = SMVA_Vec[i];
+    curSingleAccess = (*SMVA_Vec)[i];
     nextNumVals = (*curSingleAccess).getLength();
     if(nextNumVals + nimCurrent > nimEnd){
       PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
@@ -312,6 +312,25 @@ void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &
     PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
+template<class T>
+void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, int index){
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  curSingleAccess = (*SMVA_Vec)[index];
+  nextNumVals = (*curSingleAccess).getLength();
+  if(nextNumVals + nimCurrent > nimEnd)
+    PRINTF("Warning: in nimArr_2_ManyModelAccessIndex, accessor larger than NimArr!\n");
+  nimArr_2_SingleModelAccess<T>(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+  nimCurrent += nextNumVals;
+  if(nimCurrent != nimEnd)
+    PRINTF("Warning: after completing nimArr_2_ManyModelAccessIndex, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+}
+  
 ///////////////
 // [accessors]_2_nimArr
 // nimArr is "to". SMVAPtr is "from"
@@ -353,16 +372,16 @@ void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase
 
 template<class T>
 void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
-  vector<SingleVariableMapAccessBase*> SMVA_Vec = MMVAPtr.getMapAccessVector();
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
   int nimCurrent = 0;
   int nimEnd = nimArr.size();
   int nimArrStride = nimArr.strides()[0];
   int nimCurrentOffset = nimArr.getOffset();
-  int k = SMVA_Vec.size();
+  int k = SMVA_Vec->size();
   int nextNumVals;
   SingleVariableMapAccessBase* curSingleAccess;
   for(int i = 0; i < k ; i++){
-    curSingleAccess = SMVA_Vec[i];
+    curSingleAccess = (*SMVA_Vec)[i];
     nextNumVals = (*curSingleAccess).getLength();
     if(nextNumVals + nimCurrent > nimEnd){
       PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
@@ -376,6 +395,24 @@ void ManyModelAccess_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &
     PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
 
+template<class T>
+void ManyModelAccessIndex_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, int index) {
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int nextNumVals;
+  SingleVariableMapAccessBase* curSingleAccess;
+  curSingleAccess = (*SMVA_Vec)[index];
+  nextNumVals = (*curSingleAccess).getLength();
+  if(nextNumVals + nimCurrent > nimEnd)
+    PRINTF("Warning: in ManyModelAccessIndex_2_nimArr, accessor larger than NimArr!\n");
+  SingleModelAccess_2_nimArr<T>(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+  //SingleModelAccess_2_nimArr<T>(curSingleAccess, nimArr, 0, 0 ); 
+}
+
+
 //////////
 //
 void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA){
@@ -386,11 +423,27 @@ void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA){
 	nimArr_2_ManyModelAccess<int>(MVA, nimArr);
 }
 
+void setValues(NimArrBase<double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  nimArr_2_ManyModelAccessIndex<double>(MVA, nimArr, index-1);
+}
+
+void setValues(NimArrBase<int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  nimArr_2_ManyModelAccessIndex<int>(MVA, nimArr, index-1);
+}
+
 void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA){
 	ManyModelAccess_2_nimArr<double>(MVA, nimArr);
 }
 void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA){
 	ManyModelAccess_2_nimArr<int>(MVA, nimArr);
+}
+
+void getValues(NimArr<1, double> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  ManyModelAccessIndex_2_nimArr<double>(MVA, nimArr, index-1);
+  } 
+
+void getValues(NimArr<1, int> &nimArr, ManyVariablesMapAccessor &MVA, int index){
+  ManyModelAccessIndex_2_nimArr<int>(MVA, nimArr, index-1);
 }
 
 ////////////////////////
@@ -426,14 +479,14 @@ void nimArr_2_SingleModelAccess(SingleVariableAccessBase* SMVAPtr, NimArrBase<T>
 //void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArr<D, T> &nimArr){
 template<class T>
 void nimArr_2_ManyModelAccess(ManyVariablesAccessor &MMVAPtr, NimArrBase<T> &nimArr) {
-  vector<SingleVariableAccessBase*> SMVA_Vec = MMVAPtr.getAccessVector();
+  vector<SingleVariableAccessBase*> *SMVA_Vec = &(MMVAPtr.getAccessVector());
   int nimCurrent = 0;
   int nimEnd = nimArr.size();
-  int k = SMVA_Vec.size();
+  int k = SMVA_Vec->size();
   int nextNumVals;
   SingleVariableAccessBase* curSingleAccess;
   for(int i = 0; i < k ; i++){
-    curSingleAccess = SMVA_Vec[i];
+    curSingleAccess = (*SMVA_Vec)[i];
     nextNumVals = (*curSingleAccess).getLength();
     if(nextNumVals + nimCurrent > nimEnd){
       PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
@@ -471,26 +524,25 @@ void SingleModelAccess_2_nimArr(SingleVariableAccessBase* SMVAPtr, NimArr<D, T> 
 
 template<int D, class T>
 void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T> &nimArr) {
-  vector<SingleVariableAccessBase*> SMVA_Vec = MMVAPtr.getAccessVector();
+  vector<SingleVariableAccessBase*> *SMVA_Vec = &(MMVAPtr.getAccessVector());
   int nimCurrent = 0;
   int nimEnd = nimArr.size();
-  int k = SMVA_Vec.size();
+  int k = SMVA_Vec->size();
   int nextNumVals;
   SingleVariableAccessBase* curSingleAccess;
   for(int i = 0; i < k ; i++){
-    curSingleAccess = SMVA_Vec[i];
+    curSingleAccess = (*SMVA_Vec)[i];
     nextNumVals = (*curSingleAccess).getLength();
     if(nextNumVals + nimCurrent > nimEnd){
-      PRINTF("Warning: in nimArr_2_ManyModelAccess, accessor larger than NimArr!\n");
+      PRINTF("Warning: in ManyModelAccess_2_nimArr, accessor larger than NimArr!\n");
       break;
     }
     SingleModelAccess_2_nimArr<D, T>(curSingleAccess, nimArr, nimCurrent);
     nimCurrent = nimCurrent + nextNumVals;
   }
   if(nimCurrent != nimEnd)
-    PRINTF("Warning: after completing nimArr_2_ManyModelAccess, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
+    PRINTF("Warning: after completing ManyModelAccess_2_nimArr, nimCurrent != nimEnd. Perhaps the NimArr was longer than the accessor?\n");
 }
-
 
 void setValues(NimArrBase<double> &nimArr, ManyVariablesAccessor &MVA){
 	nimArr_2_ManyModelAccess<double>(MVA, nimArr);
@@ -505,6 +557,7 @@ void getValues(NimArr<1, double> &nimArr, ManyVariablesAccessor &MVA){
 void getValues(NimArr<1, int> &nimArr, ManyVariablesAccessor &MVA){
 	ManyModelAccess_2_nimArr<1, int>(MVA, nimArr);
 }
+
 
 // new copierClass versions
 // remember to look at calculate() too to avoid copies every time.
@@ -541,8 +594,8 @@ void nimCopy(copierVectorClass &copiers, int rowFrom, int rowTo, int unused) { /
 
 void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesMapAccessorBase *to, int isFromMV, int isToMV) {
   // Imitates old version of nimCopy but populates copyVector of correct choices of derived copierClass objects
-  vector<SingleVariableMapAccessBase *> fromAccessors = from->getMapAccessVector();
-  vector<SingleVariableMapAccessBase *> toAccessors = to->getMapAccessVector();
+  vector<SingleVariableMapAccessBase *> *fromAccessors = &(from->getMapAccessVector());
+  vector<SingleVariableMapAccessBase *> *toAccessors = &(to->getMapAccessVector());
 
 #ifdef __NIMBLE_DEBUG_ACCESSORS
   PRINTF("Entering nimCopy\n");
@@ -550,17 +603,17 @@ void copierVectorClass::setup(ManyVariablesMapAccessorBase *from, ManyVariablesM
   to->check();
 #endif
 
-  if(fromAccessors.size() != toAccessors.size()) {
-    _nimble_global_output<<"Error in setting up a copierVector: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+  if(fromAccessors->size() != toAccessors->size()) {
+    _nimble_global_output<<"Error in setting up a copierVector: from and to access vectors have sizes "<<fromAccessors->size() << " and " << toAccessors->size() << "\n";
     nimble_print_to_R(_nimble_global_output);
   }
-  copyVector.resize( fromAccessors.size() );
+  copyVector.resize( fromAccessors->size() );
   //PRINTF("Ready to set up length %i\n", copyVector.size());
   vector<SingleVariableMapAccessBase *>::iterator iFrom, iTo, iFromEnd;
-  iFromEnd = fromAccessors.end();
-  iTo =  toAccessors.begin();
+  iFromEnd = fromAccessors->end();
+  iTo =  toAccessors->begin();
   int i = 0;
-  for(iFrom = fromAccessors.begin(); iFrom != iFromEnd; iFrom++) {
+  for(iFrom = fromAccessors->begin(); iFrom != iFromEnd; iFrom++) {
     //PRINTF("setting up %i\n", i);
     copyVector[i] = makeOneCopyClass(*iFrom, *iTo, isFromMV, isToMV); // switched from isFromMV and isToMV
     iTo++;
@@ -580,24 +633,24 @@ copierVectorClass::~copierVectorClass() {
 // new MapAccessor versions
 void nimCopy(ManyVariablesMapAccessorBase &from, ManyVariablesMapAccessorBase &to) { //map version
 
-  vector<SingleVariableMapAccessBase *> fromAccessors = from.getMapAccessVector();
-  vector<SingleVariableMapAccessBase *> toAccessors = to.getMapAccessVector();
+  vector<SingleVariableMapAccessBase *> *fromAccessors = &(from.getMapAccessVector());
+  vector<SingleVariableMapAccessBase *> *toAccessors = &(to.getMapAccessVector());
 
 #ifdef __NIMBLE_DEBUG_ACCESSORS
   PRINTF("Entering nimCopy\n");
-  from.check();
-  to.check();
+  from->check();
+  to->check();
 #endif
 
-  if(fromAccessors.size() != toAccessors.size()) {
-    _nimble_global_output<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+  if(fromAccessors->size() != toAccessors->size()) {
+    _nimble_global_output<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors->size() << " and " << toAccessors->size() << "\n";
     nimble_print_to_R(_nimble_global_output);
   }
 
   vector<SingleVariableMapAccessBase *>::iterator iFrom, iTo, iFromEnd;
-  iFrom = fromAccessors.begin();
-  iFromEnd = fromAccessors.end();
-  iTo =  toAccessors.begin();
+  iFrom = fromAccessors->begin();
+  iFromEnd = fromAccessors->end();
+  iTo =  toAccessors->begin();
   for( ; iFrom != iFromEnd; ++iFrom) {
     nimCopyOne(*iFrom, *iTo);
     ++iTo;
@@ -847,18 +900,18 @@ void dynamicMapCopyCheck(NimArrType *NAT, int offset, vector<int> &strides, vect
 // old versions:
 void nimCopy(ManyVariablesAccessorBase &from, ManyVariablesAccessorBase &to) {
 
-  vector<SingleVariableAccessBase *> fromAccessors = from.getAccessVector();
-  vector<SingleVariableAccessBase *> toAccessors = to.getAccessVector();
+  vector<SingleVariableAccessBase *> *fromAccessors = &(from.getAccessVector());
+  vector<SingleVariableAccessBase *> *toAccessors = &(to.getAccessVector());
 
-  if(fromAccessors.size() != toAccessors.size()) {
-    _nimble_global_output<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors.size() << " and " << toAccessors.size() << "\n";
+  if(fromAccessors->size() != toAccessors->size()) {
+    _nimble_global_output<<"Error in nimCopy: from and to access vectors have sizes "<<fromAccessors->size() << " and " << toAccessors->size() << "\n";
     nimble_print_to_R(_nimble_global_output);
   }
 
   vector<SingleVariableAccessBase *>::iterator iFrom, iTo, iFromEnd;
-  iFrom = fromAccessors.begin();
-  iFromEnd = fromAccessors.end();
-  iTo =  toAccessors.begin();
+  iFrom = fromAccessors->begin();
+  iFromEnd = fromAccessors->end();
+  iTo =  toAccessors->begin();
   for( ; iFrom != iFromEnd; ++iFrom) {
     nimCopyOne(*iFrom, *iTo);
     ++iTo;

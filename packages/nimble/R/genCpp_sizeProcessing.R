@@ -721,7 +721,7 @@ sizeRunTime <- function(code, symTab, typeEnv) {
 
     ## this is the case ans <- run.time({foo(y)})
     lhsName <- code$caller$args[[1]]$name
-    timerName <- paste0(lhsName,'_TIMER_')
+    timerName <- IntermLabelMaker() ##paste0(lhsName,'_TIMER_')
     newSym <- symbolNimbleTimer(name = timerName, type = 'symbolNimbleTimer')
     symTab$addSymbol(newSym)
     startTimerAssert <- RparseTree2ExprClasses(substitute(startNimbleTimer(TIMERNAME), list(TIMERNAME = as.name(timerName))))
@@ -975,20 +975,36 @@ sizeValues <- function(code, symTab, typeEnv) {
     sym <- symTab$getSymbolObject(code$args[[1]]$name, TRUE)
 ##    if(length(sym$lengthName)==0) stop(paste0("Error the size information for ", nimDeparse(code), " is missing."), call. = FALSE) 
 ##    code$sizeExprs <- list(as.name(sym$lengthName))
-    code$sizeExprs <- list(substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name))))
+    if(length(code$args) == 1) {  # full vector of nodes
+        code$sizeExprs <- list(substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name))))
+    } else {  # there must be index on the node
+        if(is.numeric(code$args[[2]])) {
+            code$sizeExprs <- list(substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = code$args[[2]])))
+            } else code$sizeExprs <- list(substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))))
+    }
+    
     asserts <- list()
-   
-    if(code$caller$name %in% assignmentOperators) {
+    if(code$caller$name == "[" & code$caller$callerArgID == 1) # values(...)[.] <- 
+	stop(exprClassProcessingErrorMsg(code, 'In sizeValues: indexing of values() on left-hand size of an assignment is not allowed.'), call. = FALSE)
+     if(code$caller$name %in% assignmentOperators) {
         if(code$callerArgID == 2) { ## ans <- values(...)
             code$name <- 'getValues'
             LHS <- code$caller$args[[1]]
             if(LHS$isName) { ## It is a little awkward to insert setSize here, but this is different from other cases in sizeAssignAfterRecursing
                 assertSS <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
-                assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
+                if(length(code$args) == 1) {  # full vector of nodes
+                    assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
+                } else {  # there must be index on the node
+                    if(is.numeric(code$args[[2]])) {
+                        assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = code$args[[2]]))
+                    } else assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name)))
+                }
+
+                # assertSS[[1]][[3]] <- substitute(cppMemberFunction(getTotalLength(ACCESSNAME)), list(ACCESSNAME = as.name(code$args[[1]]$name)))
                 asserts <- c(assertSS, asserts)
             } else
                 typeEnv$.ensureNimbleBlocks <- TRUE
-        } ## values(...) <- P, don't change it
+        }   # values(...) <- P, don't change it
     } else { ## values(...) embedded in a RHS expression
         code$name <- 'getValues'
         code$toEigenize <- 'yes' ## This tricks sizeAssignAfterRecursing to generate the setSize in asserts
@@ -1358,14 +1374,15 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     }
     ## update size info in typeEnv
     assert <- NULL
-    
-    if(LHS$name == 'values' && length(LHS$args) == 1) { ## It is values(model_values_accessor) <- STUFF
+
+    if(LHS$name == 'values' && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
+        # triggered when we have simple assignment into values() without indexing of values()
         if(is.numeric(RHS)) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Cannot assign into values() from numeric.')), call. = FALSE)
-        code$name <- 'setValues'
-        
-        code$args <- list(2)
+        code$name <- 'setValues'  
+        code$args <- list(1 + length(LHS$args))
         setArg(code, 1, RHS)
         setArg(code, 2, LHS$args[[1]])
+        if(length(LHS$args) == 2) setArg(code, 3, LHS$args[[2]])  # for indexed of form values(model, nodes[i])
         if(!(RHS$isName)) assert <- c(assert, sizeInsertIntermediate(code, 1, symTab, typeEnv) )
         return( if(length(assert) == 0) NULL else assert )
     }
