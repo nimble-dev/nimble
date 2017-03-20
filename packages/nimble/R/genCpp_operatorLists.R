@@ -26,9 +26,9 @@ binaryLeftOperators <- c(binaryLeftDoubleOperators, binaryLeftPromoteOperators, 
 binaryOperators <- c(binaryMidOperators, binaryLeftOperators)
 
 binaryOrUnaryOperators <- c('+','-')
-unaryPromoteNoLogicalOperators <- 'abs'
+unaryPromoteNoLogicalOperators <- c('abs','cube')
 unaryIntegerOperators <- 'nimStep'
-unaryDoubleOperators <- c('exp','log', 'cube', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
+unaryDoubleOperators <- c('exp','log', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
                     'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
                     ## 'lgamma1p',
                     'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
