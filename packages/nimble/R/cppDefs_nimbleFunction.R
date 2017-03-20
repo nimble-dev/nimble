@@ -18,6 +18,7 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
                                                          else {
                                                              baseClassName <- environment(baseClassObj)$CclassName
                                                              addInheritance(baseClassName)
+                                                            ## addAncestors(c(baseClassObj$inheritance, baseClassObj$ancestors))
                                                          }
                                                      }
                                                  },
@@ -274,9 +275,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   ## see comment in nimbleProjectClass::compileNimbleFunction
                                                   oldCobjectInterface <- nf_getRefClassObject(R_NimbleFxn)$.CobjectInterface
                                                   if(!is.list(oldCobjectInterface)) return(oldCobjectInterface)
-                                                  existingBasePtr <- oldCobjectInterface[[1]]$getBasePtr(oldCobjectInterface[[2]])
+                                                  existingExtPtrs <- oldCobjectInterface[[1]]$getExtPtrs(oldCobjectInterface[[2]])
                                                   thisDll <- oldCobjectInterface[[1]]$dll
-                                                  newCobjectInterface <- Rgenerator(R_NimbleFxn, thisDll, project = nimbleProject, existingBasePtr = existingBasePtr)
+                                                  newCobjectInterface <- Rgenerator(R_NimbleFxn, thisDll, project = nimbleProject, existingExtPtrs = existingExtPtrs)
                                                   newCobjectInterface
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){
@@ -294,6 +295,12 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassName <- environment(baseClassObj)$name
                                                       addInheritance(baseClassName)
+                                                      ## These lines would be completely general...
+                                                      ##baseClassCppDef <- environment(baseClassObj)$cppDef
+                                                      ##if(is.null(baseClassCppDef)) warning('cppDef for a base class not available when needed')
+                                                      ##addAncestors(c(baseClassCppDef$inheritance, baseClassCppDef$ancestors))
+                                                      ## ... but I'm going with this for now because it is just what is needed 
+                                                      addAncestors('NamedObjects')
                                                   }
                                                   callSuper(where)
                                               }

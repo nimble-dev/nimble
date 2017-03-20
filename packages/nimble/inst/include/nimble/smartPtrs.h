@@ -3,9 +3,17 @@
 
 #include "Utils.h"
 
+//#define _DEBUG_SMARTPTRS
+
 class nimSmartPtrBase {
-	public:
-	virtual void setPtrFromVoidPtr(void* & inputPtr)=0;
+ public:
+  virtual void setPtrFromVoidPtr(void* & inputPtr)=0;
+  virtual ~nimSmartPtrBase() {
+#ifdef _DEBUG_SMARTPTRS
+    PRINTF("smartPtrBase destructing\n");
+#endif
+  };
+  virtual void* getVoidPtrToRealPtr()=0;
 };
 
 template<typename T>
@@ -16,19 +24,30 @@ class nimSmartPtr : public nimSmartPtrBase {
   T& operator*() {return *realPtr;}
   T* operator->() {return realPtr;}
   void setPtr(const nimSmartPtr & input) {
+    if(realPtr == input.realPtr) return;
     if(realPtr) realPtr->removeWatcher();
     realPtr = input.realPtr;
     realPtr->newWatcher();
   };
   void setPtrFromT(T* & inputPtr) {
+    if(realPtr == inputPtr) return;
     if(realPtr) realPtr->removeWatcher();
     realPtr = inputPtr;
     realPtr->newWatcher();
   };
   void setPtrFromVoidPtr(void* & inputPtr) {
-		T* tempPtr = static_cast<T*>(inputPtr);
-	    setPtrFromT( tempPtr ); 
+    T* tempPtr = static_cast<T*>(inputPtr);
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("setting pointer at %p to realPtr = %p (cast to T* from void* %p)\n", &realPtr, tempPtr, inputPtr);
+#endif
+    setPtrFromT( tempPtr ); 
   };
+  void* getVoidPtrToRealPtr() {
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("getting void pointer %p to realPtr = %p\n", static_cast<void*>(&realPtr), realPtr);
+#endif
+    return(static_cast<void*>(&realPtr));
+  }
   bool equalsPtr(const nimSmartPtr & otherPtr) {
 	  return(realPtr == otherPtr.realPtr);
   }
@@ -47,21 +66,33 @@ class nimSmartPtr : public nimSmartPtrBase {
     return *this;
   }
 
-  nimSmartPtr() : realPtr(0) {};
+  nimSmartPtr() : realPtr(0) {
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("smartPtr constructing %p\n", &realPtr);
+#endif
+  };
   nimSmartPtr(const nimSmartPtr &rhs) {
     realPtr = rhs.realPtr;
     realPtr->newWatcher();
-
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("smartPtr constructing (from another smartPtr) with ptrToPtr = %p, and realPtr = %p\n", &realPtr, realPtr); 
+#endif
   }
 
   nimSmartPtr(T* rhs) {
     realPtr = rhs;
     realPtr->newWatcher();
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("smartPtr constructing (from a T*) with ptrToPtr = %p, and realPtr = %p\n", &realPtr, realPtr); 
+#endif
   }
 
   ~nimSmartPtr() {
-	  if(realPtr != 0)
-			realPtr->removeWatcher();
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("smartPtr destructing with ptrToPtr = %p, and realPtr = %p\n", &realPtr, realPtr);
+#endif
+    if(realPtr != 0)
+      realPtr->removeWatcher();
   };
 };
 
@@ -72,19 +103,33 @@ class pointedToBase {
   int watcherCount;
  pointedToBase() : watcherCount(0) {};
   void newWatcher() {
-watcherCount++;
-}
+    watcherCount++;
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("Adding watcher to %p (now has %i watchers).\n", this, watcherCount);
+#endif
+  }
   void removeWatcher() {
     watcherCount--;
+#ifdef _DEBUG_SMARTPTRS 
+    PRINTF("Removing watcher to %p (now has %i watchers).\n", this, watcherCount);
+#endif
     if(watcherCount <= 0) {
       if(watcherCount < 0) {
-	PRINTF("Error, a watcherCount went below 0. \n");
+	PRINTF("Error, watcherCount went below 0.\n");
       }
+#ifdef _DEBUG_SMARTPTRS 
+      PRINTF("pointedToBase self-destructing\n");
+#endif
       delete this;
     }
   }
   virtual ~pointedToBase() {};
 };
+
+extern "C" {
+  SEXP register_pointedToBase_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel);
+  SEXP register_smartPtrBase_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel);
+}
 
 // example
 /* class pointedToDerived : public pointedToBase { */

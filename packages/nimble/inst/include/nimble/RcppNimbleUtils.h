@@ -40,6 +40,7 @@ void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
   SEXP setSmartPtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
+  SEXP setSmartPtrFromDoublePtr(SEXP SdoublePtr, SEXP SsinglePtr);
 
   //  SEXP setVec(SEXP Sextptr, SEXP Svalue);
   //  SEXP getVec(SEXP Sextptr);

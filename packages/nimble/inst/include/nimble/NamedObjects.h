@@ -13,6 +13,8 @@ Class for void pointers to arbitrary objects for R access
 class NamedObjects {
 public:
   map< string, void * > namedObjects;
+  map< string, void * > &getNamedObjects() {return(namedObjects);}
+  void NO_hw();
   virtual void* getObjectPtr( string &name );
   virtual ~NamedObjects() {//PRINTF("In NamedObjects destructor\n");
   };

@@ -81,6 +81,13 @@ setSmartPtrFromSinglePtr <- function(elementPtr, value, dll) {
   value
 }
 
+setSmartPtrFromDoublePtr <- function(elementPtr, value, dll) {
+  if(!inherits(elementPtr, 'externalptr')) return(NULL)
+  if(!inherits(value, 'externalptr')) return(NULL)
+  eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$setSmartPtrFromDoublePtr, elementPtr, value))
+  value
+}
+
 getDoubleValue <- function(elementPtr, pointDepth = 1, dll){
   if(!inherits(elementPtr, "externalptr") )
     return(NULL)
