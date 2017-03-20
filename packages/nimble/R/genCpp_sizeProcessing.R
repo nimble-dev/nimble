@@ -668,7 +668,7 @@ sizeRunTime <- function(code, symTab, typeEnv) {
 
     ## this is the case ans <- run.time({foo(y)})
     lhsName <- code$caller$args[[1]]$name
-    timerName <- paste0(lhsName,'_TIMER_')
+    timerName <- IntermLabelMaker() ##paste0(lhsName,'_TIMER_')
     newSym <- symbolNimbleTimer(name = timerName, type = 'symbolNimbleTimer')
     symTab$addSymbol(newSym)
     startTimerAssert <- RparseTree2ExprClasses(substitute(startNimbleTimer(TIMERNAME), list(TIMERNAME = as.name(timerName))))

@@ -59,13 +59,13 @@ RCvirtualFunProcessing <- setRefClass('RCvirtualFunProcessing',
                                               if(numArgs>0) names(argInfoWithMangledNames) <- paste0("ARG", 1:numArgs, "_", Rname2CppName(names(argInfoWithMangledNames)),"_")
                                               nameSubList <<- lapply(names(argInfoWithMangledNames), as.name)
                                               names(nameSubList) <<- names(RCfun$argInfo)
-                                              compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames) ## will be used for function args.  must be a better way.
-                                              compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames)
+                                              compileInfo$origLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, names(RCfun$argInfo)) ## will be used for function args.  must be a better way.
+                                              compileInfo$newLocalSymTab <<- argTypeList2symbolTable(argInfoWithMangledNames, names(RCfun$argInfo))
                                               if(!is.null(parentST)) {
                                                   compileInfo$origLocalSymTab$setParentST(parentST)
                                                   compileInfo$newLocalSymTab$setParentST(parentST)
                                               }
-                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, "return")
+                                              compileInfo$returnSymbol <<- argType2symbol(RCfun$returnType, "return", "returnType")
                                           },
                                           process = function(...) {
                                               if(inherits(compileInfo$origLocalSymTab, 'uninitializedField')) {

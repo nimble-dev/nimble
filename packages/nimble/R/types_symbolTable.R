@@ -11,11 +11,11 @@ buildSymbolTable <- function(vars, type, size){
     return(symTab)
 }
 
-argTypeList2symbolTable <- function(ATL) {
+argTypeList2symbolTable <- function(ATL, origNames) {
     ## ATL is the type of argument type list from run-time args to a nimble function
     symTab <- symbolTable()
     for(i in seq_along(ATL)) {
-        symTab$addSymbol(argType2symbol(ATL[[i]], names(ATL)[i]))
+        symTab$addSymbol(argType2symbol(ATL[[i]], names(ATL)[i], origNames[i]))
     }
     symTab
 }
@@ -25,8 +25,14 @@ argTypeList2symbolTable <- function(ATL) {
 ## The first argument is the number of dimensions, defaulting to 0 (indicated scalar)
 ## The second argument is a vector of the sizes, defaulting to rep(NA, nDim)
 ## If only some sizes are known, something like double(2, c(5, NA)) should be valid, but we'll have to check later handling to be sure.
-argType2symbol <- function(AT, name = character()) {
-	
+argType2symbol <- function(AT, name = character(), origName) {
+    ans <- try(argType2symbolInternal(AT, name))
+    if(inherits(ans, 'try-error')) stop(paste0("Invalid type type declaration for ",origName,"."), call.=FALSE)
+    ans
+}
+
+argType2symbolInternal <- function(AT, name = character()) {
+    
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
     if(type == "internalType") {
