@@ -98,6 +98,7 @@ asCol <- function(x) {
     matrix(x, ncol = 1)
 }
 
+
 #' Make an object of information about a model-parameter pairing for getParam.  Used internally
 #'
 #' Creates a simple getParam_info object, which has a list with a paramID and a type
