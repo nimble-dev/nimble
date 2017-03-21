@@ -41,7 +41,7 @@ NimArr<2, double> getBound_2D_double(int boundID, const oneNodeUseInfo &useInfo,
   return(useInfo.nodeFunPtr->getBound_2D_double_block(boundID, useInfo.useInfo));
 }
 
-
+// see include/nimble/nimbleEigenNimArr.h for some templated versions of calculate, simulate, calculateDiff and getLogProb used for arbitrary index vectors
 double calculate(NodeVectorClassNew &nodes) {
   double ans(0);
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();

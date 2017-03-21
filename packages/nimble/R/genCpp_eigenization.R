@@ -102,6 +102,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(coreRmanipulationCalls, 'eigenize_nimbleNullaryClass'),
     makeCallList(c('nimCd','nimCi','nimCb'), 'eigenize_alwaysMatrix'),
     list(##'t' = 'eigenize_cWiseUnaryEither',
+        ':' = 'eigenize_nimbleNullaryClass', ## at this point ':' is like a coreRmanipulationCall
          eigenBlock = 'eigenize_eigenBlock',
          diagonal  = 'eigenize_cWiseUnaryMatrix',
          'inverse' = 'eigenize_cWiseUnaryMatrix',
@@ -560,8 +561,8 @@ eigenize_cWiseBinaryArrayLogical <- function(code, symTab, typeEnv, workEnv) {
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
     code$eigMatrix <- TRUE
-    if(inherits(code$args[[1]], 'exprClass')) if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
-    if(inherits(code$args[[2]], 'exprClass')) if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
+    if(inherits(code$args[[1]], 'exprClass')) if(!isEigScalar(code$args[[1]])) if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
+    if(inherits(code$args[[2]], 'exprClass')) if(!isEigScalar(code$args[[2]])) if(code$args[[2]]$eigMatrix) eigenizeArrayize(code$args[[2]])
     promoteArgTypes(code) ## key difference for logical case: promote args to match each other, not logical return type
     invisible(NULL)
 }
