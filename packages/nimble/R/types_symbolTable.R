@@ -11,11 +11,12 @@ buildSymbolTable <- function(vars, type, size){
     return(symTab)
 }
 
-argTypeList2symbolTable <- function(ATL, origNames) {
+
+argTypeList2symbolTable <- function(ATL, neededTypes, origNames) {
     ## ATL is the type of argument type list from run-time args to a nimble function
     symTab <- symbolTable()
     for(i in seq_along(ATL)) {
-        symTab$addSymbol(argType2symbol(ATL[[i]], names(ATL)[i], origNames[i]))
+        symTab$addSymbol(argType2symbol(ATL[[i]], neededTypes, names(ATL)[i], origNames[i]))
     }
     symTab
 }
@@ -25,38 +26,86 @@ argTypeList2symbolTable <- function(ATL, origNames) {
 ## The first argument is the number of dimensions, defaulting to 0 (indicated scalar)
 ## The second argument is a vector of the sizes, defaulting to rep(NA, nDim)
 ## If only some sizes are known, something like double(2, c(5, NA)) should be valid, but we'll have to check later handling to be sure.
-argType2symbol <- function(AT, name = character(), origName) {
-    ans <- try(argType2symbolInternal(AT, name))
+
+argType2symbol <- function(AT, neededTypes, name = character(), origName = "") {
+    ans <- try(argType2symbolInternal(AT, neededTypes, name))
     if(inherits(ans, 'try-error')) stop(paste0("Invalid type type declaration for ",origName,"."), call.=FALSE)
     ans
 }
 
-argType2symbolInternal <- function(AT, name = character()) {
-    
+argType2symbolInternal <- function(AT, neededTypes, name = character()) {
     if(!is.null(AT$default))    AT$default <- NULL     ## remove the 'default=' argument, if it's present
     type <- as.character(AT[[1]])
     if(type == "internalType") {
-        return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
+      return(symbolInternalType(name = name, type = "internal", argList = as.list(AT[-1]))) ## save all other contents for any custom needs later
     }
-    nDim <- if(length(AT)==1) 0 else AT[[2]]
-    if(!is.numeric(nDim) || nDim %% 1 != 0)
-        stop("argType2symbol: unexpected dimension, '", AT[[2]], "', found in argument '", deparse(AT), "'. Dimension should be integer-valued.")
-    size <- if(nDim == 0) 1 else {
-        if(length(AT) < 3)
-            as.numeric(rep(NA, nDim))
-        else
-            eval(AT[[3]])
+    if(type %in% c('double', 'integer', 'character', 'logical', 'void')){
+      nDim <- if(length(AT)==1) 0 else AT[[2]]
+      if(!is.numeric(nDim) || nDim %% 1 != 0)
+          stop("argType2symbol: unexpected dimension, '", AT[[2]], "', found in argument '", deparse(AT), "'. Dimension should be integer-valued.")
+      size <- if(nDim == 0) 1 else {
+          if(length(AT) < 3)
+              as.numeric(rep(NA, nDim))
+          else
+              eval(AT[[3]])
+      }
+      if(type == "character") {
+          if(nDim > 1) {
+              warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
+              nDim <- 1
+              size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
+          }
+          return(symbolString(name = name, type = "character", nDim = nDim, size = size))
+      }  else {
+          return(symbolBasic(name = name, type = type, nDim = nDim, size = size))
+      }
     }
-    if(type == "character") {
-        if(nDim > 1) {
-            warning(paste("character argument",name," with nDim > 1 will be treated as a vector"))
-            nDim <- 1
-            size <- if(any(is.na(size))) as.numeric(NA) else prod(size)
+    if(is.list(neededTypes)){
+      isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
+      if(any(isANeededType == 1)){
+        listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
+        listST$name <- name
+        return(listST)
+      }
+    }
+    if(name == "return"){
+      if(exists(as.character(AT), envir = globalenv()) &&
+         is.nlGenerator(eval(parse(text = as.character(AT), keep.source = FALSE)))){
+        nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
+      }
+      else if(type %in% names(nlEigenReferenceList)){
+        nlList <- nlEigenReferenceList[[type]]$eigenNimbleListDef$new() 
+      }
+      if(exists('nlList')){
+        className <- nlList$nimbleListDef$className
+        isANeededType <- (className == names(neededTypes))
+        if(any(isANeededType == 1)){
+          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
         }
-        symbolString(name = name, type = "character", nDim = nDim, size = size) 
-    } else {
-        symbolBasic(name = name, type = type, nDim = nDim, size = size)
+        else{
+          listST <- recurseGetListST(className, neededTypes)
+        }
+        listST$name <- name
+        return(listST)
+      }
+    }   
+}
+
+recurseGetListST <- function(className, neededTypes){
+  listST <- NULL
+  for(NT in neededTypes){
+    if(NT$type %in% c('symbolNimbleList', 'symbolNimbleListGenerator')){
+      if(!inherits(NT$nlProc$neededTypes, 'uninitializedField')){
+         if(className %in% names(NT$nlProc$neededTypes)){
+          isANeededType <- (className == names(NT$nlProc$neededTypes))
+          listST <- NT$nlProc$neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
+          return(listST)
+         }
+        else listST <- recurseGetListST(className, NT$nlProc$neededTypes)
+      }
     }
+  }
+  return(listST)
 }
 
 symbolTable2cppVars <- function(symTab, arguments = character(), include, parentST = NULL) {
@@ -144,6 +193,19 @@ symbolPtr <- setRefClass(
                    baseType = cType)
         })
     )
+
+symbolSEXP <- setRefClass(
+  Class = "symbolSEXP",
+  contains = "symbolBasic", ## inheriting from symbolBasic instead of symbolBase make initSizes work smoothly
+  methods = list(
+    show = function() writeLines(paste('symbolSEXP', name)),
+    genCppVar = function(...) {
+        cppVar(name = name,
+               ptr = 0,
+               baseType = "SEXP")
+    })
+)
+
 
 symbolString <- setRefClass(
     Class = "symbolString",
@@ -270,6 +332,34 @@ symbolMemberFunction <-
                     genCppVar = function(...) {
                         stop(paste('Error, you should not be generating a cppVar for symbolMemberFunction', name))
                     } ))
+
+symbolNimbleListGenerator <-
+  setRefClass(Class = 'symbolNimbleListGenerator',
+              contains = 'symbolBase',
+              fields = list(nlProc = 'ANY'),
+              methods = list(
+                initialize = function(...){callSuper(...); type <<- 'Ronly'},
+                show = function() writeLines(paste('symbolNimbleListGenerator', name)),
+                genCppVar = function(...) {
+                  return(  cppVarFull(name = name,
+                                      baseType = 'Ronly',
+                                      templateArgs = nlProc$name) )
+                }
+              ))
+
+symbolNimbleList <-
+    setRefClass(Class = 'symbolNimbleList',
+                contains = 'symbolBase',
+                fields = list(nlProc = 'ANY'),
+                methods = list(
+                    initialize = function(...){callSuper(...); type <<- 'symbolNimbleList'},
+                    show = function() writeLines(paste('symbolNimbleList', name)),
+                    genCppVar = function(...) {
+                        return(  cppVarFull(name = name,
+                                            baseType = 'nimSmartPtr',
+                                            templateArgs = nlProc$name) )
+                    }
+                    ))
 
 symbolNimbleFunction <-
     setRefClass(Class = 'symbolNimbleFunction',

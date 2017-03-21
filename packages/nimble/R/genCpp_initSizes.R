@@ -42,7 +42,13 @@ addToTypeEnv <- function(sym, typeEnv, name) {
             sizeVec <- sym$size
             type <- sym$type
             nDim <- sym$nDim
-        } else {
+        } 
+        else if(inherits(sym, 'symbolNimbleList')){ ## if return type is a nl, need to store info in typeEnv for use in sizeProcessing
+          sizeVec <- 0
+          type <- sym$type
+          nDim <- 0
+        }  
+        else {
             ##assign(code$name, NULL, envir = typeEnv)
             return(typeEnv) ## symbol exists but it is something without numeric type info
         }
@@ -54,8 +60,13 @@ addToTypeEnv <- function(sym, typeEnv, name) {
     }
     
     if(nDim == 0)  {
+      if(inherits(sym, 'symbolNimbleList')){
+        sizeExprs <- sym$nlProc
+      }
+      else{
         ## If nDim == 0, set sizes to 1
         sizeExprs <- list()
+      }
     } else {
         ## Otherwise iterate over sizes and build a list
         ## with expressions like dim(A)[2] for unknown second size

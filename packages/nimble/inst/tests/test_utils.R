@@ -458,7 +458,7 @@ test_mcmc <- function(example, model, data = NULL, inits = NULL,
 
 
 test_filter <- function(example, model, data = NULL, inits = NULL,
-                        verbose = TRUE, numItsR = 5, numItsC = 10000,
+                        verbose = TRUE, numItsR = 3, numItsC = 10000,
                         basic = TRUE, exactSample = NULL, results = NULL, resultsTolerance = NULL,
                         numItsC_results = numItsC,
                         seed = 0, filterType = NULL, latentNodes = NULL, filterControl = NULL,

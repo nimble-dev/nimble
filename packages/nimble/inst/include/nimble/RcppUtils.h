@@ -1,12 +1,15 @@
 #ifndef __RCPPUTILS
 #define __RCPPUTILS
 
+
 #include <string>
 #include <vector>
 #include<iostream>
 #include<sstream>
 #include "R.h"
 #include "Utils.h"
+#include "Rdefines.h"
+
 
 #include <Rinternals.h>
 
@@ -21,7 +24,10 @@ using namespace std;
 
 void nimble_print_to_R(std::ostringstream &input);
 
+
 void multivarTestCall(double *x, int n);
+
+vector<int> getSEXPdims(SEXP Sx);
 
 string STRSEXP_2_string(SEXP Ss, int i = 0);
 SEXP   string_2_STRSEXP(string v);
@@ -60,13 +66,14 @@ extern "C" {
   SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims);
   SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims);
 
-
   SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s);
 
   SEXP parseVar(SEXP Sinput);
 }
 
 void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent);
+
+SEXP makeNewNimbleList(SEXP S_listName);
 
 //void dontDeleteFinalizer(SEXP ptr);
 

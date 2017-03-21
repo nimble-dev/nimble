@@ -17,7 +17,7 @@
 
 makeNFBindingFields <- function(symTab, cppNames) {
     fieldList = list(.DUMMY = "ANY")  # We use this .DUMMY field to trick R into not mistakenly printing
-                                        # an error. See initialization function inside buildNimbleFxnInterface
+                                        # error. See initialization function inside buildNimbleFxnInterface
     vNames <- if(missing(cppNames)) names(symTab$symbols) else cppNames
     for(vn in vNames) {
         thisSymbol <- symTab$getSymbolObject(vn)
@@ -58,7 +58,44 @@ makeNFBindingFields <- function(symTab, cppNames) {
             fieldList[[vn]] <- 'ANY'
             next
         }
-        
+        if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
+            className <- thisSymbol$nlProc$cppDef$name
+           nlName <- paste0(".",vn,"_CnimbleList")
+           fieldList[[nlName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleList
+           fieldList[[vn]] <-  eval(substitute(
+               function(x) {
+                   if(missing(x)) {
+                       NLNAME
+                   } else {
+                       if(is.list(x)) { ## can be a list with first element a CmultiNimbleFunction object and second element an index
+                           ## Still need to support this in case an extant nimbleList object was part of compilation using multi-interface
+                           if(!inherits(x[[1]], 'CmultiNimbleListClass')) stop(paste('Nimble compilation error initializing pointer for nimbleFunction from a CmultiNimbleList object ', NFNAMECHAR, '.'), call. = FALSE)
+                           ptrToPtr <- x[[1]]$ptrToPtrList[[ x[[2]] ]]
+                           ##message('setting a nimbleFunction for a multiInterface')
+                           nimbleInternalFunctions$setSmartPtrFromDoublePtr(VPTR, ptrToPtr, dll = dll)
+                       } else {
+                           nimbleInternalFunctions$setSmartPtrFromDoublePtr(VPTR, x$.ptrToPtr, dll = dll) 
+                       }
+                       ## Even if assigned from a multiInterface, we generate a full interface for correct behavior
+                       if(inherits(NLNAME, "uninitializedField")) {
+                           nestedRgenerator <- nimbleProject$nlCompInfos[[CLASSNAME]]$cppDef$Rgenerator
+                           if(is.list(x)) {
+                               newNLinterface <- nestedRgenerator( dll = x[[1]]$dll,
+                                                                  existingExtPtrs = list(x[[1]]$ptrToSmartPtrList[[ x[[2]] ]],
+                                                                                         x[[1]]$ptrToPtrList[[ x[[2]] ]]) )
+                           } else {
+                               newNLinterface <- nestedRgenerator( dll = x$dll,
+                                                                   existingExtPtrs = list(x$.ptrToSmartPtr, x$.ptrToPtr) )
+                           }
+                           assign(NLNAMECHAR, newNLinterface, inherits = TRUE) ## avoids <<- warnings
+                       }
+                       
+                       NLNAME$resetExtPtrs(VPTR)
+                       x
+                   }
+               }, list(VPTR = as.name(ptrName), CLASSNAME = className, NLNAME = as.name(nlName), NLNAMECHAR = nlName) ) )
+            next
+        }
         if(inherits(thisSymbol, 'symbolNimbleFunction')) { ## copy type 'nimbleFunction'
             nfName <- paste0(".",vn,"_CnimbleFunction")
             fieldList[[nfName]] <- "ANY" ## This will have the ref class object that interfaces to the C++ nimbleFunction
@@ -101,7 +138,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
             next
         }
         if(inherits(thisSymbol, 'symbolNimPtrList')) { ## copy type 'nimPtrList' ## for nimbleFunctionList, set up with some partial generality but not all the way
-            nflName <- paste0(".",vn,"_CnimbleFunctionList")
+          nflName <- paste0(".",vn,"_CnimbleFunctionList")
             accessorPtrName <- paste0(".", vn, "_setter_Ptr") ## "_setter" part must match nimbleDSL_class_symbolTable symbolNimPtrList 
             fieldList[[accessorPtrName]] <- "ANY"
             fieldList[[nflName]] <- "ANY"
@@ -133,10 +170,11 @@ makeNFBindingFields <- function(symTab, cppNames) {
         if(thisSymbol$type == "character") { ## cpp copy type 'character'  : 2 sub-cases (vector and scalar)
             if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
                 eval(substitute( fieldList$VARNAME <- function(x){
-                    if(missing(x) ) 
-                        nimbleInternalFunctions$getCharacterVectorValue(VPTR, dll = dll)
-                    else
-                        nimbleInternalFunctions$setCharacterVectorValue(VPTR, x, dll = dll)
+                    nimble:::getSetCharacterVector(VPTR, VARNAME, x, dll = dll)
+                    ## if(missing(x) ) 
+                    ##     nimbleInternalFunctions$getCharacterVectorValue(VPTR, dll = dll)
+                    ## else
+                    ##     nimbleInternalFunctions$setCharacterVectorValue(VPTR, x, dll = dll)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
             next
             } else {                    ## character scalar
@@ -199,7 +237,111 @@ makeNFBindingFields <- function(symTab, cppNames) {
     return(fieldList)
 }
 
+makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
+    fieldList = list(.DUMMY = "ANY")
+    vNames <- if(missing(cppNames)) names(symTab$symbols) else cppNames
+    for(vn in vNames) {
+        thisSymbol <- symTab$getSymbolObject(vn)
+        if(is.null(thisSymbol)) next
+        if(thisSymbol$type == 'model' || thisSymbol$type == 'symbolNodeFunctionVector' || thisSymbol$type == 'symbolModelVariableAccessorVector' ||thisSymbol$type == 'symbolModelValuesAccessorVector' || thisSymbol$type == 'symbolCopierVector' || thisSymbol$type == 'symbolIndexedNodeInfoTable') next
+        ## if(inherits(thisSymbol,'symbolNimArrDoublePtr')) { ## copy type 'modelVar' ##NOT NEEDED
+        ## if(inherits(thisSymbol, 'symbolVecNimArrPtr')){ ## copy type 'modelValuesPtr'##NOT NEEDED
+        ##if(inherits(thisSymbol, 'symbolNimbleFunction')) { ##NOT NEEDED
+        ##if(inherits(thisSymbol, 'symbolModelValues')) {
+        ## NOT NEEDEDif(inherits(thisSymbol, 'symbolNimPtrList')) {
+        if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
+            className <- thisSymbol$nlProc$cppDef$name
+            castToPtrPairName <- thisSymbol$nlProc$cppDef$ptrCastToPtrPairFun$name
+            eval(substitute( fieldList$VARNAME <- function(x) {
+                namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                extPtrNL <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, VARNAME, dll = dll)
+                ## extPtrNL <- getMemberDataPtr(VARNAME) ## not working
+                nimble:::getSetNimbleList(vptr = extPtrNL, name = VARNAME, value = x, cppDef = symTab$getSymbolObject(VARNAME)$nlProc$cppDef, dll = dll )
+                ## if(missing(x)) {
+                ##     nestedRgenerator <- nimbleProject$nlCompInfos[[CLASSNAME]]$cppDef$Rgenerator 
+                ##     existingExtPtrs <- .Call(dll$CASTTOPTRPAIRNAME, extPtrNL)
+                ##     nestedRgenerator( dll = dll, existingExtPtrs = existingExtPtrs )
+                   
+                ## } else {
+                ##     if(is.list(x)) stop("Can't handle multi-interface assigning a list to a list yet")
+                ##     nimbleInternalFunctions$setSmartPtrFromDoublePtr(extPtrNL, x$.ptrToPtr, dll = dll)
+                ##     x
+                ## }
+            }, list(VARNAME = vn, CASTFUN = castFunName, CLASSNAME = className, CASTTOPTRPAIRNAME = castToPtrPairName) ) )
+            next
+        }
+        if(thisSymbol$type == "character") { ## cpp copy type 'character'  : 2 sub-cases (vector and scalar)
+
+            if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
+                eval(substitute( fieldList$VARNAME <- function(x) {
+                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    vptr <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, name, dll = dll)
+                    nimble:::getSetCharacterVector(vptr, VARNAME, value = x, dll = dll)
+                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                next
+            } else {                    ## character scalar
+                eval(substitute( fieldList$VARNAME <- function(x) {
+                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    nimble:::getSetCharacterScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                next
+            }
+        }
+        if(inherits(thisSymbol, 'symbolBase')) { ## All numeric and logical cases  ## cpp copy type 'numeric': 4 sub-cases
+            if(thisSymbol$nDim > 0) {            ## Anything vector
+                eval(substitute( fieldList$VARNAME <- function(x) {
+                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    nimble:::getSetNumericVector(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                next
+            }
+            if(thisSymbol$type == "double"){     ## Scalar double
+                eval(substitute( fieldList$VARNAME <- function(x) {
+                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    nimble:::getSetDoubleScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                next
+            }
+           if(thisSymbol$type == "integer"){    ## Scalar int
+               eval(substitute( fieldList$VARNAME <- function(x) {
+                   namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                   nimble:::getSetIntegerScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                next
+            }
+            if(thisSymbol$type == "logical"){    ## Scalar logical
+                eval(substitute( fieldList$VARNAME <- function(x) {
+                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    nimble:::getSetLogicalScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                next
+            }
+            warning("Warning: scalar datatype not current supported for variable ", vn, "\n", call. = FALSE)
+            return(NULL)
+        }
+    }
+    return(fieldList)
+}
+
 #### functions that are similar to what is created in makeNFBindingFields but are standalone and look up pointers each time
+getSetNimbleList <- function(vptr, name, value, cppDef, dll) {
+    ## When missing value, we need the cppDef from the symTab of the assignment target
+    ## from this we can get the castFun and the catToPtrPairFun
+    ## When receiving value, we don't need anything more 
+    if(missing(value)) {
+        existingExtPtrs <- .Call(getNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll), vptr)
+        cppDef$Rgenerator( dll = dll, existingExtPtrs = existingExtPtrs )        
+    } else {
+        if(is.list(value)) {
+            ptrToPtr <- value[[1]]$ptrToPtrList[[ value[[2]] ]]
+        } else {
+            ptrToPtr <- value$.ptrToPtr
+        }
+        nimbleInternalFunctions$setSmartPtrFromDoublePtr(vptr, ptrToPtr, dll = dll)
+        value
+    }
+}
+
 getSetModelVarPtr <- function(name, value, basePtr, dll) { ## This only deals with a pointer member data.  It doesn't return or set the model's actual values.
     vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
     if(missing(value)) {
@@ -260,15 +402,15 @@ getSetNimPtrList <- function(name, value, basePtr, dll) {
     }
 }
 
-getSetCharacterVector <- function(name, value, basePtr, dll) {
-    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+getSetCharacterVector <- function(vptr, name, value, dll) { ##basePtr, dll) {
+    ##vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
          nimbleInternalFunctions$getCharacterVectorValue(vptr, dll = dll)
      else
          nimbleInternalFunctions$setCharacterVectorValue(vptr, value, dll = dll)
 }
 
-getSetCharacter <- function(name, value, basePtr, dll) {
+getSetCharacterScalar <- function(name, value, basePtr, dll) {
     vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
          nimbleInternalFunctions$getCharacterValue(vptr, dll = dll)
@@ -287,7 +429,7 @@ getSetNumericVector <- function(name, value, basePtr, dll) {
 }
 
 getSetDoubleScalar <- function(name, value, basePtr, dll) {
-      vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+     vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
          nimbleInternalFunctions$getDoubleValue(vptr, dll = dll)
      else
@@ -320,6 +462,8 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                    fields = list(
                                        dll = "ANY",
                                        .basePtr = 'ANY',
+                                       .namedObjectsPtr = 'ANY', ## points to same object as .basePtr but cast to C++ base class (confusing b/c .basePtr points to the C++ derived class type)
+                                       .finalizationPtr = 'ANY',
                                        compiledNodeFun = 'ANY',
                                        Robject = 'ANY', ## this should be the refClassObject, not the function
                                        cppNames = 'ANY',
@@ -336,10 +480,12 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                            }
                                            finalize()
                                            .basePtr <<- NULL
+                                           .namedObjectsPtr <<- NULL
+                                           .finalizationPtr <<- NULL
                                            nimbleProject <<- NULL
                                        },
                                        finalize = function() {
-                                           nimbleInternalFunctions$nimbleFinalize(.basePtr)
+                                           nimbleInternalFunctions$nimbleFinalize(.finalizationPtr)
                                        },
                                        initialize = function(dll = NULL, project = NULL, test = TRUE, ...) {
                                            neededObjects <<- list()
@@ -362,10 +508,45 @@ CnimbleFunctionBase <- setRefClass('CnimbleFunctionBase',
                                        lookupSymbol = function(symname) {
                                            if(is.null(dll))
                                                stop("No DLL for this object")
-                                           
                                            getNativeSymbolInfo(symname, dll)
                                        }
                                        ))
+
+CnimbleListBase <- setRefClass('CnimbleListBase',
+                                   fields = list(
+                                       dll = "ANY",
+                                       .basePtr = 'ANY',
+                                       .finalizationPtr = 'ANY',
+                                       .ptrToSmartPtr = 'ANY',
+                                       .ptrToPtr = 'ANY',
+                                      ## compiledNodeFun = 'ANY',
+                                       Robject = 'ANY', ## this should be the refClassObject, not the function
+                                       symTab = 'ANY'
+                                      ## cppNames = 'ANY',
+                                      ## cppCopyTypes = 'ANY',
+                                      ## neededObjects = 'ANY', ## A list of things like modelValues objects, if they don't already exist
+                                       ##nimbleProject = 'ANY'
+                                       ),
+                                   methods = list(
+                                       finalizeInternal = function() {
+                                           finalize()
+                                           .ptrToPtr <<- NULL
+                                           .ptrToSmartPtr <<- NULL
+                                           .finalizationPtr <<- NULL
+                                       },
+                                       finalize = function() {
+                                           if(!is.null(.finalizationPtr)) nimbleInternalFunctions$nimbleFinalize(.finalizationPtr)
+                                       },
+                                       lookupSymbol = function(symname) {
+                                           if(is.null(dll))
+                                               stop("No DLL for this object")
+                                           getNativeSymbolInfo(symname, dll)
+                                       },
+                                       getMemberDataPtr = function(name) {
+                                           nimbleInternalFunctions$newObjElementPtr(getNamedObjectsPtr(), name, dll = dll)
+                                       }
+                                       ))
+
 
 makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
     ans <- list()
@@ -381,6 +562,7 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
         if(inherits(thisSymbol, 'symbolModelValuesAccessorVector')) {ans[[thisSymbol$name]] <- 'modelValuesAccess';next}
         if(inherits(thisSymbol, 'symbolModelValues')) {ans[[thisSymbol$name]] <- 'modelValues'; next}
         if(inherits(thisSymbol, 'symbolNimbleFunction')) {ans[[thisSymbol$name]] <- 'nimbleFunction'; next}
+        if(inherits(thisSymbol, 'symbolNimbleList')) {ans[[thisSymbol$name]] <- 'nimbleList'; next}
         if(inherits(thisSymbol, 'symbolVecNimArrPtr')) {ans[[thisSymbol$name]] <- 'modelValuesPtr'; next} ## from a singleModelValuesAccessClass, from e.g. mv[i, 'x']
         if(inherits(thisSymbol, 'symbolNumericList')) {ans[[thisSymbol$name]] <- 'numericList'; next}
         if(inherits(thisSymbol, 'symbolNimPtrList')) {ans[[thisSymbol$name]] <- 'nimPtrList'; next}
@@ -402,8 +584,8 @@ makeNimbleFxnCppCopyTypes <- function(symTab, cppNames) {
 }
 
 makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelfAsArg = FALSE, embedInBrackets = FALSE) {
-    numFuns <- length(compiledNodeFun$RCfunDefs)
     ans <- if(!embedInBrackets) quote(list()) else quote({}) 
+    numFuns <- length(compiledNodeFun$RCfunDefs)
     if(numFuns == 0) return(ans)
     funNames <- names(compiledNodeFun$RCfunDefs)
     funNames[funNames == 'operator()'] <- 'run'
@@ -416,8 +598,11 @@ makeNimbleFxnInterfaceCallMethodCode <- function(compiledNodeFun, includeDotSelf
     ans
 }
 
+
 clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
-    for(iName in compiledNodeFun$nfProc$neededObjectNames) {
+    if(inherits(compiledNodeFun$nimCompProc$neededObjectNames, 'uninitializedField'))
+      return(NULL)
+    for(iName in compiledNodeFun$nimCompProc$neededObjectNames) {
         thisObj <- Robj[[iName]]
 
         if(inherits(thisObj, 'modelValuesBaseClass')) {
@@ -440,6 +625,17 @@ clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
             }
             next
         }
+        if(is.nl(thisObj)) {
+          RCO <- thisObj
+          if(!(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface))) {
+            if(is.list(RCO$.CobjectInterface))
+              RCO$.CobjectInterface[[1]]$finalizeInstance(RCO$.CobjectInterface[[2]])
+            else
+              RCO$.CobjectInterface$finalize()
+            neededObjects[[iName]] <- NULL
+          }
+          next
+        }
         if(inherits(thisObj, 'nimbleFunctionList')) {
             for(i in seq_along(thisObj$contentsList)) {
                 RCO <- nf_getRefClassObject(thisObj[[i]])
@@ -460,7 +656,7 @@ clearNeededObjects <- function(Robj, compiledNodeFun, neededObjects) {
 }
 
 buildNeededObjects <- function(Robj, compiledNodeFun, neededObjects, dll, nimbleProject) {
-    for(iName in compiledNodeFun$nfProc$neededObjectNames) {
+    for(iName in compiledNodeFun$nimCompProc$neededObjectNames) {
         thisObj <- Robj[[iName]]
         if(inherits(thisObj, 'modelValuesBaseClass')) {
             if(inherits(thisObj$CobjectInterface, 'uninitializedField') || is.null(thisObj$CobjectInterface)) {
@@ -474,6 +670,13 @@ buildNeededObjects <- function(Robj, compiledNodeFun, neededObjects, dll, nimble
                 neededObjects[[iName]] <- nimbleProject$instantiateNimbleFunction(thisObj, dll, asTopLevel = getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions'))
             }
             next
+        }
+        if(is.nl(thisObj)) {
+          RCO <- thisObj
+          if(inherits(RCO$.CobjectInterface, 'uninitializedField') || is.null(RCO$.CobjectInterface)) {
+            neededObjects[[iName]] <- nimbleProject$instantiateNimbleList(thisObj, dll, asTopLevel = getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions'))
+          }
+          next
         }
         if(inherits(thisObj, 'nimbleFunctionList')) {
             neededObjects[[iName]] <- nimPointerList(thisObj$baseClass, length(thisObj$contentsList))
@@ -494,7 +697,9 @@ buildNeededObjects <- function(Robj, compiledNodeFun, neededObjects, dll, nimble
     neededObjects
 }
 
-copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self, dll) {
+copyFromRobjectViaActiveBindings <- function(Robj, cppNames, cppCopyTypes, .self, dll) {
+  if(is.nl(Robj)) isNL <- TRUE
+  else isNL <- FALSE
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(is.null(Robj[[v]])) {
@@ -515,6 +720,17 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
             .self[[v]] <- Cnf
             next
         }
+        else if(cppCopyTypes[[v]] == 'nimbleList') {
+          modelVar <- Robj[[v]]
+          Cnl <- modelVar$.CobjectInterface 
+          .self[[v]] <- Cnl
+          next
+        }
+        # else if(cppCopyTypes[[v]] == 'nimbleList' && isNL){
+        #   Cnl <- Robj$.CobjectInterface 
+        #   .self[[v]] <- Cnl
+        #   next
+        # }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
             if(is.null(Robj[[v]]$contentsList)) {
                 warning('Problem in copying a nimPtrList to C++ object. The contentsList is NULL. Going to browser', call. = FALSE)
@@ -601,7 +817,7 @@ copyFromRobjectViaActiveBindings = function(Robj, cppNames, cppCopyTypes, .self,
     }
 }
 
-copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
+copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) {
     for(v in cppNames) {
         if(is.null(cppCopyTypes[[v]])) next
         if(is.null(Robj[[v]])) {
@@ -628,6 +844,14 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             getSetNimbleFunction(v, valueBasePtr, basePtr, dll = dll)
             ## .self[[v]] <- Cnf
             next
+        }
+        else if(cppCopyTypes[[v]] == 'nimbleList') {
+            modelVar <- Robj[[v]]
+            Cnl <- modelVar$.CobjectInterface
+            vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, v, dll = dll)
+            cppDef <- symTab$getSymbolObject(v)$nlProc$cppDef
+            getSetNimbleList(vptr, v, Cnl, cppDef, dll = dll)
+          next
         }
         else if(cppCopyTypes[[v]] == 'nimPtrList') {
             if(is.null(Robj[[v]]$contentsList)) {
@@ -704,12 +928,13 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
             populateIndexedNodeInfoTable(fxnPtr = basePtr, Robject = Robj, indexedNodeInfoTableName = v, dll = dll)
         }
         else if(cppCopyTypes[[v]] == 'characterVector') {
-            getSetCharacterVector(v, Robj[[v]], basePtr, dll = dll)
+            vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+            getSetCharacterVector(vptr, v, Robj[[v]], dll = dll)
             ##.self[[v]] <<- Robj[[v]]
             next
         }
         else if(cppCopyTypes[[v]] == 'characterScalar') {
-            getSetCharacter(v, Robj[[v]], basePtr, dll = dll)
+            getSetCharacterScalar(v, Robj[[v]], basePtr, dll = dll)
             next
         }
         else if(cppCopyTypes[[v]] == 'numericVector') {
@@ -744,75 +969,210 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, dll) {
     }
 }
 
-buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, where = globalenv()){
+buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, where = globalenv()){
+    ## This interface is for a "permanent" nimbleList, like one in nimbleFunction member data or simply global environment
+    ## But if the element of a nimbleList is another nimbleList, we have to return that interface dynamically, since it may be ephemeral.
+    ## It's tempting to fill in interface objects with their pointers still to be filled, but there would be a danger of infinite recursion
+    ## 
     defaults <- list()
-    if(inherits(compiledNodeFun, 'symbolTable')) {
-        symTab <- compiledNodeFun
+    if(inherits(compiledNimbleObj, 'symbolTable')) {
+        symTab <- compiledNimbleObj
         defaults$cnf <- NULL
         warning('No compiled node function provided, so interface will be incomplete')
+        castFunName <- 'dummyCastingFunction'
     } else {
-        symTab <- compiledNodeFun$nfProc$setupSymTab
-        defaults$cnf <- compiledNodeFun
+        symTab <- compiledNimbleObj$nimCompProc$getSymbolTable()
+        defaults$cnf <- compiledNimbleObj
+        castFunName <- compiledNimbleObj$ptrCastFun$name
+        castToPtrPairFunName <- compiledNimbleObj$ptrCastToPtrPairFun$name
     }
+    isListObj <- inherits(compiledNimbleObj, 'cppNimbleListClass')
+    if(!isListObj) stop('compiledNimbleObj must be a nimbleList')
     ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
-    cppNames <- compiledNodeFun$objectDefs$getSymbolNames() 
-    NFBF <-  makeNFBindingFields(symTab, cppNames)
+    cppNames <- compiledNimbleObj$objectDefs$getSymbolNames()
+    NLBF <-  makeNimbleListBindingFields(symTab, cppNames, castFunName)
     defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
-    methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun) ##, compiledNodeFun$nfProc)
     defaults$basePtrCall <- basePtrCall
-
-    # substitute on parsed text string to avoid CRAN issues with .Call registration
-    fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, ..., existingBasePtr = NULL){		#cModel removed from here
-        defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE) ## in case this instance was not used during nfProc$process
-        callSuper(dll = dll, project = project, test = FALSE, ...)
-        if(is.null(existingBasePtr)) {
+    defaults$extPtrTypeIndex <- compiledNimbleObj$getExtPtrTypeIndex()
+    defaults$cppNames <- cppNames
+    defaults$nimbleProject <- compiledNimbleObj$nimbleProject
+    defaults$symTab <- symTab
+    methodsList <- quote(list())
+    fun <- substitute(function(nfObject, defaults, dll = NULL, existingExtPtrs = NULL, ...) {
+        callSuper(dll = dll, ...)
+       ## nimbleProject <<- defaults$nimbleProject ## may become unnnecessary?
+        symTab <<- defaults$symTab
+        if(is.null(existingExtPtrs)) {
             basePtrCall <- if(is.character(defaults$basePtrCall)) {
                 if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
                 lookupSymbol(defaults$basePtrCall)
             } else defaults$basePtrCall
+            ## avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
+            ## .basePtr
+            newObjPtrs <- eval(parse(text = ".Call(basePtrCall)"))
+            .ptrToSmartPtr <<- newObjPtrs[[1]] ## nimSmartPtrBase* pointing to a smartPtr<derived_nimbleList_class>
+                                        #Use .ptrToSmartPtr to get to smartPtr operations. use for finalizer.
+            .ptrToPtr <<- newObjPtrs[[2]]      ## void* that is really a **derived_nimbleList_class
+                                        #Call the ptrCastFun with .ptrToPtr to get a pointer cast as NamedObjects* 
+ 
+            .finalizationPtr <<- .ptrToSmartPtr
+            eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_smartPtrBase_Finalizer,
+                      .finalizationPtr, ##.basePtr,
+                      dll[['handle']], 'CnimbleList'))
+        } else {
+            ## Unchecked
+            .ptrToSmartPtr <<- existingExtPtrs[[1]]
+            .ptrToPtr <<- existingExtPtrs[[2]]  
+           ## .namedObjectsPtr <<- existingExtPtrs[[  defaults$extPtrTypeIndex['NamedObjects'] ]]
+            .finalizationPtr <<- NULL##.ptrToSmartPtr
+        }
+
+        if(!missing(nfObject)) { ## for a nimbleList, nfObject could be validly missing
+            if(!is.null(existingExtPtrs)) {
+              oldCobjectInterface <- nfObject$.CobjectInterface
+              if(!is.list(oldCobjectInterface)) stop('Problem promoting nimbleFunction interface from CmultiInterface to full interface')
+          }
+            ##setRobject(nfObject)
+            Robject <<- nfObject
+            Robject$.CobjectInterface <<- .self 
+          ##buildNeededObjects()
+          
+          if(!is.null(existingExtPtrs)) {
+              ## unchecked
+              ##  neededObjects <<- oldCobjectInterface[[1]]$getNeededObjects( oldCobjectInterface[[2]] )
+              oldCobjectInterface[[1]]$clearInstance( oldCobjectInterface[[2]] )
+          } else {
+              nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, defaults$cppNames, defaults$cppCT, .self, dll) 
+          }
+        }
+    }, list(ABC = NULL))
+      # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization
+      # function is called.  So change the .Call('name') to .Call(lookupSymbol('name')) which will use this objects
+      # dll field.
+
+    methodsList[[length(methodsList) + 1]] <- fun
+    names(methodsList)[length(methodsList)] <- 'initialize'
+    className <- compiledNimbleObj$name
+    methodsList[[length(methodsList) + 1]] <- substitute(function() {
+        writeLines(paste0("Derived CnimbleListBase object (compiled nimbleList) created by buildNimbleListInterface for nimbleList with class ", 
+                          CLASSNAME))
+    }, list(CLASSNAME = className))
+    names(methodsList)[length(methodsList)] <- 'show'
+    resetExtPtrsFun <- substitute(
+        function(VPTR) {
+            newPtrs <- .Call(dll$RESETPTRFUN, VPTR)
+            .ptrToSmartPtr <<- newPtrs[[1]]
+            .ptrToPtr <<- newPtrs[[2]]
+            .finalizationPtr <<- NULL
+        }, list(RESETPTRFUN = castToPtrPairFunName)
+    )
+    methodsList[[length(methodsList) + 1]] <- resetExtPtrsFun
+    names(methodsList)[length(methodsList)] <- 'resetExtPtrs'
+    getNamedObjectsPtr <- substitute(
+        function() {
+            .Call(dll$CASTFUNNAME, .ptrToPtr)
+        }, list(CASTFUNNAME = castFunName))
+    methodsList[[length(methodsList) + 1]] <- getNamedObjectsPtr
+    names(methodsList)[length(methodsList)] <- 'getNamedObjectsPtr'
+
+    eval(substitute( newClass <-  setRefClass(refName,
+                                              fields = FIELDS,
+                                              contains = 'CnimbleListBase',
+                                              methods = ML,
+                                              where = where),
+                    list(FIELDS = NLBF, ML = methodsList ) ) )
+
+    ans <- function(nfObject, dll = NULL, project, existingExtPtrs = NULL) {
+    	newClass$new(nfObject, defaults, dll = dll, existingExtPtrs = existingExtPtrs) ##get project from defaults now
+    }
+    return(ans)
+}
+
+
+buildNimbleObjInterface <- function(refName,  compiledNimbleObj, basePtrCall, where = globalenv()){
+    defaults <- list()
+    if(inherits(compiledNimbleObj, 'symbolTable')) {
+        symTab <- compiledNimbleObj
+        defaults$cnf <- NULL
+        warning('No compiled node function provided, so interface will be incomplete')
+    } else {
+        symTab <- compiledNimbleObj$nimCompProc$getSymbolTable()
+        defaults$cnf <- compiledNimbleObj
+    }
+    ## The following is really equivalent, because it comes *directly* from the place that generates the C++ code
+    cppNames <- compiledNimbleObj$objectDefs$getSymbolNames()
+    NFBF <-  makeNFBindingFields(symTab, cppNames)
+    defaults$cppCT <- makeNimbleFxnCppCopyTypes(symTab, cppNames)
+    defaults$basePtrCall <- basePtrCall
+    defaults$extPtrTypeIndex <- compiledNimbleObj$getExtPtrTypeIndex()
+    nlClassName <- compiledNimbleObj$name
+    
+    methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNimbleObj) ##, compiledNodeFun$nfProc)
+    # substitute on parsed text string to avoid CRAN issues with .Call registration
+    fun <- substitute(function(nfObject, defaults, dll = NULL, project = NULL, existingExtPtrs = NULL, ...){		#cModel removed from here
+        defaults$cnf$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
+        callSuper(dll = dll, project = project, test = FALSE, ...)
+        
+        if(is.null(existingExtPtrs)) {
+            basePtrCall <- if(is.character(defaults$basePtrCall)) {
+                               if(inherits(dll, "uninitializedField") | is.null(dll)) stop("Error making a nimbleFxnInterface object: no dll provided")
+                               lookupSymbol(defaults$basePtrCall)
+                           } else defaults$basePtrCall
                                         # avoid R CMD check problem with registration.  basePtrCall is already the result of getNativeSymbolInfo from the dll, if possible from cppDefs_nimbleFunction.R
-            .basePtr <<- eval(parse(text = ".Call(basePtrCall)"))
+            ## .basePtr
             regLabel <- try(get('name', envir = nfObject), silent = TRUE)
             if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
-            eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, .basePtr, dll[['handle']], regLabel))
+
+            newObjPtrs <- eval(parse(text = ".Call(basePtrCall)"))
+            .basePtr <<- newObjPtrs[[1]] ## pointer to *derived* C++ class
+            .namedObjectsPtr <<- newObjPtrs[[  defaults$extPtrTypeIndex['NamedObjects'] ]]
+            .finalizationPtr <<- .namedObjectsPtr
+            eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
+                      .finalizationPtr, ##.basePtr,
+                      dll[['handle']], regLabel))
         } else {
-            .basePtr <<- existingBasePtr
+            .basePtr <<- existingExtPtrs[[1]]
+            .namedObjectsPtr <<- existingExtPtrs[[  defaults$extPtrTypeIndex['NamedObjects'] ]]
+            if(is.null(.namedObjectsPtr)) stop('Error finding correct pointers')
+            .finalizationPtr <<- .namedObjectsPtr
         }
-        # .basePtr <<- .Call(basePtrCall)
-        cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .basePtr))
+                                        # .basePtr <<- .Call(basePtrCall)
+        cppNames <<- eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getAvailableNames, .namedObjectsPtr))##.basePtr))
         cppCopyTypes <<- defaults$cppCT
         compiledNodeFun <<- defaults$cnf
-        vPtrNames <- 	paste0(".", cppNames, "_Ptr")	
+        vPtrNames <- 	paste0(".", cppNames, "_Ptr")
         for(vn in seq_along(cppNames) ){
-            .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.basePtr, cppNames[vn], dll = dll)
+            .self[[vPtrNames[vn]]] <- nimbleInternalFunctions$newObjElementPtr(.namedObjectsPtr, cppNames[vn], dll = dll) ##.basePtr
         }
         if(!missing(nfObject)) { ## I don't know when nfObject could be missing in a correct usage
-            if(!is.null(existingBasePtr)) {
+            if(!is.null(existingExtPtrs)) {
                 oldCobjectInterface <- nfObject$.CobjectInterface
                 if(!is.list(oldCobjectInterface)) stop('Problem promoting nimbleFunction interface from CmultiInterface to full interface')
             }
             setRobject(nfObject)
             ##buildNeededObjects()
-            if(!is.null(existingBasePtr)) {
+            
+            if(!is.null(existingExtPtrs)) {
                 neededObjects <<- oldCobjectInterface[[1]]$getNeededObjects( oldCobjectInterface[[2]] )
                 oldCobjectInterface[[1]]$clearInstance( oldCobjectInterface[[2]] )
-            } else {
+            } 
+            else {
                 neededObjects <<- nimbleInternalFunctions$buildNeededObjects(Robject, compiledNodeFun, neededObjects, dll, nimbleProject)
                 nimbleInternalFunctions$copyFromRobjectViaActiveBindings(Robject, cppNames, cppCopyTypes, .self, dll)
-            }
-            ##copyFromRobject()
+          }
         }
     }, list())
-
       # if we just have the name of the routine and haven't resolved it, arrange to resolve it when this initialization
       # function is called.  So change the .Call('name') to .Call(lookupSymbol('name')) which will use this objects
       # dll field.
-    
-    methodsList[[length(methodsList) + 1]] <- fun 
+
+    methodsList[[length(methodsList) + 1]] <- fun
     names(methodsList)[length(methodsList)] <- 'initialize'
-    methodsList[[length(methodsList) + 1]] <- quote(function() {
-        writeLines(paste0("Derived CnimbleFunctionBase object created by buildNimbleFxnInterface for nimbleFunction with class ", class(Robject)))
-    })
+    showTxt <-  "Function"
+    methodsList[[length(methodsList) + 1]] <- substitute(function() {
+        writeLines(paste0("Derived CnimbleFunctionBase object (compiled nimbleFunction) for nimbleFunction with class ", 
+                           CLASSNAME))
+    }, list(CLASSNAME = nlClassName)) ## former subs removed, left substitute call for future modifications
     names(methodsList)[length(methodsList)] <- 'show'
     eval(substitute( newClass <-  setRefClass(refName,
                                               fields = FIELDS,
@@ -821,29 +1181,86 @@ buildNimbleFxnInterface <- function(refName,  compiledNodeFun, basePtrCall, wher
                                               where = where),
                     list(FIELDS = NFBF, ML = methodsList ) ) )
 
-    ans <- function(nfObject, dll = NULL, project, existingBasePtr = NULL) {
+    ans <- function(nfObject, dll = NULL, project, existingExtPtrs = NULL) {
     	wrappedInterfaceBuild <- newClass$new
-    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project, existingBasePtr = existingBasePtr) ## Only purpose of wrappedInterfaceBuild is to have a helpful name for Rprof that is not "new"
+    	wrappedInterfaceBuild(nfObject, defaults, dll = dll, project = project, existingExtPtrs = existingExtPtrs) ## Only purpose of wrappedInterfaceBuild is to have a helpful name for Rprof that is not "new"
 #        newClass$new(nfObject, defaults, dll = dll, project = project)
     }
     return(ans)
 }
 
+
+
 ####
 ## New class for interfacing multiple compiledNimbleFunctions of the same class
 
+CmultiNimbleObjClass <- setRefClass('CmultiNimbleObjClass',
+                                    fields = list(nimbleProject = 'ANY',
+                                                  finalizationPtrList = 'ANY',
+                                                  cppNames = 'ANY',
+                                                  cppCopyTypes = 'ANY',
+                                                  basePtrCall = 'ANY',
+                                                  dll = 'ANY',
+                                                  RobjectList = 'ANY',
+                                                  compiledNodeFun = 'ANY'    ## a cppNimbleFunctionClass or cppNimbleListClass
+                                                  ),
+                                    methods = list(
+                                        initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
+                                            nimbleProject <<- project
+                                            finalizationPtrList <<- list()
+                                            RobjectList <<- list()
+                                            dll <<- NULL
+                                            compiledNodeFun <<- compiledNodeFun
+                                            ## basePtrCall is the result of getNativeSymbolInfo with the dll if possible from cppDefs_nimbleFunction.R
+                                            basePtrCall <<- basePtrCall
+                                            callSuper(...)
+                                            symTab <- compiledNodeFun$nimCompProc$getSymbolTable()
+                                            cppNames <<- compiledNodeFun$objectDefs$getSymbolNames()
+                                            cppCopyTypes <<- makeNimbleFxnCppCopyTypes(symTab, cppNames)
+                                        },
+                                        finalize = function() {
+                                            for(i in seq_along(finalizationPtrList)) { ## previously basePtrList
+                                                if(!is.null(finalizationPtrList[[i]])) {
+                                                    nimbleInternalFunctions$nimbleFinalize(finalizationPtrList[[i]])
+                                                }
+                                            }
+                                        },
+                                        memberDataInternal = function(vptr, index, name, value) { ## value can be missing
+                                            ## This isn't very useful as written for many names because it just gets and sets the external pointers.  It doesn't wrap them in an interface objec
+                                            ans <- switch(cppCopyTypes[[name]],
+                                                          modelVar = {##message('switch modelVar');
+                                                              getSetModelVarPtr(name, value, basePtr, dll = dll)}, ## only makes sense internally
+                                                          nimbleFunction ={##message('switch nimbleFunction');
+                                                              getSetNimbleFunction(name, value, basePtr, dll = dll)}, ## ditto
+                                                          nimbleList ={##message('switch nimbleList');
+                                                              valueSymbol <- compiledNodeFun$nimCompProc$getSymbolTable()$getSymbolObject(name)
+                                                              getSetNimbleList(vptr, value, valueSymbol$nlProc$cppDef, dll = dll)
+                                                          }, ## ditto
+                                                          nimPtrList = {##message('switch nimPtrList');
+                                                              getSetNimPtrList(name, value, basePtr, dll = dll)}, ## ditto
+                                                          modelValues = {##message('switch modelValues');
+                                                              getSetModelValues(name, value, basePtr, dll = dll)}, ## ditto
+                                                          characterVector = getSetCharacterVector(vptr, name, value, dll = dll),
+                                                          characterScalar = getSetCharacterScalar(name, value, basePtr, dll = dll),
+                                                          numericVector ={##message('switch numericVector');
+                                                              getSetNumericVector(name, value, basePtr, dll = dll)},
+                                                          doubleScalar = getSetDoubleScalar(name, value, basePtr, dll = dll),
+                                                          integerScalar = getSetIntegerScalar(name, value, basePtr, dll = dll),
+                                                          logicalScalar = getSetLogicalScalar(name, value, basePtr, dll = dll),
+                                                          'Could not get or set a value for this variable')
+                                            ans
+                                        }
+                                    ))
+                                    
+
 CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
+                                         contains = 'CmultiNimbleObjClass',
                                          fields = list(
-                                             nimbleProject = 'ANY',
-                                             cppNames = 'ANY',
-                                             cppCopyTypes = 'ANY',
-                                             basePtrCall = 'ANY',
-                                             dll = 'ANY',
                                              ## nfObjectList = 'ANY',
-                                             basePtrList = 'ANY',
-                                             RobjectList = 'ANY',
+                                             basePtrList = 'ANY',         ## List of pointers cast as derived C++ class
+                                             namedObjectsPtrList = 'ANY', ## List of pointers cast as base C++ NamedObjects class
                                              neededObjectsList = 'ANY',
-                                             compiledNodeFun = 'ANY',    ## a cppNimbleFunctionClass
+                                             extPtrTypeIndex = 'ANY',
                                              callEnv = 'ANY'
                                          ),
                                          methods = list(
@@ -851,40 +1268,24 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  cat(paste0('CmultiNimbleFunctionClass object\n'))
                                              },
                                              initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
-                                                 if(missing(project)) stop('Cannot create CmultiNimbleFunctionClass without a project', call. = FALSE)
-                                                 if(is.null(project)) stop('Cannot create CmultiNimbleFunctionClass without a NULL project', call. = FALSE)
-                                                 nimbleProject <<- project
+                                                 callSuper(compiledNodeFun = compiledNodeFun, basePtrCall = basePtrCall, project = project, ...)
                                                  neededObjectsList <<- list()
-                                                 ##     nfObjectList <<- list()
                                                  basePtrList <<- list()
-                                                 RobjectList <<- list()
-                                                 dll <<- NULL
-                                                 compiledNodeFun <<- compiledNodeFun
-                                                 ## basePtrCall is the result of getNativeSymbolInfo with the dll if possible from cppDefs_nimbleFunction.R
-                                                 basePtrCall <<- basePtrCall
-                                                 callSuper(...)
-                                                 symTab <- compiledNodeFun$nfProc$setupSymTab
-                                                 cppNames <<- compiledNodeFun$objectDefs$getSymbolNames()
-                                                 cppCopyTypes <<- makeNimbleFxnCppCopyTypes(symTab, cppNames)
-                                                 ##                                          methodsList <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun) ## can do this but need to pass another pointer in
+                                                 namedObjectsPtrList <<- list()
+                                                 extPtrTypeIndex <<- compiledNodeFun$getExtPtrTypeIndex()
                                                  callCode <- makeNimbleFxnInterfaceCallMethodCode(compiledNodeFun, includeDotSelfAsArg = TRUE, embedInBrackets = TRUE)
                                                  callEnv <<- new.env()
                                                  eval(callCode, envir = callEnv)
                                              },
-                                             finalize = function() {
-                                                 for(i in seq_along(basePtrList)) {
-                                                     if(!is.null(basePtrList[[i]])) {
-                                                         nimbleInternalFunctions$nimbleFinalize(basePtrList[[i]])
-                                                     }
-                                                 }
-                                             },
                                              finalizeInstance = function(index) {
-                                                 if(!is.null(basePtrList[[index]])) {
+                                                 if(!is.null(finalizationPtrList[[index]])) { ## previously basePtrList
                                                      neededObjectsList[[index]] <<- nimbleInternalFunctions$clearNeededObjects(RobjectList[[index]], compiledNodeFun, neededObjectsList[[index]])
                                                      RobjectList[index] <<- list(NULL)
-                                                     nimbleInternalFunctions$nimbleFinalize(basePtrList[[index]])
+                                                     nimbleInternalFunctions$nimbleFinalize(finalizationPtrList[[index]])
                                                      basePtrList[index] <<- list(NULL)
-                                                 }          
+                                                     namedObjectsPtrList[index] <<- list(NULL)
+                                                     finalizationPtrList[index] <<- list(NULL)
+                                                 }
                                              },
                                              addInstance = function(nfObject, dll = NULL) { ## role of initialize
                                                  if(!is.null(.self$dll)) {
@@ -893,23 +1294,33 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                      if(is.null(dll)) stop('In addInstance, DLL was not set and so must be provided when calling', call. = FALSE)
                                                      dll <<- dll       ## should only occur first time addInstance is called
                                                  }
-                                                 compiledNodeFun$nfProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
-                                                 
+                                                 isNF <- is.nf(nfObject)
+                                                 if(isNF) compiledNodeFun$nimCompProc$evalNewSetupLinesOneInstance(nfObject, check = TRUE)
                                                  # avoid R CMD check problem with registration:
-                                                 newBasePtr <- eval(parse(text = ".Call(basePtrCall)"))
+                                                 ##newBasePtr
+                                                 newObjPtrs <- eval(parse(text = ".Call(basePtrCall)", keep.source = FALSE))
+                                                 newBasePtr <- newObjPtrs[[1]] ## terminology confusing because this is the derived C++ class
+                                                 newNamedObjectsPtr <- newObjPtrs[[ extPtrTypeIndex['NamedObjects'] ]] ## this is the base C++ class
+                                                 if(is.null(newNamedObjectsPtr)) stop('Problem: Cannot find right external pointer information')
                                                  regLabel <- try(get('name', envir = nfObject), silent = TRUE)
                                                  if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
-
-                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer, newBasePtr, dll[['handle']], regLabel))
                                                  
                                                  basePtrList[[length(basePtrList)+1]] <<- newBasePtr
-                                                 if(is.nf(nfObject)) newRobject <- nf_getRefClassObject(nfObject)
+                                                 namedObjectsPtrList[[length(namedObjectsPtrList)+1]] <<- newNamedObjectsPtr
+                                                                                                  
+                                                 finalizationPtrList[[length(finalizationPtrList)+1]] <<- newNamedObjectsPtr
+                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
+                                                           newNamedObjectsPtr, ##newBasePtr,
+                                                           dll[['handle']], regLabel))
+                                                 
+                                                 if(isNF) newRobject <- nimble:::nf_getRefClassObject(nfObject)
                                                  else newRobject <- nfObject
-                                                 newRobject$.CobjectInterface <- list(.self, length(basePtrList))
+                                                 newRobject$.CobjectInterface <- list(.self, length(basePtrList)) ## second element is its index
                                                  RobjectList[[length(RobjectList)+1]] <<- newRobject
+
                                                  newNeededObjects <- nimbleInternalFunctions$buildNeededObjects(newRobject, compiledNodeFun, list(), dll, nimbleProject)
                                                  neededObjectsList[[length(neededObjectsList) + 1]] <<- newNeededObjects
-                                                 nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, newBasePtr, dll)
+                                                 nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, newNamedObjectsPtr, symTab = compiledNodeFun$nimCompProc$getSymbolTable(), dll) #newBasePtr, probably really need both for different cases
                                                  if(getNimbleOption('clearNimbleFunctionsAfterCompiling')) compiledNodeFun$nfProc$clearSetupOutputs(newRobject)
                                                  list(.self, length(basePtrList)) ## (this object, index)
                                              },
@@ -917,6 +1328,7 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  ## But we cannot remove entries from the lists because the indices of remaining objects must not change
                                                  ## therefore we use the mylist[i] <- list(NULL) method
                                                  basePtrList[index] <<- list(NULL)
+                                                 namedObjectsPtrList[index] <<- list(NULL)
                                                  RobjectList[index] <<- list(NULL)
                                                  neededObjectsList[index] <<- list(NULL)
                                                  invisible(NULL)
@@ -924,36 +1336,96 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                              getNeededObjects = function(index) {
                                                  neededObjectsList[[index]]
                                              },
-                                             getBasePtr = function(index) {
-                                                 basePtrList[[index]]
+                                             getExtPtrs = function(index) {
+                                                 list(basePtrList[[index]], namedObjectsPtrList[[index]])
                                              },
-
                                              callMemberFunction = function(index, funName, ...) {
                                                  callEnv[[funName]](..., .basePtr = basePtrList[[index]])
                                              },
-                                             memberData = function(index, name, value) { ## value can be missing
-                                                 ## This isn't very useful as written for many names because it just gets and sets the external pointers.  It doesn't wrap them in an interface object
+                                             memberData = function(index, name, value) {
                                                  if(!(name %in% cppNames)) stop(paste0('Name ', name, ' is not a valid member variable in the requested object.', call.=FALSE))
                                                  basePtr <- basePtrList[[index]]
                                                  if(!inherits(basePtr, 'externalptr')) stop('Invalid index or basePtr', call. = FALSE)
-                                                 ans <- switch(cppCopyTypes[[name]],
-                                                               modelVar = {##message('switch modelVar');
-                                                                   getSetModelVarPtr(name, value, basePtr, dll = dll)}, ## only makes sense internally
-                                                               nimbleFunction ={##message('switch nimbleFunction');
-                                                                   getSetNimbleFunction(name, value, basePtr, dll = dll)}, ## ditto
-                                                               nimPtrList = {##message('switch nimPtrList');
-                                                                   getSetNimPtrList(name, value, basePtr, dll = dll)}, ## ditto
-                                                               modelValues = {##message('switch modelValues');
-                                                                   getSetModelValues(name, value, basePtr, dll = dll)}, ## ditto
-                                                               characterVector = getSetCharacterVector(name, value, basePtr, dll = dll),
-                                                               characterScalar = getSetCharacterScalar(name, value, basePtr, dll = dll),
-                                                               numericVector ={##message('switch numericVector');
-                                                                   getSetNumericVector(name, value, basePtr, dll = dll)},
-                                                               doubleScalar = getSetDoubleScalar(name, value, basePtr, dll = dll),
-                                                               integerScalar = getSetIntegerScalar(name, value, basePtr, dll = dll),
-                                                               logicalScalar = getSetLogicalScalar(name, value, basePtr, dll = dll),
-                                                               'Could not get or set a value for this variable')
-                                                 ans
+                                                 vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+                                                 memberDataInternal(vptr, index, name, value)
+                                             }
+                                         ))
+
+CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
+                                         contains = 'CmultiNimbleObjClass',
+                                         fields = list(
+                                             ptrToPtrList = 'ANY',
+                                             ptrToSmartPtrList = 'ANY',
+                                             finalizationPtrList = 'ANY',
+                                             castFunSymbolInfo = 'ANY'
+                                         ),
+                                         methods = list(
+                                             show = function() {
+                                                 cat(paste0('CmultiNimbleListlass object\n'))
+                                             },
+                                             initialize = function(compiledNodeFun, basePtrCall, project, ...) { ## need to set dll, nimbleProject
+                                                 callSuper(compiledNodeFun = compiledNodeFun, basePtrCall = basePtrCall, project = project, ...)
+                                                 ptrToPtrList <<- list()
+                                                 ptrToSmartPtrList <<- list()
+                                             },
+                                             finalizeInstance = function(index) {
+                                                 if(!is.null(finalizationPtrList[[index]])) { ## previously basePtrList
+                                                     RobjectList[index] <<- list(NULL)
+                                                     nimbleInternalFunctions$nimbleFinalize(finalizationPtrList[[index]])
+                                                     ptrToPtrList[index] <<- list(NULL)
+                                                     ptrToSmartPtrList[index] <<- list(NULL)
+                                                 }
+                                             },
+                                             addInstance = function(nfObject, dll = NULL) { ## role of initialize
+                                                 if(!is.null(.self$dll)) {
+                                                     if(!identical(dll, .self$dll)) stop('Can not addInstance of a compiled nimbleFunction from different DLLs', call. = FALSE)
+                                                 } else {
+                                                     if(is.null(dll)) stop('In addInstance, DLL was not set and so must be provided when calling', call. = FALSE)
+                                                     dll <<- dll       ## should only occur first time addInstance is called
+                                                     castFunSymbolInfo <<- getNativeSymbolInfo(compiledNodeFun$ptrCastFun$name, dll)
+                                                 }
+                                                 newObjPtrs <- eval(parse(text = ".Call(basePtrCall)", keep.source = FALSE))
+                                                 newPtrToSmartPtr <- newObjPtrs[[1]] ## terminology confusing because this is the derived C++ class
+                                                 regLabel <- try(get('name', envir = nfObject), silent = TRUE)
+                                                 if(inherits(regLabel, 'try-error') | is.null(regLabel)) regLabel <- environment(nfObject)$className
+                                                 
+                                                 ptrToSmartPtrList[[length(ptrToSmartPtrList)+1]] <<- newPtrToSmartPtr
+                                                 ptrToPtrList[[length(ptrToPtrList)+1]] <<- newPtrToPtr <- newObjPtrs[[2]]
+                                                 
+                                                 newFinalizationPtr <- newPtrToSmartPtr
+                                                 if(is.null(newFinalizationPtr)) stop('Problem: Cannot find right external pointer information')
+                                                 finalizationPtrList[[length(finalizationPtrList)+1]] <<- newFinalizationPtr
+                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_smartPtrBase_Finalizer,
+                                                           newFinalizationPtr, ##.basePtr,
+                                                           dll[['handle']], regLabel))
+                                                 newRobject <- nfObject
+                                                 newRobject$.CobjectInterface <- list(.self, length(ptrToPtrList)) ## second element is its index
+                                                 RobjectList[[length(RobjectList)+1]] <<- newRobject
+                                                 namedObjectsPtr <- .Call(castFunSymbolInfo, newPtrToPtr)
+                                                 nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, namedObjectsPtr, symTab = compiledNodeFun$nimCompProc$getSymbolTable(), dll) #newNamedObjectsPointer was previously newBasePtr, probably really need both for different cases
+                                                 list(.self, length(ptrToSmartPtrList)) ## (this object, index)
+                                             },
+                                             clearInstance = function(index) { ## this is called when a Cmulti interface was built and later needs to be replaced with a full interface
+                                                 ## But we cannot remove entries from the lists because the indices of remaining objects must not change
+                                                 ## therefore we use the mylist[i] <- list(NULL) method
+                                                 ptrToPtrList[index] <<- list(NULL)
+                                                 ptrToSmartPtrList[index] <<- list(NULL)
+                                                 RobjectList[index] <<- list(NULL)
+                                                 invisible(NULL)
+                                             },
+                                             getNamedObjectsPtr = function(index) {
+                                                 .Call(castFunSymbolInfo, ptrToPtrList[[index]])
+                                             },
+                                             getMemberDataPtr = function(index, name) {
+                                                 nimbleInternalFunctions$newObjElementPtr(getNamedObjectsPtr(index), name, dll = dll)
+                                             },
+                                             memberData = function(index, name, value) {
+                                                 if(!(name %in% cppNames)) stop(paste0('Name ', name, ' is not a valid member variable in the requested object.', call.=FALSE))
+                                                 ##ptrToPtr <- ptrToPtrList[[index]]
+                                                 ##if(!inherits(ptrToPtr, 'externalptr')) stop('Invalid index or ptrToPtr', call. = FALSE)
+                                                 ##namedObjectsPtr <- .Call(castFunSymbolInfo, .ptrToPtr)
+                                                 vptr <- getMemberDataPtr(index, name) ##nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, name, dll = dll)
+                                                 memberDataInternal(vptr, index, name, value)
                                              }
                                          ))
 

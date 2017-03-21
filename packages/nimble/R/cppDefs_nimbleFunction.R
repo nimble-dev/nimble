@@ -18,6 +18,7 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
                                                          else {
                                                              baseClassName <- environment(baseClassObj)$CclassName
                                                              addInheritance(baseClassName)
+                                                            ## addAncestors(c(baseClassObj$inheritance, baseClassObj$ancestors))
                                                          }
                                                      }
                                                  },
@@ -31,21 +32,180 @@ cppVirtualNimbleFunctionClass <- setRefClass('cppVirtualNimbleFunctionClass',
                                                  }
                                                  ))
 
-cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
-                                      contains = 'cppNamedObjectsClass',
-                                      fields = list(
-                                          ## Inherits a functionDefs list for member functions
-                                          ## Inherits an objectDefs list for member data
-                                          SEXPmemberInterfaceFuns = 'ANY', ## List of SEXP interface functions, one for each member function
-                                          nfProc = 'ANY', ## an nfProcessing class, needed to get the member data symbol table post-compilation
+## cppNimbleClassClass defines commonalities between cppNimbleFunctionClass and cppNimbleListClass, both of which are classes in nimble
+cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
+                                   contains = 'cppNamedObjectsClass',
+                                   fields = list(
+                                       ## Inherits a functionDefs list for member functions
+                                       ## Inherits an objectDefs list for member data
+                                       SEXPmemberInterfaceFuns = 'ANY', ## List of SEXP interface functions, one for each member function
+                                       nimCompProc = 'ANY', ## an nfProcessing or nlProcessing class, needed to get the member data symbol table post-compilation
 
-                                          Rgenerator = 'ANY' , ## function to generate and wrap a new object from an R object
-                                          CmultiInterface = 'ANY', ## object for interfacing multiple C instances when a top-level interface is not needed
-                                          built = 'ANY',
-                                       	  loaded = 'ANY',
-                                       	  Cwritten = 'ANY',
-                                          RCfunDefs = 'ANY'
-                                          
+                                       Rgenerator = 'ANY' , ## function to generate and wrap a new object from an R object
+                                       CmultiInterface = 'ANY', ## object for interfacing multiple C instances when a top-level interface is not needed
+                                       built = 'ANY',
+                                       loaded = 'ANY',
+                                       Cwritten = 'ANY',
+                                       RCfunDefs = 'ANY'
+                                       
+                                   ),
+                                   methods = list(
+                                       getDefs = function() {
+                                           callSuper()
+                                       },
+                                       getHincludes = function() {
+                                           callSuper()
+                                       },
+                                       getCPPincludes = function() {
+                                           callSuper()
+                                       },
+                                       getCPPusings = function() {
+                                           callSuper()
+                                       },
+                                       genNeededTypes = function(debugCpp = FALSE, fromModel = FALSE) {
+                                           for(i in seq_along(nimCompProc$neededTypes)) {
+                                               neededType<- nimCompProc$neededTypes[[i]]
+                                               if(inherits(neededType, 'nfMethodRC')) {
+                                                   thisCppDef <- nimbleProject$getRCfunCppDef(neededType, NULLok = TRUE)
+                                                   if(is.null(thisCppDef)) {
+                                                       thisCppDef <- nimbleProject$needRCfunCppClass(neededType, genNeededTypes = TRUE, fromModel = fromModel)
+                                                       neededTypeDefs[[neededType$uniqueName]] <<- thisCppDef
+                                                   } else {
+                                                       Hincludes <<- c(Hincludes, thisCppDef)
+                                                       CPPincludes <<- c(CPPincludes, thisCppDef)
+                                                   }
+                                                   next
+                                               }
+                                               if(inherits(neededType, 'symbolModelValues')) {
+                                                   thisCppDef <- nimbleProject$getModelValuesCppDef(neededType$mvConf, NULLok = TRUE)
+                                                   if(is.null(thisCppDef)) {
+                                                       thisCppDef <- nimbleProject$needModelValuesCppClass(neededType$mvConf, fromModel = fromModel)
+                                                       mvClassName <- environment(neededType$mvConf)$className
+                                                       neededTypeDefs[[mvClassName]] <<- thisCppDef
+                                                   } else {
+                                                       Hincludes <<- c(Hincludes, thisCppDef)
+                                                       CPPincludes <<- c(CPPincludes, thisCppDef)
+                                                   }
+                                                   next
+                                               }
+                                               if(inherits(neededType, 'symbolNimbleFunction')) {
+                                                   generatorName <- environment(neededType$nfProc$nfGenerator)$name
+                                                   thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = generatorName)
+                                                   if(is.null(thisCppDef)) {
+                                                       className <- names(nimCompProc$neededTypes)[i]
+                                                       if(neededType$type == 'nimbleFunction')
+                                                           thisCppDef <- nimbleProject$buildNimbleFunctionCompilationInfo(generatorName = generatorName, fromModel = fromModel)
+                                                       else if(neededType$type == 'nimbleFunctionVirtual')
+                                                           thisCppDef <- nimbleProject$buildVirtualNimbleFunctionCompilationInfo(vfun = generatorName)
+                                                       else stop('symbolNimbleFunction does not have type nimbleFunction or nimbleFunctionVirtual')
+                                                       neededTypeDefs[[ className ]] <<- thisCppDef
+                                                   } else {
+                                                       Hincludes <<- c(Hincludes, thisCppDef)
+                                                       CPPincludes <<- c(CPPincludes, thisCppDef)
+                                                   }
+                                                   next
+                                               }
+                                               if(inherits(neededType, 'symbolNimbleList')) {
+                                                 CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
+                                                 generatorName <- neededType$nlProc$name
+                                                 thisCppDef <- nimbleProject$getNimbleListCppDef(generatorName = generatorName)
+                                                 eigListClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
+                                                 ##EIGEN_EIGENCLASS and EIGEN_SVDCLASS only need partial cpp defs, as some is in permanent c++ code
+                                                 eigenList <- generatorName %in% eigListClassNames
+                                                 if(is.null(thisCppDef)){
+                                                      className <- names(nimCompProc$neededTypes)[i]
+                                                      thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel, eigenList = eigenList)
+                                                      neededTypeDefs[[ className ]] <<- thisCppDef
+                                                      Hincludes <<- c(Hincludes, thisCppDef)
+                                                      CPPincludes <<- c(CPPincludes, thisCppDef)
+                                                 }
+                                                 next
+                                               }
+                                               if(inherits(neededType, 'symbolOptimReadyFunction')){
+                                                   typeName <- neededType$genName
+                                                   thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = typeName)                                                     	 
+                                                   if(is.null(thisCppDef)){
+                                                       thisCppDef <- cppOptimObject(name = typeName, nfSym = neededType)
+                                                       neededTypeDefs[[ typeName ]] <<- thisCppDef
+                                                   } else {
+                                                       Hincludes <<- c(Hincludes, thisCppDef)
+                                                       CPPincludes <<- c(CPPincludes, thisCppDef)
+                                                   }
+                                                   
+                                               }
+                                               
+                                               if(inherits(neededType, 'symbolNimbleFunctionList')) {
+                                                   
+                                                   baseClassName <- environment(neededType$baseClass)$name
+                                                   thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = baseClassName)
+                                                   if(is.null(thisCppDef)) {
+                                                       thisCppDef <- nimbleProject$buildVirtualNimbleFunctionCompilationInfo(vfun = neededType$baseClass)
+                                                       neededTypeDefs[[baseClassName]] <<- thisCppDef
+                                                   } else {
+                                                       Hincludes <<- c(Hincludes, thisCppDef)
+                                                       CPPincludes <<- c(CPPincludes, thisCppDef)
+                                                   }
+                                               }
+                                           }
+                                       },
+                                       initialize = function(nimCompProc, debugCpp = FALSE, fromModel = FALSE, ...) {
+                                           callSuper(...) ## must call this first because it sets objectDefs to list()
+                                           RCfunDefs <<- list()
+                                           if(!missing(nimCompProc)) processNimCompProc(nimCompProc, debugCpp = debugCpp, fromModel = fromModel)
+                                           built <<- FALSE
+                                           loaded <<- FALSE
+                                           Cwritten <<- FALSE
+                                       },
+                                       processNimCompProc = function(ncp, debugCpp = FALSE, fromModel = FALSE) {
+                                           ncp$cppDef <- .self
+                                           nimCompProc <<- ncp
+                                           genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
+                                           objectDefs <<- symbolTable2cppVars(ncp$getSymbolTable())
+                                       },
+                                       buildAll = function(where = where) {
+                                           makeCppNames()
+                                           buildConstructorFunctionDef()
+                                           buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
+                                           buildRgenerator(where = where)
+                                           buildCmultiInterface()
+                                       },
+                                       buildRgenerator = function() {message('whoops, base class version of buildRgenerator')},
+                                       buildCmultiInterface = function() {message('whoops, base class version of buildCmultiInterface')},
+                                       makeCppNames = function() {
+                                           Rnames2CppNames <<- as.list(Rname2CppName(objectDefs$getSymbolNames()))
+                                           names(Rnames2CppNames) <<- objectDefs$getSymbolNames()
+                                       },
+                                       buildConstructorFunctionDef = function() {
+                                         newNestedListLines <- list()
+                                         flagLine <- list()
+                                         pointerLine <- list()
+                                         if(!(is.null(nimCompProc[['nimbleListObj']]))){
+                                           flagText <- paste0('RCopiedFlag = false')
+                                           flagLine[[1]] <- substitute(FLAGTEXT, 
+                                                            list(FLAGTEXT = as.name(flagText)))
+                                           pointerText <- paste0('RObjectPointer = NULL')
+                                           pointerLine[[1]] <- substitute(POINTERTEXT,
+                                                                          list(POINTERTEXT = as.name(pointerText)))
+                                           for(i in seq_along(nimCompProc$neededTypes)){
+                                             newListText <- paste0(nimCompProc$neededTypes[[i]]$name, " = new ", as.name(names(nimCompProc$neededTypes)[i]))
+                                             newNestedListLines[[i]] <- substitute(NEWLISTTEXT,
+                                                                                   list(NEWLISTTEXT = as.name(newListText)))
+                                           }
+                                         }
+                                         code <- putCodeLinesInBrackets(c(flagLine, pointerLine, newNestedListLines,
+                                                                          list(namedObjectsConstructorCodeBlock())))
+                                         conFunDef <- cppFunctionDef(name = name,
+                                                                     returnType = emptyTypeInfo(),
+                                                                     code = cppCodeBlock(code = code, skipBrackets = TRUE))
+                                         functionDefs[['constructor']] <<- conFunDef
+                                       }
+                                   ),
+                                   )
+
+cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
+                                      contains = 'cppNimbleClassClass',
+                                      fields = list(
+                                          nfProc = 'ANY' ## an nfProcessing class, needed to get the member data symbol table post-compilation
                                           ),
                                           methods = list(
                                               getDefs = function() {
@@ -61,82 +221,10 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   CPPuse <- unique(c(callSuper(), unlist(lapply(SEXPmemberInterfaceFuns, function(x) x$getCPPusings()))))
                                                   CPPuse
                                               },
-                                              genNeededTypes = function(debugCpp = FALSE, fromModel = FALSE) {
-                                                  ##print(nfProc$neededTypes)
-                                                  for(i in seq_along(nfProc$neededTypes)) {
-                                                      neededType<- nfProc$neededTypes[[i]]
-                                                      if(inherits(neededType, 'nfMethodRC')) {
-                                                          thisCppDef <- nimbleProject$getRCfunCppDef(neededType, NULLok = TRUE)
-                                                          if(is.null(thisCppDef)) {
-                                                              thisCppDef <- nimbleProject$needRCfunCppClass(neededType, genNeededTypes = TRUE, fromModel = fromModel)
-                                                              neededTypeDefs[[neededType$uniqueName]] <<- thisCppDef
-                                                          } else {
-                                                              Hincludes <<- c(Hincludes, thisCppDef)
-                                                              CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                          }
-                                                          next
-                                                      }
-                                                      if(inherits(neededType, 'symbolModelValues')) {
-                                                          thisCppDef <- nimbleProject$getModelValuesCppDef(neededType$mvConf, NULLok = TRUE)
-                                                          if(is.null(thisCppDef)) {
-                                                              thisCppDef <- nimbleProject$needModelValuesCppClass(neededType$mvConf, fromModel = fromModel)
-                                                              mvClassName <- environment(neededType$mvConf)$className
-                                                              neededTypeDefs[[mvClassName]] <<- thisCppDef
-                                                          } else {
-                                                              Hincludes <<- c(Hincludes, thisCppDef)
-                                                              CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                          }
-                                                          next
-                                                      }
-                                                      if(inherits(neededType, 'symbolNimbleFunction')) {
-                                                          generatorName <- environment(neededType$nfProc$nfGenerator)$name
-                                                          thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = generatorName)
-                                                          if(is.null(thisCppDef)) {
-                                                              className <- names(nfProc$neededTypes)[i]
-                                                              if(neededType$type == 'nimbleFunction')
-                                                                  thisCppDef <- nimbleProject$buildNimbleFunctionCompilationInfo(generatorName = generatorName, fromModel = fromModel)
-                                                              else if(neededType$type == 'nimbleFunctionVirtual')
-                                                                  thisCppDef <- nimbleProject$buildVirtualNimbleFunctionCompilationInfo(vfun = generatorName)
-                                                              else stop('symbolNimbleFunction does not have type nimbleFunction or nimbleFunctionVirtual')
-                                                              neededTypeDefs[[ className ]] <<- thisCppDef
-                                                          } else {
-                                                              Hincludes <<- c(Hincludes, thisCppDef)
-                                                              CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                          }
-                                                          next
-                                                      }
-                                                      
-                                                      if(inherits(neededType, 'symbolOptimReadyFunction')){
-                                                      	 typeName <- neededType$genName
-                                                         thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = typeName)                                                     	 
-                                                     	 if(is.null(thisCppDef)){
-                                                     	 	thisCppDef <- cppOptimObject(name = typeName, nfSym = neededType)
-                                                			neededTypeDefs[[ typeName ]] <<- thisCppDef
-                                                			} else {
-                                                				Hincludes <<- c(Hincludes, thisCppDef)
-                                                				CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                			}
-                                                			
-                                                      }
-                                                      
-                                                      if(inherits(neededType, 'symbolNimbleFunctionList')) {
-                                               
-                                                          baseClassName <- environment(neededType$baseClass)$name
-                                                          thisCppDef <- nimbleProject$getNimbleFunctionCppDef(generatorName = baseClassName)
-                                                          if(is.null(thisCppDef)) {
-                                                              thisCppDef <- nimbleProject$buildVirtualNimbleFunctionCompilationInfo(vfun = neededType$baseClass)
-                                                              neededTypeDefs[[baseClassName]] <<- thisCppDef
-                                                          } else {
-                                                              Hincludes <<- c(Hincludes, thisCppDef)
-                                                              CPPincludes <<- c(CPPincludes, thisCppDef)
-                                                          }
-                                                      }
-                                                  }
-                                              },
                                               initialize = function(nfProc, isNode, debugCpp = FALSE, fromModel = FALSE, ...) {
-                                              	RCfunDefs <<- list()
-                                                  callSuper(...) ## must call this first because it sets objectDefs to list()
+                                                  callSuper(nfProc, debugCpp, fromModel, ...)
                                                   if(!missing(nfProc)) processNFproc(nfProc, debugCpp = debugCpp, fromModel = fromModel)
+                                                  
                                                   if(isNode) {
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassObj <- environment(nfProc$nfGenerator)$contains
@@ -144,15 +232,9 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                           inheritance <<- c(inheritance, 'nodeFun')
                                                       }
                                                   }
-                                                  built <<- FALSE
-                                                  loaded <<- FALSE
-                                                  Cwritten <<- FALSE
                                               },
                                               processNFproc = function(nfp, debugCpp = FALSE, fromModel = FALSE) {
-                                                  nfp$cppDef <- .self
-                                                  nfProc <<- nfp
-                                                  genNeededTypes(debugCpp = debugCpp, fromModel = fromModel)
-                                                  objectDefs <<- symbolTable2cppVars(nfp$setupSymTab)
+                                                  nfProc <<- nimCompProc
                                                   buildFunctionDefs()
                                                   ## This is slightly klugey
                                                   ## The objectDefs here are for the member data
@@ -163,6 +245,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       functionDefs[[i]]$args$parentST <<- objectDefs
                                                   }
                                                   SEXPmemberInterfaceFuns <<- lapply(functionDefs, function(x) x$SEXPinterfaceFun)
+                                                  nimCompProc <<- nfProc
                                               },
                                               buildFunctionDefs = function() {
                                                   for(i in seq_along(nfProc$RCfunProcs)) {
@@ -185,15 +268,16 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                              getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
                                                          else
                                                             SEXPgeneratorFun$name
-                                                  Rgenerator <<- buildNimbleFxnInterface(paste0(name,'_refClass') , .self, sym, where = where)
+
+                                                  Rgenerator <<- buildNimbleObjInterface(paste0(name,'_refClass') , .self, sym, where = where)
                                               },
                                               promoteCallable = function(R_NimbleFxn, asTopLevel = TRUE){
                                                   ## see comment in nimbleProjectClass::compileNimbleFunction
                                                   oldCobjectInterface <- nf_getRefClassObject(R_NimbleFxn)$.CobjectInterface
                                                   if(!is.list(oldCobjectInterface)) return(oldCobjectInterface)
-                                                  existingBasePtr <- oldCobjectInterface[[1]]$getBasePtr(oldCobjectInterface[[2]])
+                                                  existingExtPtrs <- oldCobjectInterface[[1]]$getExtPtrs(oldCobjectInterface[[2]])
                                                   thisDll <- oldCobjectInterface[[1]]$dll
-                                                  newCobjectInterface <- Rgenerator(R_NimbleFxn, thisDll, project = nimbleProject, existingBasePtr = existingBasePtr)
+                                                  newCobjectInterface <- Rgenerator(R_NimbleFxn, thisDll, project = nimbleProject, existingExtPtrs = existingExtPtrs)
                                                   newCobjectInterface
                                               },
                                               buildCallable = function(R_NimbleFxn, dll = NULL, asTopLevel = TRUE){
@@ -211,31 +295,22 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       inheritance <<- inheritance[inheritance != 'NamedObjects']
                                                       baseClassName <- environment(baseClassObj)$name
                                                       addInheritance(baseClassName)
+                                                      ## These lines would be completely general...
+                                                      ##baseClassCppDef <- environment(baseClassObj)$cppDef
+                                                      ##if(is.null(baseClassCppDef)) warning('cppDef for a base class not available when needed')
+                                                      ##addAncestors(c(baseClassCppDef$inheritance, baseClassCppDef$ancestors))
+                                                      ## ... but I'm going with this for now because it is just what is needed 
+                                                      addAncestors('NamedObjects')
                                                   }
-                                                  makeCppNames()
-                                                  buildConstructorFunctionDef()
-                                                  buildSEXPgenerator(finalizer = "namedObjects_Finalizer")
-                                                  ##buildSEXPgenerator()
-                                                  ##buildSEXPfinalizer()
-                                                  buildRgenerator(where = where)
-                                                  buildCmultiInterface()
-                                              },
-                                              makeCppNames = function() {
-                                                  Rnames2CppNames <<- as.list(Rname2CppName(objectDefs$getSymbolNames()))
-                                                  names(Rnames2CppNames) <<- objectDefs$getSymbolNames()
-                                              },
-                                              buildConstructorFunctionDef = function() {
-                                                  code <- putCodeLinesInBrackets(list(namedObjectsConstructorCodeBlock()))
-                                                  conFunDef <- cppFunctionDef(name = name,
-                                                                              returnType = emptyTypeInfo(),
-                                                                              code = cppCodeBlock(code = code, skipBrackets = TRUE))
-                                                  functionDefs[['constructor']] <<- conFunDef
+                                                  callSuper(where)
                                               }
                                           ),
                                       )
 
+## This and the functions below were original stand-along compilation functions
+## Now they are superceded by compileNimble.
+## A stand-alone call could still work but these may have faller out of date.
 compileNimbleFunction <- function(fun, dirName, all.instances = TRUE, individual.instances = NA, name = deparse(substitute(fun) ),  fileName = Rname2CppName(name), writeFiles = !(environment(fun)$Cwritten), compileCpp = !(environment(fun)$compiled), loadSO = !(environment(fun)$loadedSO), debug = FALSE, debugCpp = FALSE, returnInternals = FALSE ) {
-    
     if(missing(dirName))    dirName <- makeDefaultDirName()
     
         if(!is.nfGenerator(fun)) stop('Error in compileNimbleFunction: fun should be a nimbleFunction generator')
@@ -343,6 +418,7 @@ nfWriteCompileAndLoadSO <- function(RFun, dirName, name = deparse(substitute(RFu
     return(cppProj)
 }
 
-nfBuildCInterface <- function(cppProj, instance, name = deparse(substitute(RFun) ))
+nfBuildCInterface <- function(cppProj, instance, name = deparse(substitute(RFun) )){
 	return( cppProj$cppDefs[[name]]$buildCallable(instance, cppProj$dll ) )
+}
 

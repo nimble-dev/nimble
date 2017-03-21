@@ -35,6 +35,8 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 #		rgamma_keywordInfo
 #		d_dist_keywordInfo
 #		qp_dist_keywordInfo
+#   nimEigen_keywordInfo
+#   nimSvd_keywordInfo
 #		nimOptim_keywordInfo
 #		values_keywordInfo
 #		calculate_keywordInfo
@@ -135,6 +137,37 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 ## 		return(code)		
 ## 	}
 ## 	)
+
+nimEigen_keywordInfo <- keywordInfoClass(
+  keyword = "nimEigen",
+  processor = function(code, nfProc){
+    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
+    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
+      nlEigenRefClass$addEigenListInfo(nfProc)
+    }
+    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
+    return(code)
+  }
+)
+
+nimSvd_keywordInfo <- keywordInfoClass(
+  keyword = "nimSvd",
+  processor = function(code, nfProc){
+
+    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
+    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
+      nlEigenRefClass$addEigenListInfo(nfProc)
+    }
+    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
+    code[[3]] <- switch(tolower(code[[3]]),
+                        none = 0,
+                        thin = 1,
+                        full = 2)
+    if(is.null(code[[3]])) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
+    return(code)
+  }
+)
+
 
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
@@ -613,10 +646,24 @@ doubleBracket_keywordInfo <- keywordInfoClass(
 	keyword = '[[', 
     processor = function(code, nfProc){
         if(is.null(nfProc)) stop("No allowed use of [[ in a nimbleFunction without setup code.")
-        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList')
+        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunctionList', 'symbolNimbleList')
         class = symTypeFromSymTab(code[[2]], nfProc$setupSymTab, options = possibleObjects)
+        if(is.null(class)){  ##assume that an element of a run-time provided nimbleList is being accessed
+          nl_charName <- as.character(callerCode)
+          nl_fieldName <-as.character(code[[3]])
+          newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+          return(newRunCode)
+        }
         if(class == 'symbolNimPtrList' || class == 'symbolNimbleFunctionList')
             return(code)
+        if(class == 'symbolNimbleList'){
+          #	Code is of the form 
+          #  myNimbleList[['myVar']]
+          nl_charName <- as.character(callerCode)
+          nl_fieldName <-as.character(code[[3]])
+          newRunCode <- substitute(nlVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+          return(newRunCode)
+        }
         if(class == 'symbolModel'){
             singleAccess_ArgList <- list(code = code, model = code[[2]], nodeExpr = code[[3]])
             nodeArg <- code[[3]]
@@ -644,7 +691,7 @@ doubleBracket_keywordInfo <- keywordInfoClass(
             }
             return(ans)			
         }
-        stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
+        # stop(paste('in keywordProcessing of "[[", type not recognized. Code = ', code) )
     })
 
 modelMemberFun_keywordInfo <- keywordInfoClass(
@@ -661,42 +708,48 @@ modelMemberFun_keywordInfo <- keywordInfoClass(
     })
 
 dollarSign_keywordInfo <- keywordInfoClass(
-	keyword = '$',
-	processor = function(code, nfProc){
-            if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
-			#	First thing we need to do is remove 'run', for backward compatibility, i.e.
-			#   replace myNimbleFunction$run() -> myNimbleFunction() or
-			#	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
-			#   Probably a better way to handle this
-			
-					
-		if(code[[3]] == 'run'){
-			newRunCode <- code[[2]]
-			return(newRunCode)
-		}
-				
-		possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList')
-
-		callerCode <- code[[2]]
-		#	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
-		
-		
-		if(length(callerCode) > 1)
-			callerCode <- callerCode[[2]]
-		#	This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
-		#	May be a better way to do this
-		
-		class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
-				
-		if(class == 'symbolNimPtrList'){
-			return(code)
-                    }
-            if(class == 'symbolModel'){
-                singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
-                accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
-                addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
-                return(as.name(accessName))
-            }
+  keyword = '$',
+  processor = function(code, nfProc){
+    if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
+    #	First thing we need to do is remove 'run', for backward compatibility, i.e.
+    #   replace myNimbleFunction$run() -> myNimbleFunction() or
+    #	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
+    #   Probably a better way to handle this
+    if(code[[3]] == 'run'){
+      newRunCode <- code[[2]]
+      return(newRunCode)
+    }
+    possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
+    callerCode <- code[[2]]
+    #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
+    
+    if(length(callerCode) > 1){
+      if(callerCode[[1]] == '$'){ ## nested NL case
+        callerCode <- processKeyword(callerCode, nfProc)
+      }
+      else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) {
+        callerCode <- callerCode[[2]]
+      }
+    }
+    #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
+    #       May be a better way to do this
+    
+    class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
+    
+    if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
+      nl_fieldName <-as.character(code[[3]])
+      newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
+      return(newRunCode)				
+    }
+    if(class == 'symbolNimPtrList'){
+      return(code)
+    }
+    if(class == 'symbolModel'){
+      singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
+      accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
+      addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
+      return(as.name(accessName))
+    }
 		if(class == 'symbolNimbleFunction'){
 			
 			#	Code is of the form myNimbleFunction$myMethod
@@ -720,6 +773,14 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				return(newRunCode)
 			}
 		}
+		if(class == 'symbolNimbleList'){
+		  #	Code is of the form 
+		  #  myNimbleList$myVar
+		  nl_charName <- as.character(callerCode)
+		  nl_fieldName <-as.character(code[[3]])
+		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+		  return(newRunCode)
+		}
 		if(class == 'symbolNimbleFunctionList'){
 				
 				#	Code is of the form myNimbleFunctionList[[i]]$foo	(foo should be a method)
@@ -732,8 +793,8 @@ dollarSign_keywordInfo <- keywordInfoClass(
 				nf_fieldName <- as.character(code[[3]])
 				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
 				return(newRunCode)				
-			}
-			stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
+		}
+			 # stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
 	}
 )
     
@@ -786,6 +847,8 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
+keywordList[['nimEigen']] <- nimEigen_keywordInfo
+keywordList[['nimSvd']] <- nimSvd_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
@@ -849,6 +912,8 @@ matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, lo
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
+matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
+matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
@@ -942,7 +1007,7 @@ processKeywordCodeMemberFun <- function(code, nfProc) { ## handle cases like a$b
     ## model$calculate(nodes)
     dollarSignPart <- code[[1]]
     objectPart <- dollarSignPart[[2]]
-
+    
     isModel <- FALSE
     if(length(objectPart) != 1) isModel <- FALSE ## a case like a[[i]]$b(), which can only be a nimbleFunction list
     else {
@@ -1300,7 +1365,8 @@ symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
 	if(length(options) == 0)
 		return(class)
 	if(!(class %in% options))
-		stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
+		return(NULL)  ## nimbleList that was not constructed in setup code 
+	                ## stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
 	return(class)
 }
 
@@ -1394,6 +1460,16 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     ## must be nfObj$member(args)
     nfName <- as.character(nfPart) ## nfObj
     memFunName <- deparse(dollarSignPart[[3]])
+    if((exists(nfName, where = globalenv())) && ((is.nlGenerator(eval(nfPart))) &&
+                                                 !(nfProc$setupSymTab$symbolExists(nfName)))){
+      nlList <- eval(nfPart)$new()
+      nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+      className <- nlList$nimbleListDef$className
+      newSym <- symbolNimbleList(name = nfName, type = 'symbolNimbleList', nlProc = nlp)
+      if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
+      addSym <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
+      nfProc$setupSymTab$addSymbol(addSym)
+    }
     if(nfProc$setupSymTab$symbolExists(nfName)) { ## first look in symbolTable
         symObj <- nfProc$setupSymTab$getSymbolObject(nfName)
         if(symObj$type == 'nimbleFunction') {
@@ -1401,12 +1477,30 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
             if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
             thisFunctionMatch <- thisRCfunProc$RCfun$template
             return(matchAndFill.call(thisFunctionMatch, code ) )
-        } else 
-            if(inherits(symObj, 'symbolModel')) {
+        } 
+        else if(inherits(symObj, 'symbolModel')) {
                 thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
                 if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
                 return(matchAndFill.call(thisFunctionMatch, code) )
-            } else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
+        } 
+        else if(inherits(symObj, 'symbolNimbleListGenerator')){
+          if(memFunName == "new"){
+            listElements <- symObj$nlProc$symTab$getSymbolObjects()
+            if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
+            elementName <- deparse(code[[listElements[[1]]$name]])
+            if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
+            argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
+            for(i in seq_along(listElements)[-1]){  ## skip the first element
+              if(!is.null(code[[listElements[[i]]$name]])) code[[listElements[[i]]$name]] <- matchKeywords_recurse(code[[listElements[[i]]$name]], nfProc)
+              elementName <- deparse(code[[listElements[[i]]$name]])
+              if(elementName == "NULL") elementName <- ""
+              argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)
+            }
+            nlCall <- paste0("makeNewNimbleListObject(", nfName, ", ", argValues, ")")
+            return(parse(text = nlCall, keep.source = FALSE)[[1]])
+          }
+        }
+        else stop(paste0("Cannot handle this expression (maybe it's not a nimbleFunction?): ", deparse(code))) 
     }
     ## then look in R
     if(exists(nfName)) {
@@ -1417,7 +1511,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
 matchKeywordCode <- function(code, nfProc){
     callName <- as.character(code[[1]])
     thisFunctionMatch <- matchFunctions[[ callName ]]
-
     ## see if this is a member function of an nf object
     if(!is.null(nfProc)) {
         modCallName <- if(callName == "run") "operator()" else callName

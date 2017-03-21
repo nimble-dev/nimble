@@ -56,6 +56,13 @@ cppNamespace <- setRefClass('cppNamespace',
                                 )
                             )
 
+
+nimbleCppInheritanceInfo <- list(
+    Values = c('NamedObjects'),
+    ModelBase = c('NamedObjects'),
+    nodeFun = c('NamedObjects')
+)
+
 ## C++ class object.
 ## A class is like a namespace with inheritance
 ## At the moment everything is public. 
@@ -65,7 +72,9 @@ cppNamespace <- setRefClass('cppNamespace',
 cppClassDef <- setRefClass('cppClassDef',
                            contains = 'cppNamespace',
                            fields = list(
-                               inheritance = 'list',			#'list',
+                               inheritance = 'list',           ## classes to be declared as public 
+                               ancestors = 'list',             ## classes inherited by inherited classes, needed to make all cast pointers
+                               extPtrTypes = 'ANY',
                                private = 'list',		#'list', ## a placeholder.  everything is public
                                useGenerator = 'ANY',		#'logical',
                                SEXPgeneratorFun = 'ANY', ## These will be cppFunctionDefs
@@ -109,6 +118,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                        list(.self)
                                },
                                addInheritance = function(newI) inheritance <<- c(inheritance, newI),
+                               addAncestors = function(newI) ancestors <<- c(ancestors, newI), 
                                setPrivate = function(name) private[[name]] <<- TRUE,
                                generate = function(declaration = TRUE, definition = FALSE, ...) {
                                    if(declaration) {
@@ -124,20 +134,46 @@ cppClassDef <- setRefClass('cppClassDef',
                                    }
                                    output
                                },
+                               getExtPtrTypeIndex = function() {
+                                   structure(1:(length(extPtrTypes)+1), names = c(name, extPtrTypes))
+                               },
                                buildSEXPgenerator = function(finalizer = NULL) { ## build a function that will provide a new object and return an external pointer
+                                   addinheritance <- nimbleCppInheritanceInfo[c(unlist(inheritance), unlist(ancestors))]
+                                   allinheritance <- unique(unlist(c(inheritance, ancestors, addinheritance)))
+                                   extPtrTypes <<- allinheritance
+                                   numBaseClasses <- length(allinheritance)
+                                   SallinheritanceNames <- paste0('S', allinheritance, '_EXTPTR')
+                                   baseClassPtrObjectDefs <- lapply(SallinheritanceNames, cppSEXP) 
                                    CBobjectDefs <- list(cppVar(name = 'newObj', baseType = name, ptr = 1),
-                                                      Sans = cppSEXP(name = 'Sans'));
-                                   newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'), 'PROTECT(Sans = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))
+                                                        Sans = cppSEXP(name = 'Sans'),
+                                                        Sderived = cppSEXP(name = 'Sderived_EXTPTR'))
+                                   CBobjectDefs <- c(CBobjectDefs, baseClassPtrObjectDefs)
+                                   newCodeLine <- cppLiteral(c(paste0('newObj = new ', name,';'),
+                                                               'PROTECT(Sderived_EXTPTR = R_MakeExternalPtr(newObj, R_NilValue, R_NilValue));'))
+                                   baseClassCastLines <- mapply(
+                                       function(baseClassName, Sname)
+                                           paste0('PROTECT(',Sname,'= R_MakeExternalPtr(dynamic_cast<',baseClassName,'*>(newObj), R_NilValue, R_NilValue));'),
+                                       baseClassName = allinheritance,
+                                       Sname = SallinheritanceNames)
+                                   baseClassCastLines <- cppLiteral(baseClassCastLines)
+                                   allocVectorLine <- cppLiteral(paste0('PROTECT(Sans = allocVector(VECSXP,',numBaseClasses + 1, '));'))
+
+                                   packListLines <- mapply(function(Sname, i) paste0('SET_VECTOR_ELT(Sans,',i,',',Sname,');'),
+                                                           Sname = c('Sderived_EXTPTR', SallinheritanceNames),
+                                                           i = 0:(length(SallinheritanceNames)))
+                                   packListLines <- cppLiteral(packListLines)
+                                   
                                    notificationLine <- if(nimbleOptions()$messagesWhenBuildingOrFinalizingCppObjects)
-                                                           paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << R_ExternalPtrAddr(Sans) << \"\\n\";')
+                                                           paste0('std::cout<< \"In generator for ', name, '. Created at pointer \" << newObj << \"\\n\";')
                                                        else character(0)
                                    if(is.null(finalizer)) finalizer <- paste0(name,'_Finalizer')
                                    codeLines <- substitute({
-                                       ## R_RegisterCFinalizerEx(Sans, cppReference(FINALIZER), FALSE) ## last argument is whether to call finalizer upon R exit.  If TRUE we can generate segfaults if the library has been dyn.unloaded, unfortunately
-                                       UNPROTECT(1)
+                                       ## Finalizer registration now happens through nimble's finalizer mapping system.
+                                       UNPROTECT(NUMPROT)
                                        return(Sans)
-                                   }, list(TYPE = as.name(name), FINALIZER = as.name(finalizer)))
-                                   allCode <- putCodeLinesInBrackets(list(newCodeLine, cppLiteral(notificationLine), codeLines))
+                                   }, list(TYPE = as.name(name), FINALIZER = as.name(finalizer), NUMPROT = length(allinheritance) + 2))
+                                   allCodeList <- list(newCodeLine, cppLiteral(notificationLine),  baseClassCastLines, allocVectorLine, packListLines, codeLines)
+                                   allCode <- putCodeLinesInBrackets(allCodeList)
                                    SEXPgeneratorFun <<- cppFunctionDef(name = paste0('new_',name),
                                                                        args = list(),
                                                                        code = cppCodeBlock(code = allCode, objectDefs = CBobjectDefs, skipBrackets = TRUE),
@@ -159,7 +195,7 @@ cppClassDef <- setRefClass('cppClassDef',
                                        returnType = cppVoid(),
                                        code = cppCodeBlock(code = code, objectDefs = CBobjectDefs, skipBrackets = TRUE)
                                        )
-                               }                                                                       
+                               }
                                )
                            )
 

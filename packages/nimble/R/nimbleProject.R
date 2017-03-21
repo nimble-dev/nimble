@@ -23,6 +23,21 @@ nfCompilationInfoClass <- setRefClass('nfCompilationInfoClass',
                                           addRinstanceList = function(nfList) {Rinstances[length(Rinstances) + seq_along(nfList)] <<- nfList}
                                           ))
 
+nlCompilationInfoClass <- setRefClass('nlCompilationInfoClass',
+                                      fields = list(
+                                          nlProc = 'ANY',
+                                          cppDef = 'ANY',       ## a cppNimbleFunctionClass object
+                                          written =  'ANY',		#'logical'
+                                          loaded = 'ANY',
+                                          cppCompiled =  'ANY',		#'logical'
+                                          labelMaker = 'ANY', ## a label maker function
+                                          RinitTypesProcessed = 'ANY',		# 'logical', ## setupTypesForUsingFunction() 
+                                          Rcompiled = 'ANY'   # 'logical'
+                                      ),
+                                      methods = list(
+                                          initialize = function(...){callSuper(...)}
+                                      ))
+
 mvInfoClass <- setRefClass('mvInfoClass',
                            fields = list(
                                mvConf = 'ANY', ## a custom modelValues class
@@ -61,7 +76,9 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  ##modelCppInterfaces =  'ANY',		#'list',
                                  models             =  'ANY',		#'list',
                                  nimbleFunctions    =  'ANY',		#'list',
+                                 nimbleLists        =  'ANY',   #'list',
                                  nfCompInfos        =  'ANY',		#'list', ## list of nfCompilationInfoClass objects
+                                 nlCompInfos        =  'ANY',   #'list', ## list of nfCompilationInfoClass objects
                                  cppProjects        =  'ANY',		#'list', ## list of cppProjectClass objects, 1 for each dll to be produced
                                  dirName            =  'ANY',		#'character',
                                  nimbleLabel        =  'ANY',		#'character',
@@ -79,8 +96,10 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  	modelDefInfos <<- new.env()						# list()
                                  ##	modelCppInterfaces <<- new.env()				# list()
                                  	models <<- new.env()							# list()
-                                 	nimbleFunctions <<- new.env()					# list()	
+                                 	nimbleFunctions <<- new.env()					# list
+                                 	nimbleLists <<- new.env()
                                  	nfCompInfos <<- list()							# list()
+                                 	nlCompInfos <<- list()
                                  	cppProjects <<- list()							#new.env()						#list()
                                  	refClassDefsEnv <<- new.env()
                                      dirName <<- if(is.null(dir)) makeDefaultDirName() else dir
@@ -320,6 +339,38 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      assign('nimbleProject', .self, envir = nf_getRefClassObject(fun))
                                      ## could check for duplicate Cnames here, but if the names are unique the Cnames should be too.
                                  },
+                                 addNimbleList = function(nl, fromModel = FALSE, nestedList = FALSE) {
+                                   if(!is.nl(nl)) stop('nimbleList provided to project is not a nimbleList.', call. = FALSE)
+                                   inProjectAlready <- nl[['nimbleProject']]
+                                   if(!is.null(inProjectAlready)) {
+                                     if(!identical(inProjectAlready, .self)) stop('Trying to add a specialized nimbleList to a project, but it is already part of another project. \nIf you did not specify a project, this error can occur in trying to create a new project -- you likely need to specify the relevant model as the project.\nIf you are recompiling, try redefining models and specialized nimbleFunctions and nimbleLists.', call. = FALSE)
+                                     else warning('Adding a specialized nimbleList to a project to which it already belongs', call. = FALSE)
+                                   }
+                                   className <- nl$nimbleListDef$className
+                                   if(is.null(nlCompInfos[[className]])) {
+                                     ## nfProc could have been created already during makeTypeObject for another nimbleFunction so it knows the types of this one.
+                                     nlCompInfos[[className]] <<- nlCompilationInfoClass(written = FALSE, cppCompiled = FALSE, Rcompiled = FALSE,
+                                                                                         RinitTypesProcessed = FALSE, loaded = FALSE)
+                                     nlCompInfos[[className]]$labelMaker <<- labelFunctionCreator(paste0(className,'_'))
+                                   }
+                                  
+                                   if(!exists('name', envir = nl, inherits = FALSE)) {
+                                     assign('name', nlCompInfos[[className]]$labelMaker(), envir = nl)
+                                   } else {
+                                     if(!is.null(nimbleLists[[ nl$name ]])) {
+                                       stop('nimbleList provided to project has same name as another one in the same project', call. = FALSE)
+                                     }
+                                   }
+                                   if(!nestedList)   nimbleLists[[ nl$name ]] <<- nl
+                                   # nlCompInfos[[generatorName]]$addRinstance(nl)
+                                   
+                                   if(!exists('Cname', envir = nl, inherits = FALSE)) {
+                                     assign('Cname', Rname2CppName(nl$name), envir = nl)
+                                   }
+                                   
+                                   assign('nimbleProject', .self, envir = nl)
+                                   ## could check for duplicate Cnames here, but if the names are unique the Cnames should be too.
+                                 },
                                  addRCfun = function(nfmObj, fromModel = FALSE) {
                                      if(!inherits(nfmObj, 'nfMethodRC')) stop("Can't add this function. nfmObj is not an nfMethodRC", call. = FALSE)
                                      className <- nfmObj$uniqueName
@@ -464,6 +515,96 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      if(!createModel) return(ans) else return(ans(model, where, dll = cppProj$dll))
                                      ## creating the model populates model$CobjectInterface
                                  },
+                                 ## nimbleList functions
+                                 addNestedNls = function(nl){
+                                   for(iNl in names(nl$nestedListGenList)){
+                                     addNimbleList(nl[[iNl]], nestedList = TRUE)
+                                     if(length(nl[[iNl]]$nestedListGenList) > 0){
+                                       addNestedNls(nl[[iNl]])
+                                     }
+                                   }
+                                 },
+                                 compileNimbleList = function(nl, filename = NULL, initialTypeInferenceOnly = FALSE,
+                                     control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
+                                     reset = FALSE, returnCppClass = FALSE, className = NULL, alreadyAdded = FALSE) { ## className? alreadyAdded?
+                                     ## nl could be a list or a singleton
+                                     ## message("I think we should be able to compiled a nimbleList from its nimbleListDef alone.  This is a fundamental difference from nimbleFunctions with setup outputs.")
+                                    if(is.list(nl)) {
+                                         if(is.null(className)) className <- unique(unlist(lapply(nl, function(x) x$nimbleListDef$className)))
+                                         if(length(className) != 1) stop(paste0('Not all elements in the nimbleList list for compileNimbleList are from the same nimbleFunctionDef.  The class names include:', paste(className, collapse = ' ')), call. = FALSE)
+                                         nlList <- nl
+                                     } else {
+                                         if(!is.nl(nl)) stop(paste0("nl argument provided is not a nimbleList."), call. = FALSE)
+                                         nlList <- list(nl)
+                                         className <- nl$nimbleListDef$className
+                                     }
+                                     if(reset) nlCompInfos[[className]] <<- NULL
+                                     if(!alreadyAdded) {
+                                       for(i in seq_along(nlList)) {
+                                         addNL <- TRUE
+                                         thisName <- nlList[[i]][['name']]
+                                         if(!is.null(thisName)) {
+                                           tmp <- nimbleLists[[thisName]]
+                                           if(!is.null(tmp)) {
+                                             if(reset) {
+                                               nimbleLists[[thisName]] <<- NULL
+                                             } else {
+                                               if(!identical(nlList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleList that is not the same thing')
+                                               addNL <- FALSE
+                                             }
+                                           }
+                                         }
+                                         if(addNL){
+                                           addNimbleList(nlList[[i]])
+                                           ## if any nested lists, add them too (recursively)
+                                           if(length(nlList[[i]]$nestedListGenList) > 0){
+                                             addNestedNls(nlList[[i]])
+                                           }
+                                         }
+                                       }
+                                     }
+                                     
+                                     for(iNestedNl in seq_along(nlList[[1]]$nestedListGenList)){
+                                       ## create cppInfo for any nested list classes 
+                                       compileNimbleList(nlList[[1]][[names(nlList[[1]]$nestedListGenList)[iNestedNl]]], initialTypeInferenceOnly = TRUE, alreadyAdded = TRUE)
+                                     }
+                                     cppClass <- buildNimbleListCompilationInfo(nlList, initialTypeInferenceOnly = initialTypeInferenceOnly)
+                                     
+
+                                     
+                                     if(initialTypeInferenceOnly || returnCppClass) return(cppClass)
+                                     message('Remaining compileNimbleList is not yet adapted')
+                                     if(!nlCompInfos[[className]]$written && control$writeFiles) {
+                                         cppProj <- cppProjectClass(dirName = dirName)
+                                         cppProjects[[ className ]] <<- cppProj
+                                         if(is.null(filename)) filename <- paste0(projectName, '_', Rname2CppName(className))
+                                         cppProj$addClass(cppClass, className, filename)
+                                         cppProj$writeFiles(filename)
+                                         nlCompInfos[[className]]$written <<- TRUE
+                                     } else {
+                                         if(!control$writeFiles) return(cppProj)
+                                         cppProj <- cppProjects[[ className ]]
+                                     }
+                                     if(!nlCompInfos[[className]]$cppCompiled && control$compileCpp) {
+                                         if(control$compileCpp) {
+                                             cppProj$compileFile(filename)
+                                             nlCompInfos[[className]]$cppCompiled <<- TRUE
+                                         } else writeLines('Skipping compilation because control$compileCpp is FALSE')
+                                     } else {if(!control$compileCpp) return(cppProj)}#writeLines('Using previously compiled C++ code.')
+                                     if(!nlCompInfos[[className]]$loaded && control$loadSO) {
+                                         cppProj$loadSO(filename)
+                                         nlCompInfos[[className]]$loaded <<- TRUE
+                                     } else{if(!control$loadSO) return(cppProj)}# writeLines('Using previously loaded compilation unit.')
+                                     
+                                     ans <- vector('list', length(nlList))
+
+                                     for(i in seq_along(nlList)) {
+                                         ans[[i]] <- nlCompInfos[[className]]$cppDef$buildCallable(nlList[[i]], cppProj$dll, asTopLevel = TRUE)
+                                     }
+                                     if(length(ans) == 1) ans[[1]] else ans
+                                 },
+                                 
+                                 ## nimbleFunction functions
                                  getNimbleFunctionCppDef = function(generatorName, nfProc) {
                                      if(missing(generatorName)) {
                                          if(missing(nfProc)) stop('No good information provided to getNimbleFunctionCppDef', call. = FALSE)
@@ -483,6 +624,26 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      ans <- nfCompInfos[[generatorName]]$nfProc
                                      if(inherits(ans, 'uninitializedField')) return(NULL)
                                      ans
+                                 },
+                                 getNimbleListCppDef = function(generatorName, nlProc) {
+                                   if(missing(generatorName)) {
+                                     if(missing(nlProc)) stop('No good information provided to getNimbleListCppDef', call. = FALSE)
+                                     generatorName <- nlProc$nimbleListObj$className
+                                     if(is.null(generatorName)) stop('Invalid generatorName', call. = FALSE)
+                                   }
+                                   if(is.null(nlCompInfos[[generatorName]])){
+                                     return(NULL)
+                                   }
+                                   ans <- nlCompInfos[[generatorName]]$cppDef
+                                   if(inherits(ans, 'uninitializedField') )  return(NULL)                                     	 
+                                   ans
+                                 },
+                                 getNimbleListNLproc = function(fun) {
+                                   generatorName <- fun$name
+                                   if(is.null(nlCompInfos[[generatorName]])) return(NULL)
+                                   ans <- nlCompInfos[[generatorName]]$nlProc
+                                   if(inherits(ans, 'uninitializedField')) return(NULL)
+                                   ans
                                  },
                                  buildVirtualNimbleFunctionCompilationInfo = function(vfun, initialTypeInferenceOnly = FALSE, control = list(debug = FALSE, debugCpp = FALSE)) {
                                      if(!is.character(vfun)) {
@@ -554,6 +715,65 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$cppDef ## return value if already exists
                                      }
                                  },
+                                 buildNimbleListCompilationInfo = function(listList = NULL, className, initialTypeInferenceOnly = FALSE, eigenList = FALSE,
+                                                                             control = list(debug = FALSE, debugCpp = FALSE), where = globalenv(), fromModel = FALSE
+                                                                           ) {
+                                   if(!is.null(listList)) {
+                                     className <- listList[[1]]$nimbleListDef$className
+                                     name <- listList[[1]]$name
+                                     Cname <- listList[[1]]$Cname
+                                     if(is.null(nlCompInfos[[className]])) stop("Requested buildNimbleListCompilationInfo for a generator for which no specialized NL has been added to the project", call. = FALSE)
+                                     if(inherits(nlCompInfos[[className]]$nlProc, 'uninitializedField')) 
+                                       nlCompInfos[[className]]$nlProc <<- nlProcessing(listList, className, project = .self)
+                                   } else {
+                                     if(missing(className)) stop("If listList is omitted, a class name must be provided to buildNimbleListCompilationInfo", call. = FALSE)
+                                     if(inherits(nlCompInfos[[className]]$nlProc, 'uninitializedField')) stop("buildNimbleListCompilationInfo was called with only a className (probably from genNeededTypes), but the nfProc is missing.", call. = FALSE)
+                                   }
+                                   if(initialTypeInferenceOnly) {
+                                     if(!nlCompInfos[[className]]$RinitTypesProcessed) {
+                                       nlCompInfos[[className]]$nlProc$setupTypesForUsingFunction() 
+                                       nlCompInfos[[className]]$RinitTypesProcessed <<- TRUE
+                                     }
+                                     return(nlCompInfos[[className]]$nlProc)
+                                   }
+                                   if(!nlCompInfos[[className]]$Rcompiled) {
+                                     nlCompInfos[[className]]$nlProc$process(control = control)
+                                     nlCompInfos[[className]]$Rcompiled <<- TRUE
+                                   }
+                                   if(inherits(nlCompInfos[[className]]$cppDef, 'uninitializedField')) {
+                                     newCppClass <- cppNimbleListClass(name = className,
+                                                                       nimCompProc = nlCompInfos[[className]]$nlProc,
+                                                                       debugCpp = control$debugCpp,
+                                                                       project = .self,
+                                                                       eigenList = eigenList
+                                     )
+                                     newCppClass$buildAll(where = where)
+                                     nlCompInfos[[className]]$cppDef <<- newCppClass
+                                     newCppClass ## possible return value
+                                   } else {
+                                     nfCompInfos[[className]]$cppDef ## return value if already exists
+                                   }
+                                 },
+                                 instantiateNimbleList = function(nl, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
+                                   ## to instantiate neededObjects
+                                   for(nestedNL in names(nl$nestedListGenList)) {
+                                     nestedAns <- instantiateNimbleList(nl[[nestedNL]], dll, asTopLevel)
+                                   }
+
+                                   if(!is.nl(nl)) stop("Can't instantiateNimbleList, nl is not a nimbleList")
+                                   className <- nl$nimbleListDef$className
+                                   nlCppDef <- getNimbleListCppDef(generatorName = className)
+                                   ok <- TRUE
+                                   if(asTopLevel) {
+                                     if(is.null(nlCppDef$Rgenerator)) ok <- FALSE
+                                     else ans <- nlCppDef$Rgenerator(nl, dll = dll, project = .self)
+                                   } else {
+                                     if(is.null(nlCppDef$CmultiInterface)) ok <- FALSE
+                                     else ans <- nlCppDef$CmultiInterface$addInstance(nl, dll = dll)
+                                   }
+                                   if(!ok) stop("Oops, there is something in this compilation job that doesn\'t fit together.  This can happen in some cases if you are trying to compile new pieces into an exising project.  If that is the situation, please try including \"resetFunctions = TRUE\" as an argument to compileNimble.  Alternatively please try rebuilding the project from the beginning with more pieces in the same call to compileNimble.  For example, if you are compiling multiple algorithms for the same model in multiple calls to compileNimble, try compiling them all with one call.", call. = FALSE) 
+                                   ans
+                                 },
                                  instantiateNimbleFunction = function(nf, dll, asTopLevel = TRUE) { ## called by cppInterfaces_models and cppInterfaces_nimbleFunctions
                                      ## to instantiate neededObjects
                                      if(!is.nf(nf)) stop("Can't instantiateNimbleFunction, nf is not a nimbleFunction")
@@ -621,7 +841,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  compileNimbleFunction = function(fun, isNode = FALSE, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
                                      reset = FALSE, returnCppClass = FALSE, where = globalenv(), fromModel = FALSE, generatorName = NULL, alreadyAdded = FALSE, showCompilerOutput = nimbleOptions('showCompilerOutput')) {
-                                     if(is.character(fun)) {
+                                   if(is.character(fun)) {
                                          tmp <- nimbleFunctions[[fun]]
                                          if(is.null(tmp)) stop(paste0("nimbleFunction name ", fun, " not recognized in this project."), call. = FALSE)
                                          if(reset) {
@@ -770,7 +990,6 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
 ## 1. Extract compilation items
     reset <- FALSE
     ## This pulls out ... arguments, makes names from their expressions if names weren't provided, and combines them with any ... arguments that are lists.
-
     controlDefaults = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE, returnAsList = FALSE)
     
     dotsDeparses <- unlist(lapply( substitute(list(...))[-1], deparse ))
@@ -801,10 +1020,11 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         if(!i %in% names(control)) control[[i]] <- controlDefaults[[i]]
     }
     
+
     ## Units should be either Rmodel, nimbleFunction, or RCfunction (now coming from nimbleFunction with no setup)
     if(nimbleOptions('verbose') && !showCompilerOutput) message("compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.")
     if(nimbleOptions('verbose') && showCompilerOutput) message("compiling... this may take a minute. On some systems there may be some compiler warnings that can be safely ignored.")
-    
+
     ## Compile models first
     ans <- list()
     rcfUnits <- unitTypes == 'rcf'
@@ -832,6 +1052,13 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
         ans[whichUnits] <- nfAns
         for(i in whichUnits) if(names(units)[i] != '') names(ans)[i] <- names(units)[i]
     }
+    nlUnits <- unitTypes == 'nl'
+    if(sum(nlUnits) > 0) {
+      whichUnits <- which(nlUnits)
+      nlAns <- project$compileNimbleList(units[whichUnits], control = control, reset = reset)
+      ans[[whichUnits]] <- nlAns
+      for(i in whichUnits) if(names(units)[i] != '') names(ans)[i] <- names(units)[i]
+    }
     
     if(nimbleOptions('verbose')) message("compilation finished.")
 
@@ -845,6 +1072,7 @@ getNimbleTypes <- function(units) {
         else if(is.nf(units[[i]])) ans[i] <- 'nf'   ## a nimbleFunction
         else if(is.rcf(units[[i]])) ans[i] <- 'rcf' ## an RCfunction = a nimbleFunction with no setup
         else if(is.nfGenerator(units[[i]])) ans[i] <- 'unknown(nf generator)'
+        else if(is.nl(units[[i]])) ans[i] <- 'nl'  ## a nimbleList
         else ans[i] <- 'unknown'
     }
     ans

@@ -33,6 +33,7 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          resize = 'cppOutputMemberFunctionDeref',
                          nfMethod = 'cppOutputNFmethod',
                          nfVar = 'cppOutputNFvar',
+                         makeNewNimbleListObject = "cppNewNimbleList",
                          getsize = 'cppOutputMemberFunctionDeref',
                          getNodeFunctionIndexedInfo = 'cppOutputGetNodeFunctionIndexedInfo',
                          resizeNoPtr = 'cppOutputMemberFunction',
@@ -45,7 +46,9 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          return = 'cppOutputReturn',
                          cppPtrType = 'cppOutputPtrType', ## mytype* (needed in templates like myfun<a*>(b)
                          cppDereference = 'cppOutputDereference', ## *(arg)
+                         cppPointerDereference = 'cppOutputPointerDereference',  ##(*arg)
                          cppMemberDereference = 'cppOutputMidOperator', ## arg1->arg2
+                         cppLiteral = 'cppOutputLiteral',
                          '[[' = 'cppOutputDoubleBracket',
                          as.integer = 'cppOutputCast',
                          as.numeric = 'cppOutputCast',
@@ -66,7 +69,7 @@ cppMidOperators[['|']] <- ' || '
 for(v in c('$', ':')) cppMidOperators[[v]] <- NULL
 for(v in assignmentOperators) cppMidOperators[[v]] <- ' = '
 
-nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch')
+nimCppKeywordsThatFillSemicolon <- c('{','for',ifOrWhile,'nimSwitch','cppLiteral')
 
 ## In the following list, the names are names in the parse tree (i.e. the name field in an exprClass object)
 ## and the elements are the name of the function to use to generate output for that name
@@ -163,6 +166,12 @@ cppOutputChainedCall <- function(code, symTab) {
     firstCall <- nimGenerateCpp(code$args[[1]], symTab)
     ## now similar to cppOutputCallAsIs
     paste0(firstCall, '(', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+}
+
+cppNewNimbleList <- function(code, symTab) {
+  listType <- symTab$getSymbolObject(code$caller$args[[1]]$name)$templateArgs
+  if(is.null(listType)) listType <-  symTab$getSymbolObject(code$caller$args[[1]]$name, inherits = TRUE)$templateArgs
+  paste0("new ", listType)
 }
 
 cppOutputFor <- function(code, symTab) {
@@ -409,6 +418,14 @@ cppOutputPtrType <- function(code, symTab) {
 
 cppOutputDereference <- function(code, symTab) {
     cppOutputCallWithName(code, symTab, '*')
+}
+
+cppOutputPointerDereference <- function(code, symTab) {
+  paste0('(*', paste0(unlist(lapply(code$args, nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), ')' )
+}
+
+cppOutputLiteral <- function(code, symTab) {
+  return(eval(code$args[[1]]))
 }
 
 cppOutputTemplate <- function(code, symTab) {

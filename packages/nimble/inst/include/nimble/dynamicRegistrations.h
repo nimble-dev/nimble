@@ -10,6 +10,7 @@
 #include <nimble/dists.h>
 #include <nimble/NamedObjects.h>
 #include <nimble/dllFinalizer.h>
+#include <nimble/smartPtrs.h>
 
 #include <R_ext/Rdynload.h>
 
@@ -66,6 +67,8 @@ R_CallMethodDef CallEntries[] = {
 
   //RcppNimbleUtils
   FUN(setDoublePtrFromSinglePtr, 2),
+  FUN(setSmartPtrFromSinglePtr, 2),
+  FUN(setSmartPtrFromDoublePtr, 2),
   FUN(addBlankModelValueRows, 2),
   FUN(getNRow, 1),
   FUN(copyModelValuesElements, 4),
@@ -101,7 +104,8 @@ R_CallMethodDef CallEntries[] = {
   FUN(register_namedObjects_Finalizer, 3),
   FUN(register_numberedObjects_Finalizer, 3),
   FUN(register_VecNimArr_Finalizer, 2),
-
+  FUN(register_pointedToBase_Finalizer, 3),
+  FUN(register_smartPtrBase_Finalizer, 3),
   FUN(RNimble_Ptr_ManualFinalizer, 1),
   FUN(RNimble_Ptr_CheckAndRunAllDllFinalizers, 2),
   FUN(CountDllObjects, 1),

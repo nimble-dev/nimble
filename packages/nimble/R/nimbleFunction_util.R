@@ -33,6 +33,16 @@ is.Cnf <- function(f, inputIsName = FALSE) {
     return(FALSE)
 }
 
+is.nlGenerator <- function(f){
+  return(is.list(f) && (is.function(f$new) && 
+           existsFunctionEnvVar(f$new, 'nlDefClassObject')))
+  
+}
+
+is.nl <- function(f){
+  if(inherits(f, 'nimbleListBase')) return(TRUE)
+  return(FALSE)
+}
 
 is.nfGenerator <- function(f, inputIsName = FALSE) {
     if(inputIsName) f <- get(f)
@@ -77,6 +87,35 @@ nf_getSetupOutputNames <- function(f, hidden = FALSE) {
     stop('invalid nimbleFunction argument\n')
 }
 
+nf_getArgOutputNames <- function(f, hidden = FALSE) {
+  nfEnv <- environment(f)
+  methodList <- nfEnv$methodList
+  methodArgListCode <- lapply(methodList, function(x){
+    outputType <-  as.character(x$argInfo[[1]][[1]])
+    if((length(outputType) == 0) ||
+       outputType %in% c('double', 'integer', 'character', 'logical', 'internalType'))
+      return(NULL)
+    else
+      return(outputType)
+  })
+  return(unlist(methodArgListCode))
+}
+
+nf_getReturnTypeOutputNames <- function(f, hidden = FALSE) {
+  nfEnv <- environment(f)
+  methodList <- nfEnv$methodList
+  methodReturnTypes <- lapply(methodList, function(x){ RT <- as.character(x$returnType)[1]
+                                                       ## vector of types below should contain all basic types, as well as nlDefs that we
+                                                       ## do keyword replacement on (eigen, svd, ...)
+                                                       # if(!RT %in%  c('double', 'integer', 'character', 'logical', 'internalType', 'void',
+                                                       #                'eigen', 'svd'))
+                                                        if(!RT %in%  c('double', 'integer', 'character', 'logical', 'void',
+                                                                       'nimEigen', 'nimSvd'))
+                                                         return(RT)
+                                                       else return(NULL)})
+  return(unlist(methodReturnTypes))
+}
+
 #'
 #' Get nimbleFunction definition
 #'
@@ -92,6 +131,3 @@ getDefinition <- function(nf) {
     defList <- c(list(setup=nfEnv$setup, run=nfEnv$run), nfEnv$methods)
     defList
 }
-
-
-

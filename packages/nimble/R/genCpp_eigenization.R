@@ -21,6 +21,7 @@
 ## 2. nimbleFunctions that return non-scalar-equivalent and are used within a larger expression
 
 exprClasses_labelForEigenization <- function(code) {
+
     if(code$isCall) {
         if(code$name == '{') {
             for(i in seq_along(code$args)) {
@@ -277,6 +278,7 @@ exprClasses_eigenize <- function(code, symTab, typeEnv, workEnv = new.env()) {
                 setupExprs <- c(setupExprs, exprClasses_eigenize(code$args[[i]], symTab, typeEnv, workEnv))
         }
         ## finally, call any special handlers
+        
         eCall <- eigenizeCalls[[code$name]]
                 
         if(!is.null(eCall)) {
@@ -494,7 +496,7 @@ eigenize_assign_before_recurse <- function(code, symTab, typeEnv, workEnv) {
 eigenize_matrixOps <- function(code, symTab, typeEnv, workEnv) {
     if(!code$args[[1]]$eigMatrix) eigenizeMatricize(code$args[[1]])
     if(length(code$args) == 2)
-        if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])
+      if(!code$args[[2]]$eigMatrix) eigenizeMatricize(code$args[[2]])	
     code$eigMatrix <- TRUE
     code$name <- switch(code$name,
                         chol = 'EIGEN_CHOL',
@@ -763,14 +765,13 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     }
     code$eigMatrix <- TRUE
 
-    deparsedCode <- parse(text = nimDeparse(code), keep.source = FALSE)[[1]]
+    deparsedCode <- parse(text = nimDeparse(code), keep.source = FALSE)[[1]] 
     newExpr <- RparseTree2ExprClasses(as.name(EigenName))
     newExpr$type <- code$type
     newExpr$sizeExprs <- code$sizeExprs
     newExpr$nDim <- code$nDim
     newExpr$eigMatrix <- code$eigMatrix
     setArg(code$caller, code$callerArgID, newExpr)
-    
     if(!thisMapAlreadySet) {
         return(RparseTree2ExprClasses(
             EigenNewExpr(EigenName, deparsedCode, NULL, makeEigenTypeLabel(TRUE, code$type),
@@ -783,6 +784,7 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
 
 eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     targetSym <- symTab$getSymbolObject(code$name, TRUE)
+    if(inherits(targetSym, 'symbolNimbleList')) return(NULL)
     if(!exists('nDim', envir = targetSym, inherits = FALSE)) {
        ## contextCode <- if(!is.null(code$caller)) paste(unlist(nimDeparse(code$caller)), collapse = '\n') else character()
         ## stop(paste0('in eigenizeName for ', nimDeparse(code), '. Symbol does not have an nDim.\n This occured within call\n', contextCode, collapse = ''), call. = FALSE)

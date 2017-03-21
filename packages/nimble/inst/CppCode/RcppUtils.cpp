@@ -24,6 +24,16 @@ void multivarTestCall(double *x, int n) {
   nimble_print_to_R(_nimble_global_output);
 }
 
+vector<int> getSEXPdims(SEXP Sx) {
+  if(!isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
+  if(!isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
+  if(!isArray(Sx) & !isMatrix(Sx)) {
+    vector<int> ans; 
+    ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
+  }
+  return(SEXP_2_vectorInt(getAttrib(Sx, R_DimSymbol), 0));
+}
+
 string STRSEXP_2_string(SEXP Ss, int i) {
   if(!isString(Ss)) {
     PRINTF("Error: STRSEXP_2_string called for SEXP that is not a string!\n"); 
@@ -135,6 +145,26 @@ SEXP vectorInt_2_SEXP(const vector<int> &v) {
   return(Sans);
 }
 
+
+void vectorDouble_2_SEXP(const vector<double> &v, SEXP Sn) {
+  int nn = v.size();
+  PROTECT(Sn = allocVector(REALSXP, nn));
+  if(nn > 0) {
+    copy(v.begin(), v.end(), REAL(Sn));
+  }
+  UNPROTECT(1);
+}
+
+void vectorInt_2_SEXP(const vector<int> &v, SEXP Sn) {
+  int nn = v.size();
+  PROTECT(Sn = allocVector(INTSXP, nn));
+  if(nn > 0) {
+    copy(v.begin(), v.end(), INTEGER(Sn));
+  }
+  UNPROTECT(1);
+}
+
+
 struct opIntegerShift {
 public:
   int c;
@@ -155,6 +185,8 @@ SEXP vectorInt_2_SEXP(const vector<int> &v, int offset) {
   UNPROTECT(1);
   return(Sans);
 }
+
+
 
 vector<int> SEXP_2_vectorInt( SEXP Sn, int offset ) {
   if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_vectorInt called for SEXP that is not a numeric or logica!\n");
@@ -682,4 +714,13 @@ SEXP parseVar(SEXP Sinput) {
   STRSEXP_2_vectorString(Sinput, input);
   parseVar(input, output);
   return(vectorString_2_STRSEXP(output));
+}
+
+SEXP makeNewNimbleList(SEXP S_listName) {
+  SEXP call;
+  PROTECT(call = allocVector(LANGSXP, 2));
+  SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
+  SETCADR(call, S_listName);
+  UNPROTECT(1);
+  return(EVAL(call));
 }

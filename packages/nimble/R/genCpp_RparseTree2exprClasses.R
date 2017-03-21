@@ -23,7 +23,7 @@ RparseTree2ExprClasses <- function(code, caller = NULL, callerArgID = numeric())
     if(is.name(code)) return(exprClass(expr = code, isName = TRUE, isCall = FALSE, isAssign = FALSE, name = as.character(code), caller = caller, callerArgID = callerArgID))
     ## call
     if(is.call(code)) {
-        if(is.call(code[[1]])) { ## chained calls like a(b)(c) or a[[b]](c).  We wrap these as chainedCall(a(b), c) or chainedCall(a[[b]], c) 
+        if(is.call(code[[1]])) { ## chained calls like a(b)(c) or a[[b]](c).  We wrap these as chainedCall(a(b), c) or chainedCall(a[[b]], c)
             code <- as.call(c(list(as.name('chainedCall')), as.list(code))) 
         }
         name <- as.character(code[[1]])

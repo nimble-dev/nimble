@@ -12,6 +12,20 @@ USER LEVEL CHANGES
 
 -- Added checking at time of model definition to catch errors where implied dimensions of a variable are different in different BUGS declarations.
 
+-- nimbleLists can now be created and used in nimbleFunctions.  nimbleList definitions can be created in R's global environment, or in setup code.  Instances of nimbleLists can be created in R's global environment, in setup code, or in run code.  nimbleLists can contain other nimbleLists.  nimbleLists can be used as arguments to runtime nimbleFunctions, and returned from such nimbleFunctions.  
+
+-- nimEigen() and nimSvd() now work to conduct eigendecompositions and singular value decompositions on matrices in nimble.  If called from R, nimEigen() and nimSvd() will execute precompiled c++ code that conducts these decompositions using the eigen c++ library.  Both decompositions return nimbleList objects.  nimEigen() and nimSvd() can also be used in BUGS code.
+
+-- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework, specifying "AF_slice" as the sampler type.  
+
+-- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
+
+BUG FIXES
+
+-- Fixed bug in RW_PF sampler where dependencies were not being updated after proposal value was inserted into target node
+
+-- Fixed bugs in RW_PF and RW_PF_block samplers where stored LP0 was not being updated with potentially new log probability for target node at each iteration.  
+
 
                            CHANGES IN VERSION 0.6-3 (December 2016)
 

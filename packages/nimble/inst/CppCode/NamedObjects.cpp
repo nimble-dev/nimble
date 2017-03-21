@@ -4,8 +4,14 @@
 #include "nimble/dllFinalizer.h"
 #include "R.h"
 
+//#define _DEBUG_NAMEDOBJECTS
+
+void NamedObjects::NO_hw(  ) {
+  PRINTF("hello world from NamedObjects\n");
+}
+
 void* NamedObjects::getObjectPtr( string &name ) {
-  //  cout<<name<<"\n";
+  //cout<<name<<"\n";
   map<string, void *>::iterator iMO;
   iMO= namedObjects.find(name);		
   if(iMO == namedObjects.end()) {
@@ -17,6 +23,9 @@ void* NamedObjects::getObjectPtr( string &name ) {
     _nimble_global_output << "Available Name 1 = " << iMO->first << "\n"; nimble_print_to_R( _nimble_global_output);
     return(0);
   }
+#ifdef _DEBUG_NAMEDOBJECTS
+  PRINTF("Getting pointer to %s: %p\n", name.c_str(), iMO->second);
+#endif
   return(	(iMO->second) ) ;
 }
 
@@ -43,18 +52,26 @@ SEXP getModelObjectPtr(SEXP Sextptr, SEXP Sname) {
 }
 
 SEXP getAvailableNames(SEXP Sextptr) {
+  ///_nimble_global_output << "In getAvailableNames\n"; nimble_print_to_R( _nimble_global_output);
   if(!R_ExternalPtrAddr(Sextptr)) {
     PRINTF("Error: Sextptr is not a a valid external pointer\n");
     return(R_NilValue);
   }
-  NamedObjects *m = static_cast< NamedObjects *>(R_ExternalPtrAddr(Sextptr));
-
+  NamedObjects *m;
+  m = static_cast< NamedObjects *>(R_ExternalPtrAddr(Sextptr));
+  
   SEXP Sans;
   int numNames = m->namedObjects.size();
+  //  _nimble_global_output << "numNames = "<<numNames<<"\n"; nimble_print_to_R( _nimble_global_output);
   PROTECT(Sans = allocVector(STRSXP, numNames));
-  map<string, void *>::iterator iNO = m->namedObjects.begin();
+  //  m->hw();
+  map<string, void *>::iterator iNO = m->getNamedObjects().begin();
   for(int i = 0; i < numNames; ++i, ++iNO) {
+    // _nimble_global_output << "starting "<<i<<"\n"; nimble_print_to_R( _nimble_global_output);
+    //_nimble_global_output << iNO->first.c_str() <<" \n";
+    //nimble_print_to_R( _nimble_global_output);
     SET_STRING_ELT(Sans, i, mkChar(iNO->first.c_str()));
+    //_nimble_global_output << "done with "<<i<<" "<<iNO->first<<" \n"; nimble_print_to_R( _nimble_global_output);
   }
   UNPROTECT(1);
   return(Sans);
@@ -105,14 +122,14 @@ SEXP getSizeNumberedObjects(SEXP Snp){
 }
 
 SEXP register_numberedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
-  //  std::cout<< "In register_numberedObjects_Finalizer\n";
+  //std::cout<< "In register_numberedObjects_Finalizer\n";
   //  R_RegisterCFinalizerEx(Snp, &numberedObjects_Finalizer, TRUE);
   RegisterNimbleFinalizer(Snp, Dll, &numberedObjects_Finalizer, Slabel);
   return(Snp);
 }
 
 void numberedObjects_Finalizer(SEXP Snp){
-  //  std::cout<< "In numberedObjects_Finalizer\n";
+  //std::cout<< "In numberedObjects_Finalizer\n";
   NumberedObjects* np = static_cast<NumberedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);
@@ -126,7 +143,7 @@ SEXP register_namedObjects_Finalizer(SEXP Snp, SEXP Dll, SEXP Slabel) {
 }
 
 void namedObjects_Finalizer(SEXP Snp){
-  //  std::cout<< "In namedObjects_Finalizer\n";
+  // std::cout<< "In namedObjects_Finalizer\n";
   NamedObjects* np = static_cast<NamedObjects*>(R_ExternalPtrAddr(Snp));
   if(np) delete np;
   R_ClearExternalPtr(Snp);

@@ -5,7 +5,7 @@
 //#include "nimble/RcppUtils.h"
 #include "nimble/dllFinalizer.h"
 
-
+//#define _DEBUG_DLLFINALIZER
 //typedef std::pair<SEXP, R_CFinalizer_t> DllAndFinalizer;
 
 struct DllAndFinalizer {
@@ -55,21 +55,26 @@ string local_STRSEXP_2_string(SEXP Ss, int i) {
 void RegisterNimblePointer(SEXP ptr, SEXP Dll, R_CFinalizer_t finalizer, SEXP Slabel) { // same as RegisterNimbleFinalizer
   RnimblePtrsIterator value = RnimblePtrs.find(ptr);
   // add check that ptr is an external pointer
+  string label;
+  if(Slabel != R_NilValue) {
+    label = local_STRSEXP_2_string(Slabel, 0);
+  } else {
+    label = string("");
+  }
+
   if(value != RnimblePtrs.end()) {
-    PRINTF("Error: trying to register a finalizer for an external pointer that has already has one\n");
+    PRINTF("Error: trying to register a finalizer for an external pointer (for %s) that has already has one\n", label.c_str());
     return;
   }
   DllAndFinalizer newDLLAndFinalizer;
   newDLLAndFinalizer.Dll = Dll;
   newDLLAndFinalizer.Finalizer = finalizer;
-  if(Slabel != R_NilValue) {
-    newDLLAndFinalizer.Label = local_STRSEXP_2_string(Slabel, 0);
-  } else {
-    newDLLAndFinalizer.Label = string("");
-  }
-  //  PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
-  RnimblePtrs[ptr] = newDLLAndFinalizer;
-  R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
+  newDLLAndFinalizer.Label = label;
+#ifdef _DEBUG_DLLFINALIZER
+   PRINTF("Adding label %s\n",  newDLLAndFinalizer.Label.c_str());
+#endif
+   RnimblePtrs[ptr] = newDLLAndFinalizer;
+   R_RegisterCFinalizerEx(ptr, RNimble_PtrFinalizer, TRUE);
 }
 
 SEXP CountDllObjects() {
@@ -107,8 +112,9 @@ SEXP RNimble_Ptr_CheckAndRunAllDllFinalizers(SEXP Dll, SEXP Sforce) {
       ) {
     if(RNPiter->second.Dll == Dll) {
       objectsFound++;
-      //PRINTF("Found label %s\n",  RNPiter->second.Label.c_str());
-	
+#ifdef _DEBUG_DLLFINALIZER
+      PRINTF("Found label %s\n",  RNPiter->second.Label.c_str());
+#endif	
       objectsFoundLabels.push_back(RNPiter->second.Label);
       if(force) {
 	finalizeOneObject(RNPiter++);// pass by copy a current iterator value and increment, since finalizerOneObject will use .erase()

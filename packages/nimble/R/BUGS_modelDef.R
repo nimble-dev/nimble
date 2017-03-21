@@ -386,6 +386,7 @@ modelDefClass$methods(addMissingIndexing = function() {
         declInfo[[i]] <<- BUGSdeclClassObject
     }
 })
+
 addMissingIndexingRecurse <- function(code, dimensionsList) {
     if(!is.call(code)) return(code)   # returns names, numbers
     if(code[[1]] != '[') {
@@ -394,39 +395,44 @@ addMissingIndexingRecurse <- function(code, dimensionsList) {
     }
     if(code[[1]] != '[')   stop('something went wrong: expecting a [')
     ## code must be an indexing call, e.g. x[.....]
+    if(length(code[[2]]) > 1 && code[[2]][[1]] == '$'){
+      code[[2]][[2]] <- addMissingIndexingRecurse(code[[2]][[2]], dimensionsList)
+      return(code)
+    }
     if(!any(code[[2]] == names(dimensionsList))) {
-        ## dimension information was NOT provided for this variable
-        ## let's check to make sure all indexes are present
-        if(any(unlist(lapply(as.list(code), is.blank)))) {
-            stop(paste0('Opps! This part of NIMBLE is still under development.', '\n',
-                        'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
-                        'There are two options to resolve this:', '\n',
-                        '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
-                        '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
-                        '    nimbleModel(code, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
-                        'Thanks for bearing with us.'), call. = FALSE)
-        }
-        ## and to recurse on all elements
-        for(i in seq_along(code))     code[[i]] <- addMissingIndexingRecurse(code[[i]], dimensionsList)
-        return(code)
+      ## dimension information was NOT provided for this variable
+      ## let's check to make sure all indexes are present
+      if(any(unlist(lapply(as.list(code), is.blank)))) {
+        stop(paste0('Opps! This part of NIMBLE is still under development.', '\n',
+                    'The model definition included the expression \'', deparse(code), '\', which contains missing indices.', '\n',
+                    'There are two options to resolve this:', '\n',
+                    '(1) Explicitly provide the missing indices in the model definition (e.g., \'', deparse(example_fillInMissingIndices(code)), '\'), or', '\n',
+                    '(2) Provide the dimensions of variable \'', code[[2]], '\' via the \'dimensions\' argument to nimbleModel(), e.g.,', '\n',
+                    '    nimbleModel(code, dimensions = list(', code[[2]], ' = ', deparse(example_getMissingDimensions(code)), '))', '\n',
+                    'Thanks for bearing with us.'), call. = FALSE)
+      }
+      ## and to recurse on all elements
+      for(i in seq_along(code))     code[[i]] <- addMissingIndexingRecurse(code[[i]], dimensionsList)
+      return(code)
     }
     if(any(code[[2]] == names(dimensionsList))) {
-        dimensions <- dimensionsList[[as.character(code[[2]])]]
-        ## dimension information WAS provided for this variable
-        ## first, just check that the dimensionality of the node is consistent
-        if(length(code) != length(dimensions)+2)   stop(paste0('inconsistent dimensionality provided for node \'', code[[2]], '\''))
-        ## then, fill in any missing indicies, and recurse on all other elements
-        for(i in seq_along(code)) {
-            if(is.blank(code[[i]])) {
-                code[[i]] <- substitute(1:TOP, list(TOP = as.numeric(dimensions[i-2])))
-            } else {
-                code[[i]] <- addMissingIndexingRecurse(code[[i]], dimensionsList)
-            }
+      dimensions <- dimensionsList[[as.character(code[[2]])]]
+      ## dimension information WAS provided for this variable
+      ## first, just check that the dimensionality of the node is consistent
+      if(length(code) != length(dimensions)+2)   stop(paste0('inconsistent dimensionality provided for node \'', code[[2]], '\''))
+      ## then, fill in any missing indicies, and recurse on all other elements
+      for(i in seq_along(code)) {
+        if(is.blank(code[[i]])) {
+          code[[i]] <- substitute(1:TOP, list(TOP = as.numeric(dimensions[i-2])))
+        } else {
+          code[[i]] <- addMissingIndexingRecurse(code[[i]], dimensionsList)
         }
-        return(code)
+      }
+      return(code)
     }
     stop('something went wrong')
 }
+
 example_fillInMissingIndices <- function(code) {
     as.call(lapply(as.list(code), function(el) if(is.blank(el)) quote(1:10) else el))
 }
@@ -1472,7 +1478,6 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
     vars_2_vertexOrigID <- new.env()   ## IDs for node labels, e.g. x[1:4] might be: 1, 1, 1, 2
     vars2LogProbName <- new.env()      ## e.g. "x" might be "logProb_x" if it has any LHS
     ##vars2LogProbID <- new.env()        ## yiels LogProbIDs, which are not sorted in any way and we might move away from.
-
     ## 1b. set up variables in all the environments
     for(iV in seq_along(varInfo)) {
         varName <- varInfo[[iV]]$varName
@@ -1522,7 +1527,7 @@ modelDefClass$methods(genExpandedNodeAndParentNames3 = function(debug = FALSE) {
             types <- c(types, rep(BUGSdecl$type, length(BUGSdecl$nodeFunctionNames) ) )       ## append vector of "stoch" or "determ" to types vector
             BUGSdecl$origIDs <- next_origID -1 + (1:length(BUGSdecl$nodeFunctionNames))       ## record the original IDs used here
             next_origID <- next_origID + length(BUGSdecl$nodeFunctionNames)
-
+            
             ## Fill in the vars_2_nodeOrigID elements
             if(is.environment(BUGSdecl$replacementsEnv)) { ## this means there was some replacement involved in this BUGS line
                 BUGSdecl$replacementsEnv[['origIDs']] <- BUGSdecl$origIDs
@@ -2017,7 +2022,7 @@ modelDefClass$methods(genVarInfo3 = function() {
 
         ## RHS:
         rhsVars <- BUGSdecl$rhsVars
-        
+
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
             if(!(rhsVar %in% names(varInfo))) {

@@ -457,7 +457,6 @@ Details: If a provided value (or the current value in the model when only a name
                                           ## intention is to flag these variables as 'data', and not change any model values.
                                           ## some inefficiency here (accesses model values, then re-sets the same model values),
                                           ## but this simplifies the addition without changing exisiting code.
-
                                            data = list(...)
                                            ## Check if a single list or character vector was provided
                                            if(length(data)==0) return()

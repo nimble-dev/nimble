@@ -1,5 +1,6 @@
 # for use in DSL code check:
-otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample")
+otherDSLcalls <- c("{", "[[", "$", "resize", "declare", "returnType", "seq_along", "double", "rankSample", "new",
+                   "nimEigen", "nimSvd")
 
 nimKeyWords <- list(copy = 'nimCopy',
                     print = 'nimPrint',
@@ -15,22 +16,30 @@ nimKeyWords <- list(copy = 'nimCopy',
                     round = 'nimRound',
                     c = 'nimC',
                     rep = 'nimRep',
-                    seq = 'nimSeq')
+                    seq = 'nimSeq',
+                    eigen = 'nimEigen',
+                    svd = 'nimSvd')
 
+nfMethodRCinterface <- setRefClass(Class = 'nfMethodRCinterface',
+                                   fields = list(
+                                       argInfo    = 'ANY',
+                                       arguments  = 'ANY',
+                                       returnType = 'ANY',
+                                       uniqueName = 'character'))
 nfMethodRC <- 
     setRefClass(Class   = 'nfMethodRC',
+                contains = 'nfMethodRCinterface',
                 fields  = list(
-                    argInfo    = 'ANY',
-                    arguments  = 'ANY',
+##                    argInfo    = 'ANY',
+##                    arguments  = 'ANY',
                     template   = 'ANY',
                     code       = 'ANY',
-                    returnType = 'ANY',
-                    uniqueName = 'character',
+##                    returnType = 'ANY',
+##                    uniqueName = 'character',
                     neededRCfuns = 'ANY'		#list
                 ),
                 methods = list(
                     initialize = function(method, name, check = FALSE) {
-                    	
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
                         neededRCfuns <<- list()	
                         argInfo <<- formals(method)
@@ -93,7 +102,7 @@ nfMethodRC <-
 
 
 
-nf_checkDSLcode <- function(code) {  
+nf_checkDSLcode <- function(code) { 
     dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords)
     calls <- setdiff(all.names(code), all.vars(code))
     # find cases of x$y() and x[]$y and x[[]]$y (this also unnecessarily finds x$y)
@@ -116,11 +125,11 @@ nf_checkDSLcode <- function(code) {
             # problem with passing inputIsName when run through roxygen...
             nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, function(x) is.nf(x, inputIsName = TRUE)) |
                                      sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)))]
-            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these functions must defined as nimbleFunctions or nimbleFunction methods: ", paste(nonDSLinR, collapse = ', '), "."))
-            if("c" %in% nonDSLinR) warning("Note that until version 0.6-3 of NIMBLE, c() cannot be used as a stand-alone function, but its use to create vector arguments to a function may be valid.")
+            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must defined as nimbleFunctions, nimbleLists, or nimbleFunction methods: ", paste(nonDSLinR, collapse = ', '), "."))
+            if("c" %in% nonDSLinR) warning("Note that until version 0.6-4 of NIMBLE, c() cannot be used as a stand-alone function, but its use to create vector arguments to a function may be valid.")
         }
         if(length(nonDSLnonR))
-            warning(paste0("For this nimbleFunction to compile, these functions must be defined as nimbleFunctions or nimbleFunction methods: ", paste(nonDSLnonR, collapse = ', '), "."))
+            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleLists, or nimbleFunction methods: ", paste(nonDSLnonR, collapse = ', '), "."))
     }
     return(0)
 }

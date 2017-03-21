@@ -1,9 +1,11 @@
 #ifndef __RCPPNIMBLEUTILS
 #define __RCPPNIMBLEUTILS
-
 #include "NimArrBase.h"
 #include "NimArr.h"
 #include "RcppUtils.h"
+
+//#include "RcppUtils.h"
+
 
 // all of this is in RcppUtils.h
 /* #include "R.h" */
@@ -34,10 +36,11 @@ void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP 
 //bool checkString(SEXP Ss, int len);
 //bool checkNumeric(SEXP Sval, int len);
 
-vector<int> getSEXPdims(SEXP Sx);
 
 extern "C" {
   SEXP setDoublePtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
+  SEXP setSmartPtrFromSinglePtr(SEXP SdoublePtr, SEXP SsinglePtr);
+  SEXP setSmartPtrFromDoublePtr(SEXP SdoublePtr, SEXP SsinglePtr);
 
   //  SEXP setVec(SEXP Sextptr, SEXP Svalue);
   //  SEXP getVec(SEXP Sextptr);
@@ -134,6 +137,8 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   So these are witten for doubles, and when we get to integers and logicals we can 
   use overlaoding or different names.
  */
+
+
 template<int ndim>
 void SEXP_2_NimArr(SEXP Sn, NimArr<ndim, double> &ans );
 template<int ndim>
@@ -272,8 +277,7 @@ SEXP NimArr_2_SEXP(NimArr<ndim, bool> &val) {
 }
 
 
-
-void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
+ void row2NimArr(SEXP &matrix, NimArrBase<double> &nimPtr, int startPoint, int len, int nRows);
 void row2NimArr(SEXP &matrix, NimArrBase<int> &nimPtr, int startPoint, int len, int nRows);
 
 template <class T>
@@ -363,7 +367,6 @@ void nimble_optim(void* nimFun, OptimControl* control, OptimAns* ans,
 void nimble_optim_withVarArgs(void* nimFun, OptimControl* control, OptimAns* ans,
 				 	NimArr<1, double> par, optimfn objFxn,
 				 	int numOtherArgs, ...);
+					
 
 #endif
-
-

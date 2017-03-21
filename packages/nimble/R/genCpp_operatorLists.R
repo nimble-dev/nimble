@@ -58,8 +58,8 @@ nonNativeEigenCalls <- c('logdet','sd','var','inprod', coreRmanipulationCalls, c
 matrixMultOperators <- c('%*%')
 matrixFlipOperators <- c('t')
 matrixSquareOperators <- c('chol','inverse')
+matrixEigenListOperators <- c('EIGEN_EIGEN', 'EIGEN_SVD')
 matrixSolveOperators <- c('solve','forwardsolve','backsolve')
-matrixEigenOperators <- c('eigen')
 passThroughOperators <- c('return')
 ##keywordOperators <- c('for','if', 'while')
 
@@ -88,7 +88,7 @@ returnTypeHandling <- with(returnTypeCodes,
                                makeCallList(reductionUnaryOperatorsArray, double),
                                makeCallList(matrixSquareReductionOperators, double),
                                makeCallList(reductionBinaryOperatorsEither, promoteNoLogical),
-                               makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators, matrixEigenOperators), double)))
+                               makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators), double)))
 ## deliberately omitted (so they just return same type as input):
 ## matrixFlipOperators ('t')
 
