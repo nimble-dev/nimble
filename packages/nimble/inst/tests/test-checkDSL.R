@@ -9,6 +9,8 @@ test1 <- nimbleFunction(
     run = function(x = double(0)) {
         returnType(double())
         y = cos(x)
+        tmp <- c(seq(0, 1, by = 0.1), rep(4, 5))
+        tmp2 <- logical(5)
         return(y)
     }
     )
@@ -74,5 +76,25 @@ test5 <- nimbleFunction(
         tmp = my_decideAndJump(0,0,0,0)
         return(tmp)
     }
+)
+))
+
+
+test_that("Test of DSL check of valid nimbleFunction with other methods present", expect_silent(
+test5 <- nimbleFunction(
+    setup = function(model, target, mvSaved) {
+        calcNodes <- model$getDependencies(target)
+    },
+    run = function(par = double(1)) {
+        returnType(double(0))
+        values(model, target) <<- par
+        ans <- model$calculate(calcNodes)
+        tmp = auxil()
+        return(tmp)
+    }, methods = list(
+           auxil = function() {
+               returnType(double(0))
+               return(3)
+           })
 )
 ))

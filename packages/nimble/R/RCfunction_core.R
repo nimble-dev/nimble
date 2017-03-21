@@ -39,14 +39,14 @@ nfMethodRC <-
                     neededRCfuns = 'ANY'		#list
                 ),
                 methods = list(
-                    initialize = function(method, name, check = FALSE) {
+                    initialize = function(method, name, check = FALSE, methodNames = NULL) {
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
                         neededRCfuns <<- list()	
                         argInfo <<- formals(method)
                         code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                         if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))
                         if(check && "package:nimble" %in% search()) # don't check nimble package nimbleFunctions
-                            nf_checkDSLcode(code)
+                            nf_checkDSLcode(code, methodNames)
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
@@ -102,8 +102,8 @@ nfMethodRC <-
 
 
 
-nf_checkDSLcode <- function(code) { 
-    dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords)
+nf_checkDSLcode <- function(code, methodNames) { 
+    dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords, methodNames)
     calls <- setdiff(all.names(code), all.vars(code))
     # find cases of x$y() and x[]$y and x[[]]$y (this also unnecessarily finds x$y)
     names <- all.names(code)
