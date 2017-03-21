@@ -587,7 +587,8 @@ modelDefClass$methods(reparameterizeDists = function() {
         newValueExpr[[1]] <- as.name(distName)     ## add in the distribution name
         newValueExpr[1 + (1:numArgs)] <- rep(NA, numArgs)      ## fill in the new parse tree with required arguments
         names(newValueExpr)[1 + (1:numArgs)] <- distRule$reqdArgs    ## add names for the arguments
-        params <- as.list(valueExpr[-1])   ## extract the original distribution parameters
+
+        params <- if(length(valueExpr) > 1) as.list(valueExpr[-1]) else structure(list(), names = character()) ## extract the original distribution parameters
         
         if(identical(sort(names(params)), sort(distRule$reqdArgs))) {
             matchedAlt <- 0
@@ -598,7 +599,7 @@ modelDefClass$methods(reparameterizeDists = function() {
                 if(identical(sort(unique(distRule$alts[[count]])), sort(unique(names(params)))))
                     matchedAlt <- count
             }
-            if(is.null(matchedAlt)) stop('Error: no available re-parameterization found for: ', deparse(valueExpr), '.')
+            if(is.null(matchedAlt)) stop(paste0('bad parameters for distribution ', deparse(valueExpr), '. (No available re-parameterization found.)'), call. = FALSE)
         }
         nonReqdArgs <- names(params)[!(names(params) %in% distRule$reqdArgs)]
         for(iArg in 1:numArgs) {   ## loop over the required arguments
