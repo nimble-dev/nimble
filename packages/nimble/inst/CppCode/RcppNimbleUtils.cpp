@@ -420,27 +420,27 @@ SEXP cGetMVElementOneRow(NimVecType* typePtr, nimType vecType, int index) 	{
 	return(R_NilValue);
 }
 
-  SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
-  	// This function needs to get the length of rList
-  	// Once it has this length, it marches down the length of rList and sets all the values of
-  	// of vNimPtr
-  	int listLength = LENGTH(rList);
-  	int checkLength = LENGTH(Sindices);
-  	if(listLength != checkLength){
-  		PRINTF("Number of indices copying to does not match length of list\n");
-  		return(R_NilValue);
-  	}
-	SEXP listElement;
-	NimVecType *typePtr = static_cast<NimVecType*>(R_ExternalPtrAddr(vNimPtr) );
-	nimType vecType = (*typePtr).getNimType();
-	int index;
-	for(int i = 0; i < listLength ; i++){
-		listElement = VECTOR_ELT(rList, i);
-		index = INTEGER(Sindices)[i];
-		cSetMVElementSingle(typePtr, vecType, index, listElement);
-	}
-  	return(R_NilValue);
+SEXP setMVElementFromList(SEXP vNimPtr, SEXP rList, SEXP Sindices){
+  // This function needs to get the length of rList
+  // Once it has this length, it marches down the length of rList and sets all the values of
+  // of vNimPtr
+  int listLength = LENGTH(rList);
+  int checkLength = LENGTH(Sindices);
+  if(listLength != checkLength){
+    PRINTF("Number of indices copying to does not match length of list\n");
+    return(R_NilValue);
   }
+  SEXP listElement;
+  NimVecType *typePtr = static_cast<NimVecType*>(R_ExternalPtrAddr(vNimPtr) );
+  nimType vecType = (*typePtr).getNimType();
+  int index;
+  for(int i = 0; i < listLength ; i++){
+    listElement = VECTOR_ELT(rList, i);
+    index = INTEGER(Sindices)[i];
+    cSetMVElementSingle(typePtr, vecType, index, listElement);
+  }
+  return(R_NilValue);
+}
 
 
  void cSetMVElementSingle(NimVecType* typePtr, nimType vecType,  int index, SEXP Svalue) {

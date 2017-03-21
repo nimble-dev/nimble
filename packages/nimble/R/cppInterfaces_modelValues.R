@@ -211,7 +211,7 @@ setMethod('[[<-', 'CmodelValues',
 						eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElement, ptr, as.integer(1), as.numeric(value) ))
 						return(x)
 					}
-				eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, as.numeric(value), as.integer(1:k) ))
+				eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$setMVElementFromList, ptr, value, as.integer(1:k) ))
 				return(x)
 				}
 			cmpNames = names(value)

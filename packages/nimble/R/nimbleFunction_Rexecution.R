@@ -698,9 +698,8 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
         nodes = from$getVarNames(includeLogProb = logProb) ## allNodeNames(from)
     if( inherits(from, "modelBaseClass") ){
         accessFrom = modelVariableAccessorVector(from, nodes, logProb = logProb)
-    }
-    else
-        if(inherits(from, "modelValuesBaseClass")) {
+    } else
+        if(inherits(from, "modelValuesBaseClass") || inherits(from, "CmodelValues")) {
             accessFrom = modelValuesAccessorVector(from, nodes, logProb = logProb)
             if(is.na(row))
                 stop("Error: need to supply 'row' for a modelValues copy")
@@ -713,8 +712,7 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
             accessTo = modelVariableAccessorVector(to, nodes, logProb = logProb)
         else
             accessTo = modelVariableAccessorVector(to, nodesTo, logProb = logProb)
-    }
-    else
+    } else
         if(inherits(to, "modelValuesBaseClass")) {
             if(is.null(nodesTo) ) 
                 accessTo = modelValuesAccessorVector(to, nodes, logProb = logProb)
@@ -723,8 +721,7 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
             if(is.na(rowTo))
                 rowTo = row
             ##accessTo$setRow(rowTo) ## NEW ACCESSORS
-        }
-        else stop('argument "to" in nimCopy is neither a model nor modelValues')
+        } else stop('argument "to" in nimCopy is neither a model nor modelValues')
 
     sourceToObject <- accessTo[[1]]
     sourceFromObject <- accessFrom[[1]]

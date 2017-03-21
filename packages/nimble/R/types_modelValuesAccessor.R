@@ -29,8 +29,8 @@ makeSetCodeFromAccessorVector <- function(accessorVector) {
     if(inherits(accessorVector, 'modelValuesAccessorVector'))
         setCode <- lapply(nodeNames, function(nn) {
             temp <- parse(text = nn, keep.source = FALSE)[[1]]
-            if(is.name(temp)) return(substitute(sourceToObject$B[[rowTo]] <- oneValue, list(B = temp)))
-            temp[[2]] <- substitute(sourceToObject$B[[rowTo]], list(B = temp[[2]]))
+            if(is.name(temp)) return(substitute(sourceToObject[[B]][[rowTo]] <- oneValue, list(B = as.character(temp))))
+            temp[[2]] <- substitute(sourceToObject[[B]][[rowTo]], list(B = as.character(temp[[2]])))
             substitute(A <- oneValue, list(A = temp))
         })
     else
@@ -53,8 +53,8 @@ makeGetCodeFromAccessorVector <- function(accessorVector) {
     if(inherits(accessorVector, 'modelValuesAccessorVector'))
         getCode <- lapply(nodeNames, function(nn) {
             temp <- parse(text = nn, keep.source = FALSE)[[1]]
-            if(is.name(temp)) return(substitute(sourceFromObject$B[[row]], list(B = temp)))
-            temp[[2]] <- substitute(sourceFromObject$B[[row]], list(B = temp[[2]]))
+            if(is.name(temp)) return(substitute(sourceFromObject[[B]][[row]], list(B = as.character(temp))))
+            temp[[2]] <- substitute(sourceFromObject$B[[row]], list(B = as.character(temp[[2]])))
             temp
         })
     else

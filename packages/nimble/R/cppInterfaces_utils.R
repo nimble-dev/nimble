@@ -8,30 +8,6 @@ cGetNRow <- function(cMV, compIndex = 1)
   return(nRow)
 }
 
-## cAddBlank <- function(cMV, addNum)
-## {
-##   addNum = as.integer(addNum)
-##   for(i in 1:length( cMV$componentExtptrs) )
-##     status = .Call(getNativeSymbolInfo('addBlankModelValueRows', cMV$dll), cMV$componentExtptrs[[i]], addNum)
-##   if(status == FALSE)
-##     stop("Error adding rows to ModelValues")
-## }
-
-## cCopyVariableRows <- function(cMVFrom, cMVTo, varIndex, rowsFrom = 1:cGetNRow(cMVFrom), rowsTo = 1:cGetNRow(cMVFrom), dll )
-## {
-##   if(length(varIndex) > 1)
-##     stop("cCopyVariableRows only takes on varIndex at a time")
-##   rowsFrom = as.integer(rowsFrom )
-##   rowsTo = as.integer(rowsTo )
-##   if(cMVFrom$extptrCall != cMVTo$extptrCall)
-##     stop("ModelValues are not of the same type")
-##   fromPtr <- cMVFrom$componentExtptrs[[varIndex]]
-##   toPtr <- cMVTo$componentExtptrs[[varIndex]]
-##   status = .Call(getNativeSymbolInfo('copyModelValuesElements', dll), fromPtr, toPtr, rowsFrom, rowsTo)
-##   if(status == FALSE)
-##     stop("Did not correctly copy from one ModelValues to another")
-## }
-
 newObjElementPtr = function(rPtr, name, dll){
   eval(call('.Call', nimbleUserNamespace$sessionSpecificDll$getModelObjectPtr, rPtr, name))
 }
