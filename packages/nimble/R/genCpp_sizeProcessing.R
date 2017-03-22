@@ -1,4 +1,4 @@
-assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr')
+assignmentAsFirstArgFuns <- c('nimArr_rmnorm_chol', 'nimArr_rmvt_chol', 'nimArr_rwish_chol', 'nimArr_rmulti', 'nimArr_rdirch', 'getValues', 'initialize', 'setWhich', 'setRepVectorTimes', 'assignVectorToNimArr', 'dimNimArr', 'assignNimArrToNimArr')
 setSizeNotNeededOperators <- c('setWhich', 'setRepVectorTimes')
 operatorsAllowedBeforeIndexBracketsWithoutLifting <- c('map','dim','mvAccessRow','nfVar')
 
@@ -627,10 +627,50 @@ sizemap <- function(code, symTab, typeEnv) {
 ## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
 ## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
 sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
-    asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, FALSE, FALSE, TRUE, TRUE))  ## recurse on initialValue and initialLogical only
+    useArgs <- c(FALSE, FALSE, FALSE, TRUE, TRUE)
+    if(length(code$args) > 5) useArgs <- c(useArgs, TRUE)
+    asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = useArgs)  ## recurse on initialValue and initialLogical only
     type <- code$args[[1]]    ## args[[1]]: 'type' argument
     nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
+    unpackNDim <- if(length(code$args) > 5) code$args[[6]] else FALSE
 
+    cSizeExprs <- code$args[[3]] ## these are the size expressions encompassed by collectSizes(), needed for purposes of the C++ line to be generated
+    if(!inherits(cSizeExprs, 'exprClass'))        stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (i) with sizes or dim to numeric, logical, integer, matrix or array')), call. = FALSE)
+    if(cSizeExprs$name != 'collectSizes')         stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (ii) with sizes or dim to numeric, logical, integer, matrix or array')), call. = FALSE)
+
+    if(unpackNDim) { 
+        asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
+        if(!cSizeExprs$args[[1]]$isName)
+            asserts <- c(asserts, sizeInsertIntermediate(cSizeExprs, 1, symTab, typeEnv)) ## this intermediate goes a layer down the AST, but works
+        if(length(cSizeExprs$args[[1]]$sizeExprs) == 0) { ## The argument expression evaluates to scalar
+            if(nDim == -1) {
+                nDim <- 1
+                code$args[[2]] <- 1
+            }
+            if(nDim == 1) unpackNDim <- FALSE             ## and that's ok because nDim given as 1
+        }
+        if(unpackNDim) {
+            if(length(cSizeExprs$args[[1]]$sizeExprs) != 1) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (ii) with sizes or dim to numeric, logical, integer, matrix or array')), call. = FALSE)
+            if(nDim == -1) {## code for nDim not given but dim given as expression
+                if(!is.numeric(cSizeExprs$args[[1]]$sizeExprs[[1]])) stop()
+                nDim <- cSizeExprs$args[[1]]$sizeExprs[1]
+                if(nDim < 1 | nDim > 4) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (iii) with sizes or dim to numeric, logical, integer, matrix or array')), call. = FALSE)
+                code$args[[2]] <- nDim
+            }
+            varName <- as.name(cSizeExprs$args[[1]]$name)
+            for(i in 1:nDim) {               
+                newIndexedSizeExpr <- RparseTree2ExprClasses( substitute(X[I], list(X = varName, I = i) ) )
+                setArg(cSizeExprs, i, newIndexedSizeExpr)
+            }
+        }
+    } else {
+        if(nDim == -1) {  ## nDim wasn't provided and dim was an expression, so it out to be a scalar
+            asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
+            if(length(cSizeExprs$args[[1]]$sizeExprs) != 0) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (iv) with sizes or dim to numeric, logical, integer, matrix or array.  It looks like dim argument was non-scalar but nDim was not provided.')), call. = FALSE)
+            nDim <- code$args[[2]] <- 1 
+        }
+    }
+        
     ## if it is a call to matrix() and the value argument is non-scalar,
     ## we will generate it in C++ as nimNewMatrix
     useNewMatrix <- FALSE
@@ -640,10 +680,7 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
                 useNewMatrix <- TRUE
     }
                 
-    cSizeExprs <- code$args[[3]] ## these are the size expressions encompassed by c(), needed for purposes of the C++ line to be generated
-    if(!inherits(cSizeExprs, 'exprClass'))        stop('something wrong 1')
-    if(cSizeExprs$name != 'collectSizes')                    stop('something wrong 2')
-    if(code$args[[2]] != length(cSizeExprs$args)) stop('something wrong 3')
+     if(code$args[[2]] != length(cSizeExprs$args)) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (iii) with sizes or dim to numeric, logical, integer, matrix or array')), call. = FALSE)
 
     annotationSizeExprs <- lapply(cSizeExprs$args, nimbleGeneralParseDeparse) ## and this is for purposes of the sizeExprs in the AST exprClass object
     
@@ -676,6 +713,9 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
     if(!(type %in% c('double', 'integer', 'logical')))       stop('unknown type in nimArrayGeneral')
     code$name <- 'initialize'
+    if(inherits(code$args[[4]], 'exprClass'))
+        if(code$args[[4]]$nDim > 0)
+            code$name <- 'assignNimArrToNimArr'
     code$args <- c(code$args[4:5], cSizeExprs$args)  ##  args: initialize(initializeValue, initializeLogical, sizeExpr1, sizeExpr2, etc...)
     for(i in seq_along(code$args)) {
         if(inherits(code$args[[i]], 'exprClass')) {
@@ -1151,6 +1191,7 @@ nimbleGeneralParseDeparse <- function(code) {
         code
 }
 
+
 sizeSetSize <- function(code, symTab, typeEnv) {
     #go inside nfVar call if resizing nimbleList element
     if(code$args[[1]]$name == 'nfVar'){
@@ -1159,8 +1200,7 @@ sizeSetSize <- function(code, symTab, typeEnv) {
       if(sym$type == 'symbolNimbleList'){
         sym <- sym$nlProc$symTab$getSymbolObject(code$args[[1]]$args[[2]])
       }
-    }
-    else{
+    } else {
       sym <- symTab$getSymbolObject(code$args[[1]]$name, inherits = TRUE)
       useArg1 <- FALSE
     } 
@@ -1200,6 +1240,73 @@ sizeSetSize <- function(code, symTab, typeEnv) {
     	invisible(NULL)
     }
 }
+
+## tsizeSetSize <- function(code, symTab, typeEnv) {
+##     #go inside nfVar call if resizing nimbleList element
+##     if(code$args[[1]]$name == 'nfVar'){
+##       useArg1 <- TRUE
+##       sym <- symTab$getSymbolObject(code$args[[1]]$args[[1]]$name)
+##       if(sym$type == 'symbolNimbleList'){
+##         sym <- sym$nlProc$symTab$getSymbolObject(code$args[[1]]$args[[2]])
+##       }
+##     } else {
+##       sym <- symTab$getSymbolObject(code$args[[1]]$name, inherits = TRUE)
+##       useArg1 <- FALSE
+##     } 
+
+##     if(!inherits(sym, 'symbolNumericList')) {
+##         if(sym$nDim == 0) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Resizing a scalar does not make sense.'), call. = FALSE)
+##         expectedNDim <- sym$nDim
+##         providedNDim <- length(code$args)-1
+##         asserts <- recurseSetSizes(code, symTab, typeEnv, c(useArg1, rep(TRUE, providedNDim) ) )
+##         firstSizeExpr <- code$args[[2]]
+##         handleSizeAsVector <- expectedNDim != providedNDim
+##         if(expectedNDim == 1) {
+##             if(handleSizeAsVector)
+##                 stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided for a vector.'), call. = FALSE)
+##             if(inherits(firstSizeExpr, 'exprClass'))
+##                 if(firstSizeExpr$nDim > 0)
+##                     handleSizeAsVector <- TRUE
+##         }
+##         if(handleSizeAsVector) {
+##             if(!inherits(firstSizeExpr, 'exprClass'))
+##                 stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Sizes provided in this case should be a vector or multiple scalar arguments (i).'), call. = FALSE)
+##             if(!firstSizeExpr$nDim == 1)
+##                 stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Sizes provided in this case should be a vector or multiple scalar arguments (ii).'), call. = FALSE)
+##             if(!firstSizeExpr$isName) {
+##                 asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
+##             }
+##             code$name <- 'setSizeNimArrToNimArr'
+##         }
+
+        
+##         ## if(inherits(firstSizeExpr, 'exprClass')) {
+##         ##     if(firstSizeExpr$name == 'nimC') { ## handle syntax of resize(Z, c(3, dim(A)[1]))
+##         ##         if(length(firstSizeExpr$args) != sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
+##         ##         asserts <- recurseSetSizes(firstSizeExpr, symTab, typeEnv) ## may set intermediates if needed
+##         ##         for(i in 1:length(firstSizeExpr$args)) {
+##         ##             code$args[[i+1]] <- firstSizeExpr$args[[i]]
+##         ##             if(inherits(firstSizeExpr$args[[i]], 'exprClass')) {
+##         ##                 firstSizeExpr$args[[i]]$caller <- code
+##         ##                 firstSizeExpr$args[[i]]$callerArgID <- i+1
+##         ##             }
+##         ##         }
+##         ##         return(if(length(asserts)==0) NULL else asserts)
+##         ##     }
+##         ## }
+##         else {
+##             if(length(code$args) != 1 + sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
+##         }
+        
+##         return(if(length(asserts)==0) NULL else asserts)
+##     }
+##     if(inherits(sym, 'symbolNumericList') ) { ## these are deprecated
+##     	if(length(code$args) != 2 + sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
+##         ## no longer modify typeEnv
+##         ##    	assign(code$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(code$args[-1], nimbleGeneralParseDeparse), type = sym$type), envir = typeEnv)
+##     	invisible(NULL)
+##     }
+## }
 
 ## This was redundant and we should eventually be able to remove it
 sizeResizeNoPtr <- function(code, symTab, typeEnv){

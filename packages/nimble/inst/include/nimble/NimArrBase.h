@@ -57,6 +57,7 @@ class NimArrBase: public NimArrType {
   T *v;
   //vector<T> *vPtr;
   T **vPtr;
+  std::size_t element_size() {return(sizeof(T));}
   void setVptr() {vPtr = &v;}
   //  vector<T> *getVptr() const {return(vPtr);}
   T **getVptr() const{return(vPtr);}

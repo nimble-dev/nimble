@@ -1046,7 +1046,8 @@ nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'doub
 #' @aliases array
 #' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{matrix}}
 #' @export
-nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
+nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double', nDim) {
+    if(!missing(nDim)) dim <- dim[1:nDim]
     fillValue <- makeFillValue(value, type, init)
     base::array(fillValue, dim)
 }

@@ -216,10 +216,23 @@ nimArrayGeneralHandler <- function(code, symTab) {
                } else {
                    ## dim argument is a single number or expression
                    sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[2], caller=code, callerArgID=3)
-                   newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
+                   if(!inherits(code$args[[2]], 'exprClass')) {
+                       ## a constant was given
+                       newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
+                   } else {
+                       ## an expression was given: either find nDim argument or use nDim = -1 to flag it for resolution during size processing
+                       nDim <- if(!is.null(code$args[['nDim']])) code$args[['nDim']] else -1
+                       newArgs <- list(code$args[[4]], -1, sizeExprs, code$args[[1]], code$args[[3]])
+                   }
+               }
+               if(!is.null(code$args[['nDim']])) {
+                   nDim <- code$args[['nDim']]
+                   if(newArgs[[2]] != -1) if(nDim != newArgs[[2]]) warning("Possible nDim mismatch")
+                   newArgs[[2]] <- nDim
+                   newArgs[[6]] <- TRUE
                }
            },
-           stop('should never get here')
+           stop('There is some problem processing a call to numeric, integer, logical, matrix or array.')
            )
     code$name <- 'nimArrayGeneral'
     code$args <- newArgs
@@ -238,7 +251,9 @@ nimArrayGeneralHandler <- function(code, symTab) {
         }
     }
     if(!(code$args[[1]] %in% c('double', 'integer', 'logical'))) stop('unknown type in nimArrayGeneral')
-    if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
+    if(code$args[[2]] != -1)
+        if(length(newArgs) < 6)
+            if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
 }
 
 
