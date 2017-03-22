@@ -10,6 +10,7 @@ nimKeyWords <- list(copy = 'nimCopy',
                     dim = 'nimDim',
                     stop = 'nimStop',
                     numeric = 'nimNumeric',
+                    logical = 'nimLogical',
                     integer = 'nimInteger',
                     matrix = 'nimMatrix',
                     array = 'nimArray',
@@ -84,6 +85,7 @@ nfMethodRC <-
                         }
                         ## a very patchy solution: switch nimInteger back to integer
                         if(as.character(returnTypeDeclaration[[1]]) == 'nimInteger') returnTypeDeclaration[[1]] <- as.name('integer')
+                        if(as.character(returnTypeDeclaration[[1]]) == 'nimLogical') returnTypeDeclaration[[1]] <- as.name('logical')
                         returnType <<- returnTypeDeclaration
                     },
                     generateFunctionObject = function(keep.nfMethodRC = FALSE) {
