@@ -71,7 +71,7 @@ returnTypeCodes <- list(
     promoteNoLogical = 5L)
 
 returnTypeHandling <- with(returnTypeCodes,
-                           c(
+                           c(list('(' = promote),
                                makeCallList(binaryMidLogicalOperators, logical),
                                makeCallList(binaryMidDoubleOperators, double),
                                makeCallList(binaryMidPromoteNoLogicalOperators, promoteNoLogical),

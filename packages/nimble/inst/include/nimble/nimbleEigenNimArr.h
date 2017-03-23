@@ -93,6 +93,136 @@ template<typename Derived>
   }
 }
 
+
+/* template<typename NimArrOutput, typename NimArrInput> */
+/*   void setSizeNimArrToNimArr(NimArrOutput &target, NimArrInput &input, bool copyValues = true, bool fillZeros = true ) { */
+/*   if(target.isMap()) { */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output); */
+/*     return; */
+/*   }  */
+/*   if(input.numDims() != 1) { */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with input that is not 1-dimensional.\n"; nimble_print_to_R( _nimble_global_output); */
+/*   } */
+/*   if(input.size() != target.numDims()) { */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with wrong number of dimensions provided.\n"; nimble_print_to_R( _nimble_global_output); */
+/*   } */
+/*   switch(target.numDims()) { */
+/*   case 1: */
+/*     target.setSize(input[0], copyValues, fillZeros); */
+/*     break; */
+/*   case 2: */
+/*     target.setSize(input[0], input[1], copyValues, fillZeros); */
+/*     break; */
+/*   case 3: */
+/*     target.setSize(input[0], input[1], input[2], copyValues, fillZeros); */
+/*     break; */
+/*   case 4: */
+/*     target.setSize(input[0], input[1], input[2], input[3], copyValues, fillZeros); */
+/*     break; */
+/*   default: */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with invalid number of dimensions.\n"; nimble_print_to_R( _nimble_global_output); */
+/*     break; */
+/*   } */
+
+/*   return; */
+/* } */
+
+template<typename NimArrOutput, typename NimArrInput>
+  void copyNimArrToNimArrInternal(NimArrOutput &output, NimArrInput &input, int totSize) {
+  int sizeToCopy;
+  if(input.size() < totSize) {
+      _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output);
+      sizeToCopy = input.size();
+  } else {
+    if(input.size() > totSize) {
+      _nimble_global_output << "Warning from C++: too many initialization values.\n"; nimble_print_to_R( _nimble_global_output);
+    }
+    sizeToCopy = totSize;
+  }
+  if(input.isMap() | (output.getNimType() != input.getNimType())) { 
+    for(int i = 0; i < sizeToCopy; i++) output.valueNoMap(i) = input[i];
+    if(sizeToCopy < totSize) {
+      for(int i = sizeToCopy; i < totSize; i++) output.valueNoMap(i) = 0;
+    }
+  } else {
+    memcpy(output.getPtr(), input.getPtr(), sizeToCopy * output.element_size() );
+    if(sizeToCopy < totSize) {
+      std::fill(output.getPtr() + sizeToCopy, output.getPtr() + totSize, 0);
+    }
+  }
+  return;
+}
+
+template<typename NimArrOutput, typename NimArrInput>
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1) {
+  if(!init) return;
+  if(output.isMap()) {
+    _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
+  } else {
+    output.setSize(size1, false, false); // would need same scalar types before trying memcpy.
+    copyNimArrToNimArrInternal(output, input, size1);
+  }
+  /*   if(input.size() < size1) { */
+  /*     _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output); */
+  /*     sizeToCopy = input.size(); */
+  /*   } else { */
+  /*     if(input.size() > size1) { */
+  /* 	_nimble_global_output << "Warning from C++: too many initialization values.\n"; nimble_print_to_R( _nimble_global_output); */
+  /*     } */
+  /*     sizeToCopy = size1; */
+  /*   } */
+  /*   if(input.isMap() | (output.getNimType() != input.getNimType())) */
+  /*     for(int i = 0; i < size1; i++) output.valueNoMap(i) = input[i]; */
+  /*   else { */
+  /*     memcpy(output.getPtr(), input.getPtr(), sizeToCopy * output.element_size() ); */
+  /*     if(sizeToCopy < size1) { */
+  /* 	std::fill(output.getPtr() + sizeToCopy, output.getPtr() + size1, 0); */
+  /*     } */
+  /*   } */
+  /* } */
+  return;
+}
+
+template<typename NimArrOutput, typename NimArrInput>
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2) {
+  if(!init) return;
+  if(output.isMap()) {
+    _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
+  } else {
+    output.setSize(size1, size2, false, false); // would need same scalar types before trying memcpy.
+    int totsize = size1 * size2;
+    copyNimArrToNimArrInternal(output, input, totsize);
+  }
+  return;
+}
+
+template<typename NimArrOutput, typename NimArrInput>
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2, int size3) {
+  if(!init) return;
+  if(output.isMap()) {
+    _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
+  } else {
+    output.setSize(size1, size2, size3, false, false); // would need same scalar types before trying memcpy.
+    int totsize = size1 * size2 * size3;
+    copyNimArrToNimArrInternal(output, input, totsize);
+  }
+  return;
+}
+
+
+template<typename NimArrOutput, typename NimArrInput>
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2, int size3, int size4) {
+  if(!init) return;
+  if(output.isMap()) {
+    _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
+  } else {
+    output.setSize(size1, size2, size3, size4, false, false); // would need same scalar types before trying memcpy.
+    int totsize = size1 * size2 * size3 * size4;
+    copyNimArrToNimArrInternal(output, input, totsize);
+  }
+  return;
+}
+
 template<typename NimArrOutput, typename VectorInput>
 void assignVectorToNimArr(NimArrOutput &output, const VectorInput &input) {
   if(output.isMap()) {

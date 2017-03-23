@@ -943,9 +943,8 @@ nimCat <- function(...) {
 #' @export
 nimNumeric <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'double', init)
-    rep(fillValue, length)
+    makeReturnVector(fillValue, length)
 }
-
 
 #' Creates an integer vector for use in NIMBLE DSL functions
 #'
@@ -966,9 +965,30 @@ nimNumeric <- function(length = 0, value = 0, init = TRUE) {
 #' @export
 nimInteger <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'integer', init)
-    rep(fillValue, length)
+    makeReturnVector(fillValue, length)
 }
 
+#' Creates an logical vector for use in NIMBLE DSL functions
+#'
+#' In a \code{nimbleFunction}, \code{logical} is identical to \code{nimLogical}
+#'
+#' See the User Manual for usage examples.
+#'
+#' @param length the length of the vector (default = 0)
+#' @param value the initial value for each element of the vector (default = 0L).  Only used if \code{init} is \code{TRUE}.
+#' @param init logical, whether to initialize elements of the vector (default = TRUE).
+#'
+#' @details
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{logical} is a synonym for \code{nimLogical}.  When used with only the \code{length} argument, this behaves similarly to R's \code{logical} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
+#' 
+#' @author Daniel Turek and Chris Paciorek
+#' @aliases logical
+#' @seealso \code{\link{numeric}} \code{\link{matrix}} \code{\link{array}}
+#' @export
+nimLogical <- function(length = 0, value = 0, init = TRUE) {
+    fillValue <- makeFillValue(value, 'logical', init)
+    makeReturnVector(fillValue, length)
+}
 
 #' Creates a matrix object for use in NIMBLE DSL functions
 #' 
@@ -980,7 +1000,7 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 #' @param nrow the number of rows in the matrix (default = 1)
 #' @param ncol the number of columns in the matrix (default = 1)
 #' @param init logical, whether to initialize elements of the matrix (default = TRUE)
-#' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
+#' @param type character representing the data type, i.e. 'double', 'integer', or 'logical' (default = 'double')
 #'
 #' @details
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{matrix} is a synonym for \code{nimMatrix}.  When used with only the first three arguments, this behaves similarly to R's \code{matrix} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
@@ -1016,7 +1036,7 @@ nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'doub
 #' @param value the initial value for each element of the array (default = 0)
 #' @param dim a vector specifying the dimensionality and sizes of the array, provided as c(size1, ...) (default = c(1, 1))
 #' @param init logical, whether to initialize elements of the matrix (default = TRUE)
-#' @param type character representing the data type, i.e. 'double' or 'integer' (default = 'double')
+#' @param type character representing the data type, i.e. 'double', 'integer', or 'logical (default = 'double')
 #'
 #' @details
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{array} is a synonym for \code{nimArray}.  When used with only the first two arguments, this behaves similarly to R's \code{array} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
@@ -1025,7 +1045,8 @@ nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'doub
 #' @aliases array
 #' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{matrix}}
 #' @export
-nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double') {
+nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double', nDim) {
+    if(!missing(nDim)) dim <- dim[1:nDim]
     fillValue <- makeFillValue(value, type, init)
     base::array(fillValue, dim)
 }
@@ -1035,9 +1056,27 @@ makeFillValue <- function(value, type, init) {
     fillValueTyped <- switch(type,
                              double = as.numeric(fillValue),
                              integer = as.integer(fillValue),
-                             ##logical = as.logical(fillValue),
+                             logical = as.logical(fillValue),
                              stop('unknown type argument'))
     return(fillValueTyped)
+}
+
+makeReturnVector <- function(fillValue, length) {
+    if(length(fillValue) == 1)
+        rep(fillValue, length)
+    else {
+        if(length(fillValue) != length) {
+            if(length(fillValue) < length) {
+                warning(paste0("Not enough values provided for vector of length ",length, ".")) 
+                c(fillValue, rep(0, length-length(fillValue)))
+            } else {
+                warning(paste0("Too many values provided for vector of length ",length, ".")) 
+                fillValue[1:length]
+            }
+        } else {
+            fillValue
+        }
+    }
 }
 
 

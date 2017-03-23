@@ -21,6 +21,7 @@ system.in.dir <- function(cmd, dir = '.') {
 gen_runFunCore <- function(input) {
     runFun <- function() {}
     formalsList <- input$args
+    if(is.null(formalsList)) formalsList <- list()
     if(is.null(names(formalsList)))
         if(length(formalsList) > 0)
             names(formalsList) <- paste0('arg', seq_along(input$args))
@@ -33,11 +34,30 @@ gen_runFunCore <- function(input) {
     return(runFun)
 }
 
+## Indexes the names of a list of input lists for test_coreRfeature
+indexNames <- function(x) {
+    i <- 1
+    lapply(x, function(z) {z$name <- paste(i, z$name); i <<- i + 1; z})
+}
+
 test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot like test_math but a bit more flexible
   if(verbose) cat("### Testing", input$name, "###\n")
   runFun <- gen_runFunCore(input)
   nfR <- nimbleFunction(run = runFun)
-  nfC <- compileNimble(nfR, dirName = dirName)
+  nfC <- try(compileNimble(nfR, dirName = dirName))
+  compilerFailed <- inherits(nfC, 'try-error')
+  expectCompilerFailed <- FALSE
+  if(!is.null(input[['safeCompilerFail']]))
+      if(isTRUE(input[['safeCompilerFail']]))
+          expectCompilerFailed <- TRUE
+
+  test_that(paste0("Compiler worked or failed as expected: ", input$name),
+            expect_equal(compilerFailed, expectCompilerFailed))
+
+  if(compilerFailed) {
+      return();
+  }
+  
   nArgs <- length(input$args)
   evalEnv <- new.env()
   eval(input$setArgVals, envir = evalEnv)
@@ -91,7 +111,14 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
       out_nfC = nfC()
   }
   out <- savedOutputs$out
+  ## clearn any attributes except dim
+  dimOut <- attr(out, 'dim')
+  dimOutR <- attr(out_nfR, 'dim')
+  dimOutC <- attr(out_nfC, 'dim')
   attributes(out) <- attributes(out_nfR) <- attributes(out_nfC) <- NULL
+  attr(out, 'dim') <- dimOut
+  attr(out_nfR, 'dim') <- dimOutR
+  attr(out_nfC, 'dim') <- dimOutC
   checkEqual <- input[['checkEqual']]
   if(is.null(checkEqual)) checkEqual <- FALSE
   if(!checkEqual) {

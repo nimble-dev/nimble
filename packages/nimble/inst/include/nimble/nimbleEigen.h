@@ -805,7 +805,7 @@ struct nimble_eigen_coeff_mod_impl<true, result_type, eigenType, Index> {
 template<typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_mod_impl<false, result_type, eigenType, Index> {
   static result_type getCoeff(const eigenType &Arg, Index i, unsigned int size) {
-    std::div_t divRes = div(i % size, Arg.rows());
+    std::ldiv_t divRes = div(i % size, Arg.rows());
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }  
 };

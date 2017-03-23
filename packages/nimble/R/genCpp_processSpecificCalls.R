@@ -39,7 +39,7 @@ specificCallHandlers = c(
          min = 'minMaxHandler',
          max = 'minMaxHandler'),
     makeCallList(names(specificCallReplacements), 'replacementHandler'),
-    makeCallList(c('nimNumeric', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
+    makeCallList(c('nimNumeric', 'nimLogical', 'nimInteger', 'nimMatrix', 'nimArray'), 'nimArrayGeneralHandler' ),
     ##makeCallList(c(distribution_rFuns, 'rt', 'rexp'), 'rFunHandler'),  # exp and t allowed in DSL because in R and Rmath, but t_nonstandard and exp_nimble are the Nimble distributions for nodeFunctions
     makeCallList(c('dmnorm_chol', 'dmvt_chol', 'dwish_chol', 'dmulti', 'dcat', 'dinterval', 'ddirch'), 'dmFunHandler')
          )
@@ -193,6 +193,12 @@ nimArrayGeneralHandler <- function(code, symTab) {
                sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
                newArgs <- list('integer', 1, sizeExprs, code$args[[2]], code$args[[3]])
            },
+           ##nimLogical(length = 0, value = 0, init = TRUE)
+           nimLogical = {
+##               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
+               newArgs <- list('logical', 1, sizeExprs, code$args[[2]], code$args[[3]])
+           },
            ##nimVector(type = 'double', length = 0, value = 0, init = TRUE)
            ##nimVector = {},
            ##nimMatrix(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double')
@@ -210,10 +216,23 @@ nimArrayGeneralHandler <- function(code, symTab) {
                } else {
                    ## dim argument is a single number or expression
                    sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[2], caller=code, callerArgID=3)
-                   newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
+                   if(!inherits(code$args[[2]], 'exprClass')) {
+                       ## a constant was given
+                       newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
+                   } else {
+                       ## an expression was given: either find nDim argument or use nDim = -1 to flag it for resolution during size processing
+                       nDim <- if(!is.null(code$args[['nDim']])) code$args[['nDim']] else -1
+                       newArgs <- list(code$args[[4]], -1, sizeExprs, code$args[[1]], code$args[[3]])
+                   }
+               }
+               if(!is.null(code$args[['nDim']])) {
+                   nDim <- code$args[['nDim']]
+                   if(newArgs[[2]] != -1) if(nDim != newArgs[[2]]) warning("Possible nDim mismatch")
+                   newArgs[[2]] <- nDim
+                   newArgs[[6]] <- TRUE
                }
            },
-           stop('should never get here')
+           stop('There is some problem processing a call to numeric, integer, logical, matrix or array.')
            )
     code$name <- 'nimArrayGeneral'
     code$args <- newArgs
@@ -231,8 +250,10 @@ nimArrayGeneralHandler <- function(code, symTab) {
             code$args[[3]]$args[[i]]$caller <- code$args[[3]]
         }
     }
-    if(!(code$args[[1]] %in% c('double', 'integer'))) stop('unknown type in nimArrayGeneral')
-    if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
+    if(!(code$args[[1]] %in% c('double', 'integer', 'logical'))) stop('unknown type in nimArrayGeneral')
+    if(code$args[[2]] != -1)
+        if(length(newArgs) < 6)
+            if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
 }
 
 

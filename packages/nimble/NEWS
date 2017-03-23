@@ -1,26 +1,38 @@
-                           CHANGES IN VERSION 0.6-4 (February 2017)
+                           CHANGES IN VERSION 0.6-4 (March 2017)
 
 USER LEVEL CHANGES
 
+-- Versions of R functions c(), seq(), `:`, rep(), diag(), diag()<-, and which() are now allowed in nimbleFunction run code and in BUGS code.
+
+-- Functions numeric(), integer(), logical(), matrix(), and array() can now take non-scalar value arguments and will populate the newly created object from using the contents of value sequentially.
+
+-- Distribution functions (d, p, r and q) now follow R's recycling rule, allowing non-scalar arguments and return values.  Unlike R, return values will never have dimension > 1.  Hence matrix arguments will result in a vector return value.
+
+-- Logical vectors and operators are now supported.
+
+-- Indexing of vectors, matrices and arrays can now use arbitrary numeric (with integer contents) and logical vectors.
+
+-- dim() now returns an integer vector.  It is not limited to uses like dim(x)[i].
+
 -- Updates to MCMC configuration API.  Member methods conf$addMonitors() and conf$addMonitors2() now accept argument ..., allowing multiple monitors to be added using the syntax conf$addMonitors('x', 'y', 'z').  Introduced a new member method, conf$printMonitors(), which nicely prints the current MCMC monitors.  This takes the place of the former method conf$getMonitors().  Now, conf$getMonitors() returns a character vector of the MCMC monitors, and the new method conf$getMonitors2() returns a character vector of the MCMC monitors2 field.
 
--- Indexing of values() now allowed in the DSL, so syntax such as `x <- model$values(nodes[i])` or `values(model, nodes[i]) <- x` is supported.
+-- Indexing of nodes as an argument to values() now allowed, so syntax such as `x <- model$values(nodes[i])` or `values(model, nodes[i]) <- x` is supported.
 
 -- New sampling algorithm (RW_dirichlet) added to MCMC engine, for sampling non-conjugate Dirichlet distributions.
 
--- Fixed bug preventing use of round() in DSL and BUGS code.
-
 -- Added checking at time of model definition to catch errors where implied dimensions of a variable are different in different BUGS declarations.
 
--- nimbleLists can now be created and used in nimbleFunctions.  nimbleList definitions can be created in R's global environment, or in setup code.  Instances of nimbleLists can be created in R's global environment, in setup code, or in run code.  nimbleLists can contain other nimbleLists.  nimbleLists can be used as arguments to runtime nimbleFunctions, and returned from such nimbleFunctions.  
+-- nimbleLists can now be created and used in nimbleFunctions.  nimbleList definitions can be created in R's global environment, or in setup code.  Instances of nimbleLists can be created in R's global environment, in setup code, or in run code.  nimbleLists can contain other nimbleLists.  nimbleLists can be used as arguments to nimbleFunction run and other methods, and returned from such nimbleFunctions.  
 
--- nimEigen() and nimSvd() now work to conduct eigendecompositions and singular value decompositions on matrices in nimble.  If called from R, nimEigen() and nimSvd() will execute precompiled c++ code that conducts these decompositions using the eigen c++ library.  Both decompositions return nimbleList objects.  nimEigen() and nimSvd() can also be used in BUGS code.
+-- eigen() and svd() now work to conduct eigendecompositions and singular value decompositions on matrices in nimble.  These are synonyms for nimEigen and nimSvd, respectively.  If called from R, nimEigen() and nimSvd() will execute precompiled c++ code that conducts these decompositions using the eigen c++ library.  Both decompositions return nimbleList objects.  nimEigen() and nimSvd() can also be used in BUGS code.
 
--- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework, specifying "AF_slice" as the sampler type.  
+-- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework by specifying "AF_slice" as the sampler type.  
 
 -- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
 
 BUG FIXES
+
+-- Fixed bug preventing use of round() in nimbleFunction and BUGS code.
 
 -- Fixed bug in RW_PF sampler where dependencies were not being updated after proposal value was inserted into target node
 
