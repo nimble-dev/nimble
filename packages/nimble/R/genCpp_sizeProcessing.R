@@ -624,12 +624,17 @@ sizemap <- function(code, symTab, typeEnv) {
 }
 
 ## size handler for nimArrayGeneral()
-## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
-## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
+## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical, unpackNDim(optional))
+## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       ,       arg6     )
 sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     useArgs <- c(FALSE, FALSE, FALSE, TRUE, TRUE)
     if(length(code$args) > 5) useArgs <- c(useArgs, TRUE)
     asserts <- recurseSetSizes(code, symTab, typeEnv, useArgs = useArgs)  ## recurse on initialValue and initialLogical only
+
+    ## some checking
+    if(inherits(code$args[[5]], 'exprClass'))
+        if(!(code$args[[5]]$nDim == 0)) stop(exprClassProcessingErrorMsg(code, paste0('init argument to numeric, logical, integer, matrix or array must be scalar')), call. = FALSE)
+    
     type <- code$args[[1]]    ## args[[1]]: 'type' argument
     nDim <- code$args[[2]]    ## args[[2]]: 'nDim' argument
     unpackNDim <- if(length(code$args) > 5) code$args[[6]] else FALSE
@@ -664,11 +669,18 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
             }
         }
     } else {
-        if(nDim == -1) {  ## nDim wasn't provided and dim was an expression, so it out to be a scalar
-            asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
-            if(length(cSizeExprs$args[[1]]$sizeExprs) != 0) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (iv) with sizes or dim to numeric, logical, integer, matrix or array.  It looks like dim argument was non-scalar but nDim was not provided.')), call. = FALSE)
+        asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
+        nonScalarWhereNeeded <- FALSE
+            if(inherits(cSizeExprs$args[[1]], 'exprClass'))
+                if(cSizeExprs$args[[1]]$nDim != 0)
+                    nonScalarWhereNeeded <- TRUE
+        if(nDim == -1) {  ## nDim wasn't provided (to nimArray) and dim was an expression, so it out to be a scalar
+            if(nonScalarWhereNeeded) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (iv) with sizes or dim to numeric, logical, integer, matrix or array.  It looks like dim argument was non-scalar but nDim was not provided.')), call. = FALSE)
             nDim <- code$args[[2]] <- 1 
+        } else { ## call was from numeric, integer or logical
+            if(nonScalarWhereNeeded) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (v) with sizes or dim to numeric, logical, integer, matrix or array.  It looks like length argument was non-scalar.')), call. = FALSE)
         }
+        
     }
         
     ## if it is a call to matrix() and the value argument is non-scalar,
@@ -712,7 +724,7 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
     
     asserts <- c(asserts, recurseSetSizes(cSizeExprs, symTab, typeEnv))
     if(!(type %in% c('double', 'integer', 'logical')))       stop('unknown type in nimArrayGeneral')
-    code$name <- 'initialize'
+    code$name <- 'initialize' ## may be replaced below if useNewMatrix
     if(inherits(code$args[[4]], 'exprClass'))
         if(code$args[[4]]$nDim > 0)
             code$name <- 'assignNimArrToNimArr'
@@ -745,6 +757,11 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
         if(code$type == 'logical') suffix <- 'B'
         code$name <- paste0("nimNewMatrix", suffix)
         code$toEigenize <- "yes"
+    } else {
+        ## otherwise, lift values arg if necessary
+        if(inherits(code$args[[1]], 'exprClass')) ## was re-ordered here
+            if(!(code$args[[1]]$isName))
+                asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
     
     return(asserts)

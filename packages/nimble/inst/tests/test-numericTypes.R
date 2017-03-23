@@ -25,10 +25,6 @@ makeUnaryCwiseTypeTest <- function(name, funName, type, nDim) {
          outputType = substitute(OUTPUTTYPE(NDIM), list(OUTPUTTYPE = as.name(outputType), NDIM = nDim)))
 }
 
-indexNames <- function(x) {
-    i <- 1
-    lapply(x, function(z) {z$name <- paste(i, z$name); i <<- i + 1; z})
-}
 
 unaryCwiseTypeTests <- unlist(recursive = FALSE,
                               x= lapply(c('-', nimble:::unaryOperators),

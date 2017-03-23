@@ -943,9 +943,8 @@ nimCat <- function(...) {
 #' @export
 nimNumeric <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'double', init)
-    rep(fillValue, length)
+    makeReturnVector(fillValue, length)
 }
-
 
 #' Creates an integer vector for use in NIMBLE DSL functions
 #'
@@ -966,7 +965,7 @@ nimNumeric <- function(length = 0, value = 0, init = TRUE) {
 #' @export
 nimInteger <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'integer', init)
-    rep(fillValue, length)
+    makeReturnVector(fillValue, length)
 }
 
 #' Creates an logical vector for use in NIMBLE DSL functions
@@ -988,7 +987,7 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 #' @export
 nimLogical <- function(length = 0, value = 0, init = TRUE) {
     fillValue <- makeFillValue(value, 'logical', init)
-    rep(fillValue, length)
+    makeReturnVector(fillValue, length)
 }
 
 #' Creates a matrix object for use in NIMBLE DSL functions
@@ -1060,6 +1059,24 @@ makeFillValue <- function(value, type, init) {
                              logical = as.logical(fillValue),
                              stop('unknown type argument'))
     return(fillValueTyped)
+}
+
+makeReturnVector <- function(fillValue, length) {
+    if(length(fillValue) == 1)
+        rep(fillValue, length)
+    else {
+        if(length(fillValue) != length) {
+            if(length(fillValue) < length) {
+                warning(paste0("Not enough values provided for vector of length ",length, ".")) 
+                c(fillValue, rep(0, length-length(fillValue)))
+            } else {
+                warning(paste0("Too many values provided for vector of length ",length, ".")) 
+                fillValue[1:length]
+            }
+        } else {
+            fillValue
+        }
+    }
 }
 
 
