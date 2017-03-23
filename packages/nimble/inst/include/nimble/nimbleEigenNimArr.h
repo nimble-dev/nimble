@@ -94,38 +94,38 @@ template<typename Derived>
 }
 
 
-template<typename NimArrOutput, typename NimArrInput>
-  void setSizeNimArrToNimArr(NimArrOutput &target, NimArrInput &input, copyValues = true, bool fillZeros = true ) {
-  if(target.isMap()) {
-    _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
-    return;
-  } 
-  if(input.numDims() != 1) {
-    _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with input that is not 1-dimensional.\n"; nimble_print_to_R( _nimble_global_output);
-  }
-  if(input.size() != target.numDims()) {
-    _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with wrong number of dimensions provided.\n"; nimble_print_to_R( _nimble_global_output);
-  }
-  switch(target.numDims()) {
-  case 1:
-    target.setSize(input[0], copyValues, fillZeros);
-    break;
-  case 2:
-    target.setSize(input[0], input[1], copyValues, fillZeros);
-    break;
-  case 3:
-    target.setSize(input[0], input[1], input[2], copyValues, fillZeros);
-    break;
-  case 4:
-    target.setSize(input[0], input[1], input[2], input[3], copyValues, fillZeros);
-    break;
-  default:
-    _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with invalid number of dimensions.\n"; nimble_print_to_R( _nimble_global_output);
-    break;
-  }
+/* template<typename NimArrOutput, typename NimArrInput> */
+/*   void setSizeNimArrToNimArr(NimArrOutput &target, NimArrInput &input, bool copyValues = true, bool fillZeros = true ) { */
+/*   if(target.isMap()) { */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output); */
+/*     return; */
+/*   }  */
+/*   if(input.numDims() != 1) { */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with input that is not 1-dimensional.\n"; nimble_print_to_R( _nimble_global_output); */
+/*   } */
+/*   if(input.size() != target.numDims()) { */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with wrong number of dimensions provided.\n"; nimble_print_to_R( _nimble_global_output); */
+/*   } */
+/*   switch(target.numDims()) { */
+/*   case 1: */
+/*     target.setSize(input[0], copyValues, fillZeros); */
+/*     break; */
+/*   case 2: */
+/*     target.setSize(input[0], input[1], copyValues, fillZeros); */
+/*     break; */
+/*   case 3: */
+/*     target.setSize(input[0], input[1], input[2], copyValues, fillZeros); */
+/*     break; */
+/*   case 4: */
+/*     target.setSize(input[0], input[1], input[2], input[3], copyValues, fillZeros); */
+/*     break; */
+/*   default: */
+/*     _nimble_global_output << "Error from C++: using setSizeNimArrToNimArr with invalid number of dimensions.\n"; nimble_print_to_R( _nimble_global_output); */
+/*     break; */
+/*   } */
 
-  return;
-}
+/*   return; */
+/* } */
 
 
 template<typename NimArrOutput, typename NimArrInput>
