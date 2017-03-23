@@ -39,14 +39,14 @@ nfMethodRC <-
                     neededRCfuns = 'ANY'		#list
                 ),
                 methods = list(
-                    initialize = function(method, name, check = FALSE, methodNames = NULL) {
+                    initialize = function(method, name, check = FALSE, methodNames = NULL, setupVarNames = NULL) {
                         if(!missing(name)) uniqueName <<- name ## only needed for a pure RC function. Not needed for a nimbleFunction method
                         neededRCfuns <<- list()	
                         argInfo <<- formals(method)
                         code <<- nf_changeNimKeywords(body(method))  ## changes all nimble keywords, e.g. 'print' to 'nimPrint'; see 'nimKeyWords' list at bottom
                         if(code[[1]] != '{')  code <<- substitute({CODE}, list(CODE=code))
                         if(check && "package:nimble" %in% search()) # don't check nimble package nimbleFunctions
-                            nf_checkDSLcode(code, methodNames)
+                            nf_checkDSLcode(code, methodNames, setupVarNames)
                         generateArgs()
                         generateTemplate() ## used for argument matching
                         removeAndSetReturnType()
@@ -102,34 +102,44 @@ nfMethodRC <-
 
 
 
-nf_checkDSLcode <- function(code, methodNames) { 
-    dslCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords, methodNames)
+nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
+    validCalls <- c(names(sizeCalls), otherDSLcalls, names(specificCallReplacements), nimKeyWords, methodNames, setupVarNames)
     calls <- setdiff(all.names(code), all.vars(code))
-    # find cases of x$y() and x[]$y and x[[]]$y (this also unnecessarily finds x$y)
+    
+    # find cases of x$y() and x[]$y() and x[[]]$y() (this also unnecessarily finds x$y, x[]$y, x[[]]$y)
+    # this relies on all.names returning symbols from parse tree in particular order
     names <- all.names(code)
+    dollarsLhs <- dollarsRhs <- NULL
     dollars <- which(names == "$")
     if(length(dollars)) {
-        lhs <- dollars+1
-        while(sum(names[lhs] %in% c('[', '[[')))
-            lhs[names[lhs] %in% c('[', '[[')] <- lhs[names[lhs] %in% c('[', '[[')] + 1
-        lhs <- lhs[lhs <= length(names)]
-        otherVars <- unique(names[lhs])
-    } else otherVars <- NULL
-    
-    nonDSLcalls <- calls[!(calls %in% c(dslCalls, otherVars))]
+        dollarsLhs <- dollars+1
+        dollarsRhs <- dollars+2
+        while(sum(names[dollarsLhs] %in% c('[', '[['))) {
+            # bracket appears between $ and the lhs,rhs of the $
+            dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] + 1
+            dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1
+        }
+        dollarsLhs <- unique(names[dollarsLhs[dollarsLhs <= length(names)]])
+        dollarsRhs <- unique(names[dollarsRhs[dollarsRhs <= length(names)]])
+    } 
+
+    # don't check RHS of $ to ensure it is a valid nf method because no current way to easily find the methods of nf's defined in setup code
+    nonDSLcalls <- calls[!(calls %in% c(validCalls, dollarsRhs))]
     if(length(nonDSLcalls)) {
         objInR <- sapply(nonDSLcalls, exists)
         nonDSLnonR <- nonDSLcalls[!objInR]
         nonDSLinR <- nonDSLcalls[objInR]
-        if(length(nonDSLinR)) {
+        if(length(nonDSLinR))
+            # nf and nimbleFunctionList cases probably will never occur as these need to be passed as setup args or created in setup
             # problem with passing inputIsName when run through roxygen...
             nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, function(x) is.nf(x, inputIsName = TRUE)) |
-                                     sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)))]
-            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must defined as nimbleFunctions, nimbleLists, or nimbleFunction methods: ", paste(nonDSLinR, collapse = ', '), "."))
-            if("c" %in% nonDSLinR) warning("Note that until version 0.6-4 of NIMBLE, c() cannot be used as a stand-alone function, but its use to create vector arguments to a function may be valid.")
-        }
+                                     sapply(nonDSLinR, function(x) is(get(x), 'nimbleFunctionList')) |
+                                     sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)) |
+                                     sapply(nonDSLinR, function(x) is.nl(x, inputIsName = TRUE)))]
+        if(length(nonDSLinR))
+           warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."))
         if(length(nonDSLnonR))
-            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleLists, or nimbleFunction methods: ", paste(nonDSLnonR, collapse = ', '), "."))
+            warning(paste0("For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists before compilation: ", paste(nonDSLnonR, collapse = ', '), "."))
     }
     return(0)
 }

@@ -83,7 +83,6 @@ nimbleType <- setRefClass(
 #' 
 #' See the NIMBLE User Manual for examples.
 #'
-
 nimbleList <- function(...,
                        name = NA,
                        where =  getNimbleFunctionEnvironment()) {
@@ -330,3 +329,12 @@ nlEigenSvdInfo    <- nlEigenClass(funcName = 'nimSvd',
 
 nlEigenReferenceList <- list(nimEigen = nlEigenEigenInfo,
                              nimSvd = nlEigenSvdInfo)
+
+is.nl <- function(x, inputIsName = FALSE) {
+    if(inputIsName) x <- get(x)
+    if(is.list(x) && is.function(x$new)) {
+        if(is.null(environment(x$new))) return(FALSE)
+        if(exists('nlDefClassObject', envir = environment(x$new), inherits = FALSE)) return(TRUE)
+    }
+    FALSE
+}

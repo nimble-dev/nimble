@@ -28,7 +28,7 @@ nimbleFunctionVirtual <- function(contains = NULL,
     className <- name
     ## We make this look like a nimbleFunction in relevants ways for compilation
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
-    methodList <- lapply(methodList, nfMethodRC, check = FALSE, methodNames = names(methodList))
+    methodList <- lapply(methodList, nfMethodRC, check = FALSE)
 ##    CclassName <- as.character(NA) ##Rname2CppName(className)
     generatorFunction <- function() {}
     force(contains)
@@ -91,7 +91,8 @@ nimbleFunction <- function(setup         = NULL,
     className <- name
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
-    methodList <- lapply(methodList, nfMethodRC, check = check)
+    # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
+    methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
     declaredSetupOutputNames <- nf_getNamesFromSetupOutputDeclaration(setupOutputsDeclaration)
