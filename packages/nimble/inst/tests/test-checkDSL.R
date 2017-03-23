@@ -185,8 +185,8 @@ test11 <- nimbleFunction(
 )
 ))
 
-testListDef <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
-test_that("Test of DSL check of valid nimbleFunction with nimbleList in R", expect_silent(
+
+test_that("Test of DSL check of valid nimbleFunction with nimbleList in R", expect_silent({testListDef <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2));
 test12 <- nimbleFunction(
   setup = function(){
   },
@@ -202,7 +202,7 @@ test12 <- nimbleFunction(
       return(outList)
     }
   )
-)
+)}
 ))
 
 test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_warning(
@@ -219,12 +219,12 @@ test13 <- nimbleFunction(
     })
 ))
 
-nfGen <- nimbleFunction(
+
+test_that("Test of DSL check of valid nimbleFunction using nimbleFunction from setup", expect_silent({
+    nfGen <- nimbleFunction(
     setup = function() {},
     run = function() {}
-    )
-
-test_that("Test of DSL check of valid nimbleFunction using nimbleFunction from setup", expect_silent(
+    );
 test14 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -237,6 +237,7 @@ test14 <- nimbleFunction(
         tmp = mynf()
         return(tmp)
     })
+}
 ))
 
 
