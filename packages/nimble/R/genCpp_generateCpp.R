@@ -294,7 +294,7 @@ cppOutputMemberFunctionGeneric <- function(code, symTab) { ##cppMemberFunction(m
 
 cppOutputEigExternalUnaryFunction <- function(code, symTab) {
     info <-  eigProxyTranslateExternalUnary[[code$name]]
-    if(length(info) != 3) stop(paste0("Invalid information entry for outputting eigen version of ", code$name), call. = FALSE)
+    if(length(info) < 3) stop(paste0("Invalid information entry for outputting eigen version of ", code$name), call. = FALSE)
     paste0( '(', nimGenerateCpp(code$args[[1]], symTab), ').unaryExpr(std::ptr_fun<',info[2],', ',info[3],'>(', info[1], '))')
 }
 

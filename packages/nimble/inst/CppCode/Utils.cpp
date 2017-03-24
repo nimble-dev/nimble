@@ -26,6 +26,8 @@ bool decide(double lMHr) { // simple function accept or reject based on log Metr
 void nimStop(string msg) {NIMERROR(msg.c_str());}
 void nimStop() {NIMERROR("");}
 
+bool nimNot(bool x) {return(!x);}
+
 double ilogit(double x) {return(1./(1. + exp(-x)));}
 
 double icloglog(double x) {return(1.-exp(-exp(x)));}

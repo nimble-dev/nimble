@@ -28,13 +28,14 @@ binaryOperators <- c(binaryMidOperators, binaryLeftOperators)
 binaryOrUnaryOperators <- c('+','-')
 unaryPromoteNoLogicalOperators <- c('abs','cube')
 unaryIntegerOperators <- 'nimStep'
+unaryLogicalOperators <- '!'
 unaryDoubleOperators <- c('exp','log', 'logit','ilogit','probit','iprobit', 'sqrt', ## these do not go directly into cppOutputCalls.  They should be direct C++ names or go through eigProxyCalls or eigProxyCallsExternalUnary
                     'gammafn','lgammafn',                    ## these also do not go direclty into eigenizeCalls but rather should be entered directly there for eigenize_cWiseUnaryEither, eigenize_cWiseUnaryArray or eigenize_cWiseUnaryMatrix
                     ## 'lgamma1p',
                     'log1p', 'lfactorial', 'factorial', 'cloglog', 'icloglog',
                     'nimRound','ftrunc','ceil','floor', 
                     'cos', 'sin', 'tan', 'acos', 'asin', 'atan', 'cosh', 'sinh', 'tanh', 'acosh', 'asinh', 'atanh')
-unaryOperators <- c(unaryPromoteNoLogicalOperators, unaryIntegerOperators, unaryDoubleOperators)
+unaryOperators <- c(unaryPromoteNoLogicalOperators, unaryIntegerOperators, unaryDoubleOperators, unaryLogicalOperators)
 unaryOrNonaryOperators <- list() 
 assignmentOperators <- c('<-','<<-','=')
 
@@ -72,23 +73,24 @@ returnTypeCodes <- list(
 
 returnTypeHandling <- with(returnTypeCodes,
                            c(list('(' = promote),
-                               makeCallList(binaryMidLogicalOperators, logical),
-                               makeCallList(binaryMidDoubleOperators, double),
-                               makeCallList(binaryMidPromoteNoLogicalOperators, promoteNoLogical),
-                               makeCallList(binaryLeftDoubleOperators, double),
-                               makeCallList(binaryLeftPromoteOperators, promoteNoLogical),
-                               makeCallList(binaryLeftLogicalOperators, logical),
-                               makeCallList(binaryOrUnaryOperators, promoteNoLogical),
-                               makeCallList(unaryPromoteNoLogicalOperators, promoteNoLogical),
-                               makeCallList(unaryIntegerOperators, integer),
-                               makeCallList(unaryDoubleOperators, double),
-                               makeCallList(reductionUnaryDoubleOperatorsEither, double),
-                               makeCallList(reductionUnaryPromoteOperatorsEither, promoteNoLogical),
-                               makeCallList(reductionUnaryLogicalOperatorsEither, logical),
-                               makeCallList(reductionUnaryOperatorsArray, double),
-                               makeCallList(matrixSquareReductionOperators, double),
-                               makeCallList(reductionBinaryOperatorsEither, promoteNoLogical),
-                               makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators), double)))
+                             makeCallList(binaryMidLogicalOperators, logical),
+                             makeCallList(binaryMidDoubleOperators, double),
+                             makeCallList(binaryMidPromoteNoLogicalOperators, promoteNoLogical),
+                             makeCallList(binaryLeftDoubleOperators, double),
+                             makeCallList(binaryLeftPromoteOperators, promoteNoLogical),
+                             makeCallList(binaryLeftLogicalOperators, logical),
+                             makeCallList(binaryOrUnaryOperators, promoteNoLogical),
+                             makeCallList(unaryPromoteNoLogicalOperators, promoteNoLogical),
+                             makeCallList(unaryLogicalOperators, logical),
+                             makeCallList(unaryIntegerOperators, integer),
+                             makeCallList(unaryDoubleOperators, double),
+                             makeCallList(reductionUnaryDoubleOperatorsEither, double),
+                             makeCallList(reductionUnaryPromoteOperatorsEither, promoteNoLogical),
+                             makeCallList(reductionUnaryLogicalOperatorsEither, logical),
+                             makeCallList(reductionUnaryOperatorsArray, double),
+                             makeCallList(matrixSquareReductionOperators, double),
+                             makeCallList(reductionBinaryOperatorsEither, promoteNoLogical),
+                             makeCallList(c(matrixMultOperators, matrixSquareOperators, matrixSolveOperators), double)))
 ## deliberately omitted (so they just return same type as input):
 ## matrixFlipOperators ('t')
 
@@ -158,8 +160,9 @@ eigProxyTranslate[['eigdet']] <- 'determinant'
 nonNativeEigenProxyCalls <- paste0('eig', nonNativeEigenCalls)
 eigProxyCalls <- setdiff(names(eigProxyTranslate), nonNativeEigenProxyCalls)
 
-## things here shuold have the inverse listing in the eigenizeTranslate list
-eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), ## (C++ name, arg type, return type) for std::ptr_fun<argtype, returntype>(fun name)
+## things here should have the inverse entry in the eigenizeTranslate list.  Those are created automatically in genCpp_eigenization.R
+## The C++ name here is (unfortunately) also used supposed to match the DSL keyword to be included in eigenizeCalls correctly
+eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), ## (C++ name, arg type, return type, DSL name if different from C++ name) for std::ptr_fun<argtype, returntype>(fun name)
                                        eigCosh = c('cosh', 'double', 'double'),
                                        eigSinh = c('sinh', 'double', 'double'),
                                        eigTanh = c('tanh', 'double', 'double'),
@@ -182,7 +185,8 @@ eigProxyTranslateExternalUnary <- list(eigAtan = c('atan', 'double', 'double'), 
                                        eigFtrunc = c('ftrunc', 'double', 'double'),
                                        eigCeil = c('ceil', 'double', 'double'),
                                        eigFloor = c('floor', 'double', 'double'),
-                                       eigNimStep = c('nimStep', 'double', 'int')
+                                       eigNimStep = c('nimStep', 'double', 'int'),
+                                       'eig!' = c('nimNot','bool','bool', '!')
                                        )
 eigProxyCallsExternalUnary <- names(eigProxyTranslateExternalUnary)
 
@@ -199,6 +203,7 @@ operatorRank <- c(
     makeCallList(c('+', '-'), 6),
     makeCallList(c('>','<','<=', '>='), 7),
     makeCallList(c('==','!='), 8),
+    list('!' = 10), ## follows R's precedence order, not C's
     list('&' = 13,
          '|' = 14,
          '&&' = 13,

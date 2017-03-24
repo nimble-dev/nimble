@@ -114,6 +114,8 @@ bool decide(double lMHr);
 void nimStop(string msg);
 void nimStop();
 
+bool nimNot(bool x);
+
 // needed for link functions
 double ilogit(double x);
 double icloglog(double x);

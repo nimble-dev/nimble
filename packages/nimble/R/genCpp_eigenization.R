@@ -67,14 +67,14 @@ exprClasses_labelForEigenization <- function(code) {
 
 ## EIGEN DOES NOT DO AUTOMATIC TYPE PROMOTION
 
-callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternalUnary, `[`, 1)))
+callsFromExternalUnaries <- as.character(unlist(lapply(eigProxyTranslateExternalUnary, function(x) if(length(x) < 4) x[1] else x[4])))
 
 eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or matrix
     makeCallList(c('abs','square','sqrt','(','t'), 'eigenize_cWiseUnaryEither'),
     makeCallList('pow', 'eigenize_cWiseByScalarArray'),
     makeCallList(c('asRow', 'asCol'), 'eigenize_asRowOrCol'),
     ## component-wise unarys valid only for only Eigen array
-    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
+    makeCallList(c('exp','log','cube','cwiseInverse','sin','cos','tan','asin','acos', '!', callsFromExternalUnaries), 'eigenize_cWiseUnaryArray'), 
     
     ## component-wise binarys valid for either Eigen array or matrix, but the arguments must match
     ## Check on which if any of these can extend to a scalar on one side
