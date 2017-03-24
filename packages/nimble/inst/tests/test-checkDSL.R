@@ -131,8 +131,9 @@ test8 <- nimbleFunction(
 ))
 
 myRCfun <- nimbleFunction(run = function() {})
+assign('myRCfun', myRCfun, envir = .GlobalEnv)
 
-test_that("Test of DSL check of valid nimbleFunction using RC function from R", expect_silent(
+test_that("Test of DSL check of valid nimbleFunction using RC function from R", expect_silent( 
 test9 <- nimbleFunction(
     setup = function(model, target) {
         calcNodes <- model$getDependencies(target)
@@ -185,8 +186,9 @@ test11 <- nimbleFunction(
 )
 ))
 
-
-test_that("Test of DSL check of valid nimbleFunction with nimbleList in R", expect_silent({testListDef <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2));
+testListDef <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+assign('testListDef', testListDef, envir = .GlobalEnv)
+test_that("Test of DSL check of valid nimbleFunction with nimbleList in R", expect_silent(
 test12 <- nimbleFunction(
   setup = function(){
   },
@@ -202,8 +204,7 @@ test12 <- nimbleFunction(
       return(outList)
     }
   )
-)}
-))
+  )))
 
 test_that("Test of DSL check of valid nimbleFunction with call to undefined nimbleFunction", expect_warning(
 test13 <- nimbleFunction(
