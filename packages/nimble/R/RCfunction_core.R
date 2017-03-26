@@ -137,7 +137,7 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
             nonDSLinR <- nonDSLinR[!(sapply(nonDSLinR, function(x) is.nf(x, inputIsName = TRUE)) |
                                      sapply(nonDSLinR, function(x) is(get(x), 'nimbleFunctionList')) |
                                      sapply(nonDSLinR, function(x) is.rcf(x, inputIsName = TRUE)) |
-                                     sapply(nonDSLinR, function(x) is.nl(x, inputIsName = TRUE)))]
+                                     sapply(nonDSLinR, function(x) is.nlGenerator(x, inputIsName = TRUE)))]
         if(length(nonDSLinR))
            warning(paste0("Detected possible use of R functions in nimbleFunction run code. For this nimbleFunction to compile, these objects must be defined as nimbleFunctions, nimbleFunctionLists, or nimbleLists: ", paste(nonDSLinR, collapse = ', '), "."))
         if(length(nonDSLnonR))

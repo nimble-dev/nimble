@@ -33,17 +33,6 @@ is.Cnf <- function(f, inputIsName = FALSE) {
     return(FALSE)
 }
 
-is.nlGenerator <- function(f){
-  return(is.list(f) && (is.function(f$new) && 
-           existsFunctionEnvVar(f$new, 'nlDefClassObject')))
-  
-}
-
-is.nl <- function(f){
-  if(inherits(f, 'nimbleListBase')) return(TRUE)
-  return(FALSE)
-}
-
 is.nfGenerator <- function(f, inputIsName = FALSE) {
     if(inputIsName) f <- get(f)
     return(is.function(f) && 

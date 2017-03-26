@@ -330,7 +330,14 @@ nlEigenSvdInfo    <- nlEigenClass(funcName = 'nimSvd',
 nlEigenReferenceList <- list(nimEigen = nlEigenEigenInfo,
                              nimSvd = nlEigenSvdInfo)
 
-is.nl <- function(x, inputIsName = FALSE) {
+
+
+is.nl <- function(f){
+  if(inherits(f, 'nimbleListBase')) return(TRUE)
+  return(FALSE)
+}
+
+is.nlGenerator <- function(x, inputIsName = FALSE) {
     if(inputIsName) x <- get(x)
     if(is.list(x) && is.function(x$new)) {
         if(is.null(environment(x$new))) return(FALSE)
