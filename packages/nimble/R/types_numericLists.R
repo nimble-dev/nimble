@@ -93,14 +93,29 @@
 #' This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 4 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, if the object is not already an appropriate size for the assignment.  E.g. prior to \code{Y[5:10] <- A \%*\% B}, one can use setSize to ensure that \code{Y} has a size (length) of at least 10.
 #'
 #' This does work in uncompiled (R) and well as compiled execution, but in some cases it is only necessary for compiled execution. During uncompiled execution, it may not catch bugs due to resizing because some R objects will be dynamically resized during assignments anyway.
-setSize <- function(numObj, ..., row){
+setSize <- function(numObj, ...){
     thisCall <- as.list(match.call()[-1])
     if(length(thisCall) < 2) stop("No information provided to setSize")
-    newDims <- unlist(list(...))
-    if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
+    newDimsList <- list(...)
     if(is.numeric(numObj)) {
         oldDims <- nimDim(numObj)
-        if(length(oldDims) != length(newDims)) stop("Number of dimensions provided does not match object to change in setSize") 
+        if(length(oldDims) != length(newDimsList)) {
+            ## newDims could have been provided as a vector
+            if(length(newDimsList) > 1)
+                stop("Number of dimensions provided does not match object to change in setSize")
+            newDims <- newDimsList[[1]]
+        } else {
+            newDims <- unlist(newDimsList)
+        }
+        if(any(is.na(newDims))) warning("Not sure what to do with NA dims in setSize")
+
+        if(length(newDims) != length(oldDims))
+            if(length(newDims) < length(oldDims))
+                stop("Number of dimensions provided does not match object to change in setSize")
+            else
+                warning("Number of dimensions provided to setSize does not match object to change in setSize.  Sizes will be truncated.")
+        newDims <- newDims[1:length(oldDims)]
+
         if(length(oldDims) == 1) {
             if(oldDims[1] < newDims[1]) {
                 newObj <- rep(0, newDims[1])

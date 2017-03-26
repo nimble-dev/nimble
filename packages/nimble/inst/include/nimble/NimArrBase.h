@@ -84,7 +84,7 @@ class NimArrBase: public NimArrType {
   T &valueNoMap(int i) const {return(*(v + i));} // only to be used if not a map 
   virtual int calculateIndex(vector<int> &i) const =0;
   T *getPtr() {return(&((*vPtr)[0]));}
-  virtual void setSize(vector<int> sizeVec)=0;
+  virtual void setSize(vector<int> sizeVec, bool copyValues = true, bool fillZeros = true)=0;
   void setLength(int l, bool copyValues = true, bool fillZeros = true) {
     if(NAlength==l) {
       if((!copyValues) & fillZeros) fillAllValues(static_cast<T>(0));
