@@ -84,11 +84,11 @@ struct nimble_eigen_coeff_impl<true, result_type, eigenType, Index> {
 template<typename result_type, typename eigenType, typename Index>
 struct nimble_eigen_coeff_impl<false, result_type, eigenType, Index> {
   static result_type getCoeff(const eigenType &Arg, Index i) {
-    std::div_t divRes = div(i, Arg.rows());
+    std::ldiv_t divRes = div(i, Arg.rows());
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }
   static result_type getDiagCoeff(const eigenType &Arg, Index i) {
-    std::div_t divRes = div(i, Arg.rows());
+    std::ldiv_t divRes = div(i, Arg.rows());
     return Arg.coeff(divRes.rem, floor(divRes.quot));
   }
 };
@@ -134,7 +134,7 @@ template<typename DerivedIndex, typename DerivedSource>
     result_type operator()(DerivedIndex i) const //Eigen::DenseIndex
   {
     //    std::cout<<"IN 1\n";
-    std::div_t divRes = div(i, dim1);
+    std::ldiv_t divRes = div(i, dim1);
     // iRow = divRes.rem
     // iCol = floor(divRes.quot)
     if(divRes.rem == floor(divRes.quot)) { // on diagonal
@@ -704,7 +704,7 @@ public:
   // this will only work for Eigen types 
   typedef typename Eigen::internal::traits<DerivedTarget>::Scalar Scalar;
   Scalar &coeffRef(IndexType i) const {
-    std::div_t divRes = div(i, dim1);
+    std::ldiv_t divRes = div(i, dim1);
     return target.coeffRef(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex1>::nimbleUseLinearAccess), Scalar, DerivedIndex1, IndexType >::getCoeff(I1, divRes.rem)-1,
 			   nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedIndex2>::nimbleUseLinearAccess), Scalar, DerivedIndex2, IndexType >::getCoeff(I2, floor(divRes.quot))-1);
 
@@ -745,7 +745,7 @@ class nonseqIndexedClass {
   result_type operator()(IndexObj i) const //Eigen::DenseIndex
   {
     //std::cout<<"IN 1\n";
-    std::div_t divRes = div(i, dim1);
+    std::ldiv_t divRes = div(i, dim1);
     return obj.coeff(nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI1>::nimbleUseLinearAccess), result_type, DerivedI1, IndexObj >::getCoeff(index1, divRes.rem) - 1,
 		     nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedI2>::nimbleUseLinearAccess), result_type, DerivedI2, IndexObj >::getCoeff(index2, floor(divRes.quot)) - 1); // This type of the index argument is confusing.  What is being passed is a type from std::div_t, which ought to be castable to any Eigen Index type I hope.
     //index1(divRes.rem)-1, index2(floor(divRes.quot))-1);

@@ -8,6 +8,84 @@
 #include "nimble/accessorClasses.h"
 
 template<typename Derived>
+int getNodesLength_Indices(ManyVariablesMapAccessor &MMVAPtr, const Derived &indices) {
+  // vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int k = indices.size();
+  //SingleVariableMapAccessBase* curSingleAccess;
+  int totLength = 0;
+  int thisIndex;
+  for(int i = 0; i < k ; i++) {
+    thisIndex = indices(i);
+    //curSingleAccess = (*SMVA_Vec)[thisIndex];
+    totLength += MMVAPtr.getNodeLength(thisIndex); // subtracts 1 internally - should be changed
+  }
+  return(totLength);
+}
+
+
+template<typename Derived, class T>
+void ManyModelAccessIndexRange_2_nimArr(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, const Derived &indices) {
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = indices.size();
+  int nextNumVals, thisIndex;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++) {
+    thisIndex = indices(i)-1;
+    curSingleAccess = (*SMVA_Vec)[thisIndex];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd)
+      PRINTF("Warning: in ManyModelAccessIndex_2_nimArr (range), accessor larger than NimArr!\n");
+    SingleModelAccess_2_nimArr<T>(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+}
+
+// This could just be getValues, overloading other getValues prototypes
+// It became getValuesIndexRange for clarity and possibility of separate handling in size processing
+// But ultimately I think it is not different.
+template<class Derived, class T>
+void getValuesIndexRange(NimArr<1, T> &nimArr, ManyVariablesMapAccessor &MVA, const Derived &indices){
+  //  int sizeFromIndices = getNodesLength_Indices(MVA, indices);
+  //if(!(nimArr.isMap())) nimArr.setSize(sizeFromIndices, false, false);
+  ManyModelAccessIndexRange_2_nimArr(MVA, nimArr, indices);
+}
+
+
+template<typename Derived, class T>
+void nimArr_2_ManyModelAccessIndexRange(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr, const Derived &indices) {
+  vector<SingleVariableMapAccessBase*> *SMVA_Vec = &(MMVAPtr.getMapAccessVector());
+  int nimCurrent = 0;
+  int nimEnd = nimArr.size();
+  int nimArrStride = nimArr.strides()[0];
+  int nimCurrentOffset = nimArr.getOffset();
+  int k = indices.size();
+  int nextNumVals, thisIndex;
+  SingleVariableMapAccessBase* curSingleAccess;
+  for(int i = 0; i < k ; i++) {
+    thisIndex = indices(i)-1;
+    curSingleAccess = (*SMVA_Vec)[thisIndex];
+    nextNumVals = (*curSingleAccess).getLength();
+    if(nextNumVals + nimCurrent > nimEnd)
+      PRINTF("Warning: in nimArr_2_ManyModelAccessIndexRange (range), accessor larger than NimArr!\n");
+    nimArr_2_SingleModelAccess<T>(curSingleAccess, nimArr, nimCurrentOffset, nimArrStride);
+    nimCurrent += nextNumVals;
+    nimCurrentOffset += nextNumVals * nimArrStride;
+  }
+}
+
+
+template<class Derived, class T>
+void setValues(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, const Derived &indices){
+  nimArr_2_ManyModelAccessIndexRange(MVA, nimArr, indices);
+}
+
+
+template<typename Derived>
 double calculate(NodeVectorClassNew &nodes, const Derived &indices, bool logical=false) {
   double ans(0);
   const vector<oneNodeUseInfo> &useInfoVec = nodes.getUseInfoVec();
