@@ -251,41 +251,11 @@ void ManyModelValuesMapAccessor::setRow(int i) {
 /////////
 // nimArr_2_[accessors]
 // nimArr is "from".  SMVAPtr is "to"
-template<class T>
-void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
-  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
-  nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
-  NimArrBase<double>* SMA_NimArrPtrD;
-  NimArrBase<int>* SMA_NimArrPtrI;
 
-  if(SMVAPtr->getSingleton()) {
-    switch(SMA_Type) {
-    case DOUBLE:
-      (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
-      break;
-    case INT:
-      (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
-      break;
-    default:
-      PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
-      break;
-    }
-  } else {
-    switch(SMA_Type) {
-    case DOUBLE:
-      SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
-      dynamicMapCopyFlatToDim<T, double>(SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
-      break;
-    case INT:
-      SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
-      dynamicMapCopyFlatToDim<T, int>(SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
-      break;
-    default:
-      PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
-      break;
-    }
-  }
-}
+// moved to accessorClasses.h so it can be seen from nimbleEigenNimArr.h
+// template<class T>
+// void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
+
 
 template<class T>
 void nimArr_2_ManyModelAccess(ManyVariablesMapAccessor &MMVAPtr, NimArrBase<T> &nimArr){
@@ -334,40 +304,10 @@ void nimArr_2_ManyModelAccessIndex(ManyVariablesMapAccessor &MMVAPtr, NimArrBase
 ///////////////
 // [accessors]_2_nimArr
 // nimArr is "to". SMVAPtr is "from"
-template<class T>
-void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
-  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
-  nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
-  NimArrBase<double>* SMA_NimArrPtrD;
-  NimArrBase<int>* SMA_NimArrPtrI;
-  if(SMVAPtr->getSingleton()) {
-    switch(SMA_Type) {
-    case DOUBLE:
-      (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset];
-      break;
-    case INT:
-      (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<int> *>(SMA_NimTypePtr))[SMVAPtr->offset];
-      break;
-    default:
-      PRINTF("Copying type for SingleModelAccess_2_nimArr not supported\n");
-      break;
-    }
-  } else {
-    switch(SMA_Type) {
-    case DOUBLE:
-      SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
-      dynamicMapCopyDimToFlat<double, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes() );
-      break;
-    case INT:
-      SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
-      dynamicMapCopyDimToFlat<int, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes());
-      break;
-    default:
-      PRINTF("Copying type for SingleModelAccess_2_nimArr not supported\n");
-      break;
-    }
-  }
-}
+
+// Moved to accessorClasses.h so nimbleEigenNimArr.h can see it
+//template<class T>
+//void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
 
 
 template<class T>

@@ -614,6 +614,80 @@ template<int D, class T>
 void SingleModelAccess_2_nimArr(SingleVariableAccess* SMVAPtr, NimArr<D, T>* nimArrPtr, int nimBegin);
 template<int D, class T>
 void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr);
+
+template<class T>
+void SingleModelAccess_2_nimArr(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+  NimArrBase<double>* SMA_NimArrPtrD;
+  NimArrBase<int>* SMA_NimArrPtrI;
+  if(SMVAPtr->getSingleton()) {
+    switch(SMA_Type) {
+    case DOUBLE:
+      (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset];
+      break;
+    case INT:
+      (*nimArr.getVptr())[nimBegin] = (*static_cast<NimArrBase<int> *>(SMA_NimTypePtr))[SMVAPtr->offset];
+      break;
+    default:
+      PRINTF("Copying type for SingleModelAccess_2_nimArr not supported\n");
+      break;
+    }
+  } else {
+    switch(SMA_Type) {
+    case DOUBLE:
+      SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+      dynamicMapCopyDimToFlat<double, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes() );
+      break;
+    case INT:
+      SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+      dynamicMapCopyDimToFlat<int, T>(&nimArr, nimBegin, nimStride, SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes());
+      break;
+    default:
+      PRINTF("Copying type for SingleModelAccess_2_nimArr not supported\n");
+      break;
+    }
+  }
+}
+
+template<class T>
+void nimArr_2_SingleModelAccess(SingleVariableMapAccessBase* SMVAPtr, NimArrBase<T> &nimArr, int nimBegin, int nimStride){
+
+  NimArrType* SMA_NimTypePtr = (*SMVAPtr).getNimArrPtr();
+  nimType SMA_Type = (*SMA_NimTypePtr).getNimType();
+  NimArrBase<double>* SMA_NimArrPtrD;
+  NimArrBase<int>* SMA_NimArrPtrI;
+
+  if(SMVAPtr->getSingleton()) {
+    switch(SMA_Type) {
+    case DOUBLE:
+      (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
+      break;
+    case INT:
+      (*static_cast<NimArrBase<double> *>(SMA_NimTypePtr))[SMVAPtr->offset] = (*nimArr.getVptr())[nimBegin];
+      break;
+    default:
+      PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+      break;
+    }
+  } else {
+    switch(SMA_Type) {
+    case DOUBLE:
+      SMA_NimArrPtrD = static_cast<NimArrBase<double>*>(SMA_NimTypePtr);
+      dynamicMapCopyFlatToDim<T, double>(SMA_NimArrPtrD, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
+      break;
+    case INT:
+      SMA_NimArrPtrI = static_cast<NimArrBase<int>*>(SMA_NimTypePtr);
+      dynamicMapCopyFlatToDim<T, int>(SMA_NimArrPtrI, SMVAPtr->getOffset(), SMVAPtr->getStrides(), SMVAPtr->getSizes(), &nimArr, nimBegin, nimStride);
+      break;
+    default:
+      PRINTF("Copying type for nimArr_2_SingleModelAccess not supported\n");
+      break;
+    }
+  }
+}
+
+
 /*
 template<int D, class T>
 void ManyModelAccess_2_nimArr(ManyVariablesAccessor &MMVAPtr, NimArr<D, T>* nimArrPtr, int i);
