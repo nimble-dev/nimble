@@ -30,6 +30,8 @@ USER LEVEL CHANGES
 
 -- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
 
+-- User-defined distributions may not be defined based solely on a density ('d') function, with a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
+
 BUG FIXES
 
 -- Fixed bug preventing use of round() in nimbleFunction and BUGS code.
