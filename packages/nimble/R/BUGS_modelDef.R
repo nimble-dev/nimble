@@ -126,15 +126,15 @@ modelDefClass <- setRefClass('modelDefClass',
 ##     further, nameMashupFromExpr(expr) in nimbleBUGS_utils.R throws an error if expr contains a ':'
 ##
 ## set v3 = FALSE to use old processing
-modelDefClass$methods(setupModel = function(code, constants, dimensions, envir, debug = FALSE) {
+modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv, debug = FALSE) {
     if(debug) browser()
-    code <- codeProcessIfThenElse(code, envir) ## evaluate definition-time if-then-else
+    code <- codeProcessIfThenElse(code, userEnv) ## evaluate definition-time if-then-else
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
     assignDimensions(dimensions)      ## uses 'dimensions' argument, sets field: dimensionList
     initializeContexts()              ## initializes the field: contexts
-    processBUGScode()                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
+    processBUGScode(userEnv = userEnv)                 ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID
     ## We will try to infer sizes later
     ##addMissingIndexing()              ## overwrites declInfo, using dimensionsList, fills in any missing indexing
     splitConstantsAndData()           ## deals with case when data is passed in as constants
@@ -258,7 +258,7 @@ reprioritizeColonOperator <- function(code) {
     return(code)
 }
 
-modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lineNumber = 0) {
+modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lineNumber = 0, userEnv) {
     ## uses BUGScode, sets fields: contexts, declInfo$code, declInfo$contextID.
     ## all processing of code is done by BUGSdeclClass$setup(code, contextID).
     ## all processing of contexts is done by BUGScontextClass$setup()
@@ -274,7 +274,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             BUGSdeclClassObject <- BUGSdeclClass$new() ## record the line number (a running count of non-`{` lines) for use in naming nodeFunctions later
             if(code[[i]][[1]] == '~') {
                 code[[i]] <- replaceDistributionAliases(code[[i]])
-                checkUserDefinedDistribution(code[[i]])
+                checkUserDefinedDistribution(code[[i]], userEnv)
             }
             if(code[[i]][[1]] == '<-')
                 checkForDeterministicDorR(code[[i]])
@@ -304,7 +304,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             } else {
                 substitute( {ONELINE}, list(ONELINE = code[[i]][[4]]))
             }
-            lineNumber <- processBUGScode(recurseCode, nextContextID, lineNumber = lineNumber)  ## Recursive call to process the contents of the for loop
+            lineNumber <- processBUGScode(recurseCode, nextContextID, lineNumber = lineNumber, userEnv = userEnv)  ## Recursive call to process the contents of the for loop
         }
         if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
             lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber)
@@ -316,13 +316,13 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
 })
 
 # check if distribution is defined and if not, attempt to register it
-checkUserDefinedDistribution <- function(code) {
+checkUserDefinedDistribution <- function(code, userEnv) {
     dist <- as.character(code[[3]][[1]])
     if(dist %in% c("T", "I")) 
         dist <- as.character(code[[3]][[2]][[1]])
     if(!dist %in% distributions$namesVector)
         if(!exists('distributions', nimbleUserNamespace) || !dist %in% nimbleUserNamespace$distributions$namesVector) {
-            registerDistributions(dist)
+            registerDistributions(dist, userEnv)
             cat("NIMBLE has registered ", dist, " as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.\n", sep = "") 
         }
 }
