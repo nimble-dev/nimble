@@ -126,9 +126,9 @@ modelDefClass <- setRefClass('modelDefClass',
 ##     further, nameMashupFromExpr(expr) in nimbleBUGS_utils.R throws an error if expr contains a ':'
 ##
 ## set v3 = FALSE to use old processing
-modelDefClass$methods(setupModel = function(code, constants, dimensions, debug = FALSE) {
+modelDefClass$methods(setupModel = function(code, constants, dimensions, envir, debug = FALSE) {
     if(debug) browser()
-    code <- codeProcessIfThenElse(code, parent.frame()) ## evaluate definition-time if-then-else
+    code <- codeProcessIfThenElse(code, envir) ## evaluate definition-time if-then-else
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
