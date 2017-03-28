@@ -1000,8 +1000,10 @@ compileNimble <- function(..., project, dirName = NULL, projectName = '',
     dotsDeparses[origIsList] <- ''
     names(origList)[boolNoName] <- dotsDeparses[boolNoName]
     units <- do.call('c', origList)
+    if(any(sapply(units, is, "MCMCconf")))
+       stop("You have provided an MCMC configuration object, which cannot be compiled. Instead, use run 'buildMCMC' on the configuration object and compile the resulting MCMC object.")
     unitTypes <- getNimbleTypes(units)
-    if(length(grep('unknown', unitTypes)) > 0) stop(paste0('Some items provided for compilation do not have types that can be compiled.  The types provided were: ', paste0(unitTypes, collapse = ' '), '. Be sure only specialized nimbleFunctions are provided, not nimbleFunction generators.'), call. = FALSE)
+    if(length(grep('unknown', unitTypes)) > 0) stop(paste0('Some items provided for compilation do not have types that can be compiled: ', paste0(names(units), collapse = ' '), '.  The types provided were: ', paste0(unitTypes, collapse = ' '), '. Be sure only specialized nimbleFunctions are provided, not nimbleFunction generators.'), call. = FALSE)
     if(is.null(names(units))) names(units) <- rep('', length(units))
     if(length(units) == 0) stop('No objects for compilation provided')
     
