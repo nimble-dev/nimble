@@ -1041,11 +1041,15 @@ sizeValues <- function(code, symTab, typeEnv) {
         if(is.numeric(code$args[[2]])) {
             code$sizeExprs <- list(substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = code$args[[2]])))
         } else {
-            if(code$args[[2]]$nDim > 0)
-                if(!(code$args[[2]]$isName))
-                    asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
-            code$sizeExprs <- list(substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))))
-            indexRangeCase <- TRUE
+            if(!(code$args[[2]]$isName))
+                asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
+
+            if(code$args[[2]]$nDim > 0) {
+                code$sizeExprs <- list(substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))))
+                indexRangeCase <- TRUE
+            } else {
+                code$sizeExprs <- list(substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))))
+            }
         }
     }
    
@@ -1053,8 +1057,8 @@ sizeValues <- function(code, symTab, typeEnv) {
         if(typeEnv$.AllowUnknowns) ## a surrogate for being on LHS of an assignment. values(...)[] should work on RHS
             stop(exprClassProcessingErrorMsg(code, 'In sizeValues: indexing of values() on left-hand size of an assignment is not allowed.'), call. = FALSE)
      if(code$caller$name %in% assignmentOperators) {
-        if(code$callerArgID == 2) { ## ans <- values(...)
-            code$name <- if(!indexRangeCase) 'getValues' else 'getValuesIndexRange'
+         if(code$callerArgID == 2) { ## ans <- values(...)
+            code$name <- if(!indexRangeCase) 'getValues' else 'getValuesIndexRange'                
             LHS <- code$caller$args[[1]]
             if(LHS$isName) { ## It is a little awkward to insert setSize here, but this is different from other cases in sizeAssignAfterRecursing
                 assertSS <- list(substitute(setSize(LHS), list(LHS = as.name(LHS$name))))
@@ -1064,7 +1068,11 @@ sizeValues <- function(code, symTab, typeEnv) {
                     if(is.numeric(code$args[[2]])) {
                         assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = code$args[[2]]))
                     } else {
-                        assertSS[[1]][[3]] <- substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))) ## intermediate has already been inserted above, if needed
+                        if(code$args[[2]]$nDim > 0) {
+                            assertSS[[1]][[3]] <- substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))) ## intermediate has already been inserted above, if needed
+                        } else {
+                            assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name)))
+                        }
                     }
                 }
 
@@ -1072,7 +1080,9 @@ sizeValues <- function(code, symTab, typeEnv) {
                 asserts <- c(asserts, assertSS)
             } else
                 typeEnv$.ensureNimbleBlocks <- TRUE
-        }   # values(...) <- P, don't change it
+         } else {   # values(...) <- P, don't change it
+             if(indexRangeCase) code$name <- 'valuesIndexRange'
+         }
     } else { ## values(...) embedded in a RHS expression
         code$name <- if(!indexRangeCase) 'getValues' else 'getValuesIndexRange'
         code$toEigenize <- 'yes' ## This tricks sizeAssignAfterRecursing to generate the setSize in asserts, in getValues case (getValuesIndexRange is in set of names to skip for that)
@@ -1456,10 +1466,10 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
     ## update size info in typeEnv
     assert <- NULL
 
-    if(LHS$name == 'values' && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
+    if((LHS$name == 'values' | LHS$name == 'valuesIndexRange') && length(LHS$args) %in% c(1,2)) { ## It is values(model_values_accessor[, index]) <- STUFF
         # triggered when we have simple assignment into values() without indexing of values()
         if(is.numeric(RHS)) stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: Cannot assign into values() from numeric.')), call. = FALSE)
-        code$name <- 'setValues' 
+        code$name <- if(LHS$name == 'values') 'setValues' else 'setValuesIndexRange' 
         code$args <- list(1 + length(LHS$args))
         setArg(code, 1, RHS)
         setArg(code, 2, LHS$args[[1]])

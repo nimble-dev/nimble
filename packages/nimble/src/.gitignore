@@ -10,4 +10,4 @@ nimbleGraph.cpp
 Makevars
 NFxnUtils.cpp
 Values.cpp
-
+eigenUsingClasses.cpp
