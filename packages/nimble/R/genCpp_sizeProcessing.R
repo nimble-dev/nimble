@@ -1041,11 +1041,15 @@ sizeValues <- function(code, symTab, typeEnv) {
         if(is.numeric(code$args[[2]])) {
             code$sizeExprs <- list(substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = code$args[[2]])))
         } else {
-            if(code$args[[2]]$nDim > 0)
-                if(!(code$args[[2]]$isName))
-                    asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
-            code$sizeExprs <- list(substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))))
-            indexRangeCase <- TRUE
+            if(!(code$args[[2]]$isName))
+                asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
+
+            if(code$args[[2]]$nDim > 0) {
+                code$sizeExprs <- list(substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))))
+                indexRangeCase <- TRUE
+            } else {
+                code$sizeExprs <- list(substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))))
+            }
         }
     }
    
@@ -1064,7 +1068,11 @@ sizeValues <- function(code, symTab, typeEnv) {
                     if(is.numeric(code$args[[2]])) {
                         assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = code$args[[2]]))
                     } else {
-                        assertSS[[1]][[3]] <- substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))) ## intermediate has already been inserted above, if needed
+                        if(code$args[[2]]$nDim > 0) {
+                            assertSS[[1]][[3]] <- substitute(getNodesLength_Indices(ACCESSNAME, ACCESSINDEX), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name))) ## intermediate has already been inserted above, if needed
+                        } else {
+                            assertSS[[1]][[3]] <- substitute(cppMemberFunction(getNodeLength(ACCESSNAME, ACCESSINDEX)), list(ACCESSNAME = as.name(code$args[[1]]$name), ACCESSINDEX = as.name(code$args[[2]]$name)))
+                        }
                     }
                 }
 
