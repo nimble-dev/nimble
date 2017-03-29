@@ -73,6 +73,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   // or upper-triangular multiplies for rate parameterization
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
+  // FIXME: x is getting overwritten
   if(scale_param) {
     F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
            chol, &p, x, &p);
@@ -171,7 +172,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
     return;
   }
   
-  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals
+  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals - crossproduct of result is standardized Wishart; based on rWishart in stats package
   for(j = 0; j < p; j++) {
     // double *Z_j = &Z[j*p];
     //Z_j[j] = sqrt(rchisq(df - (double) j)); 
@@ -191,7 +192,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
   }
  
   // multiply Z*chol, both upper triangular or solve(chol, Z^T)
-  // would be more efficient if make use of fact that right-most matrix is triangular
+  // would be more efficient if make use of fact that right-most matrix is triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, chol, &p);
   else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
 
@@ -204,7 +205,8 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
       chol[j] = Z[j]; // FIXME: check this case.  We don't want to overwite an input argument.
   }
 
-  // do crossprod of result; again this would be more efficient use fact that t(input) is lower-tri
+  // do crossprod of result
+  // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, chol, &p, Z, &p);
   else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, chol, &p, &beta, Z, &p); 
 
@@ -618,6 +620,7 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
+  // FIXME: x is getting overwritten
   if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
   else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
 
@@ -791,6 +794,7 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
+  // FIXME: x is getting overwritten
   if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
   else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
   
