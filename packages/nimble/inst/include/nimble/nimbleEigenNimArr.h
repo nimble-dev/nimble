@@ -80,7 +80,7 @@ void nimArr_2_ManyModelAccessIndexRange(ManyVariablesMapAccessor &MMVAPtr, NimAr
 
 
 template<class Derived, class T>
-void setValues(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, const Derived &indices){
+void setValuesIndexRange(NimArrBase<T> &nimArr, ManyVariablesMapAccessor &MVA, const Derived &indices){
   nimArr_2_ManyModelAccessIndexRange(MVA, nimArr, indices);
 }
 
