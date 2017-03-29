@@ -1,4 +1,3 @@
-
 // various additional distributions functions needed by NIMBLE
 // Author: Chris Paciorek 
 // Date: Initial development in February 2014
@@ -34,7 +33,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   int info(0);
   double alpha(1.0);
 
-  int i;
+  int i, j;
 
   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
     return NA_REAL;
@@ -83,16 +82,33 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       tmp_dens += x[i];
     dens += -0.5 * tmp_dens;
   } else {
-    // this could be improved by doing efficient U^T U multiply followed by direct product multiply
     F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
            chol, &p, x, &p);
     // at this point don't need to do all the multiplications so don't call dtrmm again
     // direct product of upper triangles
-    for(int j = 0; j < p; j++) {
+    for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
         tmp_dens += x[j*p+i] * chol[j*p+i];
       }
     }
+
+    // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
+    // U^T*U directly followed by direct product with x
+    /* 
+    double tmp_summand;
+    int minij;
+    for(j = 0; j < p; j++) 
+      for(i = 0; i < p; i++) {
+        tmp_summand = 0.0;
+        minij = i <= j ? i : j;
+        for(int k = 0; k < minij; k++)
+          tmp_summand += chol[j*p+k]*chol[i*p+k]; // U^T U 
+        // double if not on diagonal to account for direct product of lower triangle too
+        if(i != j) tmp_summand *= 2;
+        tmp_dens += x[j*p+i] * tmp_summand;
+      }
+    */
+    
     dens += -0.5 * tmp_dens;
   }
 

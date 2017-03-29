@@ -33,14 +33,19 @@ NULL
 #' @export
 dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
-  .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
+    out <- .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
+    if(is.null(out)) out <- NaN
+    out
 }
 
 #' @rdname Wishart
 #' @export
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
-    matrix(.Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param)), nrow = sqrt(length(cholesky)))
+    out <- .Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param))
+    if(is.null(out)) out <- NaN
+    d <- sqrt(length(cholesky))
+    matrix(out, nrow = d, ncol = d)
 }
 
 
