@@ -22,7 +22,7 @@ calc_dmnormAltParams <- nimbleFunction(
 ## used in conjugacy definition for dmnorm, to calculate 'contribution' terms;
 ## avoids unnecessary matrix multiplications, when 'coeff' is identity matrix
 calc_dmnormConjugacyContributions <- nimbleFunction(
-    run = function(coeff = double(2), prec = double(2), order = double()) {
+    run = function(coeff = double(2), prec = double(2), vec = double(1), order = double()) {
         if(dim(coeff)[1] == dim(coeff)[2]) {
             d <- dim(coeff)[1]
             total <- 0
@@ -34,7 +34,7 @@ calc_dmnormConjugacyContributions <- nimbleFunction(
             }
             if(total < d * 1E-15) return(prec)
         }
-        if(order == 1) ans <- t(coeff) %*% prec
+        if(order == 1) ans <- t(coeff) %*% (prec %*% asCol(vec))
         if(order == 2) ans <- t(coeff) %*% prec %*% coeff
         return(ans)
         returnType(double(2))

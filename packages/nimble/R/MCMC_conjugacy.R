@@ -60,7 +60,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
            ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, 1) %*% asCol(value-offset))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, 2)')),
+             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2)')),
          ## original less efficient posterior definition:
          ## posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
          ##                          cholesky   = chol(prior_prec + contribution_prec),
