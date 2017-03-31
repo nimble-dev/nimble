@@ -543,7 +543,7 @@ sizeRep <- function(code, symTab, typeEnv) {
     return(asserts)
 }
 
-tsizeNewNimbleList <- function(code, symTab, typeEnv){
+sizeNewNimbleList <- function(code, symTab, typeEnv){
   ## code looks like: nimListDef$new(a = '', b = 12)
   ## want to change code$caller to :
   ## { nimList <- nimListDef$new()
@@ -564,9 +564,12 @@ tsizeNewNimbleList <- function(code, symTab, typeEnv){
   asserts <- list()
   if(!(code$caller$name %in% assignmentOperators)){
     asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  } else {
+      asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, rep(FALSE, length(code$args)-1))), asserts)
   }
   if(length(code$args)>1){
-    asserts <- c(recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1))), asserts)
+      ##    asserts <- c(recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1))), asserts)
+   
     RnewExprs <- list()
     newExprs <- list()
     RnfVarExprs <- list()
@@ -577,8 +580,8 @@ tsizeNewNimbleList <- function(code, symTab, typeEnv){
     ## from A <- nl1$new(x = y)
     ## assignExpr is new copy of A <- nl1$new(x = y)
 
-    RassignExpr <- substitute(A <- B, list(A = nimbleGeneralParseDeparse(originalCode$caller$args[[1]]),
-                                           B = nimbleGeneralParseDeparse(originalCode$caller$args[[2]])))
+    ## RassignExpr <- substitute(A <- B, list(A = nimbleGeneralParseDeparse(originalCode$caller$args[[1]]),
+    ##                                        B = nimbleGeneralParseDeparse(originalCode$caller$args[[2]])))
                                                           
     ## assignExpr <- exprClass(name = "<-", isCall = TRUE, isName = FALSE, isAssign = TRUE,
     ##                         args = c(originalCode$caller$args[[1]], originalCode$caller$args[[2]]), caller = code$caller,
@@ -628,40 +631,48 @@ tsizeNewNimbleList <- function(code, symTab, typeEnv){
 
             ## store nfVar(A, 'x') <- y as an argument to code$caller, which is being trashed and overwritten
             ## code caller was something like `<-`(A, makeNewNimbleList(...))
-            newExprs[[exprCounter]] <- RparseTree2ExprClasses(RnewExprs[[exprCounter]])
+            ##newExprs[[exprCounter]] <- RparseTree2ExprClasses(RnewExprs[[exprCounter]])
            ## asserts <- c(asserts, exprClasses_setSizes(newExprs[[exprCounter]], symTab, typeEnv)
-            setArg(code$caller,  exprCounter+1, newExprs[[exprCounter]])
+            ##setArg(code$caller,  exprCounter+1, newExprs[[exprCounter]])
             exprCounter <- exprCounter + 1
         }
     }
     
     ## transform code$caller into a '{' expression
-    if(length(newExprs) != 0) {
+    if(length(RnewExprs) != 0) {
+        browser()
         ## if initial values were specified, modify code$caller
-        code$caller$name <- "{"
-        code$caller$isCall <- TRUE
-        code$caller$isName <- FALSE
-        code$caller$isAssign <- TRUE
-        ## fix the assignExpr AST connections
-        if(length(RassignExpr[[3]]) > 2)
-           RassignExpr[[3]] <- RassignExpr[[3]][1:2]
-        assignExpr <- RparseTree2ExprClasses(RassignExpr)
+        RbracketNewExprs <- quote(after({}))
+        RbracketNewExprs[[2]][2:(length(RnewExprs) + 1)] <- RnewExprs
+        bracketNewExprs <- RparseTree2ExprClasses(RbracketNewExprs)
+        exprClasses_setSizes(bracketNewExprs$args[[1]], symTab, typeEnv)
+        asserts <- c(asserts, list(bracketNewExprs))
+        if(length(code$args) > 1) ## always if we make it this far
+            code$args <- code$args[1]
+##         code$caller$name <- "{"
+##         code$caller$isCall <- TRUE
+##         code$caller$isName <- FALSE
+##         code$caller$isAssign <- TRUE
+##         ## fix the assignExpr AST connections
+##         if(length(RassignExpr[[3]]) > 2)
+##            RassignExpr[[3]] <- RassignExpr[[3]][1:2]
+##         assignExpr <- RparseTree2ExprClasses(RassignExpr)
 
-        ##        assignExpr$args[[1]]$caller <- assignExpr
-##        assignExpr$args[[2]]$caller <- assignExpr
+##         ##        assignExpr$args[[1]]$caller <- assignExpr
+## ##        assignExpr$args[[2]]$caller <- assignExpr
 
-        ## make the actual object creation call take only the class name as an argument
-##        assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
-        ## and fix the AST
-##        assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
-        ## reset code to the new assignment expression
+##         ## make the actual object creation call take only the class name as an argument
+## ##        assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
+##         ## and fix the AST
+## ##        assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
+##         ## reset code to the new assignment expression
         
-        ## and insert as the first item in the new '{' call 
-        setArg(code$caller, 1, assignExpr)
-        code <- assignExpr ## is this necessary?
-        browser()
-        asserts <- c(asserts, exprClasses_setSizes(code$caller, symTab, typeEnv))
-        browser()
+##         ## and insert as the first item in the new '{' call 
+##         setArg(code$caller, 1, assignExpr)
+##         code <- assignExpr ## is this necessary?
+##         browser()
+##         asserts <- c(asserts, exprClasses_setSizes(code$caller, symTab, typeEnv))
+##         browser()
     }
   }
   return(asserts)
@@ -1066,8 +1077,7 @@ recurseExtractNimListArg <- function(code, symTab){
 }
 
 ## a$b becomes nfVar(a, 'b')
-tsizeNFvar <- function(code, symTab, typeEnv) {
-    print(nimDeparse(code))
+sizeNFvar <- function(code, symTab, typeEnv) {
     asserts <- list()
     if(!inherits(code$args[[1]], 'exprClass'))
         stop(exprClassProcessingErrorMsg(code, 'Problem using $: no name on the right?'), call. = FALSE)
@@ -1084,8 +1094,7 @@ tsizeNFvar <- function(code, symTab, typeEnv) {
         symbolObject <- code$args[[1]]$sizeExprs ## repurposed for this role
     }
     
-
-    isSymFunc <- objectType == 'symbolNimbleFunction'
+    isSymFunc <- objectType == 'nimbleFunction'   ## minor inconsistency in naming style here
     isSymList <- objectType == 'symbolNimbleList'
     
     ## Cases to handle (nl for nimbleList, nf for nimbleFunction):
@@ -1114,7 +1123,7 @@ tsizeNFvar <- function(code, symTab, typeEnv) {
     memberSymbolObject <- nfProc$getSymbolTable()$getSymbolObject(memberName)
     if(!is.null(memberSymbolObject)) code$type <- memberSymbolObject$type
     
-    if(isSymList) {
+    if(isSymList | isSymFunc) {
         ## symbolNimbleList
         ## We need (*nl) in C++, represented by cppPointerDereference(nl)
         if(code$args[[1]]$name != 'cppPointerDereference') {
@@ -1130,14 +1139,14 @@ tsizeNFvar <- function(code, symTab, typeEnv) {
     }
      
     ## following checks are on type of A$B (isSymList and isSymFunc refer to type of A)
-    browser()
+    
     if(code$type == 'symbolNimbleList') {
         ## for a nimbleList, sizeExprs slot is used for symbol object
         ## of nlGenerator of member object
         code$sizeExprs <- memberSymbolObject
-    } else if(code$type == 'symbolNimbleFunction') {
-        ## symbolNimbleFunction
-        ## anything to do?
+    } else if(code$type == 'nimbleFunction') {
+        ## nimbleFunction
+        code$sizeExprs <- memberSymbolObject
     } else {
         ## a numeric etc. type
         code$nDim <- memberSymbolObject$nDim
@@ -1243,9 +1252,14 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## at the moment we have on
         nfMethodRCobj <- getFunctionEnvVar(nf_getGeneratorFunction(sym$baseClass), 'methodList')$run
     }
     else if(a1$name == 'nfMethod') {
+        browser()
         a11 <- a1$args[[1]]
         methodName <- a1$args[[2]]
-        if(a11$isName) { ## e.g. in nfMethod(nf, 'foo'), a11 is nf
+        if(a11$isName | a11$name == 'cppPointerDereference') { ## e.g. in nfMethod(nf, 'foo'), a11 is nf
+            if(a11$name != 'cppPointerDereference') {
+                nimble:::insertExprClassLayer(a1, 1, 'cppPointerDereference') ## not annotated, but not needed
+            }
+
             sym <- symTab$getSymbolObject(a11$name, TRUE)
          
             nfMethodRCobj <- sym$nfProc$getMethodInterfaces()[[methodName]] ##sym$nfProc$origMethods[[methodName]]

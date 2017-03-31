@@ -13,6 +13,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                            writeLines(paste0('virtualNFprocessing object ', name))
                                        },
                                        initialize = function(f = NULL, className, virtual = TRUE, isNode = FALSE) {
+                                        ##   browser()
                                        		compileInfos <<- list()
                                        		RCfunProcs <<- list()
 
@@ -34,7 +35,7 @@ virtualNFprocessing <- setRefClass('virtualNFprocessing',
                                                RCfunProcs <<- list()
                                                for(i in seq_along(origMethods)) {
                                                    RCname <- names(origMethods)[i]
-                                                   if(RCname == 'run') RCname <- 'operator()'
+                                                   ##if(RCname == 'run') RCname <- 'operator()'
                                                    RCfunProcs[[RCname]] <<- if(virtual) RCvirtualFunProcessing$new(origMethods[[i]], RCname, const = isNode) else RCfunProcessing$new(origMethods[[i]], RCname, const = isNode)
                                                }
                                                compileInfos <<- lapply(RCfunProcs,
@@ -78,9 +79,9 @@ nfProcessing <- setRefClass('nfProcessing',
                                   writeLines(paste0('nfProcessing object ', name))
                               },
                               initialize = function(f = NULL, className, fromModel = FALSE, project, isNode = FALSE) {
-                              	neededTypes <<- list()
-                              	neededObjectNames <<- character()
-                              	newSetupCode <<- list()
+                                  neededTypes <<- list()
+                                  neededObjectNames <<- character()
+                                  newSetupCode <<- list()
                                   if(!is.null(f)) {
                                       ## in new system, f must be a specialized nf, or a list of them
                                       nimbleProject <<- project
@@ -262,7 +263,7 @@ nfProcessing$methods(setupTypesForUsingFunction = function() {
 nfProcessing$methods(addMemberFunctionsToSymbolTable = function() {
     for(i in seq_along(origMethods)) {
         thisName <- names(origMethods)[i]
-        if(thisName == 'run') thisName <- 'operator()'
+##        if(thisName == 'run') thisName <- 'operator()'
         newSym <- symbolMemberFunction(name = thisName, nfMethodRCobj = origMethods[[i]])
         setupSymTab$addSymbol(newSym)
     }

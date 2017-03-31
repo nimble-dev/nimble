@@ -11,7 +11,7 @@ specificCallReplacements <- list(
     '^' = 'pow',
     '%%' = 'nimMod',
     length = 'size',
-    run = 'operator()',
+##    run = 'operator()',
     is.nan = 'ISNAN',
     is.nan.vec = 'ISNAN',
     is.na = 'ISNA',

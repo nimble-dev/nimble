@@ -370,7 +370,7 @@ symbolNimbleFunction <-
                     initialize = function(...) {callSuper(...)},
                     show = function() writeLines(paste('symbolNimbleFunction', name)),
                     genCppVar = function(...) {
-                        return(cppVarFull(name = name, baseType = environment(nfProc$nfGenerator)$name, ptr = 1, selfDereference = TRUE))
+                        return(cppVarFull(name = name, baseType = environment(nfProc$nfGenerator)$name, ptr = 1)) ## selfDerefence idea is not general for A$B$C, selfDereference = TRUE))
                     }
                     ))
 

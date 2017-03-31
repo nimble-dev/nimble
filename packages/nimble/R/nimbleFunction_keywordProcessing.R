@@ -708,94 +708,98 @@ modelMemberFun_keywordInfo <- keywordInfoClass(
     })
 
 dollarSign_keywordInfo <- keywordInfoClass(
-  keyword = '$',
-  processor = function(code, nfProc){
-    if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
-    #	First thing we need to do is remove 'run', for backward compatibility, i.e.
-    #   replace myNimbleFunction$run() -> myNimbleFunction() or
-    #	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
-    #   Probably a better way to handle this
-    if(code[[3]] == 'run'){
-      newRunCode <- code[[2]]
-      return(newRunCode)
+    keyword = '$',
+    processor = function(code, nfProc){
+        if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
+                                        #	First thing we need to do is remove 'run', for backward compatibility, i.e.
+                                        #   replace myNimbleFunction$run() -> myNimbleFunction() or
+                                        #	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
+                                        #   Probably a better way to handle this
+
+        ## In C++, run becomes operator() for historical reasons.
+        ## We used to strip it out here, but now we do it during generateCpp step.
+        ## if(code[[3]] == 'run'){
+        ##   newRunCode <- code[[2]]
+        ##   return(newRunCode)
+        ## }
+        
+        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
+        callerCode <- code[[2]]
+                                        #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
+        
+        if(length(callerCode) > 1){
+            if(callerCode[[1]] == '$'){ ## nested NL or NF case
+                callerCode <- processKeyword(callerCode, nfProc)
+            }
+            else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) {
+                callerCode <- callerCode[[2]]
+            }
+        }
+                                        #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
+                                        #       May be a better way to do this
+        
+        class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
+        
+        if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
+            nl_fieldName <-as.character(code[[3]])
+            newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
+            return(newRunCode)				
+        }
+        if(class == 'symbolNimPtrList'){
+            return(code)
+        }
+        if(class == 'symbolModel'){
+            singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
+            accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
+            addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
+            return(as.name(accessName))
+        }
+        if(class == 'symbolNimbleFunction'){
+            
+                                        #	Code is of the form myNimbleFunction$myMethod
+                                        #   or myNimbleFunction$myVar
+            
+            
+                                        #	Note that we have cut off '()' in the case of myMethod, so we must inspect the
+                                        #   nested symbol for myMethod to determine whether it is a method or variable
+            
+            nf_charName <- as.character(callerCode)
+            nf_fieldName <-as.character(code[[3]])
+            objectSymbol = nfProc$setupSymTab$symbols[[nf_charName]]$nfProc$setupSymTab$symbols[[nf_fieldName]]
+            if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
+                newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))				
+                return(newRunCode)
+            }
+            else {
+                                        # I *assume* that if its not a member function, it should be treated with 
+                                        # nfVar
+                newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = as.name(nf_charName), VARNAME = nf_fieldName))
+                return(newRunCode)
+            }
+        }
+        if(class == 'symbolNimbleList'){
+                                        #	Code is of the form 
+                                        #  myNimbleList$myVar
+            nl_charName <- as.character(callerCode)
+            nl_fieldName <-as.character(code[[3]])
+            newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+            return(newRunCode)
+        }
+        if(class == 'symbolNimbleFunctionList'){
+            
+                                        #	Code is of the form myNimbleFunctionList[[i]]$foo	(foo should be a method)
+                                        #	At this point, we cannot access variables of a nimble function list, ie
+                                        #	myNimbleFunctionList[[i]]$myVariable is not allowed
+                                        #	If we add this functionality, we will need to look up what foo as we do
+                                        #	for the nimbleFunction case above
+            
+            nf_name <-code[[2]]
+            nf_fieldName <- as.character(code[[3]])
+            newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
+            return(newRunCode)				
+        }
+                                        # stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
     }
-    possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
-    callerCode <- code[[2]]
-    #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
-    
-    if(length(callerCode) > 1){
-      if(callerCode[[1]] == '$'){ ## nested NL case
-        callerCode <- processKeyword(callerCode, nfProc)
-      }
-      else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) {
-        callerCode <- callerCode[[2]]
-      }
-    }
-    #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
-    #       May be a better way to do this
-    
-    class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
-    
-    if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
-      nl_fieldName <-as.character(code[[3]])
-      newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
-      return(newRunCode)				
-    }
-    if(class == 'symbolNimPtrList'){
-      return(code)
-    }
-    if(class == 'symbolModel'){
-      singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
-      accessName <- singleVarAccess_SetupTemplate$makeName(singleAccess_ArgList)
-      addNecessarySetupCode(accessName, singleAccess_ArgList, singleVarAccess_SetupTemplate, nfProc)
-      return(as.name(accessName))
-    }
-		if(class == 'symbolNimbleFunction'){
-			
-			#	Code is of the form myNimbleFunction$myMethod
-			#   or myNimbleFunction$myVar
-				
-			
-			#	Note that we have cut off '()' in the case of myMethod, so we must inspect the
-			#   nested symbol for myMethod to determine whether it is a method or variable
-						
-			nf_charName <- as.character(callerCode)
-			nf_fieldName <-as.character(code[[3]])
-			objectSymbol = nfProc$setupSymTab$symbols[[nf_charName]]$nfProc$setupSymTab$symbols[[nf_fieldName]]
-			if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
-				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))				
-				return(newRunCode)
-			}
-			else {
-				# I *assume* that if its not a member function, it should be treated with 
-				# nfVar
-				newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = as.name(nf_charName), VARNAME = nf_fieldName))
-				return(newRunCode)
-			}
-		}
-		if(class == 'symbolNimbleList'){
-		  #	Code is of the form 
-		  #  myNimbleList$myVar
-		  nl_charName <- as.character(callerCode)
-		  nl_fieldName <-as.character(code[[3]])
-		  newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
-		  return(newRunCode)
-		}
-		if(class == 'symbolNimbleFunctionList'){
-				
-				#	Code is of the form myNimbleFunctionList[[i]]$foo	(foo should be a method)
-				#	At this point, we cannot access variables of a nimble function list, ie
-				#	myNimbleFunctionList[[i]]$myVariable is not allowed
-				#	If we add this functionality, we will need to look up what foo as we do
-				#	for the nimbleFunction case above
-								
-				nf_name <-code[[2]]
-				nf_fieldName <- as.character(code[[3]])
-				newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = nf_name, METHODNAME = nf_fieldName))
-				return(newRunCode)				
-		}
-			 # stop(paste('in keywordProcessing of "$", type not recognized. Code = ', code) )
-	}
 )
     
 singleBracket_keywordInfo <- keywordInfoClass(
@@ -1474,7 +1478,8 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     if(nfProc$setupSymTab$symbolExists(nfName)) { ## first look in symbolTable
         symObj <- nfProc$setupSymTab$getSymbolObject(nfName)
         if(symObj$type == 'nimbleFunction') {
-            thisRCfunProc <- if(memFunName == 'run') symObj$nfProc$RCfunProcs[["operator()"]] else symObj$nfProc$RCfunProcs[[memFunName]] 
+            ##            thisRCfunProc <- if(memFunName == 'run') symObj$nfProc$RCfunProcs[["operator()"]] else symObj$nfProc$RCfunProcs[[memFunName]]
+            thisRCfunProc <- symObj$nfProc$RCfunProcs[[memFunName]] 
             if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
             thisFunctionMatch <- thisRCfunProc$RCfun$template
             return(matchAndFill.call(thisFunctionMatch, code ) )
@@ -1514,7 +1519,8 @@ matchKeywordCode <- function(code, nfProc){
     thisFunctionMatch <- matchFunctions[[ callName ]]
     ## see if this is a member function of an nf object
     if(!is.null(nfProc)) {
-        modCallName <- if(callName == "run") "operator()" else callName
+        ##modCallName <- if(callName == "run") "operator()" else callName
+        modCallName <- callName
         if(nfProc$setupSymTab$symbolExists(modCallName)) {
             symObj <- nfProc$setupSymTab$getSymbolObject(modCallName)
             if(class(symObj) == "symbolMemberFunction") {
