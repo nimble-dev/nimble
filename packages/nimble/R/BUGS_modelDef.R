@@ -307,7 +307,7 @@ modelDefClass$methods(processBUGScode = function(code = NULL, contextID = 1, lin
             lineNumber <- processBUGScode(recurseCode, nextContextID, lineNumber = lineNumber, userEnv = userEnv)  ## Recursive call to process the contents of the for loop
         }
         if(code[[i]][[1]] == '{') {  ## recursive call to a block contained in a {}, perhaps as a result of processCodeIfThenElse
-            lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber)
+            lineNumber <- processBUGScode(code[[i]], contextID, lineNumber = lineNumber, userEnv = userEnv)
         }
         if(!deparse(code[[i]][[1]]) %in% c('~', '<-', 'for', '{')) 
             stop("Error: ", deparse(code[[i]][[1]]), " not allowed in BUGS code in ", deparse(code[[i]]))
