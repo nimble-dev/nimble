@@ -254,15 +254,16 @@ checkDistributionFunctions <- function(distributionInput, userEnv) {
         stop(paste0("checkDistributionFunctions: density function for ", densityName,
                     " is not available as a nimbleFunction without setup code."))
     if(!exists(simulateName, where = userEnv) || !is.rcf(get(simulateName, pos = userEnv))) {
-        warning(paste0("checkDistributionFunctions: random generation function for ", densityName,
-                    " is not available as a nimbleFunction without setup code. NIMBLE is generating a placeholder function that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution."))
+        cat(paste0("Warning: random generation function for ", densityName,
+                    " is not available as a nimbleFunction without setup code. NIMBLE is generating a placeholder function that will invoke an error if an algorithm needs to simulate from this distribution. Some algorithms (such as random-walk Metropolis MCMC sampling) will work without the ability to simulate from the distribution.\n"))
         rargInfo <- environment(get(densityName, pos = userEnv))$nfMethodRCobject$argInfo
+        returnType <- deparse(unlist(rargInfo[[1]]))
         rargInfo <- rargInfo[-length(rargInfo)]  # remove 'log' argument
         rargInfo[[1]] <- quote(integer(0))
         names(rargInfo)[1] <- 'n'
         args <- paste(names(rargInfo), as.character(rargInfo), sep = "=", collapse = ', ')
         # build nf from text as unclear how to pairlist info in rargInfo with substitute
-        nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')})")
+        nfCode <- paste0("nimbleFunction(run = function(", args, ") { stop('user-defined distribution ", densityName, " provided without random generation function.')\nreturnType(", returnType, ")})")
         assign(simulateName, eval(parse(text = nfCode)), envir = userEnv)
     }
 
@@ -339,7 +340,7 @@ prepareDistributionInput <- function(dist) {
     simulateName <- sub('^d', 'r', dist)
     typeInfo <- get('nfMethodRCobject', environment(eval(as.name(simulateName))))$argInfo
     typeInfo <- typeInfo[names(typeInfo) != "n"]
-    rtypes <- numeric(0)
+    rtypes <- character(0)
     if(length(typeInfo))
         rtypes <- c(rtypes, paste0(names(typeInfo), ' = ', sapply(typeInfo, deparse)))
     if(!identical(out$types[-1], rtypes))
