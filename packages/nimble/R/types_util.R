@@ -68,6 +68,7 @@ nl_vectorizedExpandNodeIndex <- function(nodes, env = parent.frame()) {
 
 ## checks that all nodeNames are present in model
 nl_checkNodeNamesInModel <- function(model, nodeNames, determOnly = FALSE, stochOnly = FALSE) {
+    # this function not used in package, but if it were, would be good to have error messages indicate which nodes are the issue; see below for analogous situation for nl_checkVarNamesInModel
     if(!all(nodeNames %in% model$getNodeNames()))      stop('all node names not in model')
     if(determOnly) if(!all(nodeNames %in% model$getNodeNames(determOnly = TRUE)))      stop('all node names are not deterministic')
     if(stochOnly)  if(!all(nodeNames %in% model$getNodeNames(stochOnly = TRUE)))       stop('all node names are not stochastic')
@@ -75,7 +76,9 @@ nl_checkNodeNamesInModel <- function(model, nodeNames, determOnly = FALSE, stoch
 
 ## checks that all varNames are present in model
 nl_checkVarNamesInModel <- function(model, varNames) {
-    if(!all(varNames %in% model$getVarNames(includeLogProb = TRUE)))      stop('all variable names are not in model')
+    found <- varNames %in% model$getVarNames(includeLogProb = TRUE)
+    if(!all(found)) 
+        stop('These variables are not in model: ', paste(varNames[!found], collapse = ','), '.')
 }
 
 nl_nodeVectorReadyNodes <- function(model, nodeNames, includeData = TRUE){
