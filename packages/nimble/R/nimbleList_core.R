@@ -12,7 +12,10 @@ nimbleListDefClass <- setRefClass(
 
 nimbleListBase <- setRefClass(Class = 'nimbleListBase', 
                                   fields = list(
-                                    .CobjectInterface = 'ANY'
+                                      .CobjectInterface = 'ANY',
+                                      .generatorFunction = 'ANY',
+                                      nimbleListDef = 'ANY',
+                                      nestedListGenList = 'ANY'
                                   ),
                                   methods = list(
                                     initialize = function(...)
@@ -151,11 +154,11 @@ nimbleList <- function(...,
     
     classFields <- as.list(rep('ANY', length(types$vars)))
     names(classFields) <- types$vars
-    classFields[[length(classFields)+1]] <- "ANY"
-    names(classFields)[length(classFields)] <- "nimbleListDef" ## initial nl definition stored here
-    classFields[[length(classFields)+1]] <- "ANY"
-    names(classFields)[length(classFields)] <- "nestedListGenList" ## nl generators for any nested lists stored here
-
+    ## classFields[[length(classFields)+1]] <- "ANY"
+    ## names(classFields)[length(classFields)] <- "nimbleListDef" ## initial nl definition stored here
+    ## classFields[[length(classFields)+1]] <- "ANY"
+    ## names(classFields)[length(classFields)] <- "nestedListGenList" ## nl generators for any nested lists stored here
+    
     nlRefClass <- setRefClass(
       Class = name,
       fields = classFields,
@@ -208,7 +211,7 @@ nimbleList <- function(...,
 
     nlGeneratorFunction <-   eval(  substitute(
       function(...){
-      return(nlRefClass(NLDEFCLASSOBJECT, NESTEDGENLIST, ...))},
+      return(nlRefClass(NLDEFCLASSOBJECT, NESTEDGENLIST, ..., .generatorFunction = nlGeneratorFunction))},
       list(NLDEFCLASSOBJECT = nlDefClassObject,
            NESTEDGENLIST = nestedListGens)))
     return(list(new = nlGeneratorFunction))
@@ -224,7 +227,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                 neededTypes = 'ANY',
                                 nimbleProject = 'ANY',
                                 name = 'ANY',
-                                instances = 'ANY',
+                                ##   instances = 'ANY',
+                                nlGenerator = 'ANY',
                                 nestedListGens = 'ANY',
                                 neededObjectNames =  'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
                             ),
@@ -233,21 +237,34 @@ nlProcessing <- setRefClass('nlProcessing',
                                     writeLines(paste0('nlProcessing object ', nimbleListObj$className))
                                 },
                                 initialize = function(nimLists = NULL, className, project, ...) {
+                                    ## modifying this so nimLists is allowed to be a nlGenerator.  That way we don't need to create objects just to access their definition information.
+                                    ## nimLists can also be a nimbleList object or list of them (all from same generator)
                                   neededTypes <<- list()
                                   callSuper(...)
                                   if(!is.null(nimLists)) {
-                                    ## in new system, f must be a specialized nf, or a list of them
-                                    nimbleProject <<- project
-                                    sl <- if(is.list(nimLists)) nimLists[[1]]$nimbleListDef else nimLists$nimbleListDef
+                                      nimbleProject <<- project
+                                      if(is.nlGenerator(nimLists)) {
+                                          sl <- nl.getDefinitionContent(nimLists, 'nlDefClassObject')
+                                          nlGenerator <<- nimLists
+                                      } else {
+                                          if(is.list(nimLists)) {
+                                              sl <- nimLists[[1]]$nimbleListDef
+                                              nlGenerator <<- nimLists[[1]]$.generatorFunction
+                                          } else {
+                                              sl <- nimLists$nimbleListDef
+                                              nlGenerator <<- nimLists$.generatorFunction
+                                          }
+                                      }
+                                      
                                     nimbleListObj <<- sl
                                     if(missing(className)) {
                                       name <<- sl$className
                                     } else {
                                       name <<- className
                                     }
-                                    instances <<- if(inherits(nimLists, 'list')) nimLists else list(nimLists)
-                                    
-                                    nestedListGens <<- if(inherits(nimLists, 'list')) nimLists[[1]]$nestedListGenList else nimLists$nestedListGenList
+                                   ## instances <<- if(inherits(nimLists, 'list')) nimLists else list(nimLists)
+                                      nestedListGens <<- environment(nlGenerator)$nestedListGenList
+                                      ##nestedListGens <<- if(inherits(nimLists, 'list')) nimLists[[1]]$nestedListGenList else nimLists$nestedListGenList
                                   }
                                 },
                                 setupTypesForUsingFunction= function() buildSymbolTable(), ## required name
@@ -270,11 +287,15 @@ nlProcessing <- setRefClass('nlProcessing',
                                     stop("Number of nimbleList vars provided is not equal to number of nimbleList types provided")
                                   symTab <<- symbolTable()
                                   for(i in seq_along(nimbleListObj$types$vars)){
-                                    if(nimbleListObj$types$vars[i] %in% names(nestedListGens)){
-                                      nlList <- nestedListGens[[nimbleListObj$types$vars[i]]]$new()
-                                      className <- nlList$nimbleListDef$className
+                                      nimbleListObjVar <- nimbleListObj$types$vars[i]
+                                    if(nimbleListObjVar %in% names(nestedListGens)){
+                                      ##nlList <- nestedListGens[[nimbleListObj$types$vars[i]]]$new()
+                                        thisNestedListGen <- nestedListGens[[nimbleListObjVar]]
+                                        thisNestedListDef <- nl.getDefinitionContent(thisNestedListGen, 'nlDefClassObject')
+                                        ##className <- nlList$nimbleListDef$className
+                                        className <- thisNestedListDef$className
                                       nlp <- nimbleProject$nlCompInfos[[className]]$nlProc
-                                      newSym <- symbolNimbleList(name = nimbleListObj$types$vars[i], type = 'symbolNimbleList', nlProc = nlp)
+                                      newSym <- symbolNimbleList(name = nimbleListObjVar, type = 'symbolNimbleList', nlProc = nlp)
                                       neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
                                       symTab$addSymbol(newSym)
                                     }
@@ -282,7 +303,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                      nimbleListObjType <- nimbleListObj$types$types[i]
                                      nimbleListObjDim <-  as.numeric(nimbleListObj$types$dims[i])
                                      symTab$addSymbol(argType2symbol(call(nimbleListObjType, nimbleListObjDim),
-                                                                     neededTypes, nimbleListObj$types$vars[i]))
+                                                                     neededTypes, nimbleListObjVar))
                                     }
                                   }
                                 },
@@ -344,4 +365,12 @@ is.nlGenerator <- function(x, inputIsName = FALSE) {
         if(exists('nlDefClassObject', envir = environment(x$new), inherits = FALSE)) return(TRUE)
     }
     FALSE
+}
+
+nl.getDefinitionContent <- function(nlGen, name) {
+    environment(testNL$new)[[name]]
+}
+
+nl.getNestedGens <- function(nlGen) {
+    environment(testNL$new)$nestedListGens
 }
