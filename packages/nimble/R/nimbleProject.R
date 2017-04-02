@@ -557,7 +557,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      }
                                      if(reset) nlCompInfos[[className]] <<- NULL
                                      if(!alreadyAdded) {
-                                         if(!generatorOnly) {
+                                         if(generatorOnly) {
                                              ## check if generator exists and do addNimbleListGen
                                              ## and recurse into nestedListGenList
                                              

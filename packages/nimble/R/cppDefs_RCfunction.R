@@ -120,10 +120,15 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                       returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
-                                       returnListDefs <- returnListObj$nimbleListDef
-                                       returnListNestedLists <- returnListObj$nestedListGenList
-                                       returnListNew <- new(returnListObj$.refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
+                                         ##returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
+                                       ##returnListDefs <- returnListObj$nimbleListDef
+                                       ##returnListNestedLists <- returnListObj$nestedListGenList
+                                        ## refClassDef <- returnListObj$.refClassDef
+                                         nlGeneratorEnv <- environment(RCfunProc$compileInfo$returnSymbol$nlProc$nlGenerator)
+                                         returnListDefs <- get('nlDefClassObject', envir = nlGeneratorEnv)
+                                         returnListNestedLists <- get('nestedListGens', envir = nlGeneratorEnv)
+                                         refClassDef <- get('nlRefClass', envir = nlGeneratorEnv)
+                                         returnListNew <- new(refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
                                                             NESTEDGENLIST = returnListNestedLists)
                                        returnNimListGen <- list(new = function(){return(returnListNew)})
                                       

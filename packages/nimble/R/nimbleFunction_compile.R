@@ -189,13 +189,14 @@ nfProcessing <- setRefClass('nfProcessing',
                                       writeLines('***** READY FOR doSetupTypeInference *****')
                                       browser()
                                   }
-                                  doSetupTypeInference(setupOrig = FALSE, setupNew = TRUE)  
-                                                                    
-                                  if(debug) {
-                                      writeLines('***** READY FOR setupLocalSymbolTables *****')
-                                      browser()
-                                  }
-                                  setupLocalSymbolTables()
+                                  doSetupTypeInference(setupOrig = FALSE, setupNew = TRUE)
+                                  ## moved setupLocalSymbolTables inside setupTypeForUsingFunction
+                                                                                                      
+                                  ## if(debug) {
+                                  ##     writeLines('***** READY FOR setupLocalSymbolTables *****')
+                                  ##     browser()
+                                  ## }
+                                  ## setupLocalSymbolTables()
 
                                   if(debug) {
                                       print('lapply(compileInfos, function(x) print(x$newLocalSymTab))')
@@ -257,6 +258,7 @@ nfProcessing$methods(setupTypesForUsingFunction = function() {
     if(inherits(setupSymTab, 'uninitializedField')) {
         doSetupTypeInference(TRUE, FALSE)
         addMemberFunctionsToSymbolTable()
+        setupLocalSymbolTables()
     }
 })
 

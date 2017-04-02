@@ -1298,12 +1298,16 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## options include nfMethod
 
     }
 
-    
-    
     ##sym <- symTab$getSymbolObject(a11$name, TRUE)
     
-    if(isSymFun) nfMethodRCobj <- nfProc$getMethodInterfaces()[[methodName]] ##sym$nfProc$origMethods[[methodName]]
-    if(isSymFunList) nfMethodRCobj <- getFunctionEnvVar(nf_getGeneratorFunction(symbolObject$baseClass), 'methodList')[[methodName]]
+    if(isSymFun) {
+        nfMethodRCobj <- nfProc$getMethodInterfaces()[[methodName]] ##sym$nfProc$origMethods[[methodName]]
+        returnType <- nfProc$compileInfos[[methodName]]$returnSymbol
+    } 
+    if(isSymFunList) {
+        nfMethodRCobj <- getFunctionEnvVar(nf_getGeneratorFunction(symbolObject$baseClass), 'methodList')[[methodName]]
+        returnType <- nfMethodRCobj$returnType
+    }
     ## } else {
     ##     if(a11$name != '[[') stop(exprClassProcessingErrorMsg(code, 'In sizeChainedCall. Expecting a nimbleFunction list or a nimFun as first arg of nfMethod.'), call. = FALSE)
     ##     ## should look like nfMethod(nflist[[i]], 'foo')
@@ -1318,7 +1322,7 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## options include nfMethod
  ##   }
  ##   else warning(paste0('Warning that we did not know what to do in sizeChainedCall for ', nimDeparse(code)))
     if(!is.null(nfMethodRCobj)) {
-        returnType <- nfMethodRCobj$returnType
+     ##   returnType <- nfMethodRCobj$returnType
         argInfo <- nfMethodRCobj$argInfo
         asserts <- generalFunSizeHandler(code, symTab, typeEnv, returnType, argInfo, chainedCall = TRUE)
         return(asserts)
@@ -1396,27 +1400,29 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
     sym <- symTab$getSymbolObject(code$name, TRUE)
     ok <- FALSE
     if(inherits(sym, 'symbolNimbleFunction')) {
-        nfMethodRCobj <- sym$nfProc$getMethodInterfaces()$run ##environment(sym$nfProc$nfGenerator)$methodList$run
-        returnType <- nfMethodRCobj$returnType
-        eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
-        if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
-                                                eigListClasses))){  
-          ## if we have a nl return type, find class name and match with nlGenerator in symTab
-          outClassName <- get('return', envir = typeEnv)$sizeExprs$name
-          parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
-            symType <- x$type
-            if(symType == 'Ronly'){
-              symClassName <- x[['nlProc']][['name']]
-              if(!is.null(symClassName) && symClassName == outClassName){
-                return(x$name)
-              }
-            }
-            return(NULL)
-          })
-          returnType[[1]] <- as.name(unlist(parentNLGenName))
-        }
-        argInfo <- nfMethodRCobj$argInfo
-        ok <- TRUE
+        stop(exprClassProcessingErrorMsg(code, 'In sizeNimbleFunction: A nimbleFunction method should not be processed here.'), call. = FALSE)
+        ## HANDLING OF myNF$run() HERE IS DEFUNCT.  ALL SHOULD GO THROUGH sizeChainedCall now (chainedCall(nfMethod(myNF,'run'), arg1, arg2).
+        ## nfMethodRCobj <- sym$nfProc$getMethodInterfaces()$run ##environment(sym$nfProc$nfGenerator)$methodList$run
+        ## returnType <- nfMethodRCobj$returnType
+        ## eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
+        ## if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
+        ##                                         eigListClasses))){  
+        ##   ## if we have a nl return type, find class name and match with nlGenerator in symTab ## wrong 'return' ???
+        ##   outClassName <- get('return', envir = typeEnv)$sizeExprs$name
+        ##   parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
+        ##     symType <- x$type
+        ##     if(symType == 'Ronly'){
+        ##       symClassName <- x[['nlProc']][['name']]
+        ##       if(!is.null(symClassName) && symClassName == outClassName){
+        ##         return(x$name)
+        ##       }
+        ##     }
+        ##     return(NULL)
+        ##   })
+        ##   returnType[[1]] <- as.name(unlist(parentNLGenName))
+        ## }
+        ## argInfo <- nfMethodRCobj$argInfo
+        ## ok <- TRUE
     }
     if(inherits(sym, 'symbolMemberFunction')) {
         eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
@@ -3132,21 +3138,34 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
             }
         }
     }
-    returnTypeLabel <- as.character(returnType[[1]])
-    if(returnTypeLabel == 'void') {
+    if(inherits(returnType, 'symbolNimbleList')) {
+        code$type <- 'symbolNimbleList'
+        code$sizeExprs <- returnType
+        code$toEigenize <- 'maybe'
+        code$nDim <- 0
+        liftIfAmidExpression <- TRUE
+    } else {
+        returnSymbolBasic <- inherits(returnType, 'symbolBasic')
+        returnTypeLabel <- if(returnSymbolBasic) returnType$type else as.character(returnType[[1]])
+        
+        if(returnTypeLabel == 'void') {
+            code$type <- returnTypeLabel
+            code$toEigenize <- 'unknown'
+            return(asserts)
+        }
+        returnNDim <- if(returnSymbolBasic) returnType$nDim
+                      else if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
+                                                                
+                                        # returnSizeExprs <- if(returnTypeLabel == 'symbolNimbleList') symTab$getSymbolObject('return') else vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
+        returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
         code$type <- returnTypeLabel
-        code$toEigenize <- 'unknown'
-        return(asserts)
+        code$nDim <- returnNDim
+        code$sizeExprs <- returnSizeExprs
+        code$toEigenize <- if(code$nDim == 0) 'maybe' else 'no'
+        liftIfAmidExpression <- code$nDim > 0
     }
-    returnNDim <- if(length(returnType) > 1) as.numeric(returnType[[2]]) else 0
-    # returnSizeExprs <- if(returnTypeLabel == 'symbolNimbleList') symTab$getSymbolObject('return') else vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
-    returnSizeExprs <- vector('list', returnNDim) ## This stays blank (NULLs), so if assigned as a RHS, the LHS will get default sizes
-    code$type <- returnTypeLabel
-    code$nDim <- returnNDim
-    code$sizeExprs <- returnSizeExprs
-    code$toEigenize <- if(code$nDim == 0) 'maybe' else 'no'
-
-    if(code$nDim > 0) {
+    
+    if(liftIfAmidExpression) {
         if(!(code$caller$name %in% c('{','<-','<<-','='))) {
             asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
         } else
