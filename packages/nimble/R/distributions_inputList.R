@@ -90,6 +90,12 @@ distributionsInputList <- list(
                    altParams= c('rate = 1/scale', 'mean = scale*shape', 'sd = scale * sqrt(shape)'),
                    range    = c(0, Inf),
                    pqAvail = TRUE),
+
+    dinvgamma  = list(BUGSdist = 'dinvgamma(shape, rate, scale, mean, sd)',
+                   Rdist    = c('dinvgamma(shape, scale = 1/rate)'),
+                   altParams= c('rate = 1/scale', 'mean = beta/(alpha-1)', 'sd = beta / ((alpha - 1) * sqrt(alpha-2))'),
+                   range    = c(0, Inf),
+                   pqAvail = TRUE),
     
     ## gen.gamma = list(BUGSdist = 'gen.gamma(r, mu, beta)'),   ## not sure the state of this?  -DT
     
