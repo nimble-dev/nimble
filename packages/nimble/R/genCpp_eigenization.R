@@ -93,6 +93,7 @@ eigenizeCalls <- c( ## component-wise unarys valid for either Eigen array or mat
     makeCallList(c('%*%'), 'eigenize_cWiseBinaryMatrix'),
     ## matrix ops
     makeCallList(matrixSolveOperators, 'eigenize_matrixOps'),
+    makeCallList('bessel_k', 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_dFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_pFuns, 'eigenize_recyclingRuleFunction'),
     makeCallList(scalar_distribution_qFuns, 'eigenize_recyclingRuleFunction'),

@@ -1397,6 +1397,9 @@ MAKE_RECYCLING_RULE_CLASS_r2(runif, double)
 MAKE_RECYCLING_RULE_CLASS_r2(rweibull, double)
 MAKE_RECYCLING_RULE_CLASS_r2(rt_nonstandard, double)
 MAKE_RECYCLING_RULE_CLASS_r1(rt, double)
+
+MAKE_RECYCLING_RULE_CLASS2_1scalar(bessel_k, double)
+
 // matrix, array, as.numeric, as.matrix, as.array
 
 // need the additional parts below to make newMatrixClass work

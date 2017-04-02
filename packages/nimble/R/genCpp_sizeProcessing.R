@@ -59,7 +59,9 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     nimArrayGeneral = 'sizeNimArrayGeneral',
                     setAll = 'sizeOneEigenCommand',
                     voidPtr = 'sizeVoidPtr',
-                    run.time = 'sizeRunTime'),
+                    run.time = 'sizeRunTime',
+                    bessel_k = 'sizeRecyclingRuleBesselK'
+                   ),
                makeCallList(scalar_distribution_dFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_pFuns, 'sizeRecyclingRule'),
                makeCallList(scalar_distribution_qFuns, 'sizeRecyclingRule'),
@@ -292,6 +294,29 @@ sizeWhich <- function(code, symTab, typeEnv) {
         asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
     }
     if(length(asserts) == 0) NULL else asserts
+}
+
+sizeRecyclingRuleBesselK <- function(code, symTab, typeEnv) { ## also need an entry in eigenization.
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    numArgs <- length(code$args)
+
+    # this is easily relaxed but not clear the functionality would ever be needed...
+    if(!is.numeric(code$args[[3]]) && !identical(code$args[[3]]$nDim, 0))
+        stop("In besselK, 'expon.scaled' must be a single value.")
+
+    if(numArgs != 3) stop("Expecting two or three arguments for besselK function.")
+    recycleArgs <- c(TRUE, TRUE, FALSE)
+
+    newSizeExprs <- multiMaxSizeExprs(code, recycleArgs)
+    if(length(newSizeExprs)==1)
+        if(is.numeric(newSizeExprs[[1]]))
+            if(newSizeExprs[[1]] == 1)
+                return(c(asserts, sizeScalarRecurse(code, symTab, typeEnv, recurse = FALSE))) ## ALSO NEED ALL ARGS TO HAVE nDim 0
+    code$sizeExprs <- newSizeExprs
+    code$type <- 'double' ## will need to look up from a list
+    code$nDim <- 1
+    code$toEigenize <- TRUE
+    return(asserts)
 }
 
 sizeRecyclingRule <- function(code, symTab, typeEnv) { ## also need an entry in eigenization.

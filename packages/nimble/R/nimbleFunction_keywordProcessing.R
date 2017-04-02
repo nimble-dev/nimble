@@ -168,7 +168,20 @@ nimSvd_keywordInfo <- keywordInfoClass(
   }
 )
 
+besselK_keywordInfo <- keywordInfoClass(
+    keyword = 'besselK',
+    processor = function(code, nfProc) {
+        expon.scaledArg <- code$expon.scaled
+        if(is.null(expon.scaledArg))
+            expon.scaledArg <- FALSE
+        if(is.numeric(expon.scaledArg) || is.logical(expon.scaledArg)) {
+            code$expon.scaled <- 1 + as.logical(expon.scaledArg)
+        } else code$expon.scaled <- substitute(1 + A, list(A = expon.scaledArg))
+        return(code)
+    }
+)
 
+ 
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
 	processor = function(code, nfProc){
@@ -847,6 +860,7 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
+keywordList[['besselK']] <- besselK_keywordInfo
 keywordList[['nimEigen']] <- nimEigen_keywordInfo
 keywordList[['nimSvd']] <- nimSvd_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
@@ -915,6 +929,7 @@ matchFunctions[['int']] <- function(nDim, dim, default, ...){}
 matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
+matchFunctions[['besselK']] <- function(x, nu, expon.scaled = FALSE){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
