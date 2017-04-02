@@ -15,7 +15,6 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     list(
-                        run = 'cppOutputRun',
                         eigenCast = 'cppOutputEigenCast',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
                         MAKE_FIXED_VECTOR = 'cppOutputMakeFixedVector',
@@ -403,11 +402,6 @@ cppOutputPow <- function(code, symTab) {
         paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
     else
         paste0(exprName2Cpp(code, symTab), '(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),',', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
-}
-
-cppOutputRun <- function(code, symTab) {
-    message('figure out outputting of run')
-    browser()
 }
 
 cppOutputCallAsIs <- function(code, symTab) {

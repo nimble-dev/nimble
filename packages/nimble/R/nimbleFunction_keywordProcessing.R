@@ -711,42 +711,45 @@ dollarSign_keywordInfo <- keywordInfoClass(
     keyword = '$',
     processor = function(code, nfProc){
         if(is.null(nfProc)) stop("No legal use of dollar sign in nimbleFunction with no setup code")
-                                        #	First thing we need to do is remove 'run', for backward compatibility, i.e.
-                                        #   replace myNimbleFunction$run() -> myNimbleFunction() or
-                                        #	myNimbleFunList[[i]]$run() -> myNimbleFunList[[i]]()
-                                        #   Probably a better way to handle this
-
-        ## In C++, run becomes operator() for historical reasons.
-        ## We used to strip it out here, but now we do it during generateCpp step.
-        ## if(code[[3]] == 'run'){
-        ##   newRunCode <- code[[2]]
-        ##   return(newRunCode)
-        ## }
         
-        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
+        ##        possibleObjects <- c('symbolModel', 'symbolNimPtrList', 'symbolNimbleFunction', 'symbolNimbleFunctionList', 'symbolNimbleList')
         callerCode <- code[[2]]
+
+        doubleBracketCase <- FALSE
+        if(length(callerCode) > 1) {
+            if(deparse(callerCode[[1]] == '[[')) {
+                doubleBracketCase <- TRUE
+                symObj <- getSymObj_recurse(callerCode[[2]], nfProc$setupSymTab)
+            }
+        }
+        if(!doubleBracketCase)
+            symObj <- getSymObj_recurse(callerCode, nfProc$setupSymTab)
+
+        class <- class(symObj)[1]
+
                                         #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
-        
         if(length(callerCode) > 1){
             if(callerCode[[1]] == '$'){ ## nested NL or NF case
                 callerCode <- processKeyword(callerCode, nfProc)
             }
-            else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) {
-                callerCode <- callerCode[[2]]
-            }
+            ## else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) { 
+            ##     callerCode <- callerCode[[2]]
+            ## }
         }
                                         #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
                                         #       May be a better way to do this
         
-        class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
+        ##class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
         
         if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
             nl_fieldName <-as.character(code[[3]])
             newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
             return(newRunCode)				
         }
-        if(class == 'symbolNimPtrList'){
-            return(code)
+        if(class == 'symbolNimbleFunctionList'){
+             nf_fieldName <-as.character(code[[3]])
+            newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = callerCode, METHODNAME = nf_fieldName))
+            return(newRunCode)
         }
         if(class == 'symbolModel'){
             singleAccess_ArgList <- list(code = code, model = callerCode, var = as.character(code[[3]]) )
@@ -763,17 +766,17 @@ dollarSign_keywordInfo <- keywordInfoClass(
                                         #	Note that we have cut off '()' in the case of myMethod, so we must inspect the
                                         #   nested symbol for myMethod to determine whether it is a method or variable
             
-            nf_charName <- as.character(callerCode)
+            ##nf_charName <- as.character(callerCode)
             nf_fieldName <-as.character(code[[3]])
-            objectSymbol = nfProc$setupSymTab$symbols[[nf_charName]]$nfProc$setupSymTab$symbols[[nf_fieldName]]
+            objectSymbol = symObj$nfProc$setupSymTab$getSymbolObject(nf_fieldName)
             if(class(objectSymbol)[[1]] == 'symbolMemberFunction'){
-                newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = as.name(nf_charName), METHODNAME = nf_fieldName))				
+                newRunCode <- substitute(nfMethod(NIMBLEFXN, METHODNAME), list(NIMBLEFXN = callerCode, METHODNAME = nf_fieldName))				
                 return(newRunCode)
             }
             else {
                                         # I *assume* that if its not a member function, it should be treated with 
                                         # nfVar
-                newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = as.name(nf_charName), VARNAME = nf_fieldName))
+                newRunCode <- substitute(nfVar(NIMBLEFXN, VARNAME), list(NIMBLEFXN = callerCode, VARNAME = nf_fieldName))
                 return(newRunCode)
             }
         }
@@ -1361,18 +1364,37 @@ addNecessarySetupCode <- function(name, argList, template, nfProc, allowToCpp = 
     }
 }
 
+getSymObj_recurse <- function(code, symTab, recurse = FALSE) { #code will be like a$b$c with expectation all are NF or NL
+    if(length(code) > 1) {
+        if(deparse(code[[1]]) != '$') stop(paste0('Problem (i) working through ', deparse(code)), .call = FALSE)
+        firstArg <- code[[2]]
+        memberName <- deparse(code[[3]])
+        symTab <- getSymObj_recurse(firstArg, symTab, recurse = TRUE) ## when recursing, return the symTab
+    } else {
+        memberName <- deparse(code)
+    }
+    symObject <- symTab$getSymbolObject(memberName)
+    if(recurse) {
+        if(inherits(symObject, 'symbolNimbleFunction')) return(symObject$nfProc$setupSymTab)
+        if(inherits(symObject, 'symbolNimbleList')) return(symObject$nlProc$symTab) ## may not work?
+    } else {
+        return(symObject)
+    }
+    stop(paste0('Problem (ii) working through ', deparse(code)), .call = FALSE)
+}
+
 symTypeFromSymTab <- function(codeName, symTab, options = character(0) ){
-	if(is.language(codeName))
-		codeName <- as.character(codeName)
-	if(length(codeName) > 1)
-		return('NULL')
-	class <- class(symTab$symbols[[codeName]])[1]
-	if(length(options) == 0)
-		return(class)
-	if(!(class %in% options))
-		return(NULL)  ## nimbleList that was not constructed in setup code 
-	                ## stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
-	return(class)
+    if(is.language(codeName))
+        codeName <- as.character(codeName)
+    if(length(codeName) > 1)
+        return('NULL')
+    class <- class(symTab$symbols[[codeName]])[1]
+    if(length(options) == 0)
+        return(class)
+    if(!(class %in% options))
+        return(NULL)  ## nimbleList that was not constructed in setup code 
+    ## stop(paste('invalid class for object ', codeName, 'class provided = ', class) )
+    return(class)
 }
 
 isSymbolType <- function(symTab, varName, symType)
@@ -1442,41 +1464,153 @@ determineNdimsFromNfproc <- function(modelExpr, varOrNodeExpr, nfProc) {
     return(allNDims)
 }
 
+## from a$b(), goal is to get symbolObject for a
+## from a$b$c(), goal is to get symbolObject for b
 matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b(c) as one unit so the member function template for b can be looked up
     dollarSignPart <- code[[1]] ## we already checked that code[[1]][[1]] is '$' before calling this function
-    nfPart <- dollarSignPart[[2]]
-    if(length(nfPart) != 1) { ## It could be a nimbleFunctionList with nfl[[i]]$member(a)
+    leftSide <- dollarSignPart[[2]]  ## could have further recursing needed. at the moment, nimbleFunction list can only appear at the end of nesting (member data are not part of inheritance)
+    rightSide <- dollarSignPart[[3]]
+    memFunName <- deparse(rightSide)
+    nestedLeftSide <- FALSE
+
+    ## Step 1: Find the symbol object for whatever is on left-hand side of $
+    ## This may involve recursion
+    ## Only case where the symbol object can be missing (NULL) is nimbleListDef$new() if nimbleListDef if from global env
+    if(length(leftSide) != 1) {
+        if(deparse(leftSide[[1]])=='$') {
+            symObj <- getSymObj_recurse(leftSide, nfProc$setupSymTab)
+            nestedLeftSide <- TRUE
+        } else {
+            nfNestedCall <- leftSide[[1]]
+            if(length(nfNestedCall) != 1) stop(paste0("Cannot handle this expression: ", deparse(code)))
+            if(deparse(nfNestedCall) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code)))
+            leftLeftSide <- leftSide[[2]]
+            if(length(leftLeftSide) != 1) {
+                if(deparse(leftLeftSide[[1]]) == '$') { ##a$b[[i]]$foo()
+                    symObj <- getSymObj_recurse(leftLeftSide, nfProc$setupSymTab)
+                    nestedLeftSide <- TRUE
+                } else stop('Problem processing something like a$b[[i]]$foo()')
+            } else {
+                nfListName <- deparse(leftSide[[2]])
+                if(nfProc$setupSymTab$symbolExists(nfListName)) { ## look in symbol table
+                    symObj <- nfProc$setupSymTab$getSymbolObject(nfListName)
+                }
+            }
+            
+        }
+    } else {
+        symTab <- nfProc$setupSymTab
+        symObj <- symTab$getSymbolObject(deparse(leftSide))
+    }
+    
+    if(deparse(rightSide)=='new') { ## this is unique because in non-nested mode, this can be looking for a nlDef in global environment (or possibly elsewhere, but not dealt with)
+        ## symObj can be null here
+        if(is.null(symObj)) {
+            if(nestedLeftSide) stop('Cannot find nested nimbleList definition')
+            nlGenName <- deparse(leftSide)
+            if(exists(nlGenName, where = globalenv())) {
+                possibleNLgen <- get(nlGenName, envir = globalenv())
+
+                if(is.nlGenerator(possibleNLgen)) {
+                    nlList <- possibleNLgen$new() ## why do we need to instantiate this every time instead of only if it hasn't been done?
+                    nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+                    className <- nlList$nimbleListDef$className
+                    nfName <- deparse(leftSide)
+                    newSym <- symbolNimbleList(name = nfName, type = 'symbolNimbleList', nlProc = nlp)
+                    if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
+                    symObj <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
+                    nfProc$setupSymTab$addSymbol(symObj)
+                }
+            }
+        }
+    }
+
+    if(is.null(symObj)) stop('Problem looking up object')
+    
+    if(symObj$type == 'nimbleFunction') {
+        ##            thisRCfunProc <- if(memFunName == 'run') symObj$nfProc$RCfunProcs[["operator()"]] else symObj$nfProc$RCfunProcs[[memFunName]]
+        thisRCfunProc <- symObj$nfProc$RCfunProcs[[memFunName]] 
+        if(is.null(thisRCfunProc)) stop(paste0("Cannot handle this expression (member function may not exist): ", deparse(code)), call. = FALSE)
+        thisFunctionMatch <- thisRCfunProc$RCfun$template
+        return(matchAndFill.call(thisFunctionMatch, code ) )
+    } 
+    if(inherits(symObj, 'symbolModel')) {
+        if(nestedLeftSide) stop('Access to a model cannot be nested.')
+        thisFunctionMatch <- matchModelMemberFunctions[[ memFunName ]]
+        if(is.null(thisFunctionMatch)) stop(paste0("Cannot handle this expression (looks like a model with an invalid member function call?): ", deparse(code)))
+        return(matchAndFill.call(thisFunctionMatch, code) )
+    }
+    if(inherits(symObj, 'symbolNimbleFunctionList')) {
+        thisBaseClass <- symObj$baseClass
+        thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
+        return(matchAndFill.call(thisFunctionMatch, code ) )
+    }
+    if(inherits(symObj, 'symbolNimbleListGenerator')){
+        if(nestedLeftSide) stop('Problem with something like X$nimbleListDef$new().') 
+        if(memFunName == "new"){
+            listElements <- symObj$nlProc$symTab$getSymbolObjects()
+            if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
+            elementName <- deparse(code[[listElements[[1]]$name]])
+            if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
+            argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
+            for(i in seq_along(listElements)[-1]){  ## skip the first element
+                if(!is.null(code[[listElements[[i]]$name]])) code[[listElements[[i]]$name]] <- matchKeywords_recurse(code[[listElements[[i]]$name]], nfProc)
+                elementName <- deparse(code[[listElements[[i]]$name]])
+                if(elementName == "NULL") elementName <- ""
+                argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)
+            }
+            nlCall <- paste0("makeNewNimbleListObject(", deparse(leftSide), ", ", argValues, ")")
+            return(parse(text = nlCall, keep.source = FALSE)[[1]])
+        }
+    }
+    stop(paste0("Cannot handle this expression: ", deparse(code))) 
+}
+
+matchKeywordCodeMemberFun_old <- function(code, nfProc) {  ## handles cases like a$b(c) as one unit so the member function template for b can be looked up
+    dollarSignPart <- code[[1]] ## we already checked that code[[1]][[1]] is '$' before calling this function
+    nfPart <- dollarSignPart[[2]] ## with a$b(), we look up a in nfProc$setupSymTab, then use that to find b
+    ## with a$b$c(),
+    ## nesting cannot be used for model$calculate()
+    
+    if(length(nfPart) != 1) { ## It could be a nimbleFunctionList with nfl[[i]]$member(a) or nf1$nf2$foo()
         nfNestedPart <- nfPart[[1]]
-        if(length(nfNestedPart) != 1) stop(paste0("Cannot handle this expression: ", deparse(code)))
-        if(deparse(nfNestedPart) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code)))
-        nfListName <- deparse(nfPart[[2]])
-        memFunName <- deparse(dollarSignPart[[3]])
-        if(is.null(nfProc)) stop(paste0("Cannot handle what looks like a nimbleFunctionList usage unless it was created in setup code: ", deparse(code)), call. = FALSE)
-        
-        if(nfProc$setupSymTab$symbolExists(nfListName)) { ## look in symbol table
-            symObj <- nfProc$setupSymTab$getSymbolObject(nfListName)
-            if(symObj$type == 'nimbleFunctionList') {
-                thisBaseClass <- symObj$baseClass
-                thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
-                return(matchAndFill.call(thisFunctionMatch, code ) )
-            } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but the object isn\'t the right type: ", deparse(code)), call. = FALSE)
-        } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but we can\'t find it in setup: ", deparse(code)), call. = FALSE)
+        if(deparse(nfNestedPart) == '$') { ##a$b$...  nfPart will be A$b (where A could be C$D or C[[j]] etc.)
+            browser()
+            symTab <- getSymTab_recurse(nfPart, nfProc$setupSymTab)
+        } else { a[[i]]$...       ## nfPart will be A[[i]] (where A could be C$D or C[[j]]) 
+            if(length(nfNestedPart) != 1) stop(paste0("Cannot handle this expression: ", deparse(code)))
+            if(deparse(nfNestedPart) != '[[') stop(paste0("Cannot handle this expression: ", deparse(code)))
+            nfListName <- deparse(nfPart[[2]])
+            memFunName <- deparse(dollarSignPart[[3]])
+            if(is.null(nfProc)) stop(paste0("Cannot handle what looks like a nimbleFunctionList usage unless it was created in setup code: ", deparse(code)), call. = FALSE)
+            
+            if(nfProc$setupSymTab$symbolExists(nfListName)) { ## look in symbol table
+                symObj <- nfProc$setupSymTab$getSymbolObject(nfListName)
+                if(symObj$type == 'nimbleFunctionList') {
+                    thisBaseClass <- symObj$baseClass
+                    thisFunctionMatch <- environment(symObj$baseClass)$methodList[[memFunName]]$template
+                    return(matchAndFill.call(thisFunctionMatch, code ) )
+                } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but the object isn\'t the right type: ", deparse(code)), call. = FALSE)
+            } else stop(paste0("Syntax looks like a nimbleFunctionList member function, but we can\'t find it in setup: ", deparse(code)), call. = FALSE)
+        }
+    } else {
+        symTab <- nfProc$setupSymTab
     }
     ## must be nfObj$member(args)
-    nfName <- as.character(nfPart) ## nfObj
+    nfName <- as.character(deparse(nfPart)) ## nfObj
     memFunName <- deparse(dollarSignPart[[3]])
-    if((exists(nfName, where = globalenv())) && ((is.nlGenerator(eval(nfPart))) &&
-                                                 !(nfProc$setupSymTab$symbolExists(nfName)))){
-      nlList <- eval(nfPart)$new()
+    if((exists(nfName, where = globalenv())) && ((is.nlGenerator(eval(nfPart))) && ##If it's a NLdef$new() with NLdef not in symbol table 
+                                                 !(symTab$symbolExists(nfName)))){ 
+      nlList <- eval(nfPart)$new() ## why do we need to instantiate this every time instead of only if it hasn't been done?
       nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
       className <- nlList$nimbleListDef$className
       newSym <- symbolNimbleList(name = nfName, type = 'symbolNimbleList', nlProc = nlp)
       if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
       addSym <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
-      nfProc$setupSymTab$addSymbol(addSym)
+      nfProc$setupSymTab$addSymbol(addSym)                                         ## then add it to symbolTable - should this be to symTab (nested)?
     }
-    if(nfProc$setupSymTab$symbolExists(nfName)) { ## first look in symbolTable
-        symObj <- nfProc$setupSymTab$getSymbolObject(nfName)
+    if(symTab$symbolExists(nfName)) { ## first look in symbolTable
+        symObj <- symTab$getSymbolObject(nfName)
         if(symObj$type == 'nimbleFunction') {
             ##            thisRCfunProc <- if(memFunName == 'run') symObj$nfProc$RCfunProcs[["operator()"]] else symObj$nfProc$RCfunProcs[[memFunName]]
             thisRCfunProc <- symObj$nfProc$RCfunProcs[[memFunName]] 
