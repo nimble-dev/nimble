@@ -32,7 +32,11 @@ calc_dmnormConjugacyContributions <- nimbleFunction(
                              } else     { total <- total + abs(coeff[i,j])     }
                 }
             }
-            if(total < d * 1E-15) return(prec)
+            if(total < d * 1E-15) {
+                if(order == 1) ans <- prec %*% asCol(vec)
+                if(order == 2) ans <- prec
+                return(ans)
+            }
         }
         if(order == 1) ans <- t(coeff) %*% (prec %*% asCol(vec))
         if(order == 2) ans <- t(coeff) %*% prec %*% coeff
