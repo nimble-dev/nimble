@@ -184,8 +184,10 @@ nimDeparse <- function(code, indent = '') {
         return(paste0(nimDeparse(code$args[[1]]),
                       '(', paste0(unlist(lapply(code$args[-1], nimDeparse) ), collapse = ', '), ')' ) )
     }
-    ## for a general function call
-    return( paste0(code$name, '(', paste0(unlist(lapply(code$args, nimDeparse) ), collapse = ', '), ')' ) )
+    ## for a general function call. Modified to preseve any argument names
+    deparsedArguments <- lapply(code$args, nimDeparse)
+    argumentText <- if(!is.null(names(deparsedArguments))) paste(names(deparsedArguments), deparsedArguments, sep = '=') else unlist(deparsedArguments)
+    return(paste0(code$name, '(', paste0(argumentText, collapse = ','), ')' ))
 }
 
 ## error trapping utilities to be used from the various processing steps
@@ -279,7 +281,8 @@ isCodeScalar <- function(code) {
 anyNonScalar <- function(code) {
     if(!inherits(code, 'exprClass')) return(FALSE)
     if(code$name == 'map') return(TRUE)
-    if(code$type == 'symbolNimbleList') return(FALSE)
+    if(is.character(code$type))
+        if(code$type[1] == 'symbolNimbleList') return(FALSE)
     if(code$isName) {
         return(!isCodeScalar(code))
     }

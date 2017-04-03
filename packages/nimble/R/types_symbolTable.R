@@ -72,26 +72,33 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
     if(name == "return"){
         message('found the return case of interest')
         browser()
-      if(exists(as.character(AT), envir = globalenv()) &&
-         is.nlGenerator(eval(parse(text = as.character(AT), keep.source = FALSE)))){
-        nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
-      }
-      else if(type %in% names(nlEigenReferenceList)){
-        nlList <- nlEigenReferenceList[[type]]$eigenNimbleListDef$new() 
-      }
-      if(exists('nlList')){
-        className <- nlList$nimbleListDef$className
-        isANeededType <- (className == names(neededTypes))
-        if(any(isANeededType == 1)){
-          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
+        possibleTypeName <- deparse(AT[[1]])
+        className <- NULL
+        if(exists(possibleTypeName, envir = globalenv())) {
+          possibleNLgenerator <- get(possibleTypeName, envir = globalenv())
+          if(is.nlGenerator(possibleNLgenerator)) {
+              className <- nl.getListDef(nlGen)$className
+              ##nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
+          }
         }
-        else{
-          listST <- recurseGetListST(className, neededTypes)
+        if(is.null(className)) {
+            if(type %in% names(nlEigenReferenceList)){
+                className <- nl.getListDef(nlEigenReferenceList[[type]]$eigenNimbleListDef)$className
+                ##nlList <- nlEigenReferenceList[[type]]$eigenNimbleListDef$new() 
+            }
         }
+        if(!is.null(className)){
+            ##className <- nlList$nimbleListDef$className
+            isANeededType <- (className == names(neededTypes))
+            if(any(isANeededType)){
+                listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow = TRUE)
+            } else {
+                listST <- recurseGetListST(className, neededTypes)
+            }
         listST$name <- name
         return(listST)
-      }
-    }   
+        }
+    }
 }
 
 recurseGetListST <- function(className, neededTypes){

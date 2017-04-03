@@ -1367,7 +1367,7 @@ addNecessarySetupCode <- function(name, argList, template, nfProc, allowToCpp = 
 
 getSymObj_recurse <- function(code, symTab, recurse = FALSE) { #code will be like a$b$c with expectation all are NF or NL
     if(length(code) > 1) {
-        if(deparse(code[[1]]) != '$') stop(paste0('Problem (i) working through ', deparse(code)), .call = FALSE)
+        if(deparse(code[[1]]) != '$') return(NULL) ## This is valid if we have makeNewNimbleListObject(...)$member or foo()$member ## stop(paste0('Problem (i) working through ', deparse(code)), .call = FALSE)
         firstArg <- code[[2]]
         memberName <- deparse(code[[3]])
         symTab <- getSymObj_recurse(firstArg, symTab, recurse = TRUE) ## when recursing, return the symTab
@@ -1552,6 +1552,7 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
         if(memFunName == "new"){
             thisFunctionMatch <- symObj$nlProc$templateWithBlankFirstArg ## function( , var1, var2, etc.) 
             ##names(thisFunctionMatch)[2] <- '.LEFTSIDE' ## function(.LEFTSIDE, var1, var2, etc.), build into templateWithBlankFirstArg
+            for(i in seq_along(code[-1])) code[[i+1]] <- matchKeywords_recurse(code[[i+1]], nfProc)
             code[[ length(code) + 1]] <- leftSide      ## add '.LEFTSIDE = leftSide' arg to code
             names(code)[length(code)] <- '.LEFTSIDE'
             code[[1]] <- as.name('makeNewNimbleListObject') ## modify first arg of code to be desired name of call
