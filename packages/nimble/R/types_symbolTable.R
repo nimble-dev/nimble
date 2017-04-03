@@ -61,7 +61,8 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
       }
     }
     if(is.list(neededTypes)){
-      isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
+        ##  isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
+        isANeededType <- unlist(lapply(neededTypes, `[[`, 'name')) == type
       if(any(isANeededType == 1)){
         listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
         listST$name <- name
@@ -69,6 +70,8 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
       }
     }
     if(name == "return"){
+        message('found the return case of interest')
+        browser()
       if(exists(as.character(AT), envir = globalenv()) &&
          is.nlGenerator(eval(parse(text = as.character(AT), keep.source = FALSE)))){
         nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()

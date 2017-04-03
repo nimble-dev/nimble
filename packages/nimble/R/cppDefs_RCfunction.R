@@ -123,15 +123,18 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                          ##returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
                                        ##returnListDefs <- returnListObj$nimbleListDef
                                        ##returnListNestedLists <- returnListObj$nestedListGenList
-                                        ## refClassDef <- returnListObj$.refClassDef
-                                         nlGeneratorEnv <- environment(RCfunProc$compileInfo$returnSymbol$nlProc$nlGenerator)
-                                         returnListDefs <- get('nlDefClassObject', envir = nlGeneratorEnv)
-                                         returnListNestedLists <- get('nestedListGens', envir = nlGeneratorEnv)
-                                         refClassDef <- get('nlRefClass', envir = nlGeneratorEnv)
-                                         returnListNew <- new(refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
-                                                            NESTEDGENLIST = returnListNestedLists)
-                                       returnNimListGen <- list(new = function(){return(returnListNew)})
-                                      
+                                         ## refClassDef <- returnListObj$.refClassDef
+                                         ##returnListNew <- new(refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
+                                         ##                   NESTEDGENLIST = returnListNestedLists)
+
+                                         nlGenerator <- RCfunProc$compileInfo$returnSymbol$nlProc$nlGenerator
+                                         returnListDefs <- nl.getListDef(nlGenerator)
+                                         returnListNestedLists <- nl.getNestedGens(nlGenerator)
+                                         refClassGen <- nl.getDefinitionContent(nlGenerator, 'nlRefClass')
+                                         returnListNew <- refClassGen$new(NLDEFCLASSOBJECT = returnListDefs, 
+                                                                          NESTEDGENLIST = returnListNestedLists)
+                                         returnNimListGen <- list(new = function(){return(returnListNew)})
+                                         
                                        getGenList <- function(nimListGen, genList = list()){
                                          nimList <- nimListGen$new()
                                          if(is.null(genList[[nimList$nimbleListDef$className]]))

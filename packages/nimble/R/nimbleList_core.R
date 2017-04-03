@@ -214,7 +214,8 @@ nimbleList <- function(...,
       return(nlRefClass(NLDEFCLASSOBJECT, NESTEDGENLIST, ..., .generatorFunction = nlGeneratorFunction))},
       list(NLDEFCLASSOBJECT = nlDefClassObject,
            NESTEDGENLIST = nestedListGens)))
-    return(list(new = nlGeneratorFunction))
+    nlGenerator <- list(new = nlGeneratorFunction)
+    return(nlGenerator)
 }
 
 ## nimbleList processing class
@@ -228,6 +229,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                 nimbleProject = 'ANY',
                                 name = 'ANY',
                                 ##   instances = 'ANY',
+                                templateWithBlankFirstArg = 'ANY',
                                 nlGenerator = 'ANY',
                                 nestedListGens = 'ANY',
                                 neededObjectNames =  'ANY'		#'character', ## a character vector of the names of objects such as models or modelValues that need to exist external to the nimbleFunction object so their contents can be pointed to 
@@ -249,10 +251,10 @@ nlProcessing <- setRefClass('nlProcessing',
                                       } else {
                                           if(is.list(nimLists)) {
                                               sl <- nimLists[[1]]$nimbleListDef
-                                              nlGenerator <<- nimLists[[1]]$.generatorFunction
+                                              nlGenerator <<- nl.getGenerator(nimLists[[1]])
                                           } else {
                                               sl <- nimLists$nimbleListDef
-                                              nlGenerator <<- nimLists$.generatorFunction
+                                              nlGenerator <<- nl.getGenerator(nimLists)
                                           }
                                       }
                                       
@@ -263,8 +265,9 @@ nlProcessing <- setRefClass('nlProcessing',
                                       name <<- className
                                     }
                                    ## instances <<- if(inherits(nimLists, 'list')) nimLists else list(nimLists)
-                                      nestedListGens <<- environment(nlGenerator)$nestedListGenList
+                                      nestedListGens <<- nl.getNestedGens(nlGenerator)
                                       ##nestedListGens <<- if(inherits(nimLists, 'list')) nimLists[[1]]$nestedListGenList else nimLists$nestedListGenList
+                                      generateTemplate()
                                   }
                                 },
                                 setupTypesForUsingFunction= function() buildSymbolTable(), ## required name
@@ -307,7 +310,18 @@ nlProcessing <- setRefClass('nlProcessing',
                                     }
                                   }
                                 },
-                                getSymbolTable = function() symTab
+                                getSymbolTable = function() symTab,
+                                generateTemplate = function() {
+                                    vars <- c('.LEFTSIDE', nl.getListDef(nlGenerator)$types$vars)
+                                    functionAsList <- list(as.name('function'))
+                                    functionAsList[2] <- list(NULL)
+                                    if(length(vars) > 0) {
+                                        argsList <- nf_createAList(vars)
+                                        functionAsList[[2]] <- as.pairlist(argsList)
+                                    }
+                                    functionAsList[[3]] <- quote({})
+                                    templateWithBlankFirstArg <<- eval(as.call(functionAsList))
+                                }
                             ))
 
 
@@ -367,10 +381,18 @@ is.nlGenerator <- function(x, inputIsName = FALSE) {
     FALSE
 }
 
+nl.getGenerator <- function(nl) {
+    environment(nl$.generatorFunction)$nlGenerator
+}
+
 nl.getDefinitionContent <- function(nlGen, name) {
-    environment(testNL$new)[[name]]
+    environment(nlGen$new)[[name]]
 }
 
 nl.getNestedGens <- function(nlGen) {
-    environment(testNL$new)$nestedListGens
+    environment(nlGen$new)$nestedListGens
+}
+
+nl.getListDef <- function(nlGen) {
+    environment(nlGen$new)$nlDefClassObject
 }

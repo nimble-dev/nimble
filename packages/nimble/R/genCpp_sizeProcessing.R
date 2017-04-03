@@ -567,80 +567,33 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   } else {
       asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs = c(TRUE, rep(FALSE, length(code$args)-1))), asserts)
   }
-  if(length(code$args)>1){
-      ##    asserts <- c(recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1))), asserts)
-   
+  if(length(code$args)>1){   
     RnewExprs <- list()
     newExprs <- list()
     RnfVarExprs <- list()
     nfVarExprs <- list()
     exprCounter <- 1
-    originalCode <- code ##$copy()
-    listElements <- listST$nlProc$symTab$getSymbolObjects()
-    ## from A <- nl1$new(x = y)
-    ## assignExpr is new copy of A <- nl1$new(x = y)
-
-    ## RassignExpr <- substitute(A <- B, list(A = nimbleGeneralParseDeparse(originalCode$caller$args[[1]]),
-    ##                                        B = nimbleGeneralParseDeparse(originalCode$caller$args[[2]])))
-                                                          
-    ## assignExpr <- exprClass(name = "<-", isCall = TRUE, isName = FALSE, isAssign = TRUE,
-    ##                         args = c(originalCode$caller$args[[1]], originalCode$caller$args[[2]]), caller = code$caller,
-    ##                         callerArgID = 1)
-
-    ## listNameExpr is A, but must be prepared for it to be nfVar(A, 'B')
-    
-    ## listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-    ## for(i in seq_along(originalCode$caller$args[[1]]$args)) {
-    ##     setArg(listNameExpr, i, originalCode$caller$args[[1]]$args[[i]])
-    ## }
+    originalCode <- code 
+    listElements <- listST$nlProc$symTab$getSymbolNames() ##getSymbolObjects()
     RlistNameExpr <- nimbleGeneralParseDeparse(originalCode$caller$args[[1]])    
     for(i in seq_along(listElements)) {
-        if(!inherits(originalCode$args[[i+1]], 'exprClass') ||  (originalCode$args[[i+1]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
-            
-
-            ## listNameExpr is A, but must be prepared for it to be nfVar(A, 'B')
-            ## Make a new one each time so they are each separate
-            ## $copy() for exprClass objects results in wrong caller/argID relationships
-
-            
-            ## listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-            ## for(j in seq_along(originalCode$caller$args[[1]]$args)) {
-            ##     setArg(listNameExpr, j, originalCode$caller$args[[1]]$args[[j]])
-            ## }
-
-            ## nfVar(A, 'x') for whichever element name it's on ('x')
-            RnfVarExprs[[exprCounter]] <- substitute(nfVar(A, X), list(A = RlistNameExpr, X = listElements[[i]]$name))
-            ## nfVarExprs[[exprCounter]] <- exprClass(name = "nfVar", isCall = TRUE, isName = FALSE, 
-            ##                                    isAssign = FALSE, args = c(list(listNameExpr), list(listElements[[i]]$name)))
-            ## ## caller of A is nfVar(A, 'x')
-            ## setCaller(nfVarExprs[[exprCounter]]$args[[1]], nfVarExprs[[exprCounter]], 1)
-
-            ## nfVar(A, 'x') <- y or whatever code was provided (already recursed for size processing)
-            RnewExprs[[exprCounter]] <- substitute(A <- B, list(A = RnfVarExprs[[exprCounter]],
-                                                                B = nimbleGeneralParseDeparse(originalCode$args[[i+1]])))
-            ## newExprs[[exprCounter]] <- exprClass(name = '<-', isCall = TRUE, isName = FALSE,
-            ##                                  isAssign = TRUE, args = c(list(nfVarExprs[[exprCounter]]), list(originalCode$args[[i+1]])),
-            ##                                  caller = code$caller, callerArgID = exprCounter + 1)
-
-            ## set callers of the LHS and RHS (if not constant) of nfVar(A, 'x') <- y
-            ## for(j in seq_along(newExprs[[exprCounter]]$args)) {
-            ##     if(inherits(newExprs[[exprCounter]]$args[[j]], 'exprClass')) {
-            ##         setCaller(newExprs[[exprCounter]]$args[[j]], newExprs[[exprCounter]], j)
-            ##     }
-            ## }
-
-            ## store nfVar(A, 'x') <- y as an argument to code$caller, which is being trashed and overwritten
-            ## code caller was something like `<-`(A, makeNewNimbleList(...))
-            ##newExprs[[exprCounter]] <- RparseTree2ExprClasses(RnewExprs[[exprCounter]])
-           ## asserts <- c(asserts, exprClasses_setSizes(newExprs[[exprCounter]], symTab, typeEnv)
-            ##setArg(code$caller,  exprCounter+1, newExprs[[exprCounter]])
-            exprCounter <- exprCounter + 1
+        thisVarName <- listElements[i]
+        ##      if(!inherits(originalCode$args[[i+1]], 'exprClass') ||  (originalCode$args[[i+1]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
+        if(!is.null(originalCode$args[[thisVarName]])) {
+            if(!inherits(originalCode$args[[thisVarName]], 'exprClass') ||  (originalCode$args[[thisVarName]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
+                ## nfVar(A, 'x') for whichever element name it's on ('x')
+                ##    RnfVarExprs[[exprCounter]] <- substitute(nfVar(A, X), list(A = RlistNameExpr, X = listElements[[i]]$name))
+                RnfVarExprs[[exprCounter]] <- substitute(nfVar(A, X), list(A = RlistNameExpr, X = thisVarName))
+                ## nfVar(A, 'x') <- y or whatever code was provided (already recursed for size processing)
+                RnewExprs[[exprCounter]] <- substitute(A <- B, list(A = RnfVarExprs[[exprCounter]],
+                                                                    B = nimbleGeneralParseDeparse(originalCode$args[[thisVarName]])))
+                exprCounter <- exprCounter + 1
+            }
         }
     }
     
-    ## transform code$caller into a '{' expression
+    ## embed RnewExprs in a '{' expression
     if(length(RnewExprs) != 0) {
-        ## if initial values were specified, modify code$caller
         RbracketNewExprs <- quote(after({}))
         RbracketNewExprs[[2]][2:(length(RnewExprs) + 1)] <- RnewExprs
         bracketNewExprs <- RparseTree2ExprClasses(RbracketNewExprs)
@@ -657,139 +610,10 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
         asserts <- c(asserts, list(bracketNewExprs))
         if(length(code$args) > 1) ## always if we make it this far
             code$args <- code$args[1]
-##         code$caller$name <- "{"
-##         code$caller$isCall <- TRUE
-##         code$caller$isName <- FALSE
-##         code$caller$isAssign <- TRUE
-##         ## fix the assignExpr AST connections
-##         if(length(RassignExpr[[3]]) > 2)
-##            RassignExpr[[3]] <- RassignExpr[[3]][1:2]
-##         assignExpr <- RparseTree2ExprClasses(RassignExpr)
-
-##         ##        assignExpr$args[[1]]$caller <- assignExpr
-## ##        assignExpr$args[[2]]$caller <- assignExpr
-
-##         ## make the actual object creation call take only the class name as an argument
-## ##        assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
-##         ## and fix the AST
-## ##        assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
-##         ## reset code to the new assignment expression
-        
-##         ## and insert as the first item in the new '{' call 
-##         setArg(code$caller, 1, assignExpr)
-##         code <- assignExpr ## is this necessary?
-##         browser()
-##         asserts <- c(asserts, exprClasses_setSizes(code$caller, symTab, typeEnv))
-##         browser()
     }
   }
   return(asserts)
 }
-
-
-sizeNewNimbleList_old <- function(code, symTab, typeEnv){
-  ## code looks like: nimListDef$new(a = '', b = 12)
-  ## want to change code$caller to :
-  ## { nimList <- nimListDef$new()
-  ## nimList$a <- 10
-  ## nimList$b <- 12 }
-  ## accomplish this by copying code, getting arguments (e.g. a = 10, b = 12) from copied code and turning them into assignment 
-  ## exprs in code$caller, and setting first argument of code$caller to be nimList <- nimListDef$new()
-  listDefName <- code$args[[1]]$name
-  if(symTab$parentST$symbolExists(listDefName)){
-    listST <- symTab$getSymbolObject(listDefName, inherits = TRUE)
-    code$type <- "symbolNimbleList"
-    code$sizeExprs <- listST
-    code$toEigenize <- "maybe"
-    code$nDim <- 0
-  }
-  else stop('Error in sizeNewNimbleList: listGenerator not found in parentST', call. = FALSE)
-  
-  asserts <- list()
-  if(!(code$caller$name%in% assignmentOperators)){
-    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-  }
-  if(length(code$args)>1){
-    asserts <- c(recurseSetSizes(code, symTab, typeEnv, useArgs = c(FALSE, rep(TRUE, length(code$args)-1))), asserts)
-    newExprs <- list()
-    nfVarExprs <- list()
-    exprCounter <- 1
-    originalCode <- code$copy()
-    listElements <- listST$nlProc$symTab$getSymbolObjects()
-    ## from A <- nl1$new(x = y)
-    ## assignExpr is new copy of A <- nl1$new(x = y)
-    
-    assignExpr <- exprClass(name = "<-", isCall = TRUE, isName = FALSE, isAssign = TRUE,
-                            args = c(originalCode$caller$args[[1]], originalCode$caller$args[[2]]), caller = code$caller,
-                            callerArgID = 1)
-    ## listNameExpr is A, but must be prepared for it to be nfVar(A, 'B')
-    browser()
-    ## listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-    ## for(i in seq_along(originalCode$caller$args[[1]]$args)) {
-    ##     setArg(listNameExpr, i, originalCode$caller$args[[1]]$args[[i]])
-    ## }
-    
-    for(i in seq_along(listElements)) {
-        if(!inherits(originalCode$args[[i+1]], 'exprClass') ||  (originalCode$args[[i+1]]$name != "")){  ## skip first arg, which will be name of nlDef, then check if value is ""
-            
-
-            ## listNameExpr is A, but must be prepared for it to be nfVar(A, 'B')
-            ## Make a new one each time so they are each separate
-            ## $copy() for exprClass objects results in wrong caller/argID relationships
-            listNameExpr <- exprClass(name = originalCode$caller$args[[1]]$name, isCall = FALSE, isName = TRUE, isAssign = FALSE, args = list())
-            for(j in seq_along(originalCode$caller$args[[1]]$args)) {
-                setArg(listNameExpr, j, originalCode$caller$args[[1]]$args[[j]])
-            }
-
-            ## nfVar(A, 'x') for whichever element name it's on ('x')
-            nfVarExprs[[exprCounter]] <- exprClass(name = "nfVar", isCall = TRUE, isName = FALSE, 
-                                               isAssign = FALSE, args = c(list(listNameExpr), list(listElements[[i]]$name)))
-            ## caller of A is nfVar(A, 'x')
-            setCaller(nfVarExprs[[exprCounter]]$args[[1]], nfVarExprs[[exprCounter]], 1)
-
-            ## nfVar(A, 'x') <- y or whatever code was provided (already recursed for size processing)
-            newExprs[[exprCounter]] <- exprClass(name = '<-', isCall = TRUE, isName = FALSE,
-                                             isAssign = TRUE, args = c(list(nfVarExprs[[exprCounter]]), list(originalCode$args[[i+1]])),
-                                             caller = code$caller, callerArgID = exprCounter + 1)
-
-            ## set callers of the LHS and RHS (if not constant) of nfVar(A, 'x') <- y
-            for(j in seq_along(newExprs[[exprCounter]]$args)) {
-                if(inherits(newExprs[[exprCounter]]$args[[j]], 'exprClass')) {
-                    setCaller(newExprs[[exprCounter]]$args[[j]], newExprs[[exprCounter]], j)
-                }
-            }
-
-            ## store nfVar(A, 'x') <- y as an argument to code$caller, which is being trashed and overwritten
-            ## code caller was something like `<-`(A, makeNewNimbleList(...))
-            setArg(code$caller,  exprCounter+1, newExprs[[exprCounter]])
-            exprCounter <- exprCounter + 1
-        }
-    }
-    ## transform code$caller into a '{' expression
-    if(length(newExprs) != 0){
-        ## if initial values were specified, modfify code$caller
-        code$caller$name <- "{"
-        code$caller$isCall <- TRUE
-        code$caller$isName <- FALSE
-        code$caller$isAssign <- TRUE
-        ## fix the assignExpr AST connections
-        assignExpr$args[[1]]$caller <- assignExpr
-        assignExpr$args[[2]]$caller <- assignExpr
-
-        ## make the actual object creation call take only the class name as an argument
-        assignExpr$args[[2]]$args <- list(assignExpr$args[[2]]$args[[1]])
-        ## and fix the AST
-        assignExpr$args[[2]]$args[[1]]$caller <- assignExpr$args[[2]]
-        ## reset code to the new assignment expression
-        code <- assignExpr
-        ## and insert as the first item in the new '{' call 
-        setArg(code$caller, 1, code)
-        asserts <- c(asserts, exprClasses_setSizes(code$caller, symTab, typeEnv))
-    }
-  }
-  return(asserts)
-}
-
 
 sizemap <- function(code, symTab, typeEnv) {
     ## This will only be called on a map generated from setup

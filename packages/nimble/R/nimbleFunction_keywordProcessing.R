@@ -725,7 +725,7 @@ dollarSign_keywordInfo <- keywordInfoClass(
         if(!doubleBracketCase)
             symObj <- getSymObj_recurse(callerCode, nfProc$setupSymTab)
 
-        class <- class(symObj)[1]
+        class <- class(symObj)[1] ## symObj is allowed to be NULL       
 
                                         #	This extracts myNimbleFunction from the expression myNimbleFunction$foo()
         if(length(callerCode) > 1){
@@ -783,9 +783,10 @@ dollarSign_keywordInfo <- keywordInfoClass(
         if(class == 'symbolNimbleList'){
                                         #	Code is of the form 
                                         #  myNimbleList$myVar
-            nl_charName <- as.character(callerCode)
+            ##nl_charName <- as.character(callerCode) ## won't work with nesting
             nl_fieldName <-as.character(code[[3]])
-            newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+            ##newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = as.name(nl_charName), VARNAME = nl_fieldName))
+            newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
             return(newRunCode)
         }
         if(class == 'symbolNimbleFunctionList'){
@@ -1373,10 +1374,11 @@ getSymObj_recurse <- function(code, symTab, recurse = FALSE) { #code will be lik
     } else {
         memberName <- deparse(code)
     }
-    symObject <- symTab$getSymbolObject(memberName)
+    symObject <- if(is.null(symTab)) NULL else symTab$getSymbolObject(memberName)
     if(recurse) {
         if(inherits(symObject, 'symbolNimbleFunction')) return(symObject$nfProc$setupSymTab)
-        if(inherits(symObject, 'symbolNimbleList')) return(symObject$nlProc$symTab) ## may not work?
+        if(inherits(symObject, 'symbolNimbleList')) return(symObject$nlProc$symTab) ## can only be known if it was created in setup code
+        if(is.null(symObject)) return(NULL) ## will assume to be nimbleList, only kind of nested data structure that could be of unknown type right now
     } else {
         return(symObject)
     }
@@ -1548,19 +1550,26 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
     if(inherits(symObj, 'symbolNimbleListGenerator')){
         if(nestedLeftSide) stop('Problem with something like X$nimbleListDef$new().') 
         if(memFunName == "new"){
-            listElements <- symObj$nlProc$symTab$getSymbolObjects()
-            if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
-            elementName <- deparse(code[[listElements[[1]]$name]])
-            if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
-            argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
-            for(i in seq_along(listElements)[-1]){  ## skip the first element
-                if(!is.null(code[[listElements[[i]]$name]])) code[[listElements[[i]]$name]] <- matchKeywords_recurse(code[[listElements[[i]]$name]], nfProc)
-                elementName <- deparse(code[[listElements[[i]]$name]])
-                if(elementName == "NULL") elementName <- ""
-                argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)
-            }
-            nlCall <- paste0("makeNewNimbleListObject(", deparse(leftSide), ", ", argValues, ")")
-            return(parse(text = nlCall, keep.source = FALSE)[[1]])
+            thisFunctionMatch <- symObj$nlProc$templateWithBlankFirstArg ## function( , var1, var2, etc.) 
+            ##names(thisFunctionMatch)[2] <- '.LEFTSIDE' ## function(.LEFTSIDE, var1, var2, etc.), build into templateWithBlankFirstArg
+            code[[ length(code) + 1]] <- leftSide      ## add '.LEFTSIDE = leftSide' arg to code
+            names(code)[length(code)] <- '.LEFTSIDE'
+            code[[1]] <- as.name('makeNewNimbleListObject') ## modify first arg of code to be desired name of call
+            return(matchAndFill.call(thisFunctionMatch, code ) ) ## should create makeNewNimbleListObject( nimbleListCallMaybeNested, var1, var2, etc.)
+            
+            ## listElements <- symObj$nlProc$symTab$getSymbolObjects()
+            ## if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
+            ## elementName <- deparse(code[[listElements[[1]]$name]])
+            ## if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
+            ## argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
+            ## for(i in seq_along(listElements)[-1]){  ## skip the first element
+            ##     if(!is.null(code[[listElements[[i]]$name]])) code[[listElements[[i]]$name]] <- matchKeywords_recurse(code[[listElements[[i]]$name]], nfProc)
+            ##     elementName <- deparse(code[[listElements[[i]]$name]])
+            ##     if(elementName == "NULL") elementName <- ""
+            ##     argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)
+            ## }
+            ## nlCall <- paste0("makeNewNimbleListObject(", deparse(leftSide), ", ", argValues, ")")
+            ## return(parse(text = nlCall, keep.source = FALSE)[[1]])
         }
     }
     stop(paste0("Cannot handle this expression: ", deparse(code))) 

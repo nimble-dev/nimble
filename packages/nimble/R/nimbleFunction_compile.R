@@ -369,15 +369,18 @@ nfProcessing$methods(getModelVarDim = function(modelVarName, labelVarName, first
 nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALSE) {
   isNLG <- FALSE
   if(is.nlGenerator(instances[[1]][[name]])){
-    nlList <- instances[[1]][[name]]$new()
+    nlGen <- instances[[1]][[name]] ##$new()
     isNLG <- TRUE
-  } else if(exists(name, envir = globalenv()) && is.nlGenerator(eval(parse(text = name, keep.source = FALSE)))){
-      nlList <- eval(parse(text = paste0(name, "$new"), keep.source = FALSE))()
-      isNLG <- TRUE
+  } else if(exists(name, envir = globalenv())) {
+      foundObject <- get(name, envir = globalenv())
+      if(is.nlGenerator(foundObject)) {
+          nlGen <- foundObject ##eval(parse(text = paste0(name, "$new"), keep.source = FALSE))()
+          isNLG <- TRUE
+      }
   }
   if(isNLG){
-    nlp <- nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
-    className <- nlList$nimbleListDef$className
+    nlp <- nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
+    className <- nl.getListDef(nlGen)$className ##nlList$nimbleListDef$className
     newSym <- symbolNimbleList(name = name, type = 'symbolNimbleList', nlProc = nlp)
     neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
     returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)

@@ -279,10 +279,13 @@ isCodeScalar <- function(code) {
 anyNonScalar <- function(code) {
     if(!inherits(code, 'exprClass')) return(FALSE)
     if(code$name == 'map') return(TRUE)
+    if(code$type == 'symbolNimbleList') return(FALSE)
     if(code$isName) {
         return(!isCodeScalar(code))
     }
     if(code$isCall) {
+        if(code$name == 'nfVar') ## don't recurse just for nested member access
+            return(!isCodeScalar(code))
         skipFirst <- FALSE
         if(code$name == '[') skipFirst <- TRUE
         if(code$name == 'size') skipFirst <- TRUE
