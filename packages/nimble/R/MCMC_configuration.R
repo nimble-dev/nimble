@@ -37,11 +37,11 @@ samplerConf <- setRefClass(
         buildSampler = function(model, mvSaved) {
             samplerFunction(model=model, mvSaved=mvSaved, target=target, control=control)
         },
-        toStr = function() {
+        toStr = function(displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
             tempList <- list()
             tempList[[paste0(name, ' sampler')]] <- paste0(target, collapse = ', ')
             infoList <- c(tempList, control)
-            mcmc_listContentsToStr(infoList)
+            mcmc_listContentsToStr(infoList, displayControlDefaults, displayNonScalars, displayConjugateDependencies)
         },
         show = function() {
             cat(toStr())
@@ -348,20 +348,26 @@ print: A logical argument, default value TRUE, specifying whether to print the n
             return(invisible(NULL))
         },
         
-        printSamplers = function(ind) {
+        printSamplers = function(ind, displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
             '
 Prints details of the MCMC samplers.
 
 Arguments:
 
 ind: A numeric vector or character vector.  A numeric vector may be used to specify the indices of the samplers to print, or a character vector may be used to indicate a set of target nodes and/or variables, for which all samplers acting on these nodes will be printed. For example, printSamplers(\'x\') will print all samplers whose target is model node \'x\', or whose targets are contained (entirely or in part) in the model variable \'x\'.  If omitted, then all samplers are printed.
+
+displayControlDefaults: A logical argument, specifying whether to display default values of control list elements (default FALSE).
+
+displayConjugateDependencies: A logical argument, specifying whether to display the dependency lists of conjugate samplers (default FALSE).
+
+displayNonScalars: A logical argument, specifying whether to display the values of non-scalar control list elements (default FALSE).
 '
             if(missing(ind))        ind <- seq_along(samplerConfs)
             if(is.character(ind))   ind <- findSamplersOnNodes(ind)
             if(length(ind) > 0 && max(ind) > length(samplerConfs)) stop('MCMC configuration doesn\'t have that many samplers')
             makeSpaces <- if(length(ind) > 0) newSpacesFunction(max(ind)) else NULL
             for(i in ind)
-                cat(paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(), '\n'))
+                cat(paste0('[', i, '] ', makeSpaces(i), samplerConfs[[i]]$toStr(displayControlDefaults, displayNonScalars, displayConjugateDependencies), '\n'))
             ##if(length(ind) == 1) return(invisible(samplerConfs[[ind]]))
             ##return(invisible(samplerConfs[ind]))
             return(invisible(NULL))

@@ -250,9 +250,10 @@ mcmc_generateControlListArgument <- function(requiredControlNames, samplerFuncti
 
 
 
-mcmc_listContentsToStr <- function(ls) {
+mcmc_listContentsToStr <- function(ls, displayControlDefaults=FALSE, displayNonScalars=FALSE, displayConjugateDependencies=FALSE) {
     ##if(any(unlist(lapply(ls, is.function)))) warning('probably provided wrong type of function argument')
-    if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
+    if(!displayConjugateDependencies)
+        if(grepl('^conjugate_d', names(ls)[1])) ls <- ls[1]    ## for conjugate samplers, remove all 'dep_dnorm', etc, control elements (don't print them!)
     ls <- lapply(ls, function(el) if(is.nf(el) || is.function(el)) 'function' else el)   ## functions -> 'function'
     ls2 <- list()
     defaultOptions <- getNimbleOption('MCMCcontrolDefaultList')
@@ -260,8 +261,13 @@ mcmc_listContentsToStr <- function(ls) {
         controlName <- names(ls)[i]
         controlValue <- ls[[i]]
         if(length(controlValue) == 0) next   ## remove length 0
-        if(controlName %in% names(defaultOptions))   ## skip default control values
-            if(identical(controlValue, defaultOptions[[controlName]])) next
+        if(!displayControlDefaults)
+            if(controlName %in% names(defaultOptions))   ## skip default control values
+                if(identical(controlValue, defaultOptions[[controlName]])) next
+        if(!displayNonScalars)
+            if(is.numeric(controlValue) || is.logical(controlValue))
+                if(length(controlValue) > 1)
+                    controlValue <- ifelse(is.null(dim(controlValue)), 'custom vector', 'custom array')
         deparsedItem <- deparse(controlValue)
         if(length(deparsedItem) > 1) deparsedItem <- paste0(deparsedItem, collapse='')
         ls2[[i]] <- paste0(controlName, ': ', deparsedItem)
