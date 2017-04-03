@@ -1480,3 +1480,204 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
   UNPROTECT(1);
   return ans;
 }
+
+double dinvgamma(double x, double shape, double scale, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(shape) || ISNAN(scale))
+    return x + shape + scale;
+#endif
+  double xinv = 1/x;
+  if(give_log) return(dgamma(xinv, shape, scale, give_log) - 2*log(x);
+  else return(dgamma(xinv, shape, scale, give_log) * xinv * xinv;
+}
+
+double rinvgamma(double shape, double scale)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(shape) || ISNAN(scale))
+    ML_ERR_return_NAN;
+#endif
+  return(1 / rgamma(shape, scale);
+}
+
+double pinvgamma(double q, double shape, double scale, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if(ISNAN(q) || ISNAN(shape) || ISNAN(scale))
+    return q + shape + scale;
+#endif
+  return(pgamma(1/q, shape, scale, !lower_tail, log_p));
+}
+
+double qinvgamma(double p, double shape, double scale, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(p) || ISNAN(shape) || ISNAN(scale))
+    return p + shape + scale;
+#endif
+  return(1 / qgamma(p, shape, scale, !lower_tail, log_p);
+}
+
+
+SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP scale, SEXP return_log) {
+  if(!isReal(x) || !isReal(shape) || !isReal(scale) || !isLogical(return_log)) 
+    RBREAK("Error (C_dinvgamma): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_shape = LENGTH(shape);
+  int n_scale = LENGTH(scale);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  double* c_x = REAL(x);
+  double* c_shape = REAL(shape);
+  double* c_scale = REAL(scale);
+
+  // FIXME: abstract the recycling as a function
+  if(n_scale == 1 && n_shape == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dinvgamma(c_x[i], *c_shape, *c_scale, give_log);
+  } else {
+    int i_shape = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = dinvgamma(c_x[i], c_shape[i_shape++], c_scale[i_scale++], give_log);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rinvgamma(SEXP n, SEXP shape, SEXP scale) {
+  if(!isInteger(n) || !isReal(shape) || !isReal(scale))
+    RBREAK("Error (C_rinvgamma): invalid input type for one of the arguments.");
+  int n_shape = LENGTH(shape);
+  int n_scale = LENGTH(scale);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rinvgamma): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  double* c_shape = REAL(shape);
+  double* c_scale = REAL(scale);
+  if(n_scale == 1 && n_shape == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with scaleltiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rinvgamma(*c_shape, *c_scale);
+  } else {
+    int i_shape = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rinvgamma(c_shape[i_shape++], c_scale[i_scale++]);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP scale, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(q) || !isReal(shape) || !isReal(scale) || !isLogical(lower_tail) || !isLogical(log_p))
+    RBREAK("Error (C_pinvgamma): invalid input type for one of the arguments.");
+  int n_q = LENGTH(q);
+  int n_shape = LENGTH(shape);
+  int n_scale = LENGTH(scale);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_q == 0) {
+    return q;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_q));  
+  double* c_q = REAL(q);
+  double* c_shape = REAL(shape);
+  double* c_scale = REAL(scale);
+
+  // FIXME: abstract the recycling as a function
+  if(n_scale == 1 && n_shape == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with scaleltiple indices
+    for(int i = 0; i < n_q; i++) 
+      REAL(ans)[i] = pinvgamma(c_q[i], *c_shape, *c_scale, c_lower_tail, c_log_p);
+  } else {
+    int i_shape = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_q; i++) {
+      REAL(ans)[i] = pinvgamma(c_q[i], c_shape[i_shape++], c_scale[i_scale++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+ 
+SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP scale, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(p) || !isReal(shape) || !isReal(scale) || !isLogical(lower_tail) || !isLogical(log_p))
+    RBREAK("Error (C_qinvgamma): invalid input type for one of the arguments.");
+  int n_p = LENGTH(p);
+  int n_shape = LENGTH(shape);
+  int n_scale = LENGTH(scale);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_p == 0) {
+    return p;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_p));  
+  double* c_p = REAL(p);
+  double* c_shape = REAL(shape);
+  double* c_scale = REAL(scale);
+
+  // FIXME: abstract the recycling as a function
+  if(n_scale == 1 && n_shape == 1 && n_scale == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_p; i++) 
+      REAL(ans)[i] = qinvgamma(c_p[i], *c_shape, *c_scale, c_lower_tail, c_log_p);
+  } else {
+    int i_shape = 0;
+    int i_scale = 0;
+    for(int i = 0; i < n_p; i++) {
+      REAL(ans)[i] = qinvgamma(c_p[i], c_shape[i_shape++], c_scale[i_scale++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_scale == n_scale) i_scale = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}

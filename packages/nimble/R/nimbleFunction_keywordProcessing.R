@@ -919,6 +919,10 @@ matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['dinvgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
+matchFunctions[['rinvgamma']] <- function(n, shape, rate = 1, scale){}
+matchFunctions[['qinvgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pinvgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['dexp']] <- function(x, rate = 1, log = FALSE){}
 matchFunctions[['rexp']] <- function(n, rate = 1){}
 matchFunctions[['qexp']] <- function(p, rate = 1, lower.tail = TRUE, log.p = FALSE){}

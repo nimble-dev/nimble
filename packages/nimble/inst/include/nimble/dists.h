@@ -38,6 +38,10 @@ extern "C" {
   SEXP C_rexp_nimble(SEXP, SEXP);
   SEXP C_pexp_nimble(SEXP, SEXP, SEXP, SEXP);
   SEXP C_qexp_nimble(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_dinvgamma(SEXP, SEXP, SEXP, SEXP);
+  SEXP C_rinvgamma(SEXP, SEXP, SEXP);
+  SEXP C_pinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
+  SEXP C_qinvgamma(SEXP, SEXP, SEXP, SEXP, SEXP);
 
 }
 
@@ -83,5 +87,10 @@ double rexp_nimble(double);
 double dexp_nimble(double, double, int);
 double pexp_nimble(double, double, int, int);
 double qexp_nimble(double, double, int, int);
+
+double rinvgamma(double, double);
+double dinvgamma(double, double, double, int);
+double pinvgamma(double, double, double, int, int);
+double qinvgamma(double, double, double, int, int);
 
 #endif

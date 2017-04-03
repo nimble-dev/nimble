@@ -579,3 +579,83 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
   .Call('C_qexp_nimble', as.double(p), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
+#' The Inverse Gamma Distribution
+#'
+#'   Density, distribution function, quantile function and random
+#'   generation for the inverse gamma distribution with rate
+#'     or scale (mean = scale / (shape - 1)) parameterizations.
+#' 
+#' @name Inverse Gamma
+#' 
+#' @param x vector of values.
+#' @param n number of observations.
+#' @param p vector of probabilities.
+#' @param q vector of quantiles.
+#' @param rate vector of rate values.
+#' @param scale vector of scale values.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
+#' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
+#' @author Christopher Paciorek
+#' @export
+#' @details NIMBLE's exponential distribution functions use Rmath's functions
+#' under the hood, but are parameterized to take both rate and scale and to
+#' use 'rate' as the core parameterization in C, unlike Rmath, which uses 'scale'.
+#' See Gelman et al., Appendix A or
+#' the BUGS manual for mathematical details. 
+#' @return \code{dinvgamma} gives the density, \code{pinvgamma} gives the distribution
+#' function, \code{qinvgamma} gives the quantile function, and \code{rinvgamma}
+#' generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' x <- rinvgamma(50, scale = 3)
+#' dinvgamma(x, scale = 3)
+NULL
+
+
+#' @rdname Inverse Gamma
+#' @export
+dinvgamma <- function(x, shape, rate = 1/scale, scale = 1, log = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_dinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+}
+
+#' @rdname Inverse Gamma
+#' @export
+rinvgamma <- function(n = 1, shape, rate = 1/scale, scale = 1) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_rinvgamma', as.integer(n), as.double(shape), as.double(rate))
+}
+
+#' @rdname Inverse Gamma
+#' @export
+pinvgamma <- function(q, shape, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+  .Call('C_pinvgamma', as.double(q), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+}
+
+#' @rdname Inverse Gamma
+#' @export
+qinvgamma <- function(p, shape, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+  .Call('C_qinvgamma', as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+}
+
