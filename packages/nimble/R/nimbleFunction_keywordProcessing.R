@@ -146,6 +146,7 @@ nimEigen_keywordInfo <- keywordInfoClass(
       ## 1. Ideally, we should not need a separate keyword processor for eigen and svd and every new DSL function that returns a pre-defined nimbleList type
       ## 2. We normally do not add *function* names to the symbolTable.  Instead we add handlers for DSL keywords (functions) for any needed processing steps (e.g. size processing)
       ## 3. The substitution of EIGEN_EIGEN for nimEigen could be done at the generateCpp step with a handler for nimbleListReturningFunctions that looks up the final output name.
+      ## 4. nimEigen and nimSvd should probably  get entries in the matchFunctions, which often can be their actual R function to match arguments 
     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
       nlEigenRefClass$addEigenListInfo(nfProc)

@@ -338,6 +338,7 @@ nlProcessing <- setRefClass('nlProcessing',
 ## 4. The work done by "addEigenListInfo" below should be done by nimbleProjectClass.
 ## 5. The set (current eigen and svd) of nimbleListReturningFunctions should become entries of a new operator list in genCpp_operatorLists.
 ## 6. In size processing (and possibly other steps), there should be entries (e.g. in sizeCalls) to send handling of a nimbleListReturningFunction to a distinct handler function.
+## 7. 
 
 nlEigenClass <- setRefClass('nlEigenClass',
                             fields = list(
