@@ -141,6 +141,11 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 nimEigen_keywordInfo <- keywordInfoClass(
   keyword = "nimEigen",
   processor = function(code, nfProc){
+      ## EIGENHERE
+      ## Some notes:
+      ## 1. Ideally, we should not need a separate keyword processor for eigen and svd and every new DSL function that returns a pre-defined nimbleList type
+      ## 2. We normally do not add *function* names to the symbolTable.  Instead we add handlers for DSL keywords (functions) for any needed processing steps (e.g. size processing)
+      ## 3. The substitution of EIGEN_EIGEN for nimEigen could be done at the generateCpp step with a handler for nimbleListReturningFunctions that looks up the final output name.
     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
       nlEigenRefClass$addEigenListInfo(nfProc)
@@ -153,7 +158,7 @@ nimEigen_keywordInfo <- keywordInfoClass(
 nimSvd_keywordInfo <- keywordInfoClass(
   keyword = "nimSvd",
   processor = function(code, nfProc){
-
+      ## EIGENHERE: see above
     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
       nlEigenRefClass$addEigenListInfo(nfProc)

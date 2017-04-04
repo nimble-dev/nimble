@@ -83,6 +83,8 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
         }
         if(is.null(className)) {
             if(type %in% names(nlEigenReferenceList)){
+                ## EIGENHERE: If we separate the type (eigenNimbleList) from a DSL function returning that type (eigen() / nimEigen())
+                ## then ideally we will not need any specialy clause here and the case will simply be captured by the above.
                 className <- nl.getListDef(nlEigenReferenceList[[type]]$eigenNimbleListDef)$className
                 ##nlList <- nlEigenReferenceList[[type]]$eigenNimbleListDef$new() 
             }

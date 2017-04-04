@@ -1195,6 +1195,9 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
     if(inherits(sym, 'symbolMemberFunction')) {
         eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
         returnType <- sym$nfMethodRCobj$returnType ## now nfMethodRCobj could be an interface
+        ## EIGENHERE:
+        ## 0. I am confused: Was this code for handling nimbleListDef() instead of nimbleListDef$new()?
+        ##    Did we decide to support that?
         if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
                                                 eigListClasses))){  
           ## if we have a nl return type, find class name and match with nlGenerator in symTab
