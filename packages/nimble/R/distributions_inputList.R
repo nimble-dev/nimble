@@ -91,9 +91,12 @@ distributionsInputList <- list(
                    range    = c(0, Inf),
                    pqAvail = TRUE),
 
-    dinvgamma  = list(BUGSdist = 'dinvgamma(shape, rate, scale, mean, sd)',
-                   Rdist    = c('dinvgamma(shape, scale = 1/rate)'),
-                   altParams= c('rate = 1/scale', 'mean = beta/(alpha-1)', 'sd = beta / ((alpha - 1) * sqrt(alpha-2))'),
+    # (shape,scale) is BUGSdist as scale provides conjugacy
+    # calculation of shape/scale from mean/sd not obvious
+    # (solution to cubic polynomial) so not using as alternative param
+    dinvgamma  = list(BUGSdist = 'dinvgamma(shape, scale, rate)',
+                   Rdist    = c('dinvgamma(shape, rate = 1/scale)'),
+                   altParams= c('scale = 1/rate', 'mean = 1/(rate*(shape-1))', 'sd = 1 / (rate * (shape-1) * sqrt(shape-2))'),
                    range    = c(0, Inf),
                    pqAvail = TRUE),
     

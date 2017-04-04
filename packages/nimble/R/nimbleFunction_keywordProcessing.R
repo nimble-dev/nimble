@@ -854,6 +854,10 @@ keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
 keywordList[['rgamma']] <- rgamma_keywordInfo
+keywordList[['dinvgamma']] <- d_gamma_keywordInfo
+keywordList[['pinvgamma']] <- pq_gamma_keywordInfo
+keywordList[['qinvgamma']] <- pq_gamma_keywordInfo
+keywordList[['rinvgamma']] <- rgamma_keywordInfo
 # can be handled the same as gamma, so include although we have dexp_nimble too
 keywordList[['dexp']] <- d_gamma_keywordInfo
 keywordList[['pexp']] <- pq_gamma_keywordInfo
@@ -919,10 +923,10 @@ matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
 matchFunctions[['rgamma']] <- function(n, shape, rate = 1, scale){}
 matchFunctions[['qgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['pgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
-matchFunctions[['dinvgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
-matchFunctions[['rinvgamma']] <- function(n, shape, rate = 1, scale){}
-matchFunctions[['qinvgamma']] <- function(p, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
-matchFunctions[['pinvgamma']] <- function(q, shape, rate = 1, scale, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['dinvgamma']] <- function(x, shape, scale = 1, rate, log = FALSE){}
+matchFunctions[['rinvgamma']] <- function(n, shape, scale = 1, rate){}
+matchFunctions[['qinvgamma']] <- function(p, shape, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
+matchFunctions[['pinvgamma']] <- function(q, shape, scale = 1, rate, lower.tail = TRUE, log.p = FALSE){}
 matchFunctions[['dexp']] <- function(x, rate = 1, log = FALSE){}
 matchFunctions[['rexp']] <- function(n, rate = 1){}
 matchFunctions[['qexp']] <- function(p, rate = 1, lower.tail = TRUE, log.p = FALSE){}
@@ -1706,16 +1710,27 @@ makeSingleIndexAccessCodeNames <- function(baseName) {
 }
 
 handleScaleAndRateForGamma <- function(code){
-    ## also handles core R dexp
+    ## also handles core R dexp and dinvgamma
     scaleArg <- code$scale
     rateArg <- code$rate
-    if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma or dexp')
-    if(is.null(scaleArg)) {
-        scaleArg <- substitute(1.0/(A), list(A = code$rate)) ## parse(text = paste0('1/', code$rate))[[1]]
-        code$rate <- scaleArg
-        names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
+    if(is.null(scaleArg) && is.null(rateArg))	stop('neither scale nor rate defined in dgamma, invgamma, or dexp')
+    codeName <- deparse(code[[1]])
+    dist <- substring(codeName, 2, nchar(codeName))
+    if(dist == 'invgamma') {
+            if(is.null(rateArg)) {
+            rateArg <- substitute(1.0/(A), list(A = code$scale)) ## parse(text = paste0('1/', code$scale))[[1]]
+            code$scale <- rateArg
+            names(code)[which(names(code) == 'scale')] <- 'rate'  # to preserve correct order
+        }
+        code$scale <- NULL
+    } else {
+        if(is.null(scaleArg)) {
+            scaleArg <- substitute(1.0/(A), list(A = code$rate)) ## parse(text = paste0('1/', code$rate))[[1]]
+            code$rate <- scaleArg
+            names(code)[which(names(code) == 'rate')] <- 'scale'  # to preserve correct order
+        }
+        code$rate <- NULL
     }
-    code$rate <- NULL
     return(code)
 }
 
