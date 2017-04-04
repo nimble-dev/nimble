@@ -168,11 +168,10 @@ nfProcessing <- setRefClass('nfProcessing',
                                   }
 
                                   if(debug) browser()
-                                  addBaseClassTypes()
-								
-                                  ##NEW PROCESSING TOOLS.   
-                                  matchKeywords_all()
-                                  processKeywords_all()
+                                  ## next three steps moved to setupTypesforUsingFunction
+                                  ##addBaseClassTypes()
+                                  ##matchKeywords_all() ## this inserts some neededTypes from nimbleLists, so must be done before setupLocalSymbolTables()
+                                  ##processKeywords_all()
 
                                   if(debug) browser()
                                   makeNewSetupLinesOneExpr()
@@ -258,6 +257,9 @@ nfProcessing$methods(setupTypesForUsingFunction = function() {
     if(inherits(setupSymTab, 'uninitializedField')) {
         doSetupTypeInference(TRUE, FALSE)
         addMemberFunctionsToSymbolTable()
+        addBaseClassTypes()							
+        matchKeywords_all()
+        processKeywords_all()
         setupLocalSymbolTables()
     }
 })
