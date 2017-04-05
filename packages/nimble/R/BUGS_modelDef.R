@@ -128,7 +128,7 @@ modelDefClass <- setRefClass('modelDefClass',
 ## set v3 = FALSE to use old processing
 modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv, debug = FALSE) {
     if(debug) browser()
-    code <- codeProcessIfThenElse(code, userEnv) ## evaluate definition-time if-then-else
+    code <- codeProcessIfThenElse(code, constants, userEnv) ## evaluate definition-time if-then-else
     setModelValuesClassName()         ## uses 'name' field to set field: modelValuesClassName
     assignBUGScode(code)              ## uses 'code' argument, assigns field: BUGScode.  puts codes through nf_changeNimKeywords
     assignConstants(constants)        ## uses 'constants' argument, sets fields: constantsEnv, constantsList, constantsNamesList
@@ -166,22 +166,25 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
     return(NULL)        
 })
 
-codeProcessIfThenElse <- function(code, envir = parent.frame()) {
+codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
+    browser()
     codeLength <- length(code)
     if(code[[1]] == '{') {
-        if(codeLength > 1) for(i in 2:codeLength) code[[i]] <- codeProcessIfThenElse(code[[i]], envir)
+        if(codeLength > 1) for(i in 2:codeLength) code[[i]] <- codeProcessIfThenElse(code[[i]], constants, envir)
         return(code)
     } 
     if(code[[1]] == 'for') {
-        code[[4]] <- codeProcessIfThenElse(code[[4]], envir)
+        code[[4]] <- codeProcessIfThenElse(code[[4]], constants, envir)
         return(code)
     }
     if(codeLength > 1)
         if(code[[1]] == 'if') {
-            evaluatedCondition <- eval(code[[2]], envir)
-            if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], envir))
+            constantsEnv <- as.environment(constants)
+            parent.env(constantsEnv) <- envir
+            evaluatedCondition <- eval(code[[2]], constantsEnv)
+            if(evaluatedCondition) return(codeProcessIfThenElse(code[[3]], constants, envir))
             else {
-                if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], envir))
+                if(length(code) == 4) return(codeProcessIfThenElse(code[[4]], constants, envir))
                 else return(NULL)
             }
         } else
