@@ -167,7 +167,6 @@ modelDefClass$methods(setupModel = function(code, constants, dimensions, userEnv
 })
 
 codeProcessIfThenElse <- function(code, constants, envir = parent.frame()) {
-    browser()
     codeLength <- length(code)
     if(code[[1]] == '{') {
         if(codeLength > 1) for(i in 2:codeLength) code[[i]] <- codeProcessIfThenElse(code[[i]], constants, envir)
