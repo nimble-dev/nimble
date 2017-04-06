@@ -35,8 +35,6 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 #		rgamma_keywordInfo
 #		d_dist_keywordInfo
 #		qp_dist_keywordInfo
-#   nimEigen_keywordInfo
-#   nimSvd_keywordInfo
 #		nimOptim_keywordInfo
 #		values_keywordInfo
 #		calculate_keywordInfo
@@ -138,42 +136,68 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 ## 	}
 ## 	)
 
-nimEigen_keywordInfo <- keywordInfoClass(
-  keyword = "nimEigen",
+# 
+
+# 
+# nimEigen_keywordInfo <- keywordInfoClass(
+#   keyword = "nimEigen",
+#   processor = function(code, nfProc){
+#       ## EIGENHERE
+#       ## Some notes:
+#       ## 1. Ideally, we should not need a separate keyword processor for eigen and svd and every new DSL function that returns a pre-defined nimbleList type
+#       ## 2. We normally do not add *function* names to the symbolTable.  Instead we add handlers for DSL keywords (functions) for any needed processing steps (e.g. size processing)
+#       ## 3. The substitution of EIGEN_EIGEN for nimEigen could be done at the generateCpp step with a handler for nimbleListReturningFunctions that looks up the final output name.
+#       ## 4. nimEigen and nimSvd should probably  get entries in the matchFunctions, which often can be their actual R function to match arguments 
+#     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
+#     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
+#       nlEigenRefClass$addEigenListInfo(nfProc)
+#     }
+#     code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
+#     return(code)
+#   }
+# )
+# 
+# nimSvd_keywordInfo <- keywordInfoClass(
+#   keyword = "nimSvd",
+#   processor = function(code, nfProc){
+#       ## EIGENHERE: see above
+#     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
+#     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
+#       nlEigenRefClass$addEigenListInfo(nfProc)
+#     }
+#     code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
+#     code[[3]] <- switch(tolower(code[[3]]),
+#                         none = 0,
+#                         thin = 1,
+#                         full = 2)
+#     if(is.null(code[[3]])) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
+#     return(code)
+#   }
+# )
+
+nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
+  keyword = 'multiple',
   processor = function(code, nfProc){
-      ## EIGENHERE
-      ## Some notes:
-      ## 1. Ideally, we should not need a separate keyword processor for eigen and svd and every new DSL function that returns a pre-defined nimbleList type
-      ## 2. We normally do not add *function* names to the symbolTable.  Instead we add handlers for DSL keywords (functions) for any needed processing steps (e.g. size processing)
-      ## 3. The substitution of EIGEN_EIGEN for nimEigen could be done at the generateCpp step with a handler for nimbleListReturningFunctions that looks up the final output name.
-      ## 4. nimEigen and nimSvd should probably  get entries in the matchFunctions, which often can be their actual R function to match arguments 
-    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
-    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
-      nlEigenRefClass$addEigenListInfo(nfProc)
+    nlGen <-   nimbleListReturningFunctionList[[deparse(code[[1]])]]$nlGen
+    nlClassName <- nl.getListDef(nlGen)$className
+    if(!(nlClassName %in% nfProc$getSymbolTable()$getSymbolNames())){
+      nlList <- nlGen$new() ## why do we need to instantiate this every time instead of only if it hasn't been done?
+      nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
+      ### below, we add a nlg to the symbolTable for use in sizeprocessing.  Nothing is added to neededTypes as it's assumed that 
+      ### class def'n exists in nimble provided c++ code and does not need to be generated.
+      symObj <- symbolNimbleListGenerator(name = nlClassName, type = 'symbolNimbleListGenerator', nlProc = nlp)
+      nfProc$setupSymTab$addSymbol(symObj)
     }
-    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
+    ## special processing for second argument of nimSvd
+    if(deparse(code[[1]]) == 'nimSvd'){
+      code[[3]] <- switch(tolower(code[[3]]),
+                          none = 0,
+                          thin = 1,
+                          full = 2)
+    }
     return(code)
   }
 )
-
-nimSvd_keywordInfo <- keywordInfoClass(
-  keyword = "nimSvd",
-  processor = function(code, nfProc){
-      ## EIGENHERE: see above
-    nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
-    if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
-      nlEigenRefClass$addEigenListInfo(nfProc)
-    }
-    code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
-    code[[3]] <- switch(tolower(code[[3]]),
-                        none = 0,
-                        thin = 1,
-                        full = 2)
-    if(is.null(code[[3]])) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
-    return(code)
-  }
-)
-
 
 nimOptim_keywordInfo <- keywordInfoClass(
 	keyword = 'nimOptim',
@@ -861,8 +885,11 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
-keywordList[['nimEigen']] <- nimEigen_keywordInfo
-keywordList[['nimSvd']] <- nimSvd_keywordInfo
+# for(nlReturnFxnInd in seq_along(nimble:::nimbleListReturningFunctionList)){
+#   keywordList[[names(nimbleListReturningFunctionList)[nlReturnFxnInd]]] <- nimbleListReturningFunction_keywordInfo
+# }
+keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
+keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo

@@ -758,7 +758,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$cppDef ## return value if already exists
                                      }
                                  },
-                                 buildNimbleListCompilationInfo = function(listList = NULL, className, initialTypeInferenceOnly = FALSE, eigenList = FALSE,
+                                 buildNimbleListCompilationInfo = function(listList = NULL, className, initialTypeInferenceOnly = FALSE, 
                                                                              control = list(debug = FALSE, debugCpp = FALSE), where = globalenv(), fromModel = FALSE
                                                                            ) {
                                      if(!is.null(listList)) {
@@ -792,8 +792,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      newCppClass <- cppNimbleListClass(name = className,
                                                                        nimCompProc = nlCompInfos[[className]]$nlProc,
                                                                        debugCpp = control$debugCpp,
-                                                                       project = .self,
-                                                                       eigenList = eigenList
+                                                                       project = .self
                                      )
                                      newCppClass$buildAll(where = where)
                                      nlCompInfos[[className]]$cppDef <<- newCppClass

@@ -15,7 +15,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixFlipOperators, 'sizeTranspose'),
                makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
-               makeCallList(matrixEigenListOperators, 'sizeMatrixEigenList'),
+               makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
                     dim = 'sizeDim',
@@ -45,7 +45,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                     'while' = 'recurseSetSizes',
                     callC = 'sizecallC', 
                     'for' = 'sizeFor', 
-                    
+                    cppPointerDereference = 'sizeCppPointerDereference',
                     values = 'sizeValues',
                     '(' = 'sizeUnaryCwise',
                     setSize = 'sizeSetSize', ## OK but not done for numericLists
@@ -108,9 +108,7 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
                 if(symTab$symbolExists(code$name, TRUE)) {
                     thisSymbolObject <- symTab$getSymbolObject(code$name, TRUE)
                     code$type <- class(thisSymbolObject)[1]
-                    if(code$type == 'symbolNimbleListGenerator') code$sizeExprs <- thisSymbolObject$nlProc
-                    else if(code$type == 'symbolNimbleList') code$sizeExprs <- thisSymbolObject$nlProc
-                    else if(code$type == 'symbolNimbleFunction') code$sizeExprs <- thisSymbolObject$nfProc
+                    if(code$type %in% c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction')) code$sizeExprs <- thisSymbolObject
                 } else {
                     code$type <- 'unknown'
                     ##if(exists('.AllowUnknowns', envir = typeEnv)) 
@@ -908,20 +906,6 @@ sizeAsRowOrCol <- function(code, symTab, typeEnv) {
 }
 
 
-recurseExtractNimListArg <- function(code, symTab){
-  if(length(code$args) == 0){  ## reached end level list
-    listSym <- symTab$getSymbolObject(code$name, inherits = TRUE)
-  }
-  else{ ## progress though lower lists, passing appropriate symbol down each time
-    listSym <- recurseExtractNimListArg(code$args[[1]], symTab)
-    nestedObjInd <- which(sapply(listSym$nlProc$neededTypes, function(x){return(x$name == code$args[[2]])}) == TRUE)
-    if(length(nestedObjInd) == 0)
-      listSym <- listSym$nlProc$symTab$getSymbolObject(code$args[[2]])
-    else
-      listSym <- listSym$nlProc$neededTypes[[nestedObjInd]]
-  }
-    return(listSym)
-}
 
 ## a$b becomes nfVar(a, 'b')
 sizeNFvar <- function(code, symTab, typeEnv) {
@@ -940,7 +924,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
         objectType <- code$args[[1]]$type
         symbolObject <- code$args[[1]]$sizeExprs ## repurposed for this role
     }
-    
+
     isSymFunc <- objectType == 'nimbleFunction'   ## minor inconsistency in naming style here
     isSymList <- objectType == 'symbolNimbleList'
     
@@ -956,14 +940,12 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
     if(!(isSymFunc || isSymList))
         stop(exprClassProcessingErrorMsg(code, 'In sizeNFvar: First argument is not a nimbleFunction or a nimbleList'), call. = FALSE)
-
     nfProc <- if(isSymFunc) symbolObject$nfProc else symbolObject$nlProc
     
     if(is.null(nfProc)) {
          browser()
         stop(exprClassProcessingErrorMsg(code, 'In handling X$Y: Symbols for X have not been set up.'), call. = FALSE)
     }
-    
     memberName <- code$args[[2]]
     if(!is.character(memberName)) stop(exprClassProcessingErrorMsg(code, 'In handling X$Y: Something is wrong with Y.'), call. = FALSE)
 
@@ -1006,6 +988,30 @@ sizeNFvar <- function(code, symTab, typeEnv) {
                               list()
     }
     return(asserts)
+}
+
+
+
+sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
+  asserts <- recurseSetSizes(code, symTab, typeEnv)
+  code$type <- 'symbolNimbleList'
+  nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
+  symbolObject <- symTab$getSymbolObject(nlClassName, inherits = TRUE)
+  code$sizeExprs <- symbolObject
+  code$toEigenize <- "yes"
+  code$nDim <- 0
+  asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+  code$args[[1]]$toEigenize <- 'yes'
+  if(length(asserts) == 0) NULL else asserts
+}
+
+sizeCppPointerDereference <- function(code, symTab, typeEnv) {
+  asserts <- recurseSetSizes(code, symTab, typeEnv)
+  code$type <- code$args[[1]]$type
+  code$sizeExprs <- code$args[[1]]$sizeExprs
+  code$toEigenize <- code$args[[1]]$toEigenize
+  code$nDim <- code$args[[1]]$nDim
+  if(length(asserts) == 0) NULL else asserts
 }
 
 sizeDoubleBracket <- function(code, symTab, typeEnv) {
@@ -1193,13 +1199,11 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
         ## ok <- TRUE
     }
     if(inherits(sym, 'symbolMemberFunction')) {
-        eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
         returnType <- sym$nfMethodRCobj$returnType ## now nfMethodRCobj could be an interface
         ## EIGENHERE:
         ## 0. I am confused: Was this code for handling nimbleListDef() instead of nimbleListDef$new()?
         ##    Did we decide to support that?
-        if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
-                                                eigListClasses))){  
+        if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void'))){  
           ## if we have a nl return type, find class name and match with nlGenerator in symTab
           outClassName <- get('return', envir = typeEnv)$sizeExprs$name
           parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
@@ -1495,7 +1499,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
                     else if(RHStype == "symbolNimbleList") {
-                        ## I think we have the nlProc in the RHS sizeExprs in some cases?
+                      ## I think we have the nlProc in the RHS sizeExprs in some cases?
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- symTab$getSymbolObject(RHS$name, inherits = TRUE)$nlProc
@@ -2342,35 +2346,35 @@ sizeMatrixSquareReduction <- function(code, symTab, typeEnv) {
     if(length(asserts) == 0) NULL else asserts
 }
 
-
-#for eigen() and svd() function
-sizeMatrixEigenList <- function(code, symTab, typeEnv){
-  if(code$name == 'EIGEN_EIGEN'){
-    if(length(code$args) != 2){
-      stop(exprClassProcessingErrorMsg(code, 'eigen() called with inappropriate argument length.'), call. = FALSE)
-    }
-  }
-  if(code$name == 'EIGEN_SVD'){
-    if(length(code$args) != 2){
-      stop(exprClassProcessingErrorMsg(code, 'svd() called with inappropriate argument length.'), call. = FALSE)
-    }
-  }
-  asserts <- recurseSetSizes(code, symTab, typeEnv)
-  a1 <- code$args[[1]]
-  
-  if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not an expression.'), call. = FALSE)
-  if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not a matrix.'), call. = FALSE)
-
-  code$type <- 'symbolNimbleList'
-  listST <- symTab$getParentST()$getSymbolObject(paste0(code$name, 'CLASS'))
-  code$sizeExprs <- listST
-  code$toEigenize <- "yes"
-  code$nDim <- 0
-  # if(!(code$caller$name %in% c('{','<-','<<-','='))) {
-  #   asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-  # }
-  if(length(asserts) == 0) NULL else asserts
-}
+# 
+# #for eigen() and svd() function
+# sizeMatrixEigenList <- function(code, symTab, typeEnv){
+#   if(code$name == 'EIGEN_EIGEN'){
+#     if(length(code$args) != 2){
+#       stop(exprClassProcessingErrorMsg(code, 'eigen() called with inappropriate argument length.'), call. = FALSE)
+#     }
+#   }
+#   if(code$name == 'EIGEN_SVD'){
+#     if(length(code$args) != 2){
+#       stop(exprClassProcessingErrorMsg(code, 'svd() called with inappropriate argument length.'), call. = FALSE)
+#     }
+#   }
+#   asserts <- recurseSetSizes(code, symTab, typeEnv)
+#   a1 <- code$args[[1]]
+#   
+#   if(!inherits(a1, 'exprClass')) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not an expression.'), call. = FALSE)
+#   if(a1$nDim != 2) stop(exprClassProcessingErrorMsg(code, 'sizeMatrixEigenList called with argument that is not a matrix.'), call. = FALSE)
+# 
+#   code$type <- 'symbolNimbleList'
+#   listST <- symTab$getParentST()$getSymbolObject(paste0(code$name, 'CLASS'))
+#   code$sizeExprs <- listST
+#   code$toEigenize <- "yes"
+#   code$nDim <- 0
+#   # if(!(code$caller$name %in% c('{','<-','<<-','='))) {
+#   #   asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+#   # }
+#   if(length(asserts) == 0) NULL else asserts
+# }
 
 sizeUnaryCwiseSquare <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1){

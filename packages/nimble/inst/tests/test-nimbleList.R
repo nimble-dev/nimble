@@ -919,7 +919,7 @@ nlTestFunc24 <- nimbleFunction(
   },
   run = function(){
     eigenOut <- eigen(testList24$test_matrix)
-    returnType(eigen())
+    returnType(eigenNimbleList())
     return(eigenOut)
   }
 )
@@ -952,7 +952,7 @@ nlTestFunc25 <- nimbleFunction(
   },
   run = function(){
     svdOut <- svd(testList25$test_matrix, 'thin')
-    returnType(svd())
+    returnType(svdNimbleList())
     return(svdOut)
   }
 )
@@ -968,7 +968,6 @@ expect_equal(RnimbleList$u, CnimbleList$u)
 expect_equal(RnimbleList$d, CnimbleList$d)
 expect_equal(RnimbleList$v, CnimbleList$v)
 
-
 test_that("return object (from c++) is nimbleList.",
           {
             expect_identical(is.nl(CnimbleList), TRUE)
@@ -980,7 +979,7 @@ test_that("return object (from c++) is nimbleList.",
 
 nlTestFunc26 <- nimbleFunction(
   setup = function(){
-    testListDef26 <- nimbleList(testEigen = eigen())
+    testListDef26 <- nimbleList(testEigen = eigenNimbleList())
     testList26 <- testListDef26$new()
     testMat <- diag(2)
   },
@@ -1003,14 +1002,14 @@ CnimbleList <- CtestInst$run()
 
 nlTestFunc27 <- nimbleFunction(
   setup = function(){
-    testListDef27 <- nimbleList(testSvd = nimSvd())
+    testListDef27 <- nimbleList(testSvd = svdNimbleList())
     testList27 <- testListDef27$new()
     testMat <- diag(2)
   },
   run = function(){
     svdOut <- svd(testMat)
     testList27$testSvd <<- svdOut
-    returnType(nimSvd())
+    returnType(svdNimbleList())
     return(testList27$testSvd)
   }
 )
@@ -1047,7 +1046,7 @@ modelCode1 <- nimbleCode({
 
 data <- list(y = rnorm(5, 0, 1))
 constants <- list(constMat = diag(5) + 1)
-dims <- list(y = c(5), meanVec = c(5))
+dims <- list(y = c(5), meanVec = c(5), constMat = c(5,5))
 
 Rmodel1 <- nimbleModel(modelCode1, data = data, dimensions = dims, constants = constants)
 

@@ -70,8 +70,6 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
       }
     }
     if(name == "return"){
-        message('found the return case of interest')
-        browser()
         possibleTypeName <- deparse(AT[[1]])
         className <- NULL
         if(exists(possibleTypeName, envir = globalenv())) {
@@ -80,14 +78,6 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
               className <- nl.getListDef(nlGen)$className
               ##nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
           }
-        }
-        if(is.null(className)) {
-            if(type %in% names(nlEigenReferenceList)){
-                ## EIGENHERE: If we separate the type (eigenNimbleList) from a DSL function returning that type (eigen() / nimEigen())
-                ## then ideally we will not need any specialy clause here and the case will simply be captured by the above.
-                className <- nl.getListDef(nlEigenReferenceList[[type]]$eigenNimbleListDef)$className
-                ##nlList <- nlEigenReferenceList[[type]]$eigenNimbleListDef$new() 
-            }
         }
         if(!is.null(className)){
             ##className <- nlList$nimbleListDef$className
