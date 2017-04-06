@@ -378,6 +378,41 @@ sampleVals = list(x = c(3.950556165467749, 1.556947815895538, 1.598959152023738,
 
 test_mcmc(model = code, name = 'check various conjugacies', exactSample = sampleVals, seed = 0, mcmcControl = list(scale=0.01))
 
+### Weibull-gamma conjugacy
+
+y <- 3; depShape <- 2; c <- 2; shape <- 1; rate <- 2
+code <- nimbleCode({
+    y ~ dweib(shape = depShape, lambda = c*theta)
+    theta ~ dgamma(shape, rate = rate)
+})
+m <- nimbleModel(code, data = list(y = y), inits = list(c = c, theta = 1),
+                 constants = list(depShape = depShape, shape = shape, rate = rate))
+conf <- configureMCMC(m)
+samplers <- conf$getSamplers()
+try(test_that("dweibull-dgamma conjugacy with dependency using lambda",
+                               expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dweib',
+                                                info = "conjugacy not detected")))
+mcmc <- buildMCMC(conf)
+comp <- compileNimble(m, mcmc)
+set.seed(0)
+comp$mcmc$run(10)
+smp <- as.matrix(comp$mcmc$mvSamples)
+
+manualSampler <- function(n, y, depShape, c, shape, rate) {
+    out <- rep(0, n)
+    shape = shape + 1
+    rate = rate + c*y^depShape
+    set.seed(0)
+    out <- rgamma(n, shape, rate = rate)
+    return(out)
+}
+smpMan <- manualSampler(10, y, depShape, c, shape, rate)
+
+try(test_that("Test that gamma conjugate sampler with Weibull dependency gets correct result: ",
+              expect_identical(smp[,1], smpMan,
+                          info = "NIMBLE gamma-Weibull conjugate sampler and manual sampler results differ")))
+
+
 ### Dirichlet-multinomial conjugacy
 
 # as of v0.4, exact numerical results here have changed because

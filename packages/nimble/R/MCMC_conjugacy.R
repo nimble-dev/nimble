@@ -30,9 +30,10 @@ conjugacyRelationshipsInputList <- list(
              dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
              dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
              dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
-             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 )),
+             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+             dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
              ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
-             ## dpar = list(...)    ## need to figure this out
+             ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
 
@@ -45,7 +46,7 @@ conjugacyRelationshipsInputList <- list(
              dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
              dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
              dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
-             ## add ddexp, dpar?
+             ## add ddexp
          posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
                              rate = 1 / (prior_scale + contribution_scale))'),
     
@@ -60,13 +61,15 @@ conjugacyRelationshipsInputList <- list(
 
     #####
     ## pareto
+    ## these are idiosyncratic enough that we probably want to skip them
     ## list(prior = 'dpar',      ##### waiting for dpar() distribution
     ##      link = 'multiplicative',
     ##      dependents = list(
-    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
-    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
+    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_c = 'value/coeff'),  # only works if 0 is min of the unif so this will be hard to do
+    ## careful with next one - data seem to impose upper bound on posterior, so not clear this goes through
+    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha'), contribution_c = '0'),
     ##      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
-    ##                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
+    ##                        c     = max(prior_c, contribution_c)'),
     #####
 
     ## multivariate-normal
