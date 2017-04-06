@@ -152,10 +152,10 @@ try(test_that("dcat handles 'probs' that do not sum to one: ",
 
 ## dinvgamma
 
-y <- 1; a <- 1; c <- 2; alpha <- 3; beta <- 2
+y <- 1; a <- 1; c <- 2; alpha <- 3; beta <- 2; theta <- 1
 
-smp1 <- rinvgamma(10000, shape = alpha, scale = beta)
-smp2 <- rinvgamma(10000, shape = alpha, rate = 1/beta)
+smp1 <- rinvgamma(100000, shape = alpha, scale = beta)
+smp2 <- rinvgamma(100000, shape = alpha, rate = 1/beta)
 
 try(test_that("Test that rinvgamma with scale gets correct result: ",
               expect_equal(beta / (alpha-1), mean(smp1), tol = 0.01,
@@ -164,19 +164,19 @@ try(test_that("Test that rinvgamma with rate gets correct result: ",
               expect_equal(beta / (alpha-1), mean(smp2), tol = 0.01,
                           info = "Difference in mean exceeds tolerance")))
 try(test_that("Test that rinvgamma with scale gets correct result: ",
-              expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp1), tol = 0.01,
+              expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp1), tol = 0.1,
                           info = "Difference in sd exceeds tolerance")))
 try(test_that("Test that rinvgamma with rate gets correct result: ",
-              expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp2), tol = 0.01,
+              expect_equal(beta/((alpha-1)*sqrt(alpha-2)), sd(smp2), tol = 0.1,
                           info = "Difference in sd exceeds tolerance")))
 
 quantile <- quantile(smp1, .15)
 try(test_that("Test that pinvgamma gets correct result: ",
-              expect_equal(qinvgamma(.15, alpha, scale = beta), quantile, tol = 0.01,
+              expect_equal(qinvgamma(.15, alpha, scale = beta), quantile, tol = 0.005,
                           info = "Difference in quantile exceeds tolerance")))
-p <- mean(smp1, .5)
+p <- mean(smp1 < .5)
 try(test_that("Test that qinvgamma gets correct result: ",
-              expect_equal(pinvgamma(.5, alpha, scale = beta), p, tol = 0.01,
+              expect_equal(pinvgamma(.5, alpha, scale = beta), p, tol = 0.005,
                           info = "Difference in probability exceeds tolerance")))
 
 
@@ -184,40 +184,41 @@ code <- nimbleCode({
     y ~ dinvgamma(a, scale = c*theta)
     theta ~ dinvgamma(alpha, beta)
 })
-conjModel1 = nimbleModel(code, data = list(y=1),
-                         inits = list(a = a, c = c, alpha = alpha, beta = beta))
+m = nimbleModel(code, data = list(y=1),
+                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dinvgamma-dinvgamma conjugacy with dependency using scale",
-                               expect_identical(samplers[[1]]$type, 'RW',
+                               expect_identical(samplers[[1]]$name, 'RW',
                                                 info = "conjugacy improperly detected")))
 
 code <- nimbleCode({
     y ~ dinvgamma(a, rate = 2 + c*theta)
     theta ~ dinvgamma(alpha, beta)
 })
-conjModel1 = nimbleModel(code, data = list(y=1),
-                         inits = list(a = a, c = c, alpha = alpha, beta = beta))
+m = nimbleModel(code, data = list(y=1),
+                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dinvgamma-dinvgamma conjugacy with linear dependency",
-                               expect_identical(samplers[[1]]$type, 'RW',
+                               expect_identical(samplers[[1]]$name, 'RW',
                                                 info = "conjugacy improperly detected")))
 
 code <- nimbleCode({
     y ~ dinvgamma(a, rate = c*theta)
     theta ~ dinvgamma(alpha, beta)
 })
-conjModel1 = nimbleModel(code, data = list(y=y),
-                         inits = list(a = a, c = c, alpha = alpha, beta = beta))
+m = nimbleModel(code, data = list(y=y),
+                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dinvgamma-dinvgamma conjugacy with dependency using rate",
-                               expect_identical(samplers[[1]]$type, 'conj_dinvgamma_dinvgamma',
+                               expect_identical(samplers[[1]]$name, 'conjugate_dinvgamma_dinvgamma',
                                                 info = "conjugacy not detected")))
 mcmc <- buildMCMC(conf)
-comp <- compileNimble(conjModel1, mcmc)
-comp$mcmc$run(1000)
+comp <- compileNimble(m, mcmc)
+set.seed(0)
+comp$mcmc$run(100)
 smp <- as.matrix(comp$mcmc$mvSamples)
 
 manualSampler <- function(n, y, a, c, alpha, beta) {
@@ -230,35 +231,31 @@ manualSampler <- function(n, y, a, c, alpha, beta) {
     out2 <- rinvgamma(n, shape, scale = scale)
     return(list(out1, out2))
 }
-smpMan <- manualSampler(1000, y, a, c, alpha, beta) 
+smpMan <- manualSampler(100, y, a, c, alpha, beta) 
 
 try(test_that("Test that invgamma conjugate sampler gets correct result: ",
-              expect_equal(mean(smp[,1]), mean(smpMan[,1]), tol = 0.01,
-                          info = "Difference in mean (#1) exceeds tolerance")))
+              expect_identical(smp[,1], smpMan[[1]],
+                          info = "NIMBLE conjugate sampler and manual sampler results differ")))
+
 try(test_that("Test that invgamma conjugate sampler gets correct result: ",
-              expect_equal(mean(smp[,1]), mean(smpMan[,2]), tol = 0.01,
-                          info = "Difference in mean (#2) exceeds tolerance")))
-try(test_that("Test that invgamma conjugate sampler gets correct result: ",
-              expect_equal(sd(smp[,1]), sd(smpMan[,1]), tol = 0.01,
-                          info = "Difference in sd (#1) exceeds tolerance")))
-try(test_that("Test that invgamma conjugate sampler gets correct result: ",
-              expect_equal(sd(smp[,1]), sd(smpMan[,2]), tol = 0.01,
-                          info = "Difference in sd (#2) exceeds tolerance")))
+              expect_identical(smp[,1], smpMan[[2]],
+                          info = "NIMBLE conjugate sampler and manual sampler results differ")))
 
 code <- nimbleCode({
     y ~ dinvgamma(a, scale = c*theta)
     theta ~ dgamma(alpha, beta)
 })
-conjModel1 = nimbleModel(code, data = list(y=y),
-                         inits = list(a = a, c = c, alpha = alpha, beta = beta))
+m = nimbleModel(code, data = list(y=y),
+                         inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
 try(test_that("dgamma-dinvgamma conjugacy with dependency using rate",
-                               expect_identical(samplers[[1]]$type, 'conj_dgamma_dinvgamma',
+                               expect_identical(samplers[[1]]$name, 'conjugate_dgamma_dinvgamma',
                                                 info = "conjugacy not detected")))
 mcmc <- buildMCMC(conf)
-comp <- compileNimble(conjModel1, mcmc)
-comp$mcmc$run(1000)
+comp <- compileNimble(m, mcmc)
+set.seed(0)
+comp$mcmc$run(10)
 smp <- as.matrix(comp$mcmc$mvSamples)
 
 manualSampler <- function(n, y, a, c, alpha, beta) {
@@ -266,14 +263,12 @@ manualSampler <- function(n, y, a, c, alpha, beta) {
     shape = a + alpha
     rate = beta + c/y
     set.seed(0)
-    out1 <- rgamma(n, shape, rate = rate)
-    return(list(out1, out2))
+    out <- rgamma(n, shape, rate = rate)
+    return(out)
 }
-smpMan <- manualSampler(1000, y, a, c, alpha, beta)
+smpMan <- manualSampler(10, y, a, c, alpha, beta)
 
-try(test_that("Test that invgamma conjugate sampler gets correct result: ",
-              expect_equal(mean(smp[,1]), mean(smpMan), tol = 0.01,
-                          info = "Difference in mean (#1) exceeds tolerance")))
-try(test_that("Test that invgamma conjugate sampler gets correct result: ",
-              expect_equal(sd(smp[,1]), sd(smpMan), tol = 0.01,
-                          info = "Difference in sd (#1) exceeds tolerance")))
+try(test_that("Test that gamma conjugate sampler with invgamma dependency gets correct result: ",
+              expect_identical(smp[,1], smpMan,
+                          info = "NIMBLE gamma conjugate sampler and manual sampler results differ")))
+
