@@ -55,12 +55,12 @@ void rmulti(int*, double, double*, int);
 double ddirch(double*, double*, int, int);
 void rdirch(double*, double*, int);
 
-double dmnorm_chol(double*, double*, double*, int, double, int);
+double dmnorm_chol(double*, double*, double*, int, double, int, int);
 void rmnorm_chol(double *, double*, double*, int, double);
-double dmvt_chol(double*, double*, double*, double, int, double, int);
+double dmvt_chol(double*, double*, double*, double, int, double, int, int);
 void rmvt_chol(double *, double*, double*, double, int, double);
-double dwish_chol(double*, double*, double, int, double, int);
-void rwish_chol(double*, double*, double, int, double);
+double dwish_chol(double*, double*, double, int, double, int, int);
+void rwish_chol(double*, double*, double, int, double, int);
 
 double dinterval(double, double, double*, int, int);
 double rinterval(double, double*, int);
