@@ -154,7 +154,9 @@ try(test_that("dcat handles 'probs' that do not sum to one: ",
 
 y <- 1; a <- 1; c <- 2; alpha <- 3; beta <- 2; theta <- 1
 
+set.seed(0)
 smp1 <- rinvgamma(100000, shape = alpha, scale = beta)
+set.seed(0)
 smp2 <- rinvgamma(100000, shape = alpha, rate = 1/beta)
 
 try(test_that("Test that rinvgamma with scale gets correct result: ",
@@ -171,6 +173,7 @@ try(test_that("Test that rinvgamma with rate gets correct result: ",
                           info = "Difference in sd exceeds tolerance")))
 
 quantile <- quantile(smp1, .15)
+attributes(quantile) <- NULL
 try(test_that("Test that pinvgamma gets correct result: ",
               expect_equal(qinvgamma(.15, alpha, scale = beta), quantile, tol = 0.005,
                           info = "Difference in quantile exceeds tolerance")))
