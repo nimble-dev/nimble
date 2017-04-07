@@ -181,11 +181,11 @@ nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
     nlGen <-   nimbleListReturningFunctionList[[deparse(code[[1]])]]$nlGen
     nlClassName <- nl.getListDef(nlGen)$className
     if(!(nlClassName %in% nfProc$getSymbolTable()$getSymbolNames())){
-      nlList <- nlGen$new() ## why do we need to instantiate this every time instead of only if it hasn't been done?
+      nlList <- nlGen$new() 
       nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
       ### below, we add a nlg to the symbolTable for use in sizeprocessing.  Nothing is added to neededTypes as it's assumed that 
       ### class def'n exists in nimble provided c++ code and does not need to be generated.
-      symObj <- symbolNimbleListGenerator(name = nlClassName, type = 'symbolNimbleListGenerator', nlProc = nlp)
+      symObj <- symbolNimbleListGenerator(name = nlClassName, nlProc = nlp)
       nfProc$setupSymTab$addSymbol(symObj)
     }
     ## special processing for second argument of nimSvd
@@ -871,6 +871,8 @@ length_char_keywordInfo <- keywordInfoClass(
         return(code)
     })
 
+
+
 #	KeywordList
 keywordList <- new.env()
 keywordList[['nimSeq']] <- nimSeq_keywordInfo
@@ -885,9 +887,6 @@ keywordList[['nimCopy']] <- nimCopy_keywordInfo
 keywordList[['[[']] <- doubleBracket_keywordInfo
 keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
-# for(nlReturnFxnInd in seq_along(nimble:::nimbleListReturningFunctionList)){
-#   keywordList[[names(nimbleListReturningFunctionList)[nlReturnFxnInd]]] <- nimbleListReturningFunction_keywordInfo
-# }
 keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimOptim']] <- nimOptim_keywordInfo
@@ -1551,9 +1550,9 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
                     nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
                     className <- nlList$nimbleListDef$className
                     nfName <- deparse(leftSide)
-                    newSym <- symbolNimbleList(name = nfName, type = 'symbolNimbleList', nlProc = nlp)
+                    newSym <- symbolNimbleList(name = nfName,  nlProc = nlp)
                     if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
-                    symObj <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
+                    symObj <- symbolNimbleListGenerator(name = nfName, nlProc = nlp)
                     nfProc$setupSymTab$addSymbol(symObj)
                 }
             }
@@ -1647,9 +1646,9 @@ matchKeywordCodeMemberFun_old <- function(code, nfProc) {  ## handles cases like
       nlList <- eval(nfPart)$new() ## why do we need to instantiate this every time instead of only if it hasn't been done?
       nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
       className <- nlList$nimbleListDef$className
-      newSym <- symbolNimbleList(name = nfName, type = 'symbolNimbleList', nlProc = nlp)
+      newSym <- symbolNimbleList(name = nfName, nlProc = nlp)
       if(!(className %in% names(nfProc$neededTypes))) nfProc$neededTypes[[className]] <- newSym
-      addSym <- symbolNimbleListGenerator(name = nfName, type = 'symbolNimbleListGenerator', nlProc = nlp)
+      addSym <- symbolNimbleListGenerator(name = nfName, nlProc = nlp)
       nfProc$setupSymTab$addSymbol(addSym)                                         ## then add it to symbolTable - should this be to symTab (nested)?
     }
     if(symTab$symbolExists(nfName)) { ## first look in symbolTable

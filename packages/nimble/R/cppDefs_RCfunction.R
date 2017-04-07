@@ -69,6 +69,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      localArgs <- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = allNames[!(allNames %in% argNames)], parentST = args)
                                      code <<- cppCodeBlock(code = RCfunProc$compileInfo$nimExpr,
                                                            objectDefs = localArgs)
+                                     if(is.null(RCfunProc$compileInfo$returnSymbol)) stop("returnType not valid.  If a nimbleList is being returned, returnType must be the name of the nimbleList definition.")
                                      returnType <<- RCfunProc$compileInfo$returnSymbol$genCppVar()
                                      invisible(NULL)
                                  },

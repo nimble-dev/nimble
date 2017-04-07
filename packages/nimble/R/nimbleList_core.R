@@ -304,7 +304,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                         ##className <- nlList$nimbleListDef$className
                                         className <- thisNestedListDef$className
                                       nlp <- nimbleProject$nlCompInfos[[className]]$nlProc
-                                      newSym <- symbolNimbleList(name = nimbleListObjVar, type = 'symbolNimbleList', nlProc = nlp)
+                                      newSym <- symbolNimbleList(name = nimbleListObjVar, nlProc = nlp)
                                       neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
                                       symTab$addSymbol(newSym)
                                     }
@@ -341,6 +341,10 @@ nlProcessing <- setRefClass('nlProcessing',
 ## 6. In size processing (and possibly other steps), there should be entries (e.g. in sizeCalls) to send handling of a nimbleListReturningFunction to a distinct handler function.
 ## 7. 
 
+
+## Below are nimbleList definitions for predefined nimbleLists in nimble
+## Note that currently, any nimbleList definition that has "predefined = TRUE" must have existing c++ code that defines
+## the c++ class.
 eigenNimbleList <- nimbleList(list(nimbleType('values', 'double', 1),
                                    nimbleType('vectors', 'double', 2)), name = "EIGEN_EIGENCLASS", predefined = TRUE)
 svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
@@ -348,6 +352,8 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
                                                     nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
 
 
+## any DSL functions that return nimbleLists should be added to the list below, in the form:
+## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"))
 

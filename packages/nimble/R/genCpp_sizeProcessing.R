@@ -107,8 +107,8 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
             if(!exists(code$name, envir = typeEnv, inherits = FALSE)) {
                 if(symTab$symbolExists(code$name, TRUE)) {
                     thisSymbolObject <- symTab$getSymbolObject(code$name, TRUE)
-                    code$type <- class(thisSymbolObject)[1]
-                    if(code$type %in% c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction')) code$sizeExprs <- thisSymbolObject
+                    code$type <- thisSymbolObject$type
+                    if(code$type %in% c('nimbleListGenerator', 'nimbleList', 'nimbleFunction')) code$sizeExprs <- thisSymbolObject
                 } else {
                     code$type <- 'unknown'
                     ##if(exists('.AllowUnknowns', envir = typeEnv)) 
@@ -556,7 +556,7 @@ sizeNewNimbleList <- function(code, symTab, typeEnv){
   listDefName <- code$args[[1]]$name
   if(symTab$parentST$symbolExists(listDefName)){
     listST <- symTab$getSymbolObject(listDefName, inherits = TRUE)
-    code$type <- "symbolNimbleList"
+    code$type <- "nimbleList"
     code$sizeExprs <- listST
     code$toEigenize <- "maybe"
     code$nDim <- 0
@@ -926,7 +926,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     }
 
     isSymFunc <- objectType == 'nimbleFunction'   ## minor inconsistency in naming style here
-    isSymList <- objectType == 'symbolNimbleList'
+    isSymList <- objectType == 'nimbleList'
     
     ## Cases to handle (nl for nimbleList, nf for nimbleFunction):
     ## nl$a <- x     ## NimArr assignment (not setSize needed)
@@ -953,7 +953,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
     if(!is.null(memberSymbolObject)) code$type <- memberSymbolObject$type
     
     if(isSymList | isSymFunc) {
-        ## symbolNimbleList
+        ## nimbleList
         ## We need (*nl) in C++, represented by cppPointerDereference(nl)
         if(code$args[[1]]$name != 'cppPointerDereference') {
             ## a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference')
@@ -969,7 +969,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
      
     ## following checks are on type of A$B (isSymList and isSymFunc refer to type of A)
     
-    if(code$type == 'symbolNimbleList') {
+    if(code$type == 'nimbleList') {
         ## for a nimbleList, sizeExprs slot is used for symbol object
         ## of nlGenerator of member object
         code$sizeExprs <- memberSymbolObject
@@ -994,14 +994,13 @@ sizeNFvar <- function(code, symTab, typeEnv) {
 
 sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   asserts <- recurseSetSizes(code, symTab, typeEnv)
-  code$type <- 'symbolNimbleList'
+  code$type <- 'nimbleList'
   nlClassName <- nl.getListDef(nimbleListReturningFunctionList[[code$name]]$nlGen)$className
   symbolObject <- symTab$getSymbolObject(nlClassName, inherits = TRUE)
   code$sizeExprs <- symbolObject
   code$toEigenize <- "yes"
   code$nDim <- 0
   asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-  code$args[[1]]$toEigenize <- 'yes'
   if(length(asserts) == 0) NULL else asserts
 }
 
@@ -1205,7 +1204,7 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
         ##    Did we decide to support that?
         if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void'))){  
           ## if we have a nl return type, find class name and match with nlGenerator in symTab
-          outClassName <- get('return', envir = typeEnv)$sizeExprs$name
+          outClassName <- get('return', envir = typeEnv)$sizeExprs$nlProc$name
           parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
             symType <- x$type
             if(symType == 'Ronly'){
@@ -1307,7 +1306,7 @@ sizeSetSize <- function(code, symTab, typeEnv) {
     if(code$args[[1]]$name == 'nfVar'){
       useArg1 <- TRUE
       sym <- symTab$getSymbolObject(code$args[[1]]$args[[1]]$name)
-      if(sym$type == 'symbolNimbleList'){
+      if(sym$type == 'nimbleList'){
         sym <- sym$nlProc$symTab$getSymbolObject(code$args[[1]]$args[[2]])
       }
     } else {
@@ -1498,7 +1497,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                         assign(LHS$name, exprTypeInfoClass$new(nDim = RHSnDim, type = RHStype), envir = typeEnv)
                         symTab$addSymbol(symbolVoidPtr(name = LHS$name, type = RHStype))
                     } 
-                    else if(RHStype == "symbolNimbleList") {
+                    else if(RHStype == "nimbleList") {
                       ## I think we have the nlProc in the RHS sizeExprs in some cases?
                       LHSnlProc <- symTab$getSymbolObject(RHS$name)$nlProc
                       if(is.null(LHSnlProc)) LHSnlProc <- RHS$sizeExprs$nlProc
@@ -1509,7 +1508,7 @@ sizeAssignAfterRecursing <- function(code, symTab, typeEnv, NoEigenizeMap = FALS
                                                                   ## the returned nimbleList will be a symbolNimbleListGenerator that exists
                                                                   ## in the parent ST.
                       LHSnlProc <- symTab$getSymbolObject(RHStype, TRUE)$nlProc
-                      symTab$addSymbol(symbolNimbleList(name = LHS$name, type = 'symbolNimbleList', nlProc = LHSnlProc))
+                      symTab$addSymbol(symbolNimbleList(name = LHS$name, nlProc = LHSnlProc))
                     }
                     else
                         stop(exprClassProcessingErrorMsg(code, paste0('In sizeAssignAfterRecursing: LHS is not in typeEnv or symTab and cannot be added now.')), call. = FALSE)
@@ -2911,7 +2910,7 @@ generalFunSizeHandler <- function(code, symTab, typeEnv, returnType, args, chain
         }
     }
     if(inherits(returnType, 'symbolNimbleList')) {
-        code$type <- 'symbolNimbleList'
+        code$type <- 'nimbleList'
         code$sizeExprs <- returnType
         code$toEigenize <- 'maybe'
         code$nDim <- 0

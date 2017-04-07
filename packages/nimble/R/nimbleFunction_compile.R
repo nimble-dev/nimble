@@ -383,9 +383,9 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
   if(isNLG){
     nlp <- nimbleProject$compileNimbleList(nlGen, initialTypeInferenceOnly = TRUE)
     className <- nl.getListDef(nlGen)$className ##nlList$nimbleListDef$className
-    newSym <- symbolNimbleList(name = name, type = 'symbolNimbleList', nlProc = nlp)
+    newSym <- symbolNimbleList(name = name, nlProc = nlp)
     neededTypes[[className]] <<- newSym  ## if returnType is a NLG, this will ensure that it can be found in argType2symbol()
-    returnSym <- symbolNimbleListGenerator(name = name, type = 'nimbleListGenerator', nlProc = nlp)
+    returnSym <- symbolNimbleListGenerator(name = name, nlProc = nlp)
     return(returnSym)
   }
   if(is.nl(instances[[1]][[name]])) {
@@ -403,7 +403,7 @@ nfProcessing$methods(makeTypeObject = function(name, instances, firstOnly = FALS
     neededObjectNames <<- c(neededObjectNames, name)
     
     ## create a symbol table object
-    newSym <- symbolNimbleList(name = name, type = 'nimbleList', nlProc = nlp)
+    newSym <- symbolNimbleList(name = name, nlProc = nlp)
     
     ## If this is the first time this type is encountered,
     ## add it to the list of types whose C++ definitions will need to be generated

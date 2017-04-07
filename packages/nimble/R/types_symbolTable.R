@@ -96,7 +96,7 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
 recurseGetListST <- function(className, neededTypes){
   listST <- NULL
   for(NT in neededTypes){
-    if(NT$type %in% c('symbolNimbleList', 'symbolNimbleListGenerator')){
+    if(NT$type %in% c('nimbleList', 'nimbleListGenerator')){
       if(!inherits(NT$nlProc$neededTypes, 'uninitializedField')){
          if(className %in% names(NT$nlProc$neededTypes)){
           isANeededType <- (className == names(NT$nlProc$neededTypes))
@@ -355,7 +355,7 @@ symbolNimbleList <-
                 contains = 'symbolBase',
                 fields = list(nlProc = 'ANY'),
                 methods = list(
-                    initialize = function(...){callSuper(...); type <<- 'symbolNimbleList'},
+                    initialize = function(...){callSuper(...); type <<- 'nimbleList'},
                     show = function() writeLines(paste('symbolNimbleList', name)),
                     genCppVar = function(...) {
                         return(  cppVarFull(name = name,

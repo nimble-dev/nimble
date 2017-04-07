@@ -282,7 +282,7 @@ anyNonScalar <- function(code) {
     if(!inherits(code, 'exprClass')) return(FALSE)
     if(code$name == 'map') return(TRUE)
     if(is.character(code$type))
-        if(code$type[1] == 'symbolNimbleList') return(FALSE)
+        if(code$type[1] == 'nimbleList') return(FALSE)
     if(code$isName) {
         return(!isCodeScalar(code))
     }
