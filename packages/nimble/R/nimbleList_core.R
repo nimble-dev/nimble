@@ -351,48 +351,6 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"))
 
-# 
-# nlEigenClass <- setRefClass('nlEigenClass',
-#                             fields = list(
-#                               className = 'ANY',
-#                               funcName = 'ANY',
-#                               nimFuncName = 'ANY',
-#                               listElements = 'ANY',
-#                               eigenNimbleListDef = 'ANY'),
-#                             methods = list(
-#                               initialize = function(...){
-#                                 callSuper(...)
-#                                 createListDef()
-#                               },
-#                               addEigenListInfo = function(nfProc){
-#                                 thisProj <- nfProc$nimbleProject
-#                                 eigenNimbleList <- eigenNimbleListDef$new() 
-#                                 nlp <- thisProj$compileNimbleList(eigenNimbleList, initialTypeInferenceOnly = TRUE)
-#                                 eigenListSym <- symbolNimbleList(name = className, nlProc = nlp)
-#                                 nfProc$neededTypes[[className]] <- eigenListSym 
-#                                 nfProc$setupSymTab$addSymbol(symbolNimbleListGenerator(name = nimFuncName, nlProc = nlp))
-#                               },
-#                               createListDef = function(){
-#                                 eigenNimbleListDef <<- nimbleList(listElements, name = className)
-#                               }
-#                             ))
-# 
-# nlEigenEigenInfo <- nlEigenClass(funcName = 'nimEigen',
-#                                  className = 'EIGEN_EIGENCLASS',
-#                                  nimFuncName = 'EIGEN_EIGEN',
-#                                  listElements = list(nimbleType('values', 'double', 1),
-#                                                      nimbleType('vectors', 'double', 2)))
-# nlEigenSvdInfo    <- nlEigenClass(funcName = 'nimSvd',
-#                                   className = 'EIGEN_SVDCLASS',
-#                                   nimFuncName = 'EIGEN_SVD',
-#                                   listElements = list(nimbleType('d', 'double', 1),
-#                                                       nimbleType('u', 'double', 2),
-#                                                       nimbleType('v', 'double', 2)))
-# 
-# nlEigenReferenceList <- list(nimEigen = nlEigenEigenInfo,
-#                              nimSvd = nlEigenSvdInfo)
-
-
 
 is.nl <- function(f){
   if(inherits(f, 'nimbleListBase')) return(TRUE)

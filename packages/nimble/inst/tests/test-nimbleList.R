@@ -15,6 +15,7 @@ context('nimbleList() tests')
 ## Here, the nlDef is created in the global environment, outside of setup code
 ########
 
+cat("### nimbleList Test 1 ###\n")
 nlTestFunc1 <- nimbleFunction(
   setup = function(){
     doubleMatrix <- diag(1)
@@ -53,7 +54,7 @@ test_that("return objects are nimbleLists",
 ## Test of creating new nimbleList in run code and specifying initial value for that list
 ## Here, the nlDef is created in setup code.  Inital value is an expression.
 ########
-
+cat("### nimbleList Test 2 ###\n")
 nlTestFunc2 <- nimbleFunction(
   setup = function(){
     testListDef2 <- nimbleList(nlScalar = double(0))
@@ -86,6 +87,7 @@ test_that("return objects are nimbleLists",
 ## Test of creating new nimbleList in setup code and specifying initial values for that list.
 ## Here, the nlDef is created in setup code
 ########
+cat("### nimbleList Test 3 ###\n")
 nlTestFunc3 <- nimbleFunction(
   setup = function(){
     testTypes <- list(nimbleType(name = 'nlCharacter', type = 'character', dim = 0))
@@ -124,6 +126,7 @@ test_that("return objects are nimbleLists",
 ## The list is passed from the internal function to the outer function, and then to the user.
 ## This test does not use nimble's active binding system.
 ########
+cat("### nimbleList Test 4 ###\n")
 innerNlTestFunc4 <- nimbleFunction(
   setup = function(){
     setupList4 <- testListDef4$new(nlCharacter = "hello world")
@@ -166,6 +169,7 @@ test_that("return objects are nimbleLists",
 ########
 ## Test of creating and interacting with two nimble lists in two different functions from the same def'n
 ########
+cat("### nimbleList Test 5 ###\n")
 innerNlTestFunc5 <- nimbleFunction(
   setup = function(listDef){
     innerSetupList5 <- listDef$new(nlCharacter = "hello world")
@@ -211,7 +215,7 @@ test_that("return objects are nimbleLists",
 ## Test of creating an nlDef in an outer function, passing the def to the inner function,
 ## and returning the created list from the inner function through the outer function
 ########
-
+cat("### nimbleList Test 6 ###\n")
 
 innerNlTestFunc6 <- nimbleFunction(
   setup = function(nimListDef){
@@ -255,22 +259,28 @@ test_that("return objects are nimbleLists",
 ######
 ## test of a nimbleFunction method returning a nimbleList
 ######
+cat("### nimbleList Test 7 ###\n")
 
 nlTestFunc7 <- nimbleFunction(
   setup = function(){
-    testListDef7 <- nimbleList(list(nimbleType('nlCharacter', 'character', 0)))
-    
+    testListDef7 <- nimbleList(list(nimbleType('nlVector', 'double', 1)))
   },
   run = function(){
     outList <- method1()
+    outList$nlVector[1] <- method2(outList$nlVector*2)[1]
     returnType(testListDef7())
     return(outList)
   },
   methods = list(
     method1 = function(){
-      outList <- testListDef7$new(nlCharacter = 'hello world')
+      outList <- testListDef7$new(nlVector = numeric(5, 1))
       returnType(testListDef7())
       return(outList)
+    },
+    method2 = function(x = double(1)){
+      x2 <- x*2
+     return(x2)
+     returnType(double(1))
     }
   )
 )
@@ -281,9 +291,94 @@ CtestInst <- compileNimble(testInst)
 CnimbleList <- CtestInst$run()
 
 ## test for correct values of R nimbleList
-expect_identical(RnimbleList$nlCharacter, "hello world")
+expect_identical(CnimbleList$nlVector, c(4,1,1,1,1))
 ## test for identical values of R and C nimbleLists
-expect_identical(RnimbleList$nlCharacter, CnimbleList$nlCharacter)
+expect_identical(RnimbleList$nlVector, CnimbleList$nlVector)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+cat("### nimbleList Test 7a ###\n")
+
+nlTestFunc7a <- nimbleFunction(
+  setup = function(){
+    testListDef7 <- nimbleList(list(nimbleType('nlVector', 'double', 1)))
+    innerFunc7a <- innerNlTestFunc7a(testListDef7) 
+  },
+  methods = list(
+    method1 = function(){
+      outList <- testListDef7$new(nlVector = numeric(5, 1))
+      outList$nlVector[1] <- innerFunc7a$method1()*2
+      returnType(testListDef7())
+      return(outList)
+    },
+    method2 = function(x = double(1)){
+      x2 <- x*2
+      return(x2)
+      returnType(double(1))
+    }
+  )
+)
+
+innerNlTestFunc7a <- nimbleFunction(
+  setup = function(nlDef){
+    nlDef2 <- nimbleList(list(nimbleType('nlDouble', 'double', 0)))
+  },
+  methods = list(
+    method1 = function(){
+      doubleReturn <- nlDef2$new(nlDouble = 2 - 1)$nlDouble + 1
+      returnType(double(0))
+      return(doubleReturn)
+    }
+  )
+)
+
+testInst <- nlTestFunc7a()
+RnimbleList <- testInst$method1()
+CtestInst <- compileNimble(testInst)
+CnimbleList <- CtestInst$method1()
+
+## test for correct values of R nimbleList
+expect_identical(CnimbleList$nlVector, c(4,1,1,1,1))
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlVector, CnimbleList$nlVector)
+
+test_that("return objects are nimbleLists", 
+          {
+            expect_identical(nimble:::is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
+cat("### nimbleList Test 7b ###\n")
+
+nlTestFunc7b <- nimbleFunction(
+  setup = function(){
+    testListDef7 <- nimbleList(list(nimbleType('nlDouble', 'double', 0)))
+  },
+  methods = list(
+    method1 = function(){
+      outList <- testListDef7$new(nlDouble = sum(numeric(5, 1))+ testListDef7$new(nlDouble = 1)$nlDouble)
+      outList$nlDouble <- rep(10,2)[1] + outList$nlDouble
+      returnType(testListDef7())
+      return(outList)
+    }
+  )
+)
+
+testInst <- nlTestFunc7b()
+RnimbleList <- testInst$method1()
+CtestInst <- compileNimble(testInst)
+CnimbleList <- CtestInst$method1()
+
+## test for correct values of R nimbleList
+expect_identical(CnimbleList$nlDouble, 16)
+## test for identical values of R and C nimbleLists
+expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
 
 test_that("return objects are nimbleLists", 
           {
@@ -297,6 +392,7 @@ test_that("return objects are nimbleLists",
 ## Test of using a nimbleList as a run function argument 
 ########
 
+cat("### nimbleList Test 8 ###\n")
 
 nlTestFunc8 <- nimbleFunction(
   setup = function(){
@@ -334,6 +430,7 @@ test_that("return objects are nimbleLists",
 ## Test of using a nimbleList as an argument to a function within a nimbleFunction  
 ########
 
+cat("### nimbleList Test 9 ###\n")
 
 innerNlTestFunc9 <- nimbleFunction(
   setup = function(){},
@@ -380,6 +477,7 @@ test_that("return objects are nimbleLists",
 ## Test of using a nimbleList returned from a nimbleFunction as a run argument to another nimble function
 ########
 
+cat("### nimbleList Test 10 ###\n")
 
 nlTestFunc10 <- nimbleFunction(
   setup = function(){
@@ -419,6 +517,7 @@ test_that("return objects are nimbleLists",
 ## Test of using two nimbleLists as run function arguments 
 ########
 
+cat("### nimbleList Test 11 ###\n")
 
 nlTestFunc11 <- nimbleFunction(
   setup = function(){
@@ -458,6 +557,7 @@ test_that("return objects are nimbleLists",
 ## Test of assigning a new nimbleList object to a nimbleList object that was passed as a run argument
 ########
 
+cat("### nimbleList Test 12 ###\n")
 
 nlTestFunc12 <- nimbleFunction(
   setup = function(){
@@ -495,6 +595,8 @@ test_that("return objects are nimbleLists",
 ########
 ## Test of using two nimbleLists as  run function arguments, assigning one list to the other within the function
 ########
+
+cat("### nimbleList Test 13 ###\n")
 
 nlTestFunc13 <- nimbleFunction(
   setup = function(){
@@ -536,6 +638,8 @@ test_that("return objects are nimbleLists",
 ## Test of nested nimbleLists.  Both nimbleList generators are defined in setup code. Top level nimbleList is returned.
 ########
 
+cat("### nimbleList Test 14 ###\n")
+
 nlTestFunc14 <- nimbleFunction(
   setup = function(){
     testListDef14a <- nimbleList(nlDouble = double(0))
@@ -570,6 +674,9 @@ test_that("return objects are nimbleLists",
 ## Lower level nimbleList generator is defined in global environment.  Top level nimbleList is returned.
 ########
 
+cat("### nimbleList Test 15 ###\n")
+
+
 nlTestFunc15 <- nimbleFunction(
   setup = function(){
     testListDef15b <- nimbleList(nestedNL = testListDef15a())
@@ -603,6 +710,9 @@ test_that("return objects are nimbleLists",
 ## Test of nested nimbleLists. Two nimbleLists with nested nimbleLists are given as run time arguments.  
 ## In run code, the nested list of the second argument is assigned to the nested list of the first argument.
 ########
+
+cat("### nimbleList Test 16 ###\n")
+
 
 nlTestFunc16 <- nimbleFunction(
   setup = function(){
@@ -673,7 +783,7 @@ test_that("return objects are nimbleLists",
 ## The same as test 16, but with lists provided as setup arguments
 ########
 
-
+cat("### nimbleList Test 17 ###\n")
 
 nlTestFunc17 <- nimbleFunction(
   setup = function(argList17a, argList17b){
@@ -722,6 +832,8 @@ test_that("return objects are nimbleLists",
 ## processing flow than the above examples, so important to test
 ########
 
+cat("### nimbleList Test 18 ###\n")
+
 nlTestFunc18 <- nimbleFunction(
   setup = function(argList){
     testListDef18b <- nimbleList(nestedNL = argList())
@@ -754,6 +866,8 @@ test_that("return objects are nimbleLists",
 ########
 ## Test of nested nimbleLists. List is created in setup code and nested list is returned from run code.
 ########
+
+cat("### nimbleList Test 19 ###\n")
 
 nlTestFunc19 <- nimbleFunction(
   setup = function(){
@@ -789,6 +903,8 @@ test_that("return objects are nimbleLists",
 ## Test of nested nimbleLists. Both lists are created in run code and nested list is returned from run code.
 ########
 
+cat("### nimbleList Test 20 ###\n")
+
 nlTestFunc20 <- nimbleFunction(
   setup = function(){
     testListDef20a <- nimbleList(nlDouble = double(0))
@@ -821,6 +937,8 @@ test_that("return objects are nimbleLists",
 ## Test of double-nested nimbleLists. List is created in setup code and nested list is returned from run code.
 ########
 
+cat("### nimbleList Test 21 ###\n")
+
 nlTestFunc21 <- nimbleFunction(
   setup = function(){
     testListDef21a <- nimbleList(nlDouble = double(0))
@@ -851,10 +969,47 @@ test_that("return objects are nimbleLists",
           })
 
 
+cat("### nimbleList Test 21a ###\n")
+
+nlTestFunc21a <- nimbleFunction(
+  setup = function(){
+    testListDef21a <- nimbleList(nlDouble = double(0))
+    testListDef21b <- nimbleList(nestedNL = testListDef21a())
+    testListDef21c <- nimbleList(nestedNL = testListDef21b())
+  },
+  run = function(){
+    testList21a <- testListDef21c$new(nestedNL = testListDef21b$new(nestedNL = 
+                                                                testListDef21a$new(nlDouble =
+                                                                                   testListDef21a$new(nlDouble = 
+                                                                                                      sum(rep(1,5)))$nlDouble)))
+    returnType(testListDef21a())
+    return(testList21a$nestedNL$nestedNL)
+  }
+)
+
+
+testInst <- nlTestFunc21a()
+RnimbleList <- testInst$run()
+CtestInst <- compileNimble(testInst)
+CnimbleList <- CtestInst$run()
+
+expect_identical(RnimbleList$nlDouble, 5)
+expect_identical(RnimbleList$nlDouble, CnimbleList$nlDouble)
+
+test_that("return objects are nimbleLists",
+          {
+            expect_identical(is.nl(RnimbleList), TRUE)
+            expect_identical(is.nl(CnimbleList), TRUE)
+          })
+
+
 
 ########
 ## Test of double-nested nimbleLists. Lists are created in run code using nested $new() calls.  One nlDef is created outside of setup.
 ########
+
+cat("### nimbleList Test 22 ###\n")
+
 
 nlTestFunc22 <- nimbleFunction(
   setup = function(){
@@ -890,6 +1045,9 @@ test_that("return objects are nimbleLists",
 ## Test of using nlDef$new()$nlVar in an expression 
 ########
 
+cat("### nimbleList Test 23 ###\n")
+
+
 nlTestFunc23 <- nimbleFunction(
   setup = function(){},
   run = function(){
@@ -911,6 +1069,8 @@ expect_identical(RpiDigits, CpiDigits)
 ########
 ## Test #1 for eigen() function.  Return an eigenList.
 ########
+
+cat("### nimbleList Test 24 ###\n")
 
 nlTestFunc24 <- nimbleFunction(
   setup = function(){
@@ -945,6 +1105,8 @@ test_that("return object (from c++) is nimbleList.",
 ## Test #1 for svd() function.  Return an svdList.
 ########
 
+cat("### nimbleList Test 25 ###\n")
+
 nlTestFunc25 <- nimbleFunction(
   setup = function(){
     testListDef25 <- nimbleList(test_matrix = double(2))
@@ -977,6 +1139,9 @@ test_that("return object (from c++) is nimbleList.",
 ## Test #2 for eigen() function.  Use eigen() to specify a nl element.
 ########
 
+cat("### nimbleList Test 26 ###\n")
+
+
 nlTestFunc26 <- nimbleFunction(
   setup = function(){
     testListDef26 <- nimbleList(testEigen = eigenNimbleList())
@@ -999,6 +1164,8 @@ CnimbleList <- CtestInst$run()
 ########
 ## Test #2 for svd() function.  Use nimSvd() to specify a nl element.
 ########
+
+cat("### nimbleList Test 27 ###\n")
 
 nlTestFunc27 <- nimbleFunction(
   setup = function(){
@@ -1038,6 +1205,8 @@ test_that("return object (from c++) is nimbleList.",
 ## Testing for use of eigen() in BUGS models
 ########
 
+cat("### nimEigen Model Test 1 ###\n")
+
 modelCode1 <- nimbleCode({
   meanVec[1:5] <- eigen(constMat[,])$values[1:5]
   covMat[1:5,1:5] <- eigen(constMat[1:5,])$vectors[1:5,1:5]%*%t(eigen(constMat[1:5,1:5])$vectors[,])
@@ -1060,6 +1229,8 @@ Cmodel1$calculate()
 ########
 ## Testing for use of svd() in BUGS models
 ########
+
+cat("### nimSvd Model Test 1 ###\n")
 
 modelCode2 <- nimbleCode({
   meanVec[1:5] <- svd(constMat[,]%*%constMat[,])$d[1:5]

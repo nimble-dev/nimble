@@ -1932,7 +1932,6 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 if(code$caller$name %in% assignmentOperators)
                     if(code$callerArgID == 1)
                         stop(exprClassProcessingErrorMsg(code, 'There is a problem on the left-hand side of an assignment'), call. = FALSE)
-                
                 asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
             }
     }
@@ -2646,7 +2645,6 @@ sizeBinaryCwise <- function(code, symTab, typeEnv) {
     ## pull out the two arguments
     a1 <- code$args[[1]] 
     a2 <- code$args[[2]]
-
     ## pull out aXDropNdim, aXnDim, aXsizeExprs, and aXtype (X = 1 or 2)
     if(inherits(a1, 'exprClass')) {
         if(a1$toEigenize == 'no') {
