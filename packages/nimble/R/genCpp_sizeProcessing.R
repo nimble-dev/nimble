@@ -107,8 +107,11 @@ exprClasses_setSizes <- function(code, symTab, typeEnv) { ## input code is exprC
             if(!exists(code$name, envir = typeEnv, inherits = FALSE)) {
                 if(symTab$symbolExists(code$name, TRUE)) {
                     thisSymbolObject <- symTab$getSymbolObject(code$name, TRUE)
-                    code$type <- thisSymbolObject$type
-                    if(code$type %in% c('nimbleListGenerator', 'nimbleList', 'nimbleFunction')) code$sizeExprs <- thisSymbolObject
+                    code$type <- class(thisSymbolObject)[1]
+                    if(code$type %in% c('symbolNimbleListGenerator', 'symbolNimbleList', 'symbolNimbleFunction')){
+                      code$type <- thisSymbolObject$type
+                      code$sizeExprs <- thisSymbolObject
+                    }
                 } else {
                     code$type <- 'unknown'
                     ##if(exists('.AllowUnknowns', envir = typeEnv)) 
