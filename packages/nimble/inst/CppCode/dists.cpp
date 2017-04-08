@@ -255,6 +255,261 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 }
 
 
+double dinvwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
+  char uplo('U');
+  char side('L');
+  char diag('N');
+  char transT('T');
+  char transN('N');
+  int info(0);
+  double alpha(1.0);
+  double* xChol;
+  double* cholCopy;
+
+  int i, j;
+
+  if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
+    return NA_REAL;
+#ifdef IEEE_754
+  if (R_isnancpp(x, p*p) || R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param))
+    return R_NaN;
+#endif
+
+  // also covers df < 0
+  if(df < (double) p) ML_ERR_return_NAN;
+
+  if(!R_FINITE_VEC(x, p*p) || !R_FINITE_VEC(chol, p*p)) return R_D__0;
+
+  double dens = -(df*p/2 * M_LN2 + p*(p-1)*M_LN_SQRT_PI/2);
+  for(i = 0; i < p; i++)
+    dens -= lgammafn((df - i) / 2);
+
+  if(scale_param) {
+    for(i = 0; i < p*p; i += p + 1) 
+      dens += df * log(chol[i]);
+  } else {
+    for(i = 0; i < p*p; i += p + 1) 
+      dens -= df * log(chol[i]);
+  }
+
+  //HERE
+
+  // determinant of x using Cholesky:
+  // dpotrf overwrites x so need to copy first since the trace calc below also overwrites
+  if(overwrite_inputs) 
+    xChol = x;
+  else {
+    xChol = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      xChol[i] = x[i];
+  }
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
+  for(i = 0; i < p*p; i += p + 1) 
+    dens -= (df + p + 1) * log(xChol[i]);
+
+  if(overwrite_inputs)
+    cholCopy = chol;
+  else {
+    cholCopy = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      cholCopy[i] = x[i];
+  }
+  double tmp_dens = 0.0;
+
+  if(scale_param) {
+    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+           xChol, &p, cholCopy, &p);
+    for(j = 0; j < p; j++) {
+      for(i = 0; i <= j; i++) {
+        tmp_dens += cholCopy[j*p+i] * cholCopy[j*p+i];
+      }
+    }
+  } else {
+    double* iden = new double[p*p];
+    for(j = 0; j < p; j++)
+      for(i = 0; i < p; i++)
+        if(i == j) iden[j*p+i] = 1.0 else iden[j*p+i] = 0.0;
+    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+                    chol, &p, iden, &p);
+    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
+                    xChol, &p, iden, &p);
+    for(i = 0; i < p*p; i += p + 1) 
+      tmp_dens += iden[i];
+  }
+  
+
+  if(!overwrite_inputs) {  
+    delete [] xChol;
+    delete [] cholCopy;
+  }
+
+  // do upper-triangular solves for scale parameterization
+  // or upper-triangular multiplies for rate parameterization
+  // dtr{m,s}m is a BLAS level-3 function
+  double tmp_dens = 0.0;
+  if(overwrite_inputs) 
+    xCopy = x;
+  else {
+    for(i = 0; i < p*p; i++) 
+      xCopy[i] = x[i];
+  }
+  if(scale_param) {
+    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
+           chol, &p, xCopy, &p);
+    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+           chol, &p, xCopy, &p);
+    for(i = 0; i < p*p; i += p + 1) 
+      tmp_dens += xCopy[i];
+    dens += -0.5 * tmp_dens;
+  } else {
+    F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+           chol, &p, xCopy, &p);
+    // at this point don't need to do all the multiplications so don't call dtrmm again
+    // direct product of upper triangles
+    for(j = 0; j < p; j++) {
+      for(i = 0; i <= j; i++) {
+        tmp_dens += xCopy[j*p+i] * chol[j*p+i];
+      }
+    }
+    if(!overwrite_inputs)
+      delete [] xCopy;
+    
+    dens += -0.5 * tmp_dens;
+  }
+
+  return give_log ? dens : exp(dens);
+}
+
+
+SEXP C_dinvwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log) 
+// calculates Inverse Wishart density given Cholesky of scale or rate matrix
+// Cholesky matrix should be given as a numeric vector in column-major order
+//   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
+    RBREAK("Error (C_dinvwish_chol): invalid input type for one of the arguments.\n");
+  int p = pow(LENGTH(chol), 0.5);
+  int give_log = (int) LOGICAL(return_log)[0];
+  double scale = REAL(scale_param)[0];
+
+  double* c_x = REAL(x);
+  double* c_chol = REAL(chol);
+  double c_df = REAL(df)[0];
+ 
+  if(c_df < p)
+    RBREAK("Error (C_dinvwish_chol): inconsistent degrees of freedom and dimension.\n");
+  
+  SEXP ans;
+  PROTECT(ans = allocVector(REALSXP, 1));  
+  REAL(ans)[0] = dinvwish_chol(c_x, c_chol, c_df, p, scale, give_log, 1);  // 1: ok to overwrite when coming from R
+  UNPROTECT(1);
+  return ans;
+}
+
+
+void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param, int overwrite_inputs) {
+  char uplo('U');
+  char sideL('L');
+  char diag('N');
+  char transT('T');
+  char transN('N');
+  double alpha(1.0);
+  double beta(0.0);
+
+  double* cholCopy;
+  int i, j, uind, lind;
+  
+#ifdef IEEE_754
+  if (R_isnancpp(chol, p*p) || R_isnancpp(df) || R_isnancpp(scale_param)) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+#endif
+    
+  // also covers df < 0
+  if(df < (double) p) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = R_NaN;
+    return;
+  }
+  
+  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals - crossproduct of result is standardized Wishart; based on rWishart in stats package
+  for(j = 0; j < p; j++) {
+    // double *Z_j = &Z[j*p];
+    //Z_j[j] = sqrt(rchisq(df - (double) j)); 
+    Z[j*p + j] = sqrt(rchisq(df - (double) j)); 
+    for(i = 0; i < j; i++) {
+      uind = i + j * p, /* upper triangle index */
+      lind = j + i * p; /* lower triangle index */
+      Z[(scale_param ? uind : lind)] = norm_rand();
+      Z[(scale_param ? lind : uind)] = 0;
+    }
+    /*
+    for(i = 0; i < j; i++) 
+      Z_j[i] = norm_rand();
+    for (i = j + 1; i < p; i++)
+      Z_j[i] = 0;
+    */
+  }
+ 
+  // multiply Z*chol, both upper triangular or solve(chol, Z^T)
+  // would be more efficient if make use of fact that right-most matrix is triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
+  if(overwrite_inputs)
+    cholCopy = chol;
+  else {
+    cholCopy = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      cholCopy[i] = chol[i];
+  }
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
+
+  // cp result to Z or chol so can be used as matrix to multiply against and overwrite
+  if(scale_param) {
+    for(j = 0; j < p*p; j++) 
+      Z[j] = cholCopy[j];
+  } else {
+    for(j = 0; j < p*p; j++) 
+      cholCopy[j] = Z[j]; 
+  }
+
+  // do crossprod of result
+  // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
+  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, cholCopy, &p, &beta, Z, &p); 
+  if(!overwrite_inputs)
+    delete [] cholCopy;
+}
+
+SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param) 
+// generates single Inverse Wishart draw given Cholesky of scale or rate matrix
+// Cholesky matrix should be given as a numeric vector in column-major order
+//   including all n x n elements; lower-triangular elements are ignored
+{
+  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
+    RBREAK("Error (C_rinvwish_chol): invalid input type for one of the arguments.\n");
+  int n_chol = LENGTH(chol);
+  int p = pow(n_chol, 0.5);
+  double scale = REAL(scale_param)[0];
+
+  double* c_chol = REAL(chol);
+  double c_df = REAL(df)[0];
+
+  if(c_df < p)
+    RBREAK("Error (C_rinvwish_chol): inconsistent degrees of freedom and dimension.\n");
+
+  GetRNGstate(); 
+
+  SEXP ans;
+  PROTECT(ans = allocVector(REALSXP, n_chol));  
+  rinvwish_chol(REAL(ans), c_chol, c_df, p, scale, 1); // 1: ok to overwrite when coming from R
+  
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
 
 double ddirch(double* x, double* alpha, int K, int give_log) 
 // scalar function that can be called directly by NIMBLE with same name as in R
