@@ -17,6 +17,8 @@ if(!exists('.NimbleUseRegistration') || !.NimbleUseRegistration) {
   ## R_setSinglePtrFromSinglePtr = 'setSinglePtrFromSinglePtr'
    C_dwish_chol = 'C_dwish_chol'
    C_rwish_chol = 'C_rwish_chol'
+   C_dinvwish_chol = 'C_dinvwish_chol'
+   C_rinvwish_chol = 'C_rinvwish_chol'
    C_ddirch = 'C_ddirch'
    C_rdirch = 'C_rdirch'
    C_dmulti = 'C_dmulti'
