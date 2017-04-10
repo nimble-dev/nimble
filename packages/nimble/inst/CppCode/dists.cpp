@@ -26,13 +26,14 @@ bool R_FINITE_VEC(double* P, int s) {
 
 double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
   char uplo('U');
-  char side('L');
+  char sideL('L');
+  char sideR('R');
   char diag('N');
   char transT('T');
   char transN('N');
   int info(0);
   double alpha(1.0);
-  double* xCopy;
+  double* xChol;
 
   int i, j;
 
@@ -62,45 +63,47 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
 
   // determinant of x using Cholesky:
   // dpotrf overwrites x so need to copy first since the trace calc below also overwrites
-  xCopy = new double[p*p];
+  xChol = new double[p*p];
   for(i = 0; i < p*p; i++) 
-    xCopy[i] = x[i];
-  F77_CALL(dpotrf)(&uplo, &p, xCopy, &p, &info);
+    xChol[i] = x[i];
+  F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
-    dens += (df - p - 1) * log(xCopy[i]);
-  if(overwrite_inputs)  // distinct copy not needed below if ok to overwrite
-    delete [] xCopy;
+    dens += (df - p - 1) * log(xChol[i]);
 
-  // do upper-triangular solves for scale parameterization
-  // or upper-triangular multiplies for rate parameterization
+  // do upper-triangular solve for scale parameterization
+  // or upper-triangular multiply for rate parameterization
+  // once have triangular calc, can do direct product of upper
+  // triangle to get the trace, since it's the trace
+  // of triangular matrix crossprod'ed with itself
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
-  if(overwrite_inputs) 
-    xCopy = x;
-  else {
-    for(i = 0; i < p*p; i++) 
-      xCopy[i] = x[i];
-  }
   if(scale_param) {
-    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
-    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
-    for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += xCopy[i];
+    F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
+           chol, &p, xChol, &p);
+    for(j = 0; j < p; j++) {
+      for(i = 0; i <= j; i++) {
+        tmp_dens += xChol[j*p+i]*xChol[j*p+i];
     dens += -0.5 * tmp_dens;
   } else {
-    F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
+    if(overwrite_inputs) 
+      xCopy = x;
+    else {
+      for(i = 0; i < p*p; i++) 
+        xCopy[i] = x[i];
+    }
+    F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
            chol, &p, xCopy, &p);
-    // at this point don't need to do all the multiplications so don't call dtrmm again
-    // direct product of upper triangles
     for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
         tmp_dens += xCopy[j*p+i] * chol[j*p+i];
       }
     }
-    if(!overwrite_inputs)
+    if(overwrite_inputs)  
       delete [] xCopy;
+  }
+
+  delete [] xChol;
+
     // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
     // U^T*U directly followed by direct product with x
     /* 
@@ -264,7 +267,6 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
   int info(0);
   double alpha(1.0);
   double* xChol;
-  double* cholCopy;
 
   int i, j;
 
@@ -292,10 +294,7 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
       dens -= df * log(chol[i]);
   }
 
-  //HERE
-
   // determinant of x using Cholesky:
-  // dpotrf overwrites x so need to copy first since the trace calc below also overwrites
   if(overwrite_inputs) 
     xChol = x;
   else {
@@ -307,16 +306,20 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
   for(i = 0; i < p*p; i += p + 1) 
     dens -= (df + p + 1) * log(xChol[i]);
 
-  if(overwrite_inputs)
-    cholCopy = chol;
-  else {
-    cholCopy = new double[p*p];
-    for(i = 0; i < p*p; i++) 
-      cholCopy[i] = x[i];
-  }
   double tmp_dens = 0.0;
 
+  // do upper-triangular solve for scale parameterization
+  // or upper-triangular multiplies for rate parameterization
+  // dtr{m,s}m is a BLAS level-3 function
   if(scale_param) {
+    double* cholCopy;
+    if(overwrite_inputs)
+      cholCopy = chol;
+    else {
+      cholCopy = new double[p*p];
+      for(i = 0; i < p*p; i++) 
+        cholCopy[i] = chol[i];
+    }
     F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
            xChol, &p, cholCopy, &p);
     for(j = 0; j < p; j++) {
@@ -324,6 +327,8 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
         tmp_dens += cholCopy[j*p+i] * cholCopy[j*p+i];
       }
     }
+    if(!overwrite_inputs)
+      delete [] cholCopy;
   } else {
     double* iden = new double[p*p];
     for(j = 0; j < p; j++)
@@ -334,48 +339,11 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
     F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
                     xChol, &p, iden, &p);
     for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += iden[i];
+      tmp_dens += iden[i]*iden[i];
+    delete [] iden;
   }
   
-
-  if(!overwrite_inputs) {  
-    delete [] xChol;
-    delete [] cholCopy;
-  }
-
-  // do upper-triangular solves for scale parameterization
-  // or upper-triangular multiplies for rate parameterization
-  // dtr{m,s}m is a BLAS level-3 function
-  double tmp_dens = 0.0;
-  if(overwrite_inputs) 
-    xCopy = x;
-  else {
-    for(i = 0; i < p*p; i++) 
-      xCopy[i] = x[i];
-  }
-  if(scale_param) {
-    F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
-    F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
-    for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += xCopy[i];
-    dens += -0.5 * tmp_dens;
-  } else {
-    F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, xCopy, &p);
-    // at this point don't need to do all the multiplications so don't call dtrmm again
-    // direct product of upper triangles
-    for(j = 0; j < p; j++) {
-      for(i = 0; i <= j; i++) {
-        tmp_dens += xCopy[j*p+i] * chol[j*p+i];
-      }
-    }
-    if(!overwrite_inputs)
-      delete [] xCopy;
-    
-    dens += -0.5 * tmp_dens;
-  }
+  dens += -0.5 * tmp_dens;
 
   return give_log ? dens : exp(dens);
 }
