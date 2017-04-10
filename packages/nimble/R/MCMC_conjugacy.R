@@ -90,13 +90,19 @@ conjugacyRelationshipsInputList <- list(
 
     ## wishart
     list(prior = 'dwish',
-         link = 'linear',
+         ## changing to only use link='identity' case, since the link='linear' case was not correct.
+         ## -DT March 2017
+         ## link = 'linear',
+         link = 'identity',
          dependents = list(
              ## parentheses added to the contribution_R calculation:
              ## colVec * (rowVec * matrix)
              ## Chris is checking to see whether this makes a difference for Eigen
              ## -DT April 2016
-             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
+             ## changing to only use link='identity' case, since the link='linear' case was not correct
+             ## -DT March 2017
+             ## dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
+             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
                                  scale_param = 0)'),
