@@ -152,7 +152,11 @@ try(test_that("dcat handles 'probs' that do not sum to one: ",
 
 ## dinvgamma
 
-y <- 1; a <- 1; c <- 2; alpha <- 3; beta <- 2; theta <- 1
+y <- 1.1; a <- 1; c <- 2; alpha <- 3; beta <- 2; theta <- 1
+
+manDens <- alpha*log(beta) - lgamma(alpha) - (alpha+1)*log(y) - beta/y
+try(test_that("Test that dinvgamma gets correct result: ",
+              expect_equal(manDens, dinvgamma(y, alpha, scale = beta, log = TRUE), tol = 1e-15)))
 
 set.seed(0)
 smp1 <- rinvgamma(100000, shape = alpha, scale = beta)
@@ -187,7 +191,7 @@ code <- nimbleCode({
     y ~ dinvgamma(a, scale = c*theta)
     theta ~ dinvgamma(alpha, beta)
 })
-m = nimbleModel(code, data = list(y=1),
+m = nimbleModel(code, data = list(y = y),
                          inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
@@ -199,7 +203,7 @@ code <- nimbleCode({
     y ~ dinvgamma(a, rate = 2 + c*theta)
     theta ~ dinvgamma(alpha, beta)
 })
-m = nimbleModel(code, data = list(y=1),
+m = nimbleModel(code, data = list(y = y),
                          inits = list(theta = theta, a = a, c = c, alpha = alpha, beta = beta))
 conf <- configureMCMC(m)
 samplers <- conf$getSamplers()
