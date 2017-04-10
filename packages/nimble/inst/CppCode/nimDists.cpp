@@ -167,7 +167,7 @@ void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double d
   if(ans.isMap()) {ans = ansCopy;}
 }
 
-double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log) {
+double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs) {
   double *xptr, *cholptr;
   NimArr<2, double> xCopy, cholCopy;
   int p = x.dim()[0];
@@ -181,12 +181,12 @@ double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, doubl
   }
   xptr = nimArrCopyIfNeeded<2, double>(x, xCopy).getPtr();
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
-  double ans = dinvwish_chol(xptr, cholptr, df, p, scale_param, give_log);
+  double ans = dinvwish_chol(xptr, cholptr, df, p, scale_param, give_log, overwrite_inputs);
   return(ans);
 }
 
 
-void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double scale_param) {
+void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double scale_param, int overwrite_inputs) {
   double *ansptr, *cholptr;
   NimArr<2, double> ansCopy, cholCopy;
   int p = chol.dim()[0];
@@ -209,7 +209,7 @@ void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, doubl
   ansptr = nimArrCopyIfNeeded<2, double>(ans, ansCopy).getPtr();
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
 
-  rinvwish_chol(ansptr, cholptr, df, p, scale_param);
+  rinvwish_chol(ansptr, cholptr, df, p, scale_param, overwrite_inputs);
   if(ans.isMap()) {ans = ansCopy;}
 }
 

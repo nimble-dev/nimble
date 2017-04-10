@@ -16,8 +16,8 @@ void nimArr_rdirch(NimArr<1, double> &ans, NimArr<1, double> &alpha);
 double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs);
 void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double prec_param, int overwrite_inputs);
 
-double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log);
-void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double prec_param);
+double nimArr_dinvwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs);
+void nimArr_rinvwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double prec_param, int overwrite_inputs);
 
 double nimArr_dmulti(NimArr<1, double> &x, double size, NimArr<1, double> &prob, int give_log);
 void nimArr_rmulti(NimArr<1, double> &ans, double size, NimArr<1, double> &prob);

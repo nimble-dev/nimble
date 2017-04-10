@@ -62,37 +62,42 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   }
 
   // determinant of x using Cholesky:
-  // dpotrf overwrites x so need to copy first since the trace calc below also overwrites
-  xChol = new double[p*p];
-  for(i = 0; i < p*p; i++) 
-    xChol[i] = x[i];
+  if(overwrite_inputs & (int) scale_param)  // if !scale_param we need x below
+    xChol = x;
+  else {
+    xChol = new double[p*p];
+    for(i = 0; i < p*p; i++) 
+      xChol[i] = x[i];
+  }
   F77_CALL(dpotrf)(&uplo, &p, xChol, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
     dens += (df - p - 1) * log(xChol[i]);
+  
+  // R %*% x = t(chol) %*% chol %*% x (could also do with chol(x) but no more efficient
+  // solve(S, x) = crossproduct( chol(x) %*% inverse(chol) )
 
-  // do upper-triangular solve for scale parameterization
-  // or upper-triangular multiply for rate parameterization
-  // once have triangular calc, can do direct product of upper
-  // triangle to get the trace, since it's the trace
-  // of triangular matrix crossprod'ed with itself
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
   if(scale_param) {
+    // chol(x) %*% inverse(chol)
     F77_CALL(dtrsm)(&sideR, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, xChol, &p);
-    for(j = 0; j < p; j++) {
-      for(i = 0; i <= j; i++) {
+                    chol, &p, xChol, &p);
+    // trace of crossproduct of result is sum of squares of elements
+    for(j = 0; j < p; j++) 
+      for(i = 0; i <= j; i++) 
         tmp_dens += xChol[j*p+i]*xChol[j*p+i];
-    dens += -0.5 * tmp_dens;
   } else {
+    double* xCopy;
     if(overwrite_inputs) 
       xCopy = x;
     else {
       for(i = 0; i < p*p; i++) 
         xCopy[i] = x[i];
     }
+    // chol %*% x
     F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, 
            chol, &p, xCopy, &p);
+    // trace crossproduct of t(chol) with result is sum of product of upper-triangular elements
     for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
         tmp_dens += xCopy[j*p+i] * chol[j*p+i];
@@ -102,7 +107,8 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       delete [] xCopy;
   }
 
-  delete [] xChol;
+  if(!overwrite_inputs)
+    delete xChol;
 
     // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
     // U^T*U directly followed by direct product with x
@@ -121,8 +127,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       }
     */
     
-    dens += -0.5 * tmp_dens;
-  }
+  dens += -0.5 * tmp_dens;
 
   return give_log ? dens : exp(dens);
 }
@@ -286,6 +291,7 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
   for(i = 0; i < p; i++)
     dens -= lgammafn((df - i) / 2);
 
+  // determinant of S or R
   if(scale_param) {
     for(i = 0; i < p*p; i += p + 1) 
       dens += df * log(chol[i]);
@@ -310,6 +316,9 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
 
   // do upper-triangular solve for scale parameterization
   // or upper-triangular multiplies for rate parameterization
+
+  // S %*% inverse(x) = crossprod(chol %*% inverse(chol(x)) 
+  // inverse(R) %*% inverse(x) = crossproduct(solve(t(chol(x)), inverse(chol)))
   // dtr{m,s}m is a BLAS level-3 function
   if(scale_param) {
     double* cholCopy;
@@ -320,8 +329,10 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
       for(i = 0; i < p*p; i++) 
         cholCopy[i] = chol[i];
     }
+    // chol %*% inverse(chol(x))
     F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
            xChol, &p, cholCopy, &p);
+    // trace of crossproduct is sum of elements squared
     for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
         tmp_dens += cholCopy[j*p+i] * cholCopy[j*p+i];
@@ -333,13 +344,16 @@ double dinvwish_chol(double* x, double* chol, double df, int p, double scale_par
     double* iden = new double[p*p];
     for(j = 0; j < p; j++)
       for(i = 0; i < p; i++)
-        if(i == j) iden[j*p+i] = 1.0 else iden[j*p+i] = 0.0;
+        if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
+    // inverse of chol
     F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
                     chol, &p, iden, &p);
+    // solve(t(chol(x)), result)
     F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
                     xChol, &p, iden, &p);
+    // trace of crossproduct is sum of elements squared
     for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += iden[i]*iden[i];
+      tmp_dens += iden[i] * iden[i];
     delete [] iden;
   }
   
@@ -376,7 +390,8 @@ SEXP C_dinvwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_l
 
 
 void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param, int overwrite_inputs) {
-  char uplo('U');
+  char uploU('U');
+  char uploL('L');
   char sideL('L');
   char diag('N');
   char transT('T');
@@ -404,8 +419,6 @@ void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param
   
   // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals - crossproduct of result is standardized Wishart; based on rWishart in stats package
   for(j = 0; j < p; j++) {
-    // double *Z_j = &Z[j*p];
-    //Z_j[j] = sqrt(rchisq(df - (double) j)); 
     Z[j*p + j] = sqrt(rchisq(df - (double) j)); 
     for(i = 0; i < j; i++) {
       uind = i + j * p, /* upper triangle index */
@@ -413,16 +426,8 @@ void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param
       Z[(scale_param ? uind : lind)] = norm_rand();
       Z[(scale_param ? lind : uind)] = 0;
     }
-    /*
-    for(i = 0; i < j; i++) 
-      Z_j[i] = norm_rand();
-    for (i = j + 1; i < p; i++)
-      Z_j[i] = 0;
-    */
   }
  
-  // multiply Z*chol, both upper triangular or solve(chol, Z^T)
-  // would be more efficient if make use of fact that right-most matrix is triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
   if(overwrite_inputs)
     cholCopy = chol;
   else {
@@ -430,22 +435,28 @@ void rinvwish_chol(double *Z, double* chol, double df, int p, double scale_param
     for(i = 0; i < p*p; i++) 
       cholCopy[i] = chol[i];
   }
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
-  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
 
-  // cp result to Z or chol so can be used as matrix to multiply against and overwrite
+  // with S parameterization: t(chol)%*%t(Z)%*%Z%*%chol is Wishart-distributed, so take inverse based on pieces
+  // with R parameterization: inverse(chol)%*%Z%*%t(Z)%*%inverse(t(chol)) is Wishart-distributed, again inverse of pieces
   if(scale_param) {
-    for(j = 0; j < p*p; j++) 
-      Z[j] = cholCopy[j];
-  } else {
-    for(j = 0; j < p*p; j++) 
-      cholCopy[j] = Z[j]; 
+    // Z %*% chol
+    F77_CALL(dtrmm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    double* iden = new double[p*p];
+    for(j = 0; j < p; j++)
+      for(i = 0; i < p; i++)
+        if(i == j) iden[j*p+i] = 1.0; else iden[j*p+i] = 0.0;
+    // inverse(Z %*% chol)
+    F77_CALL(dtrsm)(&sideL, &uploU, &transN, &diag, &p, &p, &alpha, cholCopy, &p, iden, &p);
+    // crossproduct of result
+    F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, iden, &p, iden, &p, &beta, Z, &p);    
+    delete [] iden;
+  } else {    
+    // solve(Z, chol)
+    F77_CALL(dtrsm)(&sideL, &uploL, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
+    // crossproduct of result
+    F77_CALL(dgemm)(&transT, &transN, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p);
   }
 
-  // do crossprod of result
-  // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
-  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, cholCopy, &p, &beta, Z, &p); 
   if(!overwrite_inputs)
     delete [] cholCopy;
 }
