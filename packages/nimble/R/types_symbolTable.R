@@ -76,11 +76,9 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
           possibleNLgenerator <- get(possibleTypeName, envir = globalenv())
           if(is.nlGenerator(possibleNLgenerator)) {
               className <- nl.getListDef(nlGen)$className
-              ##nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
           }
         }
         if(!is.null(className)){
-            ##className <- nlList$nimbleListDef$className
             isANeededType <- (className == names(neededTypes))
             if(any(isANeededType)){
                 listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow = TRUE)

@@ -109,13 +109,6 @@ cppNimbleClassClass <- setRefClass('cppNimbleClassClass',
                                                  CPPincludes <<- c(CPPincludes, nimbleIncludeFile("smartPtrs.h"))
                                                  generatorName <- neededType$nlProc$name
                                                  thisCppDef <- nimbleProject$getNimbleListCppDef(generatorName = generatorName)
-                                                 ## EIGENHERE
-                                                 ## 0. The annotation "eig" or "eigen" in variable names should be something more generic, like predefinedNimbleListDef permanentNimbleListDef
-                                                 ## 1. Ideally, a nimbleList generator like eigenNimbleList can contain the information that it is  predefined, so that it does not need to be extracted here but can be extracted by the cppDef when needed
-                                                 ## 2. We need to ensure that nimbleProjectClass does not take ownership of a predefined class.  A test should be if nimbleEigenList can be used in one compileNimble and then in a completely separate compileNimble.
-                                                 # eigListClassNames <- sapply(nlEigenReferenceList, function(x){return(x$className)})
-                                                 # ##EIGEN_EIGENCLASS and EIGEN_SVDCLASS only need partial cpp defs, as some is in permanent c++ code
-                                                 # eigenList <- generatorName %in% eigListClassNames
                                                  if(is.null(thisCppDef)){
                                                       className <- names(nimCompProc$neededTypes)[i]
                                                       thisCppDef <- nimbleProject$buildNimbleListCompilationInfo(className = generatorName, fromModel = fromModel)

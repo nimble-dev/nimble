@@ -136,44 +136,6 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 ## 	}
 ## 	)
 
-# 
-
-# 
-# nimEigen_keywordInfo <- keywordInfoClass(
-#   keyword = "nimEigen",
-#   processor = function(code, nfProc){
-#       ## EIGENHERE
-#       ## Some notes:
-#       ## 1. Ideally, we should not need a separate keyword processor for eigen and svd and every new DSL function that returns a pre-defined nimbleList type
-#       ## 2. We normally do not add *function* names to the symbolTable.  Instead we add handlers for DSL keywords (functions) for any needed processing steps (e.g. size processing)
-#       ## 3. The substitution of EIGEN_EIGEN for nimEigen could be done at the generateCpp step with a handler for nimbleListReturningFunctions that looks up the final output name.
-#       ## 4. nimEigen and nimSvd should probably  get entries in the matchFunctions, which often can be their actual R function to match arguments 
-#     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
-#     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
-#       nlEigenRefClass$addEigenListInfo(nfProc)
-#     }
-#     code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
-#     return(code)
-#   }
-# )
-# 
-# nimSvd_keywordInfo <- keywordInfoClass(
-#   keyword = "nimSvd",
-#   processor = function(code, nfProc){
-#       ## EIGENHERE: see above
-#     nlEigenRefClass <- nlEigenReferenceList[[deparse(code[[1]])]]
-#     if(!nfProc$setupSymTab$symbolExists(nlEigenRefClass$nimFuncName)){
-#       nlEigenRefClass$addEigenListInfo(nfProc)
-#     }
-#     code[[1]] <- parse(text = nlEigenRefClass$nimFuncName)[[1]]
-#     code[[3]] <- switch(tolower(code[[3]]),
-#                         none = 0,
-#                         thin = 1,
-#                         full = 2)
-#     if(is.null(code[[3]])) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
-#     return(code)
-#   }
-# )
 
 nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
   keyword = 'multiple',
@@ -762,15 +724,11 @@ dollarSign_keywordInfo <- keywordInfoClass(
             if(callerCode[[1]] == '$'){ ## nested NL or NF case
                 callerCode <- processKeyword(callerCode, nfProc)
             }
-            ## else if (! (deparse(callerCode[[1]]) %in% c('nimEigen', 'nimSvd', 'makeNewNimbleListObject'))) { 
-            ##     callerCode <- callerCode[[2]]
-            ## }
         }
                                         #       This extracts myNimbleFunctionList from the expression myNimbleFunctionList[[i]]
                                         #       May be a better way to do this
         
-        ##class <- symTypeFromSymTab(callerCode, nfProc$setupSymTab, options = possibleObjects)
-        
+
         if(is.null(class) || class == 'NULL'){  ##assume that an element of a run-time provided nimbleList is being accessed
             nl_fieldName <-as.character(code[[3]])
             newRunCode <- substitute(nfVar(NIMBLELIST, VARNAME), list(NIMBLELIST = callerCode, VARNAME = nl_fieldName))
@@ -1589,20 +1547,6 @@ matchKeywordCodeMemberFun <- function(code, nfProc) {  ## handles cases like a$b
             names(code)[length(code)] <- '.LEFTSIDE'
             code[[1]] <- as.name('makeNewNimbleListObject') ## modify first arg of code to be desired name of call
             return(matchAndFill.call(thisFunctionMatch, code ) ) ## should create makeNewNimbleListObject( nimbleListCallMaybeNested, var1, var2, etc.)
-            
-            ## listElements <- symObj$nlProc$symTab$getSymbolObjects()
-            ## if(!is.null(code[[listElements[[1]]$name]])) code[[listElements[[1]]$name]] <- matchKeywords_recurse(code[[listElements[[1]]$name]], nfProc)
-            ## elementName <- deparse(code[[listElements[[1]]$name]])
-            ## if(elementName == "NULL") elementName <- ""  ## replace null values with empty char string, will be picked up in processSpecificCalls
-            ## argValues <- paste0(listElements[[1]]$name, " = ", elementName) ## add the first element here, no leading comma
-            ## for(i in seq_along(listElements)[-1]){  ## skip the first element
-            ##     if(!is.null(code[[listElements[[i]]$name]])) code[[listElements[[i]]$name]] <- matchKeywords_recurse(code[[listElements[[i]]$name]], nfProc)
-            ##     elementName <- deparse(code[[listElements[[i]]$name]])
-            ##     if(elementName == "NULL") elementName <- ""
-            ##     argValues <- paste0(argValues, ", ", listElements[[i]]$name, " = ", elementName)
-            ## }
-            ## nlCall <- paste0("makeNewNimbleListObject(", deparse(leftSide), ", ", argValues, ")")
-            ## return(parse(text = nlCall, keep.source = FALSE)[[1]])
         }
     }
     stop(paste0("Cannot handle this expression: ", deparse(code))) 

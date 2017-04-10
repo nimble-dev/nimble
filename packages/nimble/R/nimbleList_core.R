@@ -137,18 +137,6 @@ nimbleList <- function(...,
     nestedListGens <- list()
     for(i in seq_along(types$types)){
         if(!(types$types[i] %in% basicTypes)){
-            ## EIGENHERE:
-            ## 1. Is the idea that one would have nimbleList(a = double(1), b = nimEigen(), c = nimSvd())
-            ## 2. If so I think it will help to separate the pre-defined list definitions from DSL functions (keywords) that return a particular type
-            ## e.g. nimbleList(a = double(1), b = eigenNimbleList(), c = svdNimbleList())
-            ## 3. Ideally, eigen and svd should not need special handling here.  If they do, their names should be in a lookup list rather than hard-coded.
-        # if(types$types[i] %in% c('eigen', 'nimEigen')){  ## eigen() will not have been converted to nimEigen() yet, so
-        #                                                  ## need to check for both
-        #   nestedListGens[[types$vars[i]]] <- nlEigenReferenceList[['nimEigen']]$createListDef()
-        # }
-        # if(types$types[i] %in% c('svd', 'nimSvd')){
-        #   nestedListGens[[types$vars[i]]] <- nlEigenReferenceList[['nimSvd']]$createListDef()
-        # }
         for(searchEnvironment in c(parent.frame(), globalenv())){
           if(try(is.nlGenerator(get(types$types[i], envir = searchEnvironment)), silent = TRUE)){
             nestedListGens[[types$vars[i]]] <- get(types$types[i], envir = searchEnvironment)
@@ -160,11 +148,6 @@ nimbleList <- function(...,
     
     classFields <- as.list(rep('ANY', length(types$vars)))
     names(classFields) <- types$vars
-    ## classFields[[length(classFields)+1]] <- "ANY"
-    ## names(classFields)[length(classFields)] <- "nimbleListDef" ## initial nl definition stored here
-    ## classFields[[length(classFields)+1]] <- "ANY"
-    ## names(classFields)[length(classFields)] <- "nestedListGenList" ## nl generators for any nested lists stored here
-    
     nlRefClass <- setRefClass(
       Class = name,
       fields = classFields,
@@ -270,9 +253,7 @@ nlProcessing <- setRefClass('nlProcessing',
                                     } else {
                                       name <<- className
                                     }
-                                   ## instances <<- if(inherits(nimLists, 'list')) nimLists else list(nimLists)
                                       nestedListGens <<- nl.getNestedGens(nlGenerator)
-                                      ##nestedListGens <<- if(inherits(nimLists, 'list')) nimLists[[1]]$nestedListGenList else nimLists$nestedListGenList
                                       generateTemplate()
                                   }
                                 },
@@ -298,10 +279,8 @@ nlProcessing <- setRefClass('nlProcessing',
                                   for(i in seq_along(nimbleListObj$types$vars)){
                                       nimbleListObjVar <- nimbleListObj$types$vars[i]
                                     if(nimbleListObjVar %in% names(nestedListGens)){
-                                      ##nlList <- nestedListGens[[nimbleListObj$types$vars[i]]]$new()
                                         thisNestedListGen <- nestedListGens[[nimbleListObjVar]]
                                         thisNestedListDef <- nl.getDefinitionContent(thisNestedListGen, 'nlDefClassObject')
-                                        ##className <- nlList$nimbleListDef$className
                                         className <- thisNestedListDef$className
                                       nlp <- nimbleProject$nlCompInfos[[className]]$nlProc
                                       newSym <- symbolNimbleList(name = nimbleListObjVar, nlProc = nlp)
@@ -331,15 +310,6 @@ nlProcessing <- setRefClass('nlProcessing',
                             ))
 
 
-## Some notes:
-## 1. The collection of DSL functions that return a pre-defined nimbleList should
-## not all be referred to as "Eigen"-stuff.  Perhaps nimbleListReturningFunctions.  Part of this poins is that the function eigen (or nimEigen or EIGEN_EIGEN) should not be treated as a nimbleListGenerator.  It should be treated as a DSL keyword that returns a nimbleList.
-## 2. It will help to separate the nimbleList type from the (potentially multiple) functions that happen to return that type.
-## 3. A nimbleList type like eigenNimbleList or svdNimbleList can be *regular* nimbleLists, if we add a field to either nimbleListBase or nimbleListDefClass for relevant information
-## 4. The work done by "addEigenListInfo" below should be done by nimbleProjectClass.
-## 5. The set (current eigen and svd) of nimbleListReturningFunctions should become entries of a new operator list in genCpp_operatorLists.
-## 6. In size processing (and possibly other steps), there should be entries (e.g. in sizeCalls) to send handling of a nimbleListReturningFunction to a distinct handler function.
-## 7. 
 
 
 ## Below are nimbleList definitions for predefined nimbleLists in nimble

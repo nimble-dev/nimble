@@ -77,7 +77,6 @@ nimEigen <- function(x, only.values = FALSE) {
   ## placeholder list with correct names of elements, will be populated in C++
     .Call('C_nimEigen', apply(x, 1, as.double), as.logical(only.values), eigenNimbleList$new(),
           package = 'nimble')
-##        PACKAGE = nimbleUserNamespace$sessionSpecificDll[[1]])
 }
 
 
