@@ -617,6 +617,7 @@ eigenize_cWiseMultDiv <- function(code, symTab, typeEnv, workEnv) {
  
     if(scalar1 | scalar2) {
         if(scalar1 & scalar2) return(invisible(NULL))
+        promoteTypes(code)
         if(code$name == '*' | scalar2) {
             code$eigMatrix <- if(scalar1) code$args[[2]]$eigMatrix else code$args[[1]]$eigMatrix
             return(invisible(NULL))
@@ -636,6 +637,7 @@ eigenize_cWiseAddSub <- function(code, symTab, typeEnv, workEnv) {
     if(length(code$args)==1) return(eigenize_cWiseUnaryEither(code, symTab, typeEnv, workEnv))
     
     if(isEigScalar(code$args[[1]]) | isEigScalar(code$args[[2]])) {
+        promoteTypes(code)
         for(i in 1:2) { 
             if(!isEigScalar(code$args[[i]])) { 
                 if(code$args[[i]]$eigMatrix) eigenizeArrayize(code$args[[i]])
