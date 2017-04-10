@@ -297,3 +297,23 @@ try(test_that("Test that deregistration of user-supplied distributions works: ",
               expect_equal(is.null(nimble:::nimbleUserNamespace$distributions[['ddirchmulti']]), (TRUE),
                           info = paste0("ddirchmulti has not been deregistered"))))
 
+# would like to test user-defined without r function, but registerDistributions()
+# puts r function in calling frame and that is causing problems when called from
+# within testing context
+
+## dfoo = nimbleFunction(
+##     run = function(x = double(1), log = integer(0, default = 0)) {
+##         returnType(double(0))
+##         return(0)
+##     })
+
+## assign('dfoo', dfoo, envir = .GlobalEnv)
+
+## code <- nimbleCode({
+##     v[1:3] ~ dfoo()
+## })
+
+## out <- try(m <- nimbleModel(code))
+
+## try(test_that("Test of user-supplied distribution without r function: ",
+##               expect_false(is(out, 'try-error'))))

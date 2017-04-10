@@ -1,4 +1,3 @@
-
 // various additional distributions functions needed by NIMBLE
 // Author: Chris Paciorek 
 // Date: Initial development in February 2014
@@ -34,7 +33,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   int info(0);
   double alpha(1.0);
 
-  int i;
+  int i, j;
 
   if (R_IsNA(x, p*p) || R_IsNA(chol, p*p) || R_IsNA(df) || R_IsNA(scale_param))
     return NA_REAL;
@@ -74,6 +73,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   // or upper-triangular multiplies for rate parameterization
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
+  // FIXME: x is getting overwritten
   if(scale_param) {
     F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
            chol, &p, x, &p);
@@ -83,16 +83,33 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
       tmp_dens += x[i];
     dens += -0.5 * tmp_dens;
   } else {
-    // this could be improved by doing efficient U^T U multiply followed by direct product multiply
     F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
            chol, &p, x, &p);
     // at this point don't need to do all the multiplications so don't call dtrmm again
     // direct product of upper triangles
-    for(int j = 0; j < p; j++) {
+    for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
         tmp_dens += x[j*p+i] * chol[j*p+i];
       }
     }
+
+    // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
+    // U^T*U directly followed by direct product with x
+    /* 
+    double tmp_summand;
+    int minij;
+    for(j = 0; j < p; j++) 
+      for(i = 0; i < p; i++) {
+        tmp_summand = 0.0;
+        minij = i <= j ? i : j;
+        for(int k = 0; k < minij; k++)
+          tmp_summand += chol[j*p+k]*chol[i*p+k]; // U^T U 
+        // double if not on diagonal to account for direct product of lower triangle too
+        if(i != j) tmp_summand *= 2;
+        tmp_dens += x[j*p+i] * tmp_summand;
+      }
+    */
+    
     dens += -0.5 * tmp_dens;
   }
 
@@ -155,7 +172,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
     return;
   }
   
-  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals
+  // fill diags with sqrts of chi-squares and upper triangle (for scale_param) with std normals - crossproduct of result is standardized Wishart; based on rWishart in stats package
   for(j = 0; j < p; j++) {
     // double *Z_j = &Z[j*p];
     //Z_j[j] = sqrt(rchisq(df - (double) j)); 
@@ -175,7 +192,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
   }
  
   // multiply Z*chol, both upper triangular or solve(chol, Z^T)
-  // would be more efficient if make use of fact that right-most matrix is triangular
+  // would be more efficient if make use of fact that right-most matrix is triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, chol, &p);
   else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
 
@@ -188,7 +205,8 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
       chol[j] = Z[j]; // FIXME: check this case.  We don't want to overwite an input argument.
   }
 
-  // do crossprod of result; again this would be more efficient use fact that t(input) is lower-tri
+  // do crossprod of result
+  // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, chol, &p, Z, &p);
   else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, chol, &p, &beta, Z, &p); 
 
@@ -602,6 +620,7 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
+  // FIXME: x is getting overwritten
   if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
   else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
 
@@ -775,6 +794,7 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
+  // FIXME: x is getting overwritten
   if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
   else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
   
@@ -1453,6 +1473,210 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
     int i_rate = 0;
     for(int i = 0; i < n_p; i++) {
       REAL(ans)[i] = qexp_nimble(c_p[i], c_rate[i_rate++], c_lower_tail, c_log_p);
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+
+// NIMBLE's C parameterization of invgamma is (shape,rate) because
+// when passing to R's C gamma, which uses (shape,scale), 
+// the gamma scale parameter is the invgamma rate parameter
+double dinvgamma(double x, double shape, double rate, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(shape) || ISNAN(rate))
+    return x + shape + rate;
+#endif
+  double xinv = 1/x;
+  if(give_log) return(dgamma(xinv, shape, rate, give_log) - 2*log(x));
+  else return(dgamma(xinv, shape, rate, give_log) * xinv * xinv);
+}
+
+double rinvgamma(double shape, double rate)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(shape) || ISNAN(rate))
+    ML_ERR_return_NAN;
+#endif
+  return(1 / rgamma(shape, rate));
+}
+
+double pinvgamma(double q, double shape, double rate, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if(ISNAN(q) || ISNAN(shape) || ISNAN(rate))
+    return q + shape + rate;
+#endif
+  return(pgamma(1/q, shape, rate, !lower_tail, log_p));
+}
+
+double qinvgamma(double p, double shape, double rate, int lower_tail, int log_p)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(p) || ISNAN(shape) || ISNAN(rate))
+    return p + shape + rate;
+#endif
+  return(1 / qgamma(p, shape, rate, !lower_tail, log_p));
+}
+
+
+SEXP C_dinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
+  if(!isReal(x) || !isReal(shape) || !isReal(rate) || !isLogical(return_log)) 
+    RBREAK("Error (C_dinvgamma): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  double* c_x = REAL(x);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dinvgamma(c_x[i], *c_shape, *c_rate, give_log);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = dinvgamma(c_x[i], c_shape[i_shape++], c_rate[i_rate++], give_log);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rinvgamma(SEXP n, SEXP shape, SEXP rate) {
+  if(!isInteger(n) || !isReal(shape) || !isReal(rate))
+    RBREAK("Error (C_rinvgamma): invalid input type for one of the arguments.");
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rinvgamma): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rinvgamma(*c_shape, *c_rate);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rinvgamma(c_shape[i_shape++], c_rate[i_rate++]);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_pinvgamma(SEXP q, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(q) || !isReal(shape) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p))
+    RBREAK("Error (C_pinvgamma): invalid input type for one of the arguments.");
+  int n_q = LENGTH(q);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_q == 0) {
+    return q;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_q));  
+  double* c_q = REAL(q);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_q; i++) 
+      REAL(ans)[i] = pinvgamma(c_q[i], *c_shape, *c_rate, c_lower_tail, c_log_p);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_q; i++) {
+      REAL(ans)[i] = pinvgamma(c_q[i], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+ 
+SEXP C_qinvgamma(SEXP p, SEXP shape, SEXP rate, SEXP lower_tail, SEXP log_p) {
+  if(!isReal(p) || !isReal(shape) || !isReal(rate) || !isLogical(lower_tail) || !isLogical(log_p))
+    RBREAK("Error (C_qinvgamma): invalid input type for one of the arguments.");
+  int n_p = LENGTH(p);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int c_lower_tail = (int) LOGICAL(lower_tail)[0];
+  int c_log_p = (int) LOGICAL(log_p)[0];
+  SEXP ans;
+    
+  if(n_p == 0) {
+    return p;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_p));  
+  double* c_p = REAL(p);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_p; i++) 
+      REAL(ans)[i] = qinvgamma(c_p[i], *c_shape, *c_rate, c_lower_tail, c_log_p);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_p; i++) {
+      REAL(ans)[i] = qinvgamma(c_p[i], c_shape[i_shape++], c_rate[i_rate++], c_lower_tail, c_log_p);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
       if(i_rate == n_rate) i_rate = 0;
     }
   }

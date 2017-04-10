@@ -33,14 +33,19 @@ NULL
 #' @export
 dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
-  .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
+    out <- .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
+    if(is.null(out)) out <- NaN
+    out
 }
 
 #' @rdname Wishart
 #' @export
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
-    matrix(.Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param)), nrow = sqrt(length(cholesky)))
+    out <- .Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param))
+    if(is.null(out)) out <- NaN
+    d <- sqrt(length(cholesky))
+    matrix(out, nrow = d, ncol = d)
 }
 
 
@@ -569,5 +574,98 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
         else stop("specify 'rate' or 'scale' but not both")
     }
   .Call('C_qexp_nimble', as.double(p), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+}
+
+#' The Inverse Gamma Distribution
+#'
+#'   Density, distribution function, quantile function and random
+#'   generation for the inverse gamma distribution with rate
+#'     or scale (mean = scale / (shape - 1)) parameterizations.
+#' 
+#' @name Inverse Gamma
+#' 
+#' @param x vector of values.
+#' @param n number of observations.
+#' @param p vector of probabilities.
+#' @param q vector of quantiles.
+#' @param shape vector of shape values, must be positive.
+#' @param rate vector of rate values, must be positive.
+#' @param scale vector of scale values, must be positive.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#' @param log.p logical; if TRUE, probabilities p are given by user as log(p).
+#' @param lower.tail logical; if TRUE (default) probabilities are \eqn{P[X \le x]}; otherwise, \eqn{P[X > x]}.
+#' @author Christopher Paciorek
+#' @export
+#' @details The inverse gamma distribution with parameters \code{shape} = \eqn{=\alpha}{= a} and
+#' \code{scale} = \eqn{=\sigma}{= s} has density
+#' \deqn{
+#'   f(x)= \frac{s^a}{\Gamma(\alpha)} {x}^{-(\alpha+1)} e^{-\sigma/x}%
+#'  }{f(x)= (s^a / Gamma(a)) x^-(a+1) e^-(s/x)}
+#' for \eqn{x \ge 0}, \eqn{\alpha > 0}{a > 0} and \eqn{\sigma > 0}{s > 0}.
+#' (Here \eqn{\Gamma(\alpha)}{Gamma(a)} is the function implemented by \R's
+#'  \code{\link{gamma}()} and defined in its help.
+#'
+#'  The mean and variance are
+#'  \eqn{E(X) = \frac{\sigma}{\alpha}-1}{E(X) = s/(a-1)} and
+#' \eqn{Var(X) = \frac{\sigma^2}{(\alpha-1)^2 (\alpha-2)}}{Var(X) = s^2 / ((a-1)^2 * (a-2))},
+#' with the mean defined only
+#' for \eqn{\alpha > 1}{a > 1} and the variance only for \eqn{\alpha > 2}{a > 2}.
+#'
+#' See Gelman et al., Appendix A or
+#' the BUGS manual for mathematical details. 
+#' @return \code{dinvgamma} gives the density, \code{pinvgamma} gives the distribution
+#' function, \code{qinvgamma} gives the quantile function, and \code{rinvgamma}
+#' generates random deviates.
+#' @references Gelman, A., Carlin, J.B., Stern, H.S., and Rubin, D.B. (2004) \emph{Bayesian Data Analysis}, 2nd ed. Chapman and Hall/CRC.
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' x <- rinvgamma(50, shape = 1, scale = 3)
+#' dinvgamma(x, shape = 1, scale = 3)
+NULL
+
+
+#' @rdname Inverse Gamma
+#' @export
+dinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_dinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+}
+
+#' @rdname Inverse Gamma
+#' @export
+rinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_rinvgamma', as.integer(n), as.double(shape), as.double(rate))
+}
+
+#' @rdname Inverse Gamma
+#' @export
+pinvgamma <- function(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+  .Call('C_pinvgamma', as.double(q), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
+}
+
+#' @rdname Inverse Gamma
+#' @export
+qinvgamma <- function(p, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+  .Call('C_qinvgamma', as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 

@@ -1,3 +1,8 @@
+USER LEVEL CHANGES
+
+-- Added options to the printSamplers() method of MCMC configuration objects, which control the level of detail displayed.  These allow control for displaying default values, displaying values of non-scalar elements, and displaying the dependency lists of conjugate samplers.
+
+
                            CHANGES IN VERSION 0.6-4 (March 2017)
 
 USER LEVEL CHANGES
@@ -11,6 +16,8 @@ USER LEVEL CHANGES
 -- Logical vectors and operators are now supported.
 
 -- Indexing of vectors, matrices and arrays can now use arbitrary numeric (with integer contents) and logical vectors.
+
+-- Added inverse-gamma distribution to NIMBLE's provided distributions.
 
 -- dim() now returns an integer vector.  It is not limited to uses like dim(x)[i].
 
@@ -29,6 +36,8 @@ USER LEVEL CHANGES
 -- The adaptive factor slice sampler can now be used in NIMBLE's MCMC framework by specifying "AF_slice" as the sampler type.  
 
 -- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
+
+-- User-defined distributions may not be defined based solely on a density ('d') function, with a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
 
 BUG FIXES
 

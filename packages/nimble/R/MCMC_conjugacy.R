@@ -29,12 +29,27 @@ conjugacyRelationshipsInputList <- list(
              dnorm  = list(param = 'tau',    contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (value-mean)^2'        ),
              dlnorm = list(param = 'taulog', contribution_shape = '1/2',   contribution_rate = 'coeff/2 * (log(value)-meanlog)^2'),
              dgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_rate = 'coeff   * value'                 ),
-             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 )),
+             dinvgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_rate = 'coeff / value'                 ),
+             dexp   = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * value'                 ),
+             dweib   = list(param = 'lambda',   contribution_shape = '1',     contribution_rate = 'coeff   * value^shape' )),
              ## ddexp  = list(param = 'rate',   contribution_shape = '1',     contribution_rate = 'coeff   * abs(value-location)'   )
-             ## dpar = list(...)    ## need to figure this out
+             ## dpar = list(...)    ## contribution_shape=1; contribution_rate=coeff*log(value/c) 'c is 2nd param of pareto'
          posterior = 'dgamma(shape = prior_shape + contribution_shape,
                              scale = 1 / (prior_rate + contribution_rate))'),
 
+    ## invgamma
+    list(prior = 'dinvgamma',
+         link = 'multiplicative',
+         dependents = list(
+             dnorm  = list(param = 'var',    contribution_shape = '1/2',   contribution_scale = '(value-mean)^2 / (coeff * 2)'),
+             dlnorm = list(param = 'varlog', contribution_shape = '1/2',   contribution_scale = '(log(value)-meanlog)^2 / (coeff*2)'),
+             dgamma = list(param = 'scale',   contribution_shape = 'shape', contribution_scale = 'value / coeff'                 ),
+             dinvgamma = list(param = 'rate',   contribution_shape = 'shape', contribution_scale = '1 / (coeff * value)'     ),
+             dexp   = list(param = 'scale',   contribution_shape = '1',     contribution_scale = 'value / coeff'            )),
+             ## add ddexp
+         posterior = 'dinvgamma(shape = prior_shape + contribution_shape,
+                             rate = 1 / (prior_scale + contribution_scale))'),
+    
     ## normal
     list(prior = 'dnorm',
          link = 'linear',
@@ -46,13 +61,15 @@ conjugacyRelationshipsInputList <- list(
 
     #####
     ## pareto
+    ## these are idiosyncratic enough that we probably want to skip them
     ## list(prior = 'dpar',      ##### waiting for dpar() distribution
     ##      link = 'multiplicative',
     ##      dependents = list(
-    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_not_used = 'coeff'),
-    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha')),
+    ##          dunif = list(param = 'max', contribution_alpha = '1', contribution_c = 'value/coeff'),  # only works if 0 is min of the unif so this will be hard to do
+    ## careful with next one - data seem to impose upper bound on posterior, so not clear this goes through
+    ##          dpar  = list(param = 'c',   contribution_alpha = '-alpha'), contribution_c = '0'),
     ##      posterior = 'dpar(alpha = prior_alpha + contribution_alpha,
-    ##                        c     = max(prior_c, max(dep_dunif_values/dep_dunif_coeff)))'),
+    ##                        c     = max(prior_c, contribution_c)'),
     #####
 
     ## multivariate-normal
@@ -60,7 +77,7 @@ conjugacyRelationshipsInputList <- list(
          link = 'linear',
          dependents = list(
            ##dmnorm = list(param = 'mean', contribution_mean = '(t(coeff) %*% prec %*% asCol(value-offset))[,1]', contribution_prec = 't(coeff) %*% prec %*% coeff')),
-             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, 1) %*% asCol(value-offset))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, 2)')),
+             dmnorm = list(param = 'mean', contribution_mean = '(calc_dmnormConjugacyContributions(coeff, prec, value-offset, 1))[,1]', contribution_prec = 'calc_dmnormConjugacyContributions(coeff, prec, value-offset, 2)')),
          ## original less efficient posterior definition:
          ## posterior = 'dmnorm_chol(mean       = (inverse(prior_prec + contribution_prec) %*% (prior_prec %*% asCol(prior_mean) + asCol(contribution_mean)))[,1],
          ##                          cholesky   = chol(prior_prec + contribution_prec),
@@ -73,13 +90,19 @@ conjugacyRelationshipsInputList <- list(
 
     ## wishart
     list(prior = 'dwish',
-         link = 'linear',
+         ## changing to only use link='identity' case, since the link='linear' case was not correct.
+         ## -DT March 2017
+         ## link = 'linear',
+         link = 'identity',
          dependents = list(
              ## parentheses added to the contribution_R calculation:
              ## colVec * (rowVec * matrix)
              ## Chris is checking to see whether this makes a difference for Eigen
              ## -DT April 2016
-             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
+             ## changing to only use link='identity' case, since the link='linear' case was not correct
+             ## -DT March 2017
+             ## dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% (asRow(value-mean) %*% coeff)', contribution_df = '1')),
+             dmnorm = list(param = 'prec', contribution_R = 'asCol(value-mean) %*% asRow(value-mean)', contribution_df = '1')),
          posterior = 'dwish_chol(cholesky    = chol(prior_R + contribution_R),
                                  df          = prior_df + contribution_df,
                                  scale_param = 0)')
