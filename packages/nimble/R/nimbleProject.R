@@ -339,13 +339,32 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      assign('nimbleProject', .self, envir = nf_getRefClassObject(fun))
                                      ## could check for duplicate Cnames here, but if the names are unique the Cnames should be too.
                                  },
-                                 addNimbleList = function(nl, fromModel = FALSE, nestedList = FALSE) {
+                                 addNimbleListGen = function(nlGen) {
+                                     if(!is.nlGenerator(nlGen)) stop('invalid nimbleListGen provided to addNimbleListGen.', call. = FALSE)
+                                     ## get className
+                                     className <- nl.getListDef(nlGen)$className
+                                     
+                                     ## check if there is a nlCompInfos,
+                                     ## add if needed
+                                     if(is.null(nlCompInfos[[className]])) {
+                                         ## nfProc could have been created already during makeTypeObject for another nimbleFunction so it knows the types of this one.
+                                         nlCompInfos[[className]] <<- nlCompilationInfoClass(written = FALSE, cppCompiled = FALSE, Rcompiled = FALSE,
+                                                                                             RinitTypesProcessed = FALSE, loaded = FALSE)
+                                         nlCompInfos[[className]]$labelMaker <<- labelFunctionCreator(paste0(className,'_'))
+                                     }
+                                     nestedListGens <- nl.getNestedGens(nlGen)
+                                     for(i in seq_along(nestedListGens))
+                                         addNimbleListGen(nestedListGens[[i]])
+                                 },
+                                 addNimbleList = function(nl, fromModel = FALSE, nestedList = FALSE) { ##fromModel never used: clean up. 
                                    if(!is.nl(nl)) stop('nimbleList provided to project is not a nimbleList.', call. = FALSE)
                                    inProjectAlready <- nl[['nimbleProject']]
                                    if(!is.null(inProjectAlready)) {
                                      if(!identical(inProjectAlready, .self)) stop('Trying to add a specialized nimbleList to a project, but it is already part of another project. \nIf you did not specify a project, this error can occur in trying to create a new project -- you likely need to specify the relevant model as the project.\nIf you are recompiling, try redefining models and specialized nimbleFunctions and nimbleLists.', call. = FALSE)
                                      else warning('Adding a specialized nimbleList to a project to which it already belongs', call. = FALSE)
                                    }
+
+                                   ## Next two lines can become addNimbleListGen, but would have to migrate recursion out of compileNimbleList
                                    className <- nl$nimbleListDef$className
                                    if(is.null(nlCompInfos[[className]])) {
                                      ## nfProc could have been created already during makeTypeObject for another nimbleFunction so it knows the types of this one.
@@ -527,47 +546,71 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                  compileNimbleList = function(nl, filename = NULL, initialTypeInferenceOnly = FALSE,
                                      control = list(debug = FALSE, debugCpp = FALSE, compileR = TRUE, writeFiles = TRUE, compileCpp = TRUE, loadSO = TRUE),
                                      reset = FALSE, returnCppClass = FALSE, className = NULL, alreadyAdded = FALSE) { ## className? alreadyAdded?
-                                     ## nl could be a list or a singleton
-                                     ## message("I think we should be able to compiled a nimbleList from its nimbleListDef alone.  This is a fundamental difference from nimbleFunctions with setup outputs.")
-                                    if(is.list(nl)) {
-                                         if(is.null(className)) className <- unique(unlist(lapply(nl, function(x) x$nimbleListDef$className)))
-                                         if(length(className) != 1) stop(paste0('Not all elements in the nimbleList list for compileNimbleList are from the same nimbleFunctionDef.  The class names include:', paste(className, collapse = ' ')), call. = FALSE)
+
+                                     ## add possibility that nl is a generator
+                                     generatorOnly <- FALSE
+                                     if(is.nlGenerator(nl)) {
+                                         ## determine className
+                                         className <- nl.getListDef(nl)$className
+                                         generatorOnly <- TRUE
+                                         nlGen <- nl
                                          nlList <- nl
                                      } else {
-                                         if(!is.nl(nl)) stop(paste0("nl argument provided is not a nimbleList."), call. = FALSE)
-                                         nlList <- list(nl)
-                                         className <- nl$nimbleListDef$className
+                                     
+                                         if(is.list(nl)) {
+                                             if(is.null(className)) className <- unique(unlist(lapply(nl, function(x) x$nimbleListDef$className)))
+                                             if(length(className) != 1) stop(paste0('Not all elements in the nimbleList list for compileNimbleList are from the same nimbleFunctionDef.  The class names include:', paste(className, collapse = ' ')), call. = FALSE)
+                                             nlList <- nl
+                                             ## set generator
+                                         } else {
+                                             if(!is.nl(nl)) stop(paste0("nl argument provided is not a nimbleList."), call. = FALSE)
+                                             nlList <- list(nl)
+                                             className <- nl$nimbleListDef$className
+                                             ## set generator
+                                         }
+                                         nlGen <- nl.getGenerator(nlList[[1]])
                                      }
                                      if(reset) nlCompInfos[[className]] <<- NULL
                                      if(!alreadyAdded) {
-                                       for(i in seq_along(nlList)) {
-                                         addNL <- TRUE
-                                         thisName <- nlList[[i]][['name']]
-                                         if(!is.null(thisName)) {
-                                           tmp <- nimbleLists[[thisName]]
-                                           if(!is.null(tmp)) {
-                                             if(reset) {
-                                               nimbleLists[[thisName]] <<- NULL
-                                             } else {
-                                               if(!identical(nlList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleList that is not the same thing')
-                                               addNL <- FALSE
+                                         if(generatorOnly) {
+                                             ## check if generator exists and do addNimbleListGen
+                                             ## and recurse into nestedListGenList
+                                             addNimbleListGen(nlGen)
+                                         } else {
+                                             for(i in seq_along(nlList)) {
+                                                 addNL <- TRUE
+                                                 thisName <- nlList[[i]][['name']]
+                                                 if(!is.null(thisName)) {
+                                                     tmp <- nimbleLists[[thisName]]
+                                                     if(!is.null(tmp)) {
+                                                         if(reset) {
+                                                             nimbleLists[[thisName]] <<- NULL
+                                                         } else {
+                                                             if(!identical(nlList[[i]], tmp)) stop('Trying to compile something with same name as previously added nimbleList that is not the same thing')
+                                                             addNL <- FALSE
+                                                         }
+                                                     }
+                                                 }
+                                                 if(addNL){
+                                                     addNimbleList(nlList[[i]])
+                                                     ## if any nested lists, add them too (recursively)
+                                                     if(length(nlList[[i]]$nestedListGenList) > 0){
+                                                         addNestedNls(nlList[[i]])
+                                                     }
+                                                 }
                                              }
-                                           }
                                          }
-                                         if(addNL){
-                                           addNimbleList(nlList[[i]])
-                                           ## if any nested lists, add them too (recursively)
-                                           if(length(nlList[[i]]$nestedListGenList) > 0){
-                                             addNestedNls(nlList[[i]])
-                                           }
-                                         }
-                                       }
                                      }
-                                     
-                                     for(iNestedNl in seq_along(nlList[[1]]$nestedListGenList)){
-                                       ## create cppInfo for any nested list classes 
-                                       compileNimbleList(nlList[[1]][[names(nlList[[1]]$nestedListGenList)[iNestedNl]]], initialTypeInferenceOnly = TRUE, alreadyAdded = TRUE)
+
+                                     ## modify to pull nestedListGenList from generator
+                                     nestedListGens <- nl.getNestedGens(nlGen)
+                                     for(iNestedNL in seq_along(nestedListGens)) {
+                                         compileNimbleList(nestedListGens[[iNestedNL]], initialTypeInferenceOnly = TRUE, alreadyAdded = TRUE)
                                      }
+                                     ## for(iNestedNl in seq_along(nlList[[1]]$nestedListGenList)){
+                                     ##   ## create cppInfo for any nested list classes 
+                                     ##   compileNimbleList(nlList[[1]][[names(nlList[[1]]$nestedListGenList)[iNestedNl]]], initialTypeInferenceOnly = TRUE, alreadyAdded = TRUE)
+                                     ## }
                                      cppClass <- buildNimbleListCompilationInfo(nlList, initialTypeInferenceOnly = initialTypeInferenceOnly)
                                      
 
@@ -715,22 +758,27 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                          nfCompInfos[[generatorName]]$cppDef ## return value if already exists
                                      }
                                  },
-                                 buildNimbleListCompilationInfo = function(listList = NULL, className, initialTypeInferenceOnly = FALSE, eigenList = FALSE,
+                                 buildNimbleListCompilationInfo = function(listList = NULL, className, initialTypeInferenceOnly = FALSE, 
                                                                              control = list(debug = FALSE, debugCpp = FALSE), where = globalenv(), fromModel = FALSE
                                                                            ) {
-                                   if(!is.null(listList)) {
-                                     className <- listList[[1]]$nimbleListDef$className
-                                     name <- listList[[1]]$name
-                                     Cname <- listList[[1]]$Cname
-                                     if(is.null(nlCompInfos[[className]])) stop("Requested buildNimbleListCompilationInfo for a generator for which no specialized NL has been added to the project", call. = FALSE)
-                                     if(inherits(nlCompInfos[[className]]$nlProc, 'uninitializedField')) 
-                                       nlCompInfos[[className]]$nlProc <<- nlProcessing(listList, className, project = .self)
-                                   } else {
-                                     if(missing(className)) stop("If listList is omitted, a class name must be provided to buildNimbleListCompilationInfo", call. = FALSE)
-                                     if(inherits(nlCompInfos[[className]]$nlProc, 'uninitializedField')) stop("buildNimbleListCompilationInfo was called with only a className (probably from genNeededTypes), but the nfProc is missing.", call. = FALSE)
-                                   }
-                                   if(initialTypeInferenceOnly) {
-                                     if(!nlCompInfos[[className]]$RinitTypesProcessed) {
+                                     if(!is.null(listList)) {
+                                         ## check for nimbleListGen and get className
+                                         if(is.nlGenerator(listList)) {
+                                             className <- nl.getListDef(listList)$className
+                                         } else {
+                                             className <- listList[[1]]$nimbleListDef$className
+                                             name <- listList[[1]]$name
+                                             Cname <- listList[[1]]$Cname
+                                         }
+                                         if(is.null(nlCompInfos[[className]])) stop("Requested buildNimbleListCompilationInfo for a generator that has not been added to the project", call. = FALSE)
+                                         if(inherits(nlCompInfos[[className]]$nlProc, 'uninitializedField')) 
+                                             nlCompInfos[[className]]$nlProc <<- nlProcessing(listList, className, project = .self)
+                                     } else {
+                                         if(missing(className)) stop("If listList is omitted, a class name must be provided to buildNimbleListCompilationInfo", call. = FALSE)
+                                         if(inherits(nlCompInfos[[className]]$nlProc, 'uninitializedField')) stop("buildNimbleListCompilationInfo was called with only a className (probably from genNeededTypes), but the nfProc is missing.", call. = FALSE)
+                                     }
+                                     if(initialTypeInferenceOnly) {
+                                         if(!nlCompInfos[[className]]$RinitTypesProcessed) {
                                        nlCompInfos[[className]]$nlProc$setupTypesForUsingFunction() 
                                        nlCompInfos[[className]]$RinitTypesProcessed <<- TRUE
                                      }
@@ -744,8 +792,7 @@ nimbleProjectClass <- setRefClass('nimbleProjectClass',
                                      newCppClass <- cppNimbleListClass(name = className,
                                                                        nimCompProc = nlCompInfos[[className]]$nlProc,
                                                                        debugCpp = control$debugCpp,
-                                                                       project = .self,
-                                                                       eigenList = eigenList
+                                                                       project = .self
                                      )
                                      newCppClass$buildAll(where = where)
                                      nlCompInfos[[className]]$cppDef <<- newCppClass

@@ -82,7 +82,7 @@ argInfo2PointerStaticCast <- function(argInf){
 }
 
 getArgInfoFromNFSym <- function(nfSym){
-	nfSym$nfProc$setupSymTab$getSymbolObject('operator()')$nfMethodRCobj$argInfo
+	nfSym$nfProc$setupSymTab$getSymbolObject('run')$nfMethodRCobj$argInfo
 }
 
 nimOptim <- matchFunctions[['nimOptim']]

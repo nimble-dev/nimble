@@ -61,7 +61,7 @@ addToTypeEnv <- function(sym, typeEnv, name) {
     
     if(nDim == 0)  {
       if(inherits(sym, 'symbolNimbleList')){
-        sizeExprs <- sym$nlProc
+        sizeExprs <- sym
       }
       else{
         ## If nDim == 0, set sizes to 1

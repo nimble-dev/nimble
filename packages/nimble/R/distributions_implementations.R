@@ -80,10 +80,8 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 
 nimEigen <- function(x, only.values = FALSE) {
   ## placeholder list with correct names of elements, will be populated in C++
-  eigenList <- nlEigenEigenInfo$createListDef()$new()
-    .Call('C_nimEigen', apply(x, 1, as.double), as.logical(only.values), eigenList,
+    .Call('C_nimEigen', apply(x, 1, as.double), as.logical(only.values), eigenNimbleList$new(),
           package = 'nimble')
-##        PACKAGE = nimbleUserNamespace$sessionSpecificDll[[1]])
 }
 
 
@@ -131,13 +129,12 @@ nimEigen <- function(x, only.values = FALSE) {
 
 nimSvd <- function(x, vectors = 'full') {
   ## placeholder list with correct names of elements, will be populated in C++
-  svdList <- nlEigenSvdInfo$createListDef()$new()
   vectors <- switch(tolower(vectors),
                     none = 0,
                     thin = 1,
                     full = 2)
   if(is.null(vectors)) stop('vectors argument to svd() must be one of "none", "thin", or "full"')
-  .Call('C_nimSvd', apply(x, 1, as.double), vectors, svdList, 
+  .Call('C_nimSvd', apply(x, 1, as.double), vectors, svdNimbleList$new(), 
         PACKAGE = 'nimble')
 }
 

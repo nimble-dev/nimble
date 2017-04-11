@@ -69,6 +69,7 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      localArgs <- symbolTable2cppVars(RCfunProc$compileInfo$newLocalSymTab, argNames, include = allNames[!(allNames %in% argNames)], parentST = args)
                                      code <<- cppCodeBlock(code = RCfunProc$compileInfo$nimExpr,
                                                            objectDefs = localArgs)
+                                     if(is.null(RCfunProc$compileInfo$returnSymbol)) stop("returnType not valid.  If a nimbleList is being returned, returnType must be the name of the nimbleList definition.")
                                      returnType <<- RCfunProc$compileInfo$returnSymbol$genCppVar()
                                      invisible(NULL)
                                  },
@@ -120,13 +121,21 @@ RCfunctionDef <- setRefClass('RCfunctionDef',
                                      }
                                      if(includeDotSelfAsArg) argNamesCall <- c(argNamesCall, includeDotSelf)
                                      if(inherits(RCfunProc$compileInfo$returnSymbol, 'symbolNimbleList')){
-                                       returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
-                                       returnListDefs <- returnListObj$nimbleListDef
-                                       returnListNestedLists <- returnListObj$nestedListGenList
-                                       returnListNew <- new(returnListObj$.refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
-                                                            NESTEDGENLIST = returnListNestedLists)
-                                       returnNimListGen <- list(new = function(){return(returnListNew)})
-                                      
+                                         ##returnListObj <- RCfunProc$compileInfo$returnSymbol$nlProc$instances[[1]]
+                                       ##returnListDefs <- returnListObj$nimbleListDef
+                                       ##returnListNestedLists <- returnListObj$nestedListGenList
+                                         ## refClassDef <- returnListObj$.refClassDef
+                                         ##returnListNew <- new(refClassDef, NLDEFCLASSOBJECT = returnListDefs, 
+                                         ##                   NESTEDGENLIST = returnListNestedLists)
+
+                                         nlGenerator <- RCfunProc$compileInfo$returnSymbol$nlProc$nlGenerator
+                                         returnListDefs <- nl.getListDef(nlGenerator)
+                                         returnListNestedLists <- nl.getNestedGens(nlGenerator)
+                                         refClassGen <- nl.getDefinitionContent(nlGenerator, 'nlRefClass')
+                                         returnListNew <- refClassGen$new(NLDEFCLASSOBJECT = returnListDefs, 
+                                                                          NESTEDGENLIST = returnListNestedLists)
+                                         returnNimListGen <- list(new = function(){return(returnListNew)})
+                                         
                                        getGenList <- function(nimListGen, genList = list()){
                                          nimList <- nimListGen$new()
                                          if(is.null(genList[[nimList$nimbleListDef$className]]))

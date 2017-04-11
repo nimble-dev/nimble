@@ -1,17 +1,18 @@
 cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                   contains = 'cppNimbleClassClass',
                                   fields = list(
-                                      eigenList = 'ANY',
                                       ptrCastFun = 'ANY',
-                                      ptrCastToPtrPairFun = 'ANY'
+                                      ptrCastToPtrPairFun = 'ANY',
+                                      predefined = 'ANY'
                                   ),
                                   methods = list(
                                       initialize = function(nimCompProc, debugCpp = FALSE, fromModel = FALSE, ...) {
                                         callSuper(nimCompProc, debugCpp, fromModel, ...)
+                                        predefined <<- nimCompProc$nimbleListObj$predefined
                                         inheritance <<- c(inheritance, 'pointedToBase')
                                       },
                                       getDefs = function() {
-                                        ans <- if(eigenList){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
+                                        ans <- if(predefined){ ## prevents redefinition of EIGEN_EIGENCLASS or EIGEN_SVDCLASS
                                           if(inherits(SEXPfinalizerFun, 'uninitializedField'))
                                             list(SEXPgeneratorFun)
                                           else
@@ -164,7 +165,7 @@ cppNimbleListClass <- setRefClass('cppNimbleListClass',
                                           addListSymbols()
                                           buildCastPtrToNamedObjectsPtrFun()
                                           buildCastPtrToPtrPairFun()
-                                          if(eigenList){
+                                          if(predefined){
                                             callSuper(where)
                                           }
                                           else{

@@ -61,7 +61,8 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
       }
     }
     if(is.list(neededTypes)){
-      isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
+        ##  isANeededType <- unlist(lapply(neededTypes, function(x) return(type == x$name)))
+        isANeededType <- unlist(lapply(neededTypes, `[[`, 'name')) == type
       if(any(isANeededType == 1)){
         listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow  = TRUE)
         listST$name <- name
@@ -69,32 +70,31 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
       }
     }
     if(name == "return"){
-      if(exists(as.character(AT), envir = globalenv()) &&
-         is.nlGenerator(eval(parse(text = as.character(AT), keep.source = FALSE)))){
-        nlList <- eval(parse(text = paste0(as.character(AT), "$new"), keep.source = FALSE))()
-      }
-      else if(type %in% names(nlEigenReferenceList)){
-        nlList <- nlEigenReferenceList[[type]]$eigenNimbleListDef$new() 
-      }
-      if(exists('nlList')){
-        className <- nlList$nimbleListDef$className
-        isANeededType <- (className == names(neededTypes))
-        if(any(isANeededType == 1)){
-          listST <- neededTypes[[which(isANeededType == 1)[1]]]$copy(shallow = TRUE)
+        possibleTypeName <- deparse(AT[[1]])
+        className <- NULL
+        if(exists(possibleTypeName, envir = globalenv())) {
+          possibleNLgenerator <- get(possibleTypeName, envir = globalenv())
+          if(is.nlGenerator(possibleNLgenerator)) {
+              className <- nl.getListDef(nlGen)$className
+          }
         }
-        else{
-          listST <- recurseGetListST(className, neededTypes)
-        }
+        if(!is.null(className)){
+            isANeededType <- (className == names(neededTypes))
+            if(any(isANeededType)){
+                listST <- neededTypes[[which(isANeededType)[1]]]$copy(shallow = TRUE)
+            } else {
+                listST <- recurseGetListST(className, neededTypes)
+            }
         listST$name <- name
         return(listST)
-      }
-    }   
+        }
+    }
 }
 
 recurseGetListST <- function(className, neededTypes){
   listST <- NULL
   for(NT in neededTypes){
-    if(NT$type %in% c('symbolNimbleList', 'symbolNimbleListGenerator')){
+    if(NT$type %in% c('nimbleList', 'nimbleListGenerator')){
       if(!inherits(NT$nlProc$neededTypes, 'uninitializedField')){
          if(className %in% names(NT$nlProc$neededTypes)){
           isANeededType <- (className == names(NT$nlProc$neededTypes))
@@ -353,7 +353,7 @@ symbolNimbleList <-
                 contains = 'symbolBase',
                 fields = list(nlProc = 'ANY'),
                 methods = list(
-                    initialize = function(...){callSuper(...); type <<- 'symbolNimbleList'},
+                    initialize = function(...){callSuper(...); type <<- 'nimbleList'},
                     show = function() writeLines(paste('symbolNimbleList', name)),
                     genCppVar = function(...) {
                         return(  cppVarFull(name = name,
@@ -370,7 +370,7 @@ symbolNimbleFunction <-
                     initialize = function(...) {callSuper(...)},
                     show = function() writeLines(paste('symbolNimbleFunction', name)),
                     genCppVar = function(...) {
-                        return(cppVarFull(name = name, baseType = environment(nfProc$nfGenerator)$name, ptr = 1, selfDereference = TRUE))
+                        return(cppVarFull(name = name, baseType = environment(nfProc$nfGenerator)$name, ptr = 1)) ## selfDerefence idea is not general for A$B$C, selfDereference = TRUE))
                     }
                     ))
 
