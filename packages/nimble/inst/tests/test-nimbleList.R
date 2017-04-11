@@ -31,6 +31,7 @@ nlTestFunc1 <- nimbleFunction(
 )
 
 testListDef1 <- nimbleList(nlScalar = double(0), nlVector = double(1), nlMatrix = double(2))
+assign('testListDef1', testListDef1, envir = .GlobalEnv)
 testInst <- nlTestFunc1()
 RnimbleList <- testInst$run()
 CtestInst <- compileNimble(testInst, control = list(debug =  F))
