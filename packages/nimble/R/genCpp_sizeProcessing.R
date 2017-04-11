@@ -1313,16 +1313,25 @@ sizeSetSize <- function(code, symTab, typeEnv) {
       sym <- symTab$getSymbolObject(code$args[[1]]$name, inherits = TRUE)
       useArg1 <- FALSE
     } 
-
+    asserts <- list()
+    
     if(!inherits(sym, 'symbolNumericList')) {
         if(sym$nDim == 0) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Resizing a scalar does not make sense.'), call. = FALSE)
         firstSizeExpr <- code$args[[2]]
+
+        if(length(code$args) > 2)
+            nExtraArgs <- length(code$args)-2
+        else
+            nExtraArgs <- 0
+
+        if(nExtraArgs > 0)
+            asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, c(rep(FALSE, 2), rep(TRUE, nExtraArgs))))
+                         
         if(inherits(firstSizeExpr, 'exprClass')) {
             if(firstSizeExpr$name == 'nimC') { ## handle syntax of resize(Z, c(3, dim(A)[1]))
                 if(length(firstSizeExpr$args) != sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
-                asserts <- recurseSetSizes(firstSizeExpr, symTab, typeEnv) ## may set intermediates if needed
-                ## see comment below
-                ##                assign(code$args[[1]]$name, exprTypeInfoClass$new(nDim = sym$nDim, sizeExprs = lapply(firstSizeExpr$args, nimbleGeneralParseDeparse), type = sym$type), envir = typeEnv)
+                asserts <- c(asserts, recurseSetSizes(firstSizeExpr, symTab, typeEnv)) ## may set intermediates if needed
+                if(nExtraArgs > 0) origExtraArgs <- code$args[3:length(code$args)]
                 for(i in 1:length(firstSizeExpr$args)) {
                     code$args[[i+1]] <- firstSizeExpr$args[[i]]
                     if(inherits(firstSizeExpr$args[[i]], 'exprClass')) {
@@ -1330,20 +1339,27 @@ sizeSetSize <- function(code, symTab, typeEnv) {
                         firstSizeExpr$args[[i]]$callerArgID <- i+1
                     }
                 }
+                if(nExtraArgs > 0) {
+                    for(i in 1:nExtraArgs) {
+                        setArg(code, length(code$args) + 1, origExtraArgs[[i]])
+                    }
+                }
                 return(if(length(asserts)==0) NULL else asserts)
             }
         }
 
-        asserts <- recurseSetSizes(code, symTab, typeEnv, c(useArg1, rep(TRUE, sym$nDim) ) )
+        useArgs <- c(useArg1, TRUE )
+        if(nExtraArgs > 0) useArgs <- c(useArgs, rep(FALSE, nExtraArgs))
+        asserts <- c(asserts, recurseSetSizes(code, symTab, typeEnv, useArgs) )
 
         if(inherits(code$args[[2]], 'exprClass')) {
             if(code$args[[2]]$nDim > 0) {
-                if(length(code$args) > 2) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Non-scalar argument for sizes provided, but more than one size argument also provided.  This does not look valid.'), call. = FALSE)
+                ##if(length(code$args) > 2) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Non-scalar argument for sizes provided, but more than one size argument also provided.  This does not look valid.'), call. = FALSE)
         
                 if(!(code$args[[2]]$isName)) asserts <- c(asserts, sizeInsertIntermediate(code, 2, symTab, typeEnv))
                 code$name <- 'setSizeNimArrToNimArr'
             } else {
-                if(length(code$args) != 1 + sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in setSize.'), call. = FALSE)
+                ##if(length(code$args) != 1 + sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in setSize.'), call. = FALSE)
             }
         }
 
