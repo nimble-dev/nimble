@@ -31,12 +31,8 @@ nfMethodRC <-
     setRefClass(Class   = 'nfMethodRC',
                 contains = 'nfMethodRCinterface',
                 fields  = list(
-##                    argInfo    = 'ANY',
-##                    arguments  = 'ANY',
                     template   = 'ANY',
                     code       = 'ANY',
-##                    returnType = 'ANY',
-##                    uniqueName = 'character',
                     neededRCfuns = 'ANY'		#list
                 ),
                 methods = list(

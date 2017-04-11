@@ -114,17 +114,9 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                        nodes <<- nodesEnv
                                        names(nodeFunctions) <<- names(Rmodel$nodeFunctions)
                                        
-                                       ##.nodeFxnPointers_byGID <<- new('numberedObjects')
                                        .nodeFxnPointers_byDeclID <<- new('numberedObjects', dll = dll) 
-                                       ##maxID = length(modelDef$maps$graphIDs)
                                        maxID = length(modelDef$declInfo)
-                                       ##.nodeFxnPointers_byGID$resize(maxID)
                                        .nodeFxnPointers_byDeclID$resize(maxID)
-                                       ## for(nodeName in ls(nodes)) {
-                                       ##     gID <- modelDef$nodeName2GraphIDs(nodeName)
-                                       ##     basePtr <- if(is.list(nodes[[nodeName]])) nodes[[nodeName]][[1]]$basePtrList[[ nodes[[nodeName]][[2]] ]] else nodes[[nodeName]]$.basePtr
-                                       ##     .self$.nodeFxnPointers_byGID[gID] <- basePtr ## nodes[[nodeName]]$.basePtr
-                                       ## }
 
                                        for(declID in seq_along(nodes)) {
                                            thisNodeFunctionName <- names(Rmodel$nodeFunctions)[declID]
@@ -132,34 +124,8 @@ CmodelBaseClass <- setRefClass('CmodelBaseClass',
                                                           nodes[[thisNodeFunctionName]][[1]]$basePtrList[[ nodes[[thisNodeFunctionName]][[2]] ]]
                                                       else ## it's a direct interface
                                                           nodes[[thisNodeFunctionName]]$.basePtr
-                                           .self$.nodeFxnPointers_byDeclID[declID] <- basePtr ## nodes[[nodeName]]$.basePtr
+                                           .self$.nodeFxnPointers_byDeclID[declID] <- basePtr 
                                        }
-
-                                       ## maxGraphID <- length(modelDef$maps$graphIDs)
-                                       ## .nodeValPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       ## .nodeValPointers_byGID$resize(maxGraphID)
-                                       ## .nodeLogProbPointers_byGID <<- new('numberedModelVariableAccessors')
-                                       ## .nodeLogProbPointers_byGID$resize(maxGraphID)
-                                
-                                       ## for(vName in Rmodel$getVarNames()){
-                                       ## 		flatIndices = 1
-                                       ## 		if(length(vars[vName]) > 0)
-	                               ##         		flatIndices = 1:prod(unlist(vars[vName]))
-                                       		
-                                       ## 		gIDs_withNAs = unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2GraphID_values, USE.NAMES = FALSE))
-                                       ## 		validIndices = which(!is.na(gIDs_withNAs))
-                                       ## 		gIDs = gIDs_withNAs[validIndices] 
-											
-                                       ## 		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr , vName, as.integer(gIDs), as.integer(validIndices), .nodeValPointers_byGID$.ptr)
-                                       ## 		logVNames <- modelDef$nodeName2LogProbName(vName)
-                                   ##    		if(length(logVNames) > 0){
-                                  ##     			logVName <- nl_getVarNameFromNodeName(logVNames[1])
-                                  ##     			LP_gIDs_withNAs =  unlist(sapply(vName, parseEvalNumeric, env = Rmodel$modelDef$maps$vars2LogProbID, USE.NAMES = FALSE))
-	                          ##             		validIndices = which(!is.na(LP_gIDs_withNAs) ) 
-	                          ##             		l_gIDs = Rmodel$modelDef$nodeName2LogProbID(vName)
-	                           ##            		.Call('populateNumberedObject_withSingleModelVariablesAccessors', .basePtr, logVName, as.integer(l_gIDs), as.integer(validIndices), .nodeLogProbPointers_byGID$.ptr)
-                                                    ##	                                       		}
-                                   ##}
                                    }
                                    )
                                )
@@ -230,7 +196,7 @@ buildModelInterface <- function(refName, compiledModel, basePtrCall, project = N
                                                 eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$register_namedObjects_Finalizer,
                                                           .namedObjectsPtr, ##.basePtr,
                                                           dll[['handle']], model$name))
-                                                # .basePtr <<- .Call(BPTRCALL)
+
                                                 .modelValues_Ptr <<- nimbleInternalFunctions$getMVptr(.ModelBasePtr, dll = dll) ## this is a Values*
                                                 defaultModelValues <<- nimbleInternalFunctions$CmodelValues$new(existingPtr = .modelValues_Ptr,
                                                                                                                 buildCall = nimbleInternalFunctions$getMVName(.modelValues_Ptr, dll),

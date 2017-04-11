@@ -464,23 +464,6 @@ sizeConcatenate <- function(code, symTab, typeEnv) { ## This is two argument ver
     }
     setArg(code$caller, code$callerArgID, newExprList[[1]])
     return(asserts)
-    
-    ## code$type <- arithmeticOutputType(code$args[[1]]$type, code$args[[2]]$type)
-    ## if(code$type == 'double') code$name <- 'nimCd' ## this change could get moved to genCpp_generateCpp 
-    ## if(code$type == 'integer') code$name <- 'nimCi'
-    ## if(code$type == 'logical') code$name <- 'nimCb'
-    
-    ## if(code$args[[1]]$nDim > 2 | code$args[[2]]$nDim > 2) stop(exprClassProcessingErrorMsg(code, paste0('Arguments to c() must have dimension <= 2 for now.')), call. = FALSE)
-    ## ## need to deal with lifting size expressions to get them fully compiled.
-    ## ## otherwise we could end up with an assertion output somewhat incorrectly
-    ## ## insertAssertions does convert to exprClasses but does not eigenize etc
-    ## thisSizeExpr <- substitute( AAA_ + BBB_,
-    ##                            list(AAA_ = productSizeExprs(code$args[[1]]$sizeExprs),   ## need to create products of sizeExprs in general
-    ##                                 BBB_ = productSizeExprs(code$args[[2]]$sizeExprs)) )
-    ## code$sizeExprs <- list(thisSizeExpr)
-    ## code$nDim <- 1
-    ## code$toEigenize <- 'yes'
-    ## return(asserts)
 }
 
 sizeRep <- function(code, symTab, typeEnv) {
@@ -1074,19 +1057,6 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## options include nfMethod
         nfMethodRCobj <- getFunctionEnvVar(nf_getGeneratorFunction(symbolObject$baseClass), 'methodList')[[methodName]]
         returnType <- nfMethodRCobj$returnType
     }
-    ## } else {
-    ##     if(a11$name != '[[') stop(exprClassProcessingErrorMsg(code, 'In sizeChainedCall. Expecting a nimbleFunction list or a nimFun as first arg of nfMethod.'), call. = FALSE)
-    ##     ## should look like nfMethod(nflist[[i]], 'foo')
-    ##     a111 <- a11$args[[1]]
-    ##     sym <- symTab$getSymbolObject(a111$name, TRUE)
-    ##     if(!inherits(sym, 'symbolNimbleFunctionList')) {
-    ##         stop(exprClassProcessingErrorMsg(code, 'In sizeChainedCall. Expecting a nimbleFunction list.'), call. = FALSE)
-    ##     }
-    ##     nfMethodRCobj <- getFunctionEnvVar(nf_getGeneratorFunction(sym$baseClass), 'methodList')[[methodName]]
-    ## }
-    
- ##   }
- ##   else warning(paste0('Warning that we did not know what to do in sizeChainedCall for ', nimDeparse(code)))
     if(!is.null(nfMethodRCobj)) {
      ##   returnType <- nfMethodRCobj$returnType
         argInfo <- nfMethodRCobj$argInfo
@@ -1178,27 +1148,6 @@ sizeNimbleFunction <- function(code, symTab, typeEnv) { ## This will handle othe
     if(inherits(sym, 'symbolNimbleFunction')) {
         stop(exprClassProcessingErrorMsg(code, 'In sizeNimbleFunction: A nimbleFunction method should not be processed here.'), call. = FALSE)
         ## HANDLING OF myNF$run() HERE IS DEFUNCT.  ALL SHOULD GO THROUGH sizeChainedCall now (chainedCall(nfMethod(myNF,'run'), arg1, arg2).
-        ## nfMethodRCobj <- sym$nfProc$getMethodInterfaces()$run ##environment(sym$nfProc$nfGenerator)$methodList$run
-        ## returnType <- nfMethodRCobj$returnType
-        ## eigListClasses <- sapply(nlEigenReferenceList, function(x){return(x$className)})  
-        ## if(!(as.character(returnType[1]) %in% c('double', 'integer', 'character', 'logical', 'void',
-        ##                                         eigListClasses))){  
-        ##   ## if we have a nl return type, find class name and match with nlGenerator in symTab ## wrong 'return' ???
-        ##   outClassName <- get('return', envir = typeEnv)$sizeExprs$name
-        ##   parentNLGenName <- lapply(symTab$parentST$symbols, function(x){
-        ##     symType <- x$type
-        ##     if(symType == 'Ronly'){
-        ##       symClassName <- x[['nlProc']][['name']]
-        ##       if(!is.null(symClassName) && symClassName == outClassName){
-        ##         return(x$name)
-        ##       }
-        ##     }
-        ##     return(NULL)
-        ##   })
-        ##   returnType[[1]] <- as.name(unlist(parentNLGenName))
-        ## }
-        ## argInfo <- nfMethodRCobj$argInfo
-        ## ok <- TRUE
     }
     if(inherits(sym, 'symbolMemberFunction')) {
         returnType <- sym$nfMethodRCobj$returnType ## now nfMethodRCobj could be an interface
@@ -2157,26 +2106,6 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     asserts <- if(recurse) recurseSetSizes(code, symTab, typeEnv) else list()
     if(length(code$args) != 2) stop(exprClassProcessingErrorMsg(code, 'In sizeColonOperator: Problem determining size for : without two arguments.'), call. = FALSE)
 
-    ## Had the idea that some cases be shifted to seq(), but I don't think that makes sense
-    ## moveToSeqBy1 <- FALSE
-    ## if(inherits(code$args[[1]], 'exprClass')) {
-    ##     if(code$args[[1]]$nDim != 0) message('WARNING, first arg to : is not scalar in expression', nimDeparse(code))
-    ##     if(code$args[[1]]$type == 'double') moveToSeqBy1 <- TRUE
-    ## } else {
-    ##     if(storage.mode(code$args[[1]]) == 'double') if(code$args[[1]] != floor(code$args[[1]])) moveToSeqBy1 <- TRUE
-    ## }
-    ## if(inherits(code$args[[2]], 'exprClass')) {
-    ##     if(code$args[[2]]$nDim != 0) message('WARNING, second arg to : is not scalar in expression', nimDeparse(code))
-    ##     if(code$args[[2]]$type == 'double') moveToSeqBy1 <- TRUE
-    ## } else {
-    ##     if(storage.mode(code$args[[2]]) == 'double') if(code$args[[2]] != floor(code$args[[2]])) moveToSeqBy1 <- TRUE
-    ## }
-
-    ## if(moveToSeqBy1) {
-    ##     code$name <- 'nimSeq'
-    ##     asserts <- c(asserts, sizeSeq(code, symTab, typeEnv, recurse = FALSE))
-    ##     return(if(length(asserts)==0) NULL else asserts)
-    ## }
     for(i in 1:2) {
         if(inherits(code$args[[i]], 'exprClass')) {
             if(!code$args[[i]]$isName) {
@@ -2204,18 +2133,6 @@ sizeColonOperator <- function(code, symTab, typeEnv, recurse = TRUE) {
     }
     invisible(asserts)
 }
-
-## sizeDimOperator <- function(code, symTab, typeEnv) {
-##     ## a special case since the resulte is stored as a vector<int>
-##     ## recurse and set Intermediate is if it not a name or map
-##     ## we'll want a NimArr<1, int> constructor vector<int> 
-##     recurseSetSizes(code, symTab, typeEnv)
-##     code$type <- 'integer'
-##     code$nDim <- 1
-##     code$sizeExprs <- list( code$args[[1]]$nDim )
-##     code$toEigenize <- 'no'
-##     invisible(NULL)
-## }
 
 sizeTranspose <- function(code, symTab, typeEnv) {
     if(length(code$args) != 1) warning(paste0('More than one argument to transpose in ', nimDeparse(code), '.'), call. = FALSE)
