@@ -90,6 +90,11 @@ modelValuesBaseClass <- setRefClass('modelValuesBaseClass',
                                             nrow <<- nrow
                                     
                                             for(vN in varNames) {
+                                                if(prod(sizes[[vN]]) == 1)
+                                                    if(length(sizes[[vN]]) == 1) {
+                                                        assign(vN, rep(list(as.numeric(NA)), nrow), inherits = TRUE)
+                                                        next
+                                                    }
                                                 assign(vN, rep(list(array( data = as.numeric(NA), dim = sizes[[vN]])), nrow), inherits = TRUE)
                                             }
                                             GID_map <<- nimble:::makeMV_GID_Map(.self)
