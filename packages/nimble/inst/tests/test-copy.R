@@ -1,7 +1,5 @@
 source(system.file(file.path('tests', 'test_utils.R'), package = 'nimble'))
 
-nimbleOptions(showCompilerOutput = TRUE)
-
 ## Tests for copy() [implemented as nimCopy], values(), and values()<-
 ## These use some of the same internals (accessors), so they are in the same testing file.
 ## These tests use lists of nimbleFunctions, initialization code, and testing code.
