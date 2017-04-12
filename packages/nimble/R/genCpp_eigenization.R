@@ -320,18 +320,12 @@ eigenize_reductionBinaryEither <- function(code, symTab, typeEnv, workEnv) {
     newName <- eigenizeTranslate[[code$name]]
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
-##    makeEigenArgsMatch(code)
-##    for(i in 1:2) 
-##        if(code$args[[i]]$eigMatrix) eigenizeArrayize(code$args[[i]])
     promoteTypes(code)
     invisible(NULL)
 }
 
 eigenize_recyclingRuleFunction <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
-##    newName <- eigenizeTranslate[[code$name]]
-##    if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
-##    code$name <- newName
     code$eigMatrix <- TRUE
     code$name <- paste0(code$name, '_RR_impl<MatrixXd>::', code$name,'_RecyclingRule')
     invisible(NULL)
@@ -341,7 +335,6 @@ eigenize_reductionEither <- function(code, symTab, typeEnv, workEnv) {
     newName <- eigenizeTranslate[[code$name]]
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
-##    code$eigMatrix <- code$args[[1]]$eigMatrix
     promoteTypes(code)
     invisible(NULL)
 }
@@ -350,7 +343,6 @@ eigenize_reductionArray <- function(code, symTab, typeEnv, workEnv) {
     newName <- eigenizeTranslate[[code$name]]
     if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
     code$name <- newName
-##    code$eigMatrix <- code$args[[1]]$eigMatrix
     if(length(code$args[[1]]$eigMatrix) == 0) stop(paste0("Trying it eigenize ", nimDeparse(code), " but information from the argument is not complete."), call. = FALSE)
     if(code$args[[1]]$eigMatrix) eigenizeArrayize(code$args[[1]])
     promoteTypes(code)
@@ -359,9 +351,6 @@ eigenize_reductionArray <- function(code, symTab, typeEnv, workEnv) {
 
 eigenize_nimbleNullaryClass <- function(code, symTab, typeEnv, workEnv) {
     if(code$nDim == 0) return(NULL)
-    ##newName <- eigenizeTranslate[[code$name]]
-    ##if(is.null(newName)) stop(exprClassProcessingErrorMsg(code, 'Missing eigenizeTranslate entry.'), call. = FALSE)
-    ##code$name <- newName
     code$eigMatrix <- TRUE
     invisible(NULL)
 }
