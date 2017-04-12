@@ -100,6 +100,9 @@ class NimArrBase: public NimArrType {
 	    std::fill(new_v + NAlength, new_v + l, static_cast<T>(0));
 	  }
 	}
+      } else {
+	if(fillZeros) 
+	  fillAllValues(static_cast<T>(0));
       }
       delete[] v;
     }
