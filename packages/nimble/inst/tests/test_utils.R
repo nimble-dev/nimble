@@ -718,7 +718,6 @@ test_filter <- function(example, model, data = NULL, inits = NULL,
     }
   }
   if(verbose) {
-    browser()
     try(print(apply(as.matrix(C_samples), 2, summarize_posterior)))  ## print summaries of equally weighted samples
   }
   if(returnSamples) {
