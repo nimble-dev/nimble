@@ -693,8 +693,7 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
             nDim <- code$args[['nDim']] <- 1 
         } else { ## call was from numeric, integer or logical
             if(nonScalarWhereNeeded) stop(exprClassProcessingErrorMsg(code, paste0('Something wrong (v) with sizes or dim to numeric, logical, integer, matrix or array.  It looks like length argument was non-scalar.')), call. = FALSE)
-        }
-        
+        }       
     }
         
     ## if it is a call to matrix() and the value argument is non-scalar,
@@ -766,15 +765,6 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
         ## insert intermediate unless it will be newNimMatrix
     code$sizeExprs <- annotationSizeExprs
 
-    if(!useNewMatrix) 
-        if(inherits(code$caller, 'exprClass'))
-            if(!(code$caller$name %in% assignmentOperators)) {
-                if(!is.null(code$caller$name)) {
-                    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
-                }
-            } else
-                typeEnv$.ensureNimbleBlocks <- TRUE
-    
     ## check for nimNewMatrix case
     if(useNewMatrix) {
         suffix <- 'D'
@@ -788,6 +778,15 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
             if(!(code$args[['value']]$isName))
                 asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
+
+    if(!useNewMatrix) 
+        if(inherits(code$caller, 'exprClass'))
+            if(!(code$caller$name %in% assignmentOperators)) {
+                if(!is.null(code$caller$name)) {
+                    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+                }
+            } else
+                typeEnv$.ensureNimbleBlocks <- TRUE
     
     return(asserts)
 }
@@ -1346,7 +1345,10 @@ sizeSetSize <- function(code, symTab, typeEnv) {
             if(firstSizeExpr$name == 'nimC') { ## handle syntax of resize(Z, c(3, dim(A)[1]))
                 if(length(firstSizeExpr$args) != sym$nDim) stop(exprClassProcessingErrorMsg(code, 'In sizeSetSize: Problem with number of dimensions provided in resize.'), call. = FALSE)
                 asserts <- c(asserts, recurseSetSizes(firstSizeExpr, symTab, typeEnv)) ## may set intermediates if needed
-                if(nExtraArgs > 0) origExtraArgs <- code$args[3:length(code$args)] ## preserve extra arguments
+                if(nExtraArgs > 0) {
+                    origExtraArgs <- code$args[3:length(code$args)] ## preserve extra arguments
+                    code$args <- code$args[1:2]
+                }
                 for(i in 1:length(firstSizeExpr$args)) {
                     code$args[[i+1]] <- firstSizeExpr$args[[i]]
                     if(inherits(firstSizeExpr$args[[i]], 'exprClass')) {

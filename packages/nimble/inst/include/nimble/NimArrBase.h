@@ -101,8 +101,8 @@ class NimArrBase: public NimArrType {
 	  }
 	}
       } else {
-	if(fillZeros) 
-	  fillAllValues(static_cast<T>(0));
+	if(fillZeros)
+	  std::fill(new_v, new_v + l, static_cast<T>(0));
       }
       delete[] v;
     }

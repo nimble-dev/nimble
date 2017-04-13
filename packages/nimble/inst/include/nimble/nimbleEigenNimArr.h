@@ -195,30 +195,44 @@ template<typename NimArrOutput, typename NimArrInput>
   void copyNimArrToNimArrInternal(NimArrOutput &output, NimArrInput &input, int totSize, bool fillZeros, bool recycle) {
   int sizeToCopy;
   if(input.size() < totSize) {
-      _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output);
+    //     _nimble_global_output << "Warning from C++: not enough initialization values.\n"; nimble_print_to_R( _nimble_global_output);
       sizeToCopy = input.size();
   } else {
     if(input.size() > totSize) {
-      _nimble_global_output << "Warning from C++: too many initialization values.\n"; nimble_print_to_R( _nimble_global_output);
+      //   _nimble_global_output << "Warning from C++: too many initialization values.\n"; nimble_print_to_R( _nimble_global_output);
     }
     sizeToCopy = totSize;
   }
   if(input.isMap() | (output.getNimType() != input.getNimType())) { 
     for(int i = 0; i < sizeToCopy; i++) output.valueNoMap(i) = input[i];
     if(sizeToCopy < totSize) {
-      if(fillZeros) 
-	for(int i = sizeToCopy; i < totSize; i++) output.valueNoMap(i) = 0;
-      else {
-	// little algo here to implement recycling rule
+      if(recycle) {
+	int iStart = sizeToCopy;
+	while(iStart + sizeToCopy <= totSize) {
+	  for(int i = 0; i < sizeToCopy; i++) output.valueNoMap(iStart + i) = input[i];
+	  iStart += sizeToCopy;
+	}
+	if(iStart < totSize)
+	  for(int i = 0; i < (totSize - iStart); i++) output.valueNoMap(iStart + i) = input[i];
+      } else {
+	if(fillZeros) 
+	  for(int i = sizeToCopy; i < totSize; i++) output.valueNoMap(i) = 0;
       }
     }
   } else {
     memcpy(output.getPtr(), input.getPtr(), sizeToCopy * output.element_size() );
     if(sizeToCopy < totSize) {
-      if(fillZeros)
-	std::fill(output.getPtr() + sizeToCopy, output.getPtr() + totSize, 0);
-      else {
-	// little algo here to implement recycling rule
+      if(recycle) {
+	int iStart = sizeToCopy;
+	while(iStart + sizeToCopy <= totSize) {
+	  memcpy(output.getPtr() + iStart, input.getPtr(), sizeToCopy * output.element_size() );
+	  iStart += sizeToCopy;
+	}
+	if(iStart < totSize)
+	  memcpy(output.getPtr() + iStart, input.getPtr(), (totSize - iStart) * output.element_size() );
+      } else {
+	if(fillZeros)
+	  std::fill(output.getPtr() + sizeToCopy, output.getPtr() + totSize, 0);
       }
     }
   }

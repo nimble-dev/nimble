@@ -1018,13 +1018,15 @@ nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, fillZeros = 
         if(mncol) {
             base::matrix(fillValue)
         } else {
-            fillValue <- makeReturnVector(fillValue, ncol, recycle)
-            base::matrix(fillValue, ncol = ncol)
+            nrow <- ceiling( length(fillValue) / ncol )
+            fillValue <- makeReturnVector(fillValue, nrow * ncol, recycle)
+            base::matrix(fillValue, ncol = ncol, nrow = nrow)
         }
     else
         if(mncol) {
-            fillValue <- makeReturnVector(fillValue, nrow, recycle)
-            base::matrix(fillValue, nrow = nrow)
+            ncol <- ceiling( length(fillValue) / nrow )
+            fillValue <- makeReturnVector(fillValue, nrow * ncol, recycle)
+            base::matrix(fillValue, nrow = nrow, ncol = ncol)
         } else {
             fillValue <- makeReturnVector(fillValue, ncol*nrow, recycle)
             base::matrix(fillValue, nrow = nrow, ncol = ncol)
@@ -1073,7 +1075,7 @@ makeReturnVector <- function(fillValue, length, recycle) {
         if(recycle)
             rep(fillValue, length)
         else
-            c(fillValue, rep(0, max(length-1, 0)))
+            c(fillValue, as(rep(0, max(length-1, 0)), class(fillValue)))
     }
     else {
         if(length(fillValue) != length) {
@@ -1082,7 +1084,7 @@ makeReturnVector <- function(fillValue, length, recycle) {
                 if(recycle)
                     rep(fillValue, length.out = length)
                 else
-                    c(fillValue, rep(0, length-length(fillValue)))
+                    c(fillValue, as(rep(0, length-length(fillValue)), class(fillValue)))
             } else {
                 ##warning(paste0("Too many values provided for vector of length ",length, ".")) 
                 fillValue[1:length]
