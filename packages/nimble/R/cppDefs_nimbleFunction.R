@@ -303,7 +303,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   objectDefs$addSymbol(cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_'))
                                                   ##cppClass$objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
                                                   objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
-                                                  addADclassContentOneFun("operator()")
+                                                  addADclassContentOneFun("run")
                                                   ## static declaration in the class definition
                                                   
                                                   ## globals to hold the global static definition
