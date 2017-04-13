@@ -157,6 +157,13 @@ MatrixXd EIGEN_SOLVE(const MatrixBase<derived1> &x, const MatrixBase<derived2> &
   return(ans);
 }
 
+
+template <typename Type>
+struct EigenTemplateTypes {
+  typedef Matrix<Type, Dynamic, Dynamic> typeMatrixXd;
+  typedef Map<typeMatrixXd, Unaligned, EigStrDyn > typeEigenMapStrd;
+};
+
 template <typename Derived1, typename Derived2>
 double eigenInprod(const ArrayBase<Derived1>& v1, const ArrayBase<Derived2>& v2) { 
   double ans = (v1 * v2).sum();

@@ -51,15 +51,15 @@ cppVarFull <- setRefClass('cppVarFull',
                           ),
                       methods = list(
                           initialize = function(...) {
-                          	  templateArgs <<- list()
-                          	  baseScope <<- list()
-                          	  baseConstPtr <<- numeric()
-                          	  baseConst <<- logical()
-                          	  const <<- logical()
-                          	  static <<- logical()
-                          	  arraySizes <<- integer()   
-                          	  constructor <<- character()
-                                  silent <<- FALSE
+                              templateArgs <<- list()
+                              baseScope <<- list()
+                              baseConstPtr <<- numeric()
+                              baseConst <<- logical()
+                              const <<- logical()
+                              static <<- logical()
+                              arraySizes <<- integer()   
+                              constructor <<- character()
+                              silent <<- FALSE
                               selfDereference <<- FALSE
                               callSuper(...)
                           },

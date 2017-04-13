@@ -12,15 +12,17 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                     makeCallList(c('setSize', 'initialize', 'getPtr', 'dim', 'getOffset', 'strides', 'isMap', 'mapCopy', 'setMap'), 'cppOutputMemberFunction'),
                     makeCallList(eigOtherMemberFunctionCalls, 'cppOutputEigMemberFunctionNoTranslate'),
                     makeCallList(eigProxyCallsExternalUnary, 'cppOutputEigExternalUnaryFunction'),
-                    makeCallList(c('startNimbleTimer','endNimbleTimer'), 'cppOutputMemberFunction'),
+                    makeCallList(c('startNimbleTimer','endNimbleTimer','push_back'), 'cppOutputMemberFunction'),
                     makeCallList(c('nimSeqBy','nimSeqLen', 'nimSeqByLen'), 'cppOutputCallAsIs'),
                     makeCallList(nimbleListReturningOperators, 'cppNimbleListReturningOperator'),
                     list(
                         eigenCast = 'cppOutputEigenCast',
+                        memberData = 'cppOutputMemberData',
                         fill = 'cppOutputEigMemberFunctionNoTranslate',
                         MAKE_FIXED_VECTOR = 'cppOutputMakeFixedVector',
                         concatenateTemp = 'cppOutputEigBlank',
                         ':' = 'cppOutputColon',
+                        '::' = 'cppOutputMidOperator',
                         size = 'cppOutputSize',
                          'for' = 'cppOutputFor',
                          'if' = 'cppOutputIfWhile',
@@ -57,11 +59,13 @@ cppOutputCalls <- c(makeCallList(binaryMidOperators, 'cppOutputMidOperator'),
                          blank = 'cppOutputBlank',
                          callC = 'cppOutputEigBlank', ## not really eigen, but this just jumps over a layer in the parse tree
                          eigBlank = 'cppOutputEigBlank',
-                         voidPtr = 'cppOutputVoidPtr'
+                         voidPtr = 'cppOutputVoidPtr',
+                         cppLiteral = 'cppOutputLiteral'
                          )
                     )
 cppOutputCalls[['pow']] <-  'cppOutputPow'
 cppMidOperators <- midOperators
+cppMidOperators[['::']] <- '::'
 cppMidOperators[['%*%']] <- ' * '
 cppMidOperators[['cppMemberDereference']] <- '->'
 cppMidOperators[['nfVar']] <- '->'
@@ -189,7 +193,7 @@ cppOutputFor <- function(code, symTab) {
     begin <- nimGenerateCpp(code$args[[2]]$args[[1]], symTab)
     end <- nimGenerateCpp(code$args[[2]]$args[[2]], symTab)
     iterVar <- nimGenerateCpp(code$args[[1]], symTab)
-    part1 <- paste0('for(', iterVar ,'=', begin,'; ', iterVar, '<= static_cast<int>(', end, '); ++', iterVar,')')
+    part1 <- paste0('for(', iterVar ,'=', begin,'; ', iterVar, '<= static_cast<int>(', end, '); ', iterVar,'++ )')
     part2 <- nimGenerateCpp(code$args[[3]], symTab)
     if(is.list(part2)) {
         part2[[1]] <- paste(part1, part2[[1]])
@@ -292,6 +296,10 @@ cppOutputEigenMapAssign <- function(code, symTab) {
 cppOutputSize <- function(code, symTab) {
     ## Windows compiler will give warnings if something.size(), which returns unsigned int, is compared to an int.  Since R has no unsigned int, we cast .size() to int.
     paste0('static_cast<int>(', nimGenerateCpp(code$args[[1]], symTab), '.size())')
+}
+
+cppOutputMemberData <- function(code, symTab) {
+    paste0( nimGenerateCpp(code$args[[1]], symTab), '.', code$args[[2]]$name)
 }
 
 cppOutputMemberFunction <- function(code, symTab) {
@@ -441,3 +449,5 @@ cppOutputLiteral <- function(code, symTab) {
 cppOutputTemplate <- function(code, symTab) {
     paste0(code$args[[1]]$name, '<', paste0(unlist(lapply(code$args[-1], nimGenerateCpp, symTab, asArg = TRUE) ), collapse = ', '), '>' )
 }
+
+cppOutputLiteral <- function(code, symTab) code$args[[1]]

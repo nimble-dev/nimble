@@ -71,11 +71,11 @@ nimbleFunction <- function(setup         = NULL,
                            methods       = list(),
                            globalSetup   = NULL,
                            contains      = NULL,
+                           enableDerivs  = FALSE,
                            name          = NA,
                            check         = getNimbleOption('checkNimbleFunction'),
                            where         = getNimbleFunctionEnvironment()
                            ) {
-
     if(is.logical(setup)) if(setup) setup <- function() {} else setup <- NULL
 
     if(is.null(setup)) {
@@ -92,6 +92,7 @@ nimbleFunction <- function(setup         = NULL,
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
+    if(enableDerivs) methodList <- c(methodList, buildDerivMethods(methodList))
     methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
@@ -117,6 +118,18 @@ nimbleFunction <- function(setup         = NULL,
         eval(body(globalSetup), envir = .globalSetupEnv)
     }
     return(generatorFunction)
+}
+
+buildDerivMethods <- function(methodsList) {
+    derivMethodsList <- list()
+    for(i in seq_along(methodsList)) {
+        derivMethodsList[[i]] <- methodsList[[i]]
+        newCall <- as.call(c(list(quote(ADargumentTransfer)), lapply(names(formals(methodsList[[i]])), as.name)))
+        body(derivMethodsList[[i]]) <- substitute({return(vectorDouble_2_NimArr(getGradient(NEWCALL))); returnType(double(1))}, list(NEWCALL = newCall))
+        
+    }
+    names(derivMethodsList) <- paste0(names(methodsList), '_gradient')
+    derivMethodsList
 }
 
 # for now export this as R<3.1.2 give warnings if don't

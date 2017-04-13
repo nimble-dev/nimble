@@ -131,6 +131,7 @@ class vectorOfPtrsAccess : public vectorOfPtrsAccessBase {
   void *getVecPtr(int i) {return(static_cast<void *>( (*theVec)[i] ) ); }
 };
 
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input);
 
 /*
   Apparently partial specialization of function templates is not allowed.

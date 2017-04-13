@@ -81,6 +81,63 @@ double t(double x) {return(x);}
 int prod(int x) {return(x);}
 double prod(double x) {return(x);}
 
+NimArr<1, double> vectorDouble_2_NimArr(vector<double> input) {
+  NimArr<1, double> output;
+  output.setSize(input.size(), false, false);
+  std::copy(input.begin(), input.end(), output.getPtr());
+  return(output);
+}
+
+template<>
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
+  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  int nn = LENGTH(Sn);
+  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  ans.setSize(nn);
+  if(isReal(Sn)) {
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+  } else {
+    if(isInteger(Sn) || isLogical(Sn)) {
+      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+      for(int i = 0; i < nn; ++i) {
+	ans(i) = static_cast<double>(iSn[i]);
+      }
+    } else {
+      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    }
+  }
+}
+
+// Actually this is identical to above so could be done without specialization
+template<>
+void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
+  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  int nn = LENGTH(Sn);
+  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  ans.setSize(nn);
+  if(isReal(Sn)) {
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+  } else {
+    if(isInteger(Sn) || isLogical(Sn)) {
+      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+      for(int i = 0; i < nn; ++i) {
+	ans(i) = static_cast<double>(iSn[i]);
+      }
+    } else {
+      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    }
+  }
+}
+
+vector<int> getSEXPdims(SEXP Sx) {
+  if(!isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
+  if(!isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
+  if(!isArray(Sx) & !isMatrix(Sx)) {
+    vector<int> ans; 
+    ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
+  }
+  return(SEXP_2_vectorInt(getAttrib(Sx, R_DimSymbol), 0));
+}
 
 
 /* Cliff's new function for adding blank rows to C model values */

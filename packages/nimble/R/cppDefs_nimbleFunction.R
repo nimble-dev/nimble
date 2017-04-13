@@ -253,6 +253,69 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       RCfunDefs[[RCname]] <<- functionDefs[[RCname]]
                                                   }
                                               },
+                                              addTypeTemplateFunction = function( funName ) {
+                                                browser()
+                                                  newFunName <- if(funName == 'operator()') 'run_AD_' else paste0(funName, '_AD_')
+                                                  regularFun <- RCfunDefs[[funName]]
+                                                  functionDefs[[newFunName]] <<- makeTypeTemplateFunction(newFunName, regularFun)
+                                                  invisible(NULL)
+                                              },
+                                              addADtapingFunction = function( funName, independentVarNames, dependentVarNames ) {
+                                                  ADfunName <- if(funName == 'operator()') 'run_AD_' else paste0(funName, '_AD_')
+                                                  regularFun <- RCfunDefs[[funName]]
+                                                  ##                  newFunName <- if(funName == 'operator()') 'run_callForADtaping_' else paste0(funName, '_callForADtaping_')
+                                                  newFunName <- 'callForADtaping'
+                                                  functionDefs[[newFunName]] <<- makeADtapingFunction(newFunName, regularFun, ADfunName, independentVarNames, dependentVarNames)
+                                                  invisible(NULL)
+                                              },
+                                              addADargumentTransferFunction = function( funName, independentVarNames ) {
+                                                  newFunName <- 'ADargumentTransfer'
+                                                  regularFun <- RCfunDefs[[funName]]
+                                                  functionDefs[[newFunName]] <<- makeADargumentTransferFunction(newFunName, regularFun, independentVarNames)
+                                              },
+                                              addStaticInitClass = function( funName ) {
+                                                  neededTypeDefs[['staticInitClass']] <<- makeStaticInitClass(.self) ##
+                                                  invisible(NULL)
+                                              },
+                                              addGradientFunction = function(funName, independentVarNames) {
+                                                  ##ADfunName <- if(funName == 'operator()') 'run_AD_' else paste0(funName, '_AD_')
+                                                 regularFun <- RCfunDefs[[funName]]
+                                                 argumentTransferName <- 'ADargumentTransfer'
+                                                 newFunName <- 'ADgradient'
+                                                 functionDefs[[newFunName]] <<- makeGradientFunction(newFunName, regularFun, argumentTransferName, independentVarNames)
+##                                                 functionDefs[[newFunName]]$buildSEXPinterfaceFun(className = nfProc$name)
+                                                 invisible(NULL)
+                                             },
+                                              addADclassContentOneFun = function(funName) {
+                                                  addTypeTemplateFunction(funName)
+                                                  independentVarNames <- names(functionDefs[[funName]]$args$symbols)
+                                                  addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
+                                                  addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
+                                                ##  addGradientFunction(funName, independentVarNames = independentVarNames)
+
+                                              },
+                                              addADclassContent = function() {
+                                                  CPPincludes <<- c("<cppad/cppad.hpp>", CPPincludes)
+                                                  Hincludes <<- c("<cppad/cppad.hpp>", nimbleIncludeFile("nimbleCppAD.h"), Hincludes)
+                                                  addInheritance("nimbleFunctionCppADbase")
+                                                  ## cppClass$objectDefs$addSymbol(cppVarFull(name = 'allADtapePtrs_', static = TRUE, baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1))))
+                                                  ##objectDefs[['vectorADtapePtrs']] <<- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_')
+                                                  objectDefs$addSymbol(cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), static = TRUE, name = 'allADtapePtrs_'))
+                                                  ##cppClass$objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
+                                                  objectDefs$addSymbol(cppVarFull(name = 'ADtapeSetup', baseType = 'nimbleCppADinfoClass'))
+                                                  addADclassContentOneFun("operator()")
+                                                  ## static declaration in the class definition
+                                                  
+                                                  ## globals to hold the global static definition
+                                                  globals <- cppGlobalObjects(name = 'staticGlobals', staticMembers = TRUE)
+                                                  globals$objectDefs[['staticGlobalTape']] <- cppVarFull(baseType = 'vector', templateArgs = list(cppVarFull(baseType = 'CppAD::ADFun', templateArgs = list('double'), ptr = 1)), name = paste0(name,'::allADtapePtrs_'))
+                                                  ##globalObjectsDefs[['allADtapePtrs_']] <<- globals
+                                                  neededTypeDefs[['allADtapePtrs_']] <<- globals
+
+                                                  addStaticInitClass()
+
+                                                  invisible(NULL)
+                                              },
                                               buildCmultiInterface = function(dll = NULL) {
                                                   sym <- if(!is.null(dll))
                                                              getNativeSymbolInfo(SEXPgeneratorFun$name, dll)
@@ -299,6 +362,8 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                       ## ... but I'm going with this for now because it is just what is needed 
                                                       addAncestors('NamedObjects')
                                                   }
+                                                  if(environment(nfProc$nfGenerator)$enableDerivs) addADclassContent()
+
                                                   callSuper(where)
                                               }
                                           ),
