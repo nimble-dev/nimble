@@ -6,7 +6,39 @@
 #include<Rmath.h>
 #include<vector>
 #include<cstdlib>
+#include<limits>
 #include "dists.h"
+
+// A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
+int floorOrEquivalent(double x) {
+  double roundX = round(x);
+  double sqrtEpsilon = sqrt(std::numeric_limits<double>::epsilon());
+  bool shouldBeExactInteger(false);
+  if(fabs(x) > sqrtEpsilon) { // This algorithm for numerical equivalence imitates what happens in all.equal.numeric in R
+    if(fabs(x - roundX) / fabs(x) < sqrtEpsilon)
+      shouldBeExactInteger = true;
+  } else {
+    if(fabs(x - roundX) < sqrtEpsilon) // in the present context, this would mean length should be zero anyway
+      shouldBeExactInteger = true;
+  }
+  if(shouldBeExactInteger)
+    return(static_cast<int>(roundX));
+  return(floor(x));
+}
+
+// a utility function used by nimSeq and generated size expressions to determine the length of a sequence
+template<typename fromT, typename toT, typename byT>
+  int calcSeqLength(fromT from, toT to, byT by) { // we need this function because of imprecision issues
+  double doubleLength = (static_cast<double>(to) - static_cast<double>(from))/static_cast<double>(by);
+  return(1 + floorOrEquivalent(doubleLength));
+}
+
+// a utility function used to determine missing nrow or ncol for a matrix
+template<typename totLenT, typename knownDimT>
+  int calcMissingMatrixSize(totLenT totLen, knownDimT knownDim) {
+  double doubleLength = (static_cast<double>(totLen) - 1.) / static_cast<double>(knownDim);
+  return(1 + floorOrEquivalent(doubleLength));
+}
 
 // put the call to arg.size() in a struct so we can proxy it with "1" for a scalar type
 // wrap access to Eigen's traits::..::LinearAccessBit so we can proxy it with true for a scalar type (double, int, bool)
@@ -502,7 +534,8 @@ public:
   from(fromIn),
     by(byIn) {
       //    printf("Add some checking to seqClass constructor and deal with inconsistent scalar types\n");
-      length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn));
+      length_out = calcSeqLength(fromIn, toIn, byIn);
+      //      length_out = 1 + static_cast<int>(floor(static_cast<double>(toIn) - static_cast<double>(from)) / static_cast<double>(byIn));
     };
   
   typedef typename Eigen::internal::traits<DerivedOut>::Index Index;
