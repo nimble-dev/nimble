@@ -72,9 +72,10 @@ nimbleType <- setRefClass(
 #'
 #' create a nimbleList from a nimbleList definition 
 #'
-#' @param types objects defining the names, types, and dimensions of the nimbleList elements.  
-#' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
-#' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
+#' @param ... arbitrary set of names and types for the elements of the list or a single R list of type \code{nimbleType}.
+#' @param name optional character providing a name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
+#' @param predefined logical for internal use only.
+#' @param where optional argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
 #'
 #' @author NIMBLE development team
 #'
@@ -89,9 +90,6 @@ nimbleType <- setRefClass(
 #' Definitions can be created in \code{R}'s general environment or in \code{nimbleFunction} setup code.  Instances can be created using the \code{new()} function in \code{R}'s global environment, in \code{nimbleFunction} setup code, or in \code{nimbleFunction} run code.  
 #' 
 #' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.
-#' 
-#' See the NIMBLE User Manual for additional examples.
-#' 
 #' @examples 
 #'  exampleNimListDef <- nimbleList(x = integer(0), Y = double(2))
 #'  
@@ -100,8 +98,6 @@ nimbleType <- setRefClass(
 #'  
 #'  ## this nimbleList definition is identical to the one created above
 #'  exampleNimListDef <- nimbleList(nimbleListTypes)
-
-
 nimbleList <- function(...,
                        name = NA,
                        predefined = FALSE,

@@ -170,7 +170,7 @@ makeNFBindingFields <- function(symTab, cppNames) {
         if(thisSymbol$type == "character") { ## cpp copy type 'character'  : 2 sub-cases (vector and scalar)
             if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
                 eval(substitute( fieldList$VARNAME <- function(x){
-                    nimble:::getSetCharacterVector(VPTR, VARNAME, x, dll = dll)
+                    nimbleInternalFunctions$getSetCharacterVector(VPTR, VARNAME, x, dll = dll)
                     ## if(missing(x) ) 
                     ##     nimbleInternalFunctions$getCharacterVectorValue(VPTR, dll = dll)
                     ## else
@@ -256,7 +256,7 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
                 namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
                 extPtrNL <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, VARNAME, dll = dll)
                 ## extPtrNL <- getMemberDataPtr(VARNAME) ## not working
-                nimble:::getSetNimbleList(vptr = extPtrNL, name = VARNAME, value = x, cppDef = symTab$getSymbolObject(VARNAME)$nlProc$cppDef, dll = dll )
+                nimbleInternalFunctions$getSetNimbleList(vptr = extPtrNL, name = VARNAME, value = x, cppDef = symTab$getSymbolObject(VARNAME)$nlProc$cppDef, dll = dll )
                 ## if(missing(x)) {
                 ##     nestedRgenerator <- nimbleProject$nlCompInfos[[CLASSNAME]]$cppDef$Rgenerator 
                 ##     existingExtPtrs <- .Call(dll$CASTTOPTRPAIRNAME, extPtrNL)
@@ -276,13 +276,13 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
                 eval(substitute( fieldList$VARNAME <- function(x) {
                     namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
                     vptr <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, name, dll = dll)
-                    nimble:::getSetCharacterVector(vptr, VARNAME, value = x, dll = dll)
+                    nimbleInternalFunctions$getSetCharacterVector(vptr, VARNAME, value = x, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             } else {                    ## character scalar
                 eval(substitute( fieldList$VARNAME <- function(x) {
                     namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
-                    nimble:::getSetCharacterScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                    nimbleInternalFunctions$getSetCharacterScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             }
@@ -291,28 +291,28 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
             if(thisSymbol$nDim > 0) {            ## Anything vector
                 eval(substitute( fieldList$VARNAME <- function(x) {
                     namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
-                    nimble:::getSetNumericVector(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                    nimbleInternalFunctions$getSetNumericVector(VARNAME, value = x, namedObjectsPtr, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             }
             if(thisSymbol$type == "double"){     ## Scalar double
                 eval(substitute( fieldList$VARNAME <- function(x) {
                     namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
-                    nimble:::getSetDoubleScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                    nimbleInternalFunctions$getSetDoubleScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             }
            if(thisSymbol$type == "integer"){    ## Scalar int
                eval(substitute( fieldList$VARNAME <- function(x) {
                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
-                   nimble:::getSetIntegerScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                   nimbleInternalFunctions$getSetIntegerScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             }
             if(thisSymbol$type == "logical"){    ## Scalar logical
                 eval(substitute( fieldList$VARNAME <- function(x) {
                     namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
-                    nimble:::getSetLogicalScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
+                    nimbleInternalFunctions$getSetLogicalScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             }

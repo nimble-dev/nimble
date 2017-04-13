@@ -639,7 +639,7 @@ values <- function(model, nodes, accessorIndex){
 
 #' @rdname values 
 #' @export
-`values<-` <- function(model, nodes, value, accessorIndex){
+`values<-` <- function(model, nodes, accessorIndex, value){
 	setValues(value, model, nodes)
 	return(model)
 }

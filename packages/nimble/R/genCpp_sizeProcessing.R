@@ -936,7 +936,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
         ## nimbleList
         ## We need (*nl) in C++, represented by cppPointerDereference(nl)
         if(code$args[[1]]$name != 'cppPointerDereference') {
-            a1 <- nimble:::insertExprClassLayer(code, 1, 'cppPointerDereference',
+            a1 <- nimbleInternalFunctions$insertExprClassLayer(code, 1, 'cppPointerDereference',
                                                 type = code$args[[1]]$type,
                                                 nDim = code$args[[1]]$nDim,
                                                 sizeExprs = code$args[[1]]$sizeExprs)
@@ -1977,7 +1977,7 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
                     if(!indexIsScalar) warning("There is nested indexing with drop=FALSE where an index must be scalar but isn't")
                 } else {
-                    newExpr <- nimble:::exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
+                    newExpr <- exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
                     newExpr$type <- 'integer'
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
                     newExpr$sizeExprs <- if(!indexIsScalar) c(code$args[[iInd + 1]]$sizeExprs) else list(1)
