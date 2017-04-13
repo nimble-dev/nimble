@@ -936,7 +936,7 @@ sizeNFvar <- function(code, symTab, typeEnv) {
         ## nimbleList
         ## We need (*nl) in C++, represented by cppPointerDereference(nl)
         if(code$args[[1]]$name != 'cppPointerDereference') {
-            a1 <- nimbleInternalFunctions$insertExprClassLayer(code, 1, 'cppPointerDereference',
+            a1 <- insertExprClassLayer(code, 1, 'cppPointerDereference',
                                                 type = code$args[[1]]$type,
                                                 nDim = code$args[[1]]$nDim,
                                                 sizeExprs = code$args[[1]]$sizeExprs)
@@ -1042,7 +1042,7 @@ sizeChainedCall <- function(code, symTab, typeEnv) { ## options include nfMethod
             stop(exprClassProcessingErrorMsg(code, 'In handling X$Y(): Symbols for X have not been set up.'), call. = FALSE)
         }
         if(a1$args[[1]]$name != 'cppPointerDereference') {
-            nimble:::insertExprClassLayer(a1, 1, 'cppPointerDereference') ## not annotated, but not needed
+            insertExprClassLayer(a1, 1, 'cppPointerDereference') ## not annotated, but not needed
         }
 
     }
