@@ -941,9 +941,9 @@ nimCat <- function(...) {
 #' @aliases numeric
 #' @seealso \code{\link{integer}} \code{\link{matrix}} \code{\link{array}}
 #' @export
-nimNumeric <- function(length = 0, value = 0, init = TRUE) {
+nimNumeric <- function(length = 0, value = 0, init = TRUE, fillZeros = TRUE, recycle = TRUE) {
     fillValue <- makeFillValue(value, 'double', init)
-    makeReturnVector(fillValue, length)
+    makeReturnVector(fillValue, length, recycle)
 }
 
 #' Creates an integer vector for use in NIMBLE DSL functions
@@ -963,9 +963,9 @@ nimNumeric <- function(length = 0, value = 0, init = TRUE) {
 #' @aliases integer
 #' @seealso \code{\link{numeric}} \code{\link{matrix}} \code{\link{array}}
 #' @export
-nimInteger <- function(length = 0, value = 0, init = TRUE) {
+nimInteger <- function(length = 0, value = 0, init = TRUE, fillZeros = TRUE, recycle = TRUE) {
     fillValue <- makeFillValue(value, 'integer', init)
-    makeReturnVector(fillValue, length)
+    makeReturnVector(fillValue, length, recycle)
 }
 
 #' Creates an logical vector for use in NIMBLE DSL functions
@@ -985,9 +985,9 @@ nimInteger <- function(length = 0, value = 0, init = TRUE) {
 #' @aliases logical
 #' @seealso \code{\link{numeric}} \code{\link{matrix}} \code{\link{array}}
 #' @export
-nimLogical <- function(length = 0, value = 0, init = TRUE) {
+nimLogical <- function(length = 0, value = 0, init = TRUE, fillZeros = TRUE, recycle = TRUE) {
     fillValue <- makeFillValue(value, 'logical', init)
-    makeReturnVector(fillValue, length)
+    makeReturnVector(fillValue, length, recycle)
 }
 
 #' Creates a matrix object for use in NIMBLE DSL functions
@@ -1008,22 +1008,27 @@ nimLogical <- function(length = 0, value = 0, init = TRUE) {
 #' @aliases matrix
 #' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{array}}
 #' @export
-nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'double') {
+nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, fillZeros = TRUE, recycle = TRUE, type = 'double') {
     ## the -1's are used because nimble does not allow both missingness and default value
     ## but R's matrix function relies on both possibilities
     fillValue <- makeFillValue(value, type, init)
     mnrow <- missing(nrow) || is.na(nrow)
     mncol <- missing(ncol) || is.na(ncol)
     if(mnrow)
-        if(mncol)
+        if(mncol) {
             base::matrix(fillValue)
-        else
+        } else {
+            fillValue <- makeReturnVector(fillValue, ncol, recycle)
             base::matrix(fillValue, ncol = ncol)
+        }
     else
-        if(mncol)
+        if(mncol) {
+            fillValue <- makeReturnVector(fillValue, nrow, recycle)
             base::matrix(fillValue, nrow = nrow)
-        else
+        } else {
+            fillValue <- makeReturnVector(fillValue, ncol*nrow, recycle)
             base::matrix(fillValue, nrow = nrow, ncol = ncol)
+        }
 }
 
 
@@ -1045,10 +1050,12 @@ nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'doub
 #' @aliases array
 #' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{matrix}}
 #' @export
-nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, type = 'double', nDim) {
+nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, fillZeros = TRUE, recycle = TRUE, nDim, type = 'double') {
     if(!missing(nDim)) dim <- dim[1:nDim]
     fillValue <- makeFillValue(value, type, init)
-    base::array(fillValue, dim)
+    fillValue <- makeReturnVector(fillValue, prod(dim), recycle)
+    if(length(dim) == 1) fillValue
+    else base::array(fillValue, dim)
 }
 
 makeFillValue <- function(value, type, init) {
@@ -1061,16 +1068,23 @@ makeFillValue <- function(value, type, init) {
     return(fillValueTyped)
 }
 
-makeReturnVector <- function(fillValue, length) {
-    if(length(fillValue) == 1)
-        rep(fillValue, length)
+makeReturnVector <- function(fillValue, length, recycle) {
+    if(length(fillValue) == 1) {
+        if(recycle)
+            rep(fillValue, length)
+        else
+            c(fillValue, rep(0, max(length-1, 0)))
+    }
     else {
         if(length(fillValue) != length) {
             if(length(fillValue) < length) {
-                warning(paste0("Not enough values provided for vector of length ",length, ".")) 
-                c(fillValue, rep(0, length-length(fillValue)))
+                ##warning(paste0("Not enough values provided for vector of length ",length, ".")) 
+                if(recycle)
+                    rep(fillValue, length.out = length)
+                else
+                    c(fillValue, rep(0, length-length(fillValue)))
             } else {
-                warning(paste0("Too many values provided for vector of length ",length, ".")) 
+                ##warning(paste0("Too many values provided for vector of length ",length, ".")) 
                 fillValue[1:length]
             }
         } else {

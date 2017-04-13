@@ -1410,38 +1410,50 @@ template<typename Index, typename DerivedInput>
   const DerivedInput &input;
   int dim1, dim2, totalLength, inputLength, inputRows;
   bool init; // would be a bit silly to call with init = FALSE, but it is allowed to simplify code generation
+  bool recycle;
   typedef double result_type;
- newMatrixClass(const DerivedInput &inputIn, bool initIn, int rowsIn, int colsIn) :
+ newMatrixClass(const DerivedInput &inputIn, bool initIn, bool recycleIn, int rowsIn, int colsIn) :
   input(inputIn),
-    init(initIn) {
-    inputLength = nimble_size_impl<DerivedInput>::getSize(input);
-    inputRows = nimble_size_impl<DerivedInput>::getRows(input);
-    bool rowsProvided = rowsIn > 0;
-    bool colsProvided = colsIn > 0;
-    if(!rowsProvided) {
-      if(!colsProvided) {
-	dim1 = inputLength;
-	dim2 = 1;
+    init(initIn),
+    recycle(recycleIn) {
+      inputLength = nimble_size_impl<DerivedInput>::getSize(input);
+      inputRows = nimble_size_impl<DerivedInput>::getRows(input);
+      bool rowsProvided = rowsIn > 0;
+      bool colsProvided = colsIn > 0;
+      if(!rowsProvided) {
+	if(!colsProvided) {
+	  dim1 = inputLength;
+	  dim2 = 1;
+	} else {
+	  dim2 = colsIn;
+	  dim1 = floor((double(inputLength)-1) / double(colsIn)) + 1;
+	}
       } else {
-	dim2 = colsIn;
-	dim1 = floor((double(inputLength)-1) / double(colsIn)) + 1;
+	if(!colsProvided) {
+	  dim1 = rowsIn;
+	  dim2 = floor((double(inputLength)-1) / double(rowsIn)) + 1;
+	} else {
+	  dim1 = rowsIn;
+	  dim2 = colsIn;
+	}
       }
-    } else {
-      if(!colsProvided) {
-	dim1 = rowsIn;
-	dim2 = floor((double(inputLength)-1) / double(rowsIn)) + 1;
-      } else {
-	dim1 = rowsIn;
-	dim2 = colsIn;
-      }
+      totalLength = dim1 * dim2;
     }
-    totalLength = dim1 * dim2;
-  }
   result_type operator()(Index i) const 
   {
-    if(init)
-      return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::nimbleUseLinearAccess), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
-    return 0;
+    if(init) {
+      if(recycle) {
+	return nimble_eigen_coeff_mod_impl< bool(nimble_eigen_traits<DerivedInput>::nimbleUseLinearAccess), result_type, DerivedInput, Index >::getCoeff(input, i, inputLength);
+      } else {
+	if(static_cast<int>(i) < inputLength) {
+	  return nimble_eigen_coeff_impl< bool(nimble_eigen_traits<DerivedInput>::nimbleUseLinearAccess), result_type, DerivedInput, Index >::getCoeff(input, i);
+	} else {
+	  return 0;
+	}
+      }
+    } else {
+      return 0;
+    }
   }
 
   result_type operator()(Index i, Index j) const // I don't think this should normally be called, but if it does, act like a vector
@@ -1465,8 +1477,8 @@ template<typename returnDerived>
 struct newMatrix_impl {
   typedef typename Eigen::internal::traits<returnDerived>::Index IndexReturn;
   template<typename DerivedObj>
-  static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, int nRowIn, int nColIn) {
-    newMatrixClass<IndexReturn, DerivedObj > obj(s, initIn, nRowIn, nColIn);
+  static CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived > newMatrix(const DerivedObj &s, bool initIn, bool recycle, int nRowIn, int nColIn) {
+    newMatrixClass<IndexReturn, DerivedObj > obj(s, initIn, recycle, nRowIn, nColIn);
     return(CwiseNullaryOp<newMatrixClass<IndexReturn, DerivedObj >, returnDerived >(obj.dim1, obj.dim2, obj));
   }
 };

@@ -238,41 +238,41 @@ template<typename NimArrOutput, typename NimArrInput>
 }
 
 template<typename NimArrOutput, typename NimArrInput>
-  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2) {
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, bool fillZeros, bool recycle, int size1, int size2) {
   if(output.isMap()) {
     _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
   } else {
     output.setSize(size1, size2, false, false); // would need same scalar types before trying memcpy.
     if(!init) return;
     int totsize = size1 * size2;
-    copyNimArrToNimArrInternal(output, input, totsize);
+    copyNimArrToNimArrInternal(output, input, totsize, fillZeros, recycle);
   }
   return;
 }
 
 template<typename NimArrOutput, typename NimArrInput>
-  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2, int size3) {
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, bool fillZeros, bool recycle, int size1, int size2, int size3) {
   if(output.isMap()) {
     _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
   } else {
     output.setSize(size1, size2, size3, false, false); // would need same scalar types before trying memcpy.
     if(!init) return;
     int totsize = size1 * size2 * size3;
-    copyNimArrToNimArrInternal(output, input, totsize);
+    copyNimArrToNimArrInternal(output, input, totsize, fillZeros, recycle);
   }
   return;
 }
 
 
 template<typename NimArrOutput, typename NimArrInput>
-  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, int size1, int size2, int size3, int size4) {
+  void assignNimArrToNimArr(NimArrOutput &output, NimArrInput &input, bool init, bool fillZeros, bool recycle, int size1, int size2, int size3, int size4) {
   if(output.isMap()) {
     _nimble_global_output << "Error from C++: using assignNimArrToNimArr with a map.\n"; nimble_print_to_R( _nimble_global_output);
   } else {
     output.setSize(size1, size2, size3, size4, false, false); // would need same scalar types before trying memcpy.
     if(!init) return;
     int totsize = size1 * size2 * size3 * size4;
-    copyNimArrToNimArrInternal(output, input, totsize);
+    copyNimArrToNimArrInternal(output, input, totsize, fillZeros, recycle);
   }
   return;
 }

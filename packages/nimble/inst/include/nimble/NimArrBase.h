@@ -112,6 +112,16 @@ class NimArrBase: public NimArrType {
     own_v = true;
   } // Warning, this does not make sense if vPtr is pointing to someone else's vMemory.
   void fillAllValues(T value) { std::fill(v, v + NAlength, value); }
+  void fillAllValues(T value, bool fillZeros, bool recycle) {
+    if(recycle) {
+      std::fill(v, v + NAlength, value);
+    } else {
+      if(NAlength > 0) v[0] = value;
+      if(NAlength > 1)
+	if(fillZeros)
+	  std::fill(v + 1, v + NAlength, static_cast<T>(0));
+    }
+  }
   void setMyType() {
     myType = UNDEFINED;
     if(typeid(T) == typeid(int) )
