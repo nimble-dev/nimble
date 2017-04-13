@@ -27,9 +27,9 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #'
 #' create a nimbleType object, with information on the name, type, and dimension of an object to be placed in a \link{nimbleList} 
 #'
-#' @param name The name of the object
-#' @param type The type of the object
-#' @param dim  The dimension of the object.  This can be left blank if the object is a nimbleList.
+#' @param name The name of the object, given as a character string.
+#' @param type The type of the object, given as a character string.
+#' @param dim  The dimension of the object, given as an integer.  This can be left blank if the object is a nimbleList.
 #'
 #' @author NIMBLE development team
 #'
@@ -42,7 +42,12 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' The \code{type} argument can be chosen from among \code{character}, \code{double}, \code{integer}, and \code{logical},
 #' or can be the name of a previously created \link{nimbleList} definition.
 #' 
-#' See the NIMBLE User Manual for examples.
+#' See the NIMBLE User Manual for additional examples.
+#' 
+#' @examples 
+#' nimbleTypeList <- list()
+#' nimbleTypeList[[1]] <- nimbleType(name = 'x', type = 'integer', dim = 0)
+#' nimbleTypeList[[2]] <- nimbleType(name = 'Y', type = 'double', dim = 2)
 #'
 
 
@@ -85,8 +90,18 @@ nimbleType <- setRefClass(
 #' 
 #' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.
 #' 
-#' See the NIMBLE User Manual for examples.
-#'
+#' See the NIMBLE User Manual for additional examples.
+#' 
+#' @examples 
+#'  exampleNimListDef <- nimbleList(x = integer(0), Y = double(2))
+#'  
+#'  nimbleListTypes <- list(nimbleType(name = 'x', type = 'integer', dim = 0),
+#'                          nimbleType(name = 'Y', type = 'double', dim = 2))
+#'  
+#'  ## this nimbleList definition is identical to the one created above
+#'  exampleNimListDef <- nimbleList(nimbleListTypes)
+
+
 nimbleList <- function(...,
                        name = NA,
                        predefined = FALSE,
