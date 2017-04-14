@@ -1143,6 +1143,10 @@ declare <- function(name, def){
     }
     if(length(dims) != nDim)
         stop('in declare, dimensions are not declared properly')
+    if(prod(dims)==1) {
+        if(length(dims) == 1)
+            return(assign(as.character(name), value, envir = parent.frame()))
+    }
     assign(as.character(name), array(value, dim = dims), envir = parent.frame() )
 }
 
