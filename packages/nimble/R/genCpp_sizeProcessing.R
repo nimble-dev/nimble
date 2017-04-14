@@ -1679,18 +1679,26 @@ sizeasDoublePtr <- function(code, symTab, typeEnv) {
 
 sizeScalar <- function(code, symTab, typeEnv) {
     ## use something different for distributionFuns
+
+    ## length(model[[node]]) wasn't working because we were not doing recurseSetSize here
+    ## However I am not sure if that is because there are cases where size expects a special argument we don't want to process (a modelValues?)
+    ## So I'm going to wrap it in a try() and suppress messages
+    asserts <- try(recurseSetSizes(code, symTab, typeEnv), silent = TRUE)
+    if(inherits(asserts, 'try-error')) asserts <- list()
     if(code$args[[1]]$toEigenize == 'yes') {
-        asserts <- sizeInsertIntermediate(code, 1, symTab, typeEnv)
-    } else {
-        asserts <- NULL
+        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
     }
+    ## else {
+    ##     asserts <- NULL
+    ## }
     code$nDim <- 0
     outputType <- scalarOutputTypes[[code$name]]
     if(is.null(outputType)) code$type <- 'double'
     else code$type <- outputType
     code$sizeExprs <- list()
     code$toEigenize <- 'maybe' ## a scalar can be eigenized or not
-    invisible(NULL)
+    ##invisible(NULL)
+    asserts
 }
 
 sizeScalarModelOp <- function(code, symTab, typeEnv) {
