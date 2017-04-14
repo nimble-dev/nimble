@@ -707,12 +707,12 @@ sizeNimArrayGeneral <- function(code, symTab, typeEnv) {
                 annotationSizeExprs[[1]] <- totalInputLengthExpr
                 annotationSizeExprs[[2]] <- 1
             } else { ## ncol provided
-                annotationSizeExprs[[1]] <- substitute(floor( ((A)-1) / (B)) + 1, ## avoids errors from integer arithmetic
+                annotationSizeExprs[[1]] <- substitute(calcMissingMatrixSize(A, B), ##floor( ((A)-1) / (B)) + 1, ## avoids errors from integer arithmetic
                                               list(A = totalInputLengthExpr,
                                                    B = annotationSizeExprs[[2]]))
             }
         } else { ## nrow provided, ncol missing (is both provided, we wouldn't be in this code
-                annotationSizeExprs[[2]] <- substitute(floor( ((A)-1) / (B)) + 1,
+                annotationSizeExprs[[2]] <- substitute(calcMissingMatrixSize(A, B), ##floor( ((A)-1) / (B)) + 1,
                                               list(A = totalInputLengthExpr,
                                                    B = annotationSizeExprs[[1]]))
         }
@@ -2084,7 +2084,7 @@ sizeSeq <- function(code, symTab, typeEnv, recurse = TRUE) {
                 code$name <- 'nimSeqByLenD'
                 thisSizeExpr <- parse(text = nimDeparse(code$args[[4]]), keep.source = FALSE)[[1]]
             } else {
-                thisSizeExpr <- substitute(1 + floor((TO_ - FROM_) / BY_),
+                thisSizeExpr <- substitute(calcSeqLength(FROM_, TO_, BY_),##1 + floor((TO_ - FROM_) / BY_),
                                            list(FROM_ = parse(text = nimDeparse(code$args[[1]]), keep.source = FALSE)[[1]],
                                                 TO_ = parse(text = nimDeparse(code$args[[2]]), keep.source = FALSE)[[1]],
                                                 BY_ = parse(text = nimDeparse(code$args[[3]]), keep.source = FALSE)[[1]]))
