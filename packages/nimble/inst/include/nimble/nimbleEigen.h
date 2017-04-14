@@ -6,7 +6,6 @@
 #include<Rmath.h>
 #include<vector>
 #include<cstdlib>
-#include<limits>
 #include "dists.h"
 
 

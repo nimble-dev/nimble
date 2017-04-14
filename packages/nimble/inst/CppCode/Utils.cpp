@@ -1,3 +1,4 @@
+#include<limits>
 #include "nimble/Utils.h"
 #define PRINTF Rprintf
 #define NIMERROR error
