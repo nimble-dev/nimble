@@ -249,11 +249,12 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
         ##if(inherits(thisSymbol, 'symbolNimbleFunction')) { ##NOT NEEDED
         ##if(inherits(thisSymbol, 'symbolModelValues')) {
         ## NOT NEEDEDif(inherits(thisSymbol, 'symbolNimPtrList')) {
+        castFunCall <- parse(text = paste0(".Call(dll$", castFunName, ", .ptrToPtr)"), keep.source = FALSE)[[1]]
         if(inherits(thisSymbol, 'symbolNimbleList')) { ## copy type 'nimbleList'
             className <- thisSymbol$nlProc$cppDef$name
             castToPtrPairName <- thisSymbol$nlProc$cppDef$ptrCastToPtrPairFun$name
             eval(substitute( fieldList$VARNAME <- function(x) {
-                namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                 extPtrNL <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, VARNAME, dll = dll)
                 ## extPtrNL <- getMemberDataPtr(VARNAME) ## not working
                 nimbleInternalFunctions$getSetNimbleList(vptr = extPtrNL, name = VARNAME, value = x, cppDef = symTab$getSymbolObject(VARNAME)$nlProc$cppDef, dll = dll )
@@ -267,53 +268,53 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
                 ##     nimbleInternalFunctions$setSmartPtrFromDoublePtr(extPtrNL, x$.ptrToPtr, dll = dll)
                 ##     x
                 ## }
-            }, list(VARNAME = vn, CASTFUN = castFunName, CLASSNAME = className, CASTTOPTRPAIRNAME = castToPtrPairName) ) )
+            }, list(VARNAME = vn, CASTFUNCALL = castFunCall, CLASSNAME = className, CASTTOPTRPAIRNAME = castToPtrPairName) ) ) ##CASTFUN = castFunName,
             next
         }
         if(thisSymbol$type == "character") { ## cpp copy type 'character'  : 2 sub-cases (vector and scalar)
 
             if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
                 eval(substitute( fieldList$VARNAME <- function(x) {
-                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                     vptr <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, name, dll = dll)
                     nimbleInternalFunctions$getSetCharacterVector(vptr, VARNAME, value = x, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             } else {                    ## character scalar
                 eval(substitute( fieldList$VARNAME <- function(x) {
-                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                     nimbleInternalFunctions$getSetCharacterScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
-                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                }, list(VARNAME = vn, CASTFUNCALL = castFunCall) ) )
                 next
             }
         }
         if(inherits(thisSymbol, 'symbolBase')) { ## All numeric and logical cases  ## cpp copy type 'numeric': 4 sub-cases
             if(thisSymbol$nDim > 0) {            ## Anything vector
                 eval(substitute( fieldList$VARNAME <- function(x) {
-                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                     nimbleInternalFunctions$getSetNumericVector(VARNAME, value = x, namedObjectsPtr, dll = dll)
-                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                }, list(VARNAME = vn, CASTFUNCALL = castFunCall) ) )
                 next
             }
             if(thisSymbol$type == "double"){     ## Scalar double
                 eval(substitute( fieldList$VARNAME <- function(x) {
-                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                     nimbleInternalFunctions$getSetDoubleScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
-                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                }, list(VARNAME = vn, CASTFUNCALL = castFunCall) ) )
                 next
             }
            if(thisSymbol$type == "integer"){    ## Scalar int
                eval(substitute( fieldList$VARNAME <- function(x) {
-                   namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                   namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                    nimbleInternalFunctions$getSetIntegerScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
-                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                }, list(VARNAME = vn, CASTFUNCALL = castFunCall) ) )
                 next
             }
             if(thisSymbol$type == "logical"){    ## Scalar logical
                 eval(substitute( fieldList$VARNAME <- function(x) {
-                    namedObjectsPtr <- .Call(dll$CASTFUN, .ptrToPtr)
+                    namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
                     nimbleInternalFunctions$getSetLogicalScalar(VARNAME, value = x, namedObjectsPtr, dll = dll)
-                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                }, list(VARNAME = vn, CASTFUNCALL = castFunCall) ) )
                 next
             }
             warning("Warning: scalar datatype not current supported for variable ", vn, "\n", call. = FALSE)
@@ -1060,18 +1061,18 @@ buildNimbleListInterface <- function(refName,  compiledNimbleObj, basePtrCall, w
     names(methodsList)[length(methodsList)] <- 'show'
     resetExtPtrsFun <- substitute(
         function(VPTR) {
-            newPtrs <- .Call(dll$RESETPTRFUN, VPTR)
+            newPtrs <- RESETPTRCALL ##.Call(dll$RESETPTRFUN, VPTR)
             .ptrToSmartPtr <<- newPtrs[[1]]
             .ptrToPtr <<- newPtrs[[2]]
             .finalizationPtr <<- NULL
-        }, list(RESETPTRFUN = castToPtrPairFunName)
+        }, list(RESETPTRCALL = parse(text = paste0(".Call(dll$",castToPtrPairFunName,", VPTR)"), keep.source=FALSE )[[1]] )##RESETPTRFUN = castToPtrPairFunName)
     )
     methodsList[[length(methodsList) + 1]] <- resetExtPtrsFun
     names(methodsList)[length(methodsList)] <- 'resetExtPtrs'
     getNamedObjectsPtr <- substitute(
         function() {
-            .Call(dll$CASTFUNNAME, .ptrToPtr)
-        }, list(CASTFUNNAME = castFunName))
+            CASTFUNCALL ##.Call(dll$CASTFUNNAME, .ptrToPtr)
+        }, list(CASTFUNCALL = parse(text = paste0(".Call(dll$", castFunName, ", .ptrToPtr)"), keep.source = FALSE)[[1]] ))##CASTFUNNAME = castFunName))
     methodsList[[length(methodsList) + 1]] <- getNamedObjectsPtr
     names(methodsList)[length(methodsList)] <- 'getNamedObjectsPtr'
 
