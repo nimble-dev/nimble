@@ -596,7 +596,7 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
 #'   generation for the inverse gamma distribution with rate
 #'     or scale (mean = scale / (shape - 1)) parameterizations.
 #' 
-#' @name Inverse Gamma
+#' @name Inverse-Gamma
 #' 
 #' @param x vector of values.
 #' @param n number of observations.
@@ -634,12 +634,15 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
+#' \dontrun{
+#' if(a<3) print('hi')
+#' }
 #' x <- rinvgamma(50, shape = 1, scale = 3)
 #' dinvgamma(x, shape = 1, scale = 3)
 NULL
 
 
-#' @rdname Inverse Gamma
+#' @rdname Inverse-Gamma
 #' @export
 dinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
     if (!missing(rate) && !missing(scale)) {
@@ -650,7 +653,7 @@ dinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
     .Call('C_dinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
 }
 
-#' @rdname Inverse Gamma
+#' @rdname Inverse-Gamma
 #' @export
 rinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     if (!missing(rate) && !missing(scale)) {
@@ -661,7 +664,7 @@ rinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     .Call('C_rinvgamma', as.integer(n), as.double(shape), as.double(rate))
 }
 
-#' @rdname Inverse Gamma
+#' @rdname Inverse-Gamma
 #' @export
 pinvgamma <- function(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
     if (!missing(rate) && !missing(scale)) {
@@ -672,7 +675,7 @@ pinvgamma <- function(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, lo
   .Call('C_pinvgamma', as.double(q), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
-#' @rdname Inverse Gamma
+#' @rdname Inverse-Gamma
 #' @export
 qinvgamma <- function(p, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
     if (!missing(rate) && !missing(scale)) {

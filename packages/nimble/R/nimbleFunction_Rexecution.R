@@ -1037,9 +1037,12 @@ nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, type = 'doub
 #' @param dim a vector specifying the dimensionality and sizes of the array, provided as c(size1, ...) (default = c(1, 1))
 #' @param init logical, whether to initialize elements of the matrix (default = TRUE)
 #' @param type character representing the data type, i.e. 'double', 'integer', or 'logical (default = 'double')
+#' @param nDim number of dimensions
 #'
 #' @details
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{array} is a synonym for \code{nimArray}.  When used with only the first two arguments, this behaves similarly to R's \code{array} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
+#'
+#' While the number of dimensions (\code{nDim}) would seem obvious based on \code{dim} in R, when used in the NIMBLE DSL, the length of \code{dim} may not be known until run time.
 #' 
 #' @author Daniel Turek
 #' @aliases array
