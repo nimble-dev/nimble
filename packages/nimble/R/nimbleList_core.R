@@ -49,8 +49,6 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' nimbleTypeList[[1]] <- nimbleType(name = 'x', type = 'integer', dim = 0)
 #' nimbleTypeList[[2]] <- nimbleType(name = 'Y', type = 'double', dim = 2)
 #'
-
-
 nimbleType <- setRefClass(
   Class = 'nimbleType',
   fields = c('name', 'type', 'dim'),
