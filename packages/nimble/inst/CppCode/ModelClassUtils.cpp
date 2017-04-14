@@ -51,9 +51,11 @@ SEXP getMVBuildName (SEXP rPtr){
 	if (mVBuildName == "missing")
 		PRINTF("Warning: buildName missing in modelValues! \nConstructor must assign the string buildName to the name which call a SEXP that builds modelValues object\n");
 	SEXP rName = allocVector(STRSXP, 1);
-	SET_STRING_ELT(rName, 0, mkChar(mVBuildName.c_str() ) );
 	PROTECT(rName);
-	UNPROTECT(1);
+	SEXP mvbn = mkChar(mVBuildName.c_str() );
+	PROTECT(mvbn);
+	SET_STRING_ELT(rName, 0, mvbn );
+	UNPROTECT(2);
 	return(rName);
 }
 
