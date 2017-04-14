@@ -75,7 +75,7 @@ argType2symbolInternal <- function(AT, neededTypes, name = character()) {
         if(exists(possibleTypeName, envir = globalenv())) {
           possibleNLgenerator <- get(possibleTypeName, envir = globalenv())
           if(is.nlGenerator(possibleNLgenerator)) {
-              className <- nl.getListDef(nlGen)$className
+              className <- nl.getListDef(possibleNLgenerator)$className
           }
         }
         if(!is.null(className)){
