@@ -896,6 +896,7 @@ keywordListModelMemberFuns[['getBound']] <- modelMemberFun_keywordInfo
 
 
 matchFunctions <- new.env()
+matchFunctions[['setSize']] <- function(var, ..., copy = TRUE, fillZeros = TRUE){} ## setSize, but load order is later
 matchFunctions[['nimC']] <- nimC
 matchFunctions[['nimRep']] <- function(x, times = 1, length.out, each = 1) {}
 matchFunctions[['nimSeq']] <- nimSeq
@@ -1401,51 +1402,88 @@ isSymbolType <- function(symTab, varName, symType)
 	inherits(symTab$symbols[[varName]], symType)
 
 matchAndFill.call <- function(def, call){
-  theseFormals <- formals(def)
-  formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
-  theseFormals <- theseFormals[nchar(theseFormals) > 0]
-  matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
-  missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
-  for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
-    name <- names(theseFormals)[ind]
-    matchedCall[[name]] <- theseFormals[[name]]    
-  }
+    ##   matchAndFill.call(function(a = 1, ..., b = 2){}, quote(foo(b = 1, 2, 3))) ## I don't like the behavior on this but it's due to match.call
+    theseFormals <- formals(def)
+    formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
+    theseFormals <- theseFormals[nchar(theseFormals) > 0]
+    matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
+    missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
+    for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
+        name <- names(theseFormals)[ind]
+        matchedCall[[name]] <- theseFormals[[name]]    
+    }
     
-  newCall <- matchedCall[1]
+    newCall <- matchedCall[1]
 
-  for(thisArgName in formalNames){					# This is to get the order of the arguments correctly, including anything omitted
-  	thisArg <- matchedCall[[thisArgName]]
-	if(!is.null(thisArg))
-	  	newCall[[thisArgName]] <- thisArg
-  }
-  
-##  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
- 		# i.e. are there any "..." args? if so, adds them on in the end
-  		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
-  		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
-##  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
-
-##  for(thisArg in informalArgNames)
-##  	newCall[[thisArg]] <- matchedCall[[thisArg]]
-
-  ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
-  ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
-  ## tacked on even without a '...' in the def
-  if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
-
-  indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
-
-  for(thisIndex in indexAdditionalArgs) {
-      thisName <- names(matchedCall)[thisIndex+1]
-      if(thisName=="")
-          newCall[[thisIndex + 1]] <- matchedCall[[thisIndex + 1]]
-      else {
-          newCall[[thisName]] <- matchedCall[[thisName]]
-      }
-  }
-      
-  return(newCall)
+    if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
+    indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+    
+    for(thisArgName in formalNames){					# This is to get the order of the arguments correctly and to insert unmatched arguemnts to ... location if appropriate
+        if(thisArgName == '...') {
+            for(thisIndex in indexAdditionalArgs) {
+                thisName <- names(matchedCall)[thisIndex+1]
+                if(thisName=="")
+                    newCall[[length(newCall) + 1]] <- matchedCall[[thisIndex + 1]]
+                else {
+                    newCall[[thisName]] <- matchedCall[[thisName]]
+                }
+            }
+        } else {        
+            thisArg <- matchedCall[[thisArgName]]
+            if(!is.null(thisArg))
+                newCall[[thisArgName]] <- thisArg
+        }
+    }
+    
+    return(newCall)
 }
+
+## matchAndFill.call <- function(def, call){
+##   theseFormals <- formals(def)
+##   formalNames <- names(theseFormals) # formalArgs are the arguments that are defined, i.e. does NOT include anything that is from the args "..."
+##   theseFormals <- theseFormals[nchar(theseFormals) > 0]
+##   matchedCall <- match.call(def, call) # problem with match.call for our needs is it omits formals that were not provided
+##   missingArgs <- which(!(names(theseFormals) %in% names(matchedCall)))
+##   for(ind in missingArgs){ ## this puts back in anything omitted, but order may become wrong
+##     name <- names(theseFormals)[ind]
+##     matchedCall[[name]] <- theseFormals[[name]]    
+##   }
+    
+##   newCall <- matchedCall[1]
+
+##   for(thisArgName in formalNames){					# This is to get the order of the arguments correctly, including anything omitted
+##   	thisArg <- matchedCall[[thisArgName]]
+## 	if(!is.null(thisArg))
+## 	  	newCall[[thisArgName]] <- thisArg
+##   }
+  
+## ##  informalArgNames <- names(matchedCall)[!(names(matchedCall) %in% formalNames)]
+##  		# i.e. are there any "..." args? if so, adds them on in the end
+##   		# Note: this will preserve arguments EVEN if no '...' is declared, i.e.
+##   		# dnorm(jnk = 3, x= 10) will turn into dnorm(x = 10, mean = 0, sd = 1, log = FALSE, jnk = 3)
+## ##  informalArgNames <- informalArgNames[-1]	#removing "", which is the function call, not an argument 
+
+## ##  for(thisArg in informalArgNames)
+## ##  	newCall[[thisArg]] <- matchedCall[[thisArg]]
+
+##   ## this fixes the handling of additional *unnamed* arguments that may come in through '...' in the def
+##   ## It does not appear to be the case (as claimed in older comment above) that extra arguments (like jnk) will be
+##   ## tacked on even without a '...' in the def
+##   if(is.null(names(matchedCall))) names(matchedCall) <- c("CALL_", rep("", length(matchedCall) - 1)) ## strangely assigning all "" values results in NULL
+
+##   indexAdditionalArgs <- which(!(names(matchedCall)[-1] %in% formalNames))
+
+##   for(thisIndex in indexAdditionalArgs) {
+##       thisName <- names(matchedCall)[thisIndex+1]
+##       if(thisName=="")
+##           newCall[[thisIndex + 1]] <- matchedCall[[thisIndex + 1]]
+##       else {
+##           newCall[[thisName]] <- matchedCall[[thisName]]
+##       }
+##   }
+      
+##   return(newCall)
+## }
 
 ## pasteExpr <- function(expr1, expr2)
 ## 	parse(text=paste0(as.character(expr1), as.character(expr2) ) )[[1]]
