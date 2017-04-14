@@ -114,8 +114,8 @@ nf_checkDSLcode <- function(code, methodNames, setupVarNames) {
         dollarsRhs <- dollars+2
         while(sum(names[dollarsLhs] %in% c('[', '[['))) {
             # bracket appears between $ and the lhs,rhs of the $
-            dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] + 1
             dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsRhs[names[dollarsLhs] %in% c('[', '[[')] + 1
+            dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] <- dollarsLhs[names[dollarsLhs] %in% c('[', '[[')] + 1
         }
         dollarsLhs <- unique(names[dollarsLhs[dollarsLhs <= length(names)]])
         dollarsRhs <- unique(names[dollarsRhs[dollarsRhs <= length(names)]])
