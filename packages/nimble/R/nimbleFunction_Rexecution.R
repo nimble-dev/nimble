@@ -285,23 +285,6 @@ getBound <- function(model, node, bound, nodeFunctionIndex) {
 }
 
 
-## getParam <- function(model, node, param) {
-##     if(missing(param)) { ## already converted by keyword conversion
-##         nodeFunction <- model
-##         paramInfo <- node
-##     } else {
-##         ## not already converted
-##         nodeFunction <- model$nodes[[node]]
-##         paramInfo <- makeParamInfo(model, node, param)
-##     }
-##     paramID <- paramInfo$paramID
-##     nDim <- paramInfo$nDim
-##     type <- paramInfo$type
-##     funName <- paste0('getParam_',nDim,'D_',type)
-##     ans <- eval(substitute(nodeFunction$FUNNAME(paramID), list(FUNNAME = as.name(funName))))
-##     return(ans)
-## }
-
 #' @export
 nimSwitch <- function(paramID, IDoptions, ...) {
     dotsList <- eval(substitute(alist(...)))
@@ -312,28 +295,21 @@ nimSwitch <- function(paramID, IDoptions, ...) {
 
 rCalcNodes <- function(model, nfv){ ##nodeFunctionVector
     l_Prob = 0
-
-    ## if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
-    ##     stop('calling compiled model from R calculate() or other functions is not supported yet for newNodeFunction system.')
-    ##     for(nName in nodes)
-    ##         l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculate')
-    ## } else {
-        model <- nfv$model
+    model <- nfv$model
     useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
     indexingInfo <- nfv$indexingInfo
-        declIDs <- indexingInfo$declIDs
-        numNodes <- length(declIDs)
-        if(numNodes < 1) return(l_Prob)
-        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
-        for(i in 1:numNodes) {
-            declID <- declIDs[i]
-            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
-            if(useCompiledNonNestedInterface) {
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculate', unrolledIndicesMatrixRow)
-            } else
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
-        }
-##    }
+    declIDs <- indexingInfo$declIDs
+    numNodes <- length(declIDs)
+    if(numNodes < 1) return(l_Prob)
+    unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+    for(i in 1:numNodes) {
+        declID <- declIDs[i]
+        unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+        if(useCompiledNonNestedInterface) {
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculate', unrolledIndicesMatrixRow)
+        } else
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+    }
     return(l_Prob)
 }
 
@@ -341,28 +317,21 @@ getNodeFunctionIndexedInfo <- function(indexedNodeInfo, iCol) indexedNodeInfo[iC
 
 rCalcDiffNodes <- function(model, nfv){
     l_Prob <- 0
-
-    ## if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
-    ##     stop('calling compiled model from R calculateDiff() or other functions is not supported yet for newNodeFunction system.')
-    ##     for(nName in nodes)
-    ##         l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'calculateDiff')
-    ## } else {
-        model <- nfv$model
+    model <- nfv$model
     useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
-        indexingInfo <- nfv$indexingInfo
-        declIDs <- indexingInfo$declIDs
-        numNodes <- length(declIDs)
-        if(numNodes < 1) return(l_Prob)
-        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
-        for(i in 1:numNodes) {
-            declID <- declIDs[i]
-            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
-            if(useCompiledNonNestedInterface) {
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculateDiff', unrolledIndicesMatrixRow)
-            } else
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculateDiff(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
-        }
-##    }
+    indexingInfo <- nfv$indexingInfo
+    declIDs <- indexingInfo$declIDs
+    numNodes <- length(declIDs)
+    if(numNodes < 1) return(l_Prob)
+    unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+    for(i in 1:numNodes) {
+        declID <- declIDs[i]
+        unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+        if(useCompiledNonNestedInterface) {
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'calculateDiff', unrolledIndicesMatrixRow)
+        } else
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$calculateDiff(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+    }
     return(l_Prob)
 }
 
@@ -416,22 +385,6 @@ calculate <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)
     }	
 }
 
-## calculate <- function(model, nodes, nodeFxnVector)		
-## {
-##     if(!missing(nodeFxnVector)){
-##         model <- nodeFxnVector$model
-##         nodes <- nodeFxnVector$getNodeNames()
-##         return(rCalcNodes(model, nodes))
-##     }
-##     if(inherits(model, 'modelBaseClass') ){
-##         if(missing(nodes) ) 
-##             nodes <- model$getMaps('nodeNamesLHSall')
-##         nfv <- nodeFunctionVector(model, nodes)
-##         nodeNames <- nfv$getNodeNames()
-##         return(rCalcNodes(model, nodeNames))
-##     }	
-## }
-
 #' @rdname nodeFunctions
 #' @export
 calculateDiff <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)		
@@ -449,28 +402,21 @@ calculateDiff <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)
 
 rGetLogProbsNodes <- function(model, nfv){
     l_Prob = 0
-
-    ## if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
-    ##     stop('calling compiled model from R getLogProb() or other functions is not supported yet for newNodeFunction system.')
-    ##     for(nName in nodes)
-    ##         l_Prob = l_Prob + model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'getLogProb')
-    ## } else {
-        model <- nfv$model
+    model <- nfv$model
     useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
-        indexingInfo <- nfv$indexingInfo
-        declIDs <- indexingInfo$declIDs
-        numNodes <- length(declIDs)
-        if(numNodes < 1) return(l_Prob)
-        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
-        for(i in 1:numNodes) {
-            declID <- declIDs[i]
-            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
-            if(useCompiledNonNestedInterface) {
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'getLogProb', unrolledIndicesMatrixRow)
-            } else
-                l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$getLogProb(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
-        }
-##    }
+    indexingInfo <- nfv$indexingInfo
+    declIDs <- indexingInfo$declIDs
+    numNodes <- length(declIDs)
+    if(numNodes < 1) return(l_Prob)
+    unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+    for(i in 1:numNodes) {
+        declID <- declIDs[i]
+        unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+        if(useCompiledNonNestedInterface) {
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'getLogProb', unrolledIndicesMatrixRow)
+        } else
+            l_Prob = l_Prob + model$nodeFunctions[[ declID ]]$getLogProb(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+    }
     return(l_Prob)
 }
 
@@ -491,30 +437,22 @@ getLogProb <- function(model, nodes, nodeFxnVector, nodeFunctionIndex)
 
 
 rSimNodes <- function(model, nfv){
-    
-    ## if(inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')) {
-        ##stop('calling compiled model from R simulate() or other functions is not supported yet for newNodeFunction system.')
-        ## for(nName in nodes) {
-        ##     model$nodes[[nName]][[1]]$callMemberFunction(model$nodes[[nName]][[2]], 'simulate')
-        ## }
-    ##} else {
-        model <- nfv$model
-        useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
-        indexingInfo <- nfv$indexingInfo
-        declIDs <- indexingInfo$declIDs
-        numNodes <- length(declIDs)
-        if(numNodes < 1) return()
-        unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
-        for(i in 1:numNodes) {
-            declID <- declIDs[i]
-            unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
-            if(useCompiledNonNestedInterface) {
-                model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'simulate', unrolledIndicesMatrixRow)
-                
-            } else
-                model$nodeFunctions[[ declID ]]$simulate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
-        }
-    ##}
+    model <- nfv$model
+    useCompiledNonNestedInterface <- inherits(model, 'CmodelBaseClass') & !getNimbleOption('buildInterfacesForCompiledNestedNimbleFunctions')
+    indexingInfo <- nfv$indexingInfo
+    declIDs <- indexingInfo$declIDs
+    numNodes <- length(declIDs)
+    if(numNodes < 1) return()
+    unrolledIndicesMatrixRows <- indexingInfo$unrolledIndicesMatrixRows
+    for(i in 1:numNodes) {
+        declID <- declIDs[i]
+        unrolledIndicesMatrixRow <- model$modelDef$declInfo[[declID]]$unrolledIndicesMatrix[ unrolledIndicesMatrixRows[i], ]
+        if(useCompiledNonNestedInterface) {
+            model$nodeFunctions[[ declID ]][[1]]$callMemberFunction(model$nodeFunctions[[ declID ]][[2]], 'simulate', unrolledIndicesMatrixRow)
+            
+        } else
+            model$nodeFunctions[[ declID ]]$simulate(unrolledIndicesMatrixRow) ## must use nodeFunctions to have declID ordering
+    }
 }
 
 #' @rdname nodeFunctions
@@ -580,7 +518,6 @@ getValuesAccess <- function(access) {
 
 
 setValuesAccess <- function(input, access) {
-
     toCode <- makeSetCodeFromAccessorVector(access)
     mapInfo <- makeMapInfoFromAccessorVector(access) ## inefficient to do both of these, but we need the lengths!
     if(length(toCode)==0) return(NULL)
@@ -594,7 +531,6 @@ setValuesAccess <- function(input, access) {
         nextIndex <- nextIndex + nextLength
     }
     invisible(NULL)
-
 }
 
 
@@ -762,15 +698,6 @@ nimCopy <- function(from, to, nodes = NULL, nodesTo = NULL, row = NA, rowTo = NA
             eval(setCode[[i]]) ## oneValue is hard-wired in. may have rowTo hardwired in
         }
     }
-    
-    ## lengthTo <- length(accessTo$code) ## NEW ACCESSORS
-    ## if(length(accessFrom$code) != lengthTo)
-    ##     stop('unequal number of entries in nimCopy') 
-    ## if(lengthTo > 0){
-    ##     for(i in 1:lengthTo){
-    ##         accessTo$setValues( i, accessFrom$getValues(i) )
-    ##     }
-    ## }
 }
 
 #' Access or set a member variable of a nimbleFunction
