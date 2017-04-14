@@ -9,22 +9,6 @@
 #include<limits>
 #include "dists.h"
 
-// A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
-int floorOrEquivalent(double x) {
-  double roundX = round(x);
-  double sqrtEpsilon = sqrt(std::numeric_limits<double>::epsilon());
-  bool shouldBeExactInteger(false);
-  if(fabs(x) > sqrtEpsilon) { // This algorithm for numerical equivalence imitates what happens in all.equal.numeric in R
-    if(fabs(x - roundX) / fabs(x) < sqrtEpsilon)
-      shouldBeExactInteger = true;
-  } else {
-    if(fabs(x - roundX) < sqrtEpsilon) // in the present context, this would mean length should be zero anyway
-      shouldBeExactInteger = true;
-  }
-  if(shouldBeExactInteger)
-    return(static_cast<int>(roundX));
-  return(floor(x));
-}
 
 // a utility function used by nimSeq and generated size expressions to determine the length of a sequence
 template<typename fromT, typename toT, typename byT>
