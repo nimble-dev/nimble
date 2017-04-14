@@ -121,7 +121,7 @@ void nimArr_rdirch(NimArr<1, double> &ans, NimArr<1, double> &alpha) {
   if(ans.isMap()) {ans = ansCopy;}
 }
 
-double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log) {
+double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double df, double scale_param, int give_log, int overwrite_inputs) {
   double *xptr, *cholptr;
   NimArr<2, double> xCopy, cholCopy;
   int p = x.dim()[0];
@@ -135,12 +135,12 @@ double nimArr_dwish_chol(NimArr<2, double> &x, NimArr<2, double> &chol, double d
   }
   xptr = nimArrCopyIfNeeded<2, double>(x, xCopy).getPtr();
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
-  double ans = dwish_chol(xptr, cholptr, df, p, scale_param, give_log);
+  double ans = dwish_chol(xptr, cholptr, df, p, scale_param, give_log, overwrite_inputs);
   return(ans);
 }
 
 
-void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double scale_param) {
+void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double df, double scale_param, int overwrite_inputs) {
   double *ansptr, *cholptr;
   NimArr<2, double> ansCopy, cholCopy;
   int p = chol.dim()[0];
@@ -163,14 +163,13 @@ void nimArr_rwish_chol(NimArr<2, double> &ans, NimArr<2, double> &chol, double d
   ansptr = nimArrCopyIfNeeded<2, double>(ans, ansCopy).getPtr();
   cholptr = nimArrCopyIfNeeded<2, double>(chol, cholCopy).getPtr();
 
-  rwish_chol(ansptr, cholptr, df, p, scale_param);
+  rwish_chol(ansptr, cholptr, df, p, scale_param, overwrite_inputs);
   if(ans.isMap()) {ans = ansCopy;}
 }
 
 
 
-double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log ) { 
-
+double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<2, double> &chol, double prec_param, int give_log, int overwrite_inputs) { 
   double *xptr, *meanptr, *cholptr;
   NimArr<1, double> xCopy, meanCopy;
   NimArr<2, double> cholCopy;
@@ -188,8 +187,7 @@ double nimArr_dmnorm_chol(NimArr<1, double> &x, NimArr<1, double> &mean, NimArr<
   }
 
   double ans;
-  ans = dmnorm_chol(xptr, meanptr, cholptr, n, prec_param, give_log);
-
+  ans = dmnorm_chol(xptr, meanptr, cholptr, n, prec_param, give_log, overwrite_inputs);
   return(ans);
 }
 
@@ -221,7 +219,7 @@ void nimArr_rmnorm_chol(NimArr<1, double> &ans, NimArr<1, double> &mean, NimArr<
 
 // Begin multivariate t
 
-double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<2, double> &chol, double df, double prec_param, int give_log ) { 
+double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<2, double> &chol, double df, double prec_param, int give_log, int overwrite_inputs) { 
   
   double *xptr, *muptr, *cholptr;
   NimArr<1, double> xCopy, muCopy;
@@ -240,7 +238,7 @@ double nimArr_dmvt_chol(NimArr<1, double> &x, NimArr<1, double> &mu, NimArr<2, d
   }
   
   double ans;
-  ans = dmvt_chol(xptr, muptr, cholptr, df, n, prec_param, give_log);
+  ans = dmvt_chol(xptr, muptr, cholptr, df, n, prec_param, give_log, overwrite_inputs);
   
   return(ans);
 }
