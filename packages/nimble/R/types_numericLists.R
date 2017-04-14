@@ -83,16 +83,20 @@
 #'
 #' set the size of a numeric variable in NIMBLE.  This works in R and NIMBLE, but in R it usually has no effect.
 #'
-#' @param numObj   This is the object to be resized
-#' @param ...      sizes, provided as scalars, in order, with exactly as many as needed for the object
-#' @param row      Optional argument that is not currently used
-#'
+#' @param numObj    This is the object to be resized
+#' @param ...       sizes, provided as scalars, in order, or as a single vector
+#' @param copy      logical indicating whether values should be preserved (in column-major order)
+#' @param fillZeros logical indicating whether newly allocated space should be initialized with zeros (in compiled code)
+#' 
 #' @author NIMBLE development team
 #' @export
 #' @details
 #' This function is part of the NIMBLE language.  Its purpose is to explicitly resize a multivariate object (vector, matrix or array), currently up to 4 dimensions.  Explicit resizing is not needed when an entire object is assigned to.  For example, in \code{Y <- A \%*\% B}, where A and B are matrices, \code{Y} will be resized automatically.  Explicit resizing is necessary when assignment will be by indexed elements or blocks, if the object is not already an appropriate size for the assignment.  E.g. prior to \code{Y[5:10] <- A \%*\% B}, one can use setSize to ensure that \code{Y} has a size (length) of at least 10.
 #'
 #' This does work in uncompiled (R) and well as compiled execution, but in some cases it is only necessary for compiled execution. During uncompiled execution, it may not catch bugs due to resizing because some R objects will be dynamically resized during assignments anyway.
+#'
+#' If preserving values in the resized object and/or initializing new values with 0 is not necessary, then setting these arguments to FALSE will yield slightly more efficient compiled code.
+#' 
 setSize <- function(numObj, ..., copy = TRUE, fillZeros = TRUE){ ## fillValues isn't used here but is included for consistency with the DSL
     thisCall <- as.list(match.call()[-1])
     if(length(thisCall) < 2) stop("No information provided to setSize")

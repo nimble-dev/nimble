@@ -1,14 +1,40 @@
 ###		These functions are used for calculate/sim/getLP for the nodeFunctionVectors
 ###		Can either enter model, nodes or model_nodes
 
+#' NIMBLE language functions for R-like vector construction
+#'
+#' These functions can be used in nimbleFunctions and compiled using \code{compileNimble}.
+#' 
+#' @name nimble-R-functions
+#'
+#' @aliases nimC nimRep nimSeq
+#' 
+#' @param 
+#'
+#' @details
+#' These functions are NIMBLE's version of similar R functions, e.g. \code{nimRep} for \code{rep}.   In a \code{nimbleFunction}, either the R name (e.g., \code{rep}) or the NIMBLE name (e.g., \code{nimRep}) can be used.  If the R name is used, it will be converted to the NIMBLE name.  These functions largely mimic the behavior of their R counterparts, but they can be compiled in a \code{nimbleFunction} using \code{compileNimble}.
+#' 
+#' \code{nimC} is NIMBLE's version of \code{c} and behaves identically.
+#'
+#' \code{nimRep} is NIMBLE's version of \code{rep}.  It should behave identically to \code{rep}.  There are no NIMBLE versions of \code{rep.int} or \code{rep_len}.
+#'
+#' \code{nimSeq} is NIMBLE's version of \code{seq}.  It behaves like \code{seq} with support for \code{from}, \code{to}, \code{by} and \code{length.out} arguments.  The \code{along.with} argument is not supported.  There are no NIMBLE versions of \code{seq.int}, \code{seq_along} or \code{seq_len}, with the exception that \code{seq_along} can take a nimbleFunctionList as an argument to provide the index range of a for-loop (User Manual Ch. 13). 
+NULL
+
+#' @rdname nimble-R-functions
+#' @export
 nimC <- function(...) {
     c(...)
 }
 
+#' @rdname nimble-R-functions
+#' @export
 nimRep <- function(x, ...) {
     rep(x, ...)
 }
 
+#' @rdname nimble-R-functions
+#' @export
 nimSeq <- function(from, to, by, length.out) { ## this creates default arguments filled in at keyword matching that are then useful in cppOutput step to determine if C++ should use nimSeqBy or nimSeqLen
     haveBy <- !missing(by)
     haveLen <- !missing(length.out)
@@ -924,89 +950,71 @@ nimCat <- function(...) {
 }
 
 
-#' Creates a numeric vector for use in NIMBLE DSL functions
+#' Creates numeric, integer or logical vectors for use in nimbleFunctions
 #'
-#' In a \code{nimbleFunction}, \code{numeric} is identical to \code{nimNumeric}
+#' In a \code{nimbleFunction}, \code{numeric}, \code{integer} and \code{logical} are identical to \code{nimNumeric}, \code{nimInteger} and \code{nimLogical}, respectively.
 #'
-#' See the User Manual for usage examples.
+#' @aliases nimInteger nimLogical
 #'
 #' @param length the length of the vector (default = 0)
-#' @param value the initial value for each element of the vector (default = 0)
+#' @param value value(s) for initializing the vector (default = 0).  This may be a vector, matrix or array but will be used as a vector.
 #' @param init logical, whether to initialize elements of the vector (default = TRUE)
+#' @param fillZeros logical, whether to initialize any elements not filled by (possibly recycled) \code{value} with 0 (or FALSE for \code{nimLogical}) (default = TRUE)
+#' @param recycle logical, whether \code{value} should be recycled to fill the entire \code{length} of the new vector (default = TRUE)
 #'
 #' @details
-#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric} is a synonym for \code{nimNumeric}.  When used with only the \code{length} argument, this behaves similarly to R's \code{integer} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
+#' These functions are similar to R's \code{\link{numeric}}, \code{\link{integer}}, \code{\link{logical}} functions, but they can be used in a nimbleFunction and then compiled using \code{compileNimble}.  Largely for compilation purposes, finer control is provided over initialization behavior.  If \code{init = FALSE}, no initialization will be done, and \code{value}, \code{fillZeros} and \cd{recycle} will be ignored.  If \code{init=TRUE} and \code{recycle=TRUE}, then \code{fillZeros} will be ignored, and \code{value} will be repeated (according to R's recycling rule) as much as necessary to fill a vector of length \code{length}.  If \code{init=TRUE} and \code{recycle=FALSE}, then if \code{fillZeros=TRUE}, values of 0 (or FALSE for \code{nimLogical}) will be filled in after \code{value} up to length \code{length}.  Compiled code will be more efficient if unnecessary initialization is not done, but this may or may not be noticeable depending on the situation.
 #' 
-#' @author Daniel Turek
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric}, \code{integer} and \code{logical} are immediately converted to \code{nimNumeric}, \code{nimInteger} and \code{nimLogical}, respectively.  
+#' 
+#' @author Daniel Turek, Chris Paciorek, Perry de Valpine
 #' @aliases numeric
-#' @seealso \code{\link{integer}} \code{\link{matrix}} \code{\link{array}}
+#' @seealso \code{\link{nimMatrix}}, \code{\link{nimArray}}
 #' @export
 nimNumeric <- function(length = 0, value = 0, init = TRUE, fillZeros = TRUE, recycle = TRUE) {
     fillValue <- makeFillValue(value, 'double', init)
     makeReturnVector(fillValue, length, recycle)
 }
 
-#' Creates an integer vector for use in NIMBLE DSL functions
-#'
-#' In a \code{nimbleFunction}, \code{integer} is identical to \code{nimInteger}
-#'
-#' See the User Manual for usage examples.
-#'
-#' @param length the length of the vector (default = 0)
-#' @param value the initial value for each element of the vector (default = 0L).  Only used if \code{init} is \code{TRUE}.
-#' @param init logical, whether to initialize elements of the vector (default = TRUE).
-#'
-#' @details
-#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{integer} is a synonym for \code{nimInteger}.  When used with only the \code{length} argument, this behaves similarly to R's \code{integer} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
-#' 
-#' @author Daniel Turek
-#' @aliases integer
-#' @seealso \code{\link{numeric}} \code{\link{matrix}} \code{\link{array}}
+#' @rdname nimNumeric
 #' @export
 nimInteger <- function(length = 0, value = 0, init = TRUE, fillZeros = TRUE, recycle = TRUE) {
     fillValue <- makeFillValue(value, 'integer', init)
     makeReturnVector(fillValue, length, recycle)
 }
 
-#' Creates an logical vector for use in NIMBLE DSL functions
-#'
-#' In a \code{nimbleFunction}, \code{logical} is identical to \code{nimLogical}
-#'
-#' See the User Manual for usage examples.
-#'
-#' @param length the length of the vector (default = 0)
-#' @param value the initial value for each element of the vector (default = 0L).  Only used if \code{init} is \code{TRUE}.
-#' @param init logical, whether to initialize elements of the vector (default = TRUE).
-#'
-#' @details
-#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{logical} is a synonym for \code{nimLogical}.  When used with only the \code{length} argument, this behaves similarly to R's \code{logical} function.  NIMBLE provides additional arguments to control the initialization value and whether or not initialization will occur.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
-#' 
-#' @author Daniel Turek and Chris Paciorek
-#' @aliases logical
-#' @seealso \code{\link{numeric}} \code{\link{matrix}} \code{\link{array}}
+#' @rdname nimNumeric
 #' @export
 nimLogical <- function(length = 0, value = 0, init = TRUE, fillZeros = TRUE, recycle = TRUE) {
     fillValue <- makeFillValue(value, 'logical', init)
     makeReturnVector(fillValue, length, recycle)
 }
 
-#' Creates a matrix object for use in NIMBLE DSL functions
+#' Creates matrix or array objects for use in nimbleFunctions
 #' 
-#' In a \code{nimbleFunction}, \code{matrix} is identical to \code{nimMatrix}
+#' In a \code{nimbleFunction}, \code{matrix} and \code{array} are identical to \code{nimMatrix} and \code{nimArray}, respectively
 #'
-#' See the User Manual for usage examples.
+#' @aliases nimArray
 #'
-#' @param value the initial value for each element of the matrix (default = 0)
-#' @param nrow the number of rows in the matrix (default = 1)
-#' @param ncol the number of columns in the matrix (default = 1)
-#' @param init logical, whether to initialize elements of the matrix (default = TRUE)
+#' @param value value(s) for initialization (default = 0).  This can be a vector, matrix or array, but it will be used as a vector.
+#' @param nrow the number of rows in a matrix (default = 1)
+#' @param ncol the number of columns in a matrix (default = 1)
+#' @param dim vector of dimension sizes in an array (default = c(1, 1))
+#' @param init logical, whether to initialize values (default = TRUE)
+#' @param fillZeros logical, whether to initialize any elements not filled by (possibly recycled) \code{value} with 0 (or FALSE for \code{nimLogical}) (default = TRUE)
+#' @param recycle logical, whether \code{value} should be recycled to fill the entire contents of the new object (default = TRUE)
 #' @param type character representing the data type, i.e. 'double', 'integer', or 'logical' (default = 'double')
+#' @param nDim number of dimensions in an array.  This is only necessary for \code{compileNimble} if the length of \code{dim} cannot be determined during compilation.
 #'
 #' @details
-#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{matrix} is a synonym for \code{nimMatrix}.  When used with only the first three arguments, this behaves similarly to R's \code{matrix} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
-#' @author Daniel Turek
-#' @aliases matrix
-#' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{array}}
+#' These functions are similar to R's \code{\link{matrix}} and \code{\link{array}} functions, but they can be used in a nimbleFunction and compiled using \code{compileNimble}.  Largely for compilation purposes, finer control is provided over initialization behavior, similarly to \code{\link{nimNumeric}}, \code{\link{nimInteger}}, and \code{\link{nimLogical}}. If \code{init = FALSE}, no initialization will be done, and \code{value}, \code{fillZeros} and \cd{recycle} will be ignored.  If \code{init=TRUE} and \code{recycle=TRUE}, then \code{fillZeros} will be ignored, and \code{value} will be repeated (according to R's recycling rule) as much as necessary to fill the object.  If \code{init=TRUE} and \code{recycle=FALSE}, then if \code{fillZeros=TRUE}, values of 0 (or FALSE for \code{nimLogical}) will be filled in after \code{value}.  Compiled code will be more efficient if unnecessary initialization is not done, but this may or may not be noticeable depending on the situation.
+#'
+#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{matrix} and \code{array} are immediately converted to \code{nimMatrix} and \code{nimArray}, respectively.
+#'
+#' The \code{nDim} argument is only necessary for a use like \code{dim <- c(2, 3, 4); A <- nimArray(0, dim = dim, nDim = 3)}.  It is necessary because the NIMBLE compiler must determine during compilation that \code{A} will be a 3-dimensional numeric array.  However, the compiler doesn't know for sure what the length of \code{dim} will be at run time, only that it is a vector.  On the other hand,   \code{A <- nimArray(0, dim = c(2, 3, 4))} is allowed because the compiler can directly determine that a vector of length three is constructed inline for the dim argument.
+#' 
+#' @author Daniel Turek and Perry de Valpine
+#' @seealso \code{\link{nimNumeric}} \code{\link{nimInteger}} \code{\link{nimLogical}}
 #' @export
 nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, fillZeros = TRUE, recycle = TRUE, type = 'double') {
     ## the -1's are used because nimble does not allow both missingness and default value
@@ -1034,26 +1042,7 @@ nimMatrix <- function(value = 0, nrow = NA, ncol = NA, init = TRUE, fillZeros = 
 }
 
 
-#' Creates a array object of arbitrary dimension for use in NIMBLE DSL functions
-#'
-#' In a \code{nimbleFunction}, \code{array} is identical to \code{nimArray}
-#'
-#' See the User Manual for usage examples.
-#'
-#' @param value the initial value for each element of the array (default = 0)
-#' @param dim a vector specifying the dimensionality and sizes of the array, provided as c(size1, ...) (default = c(1, 1))
-#' @param init logical, whether to initialize elements of the matrix (default = TRUE)
-#' @param type character representing the data type, i.e. 'double', 'integer', or 'logical (default = 'double')
-#' @param nDim number of dimensions
-#'
-#' @details
-#' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{array} is a synonym for \code{nimArray}.  When used with only the first two arguments, this behaves similarly to R's \code{array} function.  NIMBLE provides additional arguments to control the initialization value, whether or not initialization will occur, and the type of scalar elements.  Using \code{init=FALSE} when initialization is not necessary can make compiled nimbleFunctions a bit faster.
-#'
-#' While the number of dimensions (\code{nDim}) would seem obvious based on \code{dim} in R, when used in the NIMBLE DSL, the length of \code{dim} may not be known until run time.
-#' 
-#' @author Daniel Turek
-#' @aliases array
-#' @seealso \code{\link{numeric}} \code{\link{integer}} \code{\link{matrix}}
+#' @rdname nimMatrix
 #' @export
 nimArray <- function(value = 0, dim = c(1, 1), init = TRUE, fillZeros = TRUE, recycle = TRUE, nDim, type = 'double') {
     if(!missing(nDim)) dim <- dim[1:nDim]
