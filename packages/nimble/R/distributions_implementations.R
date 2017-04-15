@@ -56,6 +56,8 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' @param x a symmetric numeric matrix (dobule or integer) whose spectral decomposition is to be computed.
 #' @param only.values if TRUE, only the eigenvalues are computed, otherwise both eigenvalues and eigenvectors are computed; default is \code{FALSE}.
 #'
+#' @aliases eigen
+#'
 #' @author NIMBLE development team
 #'
 #' @export
@@ -102,6 +104,8 @@ nimEigen <- function(x, only.values = FALSE) {
 #' @param vectors character that determines whether to calculate left and right singular vectors.  Can take values \code{'none'}, \code{'thin'} or \code{'full'}.  Defaults to \code{'full'}.  See details.
 #'
 #' @author NIMBLE development team
+#'
+#' @aliases svd
 #'
 #' @export
 #'

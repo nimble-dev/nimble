@@ -194,7 +194,7 @@ getLogProbNodesMV <- nimbleFunction(
 #'
 #' Returns a d-by-d identity matrix (square matrix of 0's, with 1's on the main diagnol).
 #'
-#' This function can be used in the NIMBLE DSL, i.e. in the run function and member methods of nimbleFunctions.
+#' This function can be used in NIMBLE run code.
 #'
 #' @param d The size of the identity matrix to return, will return a d-by-d matrix
 #'

@@ -36,6 +36,8 @@ dimOrLength <- function(obj, scalarize = FALSE) {
 #'
 #' @author NIMBLE development team
 #'
+#' @aliases dim
+#'
 #' @examples
 #' x <- rnorm(4)
 #' dim(x)
