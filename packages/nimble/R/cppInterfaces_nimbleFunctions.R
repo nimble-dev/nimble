@@ -1226,7 +1226,7 @@ CmultiNimbleObjClass <- setRefClass('CmultiNimbleObjClass',
                                                 }
                                             }
                                         },
-                                        memberDataInternal = function(vptr, index, name, value) { ## value can be missing
+                                        memberDataInternal = function(basePtr, index, name, value) { ## value can be missing
                                             ## This isn't very useful as written for many names because it just gets and sets the external pointers.  It doesn't wrap them in an interface objec
                                             ans <- switch(cppCopyTypes[[name]],
                                                           modelVar = {##message('switch modelVar');
@@ -1235,13 +1235,17 @@ CmultiNimbleObjClass <- setRefClass('CmultiNimbleObjClass',
                                                               getSetNimbleFunction(name, value, basePtr, dll = dll)}, ## ditto
                                                           nimbleList ={##message('switch nimbleList');
                                                               valueSymbol <- compiledNodeFun$nimCompProc$getSymbolTable()$getSymbolObject(name)
+                                                              vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
                                                               getSetNimbleList(vptr, value, valueSymbol$nlProc$cppDef, dll = dll)
                                                           }, ## ditto
                                                           nimPtrList = {##message('switch nimPtrList');
                                                               getSetNimPtrList(name, value, basePtr, dll = dll)}, ## ditto
                                                           modelValues = {##message('switch modelValues');
                                                               getSetModelValues(name, value, basePtr, dll = dll)}, ## ditto
-                                                          characterVector = getSetCharacterVector(vptr, name, value, dll = dll),
+                                                          characterVector = {
+                                                              vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+                                                              getSetCharacterVector(vptr, name, value, dll = dll)
+                                                          },
                                                           characterScalar = getSetCharacterScalar(name, value, basePtr, dll = dll),
                                                           numericVector ={##message('switch numericVector');
                                                               getSetNumericVector(name, value, basePtr, dll = dll)},
@@ -1347,8 +1351,8 @@ CmultiNimbleFunctionClass <- setRefClass('CmultiNimbleFunctionClass',
                                                  if(!(name %in% cppNames)) stop(paste0('Name ', name, ' is not a valid member variable in the requested object.', call.=FALSE))
                                                  basePtr <- basePtrList[[index]]
                                                  if(!inherits(basePtr, 'externalptr')) stop('Invalid index or basePtr', call. = FALSE)
-                                                 vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
-                                                 memberDataInternal(vptr, index, name, value)
+                                                 ##vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+                                                 memberDataInternal(basePtr, index, name, value)
                                              }
                                          ))
 
