@@ -6,6 +6,13 @@
 #' These functions can be used in nimbleFunctions and compiled using \code{compileNimble}.
 #' 
 #' @name nimble-R-functions
+#' 
+#' @param ... values to be concatenated.
+#' @param x vector of values to be replicated.
+#' @param from starting value of sequence.
+#' @param to end value of sequence.
+#' @param by increment of the sequence.
+#' @param length.out desired length of the sequence.
 #'
 #' @aliases nimC nimRep nimSeq c rep seq
 #'
@@ -896,7 +903,7 @@ nimCat <- function(...) {
 #' @param recycle logical, whether \code{value} should be recycled to fill the entire \code{length} of the new vector (default = TRUE)
 #'
 #' @details
-#' These functions are similar to R's \code{\link{numeric}}, \code{\link{integer}}, \code{\link{logical}} functions, but they can be used in a nimbleFunction and then compiled using \code{compileNimble}.  Largely for compilation purposes, finer control is provided over initialization behavior.  If \code{init = FALSE}, no initialization will be done, and \code{value}, \code{fillZeros} and \cd{recycle} will be ignored.  If \code{init=TRUE} and \code{recycle=TRUE}, then \code{fillZeros} will be ignored, and \code{value} will be repeated (according to R's recycling rule) as much as necessary to fill a vector of length \code{length}.  If \code{init=TRUE} and \code{recycle=FALSE}, then if \code{fillZeros=TRUE}, values of 0 (or FALSE for \code{nimLogical}) will be filled in after \code{value} up to length \code{length}.  Compiled code will be more efficient if unnecessary initialization is not done, but this may or may not be noticeable depending on the situation.
+#' These functions are similar to R's \code{\link{numeric}}, \code{\link{integer}}, \code{\link{logical}} functions, but they can be used in a nimbleFunction and then compiled using \code{compileNimble}.  Largely for compilation purposes, finer control is provided over initialization behavior.  If \code{init = FALSE}, no initialization will be done, and \code{value}, \code{fillZeros} and \code{recycle} will be ignored.  If \code{init=TRUE} and \code{recycle=TRUE}, then \code{fillZeros} will be ignored, and \code{value} will be repeated (according to R's recycling rule) as much as necessary to fill a vector of length \code{length}.  If \code{init=TRUE} and \code{recycle=FALSE}, then if \code{fillZeros=TRUE}, values of 0 (or FALSE for \code{nimLogical}) will be filled in after \code{value} up to length \code{length}.  Compiled code will be more efficient if unnecessary initialization is not done, but this may or may not be noticeable depending on the situation.
 #' 
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{numeric}, \code{integer} and \code{logical} are immediately converted to \code{nimNumeric}, \code{nimInteger} and \code{nimLogical}, respectively.  
 #' 
@@ -940,7 +947,7 @@ nimLogical <- function(length = 0, value = 0, init = TRUE, fillZeros = TRUE, rec
 #' @param nDim number of dimensions in an array.  This is only necessary for \code{compileNimble} if the length of \code{dim} cannot be determined during compilation.
 #'
 #' @details
-#' These functions are similar to R's \code{\link{matrix}} and \code{\link{array}} functions, but they can be used in a nimbleFunction and compiled using \code{compileNimble}.  Largely for compilation purposes, finer control is provided over initialization behavior, similarly to \code{\link{nimNumeric}}, \code{\link{nimInteger}}, and \code{\link{nimLogical}}. If \code{init = FALSE}, no initialization will be done, and \code{value}, \code{fillZeros} and \cd{recycle} will be ignored.  If \code{init=TRUE} and \code{recycle=TRUE}, then \code{fillZeros} will be ignored, and \code{value} will be repeated (according to R's recycling rule) as much as necessary to fill the object.  If \code{init=TRUE} and \code{recycle=FALSE}, then if \code{fillZeros=TRUE}, values of 0 (or FALSE for \code{nimLogical}) will be filled in after \code{value}.  Compiled code will be more efficient if unnecessary initialization is not done, but this may or may not be noticeable depending on the situation.
+#' These functions are similar to R's \code{\link{matrix}} and \code{\link{array}} functions, but they can be used in a nimbleFunction and compiled using \code{compileNimble}.  Largely for compilation purposes, finer control is provided over initialization behavior, similarly to \code{\link{nimNumeric}}, \code{\link{nimInteger}}, and \code{\link{nimLogical}}. If \code{init = FALSE}, no initialization will be done, and \code{value}, \code{fillZeros} and \code{recycle} will be ignored.  If \code{init=TRUE} and \code{recycle=TRUE}, then \code{fillZeros} will be ignored, and \code{value} will be repeated (according to R's recycling rule) as much as necessary to fill the object.  If \code{init=TRUE} and \code{recycle=FALSE}, then if \code{fillZeros=TRUE}, values of 0 (or FALSE for \code{nimLogical}) will be filled in after \code{value}.  Compiled code will be more efficient if unnecessary initialization is not done, but this may or may not be noticeable depending on the situation.
 #'
 #' When used in a \code{nimbleFunction} (in \code{run} or other member function), \code{matrix} and \code{array} are immediately converted to \code{nimMatrix} and \code{nimArray}, respectively.
 #'
