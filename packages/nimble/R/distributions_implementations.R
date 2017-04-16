@@ -43,9 +43,13 @@ dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
     out <- .Call('C_rwish_chol', cholesky, as.double(df), as.double(scale_param))
-    if(is.null(out)) out <- NaN
-    d <- sqrt(length(cholesky))
-    matrix(out, nrow = d, ncol = d)
+    if(is.null(out)) {
+       out <- NaN
+       if(is.matrix(cholesky)) {
+          out <- matrix(out, nrow = nrow(cholesky), ncol = ncol(cholesky))
+       } else length(out) <- length(cholesky)
+    }
+    return(out)
 }
 
 
@@ -361,7 +365,9 @@ NULL
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-.Call('C_dmnorm_chol', x, mean, cholesky, as.double(prec_param), as.logical(log))
+  out <- .Call('C_dmnorm_chol', x, mean, cholesky, as.double(prec_param), as.logical(log))
+  if(is.null(out)) out <- NaN
+  out
 }
 
 #' @rdname MultivariateNormal
@@ -370,7 +376,10 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
  ## cholesky should be upper triangular
  ## FIXME: allow cholesky to be lower tri
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-    .Call('C_rmnorm_chol', mean, cholesky, as.double(prec_param))
+    out <- .Call('C_rmnorm_chol', mean, cholesky, as.double(prec_param))
+    if(is.null(out))
+      out <- rep(NaN, sqrt(length(cholesky)))
+    return(out)
 }
 
 #' The Multivariate t Distribution
@@ -409,8 +418,10 @@ NULL
 dmvt_chol <- function(x, mu, cholesky, df, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-  .Call('C_dmvt_chol', x, mu, cholesky,
+  out <- .Call('C_dmvt_chol', x, mu, cholesky,
         as.double(df), as.double(prec_param), as.logical(log))
+  if(is.null(out)) out <- NaN
+  return(out)
 }
 
 #' @rdname Multivariate-t
@@ -419,8 +430,11 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
   ## cholesky should be upper triangular
   ## FIXME: allow cholesky to be lower tri
   if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-  .Call('C_rmvt_chol', mu, cholesky,
+  out <- .Call('C_rmvt_chol', mu, cholesky,
         as.double(df), as.double(prec_param))
+    if(is.null(out))
+       out <- rep(NaN, sqrt(length(cholesky)))
+    return(out)
 }
 
 #' Interval calculations 
