@@ -682,7 +682,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 {
   if(!isMatrix(chol) || !isReal(chol))
     RBREAK("Error (C_dmnorm_chol): 'chol' must be a real matrix.\n");
-  if(!isReal(x) || !isReal(mean) 
+  if(!isReal(x) || !isReal(mean))
     RBREAK("Error (C_dmnorm_chol): 'x' and 'mean' should be real valued.\n");
   if(!isReal(prec_param) || !isLogical(return_log))
     RBREAK("Error (C_dmnorm_chol): invalid input type for one of the arguments.\n");
@@ -874,7 +874,7 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
 {
   if(!isMatrix(chol) || !isReal(chol))
     RBREAK("Error (C_dmvt_chol): 'chol' must be a real matrix.\n");
-  if(!isReal(x) || !isReal(mu) 
+  if(!isReal(x) || !isReal(mu))
     RBREAK("Error (C_dmvt_chol): 'x' and 'mu' should be real valued.\n");
   if(!isReal(df) || !isReal(prec_param) || !isLogical(return_log))
     RBREAK("Error (C_dmvt_chol): invalid input type for one of the arguments.\n");
