@@ -33,7 +33,7 @@ NULL
 #' @export
 dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
-    out <- .Call('C_dwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
+    out <- .Call('C_dwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
     if(is.null(out)) out <- NaN
     out
 }
@@ -42,7 +42,7 @@ dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
 #' @export
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
-    out <- .Call('C_rwish_chol', as.double(cholesky), as.double(df), as.double(scale_param))
+    out <- .Call('C_rwish_chol', cholesky, as.double(df), as.double(scale_param))
     if(is.null(out)) out <- NaN
     d <- sqrt(length(cholesky))
     matrix(out, nrow = d, ncol = d)
@@ -361,7 +361,7 @@ NULL
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-  .Call('C_dmnorm_chol', as.double(x), as.double(mean), as.double(cholesky), as.double(prec_param), as.logical(log))
+.Call('C_dmnorm_chol', x, mean, cholesky, as.double(prec_param), as.logical(log))
 }
 
 #' @rdname MultivariateNormal
@@ -370,7 +370,7 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
  ## cholesky should be upper triangular
  ## FIXME: allow cholesky to be lower tri
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-    .Call('C_rmnorm_chol', as.double(mean), as.double(cholesky), as.double(prec_param))
+    .Call('C_rmnorm_chol', mean, cholesky, as.double(prec_param))
 }
 
 #' The Multivariate t Distribution
@@ -409,7 +409,7 @@ NULL
 dmvt_chol <- function(x, mu, cholesky, df, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-  .Call('C_dmvt_chol', as.double(x), as.double(mu), as.double(cholesky),
+  .Call('C_dmvt_chol', x, mu, cholesky,
         as.double(df), as.double(prec_param), as.logical(log))
 }
 
@@ -419,7 +419,7 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
   ## cholesky should be upper triangular
   ## FIXME: allow cholesky to be lower tri
   if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-  .Call('C_rmvt_chol', as.double(mu), as.double(cholesky),
+  .Call('C_rmvt_chol', mu, cholesky,
         as.double(df), as.double(prec_param))
 }
 
@@ -638,9 +638,6 @@ qexp_nimble <- function(p, rate = 1/scale, scale = 1, lower.tail = TRUE, log.p =
 #' @seealso \link{Distributions} for other standard distributions
 #' 
 #' @examples
-#' \dontrun{
-#' if(a<3) print('hi')
-#' }
 #' x <- rinvgamma(50, shape = 1, scale = 3)
 #' dinvgamma(x, shape = 1, scale = 3)
 NULL
