@@ -11,6 +11,9 @@ using std::string;
 
 //using namespace std;
 
+// A utility function that will return floor(x) unless x is within numerical imprecision of an integer, in which case it will return round(x)
+int floorOrEquivalent(double x);
+
 int rFunLength(int Arg);
 int rFunLength(double Arg);
 int rFunLength(bool Arg);

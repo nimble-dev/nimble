@@ -1528,22 +1528,22 @@ sampler_RW_dirichlet <- nimbleFunction(
 #' # mcmcConf$addSampler(target = 'y[1]', type = 'binary')   
 #' 
 #' # mcmcConf$addSampler(target = 'a', type = 'RW',
-#'     control = list(log = TRUE, adaptive = FALSE, scale = 3))
+#' #    control = list(log = TRUE, adaptive = FALSE, scale = 3))
 #' # mcmcConf$addSampler(target = 'b', type = 'RW',
-#'     control = list(adaptive = TRUE, adaptInterval = 200))
+#' #    control = list(adaptive = TRUE, adaptInterval = 200))
 #' # mcmcConf$addSampler(target = 'p', type = 'RW',
-#'     control = list(reflective = TRUE))
+#' #    control = list(reflective = TRUE))
 #'
 #' ## a, b, and c all continuous-valued:
 #' # mcmcConf$addSampler(target = c('a', 'b', 'c'), type = 'RW_block')   
 #' 
 #' # mcmcConf$addSampler(target = 'p', type = 'RW_llFunction',
-#'     control = list(llFunction = RllFun, includesTarget = FALSE))
+#' #    control = list(llFunction = RllFun, includesTarget = FALSE))
 #' 
 #' # mcmcConf$addSampler(target = 'y[1]', type = 'slice',
-#'     control = list(adaptive = FALSE, sliceWidth = 3))
+#' #    control = list(adaptive = FALSE, sliceWidth = 3))
 #' # mcmcConf$addSampler(target = 'y[2]', type = 'slice',
-#'     control = list(adaptive = TRUE, sliceMaxSteps = 1))
+#' #    control = list(adaptive = TRUE, sliceMaxSteps = 1))
 #' 
 #' # mcmcConf$addSampler(target = 'x[1:10]', type = 'ess')   ## x[1:10] ~ dmnorm()
 #' 
