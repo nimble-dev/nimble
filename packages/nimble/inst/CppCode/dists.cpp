@@ -212,11 +212,12 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, i
     cholCopy = chol;
   else {
     cholCopy = new double[p*p];
-    for(i = 0; i < p*p; i++) 
-      cholCopy[i] = chol[i];
+    if(scale_param)
+      for(i = 0; i < p*p; i++) 
+        cholCopy[i] = chol[i];
   }
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
-  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
+  else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
 
   // cp result to Z or chol so can be used as matrix to multiply against and overwrite
   if(scale_param) {
@@ -230,7 +231,7 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, i
   // do crossprod of result
   // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
   if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
-  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, cholCopy, &p, &beta, Z, &p); 
+  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p); 
   if(!overwrite_inputs)
     delete [] cholCopy;
 }

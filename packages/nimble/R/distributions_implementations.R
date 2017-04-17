@@ -33,18 +33,10 @@ NULL
 #' @export
 dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = TRUE is the GCSR parameterization (i.e., scale matrix); scale_param = FALSE is the BUGS parameterization (i.e., rate matrix)
-    if(!is.matrix(x) || !is.matrix(cholesky))
-   	stop("dwish_chol: 'x' and 'cholesky' should be matrices.")
-    if(is.logical(x) || is.integer(x)) {
-        dims <- dim(x)
-        x <- as.double(x)
-        dim(x) <- dims
-    }
-    if(is.logical(cholesky) || is.integer(cholesky)) {
-        dims <- dim(cholesky)
-	cholesky <- as.double(cholesky)
-        dim(cholesky) <- dims
-    }
+    if(storage.mode(cholesky) != 'double')
+          storage.mode(cholesky) <- 'double'
+    if(storage.mode(x) != 'double')
+            storage.mode(x) <- 'double'
     .Call('C_dwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
 }
 
@@ -52,14 +44,11 @@ dwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
 #' @export
 rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
     if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
-    if(!is.matrix(cholesky))
-        stop("rwish_chol: 'cholesky' should be a matrix.")
-    if(is.logical(cholesky) || is.integer(cholesky)) {
-        dims <- dim(cholesky)
-        cholesky <- as.double(cholesky)
-        dim(cholesky) <- dims
-    }
-    .Call('C_rwish_chol', cholesky, as.double(df), as.double(scale_param))
+    if(storage.mode(cholesky) != 'double')
+    	storage.mode(cholesky) <- 'double'
+    out <- .Call('C_rwish_chol', cholesky, as.double(df), as.double(scale_param))
+    if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
+    return(out)
 }
 
 
@@ -375,13 +364,8 @@ NULL
 dmnorm_chol <- function(x, mean, cholesky, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-    if(!is.matrix(cholesky))
-        stop("dmnorm_chol: 'cholesky' should be a matrix.")
-    if(is.logical(cholesky) || is.integer(cholesky)) {
-        dims <- dim(cholesky)
-        cholesky <- as.double(cholesky)
-        dim(cholesky) <- dims
-    }
+    if(storage.mode(cholesky) != 'double')
+         storage.mode(cholesky) <- 'double'
     .Call('C_dmnorm_chol', as.double(x), as.double(mean), cholesky, as.double(prec_param), as.logical(log))
 }
 
@@ -391,13 +375,8 @@ rmnorm_chol <- function(n = 1, mean, cholesky, prec_param = TRUE) {
  ## cholesky should be upper triangular
  ## FIXME: allow cholesky to be lower tri
     if(n != 1) warning('rmnorm_chol only handles n = 1 at the moment')
-    if(!is.matrix(cholesky))
-        stop("rmnorm_chol: 'cholesky' should be a matrix.")
-    if(is.logical(cholesky) || is.integer(cholesky)) {
-        dims <- dim(cholesky)
-        cholesky <- as.double(cholesky)
-        dim(cholesky) <- dims
-    }
+    if(storage.mode(cholesky) != 'double')
+         storage.mode(cholesky) <- 'double'
     .Call('C_rmnorm_chol', as.double(mean), cholesky, as.double(prec_param))
 }
 
@@ -437,13 +416,8 @@ NULL
 dmvt_chol <- function(x, mu, cholesky, df, prec_param = TRUE, log = FALSE) {
   # cholesky should be upper triangular
   # FIXME: allow cholesky to be lower tri
-    if(!is.matrix(cholesky))
-        stop("dmvt_chol: 'cholesky' should be a matrix.")
-    if(is.logical(cholesky) || is.integer(cholesky)) {
-        dims <- dim(cholesky)
-        cholesky <- as.double(cholesky)
-        dim(cholesky) <- dims
-    }
+    if(storage.mode(cholesky) != 'double')
+       storage.mode(cholesky) <- 'double'
     .Call('C_dmvt_chol', as.double(x), as.double(mu), cholesky,
         as.double(df), as.double(prec_param), as.logical(log))
 }
@@ -454,13 +428,8 @@ rmvt_chol <- function(n = 1, mu, cholesky, df, prec_param = TRUE) {
   ## cholesky should be upper triangular
   ## FIXME: allow cholesky to be lower tri
     if(n != 1) warning('rmvt_chol only handles n = 1 at the moment')
-    if(!is.matrix(cholesky))
-        stop("rmvt_chol: 'cholesky' should be a matrix.")
-    if(is.logical(cholesky) || is.integer(cholesky)) {
-        dims <- dim(cholesky)
-        cholesky <- as.double(cholesky)
-        dim(cholesky) <- dims
-    }
+    if(storage.mode(cholesky) != 'double')
+         storage.mode(cholesky) <- 'double'
     .Call('C_rmvt_chol', as.double(mu), cholesky,
         as.double(df), as.double(prec_param))
 }
