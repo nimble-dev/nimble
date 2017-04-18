@@ -365,7 +365,7 @@ nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList,
 #'
 #' @param l object to be tested
 #'
-#' @seealso \link{\code{nimbleList}} for how to create a nimbleList
+#' @seealso \code{\link{nimbleList}} for how to create a nimbleList
 #' @export
 is.nl <- function(l){
   if(inherits(l, 'nimbleListBase')) return(TRUE)
