@@ -51,7 +51,7 @@ samplerConf <- setRefClass(
 #' Given an MCMCconf object, the actual MCMC function can be built by calling \link{buildMCMC}\code{(conf)}.
 #' See documentation below for method initialize() for details of creating an MCMCconf object.
 #' @author Daniel Turek
-#' @seealso \link{configureMCMC}
+#' @seealso \code{\link{configureMCMC}}
 #' @examples
 #' code <- nimbleCode({
 #'  mu ~ dnorm(0, 1)
@@ -156,7 +156,6 @@ print: A logical argument, specifying whether to print the ordered list of defau
             
             nodes <- model$topologicallySortNodes(nodes)   ## topological sort
 
-
             ## set up environment in which to evaluate sampler assignment rule conditions
             ruleEvaluationEnv <- new.env()
             ruleEvaluationEnv$model <- model
@@ -176,9 +175,7 @@ print: A logical argument, specifying whether to print the ordered list of defau
                 }
             }
             
-
-            
-            ##  OLD SAMPLER ASSIGNMENT LOGIC STARTS HERE
+            ## OLD SAMPLER ASSIGNMENT LOGIC
             ##
             ##isEndNode <- model$isEndNode(nodes)
             ##if(useConjugacy) conjugacyResultsAll <- model$checkConjugacy(nodes)
@@ -224,8 +221,6 @@ print: A logical argument, specifying whether to print the ordered list of defau
             ##    ## default: 'RW' sampler
             ##    addSampler(target = node, type = 'RW');     next
             ##}
-            ##  OLD SAMPLER ASSIGNMENT LOGIC ENDS HERE
-
             
             ##if(TRUE) { dynamicConjugateSamplerWrite(); message('don\'t forget to turn off writing dynamic sampler function file!') }
             if(print)   printSamplers()
@@ -591,7 +586,6 @@ Details: See the initialize() function
 )
 
 
-## not exported, don't need to document
 rule <- setRefClass(
     Class = 'rule',
     fields = list(
@@ -614,8 +608,36 @@ rule <- setRefClass(
 )
 
 
-## XXXXXX need to add roxygen documentation for this!!!!!
+
+#' Class \code{samplerAssignmentRules}
+#' @aliases samplerAssignmentRules addRule reorder printRules
 #' @export
+#' @description
+#' Objects of this class specify an ordered set of rules for assigning MCMC sampling algorithms to the stochastic nodes in a BUGS model.
+#' The rules can be modified to alter under what circumstances various samplers are assigned, and with what precedence.
+#' When assigning samplers to each stochastic node, the set of rules is traversed beginning with the first, until a matching rule is found.
+#' When a matching rule is found, the sampler specified by that rule is assigned (or general code for sampler assignment is executed),
+#' and the assignment process proceeds to the next stochastic node.  That is, a maximum of one rule can be invoked for each stochastic node.
+#' If no matching rule is found, an (optional) warning is issued and no sampler is assigned.
+#' Objects of this class may be passed using the \code{rules} argument to \link{configureMCMC} to customize the sampler assignment process.
+#' See documentation below for method \code{initialize()} for details of creating a samplerAssignmentRules object, 
+#' and methods \code{addRule()} and \code{reorder()} for adding and modifying the sampler assignment rules.
+#' The default behaviour of \code{configureMCMC} can be modified by setting the nimble option \'MCMCsamplerAssignmentRules\' to a customized samplerAssignmentRules object.
+#' The default behaviour of \code{configureMCMC} can be restored using \code{nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())}.
+#' @author Daniel Turek
+#' @seealso \code{\link{configureMCMC}}
+#' @examples
+#' my_rules <- samplerAssignmentRules(empty = TRUE)
+#' my_rules$addRule(quote(model$isEndNode(node)), "posterior_predictive")
+#' my_rules$addRule(quote(model$isDiscrete(node)), "my_new_discrete_sampler")
+#' my_rules$addRule(TRUE, "RW")   ## default assignment
+#' my_rules$printRules()
+#' conf <- configureMCMC(Rmodel, rules = my_rules)
+#' conf$printSamplers()
+#' 
+#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)                   ## modify default behaviour of configureMCMC()
+#' 
+#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())   ## reset configureMCMC() to default behaviour
 samplerAssignmentRules <- setRefClass(
     Class = 'samplerAssignmentRules',
     fields = list(
@@ -623,9 +645,18 @@ samplerAssignmentRules <- setRefClass(
         evaluationEnv = 'environment'
     ),
     methods = list(
-        initialize = function(default = TRUE, print = FALSE) {
+        initialize = function(empty = FALSE, print = FALSE) {
+            '
+Creates a new samplerAssignmentRules object, which is a container for an ordered set of rules for MCMC sampler assignments.  Objects of this class may be passed using the \'rules\' argument to configureMCMC(), to customize the process of assigning samplers to stochastic model nodes.  By default, new samplerAssignmentRules objects are initialized having an exact copy of the default sampler assignment rules used by NIMBLE, and can thereafter be modified using the addRule() and reorder() methods.
+
+Arguments:
+
+empty: Logical argument (default = FALSE).  If TRUE, then a new samplerAssignmentRules object is created containing no rules.  The default behaviour creates new objects containing an exact copy of the default sampler assignment rules used by NIMBLE.
+
+print: Logical argument (default = FALSE).  If TRUE, the ordered list of sampler assignment rules is printed.
+'
             ruleList <<- list()
-            if(default) addDefaultSamplerAssignmentRules()
+            if(!empty) addDefaultSamplerAssignmentRules()
             if(print) printRules()
         },
         setEvaluationEnv = function(env) {
@@ -640,12 +671,33 @@ samplerAssignmentRules <- setRefClass(
                                   strsplit(as.character(e), '\n')[[1]][2])
                     stop(msg, call. = FALSE)
                 }
+                if(length(e) == 0) {
+                    msg <- paste0('condition evaluated as length = 0, from sampler assignment rule ', i, ', when node = ', evaluationEnv$node, '\n')
+                    stop(msg, call. = FALSE)
+                }
+                if(length(e) > 1) {
+                    msg <- paste0('condition evaluated as length > 1, from sampler assignment rule ', i, ', when node = ', evaluationEnv$node, '\n')
+                    warning(msg, call. = FALSE)
+                }
                 if(e) return(ruleList[[i]]$getSampler())
                 i <- i+1
             }
             return(NULL)     ## no matching rule found; return NULL
         },
         addRule = function(condition, sampler, position, print = FALSE) {
+            '
+Add a new rule for assigning sampler(s) to the samplerAssignmentRules object.  A rule consists of two parts: (1) a \'condition\' which determines when the rule is invoked, and (2) a \'sampler\' which governs the assignment of sampler(s) when the rule is invoked.  New rules can be inserted at an arbitrary position in the ordered set of rules.
+
+Arguments:
+
+condition: The \'condition\' argument must be a quoted R expression object, which will be evaluated and interpreted as a logical to control whether or not the rule is invoked.  The condition will be evaluated in an environment which contains the BUGS \'model\' object, the \'node\' name to which the rules (and hence the sampler assignment process) are being applied, and other sampler assignment related arguments of configureMCMC() (e.g., \'useConjugacy\' and \'multivariateNodesAsScalars\').  Thus, the condition expression may involve these names, as well as methods of BUGS model objects.  Creating an R expression object will generally use the function quote(...).  For example: addRule(condition = quote(model$isBinary(node)), ...).  Model-specific rules for particular nodes could be specified as: addRule(condition = quote(node == \'x\' || node == \'y\'), ...), or addRule(condition = quote(grepl(\'^sigma\', node)), ...).  Rules for specific distributions can be created as: addRule(condition = quote(model$getDistribution(node) == \'dpois\'), ...).  More complex, multi-line conditions can be specified as: addRule(condition = quote({ expression1;  expression2;  expression3 }), ...), the final expression of which will be evaluated and interpreted as a logical to control rule invocation.  A default, catch-all rule can specified as: addRule(condition = TRUE, ...), which will always be invoked whenever the sampler assignment process reaches this rule, and therefore subsequent rules will never be invoked.
+
+sampler: The \'sampler\' argument controls the sampler assignment process, once a rule is invoked (i.e., the \'condition\' evaluated to TRUE).  The \'sampler\' argument must take one of three different forms: (1) a character string giving the name of an MCMC nimbleFunction sampler, (2) an unspecialized nimbleFunction object which is a valid MCMC sampler, or (3) an arbitrary quoted R expression object, which will be executed to perform the sampler assignment process, and should generally make use of the method addSampler().  Example (1): addRule(..., sampler = \'slice\'), for assigning a \'slice\' sampler when the rule is invoked. Example (2): addRule(..., sampler = my_sampler_nimbleFunction), for assigning the sampling algorithm defined in the object my_sampler_nimbleFunction.  Note the same behaviour will result from: addRule(..., sampler = \'my_sampler_nimbleFunction\'), which will be also more informative when the list of assignment rules is printed.  Example (3): addRule(..., sampler = quote( addSampler(target=node, type=\'RW\', control=list(adaptive=FALSE)) )), for assigning a non-adaptive RW sampler.  Or, perhaps, addRule(..., sampler = quote( { addSampler(target=node, type=\'RW\');  addSampler(target=node, type=\'slice\') } )), for assigning two samplers.  This third option for specifying \'sampler\' as an arbitrary R expression allows for completely general and flexible behaviour of sampler assignment.
+
+position: Index of the position to add the new rule.  By default, new rules are added at the end of the current ordered set of rules (giving it the lowest priority in the sampler assignment process).  Specifying a position inserts the new rule at that position, and does not over-write an existing rule.
+
+print: Logical argument (default = FALSE).  If TRUE, the newly-added sampler assignment rule is printed.
+'
             numRules <- length(ruleList)
             if(missing(position)) position <- numRules + 1  ## default adds new rules at the end
             if(position < 1) stop('cannot add new rules before position = 1')
@@ -656,6 +708,15 @@ samplerAssignmentRules <- setRefClass(
             if(print) printRules(position)
         },
         reorder = function(ind, print = FALSE) {
+            '
+Reorder the current ordered list of sampler assignment rules.  This method can be used to reorder the existing rules, as well as delete one or more rules.
+
+Arguments:
+
+ind: The indices of the current set of rules to keep.  Assuming there are 10 rules, reorder(1:5) will remove the final five rules, reorder(c(10,1:9)) will move the last (lowest priority) rule to the first position (highest priority), and reorder(8) deletes all rules except the eighth, making it the only (and hence first, highest priority) rule.
+
+print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list of sampler assignment rules is printed.
+'
             if(min(ind) < 1) stop('index is below one')
             if(max(ind) > length(ruleList)) stop('index is greater than number of rules')
             ruleList <<- ruleList[ind]
@@ -694,6 +755,13 @@ samplerAssignmentRules <- setRefClass(
             addRule(TRUE, 'RW')
         },
         printRules = function(ind) {
+            '
+Prints the ordered set of sampler assignment rules.
+
+Arguments:
+
+ind: A set of indicies, specifying which sampler assignment rules to print.  If omitted, all rules are printed.
+'
             if(length(ruleList) == 0) {
                 cat('Empty list of sampler assignment rules\n')
                 return()
@@ -712,23 +780,16 @@ samplerAssignmentRules <- setRefClass(
 )
 
 
-## internal to nimble package, default sampler rules,
-## this the default rules object used by configureMCMC()
-defaultSamplerRules <- samplerAssignmentRules()
 
+## set nimbleOption for configureMCMC() to default behaviour
+nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 
-## XXXX this is how users can alter the *default* MCMC behaviour
-## XXXXXX need to document it
-#' @export
-getDefaultSamplerAssignmentRulesObject <- function() {
-    return(defaultSamplerRules)
-}
 
 
 
 #' Build the MCMCconf object for construction of an MCMC object
 #'
-#' Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \link{buildMCMC}. 
+#' Creates a defaut MCMC configuration for a given model.  The resulting object is suitable as an argument to \link{buildMCMC}. The assignment of sampling algorithms may be controlled using the \code{rules} argument, if provided.
 #'
 #'@param model A NIMBLE model object, created from \link{nimbleModel}
 #'@param nodes An optional character vector, specifying the nodes and/or variables for which samplers should be created.
@@ -749,7 +810,7 @@ getDefaultSamplerAssignmentRulesObject <- function() {
 #'@param thin2 The thinning interval for \code{monitors2}.  Default value is one.
 #'@param useConjugacy A logical argument, with default value TRUE.  If specified as FALSE, then no conjugate samplers will be used, even when a node is determined to be in a conjugate relationship.
 #'@param multivariateNodesAsScalars A logical argument, with default value FALSE.  If specified as TRUE, then non-terminal multivariate stochastic nodes will have scalar samplers assigned to each of the scalar components of the multivariate node.  The default value of FALSE results in a single block sampler assigned to the entire multivariate node.  Note, multivariate nodes appearing in conjugate relationships will be assigned the corresponding conjugate sampler (provided \code{useConjugacy == TRUE}), regardless of the value of this argument.
-#'@param rules XXXXXXX
+#'@param rules An object of class samplerAssignmentRules, which governs the assigment of MCMC sampling algorithms to stochastic model nodes.  The default set of sampler assignment rules is specified by the nimble option \'MCMCdefaultSamplerAssignmentRules\'.
 #'@param warnNoSamplerAssigned A logical argument, with default value TRUE.  This specifies whether to issue a warning when no sampler is assigned to a node, meaning there is no matching sampler assignment rule.
 #'@param print A logical argument, specifying whether to print the ordered list of default samplers.
 #'@param autoBlock A logical argument specifying whether to use an automated blocking procedure to determine blocks of model nodes for joint sampling.  If TRUE, an MCMC configuration object will be created and returned corresponding to the results of the automated parameter blocking.  Default value is FALSE.
@@ -758,15 +819,19 @@ getDefaultSamplerAssignmentRulesObject <- function() {
 #'@author Daniel Turek
 #'@export 
 #'@details See \code{MCMCconf} for details on how to manipulate the \code{MCMCconf} object
+#'@seealso \code{\link{samplerAssignmentRules}}, \code{\link{buildMCMC}}
 configureMCMC <- function(model, nodes, control = list(), 
                           monitors, thin = 1, monitors2 = character(), thin2 = 1,
                           useConjugacy = TRUE, onlyRW, onlySlice, multivariateNodesAsScalars = FALSE,
-                          print = FALSE, autoBlock = FALSE, oldConf, rules = NULL,
+                          print = FALSE, autoBlock = FALSE, oldConf,
+                          rules = getNimbleOption('MCMCdefaultSamplerAssignmentRules'),
                           warnNoSamplerAssigned = TRUE, ...) {
 
     if(!missing(onlyRW))    warning('onlyRW argument has been deprecated')
     if(!missing(onlySlice)) warning('onlySlice argument has been deprecated')
     
+    if(class(rules) != 'samplerAssignmentRules') stop('rules argument must be a samplerAssignmentRules object')
+
     if(!missing(oldConf)){
         if(!is(oldConf, 'MCMCconf'))
             stop('oldConf must be an MCMCconf object, as built by the configureMCMC function')
@@ -778,8 +843,6 @@ configureMCMC <- function(model, nodes, control = list(),
     if(missing(monitors))     monitors <- NULL
 
     if(autoBlock) return(autoBlock(model, ...)$conf)
-
-    if(is.null(rules)) rules <- defaultSamplerRules
 
     thisConf <- MCMCconf(model = model, nodes = nodes, control = control, rules = rules,
                          monitors = monitors, thin = thin, monitors2 = monitors2, thin2 = thin2,
@@ -813,7 +876,6 @@ newSpacesFunction <- function(m) {
     log10max <- floor(log10(m))
     function(i) paste0(rep(' ', log10max-floor(log10(i))), collapse = '')
 }
-
 
 
 
