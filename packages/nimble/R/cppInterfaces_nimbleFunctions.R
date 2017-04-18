@@ -330,7 +330,7 @@ getSetNimbleList <- function(vptr, name, value, cppDef, dll) {
     ## from this we can get the castFun and the catToPtrPairFun
     ## When receiving value, we don't need anything more 
     if(missing(value)) {
-        existingExtPtrs <- .Call(getNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll), vptr)
+        existingExtPtrs <- eval(call('.Call', getNativeSymbolInfo(cppDef$ptrCastToPtrPairFun$name, dll), vptr) )
         cppDef$Rgenerator( dll = dll, existingExtPtrs = existingExtPtrs )        
     } else {
         if(is.list(value)) {
@@ -1406,7 +1406,7 @@ CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
                                                  newRobject <- nfObject
                                                  newRobject$.CobjectInterface <- list(.self, length(ptrToPtrList)) ## second element is its index
                                                  RobjectList[[length(RobjectList)+1]] <<- newRobject
-                                                 namedObjectsPtr <- .Call(castFunSymbolInfo, newPtrToPtr)
+                                                 namedObjectsPtr <- eval(call('.Call',castFunSymbolInfo, newPtrToPtr))
                                                  nimble:::copyFromRobject(newRobject, cppNames, cppCopyTypes, namedObjectsPtr, symTab = compiledNodeFun$nimCompProc$getSymbolTable(), dll) #newNamedObjectsPointer was previously newBasePtr, probably really need both for different cases
                                                  list(.self, length(ptrToSmartPtrList)) ## (this object, index)
                                              },
@@ -1419,7 +1419,7 @@ CmultiNimbleListClass <- setRefClass('CmultiNimbleListClass',
                                                  invisible(NULL)
                                              },
                                              getNamedObjectsPtr = function(index) {
-                                                 .Call(castFunSymbolInfo, ptrToPtrList[[index]])
+                                                 eval(call('.Call', castFunSymbolInfo, ptrToPtrList[[index]]))
                                              },
                                              getMemberDataPtr = function(index, name) {
                                                  nimbleInternalFunctions$newObjElementPtr(getNamedObjectsPtr(index), name, dll = dll)

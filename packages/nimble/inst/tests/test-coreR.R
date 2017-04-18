@@ -716,17 +716,13 @@ logicalTests <- list(
          outputType = quote(double(2)))
 )
 
- 
-
-
-
-lapply(cTests, test_coreRfeature)
-lapply(blockTests, test_coreRfeature)
-lapply(repTests, test_coreRfeature)
-lapply(diagTests, test_coreRfeature)
-lapply(recyclingRuleTests, test_coreRfeature)
-lapply(rRecyclingRuleTests, test_coreRfeature)
-lapply(seqTests, test_coreRfeature)
-lapply(nonSeqIndexTests, test_coreRfeature)
-lapply(indexChainTests, test_coreRfeature)
-lapply(logicalTests, test_coreRfeature)
+cTestsResults <- lapply(cTests, test_coreRfeature)
+blockTestsResults <- lapply(blockTests, test_coreRfeature)
+repTestsResults <- lapply(repTests, test_coreRfeature)
+diagTestsResults <- lapply(diagTests, test_coreRfeature)
+recyclingRuleTestsResults <- lapply(recyclingRuleTests, test_coreRfeature)
+rRecyclingRuleTestsResults <- lapply(rRecyclingRuleTests, test_coreRfeature)
+seqTestsResults <- lapply(seqTests, test_coreRfeature)
+nonSeqIndexTestsResults <- lapply(nonSeqIndexTests, test_coreRfeature)
+indexChainTestsResults <- lapply(indexChainTests, test_coreRfeature)
+logicalTestsResults <- lapply(logicalTests, test_coreRfeature)

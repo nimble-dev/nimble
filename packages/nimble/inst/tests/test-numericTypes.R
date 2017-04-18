@@ -263,21 +263,13 @@ binaryMatrixOpTypeTests <- unlist(recursive = FALSE,
 binaryMatrixOpTypeTests <- indexNames(binaryMatrixOpTypeTests)
 
 
-lapply(unaryCwiseTypeTests, test_coreRfeature)
-lapply(binaryCwiseTypeTests, test_coreRfeature)
-lapply(binaryCwiseTypeTestsLogicals, test_coreRfeature)
-lapply(reductionTypeTests, test_coreRfeature)
-lapply(reductionTypeTestsLogical, test_coreRfeature)
-lapply(reductionTypeTestsMatrixSquare[3:4], test_coreRfeature)
-lapply(binaryCwiseTypeTestsMidOps, test_coreRfeature)
-lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
-lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
-
-
-
-lapply(binaryMatrixOpTypeTests, test_coreRfeature)
-
-
-
-
-
+unaryCwiseResults <- lapply(unaryCwiseTypeTests, test_coreRfeature)
+binaryCwiseResults <- lapply(binaryCwiseTypeTests, test_coreRfeature)
+binaryCwiseLogicalResults <- lapply(binaryCwiseTypeTestsLogicals, test_coreRfeature)
+reductionResults <- lapply(reductionTypeTests, test_coreRfeature)
+reductionLogicalResults <- lapply(reductionTypeTestsLogical, test_coreRfeature)
+reductionMatrixSquareResults <- lapply(reductionTypeTestsMatrixSquare[3:4], test_coreRfeature)
+binaryCwiseMidOpsResults <- lapply(binaryCwiseTypeTestsMidOps, test_coreRfeature)
+binaryCwiseInProdResults <- lapply(binaryCwiseTypeTestsInprod, test_coreRfeature)
+binaryCwiseLeftPromoteResults <- lapply(binaryCwiseTypeTestsLeftPromotOps, test_coreRfeature)
+binaryMatrixOpResults <- lapply(binaryMatrixOpTypeTests, test_coreRfeature)
