@@ -166,10 +166,12 @@ print: A logical argument, specifying whether to print the ordered list of defau
 
             for(node in nodes) {
                 ruleEvaluationEnv$node <- node     ## put current node into rule evaluation environment
-                sampler <- rules$chooseSampler()
-                if(!is.null(sampler)) {               ## matching rule was found
+                rule <- rules$selectRuleToInvoke()
+                if(!is.null(rule)) {               ## matching rule was found
+                    sampler <- rule$getSampler()
+                    name <- rule$getName()
                     if(is.call(sampler)) { eval(sampler, envir = ruleEvaluationEnv)
-                                       } else addSampler(target = node, type = sampler)
+                                       } else addSampler(target = node, type = sampler, name = name)
                 } else if(warnNoSamplerAssigned) {    ## no matching rule was found
                     warning(paste0('No matching rule found, and no sampler assigned to node: ', node))
                 }
@@ -287,11 +289,20 @@ Invisibly returns a list of the current sampler configurations, which are sample
                     } else stop(paste0('cannot find sampler type \'', type, '\''))
                 }
             } else if(is.function(type)) {
-                thisSamplerName <- if(nameProvided) name else gsub('^sampler_', '', deparse(substitute(type)))
+                if(nameProvided) {
+                    thisSamplerName <- name
+                } else {
+                    typeArg <- substitute(type)
+                    if(is.name(typeArg)) {
+                        thisSamplerName <- gsub('^sampler_', '', deparse(typeArg))
+                    } else {
+                        thisSamplerName <- 'custom_function'
+                    }
+                }
                 samplerFunction <- type
             } else stop('sampler type must be character name or function')
-            if(!is.character(thisSamplerName)) stop('Sampler name should be a character string')
-            if(!is.function(samplerFunction)) stop('Sampler type does not specify a function')
+            if(!is.character(thisSamplerName)) stop('sampler name should be a character string')
+            if(!is.function(samplerFunction)) stop('sampler type does not specify a function')
 
             libraryTag <- if(nameProvided) namedSamplerLabelMaker() else thisSamplerName   ## unique tag for each 'named' sampler, internal use only
             if(is.null(controlNamesLibrary[[libraryTag]]))   controlNamesLibrary[[libraryTag]] <<- mcmc_findControlListNamesInCode(samplerFunction)   ## populate control names library
@@ -590,17 +601,20 @@ rule <- setRefClass(
     Class = 'rule',
     fields = list(
         condition = 'ANY',
-        sampler = 'ANY'
+        sampler = 'ANY',
+        name = 'character'
     ),
     methods = list(
-        initialize = function(condition, sampler) {
+        initialize = function(condition, sampler, name, nameProvided) {
             condition <<- condition
             sampler <<- sampler      ## must be of class: character, function, or call
+            name <<- name
         },
         getCondition = function()   return(condition),
         getSampler = function()     return(sampler),
+        getName = function()        return(name),
         show = function() {
-            if(is.function(sampler)) sampPrint <- 'custom function' else sampPrint <- sampler    ## ifelse() fails here, seems to be R bug w/ quoted expressions
+            if(is.character(sampler) || is.function(sampler)) sampPrint <- as.name(name) else sampPrint <- sampler    ## ifelse() fails here, seems to be R bug w/ quoted expressions
             cat('condition: ', paste0(deparse(condition),sep='\n'), sep='')
             cat('sampler:   ', paste0(deparse(sampPrint),sep='\n'), sep='')
         }
@@ -627,17 +641,28 @@ rule <- setRefClass(
 #' @author Daniel Turek
 #' @seealso \code{\link{configureMCMC}}
 #' @examples
+#' ## omitting empty=TRUE creates a copy of nimble's default rules
 #' my_rules <- samplerAssignmentRules(empty = TRUE)
+#' 
 #' my_rules$addRule(quote(model$isEndNode(node)), "posterior_predictive")
 #' my_rules$addRule(quote(model$isDiscrete(node)), "my_new_discrete_sampler")
-#' my_rules$addRule(TRUE, "RW")   ## default assignment
+#' my_rules$addRule(TRUE, "RW")   ## default catch-all sampler assignment
+#'
+#' ## print the ordered set of sampler assignment rules
 #' my_rules$printRules()
+#'
+#' ## assign samplers according to my_rules object
 #' conf <- configureMCMC(Rmodel, rules = my_rules)
 #' conf$printSamplers()
+#'
+#' ## view the current (default) assignment rules used by configureMCMC()
+#' nimbleOptions(MCMCdefaultSamplerAssignmentRules)
+#'
+#' ## change default behaviour of configureMCMC() to use my_rules
+#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)
 #' 
-#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = my_rules)                   ## modify default behaviour of configureMCMC()
-#' 
-#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())   ## reset configureMCMC() to default behaviour
+#' ## reset configureMCMC() to use default rules
+#' nimbleOptions(MCMCdefaultSamplerAssignmentRules = samplerAssignmentRules())
 samplerAssignmentRules <- setRefClass(
     Class = 'samplerAssignmentRules',
     fields = list(
@@ -662,7 +687,7 @@ print: Logical argument (default = FALSE).  If TRUE, the ordered list of sampler
         setEvaluationEnv = function(env) {
             evaluationEnv <<- env
         },
-        chooseSampler = function() {
+        selectRuleToInvoke = function() {
             i <- 1
             while(i <= length(ruleList)) {   ## using while() rather than for() to protect against ruleList=list()
                 e <- try(eval(ruleList[[i]]$getCondition(), envir=evaluationEnv), silent=TRUE)
@@ -679,12 +704,12 @@ print: Logical argument (default = FALSE).  If TRUE, the ordered list of sampler
                     msg <- paste0('condition evaluated as length > 1, from sampler assignment rule ', i, ', when node = ', evaluationEnv$node, '\n')
                     warning(msg, call. = FALSE)
                 }
-                if(e) return(ruleList[[i]]$getSampler())
+                if(e) return(ruleList[[i]])
                 i <- i+1
             }
             return(NULL)     ## no matching rule found; return NULL
         },
-        addRule = function(condition, sampler, position, print = FALSE) {
+        addRule = function(condition, sampler, position, name, print = FALSE) {
             '
 Add a new rule for assigning sampler(s) to the samplerAssignmentRules object.  A rule consists of two parts: (1) a \'condition\' which determines when the rule is invoked, and (2) a \'sampler\' which governs the assignment of sampler(s) when the rule is invoked.  New rules can be inserted at an arbitrary position in the ordered set of rules.
 
@@ -696,6 +721,8 @@ sampler: The \'sampler\' argument controls the sampler assignment process, once 
 
 position: Index of the position to add the new rule.  By default, new rules are added at the end of the current ordered set of rules (giving it the lowest priority in the sampler assignment process).  Specifying a position inserts the new rule at that position, and does not over-write an existing rule.
 
+name: Optional character string name for the sampler to be added, which is used by subsequent print methods.  If \'name\' is not provided, the \'sampler\' argument is used to generate the name.  Note, if the \'sampler\' argument is provided as an R expression making use of the addSampler method, then the \'name\' argument will not be passed on to the MCMC configuration object, and instead any call(s) to addSampler can explicitly make use of its own \'name\' argument.
+
 print: Logical argument (default = FALSE).  If TRUE, the newly-added sampler assignment rule is printed.
 '
             numRules <- length(ruleList)
@@ -704,7 +731,18 @@ print: Logical argument (default = FALSE).  If TRUE, the newly-added sampler ass
             if(position > numRules + 1)  stop('position specified is too high')
             if(position < numRules + 1)
                 ruleList[(position+1):(numRules+1)] <<- ruleList[position:numRules]
-            ruleList[[position]] <<- rule(condition, sampler)
+            nameProvided <- !missing(name)
+            if(!nameProvided) {
+                if(is.character(sampler)) {
+                    name <- gsub('^sampler_', '', sampler)   ## removes 'sampler_' from beginning, if present
+                } else if(is.function(sampler)) {
+                    samplerArg <- substitute(sampler)
+                    if(is.name(samplerArg)) {
+                        name <- gsub('^sampler_', '', deparse(samplerArg))
+                    } else { name <- 'custom_function' }
+                } else { name <- 'if this ever is printed, then something went wrong' }  ## sampler argument is a quoted expression, such as quote({ ... })
+            }
+            ruleList[[position]] <<- rule(condition, sampler, name, nameProvided)
             if(print) printRules(position)
         },
         reorder = function(ind, print = FALSE) {
