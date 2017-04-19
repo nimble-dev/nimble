@@ -798,7 +798,7 @@ struct nonseqIndexed_impl {
 
 #define nimNonseqIndexedd nonseqIndexed_impl<MatrixXd>::nonseqIndexed
 #define nimNonseqIndexedi nonseqIndexed_impl<MatrixXi>::nonseqIndexed
-#define nimNonseqIndexedb nonseqIndexed_imple<MatrixXb>::nonseqIndexed
+#define nimNonseqIndexedb nonseqIndexed_impl<MatrixXb>::nonseqIndexed
 
 // get first element or length.  used for lengths of return values of recycling rule r functions needed for sizeExprs
 
