@@ -365,9 +365,20 @@ eigenize_nonSeq <- function(code, symTab, typeEnv, workEnv) {
     if(!is.null(names(code$args)))
         if('drop' %in% names(code$args)) {
             iDropArg <- which(names(code$args)=='drop')
+            dropBool <- code$args[[iDropArg]]
             code$args[[iDropArg]] <- NULL
         }
-    eigenize_nimbleNullaryClass(code, symTab, typeEnv, workEnv)
+    ans <- eigenize_nimbleNullaryClass(code, symTab, typeEnv, workEnv)
+    origCodeCaller <- code$caller
+    origCodeCallerArgID <- code$callerArgID
+    newExpr <- addTransposeIfNeededForNonSeqBlock(code, dropBool)
+    if(!identical(newExpr, code)) {
+        setArg(origCodeCaller, origCodeCallerArgID, newExpr)
+        newExpr$name <- 't' ## this is set to eigTranspose for the other case, but to call the handler it needs to be 't'!
+        ans2 <- eval(call(eigenizeCalls[['t']], newExpr, symTab, typeEnv, workEnv))
+        c(ans2, ans)
+    } else
+        ans
 }
 
 eigenize_eigenBlock <- function(code, symTab, typeEnv, workEnv) {

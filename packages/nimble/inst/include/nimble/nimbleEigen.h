@@ -712,7 +712,7 @@ public:
   template<typename fromType>
   void fill(const fromType &from) {
     Scalar val = nimble_eigen_coeff_impl< bool(nimble_eigen_traits<fromType>::nimbleUseLinearAccess), Scalar, fromType, IndexType >::getCoeff(from, 0);
-    printf("In from\n");
+    //printf("In from\n");
     for(int i = 0 ; i  < totSize; i++) {
       coeffRef(i) = val;
     }
