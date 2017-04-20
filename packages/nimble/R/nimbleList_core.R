@@ -80,14 +80,14 @@ nimbleType <- setRefClass(
 #' @export
 #'
 #' @details
-#' This function creates a definition for a nimbleList.  The \code{types} argument defines the names, types, and dimensions of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g. integer, double) or other nimbleList definitions.   
+#' This function creates a definition for a nimbleList.  The \code{types} argument defines the names, types, and dimensions of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g., \code{integer}, \code{double}) or other nimbleList definitions.   
 #' The \code{types} argument can be either a series of expressions of the form \code{name = type(dim)}, or a list of \link{nimbleType} objects.
 #' 
 #' \code{nimbleList} returns a definition, which can be used to create instances of this type of nimbleList via the \code{new()} member function. 
 #' 
-#' Definitions can be created in \code{R}'s general environment or in \code{nimbleFunction} setup code.  Instances can be created using the \code{new()} function in \code{R}'s global environment, in \code{nimbleFunction} setup code, or in \code{nimbleFunction} run code.  
+#' Definitions can be created in R's general environment or in nimbleFunction setup code.  Instances can be created using the \code{new()} function in R's global environment, in nimbleFunction setup code, or in nimbleFunction run code.  
 #' 
-#' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.
+#' Instances of \code{nimbleList} definitions can be used as arguments to run code of nimbleFunctions, and as the return type of nimbleFunctions.
 #' @examples 
 #'  exampleNimListDef <- nimbleList(x = integer(0), Y = double(2))
 #'  
