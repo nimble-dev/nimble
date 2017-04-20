@@ -55,6 +55,7 @@ test_coreRfeature <- function(input, verbose = TRUE, dirName = NULL) { ## a lot 
             expect_equal(compilerFailed, expectCompilerFailed))
 
   if(compilerFailed) {
+      if(expectCompilerFailed) message('COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.')
       return();
   }
   
