@@ -38,9 +38,7 @@ test cross-machine on Macs and on Windows
 
 can test using rhub:
 
-library(rhub)
-check()
-check_with_sanitizers()
+Rscript -e "library(rhub);check(platform = c('ubuntu-gcc-devel','windows-x86_64-devel','linux-x86_64-rocker-gcc-san','linux-x86_64-centos6-epel','fedora-clang-devel')); check_with_sanitizers()" >> rhub.out
 
 submit to CRAN - potentially making use of notes in CJP's cranSubmit.txt file
 
