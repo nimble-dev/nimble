@@ -1819,10 +1819,20 @@ sizemvAccessBracket <- function(code, symTab, typeEnv) {
 }
 
 sizeIndexingBracket <- function(code, symTab, typeEnv) {
+    ## This is for X[i, j], viewed as `[`(X, i, j), where there may be different numbers of indices, and they may be scalars, sequences defined by `:`, or arbitrary (nonSequence) vectors of integers or logicals.
+    ## X itself could be Y[k, l] (or the result of processing it) or map(Y, k, l), which is created if Y is a model variable and we know we need a map into but at the point it is created there is no processing of how it should be represented, so it is just represented as an abstract map.
+
+    ## recurse into arguments
     asserts <- recurseSetSizes(code, symTab, typeEnv)
+
+    ## Check two special cases
+    ## This is from modelValues:
     if(code$args[[1]]$type == 'symbolVecNimArrPtr') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
+    ## This is deprecated:
     if(code$args[[1]]$type == 'symbolNumericList') return(c(asserts, sizemvAccessBracket(code, symTab, typeEnv)))
 
+    ## Iterate over arguments,  lifting any logical indices into which()
+    ## e.g. X[i, bool] becomes X[i, Interm1], with Interm1 <- which(bool) as an assert.
     for(i in seq_along(code$args)) {
         if(i == 1) next
         if(inherits(code$args[[i]], 'exprClass')) {
@@ -1839,9 +1849,12 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 }
         }
     }
-    
-    nDimVar <- code$args[[1]]$nDim
 
+    ## Collect information about the number of dimensions and value of a drop argument if provided
+
+    ## nDimVar is nDim of X
+    nDimVar <- code$args[[1]]$nDim
+    
     dropBool <- TRUE
     dropArgProvided <- FALSE
     if(!is.null(names(code$args)))
@@ -1849,14 +1862,15 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             dropArgProvided <- TRUE
             iDropArg <- which(names(code$args) == 'drop')
         }
-    if(nDimVar != length(code$args) - 1 - dropArgProvided) {
-        ## only valid case with fewer index arguments than source dimensions is matrix[indices]
+    if(nDimVar != length(code$args) - 1 - dropArgProvided) { ## check if number of indices is correct
+        ## only valid case with fewer index arguments than source dimensions is matrix[indices], where matrix can be treated as a vector
         if(!( (nDimVar == 2) & (length(code$args) - dropArgProvided) == 1)) {
             msg <- paste0('Error, wrong number of indices provided for ', nimDeparse(code),'.')
             stop(exprClassProcessingErrorMsg(code, msg), call. = FALSE)
         }
     }
 
+    ## pick out the drop argument and check if it is logical
     if(dropArgProvided) {
         dropBool <- code$args[[iDropArg]]
         if(!is.logical(dropBool)) {
@@ -1864,35 +1878,47 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             stop(exprClassProcessingErrorMsg(code, msg), call. = FALSE)
         }
     }
+    ## These initial annotations may change later
     code$nDim <- nDimVar
     code$type <- code$args[[1]]$type
+    ## Initialize sizeExprs
     code$sizeExprs <- vector('list', length = nDimVar)
-    ## We could generate asserts here to ensure sub-indexing is within bounds
+    ## (We could generate asserts here to ensure sub-indexing is within bounds)
+
+    ## needMap will become TRUE below unless all indices are scalars
     needMap <- FALSE
+
     ## Track whether if all index ranges are defined by `:` or by scalar
+    ## simpleBlockOK will be TRUE if all index vectors and sequential, defined by `:`
     simpleBlockOK <- TRUE
     iSizes <- 1
+    ## Iternate over dimensions of X and see which dimensions will be dropped from X[i,j,k] due to scalar indices, if drop = TRUE
     for(i in 1:nDimVar) {
         dropThisDim <- FALSE
 
+        ## If the index is numeric, drop this dimension
         if(is.numeric(code$args[[i+1]])) dropThisDim <- TRUE
+        ## If the index is not numeric but it is not a blank and its sizeExprs reveal it is a scalar-equivalent, drop this dimension
         else if((code$args[[i+1]]$name != "") & (length(dropSingleSizes(code$args[[i+1]]$sizeExprs)$sizeExprs) == 0)) dropThisDim <- TRUE
 
-        isExprClass <- inherits(code$args[[i+1]], 'exprClass') ## code$args[[1]] ???
-        
+        ## Is this indices an expression?
+        isExprClass <- inherits(code$args[[i+1]], 'exprClass') ## 
+
         if(dropThisDim) { ## The index is a scalar
-            if(nimbleOptions()$indexDrop & dropBool) {
-                code$sizeExprs[[iSizes]] <- NULL
-                code$nDim <- code$nDim - 1
+            if(nimbleOptions()$indexDrop & dropBool) {  ## And flags allow dropping
+                code$sizeExprs[[iSizes]] <- NULL        ## Remove that sizeExpr element
+                code$nDim <- code$nDim - 1              ## reduce dimensions of result by 1
             } else { 
-                code$sizeExprs[[iSizes]] <- 1; iSizes <- iSizes + 1
+                code$sizeExprs[[iSizes]] <- 1; iSizes <- iSizes + 1  ## If we are not droping dimensions, set sizeExpr to 1
             }
             next
-        } else {
-            if(isExprClass) ## Need to think through cases here more
+        } else {        ## not dropping a dimension, so the index is non-scalar
+            if(isExprClass) ## If it is an expression that is not `:` or blank, then a simple block is not allowed
                 if((code$args[[i+1]]$name != ':') && (code$args[[i+1]]$name != "")) simpleBlockOK <- FALSE
         }
         needMap <- TRUE ## If the "next" in if(dropThisDim) {} is always hit, then needMap will never be set to TRUE
+
+        ## Update sizeExprs
         if(isExprClass) {
             if(code$args[[i+1]]$name != "") {
                 ## An entry that is a variable possibly with a length
@@ -1900,7 +1926,8 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             } else {
                 ## blank entry (e.g. A[,i]) is an exprClass with isName = TRUE and name = ""
                 code$sizeExprs[[iSizes]] <- code$args[[1]]$sizeExprs[[i]]
-                ## also at this point we will fill in a `:` expression for the indices
+                ## also at this point we will fill in a `:` expression for the indices,
+                ## so now we have e.g. A[ 1:dim(A)[1], i ]
                 newIndexExpr <- RparseTree2ExprClasses(substitute(1:N, list(N = code$args[[1]]$sizeExprs[[i]])))
                 setArg(code, i+1, newIndexExpr)
                 useArgs <- rep(FALSE, length(code$args))
@@ -1911,12 +1938,16 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
             next
         }
     }
+
     ## did all dims get dropped?
     if(length(code$sizeExprs)==0) {
         code$sizeExprs <- list() ## it was a named, list.  this creates consistency. maybe unnecessary
         ##needMap will be FALSE if we are in this clause
-        if(!code$args[[1]]$isName)
-            if(!(code$args[[1]]$name %in% operatorsAllowedBeforeIndexBracketsWithoutLifting)) {## 'mvAccessRow'){
+
+        ## We need to check whether X is an expression that needs to be lifted, say (A + B)[2, 3]
+        ## We could do better for these cases 
+        if(!code$args[[1]]$isName) ## It's not a name
+            if(!(code$args[[1]]$name %in% operatorsAllowedBeforeIndexBracketsWithoutLifting)) {## e.g. 'mvAccessRow'
                 ## At this point we have decided to lift, and the next two if()s determine if that is weird due to being on LHS of assignment
                 if(code$caller$name %in% assignmentOperators)
                     if(code$callerArgID == 1)
@@ -1931,26 +1962,22 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
         ## e.g. (A + B)[1:4] must become (Interm <- A + B; Interm[1:4])
         ## Now we only need to lift it if the map will not be impemented via eigenBlock
 
-        ## Or maybe we never need to
-        ## liftArg <- FALSE
-        ## mappingViaEigenBlock <- simpleBlockOK && code$args[[1]]$nDim <= 2
-        ## if(!code$args[[1]]$isName)                   ## In X[I], X is an expression, not just a name
-        ##     if(!mappingViaEigenBlock) {              ## Handling of `[` will NOT be via .block() in Eigen
-        ##         if(code$args[[1]]$name != 'map')     ## Lift unless it is already a map, which can be compounded
-        ##             liftArg <- TRUE
-        ##     }
-        ## if(liftArg) asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-
         ## for nested blocking, we have (nonseq | eigenBlock | map) x (nonseq | eigenBlock | map)
         ##      [ coeffSetter is a version of nonseq ]
+        ## where nonseq means non-sequential indices, eigenBlock means sequential indices, and map means a model or modelValues variable marked abstractly for a map
+        
         ## (map) x (eigenBlock | map) is already handled
         ## (map) x (nonseq)           is already handled
         ## (eigenBlock) x (eigenBlock) is already handled
         ## 
         ## check whether to nest the indexing directly
 
-
+        ## nestIndexing TRUE means we will convert X[i, j][k, l] into X[ i[k], j[l] ] (while we are working on `[`(X[i, j], k, l)
+        ## We do this for nested indexing except (eigenBlock) x (eigenBlock), which means all indices are sequential
+        ## Then we just generate .block(..).block(..)
         nestIndexing <- FALSE
+
+        ## code$args[[1]] is the X[i, j]
         if(!code$args[[1]]$isName) { ## In X[i], X is an expression
             ## X is an indexing expression of some kind (other than a map, which is already a new object)
             ## It can't be coeffSetter at this point in processing flow, because the nestedness implies its caller was not <-
@@ -1960,37 +1987,55 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     nestIndexing <- TRUE
             }
         }
-        
+
+        ## implement nestIndexing
         if(nestIndexing) {
+            ## We have something like `[`( eigenBlock(X, i, j), k, l) or `[`( nimNonseqIndexedd(X, i, j), k, l)
+            ## We will gradually take over the first argument to construct something that will end up like nimNonseqIndexedd(X, nimNonseqIndexedi(i, k), nimNonseqIndexedi(j, l))
+            
+            ## The first one was an eigenBlock (all sequential integer indices defined by `:` or blank imputed with `:`)
             if(code$args[[1]]$name == 'eigenBlock') {
+                ## We have `[`( eigenBlock(X, i, j), k, l)
+                ##
                 ## reach down to X and rename it
                 ## put `:`(start, finish) back together.
+                ##
+                ## If we are in  `[`( eigenBlock(X, i, j), k, l) <- Z,
+                ## convert to  `[`( coeffSetter(X, i, j), k, l) <- Z,
                 if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
                     code$args[[1]]$name <- 'coeffSetter'
                 } else {
+                    ## otherwise, convert  `[`( eigenBlock(X, i, j), k, l) to `[`( nimNonseqIndexedd(X, i, j), k, l), e.g.
                     if(code$type == 'double') code$args[[1]]$name <- 'nimNonseqIndexedd'
                     if(code$type == 'integer') code$args[[1]]$name <- 'nimNonseqIndexedi'
                     if(code$type == 'logical') code$args[[1]]$name <- 'nimNonseqIndexedb'
                 }
-            } else {
+            } else { ## The first one was a nonSeq
                 ## it was already nonseq, but it might need to become coeffSetter
+                ## If we are in `[`( nimNonseqIndexedd(X, i, j), k, l) <- Z,
+                ## convert to `[`( coeffSetter(X, i, j), k, l) <- Z,
                 if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
                     code$args[[1]]$name <- 'coeffSetter'
                 }
             }
+            ## Now construct the nesting i[k], j[l], etc.
             nestedNinds <- length(code$args[[1]]$args)-1
             nestedNdim <- code$args[[1]]$nDim
             nestedDropBool <- TRUE
             nestedDropArgProvided <- FALSE
-            if(!is.null(names(code$args[[1]]$args)))
-                if("drop" %in% names(code$args[[1]]$args)) {
+            if(!is.null(names(code$args[[1]]$args))) ## does nimNonseqIndexedd(X, i, j) or coeffSetter(X, i, j) have named arguments?
+                if("drop" %in% names(code$args[[1]]$args)) { ## is drop among the names?
                     nestedDropArgProvided <- TRUE
                     nestedDropBool <- code$args[[1]]$args[[ which(names(code$args[[1]]$args) == 'drop') ]]
                     nestedNinds <- nestedNinds - 1
                 }
             nestedBlockBool <- rep(TRUE, nestedNinds)    ## is it preserved as a block (can still be scalar if nestedDropBool is FALSE)
             nestedScalarIndex <- rep(FALSE, nestedNinds) 
-            
+
+            ## Of the indices of nimNonseqIndexedd(X, i, j) or coeffSetter(X, i, j)
+            ## which are scalars, and which are blocks
+            ## If we have  nimNonseqIndexedd(X, i, j, drop = FALSE) or coeffSetter(X, i, j, drop = FALSE),
+            ##    then we treat all dimensions as blocks, even if scalar indices
             for(iInd in 1:nestedNinds) {
                 if(is(code$args[[1]]$args[[iInd+1]], 'exprClass'))  {
                     if(code$args[[1]]$args[[iInd+1]]$nDim == 0) {
@@ -2002,22 +2047,29 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     if(nestedDropBool) nestedBlockBool[iInd] <- FALSE
                 }
             }
-            
+
+            ## Re-annotate first arg
             code$args[[1]]$sizeExprs <- code$sizeExprs
             code$args[[1]]$nDim <- code$nDim
             code$args[[1]]$type <- code$type
             numIndices <- length(code$args) - 1 - dropArgProvided
+
+            ## Do we need to set drop carefully?
             
             ## NEED TO SKIP SCALARS IF dropBool = TRUE for nested case.
             nestedInds <- which(nestedBlockBool)
             if(length(nestedInds) != numIndices) stop(exprClassProcessingErrorMsg(code, 'Wrong number of nested indices.'), call.=FALSE)
+            ## iterate over indices, constructing i[j] if necessary
             for(iInd in 1:numIndices) {
                 nestedIind <- nestedInds[iInd]
                 nestedIndexIsScalar <- if(inherits(code$args[[1]]$args[[nestedIind + 1]], 'exprClass')) code$args[[1]]$args[[nestedIind + 1]]$nDim == 0 else TRUE
                 if(nestedIndexIsScalar) {
+                    ## check:
+                    ## In X[i, j][k, l], if i is scalar, k should also be scalar (can't check its value now, but should be 1 at run-time)
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
                     if(!indexIsScalar) warning("There is nested indexing with drop=FALSE where an index must be scalar but isn't")
                 } else {
+                    ## construct i[k], which is really nimNonseqIndexedi(i, k)
                     newExpr <- exprClass(name = 'nimNonseqIndexedi', isName = FALSE, isCall = TRUE, isAssign = FALSE)
                     newExpr$type <- 'integer'
                     indexIsScalar <- if(inherits(code$args[[iInd+1]], 'exprClass')) code$args[[iInd+1]]$nDim == 0 else TRUE
@@ -2031,32 +2083,46 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                     setArg(code$args[[1]], nestedIind + 1, newExpr)
                 }
             }
+            ## The only remaining use of a drop argument is during eigenization to determine if 1xn needs a transpose to become nx1
+            ## For that purpose, the drop arg of X[ i[k], j[l] ] should be from the outer part of `[`(X[i, j, drop = TRUE|FALSE], k, l, drop = [TRUE|FALSE]), not from the X[i,j]
+            code$args[[1]]$args[['drop']] <- if(dropArgProvided) dropBool else TRUE
+            
+            ## clear remaining indices
+            ## i.e. turn `[`( nimNonseqIndexedd(X, nimNonseqIndexedi(i, k), nimNonseqIndexedi(j, l)), k, l)
+            ## into `[`( nimNonseqIndexedd(X, nimNonseqIndexedi(i, k), nimNonseqIndexedi(j, l)))
             code$args[1+(1:numIndices)] <- NULL
             codeCaller <- code$caller
             codeCallerArgID <- code$callerArgID
+            ## remove the `[` layer of the current processing
+            ## i.e. turn `[`( nimNonseqIndexedd(X, nimNonseqIndexedi(i, k), nimNonseqIndexedi(j, l))) into
+            ## imNonseqIndexedd(X, nimNonseqIndexedi(i, k), nimNonseqIndexedi(j, l))
             removeExprClassLayer(code)
             code <- codeCaller$args[[codeCallerArgID]]
             return(if(length(asserts)==0) NULL else asserts)
         }
-        
+
+        ## Now we are in the case where there is no nested indexing, or if there is X[i, j][k, l], it can be chained eigen blocks
         ## Replace with a map expression if needed
         if(!simpleBlockOK) {
             if(typeEnv$.ensureNimbleBlocks) {
                 stop(exprClassProcessingErrorMsg(code, "LHS indexing for a multivariate random draw can only use sequential blocks (via ':')."), call. = FALSE)
             }
-            ##   if(nDimVar != length(code$args) - 1) code$args[[length(code$args)]] <- NULL 
+            ## If this is part of X[i, j] <- Z, convert to coeffSetter(X, i, j) <- Z
             if(code$caller$name %in% assignmentOperators & code$callerArgID == 1) {
                 code$name <- 'coeffSetter'
             } else {
+                ## otherwise convert `[`(X, i, j) to e.g. nimNonseqIndexedd(X, i, j)
                 if(code$type == 'double') code$name <- 'nimNonseqIndexedd' ## this change could get moved to genCpp_generateCpp 
                 if(code$type == 'integer') code$name <- 'nimNonseqIndexedi'
                 if(code$type == 'logical') code$name <- 'nimNonseqIndexedb'
             }
+            ## If we have nimNonseqIndexedd(X, i), make it nimNonseqIndexedd(X, i, 1) for Eigen
             if(length(code$args) - 1 - dropArgProvided == 1) ## only 1 index
-                code$args[[3]] <- 1 ## fill in extra 1 for a second dimension
+                code$args[[3]] <- 1 ## fill in extra 1 for a second dimension.  ## should the index depend on dropArgProvided?
         }
-        else {
+        else { ## a simpleBlock is ok
             if(code$args[[1]]$nDim > 2 | typeEnv$.ensureNimbleBlocks) { ## old-style blocking from >2D down to 2D or 1D, or this is LHS for something like rmnorm, requiring a non-eigen map on LHS.
+                ## We have X[i, j, k] where X has dimension > 2
                 if(dropArgProvided) code$args[[iDropArg]] <- NULL
                 newExpr <- makeMapExprFromBrackets(code, dropBool)
                 newExpr$sizeExprs <- code$sizeExprs
@@ -2066,16 +2132,10 @@ sizeIndexingBracket <- function(code, symTab, typeEnv) {
                 setArg(code$caller, code$callerArgID, newExpr)
             }
             else { ## blocking via Eigen
-                ## newExpr <- makeEigenBlockExprFromBrackets(code, dropBool) ## at this point it is ok that code exprClass is messed up (first arg re-used in newExpr)
-                ## newExpr$sizeExprs <- code$sizeExprs
-                ## newExpr$type <- code$type
-                ## newExpr$nDim <- code$nDim
-                ## newExpr$toEigenize <- 'yes'
                 ## ## note that any expressions like sum(A) in 1:sum(A) should have already been lifted
                 code$name <- 'eigenBlock'
                 code$toEigenize <- 'yes'
             }
-            ##setArg(code$caller, code$callerArgID, newExpr)
         }
     }
     if(length(asserts)==0) NULL else asserts
