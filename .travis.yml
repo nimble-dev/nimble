@@ -32,6 +32,7 @@ script:
   - Rscript packages/nimble/inst/tests/test-declare.R
   - Rscript packages/nimble/inst/tests/test-distributions.R
   - Rscript packages/nimble/inst/tests/test-dsl_dists.R
+  - Rscript packages/nimble/inst/tests/test-errors.R
   - Rscript packages/nimble/inst/tests/test-filtering.R
   - Rscript packages/nimble/inst/tests/test-getBound.R
   - Rscript packages/nimble/inst/tests/test-getDependencies.R
