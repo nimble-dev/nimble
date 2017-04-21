@@ -392,16 +392,7 @@ seqTests <- list(
          setArgVals = quote({}), outputType = quote(double(1))),
     list(name = "seq(.1, 10, length.out = 11) in expression", expr = quote(out <- log(seq(.1, 10, length.out = 11)) + 2 + rep(1, 11)), args = list(),
          setArgVals = quote({}), outputType = quote(double(1)))
-
-    ## need to handle this case
-##    list(name = "seq(.1, 10, by = .1)", expr = quote(out <- seq(.1, by = 0.1, length.out = 11)), args = list(),
-##         setArgVals = quote({}), outputType = quote(double(1)))
-    ## need to handle decreasing colon sequenences
 )
-## STATUS: need to handle by and length.out case.
-## need to handle decreasing colon sequences
-## need to cast from integer to double.  
-
 
 nonSeqIndexTests <- list(
     ##1
@@ -725,17 +716,13 @@ logicalTests <- list(
          outputType = quote(double(2)))
 )
 
- 
-
-
-
-lapply(cTests, test_coreRfeature)
-lapply(blockTests, test_coreRfeature)
-lapply(repTests, test_coreRfeature)
-lapply(diagTests, test_coreRfeature)
-lapply(recyclingRuleTests, test_coreRfeature)
-lapply(rRecyclingRuleTests, test_coreRfeature)
-lapply(seqTests, test_coreRfeature)
-lapply(nonSeqIndexTests, test_coreRfeature)
-lapply(indexChainTests, test_coreRfeature)
-lapply(logicalTests, test_coreRfeature)
+cTestsResults <- lapply(cTests, test_coreRfeature)
+blockTestsResults <- lapply(blockTests, test_coreRfeature)
+repTestsResults <- lapply(repTests, test_coreRfeature)
+diagTestsResults <- lapply(diagTests, test_coreRfeature)
+recyclingRuleTestsResults <- lapply(recyclingRuleTests, test_coreRfeature)
+rRecyclingRuleTestsResults <- lapply(rRecyclingRuleTests, test_coreRfeature)
+seqTestsResults <- lapply(seqTests, test_coreRfeature)
+nonSeqIndexTestsResults <- lapply(nonSeqIndexTests, test_coreRfeature)
+indexChainTestsResults <- lapply(indexChainTests, test_coreRfeature)
+logicalTestsResults <- lapply(logicalTests, test_coreRfeature)

@@ -49,8 +49,6 @@ nimbleListBase <- setRefClass(Class = 'nimbleListBase',
 #' nimbleTypeList[[1]] <- nimbleType(name = 'x', type = 'integer', dim = 0)
 #' nimbleTypeList[[2]] <- nimbleType(name = 'Y', type = 'double', dim = 2)
 #'
-
-
 nimbleType <- setRefClass(
   Class = 'nimbleType',
   fields = c('name', 'type', 'dim'),
@@ -72,26 +70,24 @@ nimbleType <- setRefClass(
 #'
 #' create a nimbleList from a nimbleList definition 
 #'
-#' @param types objects defining the names, types, and dimensions of the nimbleList elements.  
-#' @param name An optional name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
-#' @param where An optional \code{where} argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
+#' @param ... arbitrary set of names and types for the elements of the list or a single R list of type \code{nimbleType}.
+#' @param name optional character providing a name used internally, for example in generated C++ code.  Usually this is left blank and NIMBLE provides a name.
+#' @param predefined logical for internal use only.
+#' @param where optional argument passed to \code{setRefClass} for where the reference class definition generated for this nimbleFunction will be stored.  This is needed due to R package namespace issues but should never need to be provided by a user.
 #'
 #' @author NIMBLE development team
 #'
 #' @export
 #'
 #' @details
-#' This function creates a definition for a nimbleList.  The \code{types} argument defines the names, types, and dimensions of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g. integer, double) or other nimbleList definitions.   
+#' This function creates a definition for a nimbleList.  The \code{types} argument defines the names, types, and dimensions of the elements of the nimbleList.  Elements of nimbleLists can be either basic types (e.g., \code{integer}, \code{double}) or other nimbleList definitions.   
 #' The \code{types} argument can be either a series of expressions of the form \code{name = type(dim)}, or a list of \link{nimbleType} objects.
 #' 
 #' \code{nimbleList} returns a definition, which can be used to create instances of this type of nimbleList via the \code{new()} member function. 
 #' 
-#' Definitions can be created in \code{R}'s general environment or in \code{nimbleFunction} setup code.  Instances can be created using the \code{new()} function in \code{R}'s global environment, in \code{nimbleFunction} setup code, or in \code{nimbleFunction} run code.  
+#' Definitions can be created in R's general environment or in nimbleFunction setup code.  Instances can be created using the \code{new()} function in R's global environment, in nimbleFunction setup code, or in nimbleFunction run code.  
 #' 
-#' Instances of \code{nimbleList} definitions can be used as arguments to run code of \code{nimbleFunction}s, and as the return type of \code{nimbleFunction}s.
-#' 
-#' See the NIMBLE User Manual for additional examples.
-#' 
+#' Instances of \code{nimbleList} definitions can be used as arguments to run code of nimbleFunctions, and as the return type of nimbleFunctions.
 #' @examples 
 #'  exampleNimListDef <- nimbleList(x = integer(0), Y = double(2))
 #'  
@@ -100,8 +96,6 @@ nimbleType <- setRefClass(
 #'  
 #'  ## this nimbleList definition is identical to the one created above
 #'  exampleNimListDef <- nimbleList(nimbleListTypes)
-
-
 nimbleList <- function(...,
                        name = NA,
                        predefined = FALSE,
@@ -168,40 +162,40 @@ nimbleList <- function(...,
       fields = classFields,
       contains = 'nimbleListBase',
       methods = list(
-        initialize = function(NLDEFCLASSOBJECT, NESTEDGENLIST, ...){
-          nimbleListDef <<- NLDEFCLASSOBJECT
-          nestedListGenList <<- NESTEDGENLIST
-          for(i in seq_along(nestedListGenList)){
-            .self[[names(nestedListGenList)[i]]] <- nestedListGenList[[i]]$new()
-          }
+        initialize = function(...){
+          callSuper(...)
           nimListFields <- nimbleListDef$types$vars
           initializeFields <- list(...)
-          nonInitializeFields <- which(!(nimListFields %in% c(names(nestedListGenList), names(initializeFields))))
+          nonInitializeFields <- which(!(nimListFields %in% names(initializeFields)))
           ## initialize uninitialized fields
           for(i in nonInitializeFields){
             thisType <- nimbleListDef$types$types[i]
             thisDim <-  nimbleListDef$types$dims[i]
             if(thisType == 'character'){
-              .self[[nimListFields[i]]] <- ""
+              initValue  <- ""
             }
             else if(thisType %in% c('integer', 'double')){
               if(thisDim == 0)
-                .self[[nimListFields[i]]] <- 0
+                initValue <- 0
               if(thisDim == 1)
-                .self[[nimListFields[i]]] <- integer(0)
+                initValue <- integer(0)
               if(thisDim == 2)
-                .self[[nimListFields[i]]] <- matrix(0, 0, 0)
+                initValue <- matrix(0, 0, 0)
               if(thisDim > 2)
-                .self[[nimListFields[i]]] <- array(0, dim = rep(0, thisDim))
+                initValue <- array(0, dim = rep(0, thisDim))
             }
             else if(thisType == 'logical'){
-              .self[[nimListFields[i]]] <- FALSE
+              initValue <- FALSE
             }
-          }     
-          callSuper(...)
+            else if(nimListFields[i] %in% names(nestedListGenList)){
+              initValue <- nestedListGenList[[nimListFields[i]]]$new()
+            }
+            else(stop(paste("unrecognized type given for nimbleList element", nimListFields[i])))
+            eval(substitute(.self[[nimListFields[i]]] <<-initValue))
+          }   
         },
         show = function(){
-          cat("nimbleList object of type ", .self$nimbleListDef$className, 
+          cat("nimbleList object of type ", nimbleListDef$className, 
               "\n", sep = "")
           nimListPrintFields <- nimbleListDef$types$vars
           for(fieldName in nimListPrintFields){
@@ -212,12 +206,10 @@ nimbleList <- function(...,
       ),
       where = where
     )
-
-    nlGeneratorFunction <-   eval(  substitute(
-      function(...){
-      return(nlRefClass(NLDEFCLASSOBJECT, NESTEDGENLIST, ..., .generatorFunction = nlGeneratorFunction))},
-      list(NLDEFCLASSOBJECT = nlDefClassObject,
-           NESTEDGENLIST = nestedListGens)))
+    
+    nlGeneratorFunction <- function(...){
+        return(nlRefClass(nimbleListDef = nlDefClassObject, nestedListGenList = nestedListGens, .generatorFunction = nlGeneratorFunction,
+                          ...))}
     nlGenerator <- list(new = nlGeneratorFunction)
     return(nlGenerator)
 }
@@ -330,11 +322,35 @@ nlProcessing <- setRefClass('nlProcessing',
 ## Below are nimbleList definitions for predefined nimbleLists in nimble
 ## Note that currently, any nimbleList definition that has "predefined = TRUE" must have existing c++ code that defines
 ## the c++ class.
+
+
+#' eigenNimbleList definition
+#' 
+#' \code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimEigen}}.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#'
+#' @seealso  \code{\link{nimEigen}} 
+
 eigenNimbleList <- nimbleList(list(nimbleType('values', 'double', 1),
                                    nimbleType('vectors', 'double', 2)), name = "EIGEN_EIGENCLASS", predefined = TRUE)
+
+
+#' svdNimbleList definition
+#' 
+#' \code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimSvd}}.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#' 
+#' @seealso  \code{\link{nimSvd}} 
+
 svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
-                                                    nimbleType('u', 'double', 2),
-                                                    nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
+                                  nimbleType('u', 'double', 2),
+                                  nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
 
 
 ## any DSL functions that return nimbleLists should be added to the list below, in the form:
@@ -343,8 +359,16 @@ nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList,
                                         nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"))
 
 
-is.nl <- function(f){
-  if(inherits(f, 'nimbleListBase')) return(TRUE)
+#' check if a nimbleList
+#'
+#' Checks an object to determine if it is a nimbleList (i.e., a list created by \code{nlDef$new()}).
+#'
+#' @param l object to be tested
+#'
+#' @seealso \code{\link{nimbleList}} for how to create a nimbleList
+#' @export
+is.nl <- function(l){
+  if(inherits(l, 'nimbleListBase')) return(TRUE)
   return(FALSE)
 }
 
@@ -372,3 +396,12 @@ nl.getNestedGens <- function(nlGen) {
 nl.getListDef <- function(nlGen) {
     environment(nlGen$new)$nlDefClassObject
 }
+
+## makeNewNimListSEXPRESSIONFromC is added to nimbleInternalFunctions and called from c++ function makeNewNimbleList
+## nimbleUerNamespace$nimListGens is populated in buildRwrapperFunCode method of RCfunctionDef ref class
+makeNewNimListSEXPRESSIONFromC <- function(name){
+  returnList <- nimbleUserNamespace$nimListGens[[name]]$new()
+  return(returnList)
+}
+
+

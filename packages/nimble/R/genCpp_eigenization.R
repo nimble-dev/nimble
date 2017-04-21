@@ -365,9 +365,20 @@ eigenize_nonSeq <- function(code, symTab, typeEnv, workEnv) {
     if(!is.null(names(code$args)))
         if('drop' %in% names(code$args)) {
             iDropArg <- which(names(code$args)=='drop')
+            dropBool <- code$args[[iDropArg]]
             code$args[[iDropArg]] <- NULL
         }
-    eigenize_nimbleNullaryClass(code, symTab, typeEnv, workEnv)
+    ans <- eigenize_nimbleNullaryClass(code, symTab, typeEnv, workEnv)
+    origCodeCaller <- code$caller
+    origCodeCallerArgID <- code$callerArgID
+    newExpr <- addTransposeIfNeededForNonSeqBlock(code, dropBool)
+    if(!identical(newExpr, code)) {
+        setArg(origCodeCaller, origCodeCallerArgID, newExpr)
+        newExpr$name <- 't' ## this is set to eigTranspose for the other case, but to call the handler it needs to be 't'!
+        ans2 <- eval(call(eigenizeCalls[['t']], newExpr, symTab, typeEnv, workEnv))
+        c(ans2, ans)
+    } else
+        ans
 }
 
 eigenize_eigenBlock <- function(code, symTab, typeEnv, workEnv) {
@@ -699,7 +710,7 @@ eigenize_nfVar <- function(code, symTab, typeEnv, workEnv) { ## A lot like eigen
     targetTypeSizeExprs <- code$sizeExprs
 
     if(length(targetTypeSizeExprs) > 2) {
-        stop(exprClassProcessingErrorMsg(code, 'Cannot eigenize a map of dimensions > 2.'), call. = FALSE)
+        stop(exprClassProcessingErrorMsg(code, 'Cannot do math with arrays that have more than 2 dimensions.'), call. = FALSE)
     }
     if(length(targetTypeSizeExprs) == 2) {
         nrowExpr <- targetTypeSizeExprs[[1]]
@@ -806,7 +817,7 @@ eigenizeName <- function(code, symTab, typeEnv, workEnv) {
     if(!identical(targetSym$name, code$name)) { writeLines('found a case where !identical(targetSym$name, code$name)'); browser() }
     targetTypeSizeExprs <- code$sizeExprs
 
-    if(length(targetTypeSizeExprs) > 2) {stop(exprClassProcessingErrorMsg(code, 'Cannot eigenize a map of dimensions > 2.'), call. = FALSE)}
+    if(length(targetTypeSizeExprs) > 2) {stop(exprClassProcessingErrorMsg(code, 'Cannot do math with arrays that have more than 2 dimensions.'), call. = FALSE)}
     if(length(targetTypeSizeExprs) == 2) {
         nrowExpr <- targetTypeSizeExprs[[1]]
         ncolExpr <- targetTypeSizeExprs[[2]]

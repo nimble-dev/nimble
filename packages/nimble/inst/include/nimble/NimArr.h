@@ -191,6 +191,11 @@ public:
     if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
+  void initialize(T value, bool init, bool fillZeros, bool recycle, int is1) {
+    setSize(is1, false, false);
+    if(init) { NimArrBase<T>::fillAllValues(value, fillZeros, recycle); }
+  }
+  
   void setSize(int is1, bool copyValues = true, bool fillZeros = true) {
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAstrides[0] = NimArrBase<T>::stride1 = 1;
@@ -427,6 +432,11 @@ public:
     if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
+  void initialize(T value, bool init, bool fillZeros, bool recycle, int is1, int is2) {
+    setSize(is1, is2, false, false);
+    if(init) { NimArrBase<T>::fillAllValues(value, fillZeros, recycle); }
+  }
+  
   void setSize(int is1, int is2, bool copyValues = true, bool fillZeros = true) {
       NimArrBase<T>::NAdims[0] = size1 = is1; 
       NimArrBase<T>::NAdims[1] = size2 = is2;
@@ -692,6 +702,11 @@ class NimArr<3, T> : public NimArrBase<T> {
     if(init) { NimArrBase<T>::fillAllValues(value); }
   }
 
+  void initialize(T value, bool init, bool fillZeros, bool recycle, int is1, int is2, int is3) {
+    setSize(is1, is2, is3, false, false);
+    if(init) { NimArrBase<T>::fillAllValues(value, fillZeros, recycle); }
+  }
+  
   void setSize(int is1, int is2, int is3, bool copyValues = true, bool fillZeros = true) {
     NimArrBase<T>::NAdims[0] = size1 = is1;
     NimArrBase<T>::NAdims[1] = size2 = is2;
@@ -990,6 +1005,11 @@ class NimArr<4, T> : public NimArrBase<T> {
   void initialize(T value, bool init, int is1, int is2, int is3, int is4) {
     setSize(is1, is2, is3, is4, false, false);
     if(init) { NimArrBase<T>::fillAllValues(value); }
+  }
+
+  void initialize(T value, bool init, bool fillZeros, bool recycle, int is1, int is2, int is3, int is4) {
+    setSize(is1, is2, is3, is4, false, false);
+    if(init) { NimArrBase<T>::fillAllValues(value, fillZeros, recycle); }
   }
 
   void setSize(int is1, int is2, int is3, int is4, bool copyValues = true, bool fillZeros = true) {

@@ -716,11 +716,14 @@ SEXP parseVar(SEXP Sinput) {
   return(vectorString_2_STRSEXP(output));
 }
 
+
 SEXP makeNewNimbleList(SEXP S_listName) {
+  SEXP SnimbleInternalFunctionsEnv;
   SEXP call;
+  PROTECT(SnimbleInternalFunctionsEnv = EVAL(findVar(install("nimbleInternalFunctions"), R_GlobalEnv)));
   PROTECT(call = allocVector(LANGSXP, 2));
   SETCAR(call, install("makeNewNimListSEXPRESSIONFromC"));
   SETCADR(call, S_listName);
-  UNPROTECT(1);
-  return(EVAL(call));
+  UNPROTECT(2);
+  return(eval(call, SnimbleInternalFunctionsEnv));
 }

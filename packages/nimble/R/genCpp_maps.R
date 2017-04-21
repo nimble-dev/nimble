@@ -99,6 +99,34 @@ blockIndexInfo <- function(code) {
     list(firstIndexRexprs = firstIndexRexprs, blockBool = blockBool)
 }
 
+addTransposeIfNeededForNonSeqBlock <- function(code, drop = TRUE) {
+    ## somewhat like makeEigenBlockExprFromBrackets, but the only
+    ## purpose is to add a transpose step for the case X[ scalar, vector ]
+    if(!drop) return(code);
+    nArgs <- length(code$args)
+    nDim <- nArgs-1
+    blockBool <- rep(FALSE, nDim)
+    for(i in 1:nDim) {
+        if(inherits(code$args[[i+1]], 'exprClass')) {
+            if(code$args[[i+1]]$nDim > 0) blockBool[i] <- TRUE
+        }
+    }
+    if(identical(blockBool, c(FALSE, TRUE))) {
+        code <- insertEigenTranspose(code)
+    }
+    code
+}
+
+insertEigenTranspose <- function(code) {
+    newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
+    newExpr2$sizeExprs <- c(code$sizeExprs[2], code$sizeExprs[1])
+    newExpr2$toEigenize <- 'yes' ## ditto
+    newExpr2$nDim <-  code$nDim
+    newExpr2$type <- code$type
+    setArg(newExpr2, 1, code)
+    newExpr2
+}
+
 makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
     thisBlockIndexInfo <- blockIndexInfo(code)
     blockBool <- thisBlockIndexInfo$blockBool
@@ -153,18 +181,19 @@ makeEigenBlockExprFromBrackets <- function(code, drop = TRUE) {
         newExpr$type <- code$type
         newExpr$sizeExprs <- code$sizeExprs
         newExpr$toEigenize <- 'yes' ## not really needed since will be called from eigenization
-
+        newExpr <- insertEigenTranspose(newExpr)
+        
         ## This used to be called from size processing, but now it is called from eigenization
         ## so we need to annotate it 
-        newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
-        newExpr2$sizeExprs <- c(newExpr$sizeExprs[2], newExpr$sizeExprs[1])
-        newExpr2$toEigenize <- 'yes' ## ditto
-        newExpr2$nDim <-  newExpr$nDim
-        newExpr2$type <- newExpr$type
+        ## newExpr2 <- exprClass$new(isName = FALSE, isCall = TRUE, isAssign = FALSE, name = 'eigTranspose', args = list(1))
+        ## newExpr2$sizeExprs <- c(newExpr$sizeExprs[2], newExpr$sizeExprs[1])
+        ## newExpr2$toEigenize <- 'yes' ## ditto
+        ## newExpr2$nDim <-  newExpr$nDim
+        ## newExpr2$type <- newExpr$type
                
-        setArg(newExpr2, 1, newExpr)
-        ## newExpr2 gets annotated in the calling function, sizeIndexingBracket
-        newExpr <- newExpr2
+        ## setArg(newExpr2, 1, newExpr)
+        ## ## newExpr2 gets annotated in the calling function, sizeIndexingBracket
+        ## newExpr <- newExpr2
     }
     newExpr
 }

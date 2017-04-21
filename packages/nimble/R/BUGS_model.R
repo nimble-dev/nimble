@@ -921,8 +921,8 @@ Details: The newly created model object will be identical to the original model 
                                           if(check) newlyCreatedModel$check()
                                           return(newlyCreatedModel)
                                       }
-                                      if(is.null(data)) data <- origData
-                                      if(is.null(inits)) inits <- origInits
+                                      if(is.null(data)) data <- if( inherits(origData, 'uninitializedField') ) list() else origData
+                                      if(is.null(inits)) inits <- if( inherits(origInits, 'uninitializedField') ) list() else origInits
                                       modelDef$newModel(data = data, inits = inits, modelName = modelName, check = check)
                                   }
                               )

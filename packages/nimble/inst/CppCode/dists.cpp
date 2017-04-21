@@ -24,7 +24,7 @@ bool R_FINITE_VEC(double* P, int s) {
   return(true);
 }
 
-double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log) {
+double dwish_chol(double* x, double* chol, double df, int p, double scale_param, int give_log, int overwrite_inputs) {
   char uplo('U');
   char side('L');
   char diag('N');
@@ -32,6 +32,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
   char transN('N');
   int info(0);
   double alpha(1.0);
+  double* xCopy;
 
   int i, j;
 
@@ -61,38 +62,45 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
 
   // determinant of x using Cholesky:
   // dpotrf overwrites x so need to copy first since the trace calc below also overwrites
-  double* tmp = new double[p*p];
+  xCopy = new double[p*p];
   for(i = 0; i < p*p; i++) 
-    tmp[i] = x[i];
-  F77_CALL(dpotrf)(&uplo, &p, tmp, &p, &info);
+    xCopy[i] = x[i];
+  F77_CALL(dpotrf)(&uplo, &p, xCopy, &p, &info);
   for(i = 0; i < p*p; i += p + 1) 
-    dens += (df - p - 1) * log(tmp[i]);
-  delete [] tmp;
+    dens += (df - p - 1) * log(xCopy[i]);
+  if(overwrite_inputs)  // distinct copy not needed below if ok to overwrite
+    delete [] xCopy;
 
   // do upper-triangular solves for scale parameterization
   // or upper-triangular multiplies for rate parameterization
   // dtr{m,s}m is a BLAS level-3 function
   double tmp_dens = 0.0;
-  // FIXME: x is getting overwritten
+  if(overwrite_inputs) 
+    xCopy = x;
+  else {
+    for(i = 0; i < p*p; i++) 
+      xCopy[i] = x[i];
+  }
   if(scale_param) {
     F77_CALL(dtrsm)(&side, &uplo, &transT, &diag, &p, &p, &alpha, 
-           chol, &p, x, &p);
+           chol, &p, xCopy, &p);
     F77_CALL(dtrsm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, x, &p);
+           chol, &p, xCopy, &p);
     for(i = 0; i < p*p; i += p + 1) 
-      tmp_dens += x[i];
+      tmp_dens += xCopy[i];
     dens += -0.5 * tmp_dens;
   } else {
     F77_CALL(dtrmm)(&side, &uplo, &transN, &diag, &p, &p, &alpha, 
-           chol, &p, x, &p);
+           chol, &p, xCopy, &p);
     // at this point don't need to do all the multiplications so don't call dtrmm again
     // direct product of upper triangles
     for(j = 0; j < p; j++) {
       for(i = 0; i <= j; i++) {
-        tmp_dens += x[j*p+i] * chol[j*p+i];
+        tmp_dens += xCopy[j*p+i] * chol[j*p+i];
       }
     }
-
+    if(!overwrite_inputs)
+      delete [] xCopy;
     // attempt to improve above calcs by doing efficient U^T U multiply followed by direct product multiply, however this would not make use of threading provided by BLAS and even with one thread seems to be no faster
     // U^T*U directly followed by direct product with x
     /* 
@@ -106,7 +114,7 @@ double dwish_chol(double* x, double* chol, double df, int p, double scale_param,
           tmp_summand += chol[j*p+k]*chol[i*p+k]; // U^T U 
         // double if not on diagonal to account for direct product of lower triangle too
         if(i != j) tmp_summand *= 2;
-        tmp_dens += x[j*p+i] * tmp_summand;
+        tmp_dens += xCopy[j*p+i] * tmp_summand;
       }
     */
     
@@ -122,9 +130,18 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(chol) || !isReal(df) || !isReal(scale_param) || !isLogical(return_log))
+  if(!isMatrix(x) || !isMatrix(chol) || !isReal(x) || !isReal(chol))
+    RBREAK("Error (C_dwish_chol): 'x' and 'chol' must be real matrices.\n")
+  if(!isReal(df) || !isReal(scale_param) || !isLogical(return_log))
     RBREAK("Error (C_dwish_chol): invalid input type for one of the arguments.\n");
-  int p = pow(LENGTH(chol), 0.5);
+  int* dims = INTEGER(getAttrib(x, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dwish_chol): 'x' must be a square matrix.\n");
+  int p = dims[0];
+  dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1] || dims[0] != p)
+   RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix with the same dimensions as 'x'.\n");
+
   int give_log = (int) LOGICAL(return_log)[0];
   double scale = REAL(scale_param)[0];
 
@@ -137,24 +154,22 @@ SEXP C_dwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_log)
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log);
+  REAL(ans)[0] = dwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
   UNPROTECT(1);
   return ans;
 }
 
 
-void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
-  // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
+void rwish_chol(double *Z, double* chol, double df, int p, double scale_param, int overwrite_inputs) {
   char uplo('U');
   char sideL('L');
-  //  char sideR('R');
   char diag('N');
   char transT('T');
   char transN('N');
-  //  int info(0);
   double alpha(1.0);
   double beta(0.0);
 
+  double* cholCopy;
   int i, j, uind, lind;
   
 #ifdef IEEE_754
@@ -193,23 +208,32 @@ void rwish_chol(double *Z, double* chol, double df, int p, double scale_param) {
  
   // multiply Z*chol, both upper triangular or solve(chol, Z^T)
   // would be more efficient if make use of fact that right-most matrix is triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, chol, &p);
+  if(overwrite_inputs)
+    cholCopy = chol;
+  else {
+    cholCopy = new double[p*p];
+    if(scale_param)
+      for(i = 0; i < p*p; i++) 
+        cholCopy[i] = chol[i];
+  }
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, Z, &p, cholCopy, &p);
   else F77_CALL(dtrsm)(&sideL, &uplo, &transN, &diag, &p, &p, &alpha, chol, &p, Z, &p);
 
   // cp result to Z or chol so can be used as matrix to multiply against and overwrite
   if(scale_param) {
     for(j = 0; j < p*p; j++) 
-      Z[j] = chol[j];
+      Z[j] = cholCopy[j];
   } else {
     for(j = 0; j < p*p; j++) 
-      chol[j] = Z[j]; // FIXME: check this case.  We don't want to overwite an input argument.
+      cholCopy[j] = Z[j]; 
   }
 
   // do crossprod of result
   // for dtrmm call, again this would be more efficient if use fact that RHS upper triangular, but no available BLAS routine and hand-coding would eliminate use of threading and might well not be faster
-  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, chol, &p, Z, &p);
-  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, chol, &p, chol, &p, &beta, Z, &p); 
-
+  if(scale_param) F77_CALL(dtrmm)(&sideL, &uplo, &transT, &diag, &p, &p, &alpha, cholCopy, &p, Z, &p);
+  else F77_CALL(dgemm)(&transN, &transT, &p, &p, &p, &alpha, cholCopy, &p, cholCopy, &p, &beta, Z, &p); 
+  if(!overwrite_inputs)
+    delete [] cholCopy;
 }
 
 SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param) 
@@ -217,10 +241,16 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(chol) || !isReal(df) || !isReal(scale_param))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (Crwish_chol): 'chol' must be a real matrix.\n")
+  if(!isReal(df) || !isReal(scale_param))
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_chol = LENGTH(chol);
-  int p = pow(n_chol, 0.5);
   double scale = REAL(scale_param)[0];
 
   double* c_chol = REAL(chol);
@@ -233,7 +263,7 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, n_chol));  
-  rwish_chol(REAL(ans), c_chol, c_df, p, scale);
+  rwish_chol(REAL(ans), c_chol, c_df, p, scale, 0);
   
   PutRNGstate();
   UNPROTECT(1);
@@ -585,13 +615,14 @@ SEXP C_rcat(SEXP n, SEXP prob) {
 
 }
   
-double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_param, int give_log) {
+double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_param, int give_log, int overwrite_inputs) {
   char uplo('U');
   char transPrec('N');
   char transCov('T');
   char diag('N');
   int lda(n);
   int incx(1);
+  double* xCopy;
 
   double dens = -n * M_LN_SQRT_2PI;
   int i;
@@ -606,6 +637,7 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
 
   if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mean, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
 
+    
 
   if(prec_param) {
     for(i = 0; i < n*n; i += n + 1) 
@@ -614,22 +646,32 @@ double dmnorm_chol(double* x, double* mean, double* chol, int n, double prec_par
     for(i = 0; i < n*n; i += n + 1) 
       dens -= log(chol[i]);
   }
-  for(i = 0; i < n; i++) 
-    x[i] -= mean[i];
+
+  if(overwrite_inputs) {
+    xCopy = x;
+    for(i = 0; i < n; i++) 
+      xCopy[i] -= mean[i];
+  } else {
+    xCopy = new double[n];
+    for(i = 0; i < n; i++)
+      xCopy[i] = x[i] - mean[i];
+  }
 
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
-  // FIXME: x is getting overwritten
-  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
-  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx);
 
   // sum of squares to calculate quadratic form
   double tmp = 0.0;
   for(i = 0; i < n; i++)
-    tmp += x[i] * x[i];
+    tmp += xCopy[i] * xCopy[i];
 
   dens += -0.5 * tmp;
+
+  if(!overwrite_inputs)
+    delete [] xCopy;
 
   return give_log ? dens : exp(dens);
 }
@@ -639,9 +681,21 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(mean) || !isReal(chol) || !isReal(prec_param) || !isLogical(return_log))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a real matrix.\n");
+  if(!isReal(x) || !isReal(mean))
+    RBREAK("Error (C_dmnorm_chol): 'x' and 'mean' should be real valued.\n");
+  if(!isReal(prec_param) || !isLogical(return_log))
     RBREAK("Error (C_dmnorm_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_x = LENGTH(x);
+  if(n_x != p)
+    RBREAK("Error (C_dmnorm_chol): 'x' and 'chol' are not of compatible sizes.\n");
   int n_mean = LENGTH(mean);
   int give_log = (int) LOGICAL(return_log)[0];
   double prec = REAL(prec_param)[0];
@@ -649,10 +703,6 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   double* c_x = REAL(x);
   double* c_mean = REAL(mean);
   double* c_chol = REAL(chol);
-
-  double* xcopy = new double[n_x];
-  for(int i = 0; i < n_x; ++i) 
-    xcopy[i] = c_x[i];
 
   double* full_mean;
   if(n_mean < n_x) {
@@ -666,16 +716,14 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dmnorm_chol(xcopy, full_mean, c_chol, n_x, prec, give_log);
+  REAL(ans)[0] = dmnorm_chol(c_x, full_mean, c_chol, n_x, prec, give_log, 0);
   if(n_mean < n_x)
     delete [] full_mean;
-  delete [] xcopy;
   UNPROTECT(1);
   return ans;
 }
 
 void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_param) {
-  // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
   char uplo('U');
   char transPrec('N');
   char transCov('T');
@@ -699,22 +747,16 @@ void rmnorm_chol(double *ans, double* mean, double* chol, int n, double prec_par
     return;
   }
 
-  double* devs = new double[n];
-  //  double* ans = new double[n];
-
   for(i = 0; i < n; i++) 
-    devs[i] = norm_rand();
-
+    ans[i] = norm_rand();
 
   // do upper-triangular solve or (transpose) multiply
   // dtr{s,m}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, devs, &incx);
-  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, devs, &incx);
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx);
 
   for(i = 0; i < n; i++) 
-    ans[i] = mean[i] + devs[i];
-
-  delete [] devs;
+    ans[i] += mean[i];
 }
 
 SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param) 
@@ -722,11 +764,19 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 // Cholesky matrix should be given as a numeric vector in column-major order
 //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(mean) || !isReal(chol) || !isReal(prec_param))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_rmnorm_chol): 'chol' should be a real matrix.\n");
+  if(!isReal(mean))
+    RBREAK("Error (C_rmnorm_chol): 'mean' should be real-valued\n");
+  if(!isReal(prec_param))
     RBREAK("Error (C_rmnorm_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a square matrix.\n");
+  int n_values = dims[0];
+
   int n_mean = LENGTH(mean);
-  int n_chol = LENGTH(chol);
-  int n_values = pow(n_chol, 0.5);
   double prec = REAL(prec_param)[0];
 
   int i;
@@ -759,17 +809,17 @@ SEXP C_rmnorm_chol(SEXP mean, SEXP chol, SEXP prec_param)
 
 // Begin multivariate t
 
-double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double prec_param, int give_log) {
+double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double prec_param, int give_log, int overwrite_inputs) {
   char uplo('U');
   char transPrec('N');
   char transCov('T');
   char diag('N');
   int lda(n);
   int incx(1);
+  double* xCopy;
   
   double dens = lgammafn((df + n) / 2) - lgammafn(df / 2) - n * M_LN_SQRT_PI - n * log(df) / 2;
   int i;
-  // add diagonals of Cholesky
   
   if (R_IsNA(x, n) || R_IsNA(mu, n) || R_IsNA(chol, n*n) || R_IsNA(df) || R_IsNA(prec_param))
     return NA_REAL;
@@ -780,7 +830,7 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
   
   if(!R_FINITE_VEC(x, n) || !R_FINITE_VEC(mu, n) || !R_FINITE_VEC(chol, n*n)) return R_D__0;
   
-  
+  // add diagonals of Cholesky
   if(prec_param) {
     for(i = 0; i < n*n; i += n + 1) 
       dens += log(chol[i]);
@@ -788,23 +838,33 @@ double dmvt_chol(double* x, double* mu, double* chol, double df, int n, double p
     for(i = 0; i < n*n; i += n + 1) 
       dens -= log(chol[i]);
   }
-  for(i = 0; i < n; i++) 
-    x[i] -= mu[i];
+
+  if(overwrite_inputs) {
+    xCopy = x;
+    for(i = 0; i < n; i++) 
+      xCopy[i] -= mu[i];
+  } else {
+    xCopy = new double[n];
+    for(i = 0; i < n; i++)
+      xCopy[i] = x[i] - mu[i];
+  }
   
   // do matrix-vector multiply with upper-triangular matrix stored column-wise as full n x n matrix (prec parameterization)
   // or upper-triangular (transpose) solve (cov parameterization)
   // dtr{m,s}v is a BLAS level-2 function
-  // FIXME: x is getting overwritten
-  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, x, &incx);
-  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, x, &incx);
+  if(prec_param) F77_CALL(dtrmv)(&uplo, &transPrec, &diag, &n, chol, &lda, xCopy, &incx);
+  else F77_CALL(dtrsv)(&uplo, &transCov, &diag, &n, chol, &lda, xCopy, &incx);
   
   // sum of squares to calculate quadratic form
   double tmp = 0.0;
   for(i = 0; i < n; i++)
-    tmp += x[i] * x[i];
+    tmp += xCopy[i] * xCopy[i];
   
   dens += -0.5 * (df + n) * log(1 + tmp / df);
   
+  if(!overwrite_inputs)
+    delete xCopy;
+
   return give_log ? dens : exp(dens);
 }
 
@@ -813,9 +873,21 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(x) || !isReal(mu) || !isReal(chol) || !isReal(df) || !isReal(prec_param) || !isLogical(return_log))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_dmvt_chol): 'chol' must be a real matrix.\n");
+  if(!isReal(x) || !isReal(mu))
+    RBREAK("Error (C_dmvt_chol): 'x' and 'mu' should be real valued.\n");
+  if(!isReal(df) || !isReal(prec_param) || !isLogical(return_log))
     RBREAK("Error (C_dmvt_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_dmvt_chol): 'chol' must be a square matrix.\n");
+  int p = dims[0];
+
   int n_x = LENGTH(x);
+  if(n_x != p)
+    RBREAK("Error (C_dmvt_chol): 'x' and 'chol' are not of compatible sizes.\n");
   int n_mu = LENGTH(mu);
   int give_log = (int) LOGICAL(return_log)[0];
   double c_df = REAL(df)[0];
@@ -824,10 +896,6 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   double* c_x = REAL(x);
   double* c_mu = REAL(mu);
   double* c_chol = REAL(chol);
-  
-  double* xcopy = new double[n_x];
-  for(int i = 0; i < n_x; ++i) 
-    xcopy[i] = c_x[i];
   
   double* full_mu;
   if(n_mu < n_x) {
@@ -841,16 +909,14 @@ SEXP C_dmvt_chol(SEXP x, SEXP mu, SEXP chol, SEXP df, SEXP prec_param, SEXP retu
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dmvt_chol(xcopy, full_mu, c_chol, c_df, n_x, prec, give_log);
+  REAL(ans)[0] = dmvt_chol(c_x, full_mu, c_chol, c_df, n_x, prec, give_log, 0); 
   if(n_mu < n_x)
     delete [] full_mu;
-  delete [] xcopy;
   UNPROTECT(1);
   return ans;
 }
 
 void rmvt_chol(double *ans, double* mu, double* chol, double df, int n, double prec_param) {
-  // Ok that this returns the array as return value? NIMBLE C code will need to free the memory
   char uplo('U');
   char transPrec('N');
   char transCov('T');
@@ -873,25 +939,20 @@ void rmvt_chol(double *ans, double* mu, double* chol, double df, int n, double p
       ans[j] = R_NaN;
     return;
   }
-  
-  double* devs = new double[n];
-  //  double* ans = new double[n];
-  
+    
   for(i = 0; i < n; i++) 
-    devs[i] = norm_rand();
+    ans[i] = norm_rand();
   
   // sample from chi-squared and calculate scaling factor
   double scaling = sqrt(df / rchisq(df));
   
   // do upper-triangular solve or (transpose) multiply
   // dtr{s,m}v is a BLAS level-2 function
-  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, devs, &incx);
-  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, devs, &incx);
+  if(prec_param) F77_CALL(dtrsv)(&uplo, &transPrec, &diag, &n, chol, &lda, ans, &incx);
+  else F77_CALL(dtrmv)(&uplo, &transCov, &diag, &n, chol, &lda, ans, &incx);
   
   for(i = 0; i < n; i++) 
-    ans[i] = mu[i] + devs[i] * scaling;
-  
-  delete [] devs;
+    ans[i] = mu[i] + ans[i] * scaling;
 }
 
 SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param) 
@@ -899,11 +960,19 @@ SEXP C_rmvt_chol(SEXP mu, SEXP chol, SEXP df, SEXP prec_param)
   // Cholesky matrix should be given as a numeric vector in column-major order
   //   including all n x n elements; lower-triangular elements are ignored
 {
-  if(!isReal(mu) || !isReal(chol) || !isReal(df) || !isReal(prec_param))
+  if(!isMatrix(chol) || !isReal(chol))
+    RBREAK("Error (C_rmvt_chol): 'chol' should be a real matrix.\n");
+  if(!isReal(mu))
+    RBREAK("Error (C_rmvt_chol): 'mu' should be real-valued\n");
+  if(!isReal(prec_param))
     RBREAK("Error (C_rmvt_chol): invalid input type for one of the arguments.\n");
+
+  int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
+  if(dims[0] != dims[1])
+    RBREAK("Error (C_rmvt_chol): 'chol' must be a square matrix.\n");
+  int n_values = dims[0];
+
   int n_mu = LENGTH(mu);
-  int n_chol = LENGTH(chol);
-  int n_values = pow(n_chol, 0.5);
   double c_df = REAL(df)[0];
   double prec = REAL(prec_param)[0];
   

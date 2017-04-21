@@ -56,7 +56,7 @@ BUGSmodel <- function(code, name, constants=list(), dimensions=list(), data=list
 #' @param check logical indicating whether to check the model object for missing or invalid values.  Default is given by the NIMBLE option 'checkModel', see help on \code{nimbleOptions} for details.
 #' @param calculate logical indicating whether to run \code{calculate} on the model after building it; this will calculate all deterministic nodes and logProbability values given the current state of all nodes. Default is TRUE. For large models, one might want to disable this, but note that deterministic nodes, including nodes introduced into the model by NIMBLE, may be \code{NA}. 
 #' @param name optional character vector giving a name of the model for internal use.  If omitted, a name will be provided.
-#' @param userEnv environment in which if-then-else statements in BUGS code will be evaluated; intended primarily for internal use only
+#' @param userEnv environment in which if-then-else statements in BUGS code will be evaluated if needed information not found in \code{constants}; intended primarily for internal use only
 #' @author NIMBLE development team
 #' @export
 #' @details

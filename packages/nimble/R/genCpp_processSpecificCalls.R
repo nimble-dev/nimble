@@ -169,8 +169,8 @@ declareHandler <- function(code, symTab) {
 
 ## process specific calls handler for nimArrayGeneral()
 ## the resulting function nimArrayGeneral() looks like:
-## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical)
-## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       )
+## nimArrayGeneral(typeCharString, nDim, c(sizeExpr1, ...), initializeValue, initializeLogical, fillZeros, recycle)
+## nimArrayGeneral(     arg1,      arg2,       arg3,              arg4,            arg5       ,   arg6   ,   arg7 )
 nimArrayGeneralHandler <- function(code, symTab) {
     ## check to see if we're inside a declare statement()
     if(code$caller$name == 'declare') {
@@ -185,57 +185,61 @@ nimArrayGeneralHandler <- function(code, symTab) {
            nimNumeric = {
 ##               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('numeric doesnt handle c() in length')
                sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
-               newArgs <- list('double', 1, sizeExprs, code$args[[2]], code$args[[3]])
+               newArgs <- list(type = 'double', nDim = 1, dim = sizeExprs, value = code$args[['value']], init = code$args[['init']],  fillZeros = code$args[['fillZeros']], recycle = code$args[['recycle']])
            },
            ##nimInteger(length = 0, value = 0, init = TRUE)
            nimInteger = {
 ##               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
                sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
-               newArgs <- list('integer', 1, sizeExprs, code$args[[2]], code$args[[3]])
+               newArgs <- list(type = 'integer', nDim = 1, dim = sizeExprs, value = code$args[['value']], init = code$args[['init']],  fillZeros = code$args[['fillZeros']], recycle = code$args[['recycle']])
            },
            ##nimLogical(length = 0, value = 0, init = TRUE)
            nimLogical = {
 ##               if(inherits(code$args[[1]], 'exprClass') && code$args[[1]]$isCall && code$args[[1]]$name == 'c') stop('integer doesnt handle c() in length')
                sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[1], caller=code, callerArgID=3)
-               newArgs <- list('logical', 1, sizeExprs, code$args[[2]], code$args[[3]])
+               newArgs <- list(type = 'logical', nDim = 1, dim = sizeExprs, value = code$args[['value']], init = code$args[['init']],  fillZeros = code$args[['fillZeros']], recycle = code$args[['recycle']])
            },
            ##nimVector(type = 'double', length = 0, value = 0, init = TRUE)
            ##nimVector = {},
            ##nimMatrix(value = 0, nrow = 1, ncol = 1, init = TRUE, type = 'double')
            nimMatrix = { 
-               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[2:3], caller=code, callerArgID=3)
-               newArgs <- list(code$args[[5]], 2, sizeExprs, code$args[[1]], code$args[[4]])
+               sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[c('nrow','ncol')], caller=code, callerArgID=3)
+               newArgs <- list(type = code$args[['type']], nDim = 2, dim = sizeExprs, value = code$args[['value']], init = code$args[['init']], fillZeros = code$args[['fillZeros']], recycle = code$args[['recycle']])
            },
            ##nimArray(value = 0, dim = c(1, 1), init = TRUE, type = 'double')
            nimArray = {
                ## nimArray will handle dim=c(...), and also dim=EXPR
-               if(inherits(code$args[[2]], 'exprClass') && code$args[[2]]$isCall && code$args[[2]]$name == 'nimC') {
+               if(inherits(code$args[['dim']], 'exprClass') && code$args[['dim']]$isCall && code$args[['dim']]$name == 'nimC') {
                    ## dim argument is c(...)
-                   code$args[[2]]$name <- 'collectSizes'
-                   newArgs <- list(code$args[[4]], length(code$args[[2]]$args), code$args[[2]], code$args[[1]], code$args[[3]])
+                   code$args[['dim']]$name <- 'collectSizes'
+                   newArgs <- list(type = code$args[['type']], nDim = length(code$args[['dim']]$args), dim = code$args[['dim']], value = code$args[['value']], init = code$args[['init']], fillZeros = code$args[['fillZeros']], recycle = code$args[['recycle']])
                } else {
                    ## dim argument is a single number or expression
-                   sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args[2], caller=code, callerArgID=3)
-                   if(!inherits(code$args[[2]], 'exprClass')) {
+                   sizeExprs <- exprClass$new(isName=FALSE, isCall=TRUE, isAssign=FALSE, name='collectSizes', args=code$args['dim'], caller=code, callerArgID=3)
+                   if(!inherits(code$args[['dim']], 'exprClass')) {
                        ## a constant was given
-                       newArgs <- list(code$args[[4]], 1, sizeExprs, code$args[[1]], code$args[[3]])
+                       newArgs <- list(type = code$args[['type']], nDim = 1, dim = sizeExprs, value = code$args[['value']], init = code$args[['init']], fillZeros = code$args[['fillZeros']], recycle = code$args[['recycle']])
                    } else {
-                       ## an expression was given: either find nDim argument or use nDim = -1 to flag it for resolution during size processing
-                       nDim <- if(!is.null(code$args[['nDim']])) code$args[['nDim']] else -1
-                       newArgs <- list(code$args[[4]], -1, sizeExprs, code$args[[1]], code$args[[3]])
+                       ## an expression was given: use nDim = -1 as first step to flagging it via unpackNDim for resolution during size processing
+                       ## nDim <- if(!is.null(code$args[['nDim']])) code$args[['nDim']] else -1
+                       newArgs <- list(type = code$args[['type']], nDim = -1, dim = sizeExprs, value = code$args[['value']], init = code$args[['init']], fillZeros = code$args[['fillZeros']], recycle = code$args[['recycle']])
                    }
                }
-               if(!is.null(code$args[['nDim']])) {
+               ## Check if an nDim argument was provided
+               if(!is.null(code$args[['nDim']])) { ## Typically nDim would be provided for array if length of dim argument is not known at compile time.  e.g. nimArray(value = v, dim = myDim, type = 'double', nDim = 3).  nDim = 3 is necessary because we often won't know at compile time what the length of myDim is.
                    nDim <- code$args[['nDim']]
-                   if(newArgs[[2]] != -1) if(nDim != newArgs[[2]]) warning("Possible nDim mismatch")
-                   newArgs[[2]] <- nDim
-                   newArgs[[6]] <- TRUE
+                   ## If it was provided in a situation where we haven't flagged it as useful, emit a warning
+                   if(newArgs[['nDim']] != -1) if(nDim != newArgs[['nDim']]) warning("Possible nDim mismatch")
+                   ## Enter the nDim in the right place and also flag unpackNDim=TRUE to handling during size processing
+                   newArgs[['nDim']] <- nDim
+                   newArgs[['unpackNDim']] <- TRUE
                }
            },
            stop('There is some problem processing a call to numeric, integer, logical, matrix or array.')
            )
     code$name <- 'nimArrayGeneral'
     code$args <- newArgs
+    ## fix AST caller/argument relationships:
     ## set caller / callerArgID for the new nimArraryGeneral() call arguments
     for(i in seq_along(code$args)) {
         if(inherits(code$args[[i]], 'exprClass')) {
@@ -243,17 +247,19 @@ nimArrayGeneralHandler <- function(code, symTab) {
             code$args[[i]]$caller <- code
         }
     }
+    ## fix AST caller/argument relationships for the size expressions:
     ## set caller / callerArgID for the c(size expressions...) call
-    for(i in seq_along(code$args[[3]]$args)) {
-        if(inherits(code$args[[3]]$args[[i]], 'exprClass')) {
-            code$args[[3]]$args[[i]]$callerArgID <- i
-            code$args[[3]]$args[[i]]$caller <- code$args[[3]]
+    for(i in seq_along(code$args[['dim']]$args)) {
+        if(inherits(code$args[['dim']]$args[[i]], 'exprClass')) {
+            code$args[['dim']]$args[[i]]$callerArgID <- i
+            code$args[['dim']]$args[[i]]$caller <- code$args[[3]]
         }
     }
-    if(!(code$args[[1]] %in% c('double', 'integer', 'logical'))) stop('unknown type in nimArrayGeneral')
-    if(code$args[[2]] != -1)
-        if(length(newArgs) < 6)
-            if(code$args[[2]] != length(code$args[[3]]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
+    if(!(code$args[['type']] %in% c('double', 'integer', 'logical'))) stop('unknown type in nimArrayGeneral')
+    if(code$args[['nDim']] != -1)
+##        if(length(newArgs) < 8)
+        if(is.null(newArgs[['unpackNDim']]))
+            if(code$args[['nDim']] != length(code$args[['dim']]$args)) stop('mismatch between nDim and number of size expressions in nimArrayGeneral')
 }
 
 
@@ -269,10 +275,14 @@ replacementHandler <- function(code, symTab) {
 }
     
 dmFunHandler <- function(code, symTab) {
+    if(code$name %in% c('dwish_chol', 'dmnorm_chol', 'dmvt_chol'))
+        code$args$overwrite_inputs <- 0
     code$name <- paste0('nimArr_', code$name)
 }
 
 rmFunHandler <- function(code, symTab) {
+    if(code$name %in% c('rwish_chol'))
+        code$args$overwrite_inputs <- 0
     dmFunHandler(code, symTab)
     rFunHandler(code, symTab)
 }
