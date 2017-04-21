@@ -29,14 +29,16 @@ test_that("Testing of error handling in SEXP_2_NimArr", {
   wrong_shape1 = TRUE
   wrong_shape2 = matrix(c(1, 2, 3, 4), 2, 2)
   
-  # The commented-out lines currently do not trigger errors.
+  # These DO NOT trigger errors.
+  expect_failure(expect_error(compiledFun(wrong_shape1, y, z)))
+  expect_failure(expect_error(compiledFun(x, wrong_shape1, z)))
+  expect_failure(expect_error(compiledFun(x, y, wrong_shape1)))
+  expect_failure(expect_error(compiledFun(x, wrong_shape2, z)))
+  expect_failure(expect_error(compiledFun(x, y, wrong_shape2)))
+  
+  # These DO trigger errors.
   expect_error(compiledFun(wrong_type, y, z))
   expect_error(compiledFun(x, wrong_type, z))
   expect_error(compiledFun(x, y, wrong_type))
-  # expect_error(compiledFun(wrong_shape1, y, z))
-  # expect_error(compiledFun(x, wrong_shape1, z))
-  # expect_error(compiledFun(x, y, wrong_shape1))
   expect_error(compiledFun(wrong_shape2, y, z))
-  # expect_error(compiledFun(x, wrong_shape2, z))
-  # expect_error(compiledFun(x, y, wrong_shape2))
 })
