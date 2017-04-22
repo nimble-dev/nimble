@@ -38,7 +38,7 @@ USER LEVEL CHANGES
 
 -- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
 
--- User-defined distributions may now be defined based solely on a density ('d') function, with a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
+-- User-defined distributions may now be defined based solely on a density ('d') function, without a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
 
 -- Checking of conjugacy is now much quicker in cases where there are recursive dependencies.
 
