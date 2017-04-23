@@ -85,6 +85,7 @@ void
 R_init_nimble(DllInfo *dll)
 {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }
 
 
