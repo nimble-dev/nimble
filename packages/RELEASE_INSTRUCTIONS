@@ -2,6 +2,8 @@ make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
 
+update LICENSE with current year
+
 for version on nimble website, remove FLIBS from src/Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
