@@ -843,8 +843,6 @@ nfMethod <- function(nf, methodName) {
 #' #[1] 3 3 4 4 4
 rankSample <- function(weights, size, output, silent = FALSE) {
     ##cat('in R version rankSample\n')
-    if(!is.loaded('C_rankSample'))
-        stop('rankSample does not work because we have not loaded any nimble code yet')
     assign(as.character(substitute(output)), .Call('C_rankSample', as.numeric(weights), as.integer(size), as.integer(output), as.logical(silent)), envir = parent.frame())
 }
 

@@ -93,8 +93,7 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 #' 
 nimEigen <- function(x, only.values = FALSE) {
   ## placeholder list with correct names of elements, will be populated in C++
-  .Call('C_nimEigen', x, as.logical(only.values), eigenNimbleList$new(),
-        package = 'nimble')
+  .Call('C_nimEigen', x, as.logical(only.values), eigenNimbleList$new())
 }
 
 
@@ -155,7 +154,7 @@ nimSvd <- function(x, vectors = 'full') {
                     thin = 1,
                     full = 2)
   if(is.null(vectors)) stop("nimSvd: vectors argument to 'svd' must be one of \"none\", \"thin\", or \"full\".")
-  .Call('C_nimSvd', x, vectors, svdNimbleList$new(), PACKAGE = 'nimble')
+  .Call('C_nimSvd', x, vectors, svdNimbleList$new())
 }
 
 
