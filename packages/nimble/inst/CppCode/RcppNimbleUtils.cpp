@@ -129,17 +129,6 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
   }
 }
 
-vector<int> getSEXPdims(SEXP Sx) {
-  if(!isNumeric(Sx)) {PRINTF("Error, getSEXPdims called for something not numeric\n"); return(vector<int>());}
-  if(!isVector(Sx)) {PRINTF("Error, getSEXPdims called for something not vector\n"); return(vector<int>());}
-  if(!isArray(Sx) & !isMatrix(Sx)) {
-    vector<int> ans; 
-    ans.resize(1); ans[0] = LENGTH(Sx); return(ans);
-  }
-  return(SEXP_2_vectorInt(getAttrib(Sx, R_DimSymbol), 0));
-}
-
-
 /* Cliff's new function for adding blank rows to C model values */
 SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
     if(!isInteger(numAdded)) {
