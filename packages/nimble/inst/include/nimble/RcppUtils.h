@@ -50,17 +50,17 @@ bool SEXP_2_bool(SEXP Sn, int i = 0);
 SEXP bool_2_SEXP(bool ind);
 
 extern "C" {
-  SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
-  SEXP double_2_SEXP(SEXP rPtr, SEXP refNum);
-  SEXP SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar);
-  SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum);
-  SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
-  SEXP int_2_SEXP(SEXP rPtr, SEXP refNum);
+  SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  SEXP extract_double_2_SEXP(SEXP rPtr, SEXP refNum);
+  SEXP populate_SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  SEXP extract_bool_2_SEXP(SEXP rPtr, SEXP refNum);
+  SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  SEXP extract_int_2_SEXP(SEXP rPtr, SEXP refNum);
 
-  SEXP SEXP_2_string(SEXP rPtr, SEXP rString);
-  SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector);
-  SEXP string_2_SEXP(SEXP rPtr);
-  SEXP stringVector_2_SEXP(SEXP rPtr);
+  SEXP populate_SEXP_2_string(SEXP rPtr, SEXP rString);
+  SEXP populate_SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector);
+  SEXP extract_string_2_SEXP(SEXP rPtr);
+  SEXP extract_stringVector_2_SEXP(SEXP rPtr);
 
   SEXP fastMatrixInsert(SEXP matrixInto, SEXP matrix, SEXP rowStart, SEXP colStart);
   SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims);

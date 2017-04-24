@@ -170,11 +170,11 @@ makeNFBindingFields <- function(symTab, cppNames) {
         if(thisSymbol$type == "character") { ## cpp copy type 'character'  : 2 sub-cases (vector and scalar)
             if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
                 eval(substitute( fieldList$VARNAME <- function(x){
-                    nimbleInternalFunctions$getSetCharacterVector(VPTR, VARNAME, x, dll = dll)
-                    ## if(missing(x) ) 
-                    ##     nimbleInternalFunctions$getCharacterVectorValue(VPTR, dll = dll)
-                    ## else
-                    ##     nimbleInternalFunctions$setCharacterVectorValue(VPTR, x, dll = dll)
+                    ##nimbleInternalFunctions$getSetCharacterVector(VPTR, VARNAME, x, dll = dll)
+                    if(missing(x) ) 
+                        nimbleInternalFunctions$getCharacterVectorValue(VPTR, dll = dll)
+                    else
+                        nimbleInternalFunctions$setCharacterVectorValue(VPTR, x, dll = dll)
                 }, list(VPTR = as.name(ptrName), VARNAME = vn) ) )
             next
             } else {                    ## character scalar
@@ -276,8 +276,9 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
             if(thisSymbol$nDim > 0) {   ## character vector (nDim can only be 0 or 1)
                 eval(substitute( fieldList$VARNAME <- function(x) {
                     namedObjectsPtr <- CASTFUNCALL ##.Call(dll$CASTFUN, .ptrToPtr)
-                    vptr <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, name, dll = dll)
-                    nimbleInternalFunctions$getSetCharacterVector(vptr, VARNAME, value = x, dll = dll)
+                    ##vptr <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, name, dll = dll)
+                    ##nimbleInternalFunctions$getSetCharacterVector(vptr, VARNAME, value = x, dll = dll)
+                    nimbleInternalFunctions$getSetCharacterVector(VARNAME, value = x, namedObjectsPtr, dll = dll)
                 }, list(VARNAME = vn, CASTFUN = castFunName) ) )
                 next
             } else {                    ## character scalar
@@ -403,8 +404,8 @@ getSetNimPtrList <- function(name, value, basePtr, dll) {
     }
 }
 
-getSetCharacterVector <- function(vptr, name, value, dll) { ##basePtr, dll) {
-    ##vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+getSetCharacterVector <- function(name, value, basePtr, dll) { ##basePtr, dll) {
+    vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
      if(missing(value)) 
          nimbleInternalFunctions$getCharacterVectorValue(vptr, dll = dll)
      else
@@ -929,8 +930,7 @@ copyFromRobject <- function(Robj, cppNames, cppCopyTypes, basePtr, symTab, dll) 
             populateIndexedNodeInfoTable(fxnPtr = basePtr, Robject = Robj, indexedNodeInfoTableName = v, dll = dll)
         }
         else if(cppCopyTypes[[v]] == 'characterVector') {
-            vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
-            getSetCharacterVector(vptr, v, Robj[[v]], dll = dll)
+            getSetCharacterVector(v, Robj[[v]], basePtr, dll = dll)
             ##.self[[v]] <<- Robj[[v]]
             next
         }
@@ -1243,8 +1243,8 @@ CmultiNimbleObjClass <- setRefClass('CmultiNimbleObjClass',
                                                           modelValues = {##message('switch modelValues');
                                                               getSetModelValues(name, value, basePtr, dll = dll)}, ## ditto
                                                           characterVector = {
-                                                              vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
-                                                              getSetCharacterVector(vptr, name, value, dll = dll)
+##                                                              vptr <- nimbleInternalFunctions$newObjElementPtr(basePtr, name, dll = dll)
+                                                              getSetCharacterVector(name, value, basePtr, dll = dll)
                                                           },
                                                           characterScalar = getSetCharacterScalar(name, value, basePtr, dll = dll),
                                                           numericVector ={##message('switch numericVector');

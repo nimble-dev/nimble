@@ -66,61 +66,74 @@ setSmartPtrFromDoublePtr <- function(elementPtr, value, dll) {
 
 getDoubleValue <- function(elementPtr, pointDepth = 1, dll){
   if(!inherits(elementPtr, "externalptr") )
-    return(NULL)
-  .Call("double_2_SEXP", elementPtr, as.integer(pointDepth) )
+      return(NULL)
+  eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$extract_double_2_SEXP, elementPtr, as.integer(pointDepth)))
+##  .Call("double_2_SEXP", elementPtr, as.integer(pointDepth) )
 }
 
 setDoubleValue <- function(elementPtr, value,  pointDepth = 1, dll){
   if(!inherits(elementPtr, "externalptr"))
-    return(NULL)
-  jnk = .Call("SEXP_2_double", elementPtr, as.integer(pointDepth), value)
+      return(NULL)
+  eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$populate_SEXP_2_double, elementPtr, as.integer(pointDepth), value))
+  ##jnk = .Call("SEXP_2_double", elementPtr, as.integer(pointDepth), value)
   value
 }
 
 getIntValue <- function(elementPtr, pointDepth = 1, dll){
   if(!inherits(elementPtr, "externalptr") )
-    return(NULL)
-  .Call("int_2_SEXP", elementPtr, as.integer(pointDepth) )
+      return(NULL)
+  eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$extract_int_2_SEXP, elementPtr, as.integer(pointDepth)))
+##  .Call("int_2_SEXP", elementPtr, as.integer(pointDepth) )
 }
 
 setIntValue <- function(elementPtr, value,  pointDepth = 1, dll){
   if(!inherits(elementPtr, "externalptr"))
-    return(NULL)
-  jnk = .Call("SEXP_2_int", elementPtr, as.integer(pointDepth), value )
+      return(NULL)
+  eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$populate_SEXP_2_int, elementPtr, as.integer(pointDepth), value))
+  value
+##  jnk = .Call("SEXP_2_int", elementPtr, as.integer(pointDepth), value )
 }
 
 getBoolValue <- function(elementPtr, pointDepth = 1, dll){
     if(!inherits(elementPtr, "externalptr") )
         return(NULL)
-    .Call("bool_2_SEXP" , elementPtr, as.integer(pointDepth) )
+     eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$extract_bool_2_SEXP, elementPtr, as.integer(pointDepth)))
+    ##.Call("bool_2_SEXP" , elementPtr, as.integer(pointDepth) )
 }
 
 setBoolValue <- function(elementPtr, value,  pointDepth = 1, dll){
     if(!inherits(elementPtr, "externalptr"))
         return(NULL)
-    jnk = .Call("SEXP_2_bool", elementPtr, as.integer(pointDepth), value )
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$populate_SEXP_2_bool, elementPtr, as.integer(pointDepth), value))
+    value
+##    jnk = .Call("SEXP_2_bool", elementPtr, as.integer(pointDepth), value )
 }
 
 setCharacterValue <- function(elementPtr, value, dll){
-    if(!inherits(elementPtr, "externalptr"))
-        return(NULL)
-    jnk = .Call("SEXP_2_string", elementPtr, value )
+    if(!inherits(elementPtr, "externalptr")) return(NULL)
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$populate_SEXP_2_string, elementPtr, value))
+##    jnk = .Call("SEXP_2_string", elementPtr, value )
+    value
 }
 
 getCharacterValue <- function(elementPtr, dll){
     if(!inherits(elementPtr, "externalptr") )
         return(NULL)
-    .Call("string_2_SEXP" , elementPtr )
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$extract_string_2_SEXP, elementPtr))
+    ##.Call("string_2_SEXP" , elementPtr )
 }
 
 setCharacterVectorValue <- function(elementPtr, value, dll){
     if(!inherits(elementPtr, "externalptr"))
         return(NULL)
-    jnk = .Call("SEXP_2_stringVector" , elementPtr, value )
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$populate_SEXP_2_stringVector, elementPtr, value))
+    ##    jnk = .Call("SEXP_2_stringVector" , elementPtr, value )
+    value
 }
 
 getCharacterVectorValue <- function(elementPtr, dll){
     if(!inherits(elementPtr, "externalptr") )
         return(NULL)
-    .Call("stringVector_2_SEXP" , elementPtr)
+    eval(call('.Call',nimbleUserNamespace$sessionSpecificDll$extract_stringVector_2_SEXP, elementPtr))
+    ##.Call("stringVector_2_SEXP" , elementPtr)
 }
