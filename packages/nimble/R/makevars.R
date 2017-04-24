@@ -69,9 +69,9 @@ function(target, vars = character(), .useLib = UseLibraryMakevars)
     # else cppad_inc <- paste0("-I\"",cppad_inc,"\"")
     # browser()
     # cppad_inc <- paste0("-I ", cppad_inc)
-    cppad_inc <- '-I"C:/Users/iateb/Documents/cppad/cppad-20170413"'
+    cppad_inc <- '-I"/Users/iateb/Documents/cppad/cppad-20170413"'
     vars = c(EIGEN_INC = "", ## AutoconfInfo$eigenInc, ## we used to generate an AutoconfInfo list. We'll need a new mechanism if a local Makevars needs to be generated and the user has non-nimble-provided Eigen
-             CPPAD_INC = cppad_inc,
+             CPPAD_INC = "",#cppad_inc,
              NIMBLE_INC_DIR =  system.file("include", package = "nimble"),
              NIMBLE_LIB_DIR =  system.file("CppCode", package = "nimble"),        
              NIMBLE_DIR =  system.file(package = "nimble"),
