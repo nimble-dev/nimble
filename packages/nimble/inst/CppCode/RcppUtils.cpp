@@ -677,8 +677,8 @@ void rawSample(double* p, int c_samps, int N, int* ans, bool unsort, bool silent
   }
 }
 
-SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
-  //PRINTF("in SEXP rankSample\n");
+SEXP C_rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s) {
+  //PRINTF("in SEXP C_rankSample\n");
   int N = LENGTH(p);
   int c_samps = INTEGER(n)[0];
   bool silent = LOGICAL(s)[0];

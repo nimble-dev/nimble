@@ -66,7 +66,7 @@ extern "C" {
   SEXP matrix2ListDouble(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims);
   SEXP matrix2ListInt(SEXP matrix, SEXP list, SEXP listStartIndex, SEXP RnRows,  SEXP dims);
 
-  SEXP rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s);
+  SEXP C_rankSample(SEXP p, SEXP n, SEXP not_used, SEXP s);
 
   SEXP parseVar(SEXP Sinput);
 }

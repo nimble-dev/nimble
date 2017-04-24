@@ -80,14 +80,14 @@ R_CallMethodDef CallEntries[] = {
  FUN(fastMatrixInsert, 4),
  FUN(matrix2ListDouble, 5),
  FUN(matrix2ListInt, 5),
- // FUN(rankSample, 4),
+ FUN(C_rankSample, 4),
  FUN(parseVar, 1),
 
  FUN(setGraph, 6),
  FUN(anyStochDependencies, 1),
  FUN(anyStochParents, 1),
  FUN(getDependencies, 4),
- 
+ FUN(getDependencyPathCountOneNode, 2), 
  {NULL, NULL, 0}
 };
 
