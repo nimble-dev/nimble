@@ -366,7 +366,7 @@ bool SEXP_2_bool(SEXP Sn, int i) {
 // 	return;
 // }
 
-SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
+SEXP populate_SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -391,7 +391,7 @@ SEXP SEXP_2_double(SEXP rPtr, SEXP refNum, SEXP rScalar){
     return(R_NilValue);
 }
 
-SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
+SEXP populate_SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -415,7 +415,7 @@ SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
 		//But our generated code calls both
 
 
-  SEXP SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar){
+  SEXP populate_SEXP_2_bool(SEXP rPtr, SEXP refNum, SEXP rScalar){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -439,7 +439,7 @@ SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar){
     return(R_NilValue);
 }
 
-SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum){
+SEXP extract_bool_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in bool_2_SEXP\n");
@@ -462,10 +462,10 @@ SEXP bool_2_SEXP(SEXP rPtr, SEXP refNum){
     return(Sans);
 }
 
-SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
+SEXP extract_double_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
-        PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
+        PRINTF("Warning: pointing to NULL in extract_double_2_SEXP\n");
         return(R_NilValue);
     }
     double* cPtr;
@@ -475,7 +475,7 @@ SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
     else if(cRefNum == 2)
         cPtr = (*static_cast<double**> ( vPtr ) );
     else {
-      PRINTF("Warning: double_2_SEXP called with reNum != 1 or 2\n");
+      PRINTF("Warning: extract_double_2_SEXP called with reNum != 1 or 2\n");
       return(R_NilValue);
     }
     SEXP Sans;
@@ -485,8 +485,7 @@ SEXP double_2_SEXP(SEXP rPtr, SEXP refNum){
     return(Sans);
 }
 
-
-SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
+SEXP extract_int_2_SEXP(SEXP rPtr, SEXP refNum){
     void* vPtr = R_ExternalPtrAddr(rPtr);
     if(vPtr == NULL){
         PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -509,7 +508,7 @@ SEXP int_2_SEXP(SEXP rPtr, SEXP refNum){
     return(Sans);
 }
 
-SEXP SEXP_2_string(SEXP rPtr, SEXP rString) {
+SEXP populate_SEXP_2_string(SEXP rPtr, SEXP rString) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -519,7 +518,7 @@ SEXP SEXP_2_string(SEXP rPtr, SEXP rString) {
   return(R_NilValue);
 }
 
-SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
+SEXP populate_SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -529,7 +528,7 @@ SEXP SEXP_2_stringVector(SEXP rPtr, SEXP rStringVector) {
   return(R_NilValue);
 }
 
-SEXP string_2_SEXP(SEXP rPtr) {
+SEXP extract_string_2_SEXP(SEXP rPtr) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");
@@ -538,7 +537,7 @@ SEXP string_2_SEXP(SEXP rPtr) {
   return(string_2_STRSEXP(*static_cast<string *>(vPtr)));
 }
 
-SEXP stringVector_2_SEXP(SEXP rPtr) {
+SEXP extract_stringVector_2_SEXP(SEXP rPtr) {
   void* vPtr = R_ExternalPtrAddr(rPtr);
   if(vPtr == NULL){
     PRINTF("Warning: pointing to NULL in SEXP_2_double\n");

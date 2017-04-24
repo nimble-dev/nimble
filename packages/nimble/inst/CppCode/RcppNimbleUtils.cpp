@@ -528,7 +528,7 @@ SEXP setMVElement(SEXP Sextptr, SEXP Sindex, SEXP Svalue){
 	return(returnStatus(false) ) ;
   }
   cSetMVElementSingle( typePtr, vecType, index, Svalue );
-  SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
+  //SEXP SEXP_2_int(SEXP rPtr, SEXP refNum, SEXP rScalar);
   return(returnStatus(true) );
  } 
  
