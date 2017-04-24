@@ -254,14 +254,13 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   }
                                               },
                                               addTypeTemplateFunction = function( funName ) {
-                                                browser()
-                                                  newFunName <- if(funName == 'operator()') 'run_AD_' else paste0(funName, '_AD_')
+                                                  newFunName <- if(funName == 'run') 'run_AD_' else paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   functionDefs[[newFunName]] <<- makeTypeTemplateFunction(newFunName, regularFun)
                                                   invisible(NULL)
                                               },
                                               addADtapingFunction = function( funName, independentVarNames, dependentVarNames ) {
-                                                  ADfunName <- if(funName == 'operator()') 'run_AD_' else paste0(funName, '_AD_')
+                                                  ADfunName <- if(funName == 'run') 'run_AD_' else paste0(funName, '_AD_')
                                                   regularFun <- RCfunDefs[[funName]]
                                                   ##                  newFunName <- if(funName == 'operator()') 'run_callForADtaping_' else paste0(funName, '_callForADtaping_')
                                                   newFunName <- 'callForADtaping'

@@ -58,10 +58,8 @@ makeTypeTemplateFunction = function(newName, .self) {
     typeDefs <- symbolTable()
     typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeEigenMapStrd", name = "EigenMapStrd") ) ## these coerces the cppVar system to generate a line of typedef code for us
     typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeMatrixXd", name = "MatrixXd") )
-    
     newCppFunDef$name <- newName
     newCppFunDef$template <- cppVarFull(name = character(), baseType = 'template', templateArgs = list('class TYPE_'))
-    browser()
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE)
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
@@ -126,7 +124,7 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     ## Next line creates local variables for passing to that templated CppAD version
     localVars <- symbolTable2templateTypeSymbolTable(targetFunDef$args, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double') )
     ## and similar for the return variable
-    initADptrCode <- cppLiteral("RETURN_TAPE_ = new CppAD::ADFun<double>")
+    initADptrCode <- cppLiteral("RETURN_TAPE_ = new CppAD::ADFun<double>;")
     ansSym <- cppVarSym2templateTypeCppVarSym(targetFunDef$returnType, clearRef = TRUE, replacementBaseType = 'CppAD::AD', replacementTemplateArgs = list('double'))
     ansSym$name <- 'ANS_'
     localVars$addSymbol(ansSym)
@@ -236,13 +234,13 @@ makeADtapingFunction <- function(newFunName = 'callForADtaping', targetFunDef, A
     setSizeLines[[iNextLine]] <- substitute(cppMemberFunction(resize(ADresponseVars, TDL)), list(TDL = totalDepLength))
 
     ## line to finish taping
-    finishTapingCall <- cppLiteral('RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars)')
+    finishTapingCall <- cppLiteral('RETURN_TAPE_->Dependent(ADindependentVars, ADresponseVars);')
 
-    ADoptimizeCalls <- list(cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\""),
+    ADoptimizeCalls <- list(cppLiteral("std::cout<<\"size before optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"),
                             cppLiteral("RETURN_TAPE_->optimize();"),
-                            cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\""))
+                            cppLiteral("std::cout<<\"size after optimize = \"<< RETURN_TAPE_->size_var() <<\"\\n\";"))
 
-    returnCall <- cppLiteral("return(RETURN_TAPE_)")
+    returnCall <- cppLiteral("return(RETURN_TAPE_);")
     
     ## Finally put together all the code, parse it into the nimble exprClass system,
     ## and add it to the result (CFT)
@@ -325,7 +323,7 @@ makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targe
         }
     }
     setSizeLine <- substitute(cppMemberFunction(resize(memberData(ADtapeSetup, independentVars), TIL)), list(TIL = totalIndependentLength))
-    returnCall <- cppLiteral("return(ADtapeSetup)")
+    returnCall <- cppLiteral("return(ADtapeSetup);")
     
     allRcode <- do.call('call', c(list('{'), list(assignTapePtrCode), list(setSizeLine), copyIntoIndepVarCode, list(returnCall)), quote=TRUE)
     allCode <- RparseTree2ExprClasses(allRcode)

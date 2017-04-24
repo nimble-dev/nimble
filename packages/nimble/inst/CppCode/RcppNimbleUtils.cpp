@@ -88,47 +88,6 @@ NimArr<1, double> vectorDouble_2_NimArr(vector<double> input) {
   return(output);
 }
 
-template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
-  int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
-  ans.setSize(nn);
-  if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
-  } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
-    }
-  }
-}
-
-// Actually this is identical to above so could be done without specialization
-template<>
-void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
-  int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
-  ans.setSize(nn);
-  if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
-  } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
-    }
-  }
-}
-
 /* Cliff's new function for adding blank rows to C model values */
 SEXP addBlankModelValueRows(SEXP Sextptr, SEXP numAdded){
     if(!isInteger(numAdded)) {
