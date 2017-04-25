@@ -2,6 +2,8 @@ make sure NEWS is updated with info on changes in latest release
 
 update DESCRIPTION and INSTALL with current version number
 
+update LICENSE with current year
+
 for version on nimble website, remove FLIBS from src/Makevars.in
 for CRAN, we need it in there, but it prevents easy source installation on Macs without getting the right version of libgfortran
 
@@ -16,12 +18,12 @@ R CMD INSTALL nimble_${VERSION}.tar.gz
 
 R CMD build nimble
 R CMD check --as-cran nimble_${VERSION}.tar.gz
-# officially this should be done on a development build of R, such as in a BCE or docker instance; for Chris, easiest to do via installing R-devel on SCF
+# officially this should be done on a development build of R, but now can be done formally using rhub (see below), so doing on your own machine in a release version of R just serves as a first pass
 
 run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists filtering getBound getDependencies getDistributionInfo getParam math mcem mcmc models nimbleList numericTypes setData size trunc types user"
+types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists filtering getBound getDependencies getDistributionInfo getParam math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList numericTypes setData size trunc types user"
 for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done

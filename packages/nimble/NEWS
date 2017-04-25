@@ -12,7 +12,7 @@ USER LEVEL CHANGES
 
 -- Logical vectors and operators are now supported.
 
--- Indexing of vectors, matrices and arrays can now use arbitrary numeric (with integer contents) and logical vectors.
+-- Indexing of vectors and matrices can now use arbitrary numeric (with integer contents) and logical vectors.
 
 -- Added inverse-gamma distribution to NIMBLE's provided distributions.
 
@@ -38,7 +38,7 @@ USER LEVEL CHANGES
 
 -- Filtering algorithms now have "initModel" control list option.  If initModel = TRUE, the model will be initialized at the start of the filtering algorithm.  Defaults to TRUE. 
 
--- User-defined distributions may now be defined based solely on a density ('d') function, with a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
+-- User-defined distributions may now be defined based solely on a density ('d') function, without a simulation ('r') function. Algorithms that need to use the simulate function will fail if it is not provided.
 
 -- Checking of conjugacy is now much quicker in cases where there are recursive dependencies.
 
@@ -46,7 +46,9 @@ USER LEVEL CHANGES
 
 DEVELOPER LEVEL CHANGES
 
--- Reduced copying with values and modelValues.  [FIXME: PdV - do you want to say more / edit language?]
+-- Reduced copying with values and modelValues.
+
+-- Templates compatible with Eigen library to implement R's recycling rule can be used for other functions when needed.
 
 BUG FIXES
 

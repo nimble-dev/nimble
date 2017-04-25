@@ -85,6 +85,18 @@ R_CallMethodDef CallEntries[] = {
   FUN(makeNumericList, 3),
   FUN(Nim_2_SEXP, 2),
   FUN(SEXP_2_Nim, 4),
+  FUN(extract_double_2_SEXP, 2),
+  FUN(populate_SEXP_2_double, 3),
+  FUN(extract_int_2_SEXP, 2),
+  FUN(populate_SEXP_2_int, 3),
+  FUN(extract_bool_2_SEXP, 2),
+  FUN(populate_SEXP_2_bool, 3),
+  
+  FUN(populate_SEXP_2_string, 2),
+  FUN(extract_string_2_SEXP, 1),
+  FUN(populate_SEXP_2_stringVector, 2),
+  FUN(extract_stringVector_2_SEXP, 1),
+
   FUN(setPtrVectorOfPtrs, 3),
   FUN(setOnePtrVectorOfPtrs, 3),
   //FUN(getOnePtrVectorOfPtrs, 2),

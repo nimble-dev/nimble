@@ -42,7 +42,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing numeric: fail for init given as vector ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing numeric: fail for init given as vector ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 Error : init argument to numeric, logical, integer, matrix or array must be scalar
  This occurred for: nimArrayGeneral(type="double",nDim=1,dim=collectSizes(length=3),value=1.5,init=b,fillZeros=1,recycle=1)
@@ -56,7 +57,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing numeric: length, vector value ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing numeric: length, vector value ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 ...### Testing numeric: length, vector value expression ###
@@ -106,7 +108,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing integer: fail for init given as vector ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing integer: fail for init given as vector ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 Error : init argument to numeric, logical, integer, matrix or array must be scalar
  This occurred for: nimArrayGeneral(type="integer",nDim=1,dim=collectSizes(length=3),value=15,init=b,fillZeros=1,recycle=1)
@@ -120,7 +123,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing integer: length, vector value ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing integer: length, vector value ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 ...### Testing integer: length, vector value expression ###
@@ -170,7 +174,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing logical: fail for init given as vector ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing logical: fail for init given as vector ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 Error : init argument to numeric, logical, integer, matrix or array must be scalar
  This occurred for: nimArrayGeneral(type="logical",nDim=1,dim=collectSizes(length=3),value=1,init=b,fillZeros=1,recycle=1)
@@ -184,7 +189,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing logical: length, vector value ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing logical: length, vector value ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 ...### Testing logical: length, vector value expression ###
@@ -297,7 +303,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing array 1D (dim vector) ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing array 1D (dim vector) ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 ...### Testing array 1D in expression ###
@@ -344,7 +351,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing array 2D (dim vector) ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing array 2D (dim vector) ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 ...### Testing array 2D in expression ###
@@ -400,7 +408,8 @@ Error : There is some problem at the setSizes processing step for this code:
     }
     return(out)
 }
-.### Testing array 3D (dim vector) ###
+.COMPILER FAILURE WAS EXPECTED.  THE TEST PASSED.
+### Testing array 3D (dim vector) ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 ...### Testing array 3D in expression ###
@@ -1319,8 +1328,7 @@ compilation finished.
 ...### Testing non-sequential indexing: out[arg2] <- 200 ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
-.In from
-..### Testing non-sequential indexing: out[2, arg3] <- arg1 (row matrix) ###
+...### Testing non-sequential indexing: out[2, arg3] <- arg1 (row matrix) ###
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 ...### Testing non-sequential indexing: out[2, arg3] <- arg1 (col matrix) ###
@@ -1922,18 +1930,6 @@ compilation finished.
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
-Error in envRefInferField(x, what, getClass(class(x)), selfEnv) : 
-  no function to return from, jumping to top level
-Calls: <Anonymous> -> $ -> envRefInferField
-In addition: Warning messages:
-1: Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 
-2: In declInfo[[i]]$genBounds() :
-  Lower bound is less than or equal to distribution lower bound in y4 ~ dgamma(shape = 1, scale = 1, lower = -2, upper = 5); ignoring user-provided lower bound.
-3: In declInfo[[i]]$genBounds() :
-  Lower bound is greater than or equal to upper bound in y6 ~ dgamma(shape = 1, scale = 1, lower = 2, upper = 1); proceeding anyway, but this is likely to cause numerical issues.
-Error in envRefInferField(x, what, getClass(class(x)), selfEnv) : 
-  no function to return from, jumping to top level
-Calls: <Anonymous> -> $ -> envRefInferField
 compilation finished.
 compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
 compilation finished.
@@ -1972,6 +1968,12 @@ compilation finished.
 
 
 DONE ===========================================================================
+Warning messages:
+1: Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 
+2: In declInfo[[i]]$genBounds() :
+  Lower bound is less than or equal to distribution lower bound in y4 ~ dgamma(shape = 1, scale = 1, lower = -2, upper = 5); ignoring user-provided lower bound.
+3: In declInfo[[i]]$genBounds() :
+  Lower bound is greater than or equal to upper bound in y6 ~ dgamma(shape = 1, scale = 1, lower = 2, upper = 1); proceeding anyway, but this is likely to cause numerical issues.
 
 Attaching package: ‘nimble’
 
@@ -5676,7 +5678,7 @@ beta[9]   -2191.4992817 -2193.4611794 -2191.698935       0
 beta[10]  -2495.2215282 -2498.4720430 -2495.986634       0
 beta[11]  -2799.3248688 -2803.8579702 -2799.398676       0
 ===== Finished MCMC test for ice. =====
-===== Starting MCMC test for /tmp/Rtmpw5K115/icear.bug. =====
+===== Starting MCMC test for /tmp/RtmpLIawIV/icear.bug. =====
 defining model...
 Detected cases as data within 'constants'.
 Adding cases as data for building model.
@@ -5742,7 +5744,7 @@ beta[8]    -5.6860936  -5.7364088 -5.6404834       1
 beta[9]    -4.6133629  -4.6495547 -4.5608903       1
 beta[10]   -3.2342140  -3.2778479 -3.2033487       1
 beta[11]   -1.5206015  -1.5316884 -1.5055535       1
-===== Finished MCMC test for /tmp/Rtmpw5K115/icear.bug. =====
+===== Finished MCMC test for /tmp/RtmpLIawIV/icear.bug. =====
 ===== Starting MCMC test for beetles. =====
 defining model...
 Detected r as data within 'constants'.
@@ -7019,6 +7021,38 @@ Warning messages:
   newModel: tau is not a variable in the model; initial value ignored.
 8: In md$newModel(data = data, inits = inits, where = where, check = check,  :
   newModel: beta2 is not a variable in the model; initial value ignored.
+
+Attaching package: ‘nimble’
+
+The following object is masked from ‘package:stats’:
+
+    simulate
+
+Testing of modelValues interfaces: compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
+compilation finished.
+.
+
+DONE ===========================================================================
+Warning message:
+Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 
+
+Attaching package: ‘nimble’
+
+The following object is masked from ‘package:stats’:
+
+    simulate
+
+Testing of nimbleFunction interfaces: compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
+compilation finished.
+.compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
+compilation finished.
+...compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compiler details.
+compilation finished.
+..
+
+DONE ===========================================================================
+Warning message:
+Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 
 
 Attaching package: ‘nimble’
 
@@ -10397,6 +10431,9 @@ testing for BUGS example: lsat: defining model...
 Detected r as data within 'constants'.
 Adding r as data for building model.
 building model...
+Error in (function (x)  : attempt to apply non-function
+In addition: Warning message:
+Placing tests in `inst/tests/` is deprecated. Please use `tests/testthat/` instead 
 setting data and initial values...
 checking model sizes and dimensions... note that missing values (NAs) or non-finite values were found in model variables: p, theta, a, theta.new, p.theta, p.item, P.theta. This is not an error, but some or all variables may need to be initialized for certain algorithms to operate properly.
 model building finished.
