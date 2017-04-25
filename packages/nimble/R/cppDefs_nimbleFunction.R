@@ -277,6 +277,7 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
                                                   invisible(NULL)
                                               },
                                               addGradientFunction = function(funName, independentVarNames) {
+                                                browser()
                                                   ##ADfunName <- if(funName == 'operator()') 'run_AD_' else paste0(funName, '_AD_')
                                                  regularFun <- RCfunDefs[[funName]]
                                                  argumentTransferName <- 'ADargumentTransfer'
@@ -285,12 +286,19 @@ cppNimbleFunctionClass <- setRefClass('cppNimbleFunctionClass',
 ##                                                 functionDefs[[newFunName]]$buildSEXPinterfaceFun(className = nfProc$name)
                                                  invisible(NULL)
                                              },
+                                            addHessianFunction = function(funName, independentVarNames) {
+                                              regularFun <- RCfunDefs[[funName]]
+                                              argumentTransferName <- 'ADargumentTransfer'
+                                              newFunName <- 'ADhessian'
+                                              functionDefs[[newFunName]] <<- makeHessianFunction(newFunName, regularFun, argumentTransferName, independentVarNames)
+                                              invisible(NULL)
+                                            },
                                               addADclassContentOneFun = function(funName) {
                                                   addTypeTemplateFunction(funName)
                                                   independentVarNames <- names(functionDefs[[funName]]$args$symbols)
                                                   addADtapingFunction(funName, independentVarNames = independentVarNames, dependentVarNames = 'ANS_' )
                                                   addADargumentTransferFunction(funName, independentVarNames = independentVarNames)
-                                                ##  addGradientFunction(funName, independentVarNames = independentVarNames)
+                                                  # addHessianFunction(funName, independentVarNames = independentVarNames)
 
                                               },
                                               addADclassContent = function() {

@@ -411,7 +411,7 @@ cppOutputCall <- function(code, symTab) {
 }
 
 cppOutputPow <- function(code, symTab) {
-    useStaticCase <- if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
+    useStaticCase <- if(identical(code$cppADCode, TRUE)) FALSE else if(is.numeric(code$args[[2]]) ) TRUE else identical(code$args[[2]]$nDim, 0)
     if(useStaticCase)
         paste0(exprName2Cpp(code, symTab), '( static_cast<double>(',nimGenerateCpp(code$args[[1]], symTab, asArg = TRUE),'),', nimGenerateCpp(code$args[[2]], symTab, asArg = TRUE),')')
     else

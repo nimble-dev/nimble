@@ -122,13 +122,26 @@ nimbleFunction <- function(setup         = NULL,
 
 buildDerivMethods <- function(methodsList) {
     derivMethodsList <- list()
+    secondDerivMethodsList <- list()
     for(i in seq_along(methodsList)) {
         derivMethodsList[[i]] <- methodsList[[i]]
         newCall <- as.call(c(list(quote(ADargumentTransfer)), lapply(names(formals(methodsList[[i]])), as.name)))
         body(derivMethodsList[[i]]) <- substitute({return(vectorDouble_2_NimArr(getGradient(NEWCALL))); returnType(double(1))}, list(NEWCALL = newCall))
         
+        secondDerivMethodsList[[i]] <- methodsList[[i]]
+        body(secondDerivMethodsList[[i]]) <- substitute({return(getHessian(NEWCALL)); returnType(double(2))}, list(NEWCALL = newCall))
+        # body(secondDerivMethodsList[[i]]) <- substitute({
+        #   ans <- vectorDouble_2_NimArr(getHessian(NEWCALL));
+        #   ansMat <- matrix(nrow = P, ncol = P);
+        #   for(rowNum in 1:P){
+        #     ansMat[rowNum, ] <- ans[(P*(rowNum - 1) + 1):(P*rowNum)]
+        #   };
+        #   returnType(double(2));
+        #   return(ansMat);}, list(NEWCALL = newCall, P = 4))
     }
-    names(derivMethodsList) <- paste0(names(methodsList), '_gradient')
+    names(derivMethodsList) <-paste0(names(methodsList), '_gradient')
+    names(secondDerivMethodsList) <- paste0(names(methodsList), '_hessian')
+    derivMethodsList <- c(derivMethodsList, secondDerivMethodsList)
     derivMethodsList
 }
 

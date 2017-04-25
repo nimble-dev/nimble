@@ -1,5 +1,6 @@
 /* Definitions only to be included when a nimbleFunction needs CppAD */
-
+#include <cppad/cppad.hpp>
+#include <nimble/RcppNimbleUtils.h>
 #include<vector>
 #include<cstdio>
 /* nimbleCppADinfoClass is the class to convey information from a nimbleFunction object 
@@ -21,5 +22,25 @@ class nimbleFunctionCppADbase {
     printf("inside getGradient\n");
     vector<double> ans = ADinfo.ADtape->RevOne(ADinfo.independentVars, 0);
     return(ans);
+  }
+  
+  NimArr<2, double> getHessian(nimbleCppADinfoClass &ADinfo) {
+	NimArr<1, double> nimAns;
+	NimArr<2, double> nimAnsMat;
+	std::size_t p = length(ADinfo.independentVars);
+    std::vector<double> i (p);
+    std::vector<double> j (p);
+	
+	// nimAnsMat.initialize(0, 1, 1, 1, p, p);
+
+	for(std::size_t independentVar=0; independentVar < p; independentVar++ ) { // is static_cast necessary?
+	  i[independentVar] = 0; 
+	  j[independentVar] = independentVar; 
+	}
+	printf("inside getHessian\n");
+	//vector<double> ans = ADinfo.ADtape->RevTwo(ADinfo.independentVars, i, j);
+	nimAns = vectorDouble_2_NimArr(ADinfo.ADtape->RevTwo(ADinfo.independentVars, i, j));
+	nimAnsMat.setMap(nimAns, 0, 1, 1, p, p);
+	return(nimAnsMat);
   }
 };

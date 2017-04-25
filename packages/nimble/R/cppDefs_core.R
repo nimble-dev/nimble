@@ -227,7 +227,8 @@ cppClassDef <- setRefClass('cppClassDef',
 ## A cppCodeBlock is an arbitrary collection of parse tree and other cppCodeBlocks (defined below)
 ## The parse tree can be either an R parse tree or one of our exprClass objects
 cppCodeBlock <- setRefClass('cppCodeBlock',
-                            fields = list(typeDefs = 'ANY', objectDefs = 'ANY', code = 'ANY', skipBrackets = 'ANY'),			#'logical'),
+                            fields = list(typeDefs = 'ANY', objectDefs = 'ANY', code = 'ANY', skipBrackets = 'ANY',
+                                          cppADCode = 'ANY'),			#'logical'),
                             methods = list(
                                 generate = function(indent = '', ...) {
                                     if(inherits(typeDefs, 'uninitializedField')) typeDefs <<- list()
@@ -235,7 +236,6 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
                                     if(length(typeDefsToUse) > 0) {
                                         outputCppCode <- paste0(indent, generateObjectDefs(typeDefsToUse),';')
                                     } else outputCppCode <- list()
-                                    
                                     if(inherits(objectDefs, 'uninitializedField')) objectDefs <<- list()
                                     objectDefsToUse <- if(inherits(objectDefs, 'symbolTable')) objectDefs$symbols else objectDefs
                                     if(length(objectDefsToUse) > 0) {
@@ -244,7 +244,9 @@ cppCodeBlock <- setRefClass('cppCodeBlock',
 
                                     if(inherits(code, 'exprClass')) {
                                         if(!inherits(objectDefs, 'symbolTable')) stop('Error, with exprClass code in the cppCodeBlock, must have objectDefs be a symbolTable')
-                                        outputCppCode <- c(outputCppCode, nimGenerateCpp(code, objectDefs, indent = ' ', showBracket = FALSE))
+                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, TRUE) 
+                                      outputCppCode <- c(outputCppCode, nimGenerateCpp(code, objectDefs, indent = ' ', showBracket = FALSE))
+                                        if(identical(cppADCode, TRUE)) recurseSetCppADExprs(code, FALSE) 
                                     } else {
                                         outputCppCode <- c(outputCppCode, outputCppParseTree2(code, indent))
                                     }

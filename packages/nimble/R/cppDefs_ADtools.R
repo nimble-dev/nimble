@@ -53,7 +53,6 @@ symbolTable2templateTypeSymbolTable <- function(symTab, addRef = FALSE, clearRef
 ## This is called from an existing version of the cppFunctionDef and returns a separate one
 makeTypeTemplateFunction = function(newName, .self) { 
     newCppFunDef <- RCfunctionDef$new(static = TRUE)
-
     ## use typedefs to change nimble's general typedefs for Eigen locally
     typeDefs <- symbolTable()
     typeDefs$addSymbol(cppVarFull(baseType = "typedef typename EigenTemplateTypes<TYPE_>::typeEigenMapStrd", name = "EigenMapStrd") ) ## these coerces the cppVar system to generate a line of typedef code for us
@@ -63,8 +62,17 @@ makeTypeTemplateFunction = function(newName, .self) {
     newCppFunDef$args <- symbolTable2templateTypeSymbolTable(.self$args, addRef = TRUE)
     localArgs <- symbolTable2templateTypeSymbolTable(.self$code$objectDefs)
     newCppFunDef$returnType <- cppVarSym2templateTypeCppVarSym(.self$returnType)
-    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs)
+    newCppFunDef$code <- cppCodeBlock(code = .self$code$code, objectDefs = localArgs, typeDefs = typeDefs, cppADCode = TRUE)
     newCppFunDef
+}
+
+recurseSetCppADExprs <- function(code, logicVal = TRUE){
+  if(inherits(code, 'exprClass')){
+      code$cppADCode <- logicVal
+    for(i in seq_along(code$args)){
+      recurseSetCppADExprs(code$args[[i]], logicVal)
+    }
+  }
 }
 
 
@@ -279,6 +287,22 @@ makeGradientFunction <- function(newFunName = 'run_gradient_', regularFun, argum
     allCode <- RparseTree2ExprClasses(allRcode)
     GF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
     GF
+}
+
+makeHessianFunction <- function(newFunName = 'run_hessian_', regularFun, argumentTransferName, independentVarNames) {
+  HF <- RCfunctionDef()
+  HF$name <- newFunName
+  HF$args <- regularFun$args
+  HF$returnType <- symbolBasic(name = 'NAME_NOT_USED', type = 'double', nDim = 2, size = as.numeric(NA))$genCppVar()## could check that this is double: regularFun$returnType
+  localVars <- symbolTable()
+  argTransferCall <- substitute(FOO(), list(FOO = as.name(argumentTransferName)))
+  for(i in seq_along(independentVarNames)) argTransferCall[[i + 1]] <- as.name(independentVarNames[[i]])
+  oneLinerCode <- substitute(return(vectorDouble_2_NimArr(getHessian(ATC))),  list(ATC = argTransferCall))
+  allRcode <- do.call('call', c(list('{'), list(oneLinerCode)), quote=TRUE)
+  
+  allCode <- RparseTree2ExprClasses(allRcode)
+  HF$code <- cppCodeBlock(code = allCode, objectDefs = localVars)
+  HF
 }
 
 makeADargumentTransferFunction <- function(newFunName = 'arguments2cppad', targetFunDef, independentVarNames) {
