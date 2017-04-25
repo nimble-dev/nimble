@@ -279,7 +279,7 @@ makeNimbleListBindingFields <- function(symTab, cppNames, castFunName) {
                     ##vptr <- nimbleInternalFunctions$newObjElementPtr(namedObjectsPtr, name, dll = dll)
                     ##nimbleInternalFunctions$getSetCharacterVector(vptr, VARNAME, value = x, dll = dll)
                     nimbleInternalFunctions$getSetCharacterVector(VARNAME, value = x, namedObjectsPtr, dll = dll)
-                }, list(VARNAME = vn, CASTFUN = castFunName) ) )
+                }, list(VARNAME = vn, CASTFUNCALL = castFunCall) ) )
                 next
             } else {                    ## character scalar
                 eval(substitute( fieldList$VARNAME <- function(x) {
