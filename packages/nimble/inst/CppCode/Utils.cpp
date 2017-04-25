@@ -69,4 +69,4 @@ double cube(double x) {return(x*x*x);}
 double inprod(double v1, double v2) {return(v1*v2);}
 
 // TODO Fill in this stub.
-double nimOptim(double bogus_data) { return bogus_data; }
+double nimFakeOptim(double bogus_data) { return bogus_data; }

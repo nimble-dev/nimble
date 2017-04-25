@@ -1095,4 +1095,5 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-nimOptim <- optim
+fakeOptim <- function(x) x
+nimFakeOptim <- fakeOptim

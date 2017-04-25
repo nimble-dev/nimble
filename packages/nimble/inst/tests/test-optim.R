@@ -5,7 +5,7 @@ context("Testing of the optim() function in NIMBLE code")
 test_that("nimbleFunction of optim stub works", {
     nimFun <- nimbleFunction(
         run = function(x = double(0)) {
-            return(optim(x))
+            return(fakeOptim(x))
             returnType(double(0))
         }
     )
@@ -16,11 +16,11 @@ test_that("nimbleFunction of optim stub works", {
 test_that("compileNimble of optim stub works", {
     nimFun <- nimbleFunction(
         run = function(x = double(0)) {
-            return(optim(x))
+            return(fakeOptim(x))
             returnType(double(0))
         }
     )
     compiledFun <- compileNimble(nimFun)
-    ans <- compiledFun$run(0)
+    ans <- compiledFun(0)
     expect_equal(ans, 0)
 })
