@@ -35,7 +35,6 @@ setupCodeTemplateClass <- setRefClass('setupCodeTemplateClass',
 #		rgamma_keywordInfo
 #		d_dist_keywordInfo
 #		qp_dist_keywordInfo
-#		nimOptim_keywordInfo
 #		values_keywordInfo
 #		calculate_keywordInfo
 #		simulate_keywordInfo
@@ -161,56 +160,13 @@ nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
   }
 )
 
-nimOptim_keywordInfo <- keywordInfoClass(
-	keyword = 'nimOptim',
-	processor = function(code, nfProc){
-		
-		
-		rawFunName <- as.character(code$optFun)		#grabs the run code name of the function to be optimized
-		optimFunSym <- nfProc$setupSymTab$symbols[[rawFunName]]		#gets the symbol associated with this function
-
-		optimFunName <- funName2OptimFunName(optimFunSym$nfProc$name)		#makes the name of the C++ function
-		argInfo <- getArgInfoFromNFSym(optimFunSym)							#extracts the information about the function to be optimized from it's symbol
-				
-		voidPointerNFName <- makeVoidPointerName_fromObjName(rawFunName)	#Makes the name for the void* that will ultimately be passed to nimble_optim
-		voidPointerForNFLine <- paste0(voidPointerNFName, ' <- voidPtr(', rawFunName, ', nimbleFunction)')		#line of run code for making the void pointer
-		
-		argPointInfo <- makeDSLCallforVoidPtr_fromArgInfAndCall(code, argInfo)			#Makes the lines of code that create the void*'s for the arguments to be passed to optimized function
-		argPointerRunCode <- argPointInfo$newRunCode									#run code for void pointers to arguments
-		argVPtrNames <- as.character(argPointInfo$pointerNames)							#names of pointers
-								
-		allNewBuildCode <- c(voidPointerForNFLine, argPointerRunCode)					#combining all the code for wrapping the void pointers
-		code$optFun <- parse(text = optimFunName)[[1]]									#replacing the optFun argument with the name of the new wrapper
-		
-		
-		cNimCall_to_use <- parse(text = 'bareBonesOptim')[[1]]	#As we update the flexbility of optim, we are going to be
-																#changing the cNimCall_to_use
-																#this is currently in place to bypass issues such as 
-																#getting the optimAns and optimControl into the DSL
-																
-																#When we get those working, the C++ function we will use (i.e. no longer bareBonesOptim) 
-																#will need different arguments, and so the next few lines of code will probably need expanding
-
-		code[[1]] <-cNimCall_to_use	
-		code[[4]] <- parse(text = voidPointerNFName)[[1]]
-		names(code)[4] <- 'voidNimFunPtr'
-		code[[5]] <- parse(text = length(argPointInfo$pointerNames))[[1]]
-		names(code)[5] <- 'numAdditionalArgs'
-		
-		for(argName in names(argPointInfo$pointerNames) )
-			code[[argName]] <- parse(text = argPointInfo$pointerNames[[argName]])[[1]]
-
-		newRunCode <- quote({})
-		for(i in seq_along(allNewBuildCode))
-			newRunCode[[i+1]] <- parse(text = allNewBuildCode[[i]])[[1]]
-		newRunCode[[length(newRunCode) + 1]] <- code
-				
-		
-		setupArgList <- list(name = optimFunName, nimbleFunctionName = rawFunName)			
-		addNecessarySetupCode(optimFunName, setupArgList, optimReadyFun_setupCodeTemplate, nfProc)
-		return(newRunCode)
-	}
-)
+## TODO Implement optim.
+## nimOptim_keywordInfo <- keywordInfoClass(
+##     keyword = 'nimOptim',
+##     processor = function(code, nfProc){
+##         # TODO
+##     }
+## )
 
 nimSeq_keywordInfo <- keywordInfoClass(
     keyword = 'nimSeq',
@@ -848,7 +804,7 @@ keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
-keywordList[['nimOptim']] <- nimOptim_keywordInfo
+## keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
@@ -916,7 +872,7 @@ matchFunctions[['getLogProb']] <- getLogProb	#function(model, nodes, nodeFunctio
 matchFunctions[['nimCopy']] <- function(from, to, nodes, nodesTo, row, rowTo, logProb = FALSE){}
 matchFunctions[['double']] <- function(nDim, dim, default, ...){}
 matchFunctions[['int']] <- function(nDim, dim, default, ...){}
-matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
+## matchFunctions[['nimOptim']] <- function(initPar, optFun, ...){} 
 matchFunctions[['nimEigen']] <- function(squareMat, only.values = FALSE){}
 matchFunctions[['nimSvd']] <- function(mat, vectors = 'full'){}
 matchFunctions[['dgamma']] <- function(x, shape, rate = 1, scale, log = FALSE){}
@@ -1085,7 +1041,7 @@ processKeywords_recurse <- function(code, nfProc = NULL) {
 #####	SETUPCODE TEMPLATES
 
 #		Current Available Templates:
-#		optimReadyFun_setupCodeTemplate
+##		optimReadyFun_setupCodeTemplate
 #		modelVariableAccessorVector_setupCodeTemplate
 #		modelValuesAccessorVector_setupCodeTemplate
 #		accessorVectorLength_setupCodeTemplate
@@ -1106,15 +1062,16 @@ length_char_SetupTemplate <- setupCodeTemplateClass(
              CODE = argList$code)
     })
 
-optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
-	makeName = function(argList){Rname2CppName(deparse(argList$name))},
-	codeTemplate = quote(OPTIM_FUN <- OptimReadyFunction(name = OPTIM_FUN_INQUOTES, nimbleFunction = NFNAME, localNimbleFunctionName = LOCALORGNAME)),
-	makeCodeSubList = function(resultName, argList){
-		list(OPTIM_FUN = as.name(argList$name),
-			OPTIM_FUN_INQUOTES = argList$name, 
-			NFNAME = as.name(argList$nimbleFunctionName),
-			LOCALORGNAME = argList$nimbleFunctionName)
-	})
+# TODO
+## optimReadyFun_setupCodeTemplate <- setupCodeTemplateClass(
+## 	makeName = function(argList){Rname2CppName(deparse(argList$name))},
+## 	codeTemplate = quote(OPTIM_FUN <- OptimReadyFunction(name = OPTIM_FUN_INQUOTES, nimbleFunction = NFNAME, localNimbleFunctionName = LOCALORGNAME)),
+## 	makeCodeSubList = function(resultName, argList){
+## 		list(OPTIM_FUN = as.name(argList$name),
+## 			OPTIM_FUN_INQUOTES = argList$name, 
+## 			NFNAME = as.name(argList$nimbleFunctionName),
+## 			LOCALORGNAME = argList$nimbleFunctionName)
+## 	})
 
                                           
 modelVariableAccessorVector_setupCodeTemplate <- setupCodeTemplateClass(
