@@ -149,4 +149,7 @@ int nimStep(double x);
 double cube(double x);
 double inprod(double v1, double v2);
 
+// TODO Fix the type of this stub.
+double nimOptim(double bogus_data);
+
 #endif
