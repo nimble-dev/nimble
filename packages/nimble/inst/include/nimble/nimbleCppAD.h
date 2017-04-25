@@ -25,22 +25,19 @@ class nimbleFunctionCppADbase {
   }
   
   NimArr<2, double> getHessian(nimbleCppADinfoClass &ADinfo) {
-	NimArr<1, double> nimAns;
 	NimArr<2, double> nimAnsMat;
 	std::size_t p = length(ADinfo.independentVars);
-    std::vector<double> i (p);
-    std::vector<double> j (p);
+    std::vector<int> i (p);
+    std::vector<int> j (p);
 	
-	// nimAnsMat.initialize(0, 1, 1, 1, p, p);
-
-	for(std::size_t independentVar=0; independentVar < p; independentVar++ ) { // is static_cast necessary?
+	nimAnsMat.initialize(0, 1, 1, 1, p, p);
+	for(std::size_t independentVar=0; independentVar < p; independentVar++ ) {
 	  i[independentVar] = 0; 
 	  j[independentVar] = independentVar; 
 	}
 	printf("inside getHessian\n");
-	//vector<double> ans = ADinfo.ADtape->RevTwo(ADinfo.independentVars, i, j);
-	nimAns = vectorDouble_2_NimArr(ADinfo.ADtape->RevTwo(ADinfo.independentVars, i, j));
-	nimAnsMat.setMap(nimAns, 0, 1, 1, p, p);
+	vector<double> ans = ADinfo.ADtape->RevTwo(ADinfo.independentVars, i, j);
+	std::copy(ans.begin(), ans.end(), nimAnsMat.getPtr());  //could this line ever cause error?
 	return(nimAnsMat);
   }
 };
