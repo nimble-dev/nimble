@@ -23,7 +23,7 @@ R CMD check --as-cran nimble_${VERSION}.tar.gz
 run tests:
 in particular check exact results vs previous versions (ignore differences in compilation log info)
 doing this test by test because of DLL unloading issue
-types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists filtering getBound getDependencies getDistributionInfo getParam math mcem mcmc models nimbleList numericTypes setData size trunc types user"
+types="allocation checkDSL compareMCMCs copy coreR declare distributions dsl_dists filtering getBound getDependencies getDistributionInfo getParam math mcem mcmc models modelValuesInterface nimbleFunctionInterfaces nimbleList numericTypes setData size trunc types user"
 for type in $types; do
 Rscript -e "library(nimble); library(methods); library(testthat); test_package('nimble','$type')" >> /tmp/test-results-v${VERSION} 2>&1
 done
