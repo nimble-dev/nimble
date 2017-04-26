@@ -18,9 +18,9 @@ class nimbleCppADinfoClass {
    make more sense as stand-alone functions.  Let's see. */
 class nimbleFunctionCppADbase {
  public:
-  vector<double> getGradient(nimbleCppADinfoClass &ADinfo) {
+  NimArr<1, double> getGradient(nimbleCppADinfoClass &ADinfo) {
     printf("inside getGradient\n");
-    vector<double> ans = ADinfo.ADtape->RevOne(ADinfo.independentVars, 0);
+    NimArr<1, double> ans = vectorDouble_2_NimArr(ADinfo.ADtape->RevOne(ADinfo.independentVars, 0));
     return(ans);
   }
   
@@ -39,5 +39,24 @@ class nimbleFunctionCppADbase {
 	vector<double> ans = ADinfo.ADtape->RevTwo(ADinfo.independentVars, i, j);
 	std::copy(ans.begin(), ans.end(), nimAnsMat.getPtr());  //could this line ever cause error?
 	return(nimAnsMat);
-  }
+  } 
+
 };
+
+class NIMBLE_ADCLASS : public NamedObjects, public pointedToBase {
+public:
+  NimArr<1, double> value;
+  NimArr<2, double> gradient;
+  NimArr<3, double> hessian;
+  NimArr<4, double> thirdDerivs;
+
+  SEXP RObjectPointer;
+  bool RCopiedFlag;
+void  copyFromSEXP ( SEXP S_nimList_ );
+SEXP  copyToSEXP (  );
+void  createNewSEXP (  );
+void  resetFlags (  );
+ NIMBLE_ADCLASS (  );
+};
+// use template for integer dim of nimArr?
+// seems like we'll always want to use combos of 0 and 1 to specify directions for derivatives

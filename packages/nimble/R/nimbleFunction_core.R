@@ -92,7 +92,7 @@ nimbleFunction <- function(setup         = NULL,
 
     methodList <- c(list(run = run), methods)   # create a list of the run function, and all other methods
     # simply pass in names of vars in setup code so that those can be used in nf_checkDSLcode; to be more sophisticated we would only pass vars that are the result of nimbleListDefs or nimbleFunctions
-    if(enableDerivs) methodList <- c(methodList, buildDerivMethods(methodList))
+    # if(enableDerivs) methodList <- c(methodList, buildDerivMethods(methodList))
     methodList <- lapply(methodList, nfMethodRC, check = check, methodNames = names(methodList), setupVarNames = c(all.vars(body(setup)), names(formals(setup))))
     ## record any setupOutputs declared by setupOutput()
     setupOutputsDeclaration <- nf_processSetupFunctionBody(setup, returnSetupOutputDeclaration = TRUE)
@@ -126,7 +126,7 @@ buildDerivMethods <- function(methodsList) {
     for(i in seq_along(methodsList)) {
         derivMethodsList[[i]] <- methodsList[[i]]
         newCall <- as.call(c(list(quote(ADargumentTransfer)), lapply(names(formals(methodsList[[i]])), as.name)))
-        body(derivMethodsList[[i]]) <- substitute({return(vectorDouble_2_NimArr(getGradient(NEWCALL))); returnType(double(1))}, list(NEWCALL = newCall))
+        body(derivMethodsList[[i]]) <- substitute({return(getGradient(NEWCALL)); returnType(double(1))}, list(NEWCALL = newCall))
         
         secondDerivMethodsList[[i]] <- methodsList[[i]]
         body(secondDerivMethodsList[[i]]) <- substitute({return(getHessian(NEWCALL)); returnType(double(2))}, list(NEWCALL = newCall))

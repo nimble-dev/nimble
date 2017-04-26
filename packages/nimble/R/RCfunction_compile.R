@@ -214,7 +214,6 @@ RCfunProcessing <- setRefClass('RCfunProcessing',
                                            stop(paste('There is some problem at the setSizes processing step for this code:\n', paste(deparse(compileInfo$origRcode), collapse = '\n'), collapse = '\n'), call. = FALSE)
                                        }
                                        neededRCfuns <<- compileInfo$typeEnv[['neededRCfuns']]
-                                       
                                        if(debug) {
                                            print('compileInfo$nimExpr$show(showType = TRUE) -- broken')
                                            print('compileInfo$nimExpr$show(showAssertions = TRUE) -- possible broken')

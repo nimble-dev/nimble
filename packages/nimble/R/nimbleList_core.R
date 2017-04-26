@@ -352,11 +352,17 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
                                   nimbleType('u', 'double', 2),
                                   nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
 
+ADNimbleList <-  nimbleList(list(nimbleType('value', 'double', 1),
+                                 nimbleType('gradient', 'double', 2),
+                                 nimbleType('hessian', 'double', 3),
+                                 nimbleType('thirdDerivs', 'double', 4)),
+                            name = "NIMBLE_ADCLASS", predefined = TRUE)
 
 ## any DSL functions that return nimbleLists should be added to the list below, in the form:
 ## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
-                                        nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"))
+                                        nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"),
+                                        nimDerivs = list(nlGen = ADNimbleList, cppName = "NIM_DERIVS"))
 
 
 #' check if a nimbleList

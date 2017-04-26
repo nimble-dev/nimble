@@ -66,6 +66,7 @@ Collate:
     nimbleFunction_compile.R
     nimbleFunction_keywordProcessing.R
     nimbleList_core.R
+	AD_core.R
     types_util.R
     types_symbolTable.R
     types_modelValues.R

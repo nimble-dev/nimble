@@ -52,6 +52,14 @@ rwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
 }
 
 
+#' Nimble Derivatives
+#' @export
+nimDerivs <- function(nimFxn = NA, order = NA){
+  fxnCall <- substitute(nimFxn)
+  print('R nimDerivs not yet implemented')
+  return(NA)
+}
+
 #' Spectral Decomposition of a Matrix  
 #'
 #' Computes eigenvalues and eigenvectors of a numeric matrix.  
