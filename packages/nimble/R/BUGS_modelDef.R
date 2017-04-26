@@ -2033,7 +2033,10 @@ modelDefClass$methods(genVarInfo3 = function() {
         for(iV in seq_along(rhsVars)) {
             rhsVar <- rhsVars[iV]
             if(!(rhsVar %in% names(varInfo))) {
-                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1) 0 else length(BUGSdecl$symbolicParentNodes[[iV]])-2
+                nDim <- if(length(BUGSdecl$symbolicParentNodes[[iV]])==1)
+                            0
+                        else ## this assumes parent node does not have stochastic index.
+                            length(BUGSdecl$symbolicParentNodes[[iV]])-2
                 varInfo[[rhsVar]] <<- varInfoClass$new(varName = rhsVar,
                                                        mins = rep(100000, nDim),
                                                        maxs = rep(0, nDim),
