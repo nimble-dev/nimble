@@ -160,14 +160,6 @@ nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
   }
 )
 
-## TODO Implement optim.
-## nimOptim_keywordInfo <- keywordInfoClass(
-##     keyword = 'nimOptim',
-##     processor = function(code, nfProc){
-##         # TODO
-##     }
-## )
-
 nimSeq_keywordInfo <- keywordInfoClass(
     keyword = 'nimSeq',
     processor = function(code, nfProc) {
@@ -804,7 +796,6 @@ keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
-## keywordList[['nimOptim']] <- nimOptim_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo
