@@ -7,20 +7,21 @@
 
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+    "SEXP_2_NimArr<1, double> called for SEXP that is not a numeric or logical: actual type %s\n",
+    type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+      "could not handle input of type %s to SEXP_2_NimArr<1, double>\n",
+      type2str(TYPEOF(Sn)));
+    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    for(int i = 0; i < nn; ++i) {
+      ans(i) = static_cast<double>(iSn[i]);
     }
   }
 }
@@ -28,23 +29,24 @@ void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, double> &ans) {
 // Actually this is identical to above so could be done without specialization
 template<>
 void SEXP_2_NimArr<1>(SEXP Sn, NimArr<1, int> &ans) {
-  if(!(isNumeric(Sn) || isLogical(Sn))) PRINTF("Error: SEXP_2_NimArr<1> called for SEXP that is not a numeric or logical!\n");
+  NIM_ASSERT(isNumeric(Sn) || isLogical(Sn),
+    "SEXP_2_NimArr<1, int> called for SEXP that is not a numeric or logical: actual type %s\n",
+    type2str(TYPEOF(Sn)));
   int nn = LENGTH(Sn);
-  if(ans.size() != 0) PRINTF("Error: trying to reset a NimArr that was already sized\n");
+  NIM_ASSERT(ans.size() == 0, "trying to reset a NimArr that was already sized\n");
   ans.setSize(nn);
   if(isReal(Sn)) {
-     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());	
+     std::copy(REAL(Sn), REAL(Sn) + nn, ans.getPtr());
   } else {
-    if(isInteger(Sn) || isLogical(Sn)) {
-      int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
-      for(int i = 0; i < nn; ++i) {
-	ans(i) = static_cast<double>(iSn[i]);
-      }
-    } else {
-      PRINTF("Error: We could not handle the R input type to SEXP_2_NimArr<1>\n");
+    NIM_ASSERT(isInteger(Sn) || isLogical(Sn),
+      "could not handle input of type %s to SEXP_2_NimArr<1, int>\n",
+      type2str(TYPEOF(Sn)));
+    int *iSn = isInteger(Sn) ? INTEGER(Sn) : LOGICAL(Sn);
+    for(int i = 0; i < nn; ++i) {
+      ans(i) = static_cast<double>(iSn[i]);
     }
   }
-} 
+}
 
 /*EIGEN_EIGEN class functions below */
 SEXP  EIGEN_EIGENCLASS_R::copyToSEXP (  )  {
