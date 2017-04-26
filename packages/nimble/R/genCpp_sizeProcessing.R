@@ -16,6 +16,7 @@ sizeCalls <- c(makeCallList(binaryOperators, 'sizeBinaryCwise'),
                makeCallList(matrixSolveOperators, 'sizeSolveOp'), 
                makeCallList(matrixSquareOperators, 'sizeUnaryCwiseSquare'),
                makeCallList(nimbleListReturningOperators, 'sizeNimbleListReturningFunction'),
+               nimFakeOptim = 'sizeOptim',
                list('debugSizeProcessing' = 'sizeProxyForDebugging',
                     diag = 'sizeDiagonal',
                     dim = 'sizeDim',
@@ -989,6 +990,26 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
   code$nDim <- 0
   asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
   if(length(asserts) == 0) NULL else asserts
+}
+
+sizeOptim <- function(code, symTab, typeEnv) {
+    # TODO output a nimbleList
+    # TODO input various args and an optional nimbleList for control
+    asserts <- recurseSetSizes(code, symTab, typeEnv)
+    ## lift intermediates
+    a1 <- code$args[[1]]
+    if(inherits(a1, 'exprClass')) {
+        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
+        a1 <- code$args[[1]]
+        code$nDim <- a1$nDim
+        code$sizeExprs <- a1$sizeExprs
+    } else {
+        code$nDim <- 0
+        code$sizeExprs <- list()
+    }
+    code$type <- setReturnType(code$name, getArgumentType(a1))
+    code$toEigenize <- 'no'
+    return(asserts)
 }
 
 sizeCppPointerDereference <- function(code, symTab, typeEnv) {
