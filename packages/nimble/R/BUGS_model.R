@@ -150,6 +150,26 @@ Details: The return value is a character vector with an element for each node in
                                       return(subExpr)
                                   },
 
+                                  isMultivariate = function(nodes) {
+                                      '
+Determines whether one or more nodes represent multivariate nodes
+
+Arguments:
+
+nodes: A character vector specifying one or more node or variable names.  
+
+Details: The return value is a logical vector with an element for each node indicated in the input. Note that variable names are expanded to their constituent node names, so the length of the output may be longer than that of the input. 
+'
+                                      nodeNames <- expandNodeNames(nodes, unique = FALSE)
+                                      multi <- sapply(nodeNames, function(node) getDistributionInfo(getDistribution(node))$types$value$nDim > 0)
+                                      ##multi <- rep(FALSE, length(nodeNames))
+                                      ##for(i in seq_along(nodeNames)) {
+                                      ##    nodeExpanded <- expandNodeNames(nodeNames[i], returnScalarComponents = TRUE)
+                                      ##    if(length(nodeExpanded) > 1) multi[i] <- TRUE
+                                      ##}
+                                      return(multi)
+                                  },
+
                                   isDiscrete = function(nodes) {
                                                                           '
 Determines whether one or more nodes represent discrete random variables
