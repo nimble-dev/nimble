@@ -372,7 +372,7 @@ optimResultNimbleList <- nimbleList(
         nimbleType('hessian', 'double', 2)
     ),
     name = "OptimResultNimbleList",
-    predefined = FALSE  # TODO
+    predefined = TRUE
 )
 
 
