@@ -67,6 +67,3 @@ double pairmin(double x1, double x2) {return(x1 < x2 ? x1 : x2);}
 int nimStep(double x) { return(x >= 0 ? 1 : 0);}
 double cube(double x) {return(x*x*x);}
 double inprod(double v1, double v2) {return(v1*v2);}
-
-// TODO Fill in this stub.
-double nimFakeOptim(double bogus_data) { return bogus_data; }
