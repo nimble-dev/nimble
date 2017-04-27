@@ -22,7 +22,6 @@ specificCallReplacements <- list(
     gamma = 'gammafn',
     expit = 'ilogit',
     phi = 'iprobit',
-    fakeOptim = 'nimFakeOptim',
     ceiling = 'ceil',
     trunc = 'ftrunc',
     nimDim = 'dim',

@@ -995,20 +995,11 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
 sizeOptim <- function(code, symTab, typeEnv) {
     # TODO output a nimbleList
     # TODO input various args and an optional nimbleList for control
-    asserts <- recurseSetSizes(code, symTab, typeEnv)
-    ## lift intermediates
-    a1 <- code$args[[1]]
-    if(inherits(a1, 'exprClass')) {
-        asserts <- c(asserts, sizeInsertIntermediate(code, 1, symTab, typeEnv))
-        a1 <- code$args[[1]]
-        code$nDim <- a1$nDim
-        code$sizeExprs <- a1$sizeExprs
-    } else {
-        code$nDim <- 0
-        code$sizeExprs <- list()
-    }
-    code$type <- setReturnType(code$name, getArgumentType(a1))
-    code$toEigenize <- 'no'
+    asserts <- nimble:::recurseSetSizes(code, symTab, typeEnv)
+    code$type <- 'double'
+    code$nDim <- 0
+    code$toEigenize <- 'maybe'
+    code$sizeExprs <- list()
     return(asserts)
 }
 
