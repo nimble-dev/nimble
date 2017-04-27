@@ -353,12 +353,34 @@ svdNimbleList <-  nimbleList(list(nimbleType('d', 'double', 1),
                                   nimbleType('v', 'double', 2)), name = "EIGEN_SVDCLASS", predefined = TRUE)
 
 
+#' optimResultNimbleList definition
+#' 
+#' \code{nimbleList} definition for the type of \code{nimbleList} returned by \code{\link{nimOptim}}.
+#' 
+#' @author NIMBLE development team
+#'
+#' @export
+#' 
+#' @seealso  \code{\link{nimOptim}}
+optimResultNimbleList <- nimbleList(
+    list(
+        nimbleType('par', 'double', 1),
+        nimbleType('value', 'double', 0),
+        nimbleType('counts', 'integer', 1),
+        nimbleType('convergence', 'integer', 0),
+        nimbleType('message', 'character', 0),
+        nimbleType('hessian', 'double', 2)
+    ),
+    name = "OptimResultNimbleList",
+    predefined = FALSE  # TODO
+)
 
 
 ## any DSL functions that return nimbleLists should be added to the list below, in the form:
 ## functionName = list(nlGen = nimbleList definition, cppName = name of cpp function corresponding to dsl function)
 nimbleListReturningFunctionList <- list(nimEigen = list(nlGen = eigenNimbleList, cppName = 'EIGEN_EIGEN'),
-                                        nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"))
+                                        nimSvd = list(nlGen = svdNimbleList, cppName = "EIGEN_SVD"),
+                                        optimResultNimbleList = list(nlGen = optimResultNimbleList, cppName = "OptimResultNimbleList"))
 
 
 ## TODO Add nimbleList definitions for nimOptimResult and nimOptimControl.
