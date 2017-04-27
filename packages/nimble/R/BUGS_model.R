@@ -623,20 +623,27 @@ Details: The downward search for dependent nodes propagates through deterministi
 '
 
                                       if(inherits(nodes, 'character')) {
-                                          elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
-                                          if(returnScalarComponents)
-                                             # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                              nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
-                                                                   FALSE,
-                                                                   FALSE,
-                                                                   NA)
-                                          else
-                                              nodeIDs <- elementIDs
+                                          ## elementIDs <- modelDef$nodeName2GraphIDs(nodes, !returnScalarComponents)
+                                          ## if(returnScalarComponents)
+                                          ##    # nodeIDs <- .Internal(unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                          ##     nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                          ##                          FALSE,
+                                          ##                          FALSE,
+                                          ##                          NA)
+                                          ## else
+                                          ##     nodeIDs <- elementIDs
+
+                                          ## experimental: always start from scalar components
+                                          elementIDs <- modelDef$nodeName2GraphIDs(nodes, FALSE)
+                                          nodeIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],     ## turn into IDs in the graph
+                                                            FALSE,
+                                                            FALSE,
+                                                            NA)
                                       }
                                       else if(inherits(nodes, 'numeric'))
                                           nodeIDs <- nodes
                                       
-                                      if(inherits(omit, 'character')) {
+                                      if(inherits(omit, 'character')) { ## mimic above if it works
                                           elementIDs <- modelDef$nodeName2GraphIDs(omit, !returnScalarComponents)
                                           if(returnScalarComponents)
                                               omitIDs <- unique(modelDef$maps$elementID_2_vertexID[elementIDs],
@@ -648,11 +655,13 @@ Details: The downward search for dependent nodes propagates through deterministi
                                       }
                                       else if(inherits(omit, 'numeric'))
                                           omitIDs <- omit
-                                      
 
-depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+
+## new C++ version
+## depIDs <- modelDef$maps$nimbleGraph$getDependencies(nodes = nodeIDs, omit = if(is.null(omitIDs)) integer() else omitIDs, downstream = downstream)
+
 ## ## Uncomment these lines to catch discrepancies between the old and new systems.
-## depIDsOld <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
+depIDs <- nimble:::gd_getDependencies_IDs(graph = getGraph(), maps = getMaps(all = TRUE), nodes = nodeIDs, omit = omitIDs, downstream = downstream)
 ## if(!identical(as.numeric(depIDsOld), as.numeric(depIDs))) {
 ##     cat('caught a discrepancy for depIDs')
 ##     browser()
