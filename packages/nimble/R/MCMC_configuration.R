@@ -775,13 +775,13 @@ print: Logical argument (default = FALSE).  If TRUE, the resulting ordered list 
             addRule(quote(model$getDistribution(node) == 'ddirch'), 'RW_dirichlet')
 
             ## multivariate & multivariateNodesAsScalars: univariate RW
-            addRule(quote((length(model$expandNodeNames(node, returnScalarComponents = TRUE)) > 1) && multivariateNodesAsScalars),
+            addRule(quote(model$isMultivariate(node) && multivariateNodesAsScalars),
                     quote(for(sn in model$expandNodeNames(node, returnScalarComponents = TRUE)) {
                         addSampler(target = sn, type = 'RW')
                     }))
             
             ## multivariate: RW_block
-            addRule(quote(length(model$expandNodeNames(node, returnScalarComponents = TRUE)) > 1), 'RW_block')
+            addRule(quote(model$isMultivariate(node)), 'RW_block')
 
 	    ## binary-valued nodes
             addRule(quote(model$isBinary(node)), 'binary')
