@@ -6,6 +6,7 @@
 #include <nimble/NimArr.h>
 #include <nimble/accessorClasses.h>
 #include <nimble/nimDists.h>
+#include <nimble/smartPtrs.h>
 #undef eval
 
 class OptimResultNimbleList : public NamedObjects, public pointedToBase {
