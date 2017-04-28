@@ -1,3 +1,7 @@
+
+-- New system of Sampler Assignment Rules in the MCMC, which allows customizing the rules used to assign default samplers in MCMC configuration objects.
+
+
                            CHANGES IN VERSION 0.6-4 (April 2017)
 
 USER LEVEL CHANGES
