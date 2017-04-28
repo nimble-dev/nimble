@@ -139,12 +139,15 @@ rexp_nimble_keywordInfo <- keywordInfoClass(
 nimbleListReturningFunction_keywordInfo <- keywordInfoClass(
   keyword = 'multiple',
   processor = function(code, nfProc){
-    nlGen <-   nimbleListReturningFunctionList[[deparse(code[[1]])]]$nlGen
+    name <- deparse(code[[1]])
+    nlFunctions <- nimbleListReturningFunctionList[[name]]
+    if(is.null(nlFunctions)) stop('Keyword missing from nimbleListReturningFunctionList:', name)
+    nlGen <- nlFunctions$nlGen
     nlClassName <- nl.getListDef(nlGen)$className
     if(!(nlClassName %in% nfProc$getSymbolTable()$getSymbolNames())){
       nlList <- nlGen$new() 
       nlp <- nfProc$nimbleProject$compileNimbleList(nlList, initialTypeInferenceOnly = TRUE)
-      ### below, we add a nlg to the symbolTable for use in sizeprocessing.  Nothing is added to neededTypes as it's assumed that 
+      ### below, we add a nlg to the symbolTable for use in sizeprocessing.  Nothing is added to neededTypes as it's assumed that
       ### class def'n exists in nimble provided c++ code and does not need to be generated.
       symObj <- symbolNimbleListGenerator(name = nlClassName, nlProc = nlp)
       nfProc$setupSymTab$addSymbol(symObj)
@@ -796,6 +799,7 @@ keywordList[['$']] <- dollarSign_keywordInfo
 keywordList[['[']] <- singleBracket_keywordInfo
 keywordList[['nimEigen']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['nimSvd']] <- nimbleListReturningFunction_keywordInfo
+keywordList[['nimFakeOptim']] <- nimbleListReturningFunction_keywordInfo
 keywordList[['dgamma']] <- d_gamma_keywordInfo
 keywordList[['pgamma']] <- pq_gamma_keywordInfo
 keywordList[['qgamma']] <- pq_gamma_keywordInfo

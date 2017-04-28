@@ -105,6 +105,7 @@ recurseGetListST <- function(className, neededTypes){
       }
     }
   }
+  if(is.null(listST)) stop(paste('Internal error: failed to find symbol for', className)) 
   return(listST)
 }
 
@@ -356,9 +357,11 @@ symbolNimbleList <-
                     initialize = function(...){callSuper(...); type <<- 'nimbleList'},
                     show = function() writeLines(paste('symbolNimbleList', name)),
                     genCppVar = function(...) {
+                        pointeeType <- nlProc$name
+                        if(is.null(pointeeType)) stop(paste('Internal error: nlProc is missing name:', name))
                         return(  cppVarFull(name = name,
                                             baseType = 'nimSmartPtr',
-                                            templateArgs = nlProc$name) )
+                                            templateArgs = pointeeType) )
                     }
                     ))
 

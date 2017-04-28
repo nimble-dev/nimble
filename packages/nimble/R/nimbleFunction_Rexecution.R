@@ -1095,5 +1095,9 @@ is.nan.vec <- function(x) any(is.nan(x))
 #' @export
 nimRound <- round
 
-fakeOptim <- function(x) x
+fakeOptim <- function(par) {
+    result <- optimResultNimbleList$new()
+    result$par <- as.double(par)
+    return(result)
+}
 nimFakeOptim <- fakeOptim

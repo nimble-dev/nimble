@@ -993,14 +993,14 @@ sizeNimbleListReturningFunction <- function(code, symTab, typeEnv) {
 }
 
 sizeOptim <- function(code, symTab, typeEnv) {
-    # TODO output a nimbleList
     # TODO input various args and an optional nimbleList for control
     asserts <- nimble:::recurseSetSizes(code, symTab, typeEnv)
-    code$type <- 'double'
-    code$nDim <- 0
+    code$type <- 'nimbleList'
+    code$sizeExprs <- symTab$getSymbolObject('OptimResultNimbleList', inherits = TRUE)
     code$toEigenize <- 'maybe'
-    code$sizeExprs <- list()
-    return(asserts)
+    code$nDim <- 0
+    asserts <- c(asserts, sizeInsertIntermediate(code$caller, code$callerArgID, symTab, typeEnv))
+    if(length(asserts) == 0) NULL else asserts
 }
 
 sizeCppPointerDereference <- function(code, symTab, typeEnv) {
