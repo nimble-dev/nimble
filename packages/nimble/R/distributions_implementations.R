@@ -157,9 +157,58 @@ nimSvd <- function(x, vectors = 'full') {
   .Call('C_nimSvd', x, vectors, svdNimbleList$new())
 }
 
+#' The Improper Uniform Distribution
+#'
+#' Improper flat distribution for use as a prior distribution in BUGS models
+#'
+#' @name flat
+#' @aliases halfflat
+#'
+#' @param x vector of values. 
+#' @param n number of observations.
+#' @param log logical; if TRUE, probability density is returned on the log scale.
+#'
+#' @author Christopher Paciorek
+#' @export
+#' @return \code{dflat} gives the pseudo-density value of 1, while \code{rflat} returns \code{NaN},
+#' since one cannot simulate from an improper distribution. Similarly, \code{dhalfflat}
+#' gives a pseudo-density value of 1 when \code{
+#' @seealso \link{Distributions} for other standard distributions
+#' 
+#' @examples
+#' dflat(1)
+NULL
 
+#' @rdname flat
+#' @export
+dflat <- function(x, log = FALSE) {  
+   if(log) out <- rep(as.numeric(0), length(x)) else  out <- rep(as.numeric(1), length(x))
+   nas <- is.na(x)
+   out[nas] <- x[nas]
+   return(out)
+}
 
+#' @rdname flat
+#' @export
+rflat <- function(n = 1) {
+  return(rep(NaN, n))
+}
 
+#' @rdname flat
+#' @export
+dhalfflat <- function(x, log = FALSE) {
+  out <- rep(as.numeric(0), length(x))
+  out[x < 0] <- -Inf
+  nas <- is.na(x)
+  out[nas] <- x[nas]
+  if(log) return(out) else return(exp(out))
+}
+
+#' @rdname flat
+#' @export
+rhalfflat <- function(n = 1) {
+  return(rep(NaN, n))
+}
 
 #' The Dirichlet Distribution
 #'
@@ -674,6 +723,7 @@ rinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
     .Call('C_rinvgamma', as.integer(n), as.double(shape), as.double(rate))
 }
 
+
 #' @rdname Inverse-Gamma
 #' @export
 pinvgamma <- function(q, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, log.p = FALSE) {
@@ -696,3 +746,23 @@ qinvgamma <- function(p, shape, scale = 1, rate = 1/scale, lower.tail = TRUE, lo
   .Call('C_qinvgamma', as.double(p), as.double(shape), as.double(rate), as.logical(lower.tail), as.logical(log.p))
 }
 
+# sqrtinvgamma is intended solely for use in conjugacy with dhalfflat
+#' @export
+dsqrtinvgamma <- function(x, shape, scale = 1, rate = 1/scale, log = FALSE) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_dsqrtinvgamma', as.double(x), as.double(shape), as.double(rate), as.logical(log))
+}
+
+#' @export
+rsqrtinvgamma <- function(n = 1, shape, scale = 1, rate = 1/scale) {
+    if (!missing(rate) && !missing(scale)) {
+        if (abs(rate * scale - 1) < 1e-15) 
+            warning("specify 'rate' or 'scale' but not both")
+        else stop("specify 'rate' or 'scale' but not both")
+    }
+    .Call('C_rsqrtinvgamma', as.integer(n), as.double(shape), as.double(rate))
+}

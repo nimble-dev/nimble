@@ -37,6 +37,8 @@ if(!exists('.NimbleUseRegistration') || !.NimbleUseRegistration) {
    C_rinvgamma = 'C_rinvgamma'
    C_pinvgamma = 'C_pinvgamma'
    C_qinvgamma = 'C_qinvgamma'
+   C_dsqrtinvgamma = 'C_dsqrtinvgamma'
+   C_rsqrtinvgamma = 'C_rsqrtinvgamma'
    C_dmnorm_chol = 'C_dmnorm_chol'
    C_rmnorm_chol = 'C_rmnorm_chol'
    C_dmvt_chol = 'C_dmvt_chol'

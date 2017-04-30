@@ -1550,6 +1550,143 @@ SEXP C_qexp_nimble(SEXP p, SEXP rate, SEXP lower_tail, SEXP log_p) {
   return ans;
 }
 
+
+// used solely in conjugacy for dhalfflat (so dsqrtinvgamma really just a placeholder)
+double dsqrtinvgamma(double x, double shape, double rate, int give_log)
+{
+#ifdef IEEE_754
+  if (ISNAN(x) || ISNAN(shape) || ISNAN(rate))
+    return x + shape + rate;
+#endif
+  double out = dinvgamma(x*x, shape, rate, 1) + log(2*x);
+  if(give_log) return(out);
+  else return(exp(out));
+}
+
+double rsqrtinvgamma(double shape, double rate)
+{
+#ifdef IEEE_754
+  if (ISNAN(shape) || ISNAN(rate))
+    ML_ERR_return_NAN;
+#endif
+  return(pow(rinvgamma(shape, rate), 0.5));
+}
+
+SEXP C_dsqrtinvgamma(SEXP x, SEXP shape, SEXP rate, SEXP return_log) {
+  if(!isReal(x) || !isReal(shape) || !isReal(rate) || !isLogical(return_log)) 
+    RBREAK("Error (C_dsqrtinvgamma): invalid input type for one of the arguments.");
+  int n_x = LENGTH(x);
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int give_log = (int) LOGICAL(return_log)[0];
+  SEXP ans;
+    
+  if(n_x == 0) {
+    return x;
+  }
+    
+  PROTECT(ans = allocVector(REALSXP, n_x));  
+  double* c_x = REAL(x);
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+
+  // FIXME: abstract the recycling as a function
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_x; i++) 
+      REAL(ans)[i] = dsqrtinvgamma(c_x[i], *c_shape, *c_rate, give_log);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_x; i++) {
+      REAL(ans)[i] = dsqrtinvgamma(c_x[i], c_shape[i_shape++], c_rate[i_rate++], give_log);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  UNPROTECT(1);
+  return ans;
+}
+  
+SEXP C_rsqrtinvgamma(SEXP n, SEXP shape, SEXP rate) {
+  if(!isInteger(n) || !isReal(shape) || !isReal(rate))
+    RBREAK("Error (C_rsqrtinvgamma): invalid input type for one of the arguments.");
+  int n_shape = LENGTH(shape);
+  int n_rate = LENGTH(rate);
+  int n_values = INTEGER(n)[0];
+  SEXP ans;
+    
+  if(n_values == 0) {
+    PROTECT(ans = allocVector(REALSXP, 0));
+    UNPROTECT(1);
+    return ans;
+  }
+  if(n_values < 0)
+    // should formalize using R's C error-handling API
+    RBREAK("Error (C_rsqrtinvgamma): n must be non-negative.\n");
+    
+  GetRNGstate(); 
+    
+  PROTECT(ans = allocVector(REALSXP, n_values));  
+  double* c_shape = REAL(shape);
+  double* c_rate = REAL(rate);
+  if(n_rate == 1 && n_shape == 1 && n_rate == 1) {
+    // if no parameter vectors, more efficient not to deal with multiple indices
+    for(int i = 0; i < n_values; i++) 
+      REAL(ans)[i] = rsqrtinvgamma(*c_shape, *c_rate);
+  } else {
+    int i_shape = 0;
+    int i_rate = 0;
+    for(int i = 0; i < n_values; i++) {
+      REAL(ans)[i] = rsqrtinvgamma(c_shape[i_shape++], c_rate[i_rate++]);
+      // implement recycling:
+      if(i_shape == n_shape) i_shape = 0;
+      if(i_rate == n_rate) i_rate = 0;
+    }
+  }
+    
+  PutRNGstate();
+  UNPROTECT(1);
+  return ans;
+}
+
+double dflat(double x, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x))
+    return x;
+#endif
+  if(give_log) return 0;
+  else return 1;
+}
+
+double rflat()
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  return R_NaN ;
+}
+
+double dhalfflat(double x, int give_log)
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+#ifdef IEEE_754
+  if (ISNAN(x))
+    return x;
+#endif
+  if(x >= 0) x = 0; else x = ML_NEGINF;
+  if(!give_log) x = exp(x);
+  return x;
+}
+
+double rhalfflat()
+// scalar function that can be called directly by NIMBLE with same name as in R
+{
+  return R_NaN;
+}
+
 // NIMBLE's C parameterization of invgamma is (shape,rate) because
 // when passing to R's C gamma, which uses (shape,scale), 
 // the gamma scale parameter is the invgamma rate parameter
