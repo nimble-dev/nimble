@@ -952,10 +952,11 @@ Details: The newly created model object will be identical to the original model 
 
 setMethod('[[', 'modelBaseClass',
           function(x, i) {
+              if(length(i) != 1) stop(paste0("Only one node can be accessed from a model using '[['."), call. = FALSE)
               if(!is.indexed(i)) {
                   eval(substitute(x$VAR, list(VAR=i)))
               } else {
-                  parsedNode <- parse(text=i)[[1]]
+                  parsedNode <- parse(text=i, keep.source = FALSE)[[1]]
                   parsedNode[[2]] <- substitute(x$VAR, list(VAR=parsedNode[[2]]))
                   eval(parsedNode)
               }
@@ -964,6 +965,7 @@ setMethod('[[', 'modelBaseClass',
 
 setMethod('[[<-', 'modelBaseClass',
           function(x, i, value) {
+              if(length(i) != 1) stop(paste0("Only one node can be accessed from a model using '[['."), call. = FALSE)
               if(!is.indexed(i)) {
                   eval(substitute(x$VAR <- value, list(VAR=i)))
               } else {
