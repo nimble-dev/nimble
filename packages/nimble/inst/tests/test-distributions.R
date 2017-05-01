@@ -286,7 +286,7 @@ code <- nimbleCode({
 
 n <- 100
 inits <- list(mu = 0, sigma = 1)
-m <- nimbleModel(code, data = list(y = rnorm(n)), inits = inits)
+m <- nimbleModel(code, constants = list(n = n), data = list(y = rnorm(n)), inits = inits)
 cm <- compileNimble(m)
 
 try(test_that("Test dflat calculate in R: ", {
@@ -300,6 +300,7 @@ try(test_that("Test dflat calculate in R: ", {
   expect_identical(m$sigma, NaN, "incorrect R simulate for dhalfflat")
   expect_identical(m$sigma, cm$sigma, "incorrect compiled simulate for dhalfflat")
 }))
+
 m$setInits(inits)
 cm$setInits(inits)
 
@@ -339,7 +340,7 @@ try(test_that("Test dhalfflat conjugacy detected: ",
 try(test_that("Test R and compiled MCMC equivalence for dhalfflat: ",
               expect_identical(rsmp, csmp[1:10], info = "R and compiled samples don't match")))
 try(test_that("Test compiled MCMC for dhalfflat: ", 
-              expect_equal(mean(csmp), 1, tol = 0.05, info = "posterior mean for sigma not correct")))
+              expect_equal(mean(csmp^2), var(m$y), tol = 0.03, info = "posterior mean for sigma not correct")))
 
             
 m$setInits(inits)
@@ -356,11 +357,12 @@ csmp <- as.matrix(cmcmc$mvSamples)
 
 try(test_that("Test R and compiled MCMC equivalence for dhalfflat: ",
               expect_identical(rsmp, csmp[1:10, ], info = "R and compiled samples don't match")))
-try(test_that("Test compiled MCMC for dhalfflat: ", {
+try(test_that("Test compiled MCMC for dflat and dhalfflat: ", {
               expect_equal(mean(csmp[ , 'mu']), mean(m$y), tol = 0.001, info = "posterior mean for mu not correct")
-              expect_equal(sd(csmp[ , 'mu']), 1/sqrt(n), tol = 0.003, info = "posterior sd for mu not correct")
+              expect_equal(sd(csmp[ , 'mu']), sd(m$y)/sqrt(n), tol = 0.003, info = "posterior sd for mu not correct")
 
-              expect_equal(mean(csmp[ , 'sigma']), 1, tol = 0.05, info = "posterior mean for sigma not correct")}))
+              expect_equal(mean(csmp[ , 'sigma']^2), var(m$y), tol = 0.05, info = "posterior mean for sigma not correct")
+            }))
 
    
 
