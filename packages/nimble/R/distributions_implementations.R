@@ -83,19 +83,22 @@ NULL
 #' @export
 dinvwish_chol <- function(x, cholesky, df, scale_param = TRUE, log = FALSE) {
   # scale_param = FALSE is the GCSR parameterization (i.e., inverse scale matrix); scale_param = TRUE is the parameterization best for conjugacy calculations (i.e., scale matrix)
-    out <- .Call('C_dinvwish_chol', as.double(x), as.double(cholesky), as.double(df), as.double(scale_param), as.logical(log))
-    if(is.null(out)) out <- NaN
-    out
+    if(storage.mode(cholesky) != 'double')
+          storage.mode(cholesky) <- 'double'
+    if(storage.mode(x) != 'double')
+            storage.mode(x) <- 'double'
+    .Call('C_dinvwish_chol', x, cholesky, as.double(df), as.double(scale_param), as.logical(log))
 }
 
 #' @rdname Inverse-Wishart
 #' @export
 rinvwish_chol <- function(n = 1, cholesky, df, scale_param = TRUE) {
-    if(n != 1) warning('rwish_chol only handles n = 1 at the moment')
-    out <- .Call('C_rinvwish_chol', as.double(cholesky), as.double(df), as.double(scale_param))
-    if(is.null(out)) out <- NaN
-    d <- sqrt(length(cholesky))
-    matrix(out, nrow = d, ncol = d)
+    if(n != 1) warning('rinvwish_chol only handles n = 1 at the moment')
+    if(storage.mode(cholesky) != 'double')
+    	storage.mode(cholesky) <- 'double'
+    out <- .Call('C_rinvwish_chol', cholesky, as.double(df), as.double(scale_param))
+    if(!is.null(out)) out <- matrix(out, nrow = sqrt(length(cholesky)))
+    return(out)
 }
 
 

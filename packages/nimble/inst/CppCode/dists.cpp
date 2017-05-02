@@ -255,7 +255,7 @@ SEXP C_rwish_chol(SEXP chol, SEXP df, SEXP scale_param)
     RBREAK("Error (C_rwish_chol): invalid input type for one of the arguments.\n");
   int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
-    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+    RBREAK("Error (C_rwish_chol): 'chol' must be a square matrix.\n");
   int p = dims[0];
 
   int n_chol = LENGTH(chol);
@@ -399,7 +399,7 @@ SEXP C_dinvwish_chol(SEXP x, SEXP chol, SEXP df, SEXP scale_param, SEXP return_l
   
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, 1));  
-  REAL(ans)[0] = dinvwish_chol(c_x, c_chol, c_df, p, scale, give_log, 1);  // 1: ok to overwrite when coming from R
+  REAL(ans)[0] = dinvwish_chol(c_x, c_chol, c_df, p, scale, give_log, 0); 
   UNPROTECT(1);
   return ans;
 }
@@ -498,7 +498,7 @@ SEXP C_rinvwish_chol(SEXP chol, SEXP df, SEXP scale_param)
 
   SEXP ans;
   PROTECT(ans = allocVector(REALSXP, n_chol));  
-  rinvwish_chol(REAL(ans), c_chol, c_df, p, scale, 1); // 1: ok to overwrite when coming from R
+  rinvwish_chol(REAL(ans), c_chol, c_df, p, scale, 0); 
   
   PutRNGstate();
   UNPROTECT(1);
@@ -924,7 +924,7 @@ SEXP C_dmnorm_chol(SEXP x, SEXP mean, SEXP chol, SEXP prec_param, SEXP return_lo
 
   int* dims = INTEGER(getAttrib(chol, R_DimSymbol));
   if(dims[0] != dims[1])
-    RBREAK("Error (C_dwish_chol): 'chol' must be a square matrix.\n");
+    RBREAK("Error (C_dmnorm_chol): 'chol' must be a square matrix.\n");
   int p = dims[0];
 
   int n_x = LENGTH(x);
